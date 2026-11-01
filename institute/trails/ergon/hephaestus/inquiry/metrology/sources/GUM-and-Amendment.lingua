@@ -10,4 +10,7 @@ Read JCGM 100:2008/Amd.1:2026, Nonlinearity in measurement models, with the affe
 JCGM supplies authorized free access while retaining copyright and reproduction/translation rights. These are references, not copied standards or adaptations. The current official catalogue, the base identity, and amendment text were checked on 28 October 2026. Use the exact edition and amendment when reporting a calculation.
 
 **Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+
+**Third inquiry-core inspection — 31 October 2026:** the official BIPM catalogue and its linked base/amendment PDFs were accessible even though the DOI resolver requests failed. Inspected selected base text on double counting (4.3.10), linear combination/independence (5.1.5–5.2.1), and the amendment's changes to 4.1.4 and H.1.7. The amendment is actually published as JCGM 100:2008/Amd.1:2026; it addresses significant nonlinearity in both the estimate and uncertainty. Its normal-input higher-order formula is not an assumption of the original finite conductance study. Retained-copyright/reproduction notices were visible. This is bounded inspection, not a fresh whole-guide audit; complete assignments remain and no standards text or media is bundled.
+
 } r_3KA76CK3QAA3M470TC3XHP19MQ

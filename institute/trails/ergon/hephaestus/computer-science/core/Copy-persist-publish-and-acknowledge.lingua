@@ -1,0 +1,31 @@
+Import "../Computing.lingua"
+
+Prove a copy and publish protocol under explicit persistence premises (@computing-copy-publish: 0, is #chapter, #hephaestus-core "Recovery-request-identity-and-retry.lingua#r_00808A26E92166D742D797AA5D") { r_00122E30DCA27BFCE26486692A
+Keep the active record intact while constructing a new one in the other slot. The configured starting durable state selects a complete valid record; the inactive slot may hold an old record or partial residue from an interrupted attempt. There is one writer, no concurrent reader holding references to the inactive slot, and no other outstanding device work at the start of recovery/retry.
+
+The protocol is sequential at the program level:
+
+1. Validate the request against the recovered record and construct the complete new tuple in volatile memory.
+2. Issue its four word writes to the inactive slot, allowing any persistence order among them.
+3. Wait for the data barrier, which requires all four words durable.
+4. Issue the single atomic selector write choosing the new slot.
+5. Wait for the selector barrier, then acknowledge completion.
+
+**Invariant before publication:** until the selector write persists, recovery chooses the old slot. No write in this attempt changes that slot. Whatever subset of candidate words has reached durability is irrelevant to recovery. Thus all crashes in this phase return the complete old record.
+
+**Invariant after publication:** the selector write is not even issued before the first barrier returns. Therefore, when the selector persists, all candidate fields are already durable. No later operation changes them. Atomicity of the selector leaves either its old or its new value at a crash; there is no third partially decoded selector value under this premise. Thus every crash returns the complete old or complete new record.
+
+**Acknowledgment theorem:** the second barrier returns only after the selector is durable. Acknowledgment follows it. Therefore any crash after acknowledgment recovers the new record. A crash after selector persistence but before acknowledgment also recovers new, which proves that absence of acknowledgment does not imply absence of effect.
+
+Removing the first barrier permits the selector to persist while candidate fields are incomplete. Removing the second permits acknowledgment while the old selector remains durable. Overwriting the active slot permits mixed records before publication. The companion program intentionally implements all three defective variants and finds counterexamples; passing the correct protocol is not the sole evidence that the checker distinguishes these mistakes.
+
+The proof covers any finite number of pending candidate fields if their persistence is independently atomic, the first barrier completes all of them, and the atomic selector chooses a complete root of the new state. Our implementation has four fields and two slots. A real tree, allocator, journal, device atomic unit or multiwriter system requires additional invariants; the analogy is not a proof for those systems.
+
+**Progress:** if crashes stop and every issued write eventually persists, both barriers eventually pass and this finite attempt acknowledges. Safety does not require a bound on persistence delay. Liveness requires this fairness premise; no protocol can promise completion under an infinite sequence of disruptive crashes in this model.
+
+**Reading:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 42's persistence-order and copy-on-write discussions. Use the source to compare the approaches, then prove this particular original construction from its stated premises rather than transferring an implementation claim from another filesystem.
+
+**Continue:** [Recover a committed identity before deciding whether to retry](Recovery-request-identity-and-retry.lingua#r_00808A26E92166D742D797AA5D).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00122E30DCA27BFCE26486692A

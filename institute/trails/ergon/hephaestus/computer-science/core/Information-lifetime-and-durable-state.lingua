@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+State which information must survive which interruption (@computing-durability: 0, is #chapter, #hephaestus-core "Stored-bytes-names-and-schema.lingua#r_009C242CFD97528897E1B8CB5E") { r_00ABBBC2E40324C33C0481988A
+You save a calculation, the screen says it succeeded, and the machine stops. What should be available after restart? The answer requires a failure boundary and a completion contract. [Separate a program from the state of its execution](Separate-a-program-from-the-state-of-its-execution.lingua#r_00215351C844E50F14E1E11C36) separates a program from a running process; [Connect names objects and addresses to a storage lifetime](Connect-names-objects-and-addresses-to-a-storage-lifetime.lingua#r_00B53B9599A35F97006225DA42) distinguishes an object's lifetime from the address used to access it. Durable information adds another lifetime: surviving a specified interruption of the system that wrote it.
+
+A variable, its encoded bytes, a file's contents, a directory entry and a device's persistent state are different objects. An application can finish computing a value before it has encoded it. It can finish copying bytes to a buffer before any durable medium changes. A namespace can expose a new name before the contents or that name are guaranteed to survive the failure of interest. Attach every success claim to one of these boundaries.
+
+Distinguish three example failure models. A single process stops while the operating system and device continue. A host loses volatile memory and unpersisted writes. A medium returns corrupt or missing data despite earlier completion. A protocol established only for the second model has not thereby established recovery from the third. Nor does the word persistent mean that information lasts indefinitely without maintenance or readable formats.
+
+This block develops a finite model of the second case: an interruption discards volatile execution and pending writes; already persisted words survive exactly. Each word is atomic, and explicit barriers constrain persistence order. No concurrent writer, malicious modification, corrupt durable word, device failure after persistence, or broken barrier is included in the proof. These are mathematical premises to be tested or replaced when mapping to a real system, not claims about all hardware.
+
+The central useful guarantee will be: after recovery a logical transfer is wholly old or wholly new; if completion was acknowledged before the crash, recovery returns the new state. The converse is false: a transfer can become durable immediately before an acknowledgment is lost. Keeping that uncertainty visible is necessary for a correct retry policy.
+
+**Work:** draw application, operating-system buffer, device and durable-state boundaries. For each, name what is known after a local copy, a write return, a persistence completion, and an acknowledgment to the caller. Explain why reading back through the same cache does not independently demonstrate survival of a power loss. Revisit [Input, output, and errors are part of the method](../../inquiry/reproducible-computation/foundations/Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8) for error meaning and [Files, paths, processes, and the working directory](../../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K) for names and process context.
+
+**Reading:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 39's introductory persistence/file discussion and chapter 42's crash-consistency question. Read them as preparation for the explicit model below; the complete filesystem implementations and device chapters remain broader formation.
+
+**Continue:** [Separate stored bytes names and the schema that gives them meaning](Stored-bytes-names-and-schema.lingua#r_009C242CFD97528897E1B8CB5E).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00ABBBC2E40324C33C0481988A

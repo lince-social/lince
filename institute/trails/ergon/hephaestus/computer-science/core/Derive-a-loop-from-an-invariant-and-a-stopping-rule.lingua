@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Derive a loop from an invariant and a stopping rule (@computing-loop-argument: 0, is #chapter, #hephaestus-core "Count-work-and-storage-under-an-explicit-cost-model.lingua#r_056CD81F8DB8FE38538185D3DC") { r_02552612F644E09F0E388FB4B9
+To build a procedure, first identify the fact that should remain true as work advances. In the stock model, after k accepted changes the last stored state equals the initial count plus the first k changes. Every stored state lies between zero and capacity. The trace contains exactly k + 1 entries, including the initial state. This is the proposed invariant.
+
+It holds initially because k is zero, the trace contains only the checked initial state, and the sum of no changes is zero. For the next event, compute one candidate by adding the change to the last accepted state. If the candidate lies within bounds, append it. The sum relation advances by one term, the new state satisfies the bounds, and the trace length increases by one. Thus acceptance preserves the invariant.
+
+If the candidate is outside the interval, stop before appending it. All previous events were checked and accepted, so this is the earliest violated bound for the supplied order. The result distinguishes the valid prefix from the attempted next state. A procedure that checks only the final total cannot establish that property: an intermediate excess can be followed by a withdrawal that hides it.
+
+Termination needs its own argument. The event tuple is finite and the loop advances to the next event on every accepted iteration; otherwise it returns immediately. It cannot process more events than supplied. This reasoning assumes the stated exact integer operations and ordinary successful execution. Resource exhaustion or interruption is a separate execution failure, not a successful return satisfying the contract.
+
+Trace initial stock 3, capacity 5 and changes (+2, −4, +5). The stored states begin 3, 5, 1. The third candidate is 6 and is rejected at zero-based index 2. The earlier states remain visible. Reversing the event order changes the first candidate and may change the result; addition's commutativity does not make the intermediate bound checks order-independent.
+
+**Work:** give the initialization, preservation and termination arguments in your own words. Identify exactly where the input contract is used. Try to break the invariant by appending a candidate before checking it or skipping the initial-state check. Explain what test evidence can reveal about an implementation and what the general argument establishes about the specified algorithm.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Continue:** [Count work and storage under an explicit cost model](Count-work-and-storage-under-an-explicit-cost-model.lingua#r_056CD81F8DB8FE38538185D3DC).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_02552612F644E09F0E388FB4B9

@@ -1,0 +1,23 @@
+Import "historical-inquiry-and-historiography/Historical-inquiry-and-historiography.lingua"
+Import "ancient-and-medieval-histories/Ancient-and-medieval-histories.lingua"
+Import "early-modern-and-modern-world-history/Early-modern-and-modern-world-history.lingua"
+Import "contemporary-history/Contemporary-history.lingua"
+Import "history-of-brazil/History-of-Brazil.lingua"
+Import "social-cultural-and-intellectual-history/Social-cultural-and-intellectual-history.lingua"
+Import "history-and-philosophy-of-science-and-technology/History-and-philosophy-of-science-and-technology.lingua"
+
+History (@history: 0, is #chapter, #outline, #contains "historical-inquiry-and-historiography/Historical-inquiry-and-historiography.lingua#r_13TZBD71NRYBSYDEY8BZ7AKZP3", #contains "ancient-and-medieval-histories/Ancient-and-medieval-histories.lingua#r_2VMGX2WRN4DJECEMHJMTZTAESX", #contains "early-modern-and-modern-world-history/Early-modern-and-modern-world-history.lingua#r_27AZJWR6C6Y5DVRSDA9SSWKEQH", #contains "contemporary-history/Contemporary-history.lingua#r_5KDWAWTT8VR8WYZDR4G8326G98", #contains "history-of-brazil/History-of-Brazil.lingua#r_46RA9VDE0BW8156A5J17T2P67Q", #contains "social-cultural-and-intellectual-history/Social-cultural-and-intellectual-history.lingua#r_6KTBZD5S9MQP7X644VN1AXS90B", #contains "history-and-philosophy-of-science-and-technology/History-and-philosophy-of-science-and-technology.lingua#r_0TXHW7BDPTZZNGWMERY21QJPAJ") { r_3MKG6XS2X0W9YR8T4438CTGZ1T
+Investigate a period, society, event, practice, or changing idea through sources and competing accounts. Introduce chronology, source criticism, and relevant context alongside the question. Offer chronological, regional, and thematic routes, connecting political and economic transformations, cultural life, and the history of science and technology.
+
+**Parent:** [Scholazein — pursuits of a well-spent life](../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6).
+
+**Branches:**
+
+- [Historical inquiry and historiography](historical-inquiry-and-historiography/Historical-inquiry-and-historiography.lingua#r_13TZBD71NRYBSYDEY8BZ7AKZP3)
+- [Ancient and medieval histories](ancient-and-medieval-histories/Ancient-and-medieval-histories.lingua#r_2VMGX2WRN4DJECEMHJMTZTAESX)
+- [Early modern and modern world history](early-modern-and-modern-world-history/Early-modern-and-modern-world-history.lingua#r_27AZJWR6C6Y5DVRSDA9SSWKEQH)
+- [Contemporary history](contemporary-history/Contemporary-history.lingua#r_5KDWAWTT8VR8WYZDR4G8326G98)
+- [History of Brazil](history-of-brazil/History-of-Brazil.lingua#r_46RA9VDE0BW8156A5J17T2P67Q)
+- [Social, cultural, and intellectual history](social-cultural-and-intellectual-history/Social-cultural-and-intellectual-history.lingua#r_6KTBZD5S9MQP7X644VN1AXS90B)
+- [History and philosophy of science and technology](history-and-philosophy-of-science-and-technology/History-and-philosophy-of-science-and-technology.lingua#r_0TXHW7BDPTZZNGWMERY21QJPAJ)
+} r_3MKG6XS2X0W9YR8T4438CTGZ1T

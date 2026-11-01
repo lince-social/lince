@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Repair, restoration and return to service (@mech-restoration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #mechanical-engineering "Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ", #materials-engineering "../../materials-engineering/service/Reuse-retains-a-function-and-a-history.lingua#r_0YR45G1N84REB3Q6218RNQ8J4H", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Restoration-includes-cleanliness-calibration-and-service.lingua#r_6XBZHEGMYMKKT920NK10Y9WT3Y") { r_1RF5PD4EHJKFZ57X6RSFKXJK1X
+Repair, restoration and return to service (@mech-restoration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #mechanical-engineering "Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ", #materials-engineering "../../materials-engineering/service/Reuse-retains-a-function-and-a-history.lingua#r_0YR45G1N84REB3Q6218RNQ8J4H", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Restoration-includes-cleanliness-calibration-and-service.lingua#r_6XBZHEGMYMKKT920NK10Y9WT3Y", #hephaestus-core "../../core/Connect-restored-configuration-to-a-defensible-service-claim.lingua#r_00ACDDD0A8E0E505FCE7A8CADC") { r_1RF5PD4EHJKFZ57X6RSFKXJK1X
 **Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), dismounting, inspection and mounting; [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), verification and transition. Reuse the dimensional and material-state studies.
 
 A repaired machine has a new physical history. Replacement, machining, welding, coating or adjustment can alter geometry, residual stress, contact and control settings. Restoring movement alone does not establish restored load capacity, accuracy or service life.
@@ -16,5 +16,10 @@ Define the retained function, accepted change and evidence needed for return. In
 
 
 **Continue in gas and vacuum systems:** [Restoration includes cleanliness, calibration and service](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Restoration-includes-cleanliness-calibration-and-service.lingua#r_6XBZHEGMYMKKT920NK10Y9WT3Y).
+
+
+**Eighth engineering-block reading:** Use changed configuration, affected interfaces and evidence of useful function when challenging the model's immediate successful-restoration assumption. Real disassembly, material repair and commissioning remain outside this common paper/software investigation.
+
+**Continue in the eighth engineering block:** [Connect restored configuration to a defensible service claim](../../core/Connect-restored-configuration-to-a-defensible-service-claim.lingua#r_00ACDDD0A8E0E505FCE7A8CADC).
 
 } r_1RF5PD4EHJKFZ57X6RSFKXJK1X

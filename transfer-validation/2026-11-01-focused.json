@@ -1,0 +1,51 @@
+{
+  "scope": "Focused Transfer/Transport workflow validation; Play builds excluded",
+  "source": {
+    "head": "363669ca48d600b5484239c7ae1f21ec4759ed43",
+    "working_tree": "Pre-existing uncommitted changes; local results describe the working tree, not HEAD alone"
+  },
+  "backend_transport_journeys": {
+    "command": "nix develop .#interface -c cargo xtask test --locked -p engine --test transport_journey -- --test-threads=1",
+    "passed": [
+      "adjacent_transfer_parts_share_one_seat_and_finish_independently",
+      "competing_bookings_reserve_once_and_signed_journey_progress_releases_before_settlement"
+    ],
+    "failed": 0,
+    "warnings": "Workspace lints deny warnings"
+  },
+  "laboratory": {
+    "status": "Compiling; no acceptance result yet",
+    "selected": [
+      "map_first_transport_panels_preserve_map_and_guard_an_open_draft",
+      "four_lince_transport_control_draft_finishes_sharing_before_later_settlement",
+      "four_lince_transport_address_permissions_draw_exact_points_and_configurable_areas"
+    ]
+  },
+  "phone": {
+    "model": "Moto g05",
+    "adb": "Authorized",
+    "android_version": "15",
+    "page_size_bytes": 4096,
+    "location_mode_baseline": 0,
+    "debug_app_installed": false,
+    "existing_apps": "Release and smoketest packages preserved",
+    "settings_changed": false,
+    "acceptance": "Unverified: no debug APK available locally or in latest Android CI artifacts"
+  },
+  "prior_ci": {
+    "run": 40683907868,
+    "revision": "5168c0a674ef7cf6fd9252becce54cab90d564bf",
+    "status": "Failed; historical evidence, not a run of the current working tree",
+    "arm64_failure": "gemm-f16/gemm-common half-precision assembly requires fullfp16",
+    "emulator_failure": "Organ creation smoke journey did not finish",
+    "native_failure": "Deprecated fetch_update; replacement already present in current working tree",
+    "downloaded_artifacts": ["transfer-regressions", "android-smoke-evidence"],
+    "artifact_directory": "/tmp/lince-transfer-ci-evidence"
+  },
+  "remaining_phone_acceptance": [
+    "Install verified debug APK and complete fresh-profile setup",
+    "Real location delivery and exact/generalized/excluded recipient privacy",
+    "Background delivery, notification Stop, expiry and late-callback cleanup",
+    "Transport touch navigation and draft persistence"
+  ]
+}

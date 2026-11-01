@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Derive coefficient uncertainty from linear observation weights (@inquiry-linear-estimator: 0, is #chapter, #hephaestus-core "Understand residual constraints and estimated scatter.lingua#r_007A3A0DF16E49979BF8C6FD9E") { r_00089F9DC6E7927277B93E8393
+The shared response lesson calls slope a and intercept b. Here use β for slope and α for intercept throughout. Let x̄=Σx_i/n, d_i=x_i−x̄ and Sxx=Σd_i²>0. The projection result gives β̂=Σd_iY_i/Sxx and α̂=Ȳ−β̂x̄. Their observed versions replace Y by y. If Sxx=0 the observations cannot separate intercept and slope: numerical minimization cannot create the missing information.
+
+Derive the formulas from the two residual constraints Σ(Y_i−α̂−β̂x_i)=0 and Σx_i(Y_i−α̂−β̂x_i)=0, rather than learning separate fitting rules. Then insert Y_i=α+βx_i+ε_i. Since Σd_i=0 and Σd_ix_i=Sxx, β̂−β=Σd_iε_i/Sxx and α̂−α=Σε_i/n−x̄Σd_iε_i/Sxx. Zero mean errors imply unbiased coefficients. No distributional shape has been invoked.
+
+For arbitrary error covariance matrix Σ, any two linear combinations cᵀε and dᵀε have covariance cᵀΣd, by expanding the double sum. Under Σ=σ²I, the preceding weights give Var(β̂)=σ²/Sxx, Var(α̂)=σ²(1/n+x̄²/Sxx), Cov(α̂,β̂)=−x̄σ²/Sxx. The units are respectively U²/X², U² and U²/X. These are sampling variances for known σ²; substituting an estimated variance is an additional step.
+
+Centering the coordinate to z=x−x̄ makes the new intercept α+βx̄ and its estimator Ȳ. Its covariance with β̂ is zero under the stated covariance model. Zero covariance does not generally mean independence. Rescaling z by a nonzero constant changes the slope unit and numerical variance, while leaving fitted physical responses unchanged. Reuse [Keep coordinate choices error metrics and sensitivity distinct](../../mathematics/core/Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7) when comparing numerical sensitivity with information content.
+
+For a linear unbiased slope estimator Σc_iY_i, unbiasedness for every α,β requires Σc_i=0 and Σc_ix_i=1. Write c_i=d_i/Sxx+v_i. The constraints imply Σv_i=Σv_id_i=0, so Σc_i²=1/Sxx+Σv_i². Under equal uncorrelated errors its variance is at least σ²/Sxx. This proves an optimality statement among these linear unbiased estimators only; it does not prove the mean model or superiority under a different loss/covariance structure.
+
+**Work:** derive all three covariance expressions by scalar sums. Replace Σ with σ²I+τ²11ᵀ and determine which coefficient acquires extra variance. For unequal or correlated errors, return to cᵀΣd rather than reusing the equal-variance formulas. A chosen weighted objective is a mathematical metric; calling its weights inverse variances requires evidence.
+
+**Continue:** [Understand residual constraints and estimated scatter](Understand residual constraints and estimated scatter.lingua#r_007A3A0DF16E49979BF8C6FD9E).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00089F9DC6E7927277B93E8393

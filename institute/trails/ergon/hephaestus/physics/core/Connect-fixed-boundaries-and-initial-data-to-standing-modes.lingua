@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Connect fixed boundaries and initial data to standing modes (@physics-wave-boundaries: 0, is #chapter, #hephaestus-core "Derive-local-wave-energy-and-transport-across-a-boundary.lingua#r_0015B67A83CB25AF990B8BABEF") { r_00712E8AD9B447D3F2FF03D38A
+For the ideal string on 0≤x≤L, impose y(0,t)=y(L,t)=0 for all t. A single traveling sinusoid generally fails these constraints. The trigonometric addition identities give
+
+sin(kx−ωt)+sin(kx+ωt)=2 sin(kx)cos(ωt).
+
+Oppositely traveling components can therefore make a standing field y=A sin(kx)cos(ωt+φ). Its points oscillate with location-dependent amplitude |A sin(kx)|. The zero boundary at x=0 is automatic. For a nonzero field, the second boundary requires sin(kL)=0, hence k_n=nπ/L for n=1,2,... . The wave equation supplies ω_n=c k_n and f_n=nc/(2L). Negative n merely changes the amplitude convention; n=0 in this sine family is the identically zero field, not a hidden nonzero fixed-end mode.
+
+Nodes are x=jL/n for j=0,...,n; antinodes lie halfway between adjacent nodes. A zero instantaneous displacement at every location when cos(ω_nt+φ)=0 is not a set of permanent nodes: velocities can be largest then. Initial displacement and velocity determine the time coefficients. For a specified single spatial mode y=sin(k_nx)[a cos(ω_nt)+b sin(ω_nt)], the initial functions are a sin(k_nx) and bω_n sin(k_nx). Arbitrary initial functions need a further expansion/existence theory; that is not established by listing a few modes.
+
+Finite sums of these modes solve the same homogeneous equation and end conditions, provided their summed slopes remain within the approximation. They may have complicated point motion. At the midpoint, every even mode is invisible because sin(nπ/2)=0 for even n. Repeated measurements there cannot exclude such modes, however accurate the time readings are. A second location can distinguish particular rivals but does not automatically reconstruct every possible field.
+
+One useful uniqueness statement can be proved within the smooth model. Suppose two classical solutions have the same initial displacement, initial velocity and fixed ends. Their difference z has zero initial state and boundaries. The energy argument in the next lesson gives constant nonnegative integral energy. Initially zero, it forces z_t=z_x=0 everywhere by continuity; the fixed boundary then forces z=0. This proves uniqueness if solutions with those regularity assumptions exist. It does not prove existence or convergence of an infinite modal expansion.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 16.6, focusing on fixed-end superposition and allowed modes. Derive the first three wavelengths and frequencies, compare nodes with instantaneous zeros, and verify a two-mode initial state directly. Explain why driven resonance, free ends, rigid bending members and acoustic cavities require their own boundaries and models before borrowing this frequency formula.
+
+**Continue:** [Derive local wave energy and transport across a boundary](Derive-local-wave-energy-and-transport-across-a-boundary.lingua#r_0015B67A83CB25AF990B8BABEF).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00712E8AD9B447D3F2FF03D38A

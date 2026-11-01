@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Relate forces to momentum and system boundaries (@physics-momentum-balance: 0, is #chapter, #hephaestus-core "Connect-work-energy-and-power-with-the-model.lingua#r_0FD59423D49E5DCBEFBAC05C2A") { r_07F88E984BB76BB449F22A9467
+After the shared vector and force lessons, choose a straight-line problem whose directions are explicit. For a constant-mass particle model in an inertial frame, the net external force equals mass times acceleration. An inertial frame is one in which an isolated particle has constant velocity. Frames accelerating relative to it need additional accounting; a convenient coordinate axis alone does not establish an inertial frame.
+
+A hypothetical 3 kg cart is pulled with +8 N while resistance acts with −2 N. If those are the relevant horizontal forces, the net is +6 N and the acceleration is +2 m/s². One newton is one kg m/s². A vertical support and weight can balance while the horizontal motion accelerates; do not add perpendicular force magnitudes as though they acted along one axis. The net force is a vector sum.
+
+Momentum is mass times velocity in this Newtonian model. A constant net force of +6 N acting for 2 s gives an impulse of +12 N s and changes momentum by +12 kg m/s. For the 3 kg cart, that changes velocity by +4 m/s. Equal impulses can produce the same change in momentum while having different force histories, peak forces and displacements. If force varies, its time history must be accumulated; multiplying one arbitrary force reading by elapsed time is generally wrong.
+
+For several particles, add their momenta. Under the stated equal-and-opposite internal-force model, internal forces cancel in that sum and the net external impulse determines the change in total momentum. Internal interactions can still alter relative motion, deformation and energy. Two initially stationary ideal carts of masses 1 kg and 2 kg can separate with velocities +2 m/s and −1 m/s while their total momentum stays zero. The motion requires an energy source, such as initially stored spring energy, which a momentum balance alone does not quantify.
+
+**Read:** [University Physics Volume 1](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), sections 5.1–5.4 and 9.1–9.3, with the algebraic problems that use the introduced quantities. The existing mechanical momentum lesson supplies the later derivative formulation and center-of-mass account. Material crossing a boundary requires a momentum-flow treatment; this first closed-system calculation does not cover it.
+
+**Work:** draw the cart boundary, label each interaction and check the impulse result independently from mass times velocity change. Compare a 6 N force for 2 s with a 12 N force for 1 s, both from rest on the same ideal cart. Explain why equal final velocities need not mean equal displacements. Reconsider the two-cart example with an external impulse and state which conservation claim must change.
+
+**Later derivation:** [Momentum balance for particles and the whole machine](../../engineering/mechanical-engineering-and-machine-design/dynamics/Momentum-balance-for-particles-and-the-whole-machine.lingua#r_0DD8ZD9Q7R1CTXC6D8JVTBSZKE) develops the general mechanical account after calculus preparation.
+
+**Continue:** [Connect work, energy and power with the model](Connect-work-energy-and-power-with-the-model.lingua#r_0FD59423D49E5DCBEFBAC05C2A).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_07F88E984BB76BB449F22A9467

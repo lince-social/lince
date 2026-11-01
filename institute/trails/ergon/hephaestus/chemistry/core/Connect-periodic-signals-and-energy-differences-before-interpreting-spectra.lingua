@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Connect periodic signals and energy differences before interpreting spectra (@chemistry-light-bridge: 0, is #chapter, #hephaestus-core "../general-chemistry/atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG") { r_0FF2481386174C81A212B4DB67
+A spectrum separates a signal according to a spectral coordinate such as frequency or wavelength. Before interpreting its peaks, define that coordinate, the signal being recorded and the conditions of observation. A peak location, its height, its width and the total energy received answer different questions.
+
+**Read:** Chemistry 2e section 6.1's wave quantities and light-energy discussion, then section 6.2's atomic-spectrum model. Use the shared quantity, unit, ratio and function lessons. The next [shared spectral lesson](../general-chemistry/atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG) supplies the chemical interpretation; full electromagnetic-wave and quantum derivations retain their later physics preparation.
+
+For a repeating signal, the period T is time per cycle and frequency ν is cycles per time, so ν=1/T. A hertz is one cycle per second. Wavelength λ is the spatial repeat distance. For a monochromatic traveling wave with phase speed v, v=λν. For light in vacuum use c; the medium and its frequency-dependent response matter when interpreting other wavelengths. The Greek ν for frequency is not the Latin v used for speed.
+
+A photon of frequency ν has energy E=hν. A transition between stipulated energy levels has an energy difference; the photon account uses that difference, not the arbitrary zero chosen for all levels. Absorption raises the system's energy in this simple account; emission lowers it. Not every level pair automatically yields an observable line: selection rules, populations, broadening and instrument response require additional physics and evidence.
+
+Consider a hypothetical model with levels 0, ε and 3ε, where ε=hν₀ and ν₀=4×10¹⁴ Hz. If all three downward transitions are allowed, their frequencies are ν₀, 2ν₀ and 3ν₀. The vacuum wavelengths are λ₀, λ₀/2 and λ₀/3, with λ₀=c/ν₀. Using the SI value of c gives λ₀=749.481145 nm for this stipulated exact frequency. Adding the same energy offset to every level changes none of those differences. The example is not a spectrum assigned to a real atom, nor a claim that its transitions have equal intensities.
+
+If a beam contains twice as many photons of the same frequency, its total photon energy doubles while each photon's energy stays fixed. Doubling frequency instead doubles each photon's energy. Power additionally divides transferred energy by time. Distinguish these changes before using a brighter signal as evidence for an energy-level shift. Similarly, energy per photon and energy per mole of photons have different entity counts.
+
+**Work:** derive frequency and wavelength ratios for the model, add an arbitrary common level offset and check invariance. Construct two illumination accounts with the same total energy but different photon counts and frequencies. State what spectral observation could challenge the proposed levels, and why the absence of one predicted line needs a population/transition/instrument account before rejecting the energy model.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Shared quantities:** [units and dimensions](../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1); [ratios](../../inquiry/quantitative-literacy/foundations/Ratios-and-percentages.lingua#r_2VBAHXE0WMP7E6WA0NNKV1N31S); [SI definitions and prefixes](../../inquiry/quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED); [entity and amount basis](Choose-the-entity-basis-and-information-in-a-chemical-quantity.lingua#r_0FA652331F0EBF3613EA1DA8B2).
+
+**Continue:** [Use spectra to connect energy changes with atomic structure](../general-chemistry/atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0FF2481386174C81A212B4DB67

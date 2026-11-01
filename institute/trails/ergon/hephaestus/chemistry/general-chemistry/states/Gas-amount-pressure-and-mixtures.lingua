@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Use a gas model with defined pressure, temperature, volume, and composition (@gc-gases: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Molecular-motion-and-distributions.lingua#r_44XEP1GDGE3QKRCSEXBZM135TY", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua#r_3YYAN5FQJXPX2441B2ZK5M4VPN") { r_6SXC8H8YSR9B739R9H8K2KF863
+Use a gas model with defined pressure, temperature, volume, and composition (@gc-gases: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Molecular-motion-and-distributions.lingua#r_44XEP1GDGE3QKRCSEXBZM135TY", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua#r_3YYAN5FQJXPX2441B2ZK5M4VPN", #hephaestus-core "../../../physics/core/Derive-a-wall-pressure-from-momentum-transfer-and-velocity-moments.lingua#r_0E97E7965A096183F866D6F07C") { r_6SXC8H8YSR9B739R9H8K2KF863
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 9 in full with exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete six-part gas unit; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), pressure, temperature, gas, and composition conventions.
 
 The ideal-gas equation pV = nRT connects a state under a model whose validity needs assessment. Use absolute pressure and thermodynamic temperature, consistent units for R, and the amount of the specified gas entities. A gauge reading and an absolute pressure are different quantities; a Celsius temperature must be converted before substituting into this equation.
@@ -18,4 +18,9 @@ Read the entire gas chapter and Chem1 gas unit. An engineering vessel also needs
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 
 **Continue in thermodynamics and heat transfer:** [Equations of state and caloric information](../../../physics/thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua#r_3YYAN5FQJXPX2441B2ZK5M4VPN).
+
+**Third physics-block reading:** Use the ideal-gas relation, absolute pressure/temperature, amount and model-validity discussion after the preceding physical preparation. The common block’s fresh accessible gas reading is University Physics Volume 2 sections 2.1–2.2. Preserve the original full Chemistry 2e, Chem1, mixture/wet-gas and Green Book assignments for their broader chemical formation; no fresh complete audit of those sources is claimed.
+
+**Continue in the third physics block:** [Derive a wall pressure from momentum transfer and velocity moments](../../../physics/core/Derive-a-wall-pressure-from-momentum-transfer-and-velocity-moments.lingua#r_0E97E7965A096183F866D6F07C).
+
 } r_6SXC8H8YSR9B739R9H8K2KF863

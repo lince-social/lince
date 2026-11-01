@@ -1,0 +1,26 @@
+Import "../Chemistry.lingua"
+
+Begin with substances, particles and chemical accounting (@chemistry-core: 0, is #chapter, #hephaestus-core "../general-chemistry/foundations/A-chemical-question.lingua#r_7Y7E3QBYQADPGQ06JXY84FCEVN") { r_06A721F480CCA6DC7EB5D006D8
+Chemistry asks what materials contain, how their microscopic structure relates to properties, and how substances transform. Begin with an observed material and a question: is its composition uniform, does it separate into phases, and what evidence would distinguish a mixture from a pure substance? Appearance alone does not establish chemical identity.
+
+An atom identifies an element through its number of protons. Molecules and extended structures arrange atoms through bonding. Chemical formulas state composition; their symbols are not pictures of shape or complete descriptions of state. A reaction equation accounts for atoms and charge while describing a proposed transformation. It does not by itself specify speed, energy requirements or a practical method.
+
+For bookkeeping, consider 2H₂ + O₂ → 2H₂O. Each side contains four hydrogen atoms and two oxygen atoms. The coefficients give ratios of entities, and therefore of amounts in moles; they are not mass ratios. Using rounded molar masses of 2 g/mol, 32 g/mol and 18 g/mol, 2 mol of H₂ and 1 mol of O₂ correspond to 4 g + 32 g = 36 g of H₂O. This is a symbolic accounting exercise, not an instruction to combine the substances.
+
+If the hypothetical starting amounts are 3 mol H₂ and 1 mol O₂, the equation permits at most 2 mol water from that oxygen amount, with 1 mol H₂ left over. This identifies a stoichiometric limit under the assumed reaction. Equilibrium, competing reactions and incomplete conversion can reduce actual production. A balance is necessary evidence, but it is not a complete chemical explanation.
+
+A physical mixture supplies another starting point: 5 g of a component in 100 g of total solution gives a mass fraction of 0.05, or 5%. Dividing by the solvent mass instead answers a different question. Concentration requires an explicit numerator, denominator and material state; a number labelled only “percent” leaves the quantity ambiguous.
+
+**Read and practise:** begin with [Substances, mixtures and phases](../general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS) and [Observations, particles and symbols](../general-chemistry/foundations/Observations-particles-and-symbols.lingua#r_1BMJ0JMYA9THS9B5K12C423YFC). The [general chemistry formation](../general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V) supplies whole-book reading, quantitative work and later scholarly studies. Reuse its existing foundations instead of writing a second general chemistry textbook here.
+
+**Shared continuation:** [Limiting reactants and purity](../general-chemistry/reactions/Limiting-reactants-and-purity.lingua#r_0B70BWF6HF4MK461M5Q92HPSH9) develops the reaction-accounting question and its source readings.
+
+**Work:** recount the atoms in the equation; calculate the remaining reactants when the starting amounts are 1 mol H₂ and 1 mol O₂; explain why a measured decrease in open-container mass need not contradict conservation. Distinguish a chemical balance from evidence for reaction mechanism or rate.
+
+**Review:** connect material identity, microscopic model, measured property and transformation. The broad core must also establish bonding, energy, phases, rates, equilibrium and analytical evidence; this introductory bridge does not complete those topics or the pending specialist branches.
+
+**Return:** [Chemistry — substances, structure and transformations](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the chemistry core:** [Ask a chemical question about a material and a change](../general-chemistry/foundations/A-chemical-question.lingua#r_7Y7E3QBYQADPGQ06JXY84FCEVN).
+
+} r_06A721F480CCA6DC7EB5D006D8

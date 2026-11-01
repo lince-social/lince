@@ -1,0 +1,25 @@
+Import "../Physics.lingua"
+
+Account for oscillation losses and external work (@physics-oscillator-loss: 0, is #chapter, #hephaestus-core "Describe-a-field-without-confusing-position-and-time.lingua#r_00D94239F63BAA1888D124877B") { r_008D203213F706CB6E90BC8692
+Keep the mass and linear restoring interaction, and add a phenomenological force −bv opposing velocity with b≥0 and units kg/s. Let F_d(t) be an externally applied force along the same axis. The model is
+
+m x''+b x'+kx=F_d(t).
+
+With E=mv²/2+kx²/2, direct differentiation gives E'=F_d v−bv². The first term is signed input power; the second is nonnegative removal from this mechanical energy account. Energy is transferred to other degrees of freedom or surroundings rather than destroyed. A damping coefficient and a constant-k approximation require their own evidence. Neither Coulomb friction nor every fluid force is proportional to velocity.
+
+Integrate between two times: E(t₁)−E(t₀)=∫F_d v dt−∫bv²dt. With no drive, energy cannot increase. If a solution repeats its complete state after a period, its cycle input work equals its cycle dissipated energy. Equality of average powers does not mean equality at every instant. Nor does a falling mechanical energy prove that the displacement decreases monotonically: velocity and displacement can still change sign.
+
+The prepared mathematics permits one explicit extension. Set γ=b/(2m) and x=e^(−γt)u. Product differentiation gives x'=e^(−γt)(u'−γu) and x''=e^(−γt)(u''−2γu'+γ²u). With zero drive, substitution leaves u''+(k/m−γ²)u=0. If k/m>γ², let Ω=√(k/m−γ²). Then
+
+x=e^(−γt)[x₀ cos(Ωt)+((v₀+γx₀)/Ω)sin(Ωt)].
+
+The change of variables and the earlier uniqueness result justify this bounded underdamped solution. At equality u''=0, giving x=e^(−γt)[x₀+(v₀+γx₀)t]. The substitution remains valid beyond equality, but the real exponential solutions and complete driven response are later work. Do not evaluate a negative square root as a real oscillation frequency. The exponential preparation is shared from [Define exponential change by an inverse and prove its rate law](../../chemistry/core/Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359), not redefined as a complex exponential here.
+
+A simple exact consistency exercise uses m=2 kg, k=8 N/m, b=4 kg/s: γ=1 s⁻¹ and Ω=√3 s⁻¹. If x₀=0 and v₀=0.02 m/s, differentiate x=(0.02/√3)e^(−t)sin(√3t) to recover both initial data and substitute into the equation. Its amplitude envelope decays, whereas its instantaneous E is not generally a constant times e^(−2γt): the mixed velocity/displacement terms must be retained.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 15.5; use its loss-model discussion and verify any proposed solution by differentiation. At x=0.03 m, v=0.08 m/s, b=1 kg/s and F_d=0.2 N, calculate input power 0.016 W, loss 0.0064 W and E'=0.0096 W. Explain why an increasing energy is consistent with positive damping. Prepare a force/work account before attempting a full resonance model; resonance widths, nonlinear response and general driven solutions remain unfinished.
+
+**Continue:** [Describe a field without confusing position and time](Describe-a-field-without-confusing-position-and-time.lingua#r_00D94239F63BAA1888D124877B).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_008D203213F706CB6E90BC8692

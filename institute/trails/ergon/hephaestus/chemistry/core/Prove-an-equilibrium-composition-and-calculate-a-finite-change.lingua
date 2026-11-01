@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Prove an equilibrium composition and calculate a finite change (@chemistry-equilibrium-minimum: 0, is #chapter, #hephaestus-core "../general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H") { r_00759EA4E4647C3A4DC7A61E04
+Use one original ideal model to connect the previous derivatives to a global conclusion. At a specified temperature T, set total amount N>0, pressure p=p°, and let y=n_B/N range from 0 to 1 for A⇌B. Choose a common reference with μ_A°=0 and μ_B°=−RT ln K, where K>0 is stipulated at this temperature. It is not inferred from a rate measurement. Then
+
+G=NRT φ(y), with φ(y)=y ln(y/K)+(1−y)ln(1−y).
+
+For 0<y<1, φ′(y)=ln[y/(K(1−y))] and φ″(y)=1/[y(1−y)]>0. The unique stationary composition is y*=K/(1+K). The derivative is negative before y* and positive after it, proving the global minimum over the interior. Endpoint values follow continuously by x ln x→0 as x→0+. One elementary bound is obtained by integrating 1/t≤1/sqrt(t) for t≥1: x|ln x|≤2sqrt(x), which tends to zero. Thus the same minimum is global over the closed interval. The finite endpoint G exists even though an absent species' logarithmic chemical potential is not finite.
+
+Substitution gives φ(y*)=−ln(1+K). The available Gibbs decrease to this equilibrium is
+
+G(y)−G(y*)=NRT[y ln(y/y*)+(1−y)ln((1−y)/(1−y*))]≥0,
+
+interpreting zero-weight terms by their limits. The nonnegativity follows from the proved global minimum; finite program samples are not its proof. Under the matching constant-T,p environment, this is an upper bound on reversible non-pressure-volume work to that endpoint. It does not establish a physical extraction device.
+
+For the original N=5 mol,K=4,T=300 K comparison, y*=4/5. Starting at y=1/2, n_B rises from 5/2 mol to 4 mol, Δξ=3/2 mol. Initial Δ_rG=−RT ln4, final Δ_rG=0, and finite ΔG=−5RT ln(5/4). The available work is about 2782.978 J using R=N_Ak_B. Multiplying the initial derivative by Δξ gives −(3/2)RT ln4, a different value. Starting instead at y=8/9 gives Q=8 and Δ_rG=RT ln2>0: the favorable allowed direction is toward less B.
+
+Increasing total amount at fixed fractions doubles G and the available work when N doubles, but leaves chemical potentials and the equilibrium fraction unchanged. Changing pressure does not change this ideal A⇌B ratio because Δν=0; it can matter for other reactions or nonideal phases. Changing temperature requires the material function K(T), which has not been supplied by stipulating K at one temperature.
+
+**Work:** reconstruct the closed-interval proof, integrate φ′ independently, and compare three starting compositions. Identify which conclusion needs ideality, which needs conservation, and which needs the specified environment. Do not generalize uniqueness or convexity to an arbitrary nonideal, multiphase or constrained chemical system.
+
+**Continue:** [Connect chemical potential, activities, and the reaction direction](../general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00759EA4E4647C3A4DC7A61E04

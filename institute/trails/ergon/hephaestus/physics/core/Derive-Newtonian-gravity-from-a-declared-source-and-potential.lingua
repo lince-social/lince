@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Derive Newtonian gravity from a declared source and potential (@physics-spacetime-gravity: 0, is #chapter, #hephaestus-core "Derive-orbital-shape-timing-and-the-limits-of-parameter-inference.lingua#r_003B0A54AD3132E93CD761C01A") { r_00475D684DBE55B881DF56938B
+A falling object and a satellite can share a gravitational model without sharing a constant acceleration. For a fixed point source of mass M at the origin, adopt the Newtonian potential per test mass Φ=−μ/r, μ=GM>0, r=|x|>0. A spherical source gives the same exterior expression by the shell theorem, which is an additional derived result rather than permission to ignore arbitrary source geometry. Extended nonspherical bodies require their actual mass distribution. This model assumes negligible test-body backreaction, weak gravity, slow motion and a source treated as stationary.
+
+Using ∂r/∂x_i=x_i/r gives ∇Φ=μx/r³ and acceleration g=−∇Φ=−μx/r³. Φ has m²/s² units, μ has m³/s² and g has m/s². The sign makes acceleration attractive and Φ increase outward. Potential energy for a test mass m is mΦ; g is not a potential or a mass. This inverse-distance algebra can reuse [Investigate electric work charge redistribution and observation limits](Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045) with negative source strength, while the gravitational interpretation and source assumptions remain distinct from electric charge.
+
+For constant m, differentiate ε=|u|²/2+Φ along a path: dε/dt=u·du/dt+∇Φ·u=0 when gravity is the only force and the source is stationary. Also d(x×u)/dt=x×g=0 by centrality; [Balance angular momentum about a declared origin](Balance-angular-momentum-about-a-declared-origin.lingua#r_00092886C87E4AA85B6AAE729A) supplies that derivation. Conservation laws constrain possible trajectories but do not by themselves specify every observation or source parameter.
+
+Near radius R, for an upward displacement z with |z|≪R, Φ(R+z)−Φ(R)=μz/[R(R+z)]≈μz/R². Thus g₀=μ/R² and ΔΦ≈g₀z is a local approximation. A constant-g model extended to infinity would predict unbounded potential change and no finite escape threshold; that is an invalid extension. In the point-source model, marginal escape to infinity has ε=0, so u_escape²=2μ/r. This is an ideal ballistic threshold, not an engineering trajectory including atmosphere, rotation, other bodies or propulsion.
+
+For two isolated point masses m₁,m₂ with relative position r=x₁−x₂, subtract their acceleration equations: r̈=−G(m₁+m₂)r/r³. Their center of mass moves uniformly. The relative kinetic/potential energy is represented with reduced mass m_red=m₁m₂/(m₁+m₂). In the following orbit formulas μ=G(m₁+m₂) for relative separation, or μ=GM for the fixed-source approximation; do not confuse μ with m_red, which Tong denotes by μ in his two-body section.
+
+**Read and work:** [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426), selected 2.3 and 5.1.5. Derive the exact local potential difference and bound its relative error against g₀z for positive z. Derive the relative equation from two forces, then recover the test-mass limit. Identify what orbit measurements can infer about μ and why they cannot separately determine G and M without further evidence.
+
+**Continue:** [Derive orbital shape timing and the limits of parameter inference](Derive-orbital-shape-timing-and-the-limits-of-parameter-inference.lingua#r_003B0A54AD3132E93CD761C01A).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00475D684DBE55B881DF56938B

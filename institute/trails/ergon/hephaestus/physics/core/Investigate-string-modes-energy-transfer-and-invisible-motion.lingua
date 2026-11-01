@@ -1,0 +1,228 @@
+Import "../Physics.lingua"
+
+Investigate string modes energy transfer and invisible motion (@physics-wave-study: 0, is #chapter, #hephaestus-core "Review-oscillations-waves-boundaries-and-physical-evidence.lingua#r_003B1CBD2375314B99BCD448E3") { r_000E36175B4D0D0ECA6FE26CC7
+This is an original theoretical investigation, not a performed experiment or a validated installation. Assume the ideal flexible string model with μ=3 kg/m, τ=12 N, L=4 m and fixed ends. Then c=2 m/s, k₁=π/4 m⁻¹, ω₁=π/2 s⁻¹, λ₁=8 m and f₁=1/4 Hz. Choose A=0.01 m and initial zero velocity:
+
+y₁(x,t)=A sin(πx/4)cos(πt/2).
+
+Verify the PDE, both boundaries and both initial functions independently. Its maximum slope is Ak₁=π/400, less than 0.008 using π<3.2. The small-slope requirement is plausible for the stipulated geometry, but constant tension and negligible bending are additional hypotheses, not consequences of this inequality. Its total model energy is E₁=3π²/40000 J. Resolve it into two traveling sine components of amplitude A/2; their opposite cycle-mean powers each have magnitude 3π²/160000 W. Do not sum local component energies without accounting for interference.
+
+At x=1 m and t=1/2 s, the spatial and temporal phases are both π/4. Exact identities give y=1/200 m, y_t=−π/400 m/s, y_x=π/800, e=3π²/160000 J/m and J=3π²/80000 W. This is positive instantaneous transport through that location despite the standing mode's zero cycle-mean transport. Derive each quantity from the field, then from the local account.
+
+Consider the segment [0,1 m] over 0≤t≤1/2 s. At t=0, its energy is 3π²/160000+3π/80000 J, obtained by integrating cos²(πx/4). At the final time it is 3π²/160000 J. Independently integrate J(1,t); the outward transfer is 3π/80000 J and J(0,t)=0. The segment's energy decrease agrees exactly with that transfer. This is a finite-region conservation check, not merely substitution into the PDE at one point.
+
+Now add y₂=(A/2)sin(πx/2)cos(πt). It satisfies the same PDE and end conditions, and its maximum slope also equals π/400. The total slope is bounded by π/200<0.016. At x=2 m the added displacement and velocity vanish for all t, so the entire midpoint record is unchanged. At x=1 m,t=0 it adds 0.005 m. Its energy equals E₁, since its amplitude halves while its frequency doubles. The integrated cross terms between modes one and two vanish: product-to-sum reduces each spatial sine-sine or cosine-cosine integral on [0,4] to integrals of nonconstant cos(jπx/4), whose endpoint sines are zero. Thus total energy doubles while the midpoint sensor sees exactly the same trace. Spatial observation matters even with arbitrarily dense time sampling.
+
+A second ambiguity keeps the same displacement field while doubling μ and τ. Their ratio and c stay fixed, but both energy density and power double. A fitted wave speed alone does not determine either mass density or tension. Propose an independent quantity to measure and a new observation location to distinguish the two separate rivals. Connect [Challenge a fitted model with evidence it did not fit](../../inquiry/core/Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418) and [Review sensitivity dependence and the scope of an uncertain claim](../../inquiry/core/Review-sensitivity-dependence-and-the-scope-of-an-uncertain-claim.lingua#r_000B35720D754EE82413312EED): numerical agreement checks the model calculation, whereas evidence is needed for its parameters and adequacy.
+
+**Exact executable investigation:** save the two named original files together and run `python3 wave_checks.py`. The calculations use integers and Fraction objects only. A phase is represented by the exact pair (cos θ,sin θ), so rational points on the unit circle can be checked without rounding an angle or calling a transcendental library. General phase relationships follow from the proved rotation identities. The program evaluates analytic fields and their local accounts; it is not a spatial time-stepping solver and does not infer an angle from arbitrary measurements.
+
+The checker compares a standing field with two separately formed counterpropagating fields, including all first/second derivatives; checks local balance and deliberately inconsistent fields; and checks finite-region energy changes by independently integrated boundary work. It varies exact phase pairs, amplitudes, wave numbers and material scales. The selected π-containing study outputs are checked as rational coefficients of the explicitly stated powers of π: setting a formal π scale to one in homogeneous expressions checks coefficients, not the numerical value of π. The π/4 values involving √2 enter products that reduce to exact halves in the prose calculations. No numerical transcendental accuracy or physical calibration is claimed by this suite.
+
+**Independent work:** choose a different finite two-mode state, state its initial displacement and velocity, bound its summed slope, compute energy including cross terms, and propose sensors that distinguish it from one mode. Derive a region's energy change and boundary work by different routes. Document one model violation that would require new physics. Real experiment design, source comparison and later reconstruction remain learning work; this author check does not perform them.
+
+```python file=wave_study.py
+from fractions import Fraction as F
+
+
+def rational(value):
+    if type(value) not in (int, F):
+        raise ValueError('use exact integers or Fractions')
+    return F(value)
+
+
+def unit(pair):
+    if len(pair) != 2:
+        raise ValueError('a phase is a cosine-sine pair')
+    a, b = map(rational, pair)
+    if a*a + b*b != 1:
+        raise ValueError('phase pair must have unit norm')
+    return a, b
+
+
+def parameters(amplitude, k, speed, density):
+    a, k, c, mu = map(rational, (amplitude, k, speed, density))
+    if min(k, c, mu) <= 0:
+        raise ValueError('positive wave number, speed and density required')
+    return a, k, c, mu
+
+
+def account(density, tension, fields):
+    mu, tau = map(rational, (density, tension))
+    if min(mu, tau) <= 0:
+        raise ValueError('positive density and tension required')
+    y, yt, yx, ytt, yxx, ytx = map(rational, fields)
+    return dict(y=y, yt=yt, yx=yx, ytt=ytt, yxx=yxx, ytx=ytx,
+                energy=(mu*yt*yt + tau*yx*yx)/2,
+                flux=-tau*yt*yx,
+                energy_t=mu*yt*ytt + tau*yx*ytx,
+                flux_x=-tau*(ytx*yx + yt*yxx),
+                residual=mu*ytt-tau*yxx)
+
+
+def travel(amplitude, k, speed, density, direction, phase):
+    a, k, c, mu = parameters(amplitude, k, speed, density)
+    if type(direction) is not int or direction not in (-1, 1):
+        raise ValueError('direction is -1 or +1')
+    co, si = unit(phase)
+    w = c*k
+    return account(mu, mu*c*c, (a*co, direction*a*w*si, -a*k*si,
+                   -a*w*w*co, -a*k*k*co, direction*a*w*k*co))
+
+
+def standing(amplitude, k, speed, density, spatial, temporal):
+    a, k, c, mu = parameters(amplitude, k, speed, density)
+    cx, sx = unit(spatial)
+    ct, st = unit(temporal)
+    w = c*k
+    return account(mu, mu*c*c, (a*sx*ct, -a*w*sx*st, a*k*cx*ct,
+                   -a*w*w*sx*ct, -a*k*k*sx*ct, -a*w*k*cx*st))
+
+
+def energy_change(amplitude, k, speed, density, left, right, start, end):
+    a, k, c, mu = parameters(amplitude, k, speed, density)
+    ca, sa = unit(left)
+    cb, sb = unit(right)
+    c0, s0 = unit(start)
+    c1, s1 = unit(end)
+    return mu*a*a*c*c*k*(cb*sb-ca*sa)*((c1*c1-s1*s1)-(c0*c0-s0*s0))/4
+
+
+def oscillator(mass, stiffness, displacement, velocity, damping=0, force=0):
+    m, k, x, v, b, f = map(rational, (mass, stiffness, displacement, velocity, damping, force))
+    if m <= 0 or k < 0 or b < 0:
+        raise ValueError('positive mass and nonnegative stiffness/damping required')
+    acceleration = (f-b*v-k*x)/m
+    return dict(acceleration=acceleration, energy=(m*v*v+k*x*x)/2,
+                energy_rate=m*v*acceleration+k*x*v, input_power=f*v,
+                loss_power=b*v*v)
+```
+
+```python file=wave_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import wave_study as m
+
+checks = 0
+
+def eq(a, b):
+    global checks
+    assert a == b, (a, b)
+    checks += 1
+
+
+def rejects(call):
+    global checks
+    try:
+        call()
+    except ValueError:
+        checks += 1
+    else:
+        raise AssertionError('invalid input accepted')
+
+
+def multiply(z, w):
+    return z[0]*w[0]-z[1]*w[1], z[0]*w[1]+z[1]*w[0]
+
+
+def power(z, n):
+    out = (F(1), F(0))
+    for _ in range(n):
+        out = multiply(out, z)
+    return out
+
+pairs = {(F(-1), F(0))}
+for j in range(-4, 5):
+    q = F(j, 3)
+    pairs.add(((1-q*q)/(1+q*q), 2*q/(1+q*q)))
+pairs = sorted(pairs)
+fields = ('y', 'yt', 'yx', 'ytt', 'yxx', 'ytx')
+travel_cases = standing_cases = interval_cases = 0
+for a, k, c, mu, direction, phase in product([F(0), F(1,100), F(-1,20)], [F(1,2), F(2)], [F(1), F(2)], [F(1), F(3)], [-1,1], pairs):
+    out = m.travel(a,k,c,mu,direction,phase)
+    eq(out['residual'],0)
+    eq(out['energy_t']+out['flux_x'],0)
+    eq(out['flux'],direction*c*out['energy'])
+    eq(out['yt'],-direction*c*out['yx'])
+    eq(out['energy'],mu*a*a*c*c*k*k*phase[1]**2)
+    travel_cases += 1
+for spatial, temporal, a, k in product(pairs,pairs,[F(1,100),F(-1,20)],[F(1),F(2)]):
+    c, mu = F(2), F(3)
+    out = m.standing(a,k,c,mu,spatial,temporal)
+    minus = multiply(spatial,(temporal[0],-temporal[1]))
+    plus = multiply(spatial,temporal)
+    right = m.travel(a/2,k,c,mu,1,(minus[1],-minus[0]))
+    left = m.travel(a/2,k,c,mu,-1,(plus[1],-plus[0]))
+    combined = [right[name]+left[name] for name in fields]
+    for name, value in zip(fields,combined):
+        eq(out[name],value)
+    eq(out,m.account(mu,mu*c*c,combined))
+    eq(out['energy_t']+out['flux_x'],0)
+    eq(out['residual'],0)
+    standing_cases += 1
+for left, right, end in product(pairs,pairs,pairs):
+    a,k,c,mu=F(1,100),F(2),F(2),F(3)
+    start=(F(1),F(0))
+    change=m.energy_change(a,k,c,mu,left,right,start,end)
+    integrated_left=mu*c*c*a*a*k*left[0]*left[1]*end[1]**2/2
+    integrated_right=mu*c*c*a*a*k*right[0]*right[1]*end[1]**2/2
+    eq(change,integrated_left-integrated_right)
+    eq(change,-m.energy_change(a,k,c,mu,left,right,end,start))
+    interval_cases += 1
+oscillator_cases=0
+for x,v,b,f in product([F(-1,10),F(0),F(1,10)], [F(-1,5),F(0),F(1,5)], [F(0),F(1),F(3)], [F(-2),F(0),F(2)]):
+    out=m.oscillator(2,8,x,v,b,f)
+    eq(out['energy_rate'],f*v-b*v*v)
+    eq(2*out['acceleration'],f-b*v-8*x)
+    oscillator_cases+=1
+state=m.oscillator(2,8,F(3,100),F(8,100))
+eq(state['energy'],F(1,100))
+eq(F(3,100)**2+(F(8,100)/2)**2,F(1,400))
+scaled_pi=F(1)
+a,k,c,mu=F(1,100),scaled_pi/4,F(2),F(3)
+w=c*k
+energy=mu*a*a*w*w*4/4
+eq(energy,F(3,40000))
+eq(mu*(a/2)**2*w*w*c/2,F(3,160000))
+eq(mu*a*a*w*w/4,F(3,160000))
+eq(mu*c*c*a*a*k*w/4,F(3,80000))
+eq(mu*c*c*a*a*k/8,F(3,80000))
+eq(mu*(a/2)**2*(2*w)**2*4/4,energy)
+for n in range(1,9):
+    spatial=power((F(0),F(1)),n)
+    for temporal in pairs:
+        if n%2==0:
+            eq(m.standing(a,n,c,mu,spatial,temporal)['y'],0)
+for phase in pairs:
+    base=m.travel(a,1,c,mu,1,phase)
+    rival=m.travel(a,1,c,2*mu,1,phase)
+    for name in fields:
+        eq(base[name],rival[name])
+    eq(rival['energy'],2*base['energy'])
+    eq(rival['flux'],2*base['flux'])
+for n in range(1,7):
+    for j in range(n+1):
+        eq(m.standing(a,n,c,mu,((-1)**j,0),(1,0))['y'],0)
+bad=m.account(3,12,(1,2,3,4,5,6))
+eq(bad['energy_t']+bad['flux_x'],bad['yt']*bad['residual'])
+assert bad['residual'] != 0
+checks+=1
+for phase in [(1,1),(0,0),(1,), (1.0,0), (True,0)]:
+    rejects(lambda phase=phase:m.standing(a,1,c,mu,phase,(1,0)))
+for direction in [0,2,True,F(1)]:
+    rejects(lambda direction=direction:m.travel(a,1,c,mu,direction,(1,0)))
+for k,c0,mu0 in [(0,1,1),(-1,1,1),(1,0,1),(1,1,0)]:
+    rejects(lambda k=k,c0=c0,mu0=mu0:m.standing(a,k,c0,mu0,(1,0),(1,0)))
+rejects(lambda:m.oscillator(0,1,0,0))
+rejects(lambda:m.oscillator(1,-1,0,0))
+rejects(lambda:m.oscillator(1,1,0,0,-1))
+print(json.dumps(dict(checks=checks,phase_pairs=len(pairs),travel_cases=travel_cases,standing_cases=standing_cases,interval_cases=interval_cases,oscillator_cases=oscillator_cases)))
+```
+
+**Author verification:** the companion passed 8,335 exact checks through Nix, including 480 traveling states, 400 standing states, 1,000 region/time comparisons and 81 oscillator accounts. General claims retain the derivations above; no physical experiment or numerical transcendental evaluation is implied.
+
+**Continue:** [Review oscillations waves boundaries and physical evidence](Review-oscillations-waves-boundaries-and-physical-evidence.lingua#r_003B1CBD2375314B99BCD448E3).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_000E36175B4D0D0ECA6FE26CC7

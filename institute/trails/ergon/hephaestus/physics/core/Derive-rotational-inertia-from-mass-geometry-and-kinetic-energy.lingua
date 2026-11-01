@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Derive rotational inertia from mass geometry and kinetic energy (@physics-rotation-inertia: 0, is #chapter, #hephaestus-core "../../engineering/mechanical-engineering-and-machine-design/dynamics/Mass-inertia-and-the-geometry-of-moving-matter.lingua#r_677BAAY5R0MP9FED713TF4ABQC") { r_00B0A1A46C90BC921F3C495245
+For particles attached rigidly to a fixed axis, every point has speed |ω|r_perp. Summing their kinetic energies gives K=Σm_i r_perp,i² ω²/2=I_axis ω²/2, where I_axis=Σm_i r_perp,i². Inertia depends on mass distribution and axis, not just total mass. Moving positive mass farther from the axis increases this sum. A body can have the same mass as another and a different rotational response.
+
+For a uniform thin rod of length ℓ and mass M along x, centered at x=0, linear density is λ=M/ℓ. About a perpendicular axis through its center, I_G=∫_(−ℓ/2)^(ℓ/2) x²λ dx=Mℓ²/12. About a parallel axis through an end, integrating λu² from 0 to ℓ gives I_end=Mℓ²/3. For M=3 kg and ℓ=0.8 m, these are 0.16 and 0.64 kg·m², matching [Mass inertia and the geometry of moving matter](../../engineering/mechanical-engineering-and-machine-design/dynamics/Mass-inertia-and-the-geometry-of-moving-matter.lingua#r_677BAAY5R0MP9FED713TF4ABQC). The thin-rod idealization omits transverse thickness; a nonuniform rod needs its actual density function.
+
+There is an independent finite approximation. Divide the rod into n equal masses at segment midpoints x_j=ℓ[(j+1/2)/n−1/2], j=0,…,n−1. Summing x_j² using Σj=n(n−1)/2 and Σj²=n(n−1)(2n−1)/6 gives I_n=(Mℓ²/12)(1−1/n²). Hence I_G−I_n=I_G/n² and I_n tends to the integral result. At n=1 the mass is at the center and its approximate inertia is zero. This is a convergence argument with a known error, not a claim that every finite-mass discretization exactly represents the rod.
+
+For general rigid motion write r_i=R_G+ρ_i and v_i=V_G+ω×ρ_i. The center-of-mass definition gives Σm_iρ_i=0. Expanding Σm_i|v_i|²/2 therefore cancels the mixed term and yields K=M|V_G|²/2+Σm_i|ω×ρ_i|²/2. Also L_G=Σρ_i×m_iv_i=Σm_iρ_i×(ω×ρ_i). The component identity ρ×(ω×ρ)=|ρ|²ω−(ρ·ω)ρ makes this a linear map of ω.
+
+Define its matrix I_G=Σm_i[(ρ_i·ρ_i)Id−ρ_iρ_iᵀ], where Id is the three-dimensional identity matrix and ρρᵀ has entries ρ_aρ_b. Then L_G=I_Gω and K=M|V_G|²/2+ωᵀI_Gω/2. The matrix is symmetric. For any vector q, qᵀI_Gq=Σm_i|q×ρ_i|²≥0, so it is positive semidefinite. Equality can occur for a nonzero q when all ideal point masses lie along its axis; a zero-thickness rod has zero inertia about its own length. Strict positivity needs a mass geometry that rules out that case. A general L_G need not point along ω.
+
+Shift the origin from G by c, keeping parallel Cartesian axes. Expanding the defining sum and using Σm_iρ_i=0 gives I_O=I_G+M[(c·c)Id−ccᵀ]. Along a unit axis e this gives I_O,e=I_G,e+M(|c|²−(c·e)²)=I_G,e+Md_perp². It is the perpendicular separation of parallel axes that enters. The simpler scalar theorem does not compare arbitrary differently oriented axes. Mass inertia is in kg·m²; the geometric area moment ∫r_perp²dA is in m⁴.
+
+**Read and work:** use [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 10.5, and [Classical Dynamics — David Tong](../../engineering/mechanical-engineering-and-machine-design/sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 3.2–3.2.2, progressively for integration, tensor structure and parallel-axis reasoning. Reproduce the rod sums, expand one off-diagonal tensor entry, and prove the nonnegative quadratic form by the cross-product identity. Construct two point masses whose tensor is singular and a noncollinear three-point configuration whose tensor is positive definite. Full continuum inertia integration and principal-axis dynamics remain broader work.
+
+**Continue:** [Mass inertia and the geometry of moving matter](../../engineering/mechanical-engineering-and-machine-design/dynamics/Mass-inertia-and-the-geometry-of-moving-matter.lingua#r_677BAAY5R0MP9FED713TF4ABQC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00B0A1A46C90BC921F3C495245

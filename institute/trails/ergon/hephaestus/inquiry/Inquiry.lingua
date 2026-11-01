@@ -1,4 +1,100 @@
-Inquiry — shared ways to understand and investigate (@inquiry-map: 0, is #chapter, #inquiry "quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2", #inquiry "metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #inquiry "reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ") { r_75MNKZQKNB0XBG021SWWW2HASB
+Import "quantitative-and-computational-practice/Quantitative-and-computational-practice.lingua"
+Import "reasoning-and-communication/Reasoning-and-communication.lingua"
+Import "measurement-and-research/Measurement-and-research.lingua"
+Import "learning-and-teaching/Learning-and-teaching.lingua"
+Import "knowledge-stewardship/Knowledge-stewardship.lingua"
+
+Import "core/Define-the-intervention-and-the-outcome-before-interpreting-a-comparison.lingua"
+Import "core/State-the-assumptions-that-turn-observed-means-into-intervention-means.lingua"
+Import "core/Derive-standardization-with-a-common-target-population.lingua"
+Import "core/Derive-inverse-weighting-and-separate-population-identities-from-sample-estimators.lingua"
+Import "core/Construct-different-causal-models-with-the-same-observed-distribution.lingua"
+Import "core/Choose-adjustment-from-the-causal-question-rather-than-every-available-column.lingua"
+Import "core/Bound-incomplete-outcomes-without-inventing-the-missing-evidence.lingua"
+Import "core/Investigate-identification-selection-and-competing-causal-accounts.lingua"
+Import "core/Review-causal-conclusions-with-their-design-assumptions-and-remaining-ambiguity.lingua"
+Import "sources/Causal-Inference-What-If-by-Hernan-and-Robins.lingua"
+Import "core/Define-what-someone-should-be-able-to-understand-and-do.lingua"
+Import "core/Diagnose-preparation-and-explain-a-dependency-before-naming-a-rule.lingua"
+Import "core/Use-prediction-practice-and-feedback-while-recording-the-help-given.lingua"
+Import "core/Connect-assessment-tasks-to-the-claims-their-responses-can-support.lingua"
+Import "core/Score-reasons-separately-from-answers-and-revise-ambiguous-criteria.lingua"
+Import "core/Compare-learning-arrangements-without-confusing-practice-with-evidence-of-an-effect.lingua"
+Import "core/Investigate-a-lesson-through-contrasting-responses-and-independent-transfer.lingua"
+Import "core/Hand-over-a-practical-method-and-make-its-limits-observable.lingua"
+Import "core/Review-learning-assessment-and-the-evidence-for-independent-capability.lingua"
+Import "sources/How-People-Learn-II-by-the-National-Academies.lingua"
+Import "sources/Knowing-What-Students-Know-by-the-National-Research-Council.lingua"
+Import "sources/Test-Enhanced-Learning-by-Roediger-and-Karpicke.lingua"
+Import "core/Define-the-question-and-audience-of-a-scientific-report.lingua"
+Import "core/Connect-each-claim-to-observations-methods-and-premises.lingua"
+Import "core/Choose-what-reproduction-and-agreement-must-mean.lingua"
+Import "core/Present-fitted-results-without-changing-their-meaning.lingua"
+Import "core/Turn-a-scientific-objection-into-a-testable-revision.lingua"
+Import "core/Propagate-an-input-correction-through-results-and-claims.lingua"
+Import "core/Investigate-a-traceable-report-correction-and-fresh-restoration.lingua"
+Import "core/Review-reporting-criticism-and-the-limits-of-reproduced-evidence.lingua"
+Import "reproducible-computation/publication/Results-figures-and-explanation.lingua"
+Import "reproducible-computation/publication/Archiving-and-restoration.lingua"
+Import "reproducible-computation/publication/Independent-reproduction-review.lingua"
+Import "core/Distinguish a fitted function from an observation model.lingua"
+Import "core/Derive coefficient uncertainty from linear observation weights.lingua"
+Import "core/Understand residual constraints and estimated scatter.lingua"
+Import "core/Separate a fitted mean from a future reading and an inverse.lingua"
+Import "core/Use competing explanations to choose informative observations.lingua"
+Import "core/Partition replicated variation before interpreting lack of fit.lingua"
+Import "core/Investigate fitting uncertainty and competing observation models.lingua"
+Import "core/Review fitting evidence before extending scientific claims.lingua"
+Import "metrology/calibration/Response-and-regression.lingua"
+Import "metrology/calibration/Regression-uncertainty-and-inversion.lingua"
+Import "core/Assign-continuous-probability-to-intervals-rather-than-individual-density-values.lingua"
+Import "core/Use-cumulative-probabilities-transformations-and-quantiles-with-explicit-domains.lingua"
+Import "core/Derive-continuous-moments-and-distinguish-spread-from-a-guarantee.lingua"
+Import "core/Construct-an-average-distribution-from-a-declared-joint-experiment.lingua"
+Import "core/Distinguish-an-estimator-from-its-observed-value-and-sampling-law.lingua"
+Import "core/Derive-interval-coverage-before-interpreting-an-observed-interval.lingua"
+Import "core/Use-support-and-rival-models-without-overstating-interval-evidence.lingua"
+Import "core/Investigate-exact-continuous-coverage-and-the-assumptions-that-change-it.lingua"
+Import "core/Review-continuous-models-estimation-and-the-scope-of-coverage.lingua"
+Import "core/Distinguish-error-correction-uncertainty-and-variation.lingua"
+Import "core/Represent-shared-information-with-a-joint-finite-model.lingua"
+Import "core/Derive-affine-propagation-and-common-source-cancellation.lingua"
+Import "core/Build-a-local-sensitivity-approximation-without-hiding-its-remainder.lingua"
+Import "core/Propagate-a-finite-distribution-through-a-nonlinear-measurement.lingua"
+Import "core/Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua"
+Import "core/Report-uncertainty-with-its-interpretation-and-decision-boundary.lingua"
+Import "core/Investigate-a-conductance-estimate-from-shared-temperature-evidence.lingua"
+Import "core/Review-sensitivity-dependence-and-the-scope-of-an-uncertain-claim.lingua"
+Import "metrology/uncertainty/Model-and-budget.lingua"
+Import "metrology/uncertainty/Sensitivity-and-correlation.lingua"
+Import "metrology/uncertainty/Model-discrepancy-and-robustness.lingua"
+Import "core/Define-the-units-and-comparisons-before-choosing-an-allocation.lingua"
+Import "core/Build-a-finite-chance-model-from-outcomes-and-weights.lingua"
+Import "core/Condition-on-information-without-assuming-independence.lingua"
+Import "core/Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua"
+Import "core/Derive-what-randomized-comparisons-average-over.lingua"
+Import "core/State-the-null-model-and-limits-of-an-exact-probability-comparison.lingua"
+Import "core/Investigate-complete-and-paired-allocations-with-exact-finite-evidence.lingua"
+Import "core/Review-design-dependence-and-the-scope-of-finite-evidence.lingua"
+Import "metrology/calibration/Design-and-sequence.lingua"
+Import "sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua"
+Import "core/State-the-question-and-the-kind-of-evidence-its-answer-needs.lingua"
+Import "core/Separate-observed-variation-from-uncertainty-about-a-result.lingua"
+Import "core/Design-comparisons-that-can-distinguish-competing-explanations.lingua"
+Import "core/Specify-which-result-another-investigator-can-reconstruct.lingua"
+Import "core/Make-an-argument-understandable-challengeable-and-preservable.lingua"
+Import "core/Investigate-measurement-comparisons-sampling-and-rival-explanations.lingua"
+Import "core/Review-the-chain-from-question-to-shared-scientific-claim.lingua"
+Import "metrology/foundations/Question-and-measurand.lingua"
+Import "reproducible-computation/foundations/Question-and-claim.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Questions-evidence-and-reproducible-claims.lingua"
+
+Scientific inquiry and practice — questions, evidence and shared knowledge (@inquiry-map: 0, is #chapter, #inquiry "quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2", #inquiry "metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #inquiry "reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #hephaestus-core "core/Questions-evidence-and-reproducible-claims.lingua#r_0148905A021EECB61916C70B2C", #contains "quantitative-and-computational-practice/Quantitative-and-computational-practice.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00", #contains "reasoning-and-communication/Reasoning-and-communication.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB", #contains "measurement-and-research/Measurement-and-research.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0", #contains "learning-and-teaching/Learning-and-teaching.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3", #contains "knowledge-stewardship/Knowledge-stewardship.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53") { r_75MNKZQKNB0XBG021SWWW2HASB
+**Begin the shared area core:** [Begin with questions, evidence and reproducible claims](core/Questions-evidence-and-reproducible-claims.lingua#r_0148905A021EECB61916C70B2C).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
 Begin with a question, make the terms and quantities explicit, examine the reasons or observations, and revise the answer when the evidence changes. These practices connect learning across fields.
 
 [Quantitative and technical literacy](quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2) begins from arithmetic and develops drawings, balances, measurement, and advanced model reasoning through substantial books and practical studies. Use the shared Records wherever a scientific, engineering, or production question needs them.
@@ -7,17 +103,50 @@ Begin with a question, make the terms and quantities explicit, examine the reaso
 
 [Reproducible computational work](reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) begins with a saved calculation and develops programming, data meaning, independent checks, versioning, environment reconstruction, workflows, numerical and stochastic validation, resources, preservation, and substantial computational research.
 
-Connect the question with [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001), [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001), and [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001). These are entrances into the same connected knowledge; following another reference does not change a selected learning sequence's boundary.
+Connect the question with [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001), [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001), and [Ergon](../../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1). These are entrances into the same connected knowledge; following another reference does not change a selected learning sequence's boundary.
 
-[Development scope: Quantitative and computational practice](../../../lince/Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00).
+**Developed first foundation block:** questions and evidence types, quantities and procedures, variation and uncertainty, comparisons and rival explanations, sampling, reproducible claims, communication/teaching and preservation. Seven new lessons reuse five metrology/computation Records in a thirteen-Record route. Original paired-measurement, confounding and finite-population studies have independently checked arithmetic. No physical or educational experiment is claimed. All six areas now have first blocks; their common cores and advanced formation remain unfinished. Review breadth and missing prerequisites before deepening them together.
 
-[Development scope: Reasoning and communication](../../../lince/Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB).
+[Development scope: Quantitative and computational practice](quantitative-and-computational-practice/Quantitative-and-computational-practice.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00).
 
-[Development scope: Measurement and research](../../../lince/Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0).
+[Development scope: Reasoning and communication](reasoning-and-communication/Reasoning-and-communication.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB).
 
-[Development scope: Learning and teaching](../../../lince/Trails.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3).
+[Development scope: Measurement and research](measurement-and-research/Measurement-and-research.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0).
 
-[Development scope: Knowledge stewardship](../../../lince/Trails.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53).
+[Development scope: Learning and teaching](learning-and-teaching/Learning-and-teaching.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3).
+
+[Development scope: Knowledge stewardship](knowledge-stewardship/Knowledge-stewardship.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53).
+
+**Developed second common foundation:** observation/allocation units, nuisance factors and design, finite outcomes and weights, conditioning and dependence, expectation and variance, randomized comparisons, and the scope of an exact probability comparison. Eight new lessons reuse the calibration-design Record and add one reusable probability source. An original six-unit study and two executable programs compare complete and paired allocation and explain a sharp-null tail with its finite resolution. The synthetic examples do not establish physical accuracy or generalization. All six areas now have two foundation blocks; review their preparation and continue them together before deeper branches. Whole cores and all pending specialist scopes remain unfinished.
+
+
+**Developed third common foundation:** uncertainty meanings, joint finite information, covariance and exact affine propagation, common-source cancellation, partial sensitivity with a remainder, exact nonlinear propagation, model criticism and conditional reporting/decisions. Nine new lessons reuse three existing metrology Records with bounded reading. An original thermal-conductance investigation compares identical marginals under different dependence, nonlinear mean shifts and uncertainty, repeated-reading limits and a rival calibration. Its exact programs and independent checks do not establish real measurements or validate the assigned weights. All six areas now have third foundation blocks; compare coverage before the next common pass. The whole inquiry core and all five pending subjects remain unfinished.
+
+
+**Developed fourth common foundation:** continuous densities, CDFs and transformations, moments and variance bounds, joint dependence, sampling distributions, exact interval coverage, support constraints and model criticism. Nine new lessons reuse existing mathematics, finite inquiry and metrology context without conflicting continuation edges. An original two-uniform location study independently checks distribution geometry, width certificates and calibration/dependence rivals. No actual measurement law or instrument is validated. All six areas now have four common blocks; review coverage and verify the combined fourth pass before extending specialized branches. The full inquiry core and all five pending subjects remain unfinished.
+
+
+**Developed fifth common foundation:** mathematical fit versus observation model, affine coefficient weights and covariance, constrained residuals and estimated scatter, mean versus future/inverse uncertainty, shared-error and curvature rivals, and replicated variation. Eight new lessons connect two preserved metrology Records and the shared exact linear solver. An original finite investigation checks these distinctions without assuming normality or claiming an experiment. All six areas now have five common blocks; review coverage and continue the common layer. The whole inquiry core and its five pending descendant subjects remain unfinished.
+
+
+**Developed sixth common foundation:** scientific questions and audiences, input-to-claim traceability, reproduction/comparison criteria, uncertainty-aware presentation, criticism, documented correction and fresh restoration. Eight new lessons reuse three preserved reporting/archive/review Records and two unchanged numerical programs. The original report has 371 checks and an actual author restoration; outside review and physical replication are explicitly unperformed. All six areas now have six common blocks. Review substantive coverage before branching; the whole inquiry core and its five pending subjects remain unfinished.
+
+
+**Developed seventh common foundation:** learning capabilities, prerequisite diagnosis, explanation and practice, assessment arguments, scoring, comparisons and practical handover. Nine new lessons reuse production schedules and earlier inquiry methods by reference. Three source Records distinguish inspected passages from assigned reading. An original lesson dossier includes contrasting responses, explicit criteria, transfer and revision; its finite task accounts were independently checked, with no performed teaching or learning gains claimed. Inquiry now has 73 common learning Records. All six areas have seven blocks; review substantive coverage before choosing the next layer. The whole inquiry core and all five pending descendant subjects remain unfinished.
+
+
+**Developed eighth common foundation:** causal questions, identification assumptions, standardization, inverse weighting, finite assignment estimators, observational ambiguity, adjustment and missing outcomes. Nine original lessons reuse prior probability, randomization, fitting and reporting material; three unchanged programs supply shared calculation. Exact service models, independently enumerated assignments/completions and a bounded Hernán–Robins source reconstruction separate mathematical evidence from causal assumptions. Inquiry now has 82 common learning Records. All six areas have eighth blocks; review specific common-to-branch prerequisites before selecting the next layer. Full causal inference, scientific reasoning, sustained investigation and the inquiry core remain unfinished.
+
+
+**Scope:** Develop shared questions, quantities, reasoning, measurement, experimental and computational evidence, communication, teaching and knowledge stewardship. Begin without assumed technical preparation; extend into study design, criticism, reproducible investigation and independent scholarly work. The existing quantitative, metrology and computation formations supply reusable depth. Five pending subjects retain their scope under the method groups below. The common area core is unfinished.
+
+**Branches:**
+
+- [Quantitative and computational practice](quantitative-and-computational-practice/Quantitative-and-computational-practice.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00)
+- [Reasoning and communication](reasoning-and-communication/Reasoning-and-communication.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB)
+- [Measurement and research](measurement-and-research/Measurement-and-research.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0)
+- [Learning and teaching](learning-and-teaching/Learning-and-teaching.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3)
+- [Knowledge stewardship](knowledge-stewardship/Knowledge-stewardship.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53)
 } r_75MNKZQKNB0XBG021SWWW2HASB
 
 Extension @inquiry-map "lince.vocabulary" {

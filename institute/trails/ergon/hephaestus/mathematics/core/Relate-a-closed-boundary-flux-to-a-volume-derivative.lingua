@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Relate a closed boundary flux to a volume derivative (@math-fields-gauss: 0, is #chapter, #hephaestus-core "Derive-the-surface-circulation-identity-from-a-parameter-patch.lingua#r_00FB68AFB25B0AA0ABA7407DAB") { r_00066E42C5FCE3F4B938BBA483
+For F∈C¹ near the closed box V=[a,b]×[c,d]×[e,f], the x-face pair is ∬[P(b,y,z)−P(a,y,z)]dy dz. By the fundamental theorem and continuous iterated integration it equals ∭P_x dV. The y and z pairs give ∭Q_y and ∭R_z. Adding proves ∬_∂V F·n dA=∭_V divF dV. Adjacent boxes have exactly cancelling internal faces, so the proof extends to finite box unions with matching traces.
+
+The general divergence theorem applies to bounded solids with suitably piecewise smooth closed boundary, outward orientation, and C¹ fields on a neighborhood of the entire solid closure. It is used here as an accepted theorem beyond the proved box cases. [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 6.8 Theorem 6.20 states these regularity requirements and labels its small-box discussion informal. Comparing area or surface lengths of staircase approximations is not a substitute for the missing convergence argument. More general rough domains and weak formulations belong to later analysis.
+
+Take F=(x²+2y,3y²−z,2z²+4x) on [0,2]×[−1,1]×[0,3]. The divergence is 2x+6y+4z. Its volume integral is 96. The six outward face integrals, ordered low/high x, low/high y, low/high z, are 0,24,−9,9,−16,88. Their sum is independently 96. The cross terms affect individual faces while cancelling in opposing pairs; do not infer that a term absent from the divergence is absent from local boundary flow.
+
+A domain check is indispensable. F=x/|x|³ is smooth away from the origin and has divergence 3r⁻³−3r²r⁻⁵=0 there. On a sphere of radius R centered at zero, its outward flux is (1/R²)(4πR²)=4π. Applying the theorem to the full ball would be invalid because F is undefined at zero. On a shell ε≤r≤R, the inner boundary points toward the origin and contributes −4π, cancelling the outer +4π. This uses the accepted general theorem consistently; a singular source or distributional extension requires further definitions.
+
+**Work:** reconstruct the polynomial face values without using divF, then calculate the volume integral without using those face values. Change a coefficient and predict which faces and which derivative terms change. State the actual domain before applying any cancellation. Compare the already developed [Gradient, divergence, curl and integral theorems](../../physics/electromagnetism/mathematics/Gradient-divergence-curl-and-integral-theorems.lingua#r_05M47N16QDCC5B927TEYXAMMA4) singular example with this explicit account.
+
+**Continue:** [Derive the surface circulation identity from a parameter patch](Derive-the-surface-circulation-identity-from-a-parameter-patch.lingua#r_00FB68AFB25B0AA0ABA7407DAB).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00066E42C5FCE3F4B938BBA483

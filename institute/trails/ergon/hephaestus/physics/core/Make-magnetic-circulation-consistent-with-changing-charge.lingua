@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Make magnetic circulation consistent with changing charge (@physics-magnetic-maxwell: 0, is #chapter, #hephaestus-core "Derive-field-energy-transport-with-an-explicit-matter-transfer-sign.lingua#r_002D6E1F67EC1F579536BABE48") { r_00708966101E4713476674EFFC
+The static equation curlB=μ₀J implies divJ=0 because divergence of a curl vanishes. Charge continuity allows divJ=−∂tρ, so the static equation cannot be a universal law where charge accumulates. Maxwell's vacuum equation is curlB=μ₀J+μ₀ε₀∂tE. Taking its divergence and using divE=ρ/ε₀ gives divJ+∂tρ=0, assuming the derivatives commute. This demonstrates consistency with charge conservation; it does not prove that no other proposed dynamics could share that consistency. The law still requires empirical support.
+
+Together use divE=ρ/ε₀, divB=0, curlE=−∂tB and curlB=μ₀J+μ₀ε₀∂tE. ε₀ and μ₀ are the vacuum electric and magnetic constants. Integral forms follow from the common oriented field theorems under their regularity and domain conditions. For a fixed surface, Ampère–Maxwell circulation is μ₀ times conduction current plus μ₀ε₀ times the electric-flux time derivative. The latter is not a statement that conduction carriers cross an empty gap.
+
+For an ideal parallel-plate capacitor with uniform gap field and negligible edge effects, E=Q/(ε₀A), so ε₀A Ė=Q̇=I. A surface cutting the lead and a surface crossing the gap yield the same total circulation when both current terms are included. At a partially enclosed area, integrate the actual field/current distribution; the full I cannot automatically be assigned to every patch. The approximation does not fully solve the surrounding time-dependent fields.
+
+Initial data are constrained. Taking divergence of Faraday gives ∂t(divB)=0. Taking divergence of Ampère–Maxwell with charge continuity gives ∂t(divE−ρ/ε₀)=0. Thus correctly satisfied initial constraints propagate in smooth solutions, but a bad initial divergence residual is not repaired by these curl equations alone. Boundary conditions and compatible sources are also required. Revisit [Maxwell equations and displacement current](../electromagnetism/dynamics/Maxwell-equations-and-displacement-current.lingua#r_4ETBPA07D21W3J864XWFXHN4X5) for the advanced interface/source formation.
+
+**Read and work:** [Electromagnetism — David Tong](../electromagnetism/sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), the downloaded `electro3.pdf` currently labels this discussion section 4.2.1 although the web index calls electrodynamics chapter 3; identify the actual file and heading, not an assumed chapter number. Derive the two constraint-propagation equations and explain why a time-varying potential alone need not supply a complete electromagnetic solution. Matter, dispersion, general boundary solvers and numerical constraint preservation remain branch work.
+
+**Continue:** [Derive field energy transport with an explicit matter transfer sign](Derive-field-energy-transport-with-an-explicit-matter-transfer-sign.lingua#r_002D6E1F67EC1F579536BABE48).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00708966101E4713476674EFFC

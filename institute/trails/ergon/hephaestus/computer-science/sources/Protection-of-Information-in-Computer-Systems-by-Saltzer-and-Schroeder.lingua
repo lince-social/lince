@@ -1,0 +1,11 @@
+Import "../Computing.lingua"
+
+Protection of Information in Computer Systems by Saltzer and Schroeder (@computing-source-protection: 0, is #reference) { r_0089CCD9AFEBC6BD19EFFB6851
+Jerome H. Saltzer and Michael D. Schroeder, *The Protection of Information in Computer Systems*, 1975, English. [Author-hosted text and glossary](https://web.mit.edu/Saltzer/www/publications/protection/) · [Section I Basic Principles](https://web.mit.edu/Saltzer/www/publications/protection/Basic.html) · [Manuscript and copyright note](https://web.mit.edu/Saltzer/www/publications/protection/Meta.html).
+
+**Actual inspection — 1 November 2026:** glossary entries for authentication, authorization, principal, permission and revocation; selected section I.A design-principle passages on fail-safe defaults, complete mediation, least privilege and psychological acceptability, including cached authorization and changing authority. The common authority lesson applies the cached-decision argument to an original finite ledger. It does not reproduce a source program or experimental dataset. The paper's historical systems and password examples are not present-day deployment advice.
+
+The author note gives manuscript receipt 11 October 1974, revision 17 April 1975 and copyright © 1975 J. H. Saltzer. The text is freely readable; no general adaptation licence was established. Link to the authorized author copy, retain attribution and keep media external. Broader sections II and III are available for later branch study, not claimed inspected here.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0089CCD9AFEBC6BD19EFFB6851

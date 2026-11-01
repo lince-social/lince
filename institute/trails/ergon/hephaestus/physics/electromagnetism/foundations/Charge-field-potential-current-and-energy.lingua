@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Charge, field, potential, current and energy are different quantities (@em-language: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #electromagnetism "Geometry-time-scale-and-model-scope.lingua#r_4WAT0ASSD1WYXGBDTKWTFWZ7VZ") { r_73F672N5XQ9B4B1MPJAKCK2EGS
+Charge, field, potential, current and energy are different quantities (@em-language: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #electromagnetism "Geometry-time-scale-and-model-scope.lingua#r_4WAT0ASSD1WYXGBDTKWTFWZ7VZ", #hephaestus-core "../../core/Build-a-finite-electric-field-from-signed-vector-contributions.lingua#r_0024617F87039DB1C727C66540") { r_73F672N5XQ9B4B1MPJAKCK2EGS
 **Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapters 5–10, definitions and introductory examples; [Física III — Bernhard Johannes Lesche, UFJF](../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7), charge/field, potential and current notes.
 
 Charge is a signed property and conserved quantity, measured in coulombs. Electric field is force per unit positive test charge; its direction matters. Potential difference is energy change per unit charge in an electrostatic model. Current is signed charge crossing a selected surface per time. A magnetic field changes the force on moving charge, and its effect depends on velocity and direction.
@@ -12,4 +12,9 @@ Translate tensão, diferença de potencial, corrente, campo, fluxo, carga livre,
 **Continue:** [Geometry, time scale and the range of a model](Geometry-time-scale-and-model-scope.lingua#r_4WAT0ASSD1WYXGBDTKWTFWZ7VZ).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Fifth physics-block reading:** Read the distinctions among charge, field, potential, current and energy and preserve units. The new common lessons derive the finite static and lumped relations used in this block. Magnetic force, general flux, full chapters 5–10 and the second source retain later preparation and their original specialist assignment.
+
+**Continue in the fifth physics block:** [Build a finite electric field from signed vector contributions](../../core/Build-a-finite-electric-field-from-signed-vector-contributions.lingua#r_0024617F87039DB1C727C66540).
+
 } r_73F672N5XQ9B4B1MPJAKCK2EGS

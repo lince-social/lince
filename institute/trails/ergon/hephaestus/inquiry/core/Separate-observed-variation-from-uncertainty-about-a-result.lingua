@@ -1,0 +1,23 @@
+Import "../Inquiry.lingua"
+
+Separate observed variation from uncertainty about a result (@inquiry-variation: 0, is #chapter, #hephaestus-core "Design-comparisons-that-can-distinguish-competing-explanations.lingua#r_0A7E63167B1C0C05400C73A84E") { r_0A1A2CA3D01039474C1F5678C7
+Repeated observations can vary. Summaries of those observations answer limited questions: the arithmetic mean is their sum divided by their count; the range is the largest minus the smallest. Neither summary by itself explains all uncertainty about the quantity being investigated. Begin with the observation procedure and ask which influences the repeated observations could reveal and which might affect them together.
+
+**Read:** [Bell sections](../metrology/sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1) 2–5, with section 6.1 for the distinction between statistical and other evaluations. Consult [VIM entry 2.26](../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH) for the uncertainty concept. Read the first definitions and examples before attempting distribution-based calculations. Later probability and metrology work develops standard uncertainties, correlations and coverage interpretations; a first range calculation does not supply those results.
+
+For the invented readings 10.1, 10.2 and 10.3 mm, the mean is 10.2 mm and the range is 0.2 mm. Add 0.5 mm to every reading: the mean becomes 10.7 mm and the range remains 0.2 mm. The equality of the ranges follows because subtracting the smallest shifted value from the largest shifted value cancels the same shift. Small observed spread therefore cannot rule out a common offset.
+
+An estimated correction is not the same as knowing an error exactly. Suppose, only for an interval exercise, that the indication 10.2 mm includes an additive offset b known to lie in [0.3, 0.5] mm, and no other influences matter. Under x = indication − b, the corrected value lies in [9.7, 9.9] mm. Using b = 0.4 mm gives 9.8 mm as a chosen estimate, but does not remove the stated uncertainty about b. The interval is a hard bound assumed for this example, not a confidence interval inferred from three readings.
+
+Averaging can reduce some effects under suitable conditions; it cannot remove an unknown common shift merely by repeating the same procedure. Nor does relabeling an uncertainty contribution as “statistical” establish that its observations are independent. Bell distinguishes Type A and Type B evaluation methods from a simple random/systematic classification. Keep those distinctions while deeper probability and covariance reasoning develops.
+
+Before comparing two results, check whether they concern the same quantity and conditions. A width at one marked location can differ from a maximum width over an entire sheet. A reading taken while an object is compressed may concern a different physical state from an unloaded definition. Apparent disagreement can come from different questions as well as different errors.
+
+**Work:** verify the mean, range and corrected interval by hand. Show algebraically why a common shift changes the mean but not the range. Give a procedure that could reveal a common offset using independent information, and explain the uncertainty that this information would itself introduce. Distinguish a tolerance chosen for use from uncertainty about the measured result. Report one claim supported by repeated readings and one that remains unresolved.
+
+**Shared quantitative preparation:** [signed arithmetic](../quantitative-literacy/foundations/Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7), [fractions and decimals](../quantitative-literacy/foundations/Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD) and [equations](../quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ).
+
+**Continue:** [Design comparisons that can distinguish competing explanations](Design-comparisons-that-can-distinguish-competing-explanations.lingua#r_0A7E63167B1C0C05400C73A84E).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0A1A2CA3D01039474C1F5678C7

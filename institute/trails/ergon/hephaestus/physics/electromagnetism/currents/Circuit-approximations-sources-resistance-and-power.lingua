@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Circuit approximations, sources and power (@em-dc-network: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1", #electrical-power-engineering "../../../engineering/electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6") { r_0Y05GYZKN18BT1FY2GGQ6476W2
+Circuit approximations, sources and power (@em-dc-network: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1", #electrical-power-engineering "../../../engineering/electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6", #hephaestus-core "../../core/Solve-charge-redistribution-and-account-for-the-dissipated-energy.lingua#r_00AA29526C7EBA203EF2EA6FB9") { r_0Y05GYZKN18BT1FY2GGQ6476W2
 **Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 10 in full; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), circuit and quasistatic applications.
 
 A lumped circuit replaces spatially distributed fields by port voltages, currents and element relations over a stated band and geometry. Junction current balance follows conservation when stored charge in the chosen junction is negligible. A loop voltage balance depends on how induced magnetic flux is accounted for. Both statements have field conditions, rather than being unrelated empirical rules.
@@ -14,4 +14,9 @@ Reconstruct series/parallel reduction, nodal equations and a two-port measuremen
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
 
 **Continue in electrical power engineering:** [Network theorems, nodal equations and references](../../../engineering/electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6).
+
+**Fifth physics-block reading:** Use the declared circuit domain, passive signs and steady source/load energy account. The common bridge defines each port, charge balance and constitutive premise before the coupled capacitor study. Full network theorems, two-port practice, magnetic conditions, design and protection retain their wider preparation and original assignments; the separate power-engineering route stays intact.
+
+**Continue in the fifth physics block:** [Solve charge redistribution and account for the dissipated energy](../../core/Solve-charge-redistribution-and-account-for-the-dissipated-energy.lingua#r_00AA29526C7EBA203EF2EA6FB9).
+
 } r_0Y05GYZKN18BT1FY2GGQ6476W2

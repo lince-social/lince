@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Balance redox changes while keeping oxidation state and charge distinct (@gc-redox-balance: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../practice/Laboratory-work-and-risk.lingua#r_4Y0FHN8SXCYEVEYAZYF7SRGCN7", #materials-engineering "../electrochemistry/Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A") { r_6V448SEZNVP40ASEQXC59PDTV9
+Balance redox changes while keeping oxidation state and charge distinct (@gc-redox-balance: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../practice/Laboratory-work-and-risk.lingua#r_4Y0FHN8SXCYEVEYAZYF7SRGCN7", #materials-engineering "../electrochemistry/Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A", #hephaestus-core "../../core/Half-reactions-and-independent-constraints.lingua#r_0065DB67DBA11A4144121CA5FD") { r_6V448SEZNVP40ASEQXC59PDTV9
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s redox classification and chapter 17’s balancing treatment; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), oxidation-state and nomenclature conventions; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), oxidation-reduction foundations.
 
 Oxidation states assign electrons according to formal rules to track changes; they are not generally measured partial charges or a literal account of ionic species in a covalent molecule. Oxidation increases an assigned oxidation state and reduction decreases it under this bookkeeping. An oxidizing agent is reduced while accepting the corresponding electron account.
@@ -17,5 +17,10 @@ This foundation later supports cells, electrolysis, corrosion, metallurgy, and b
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 **Continue in materials engineering:** [Use the Nernst relation with the actual reaction quotient](../electrochemistry/Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A).
+
+
+**Fifth chemistry-block reading:** Use the oxidation-state/charge distinction and the balanced-half-reaction method. The surrounding new lessons derive explicit atom/charge checks and normalization invariance. The original wider reading and materials continuation remain; a balanced account does not establish chemical feasibility.
+
+**Continue in the fifth chemistry block:** [Derive half reactions with independent atom and charge constraints](../../core/Half-reactions-and-independent-constraints.lingua#r_0065DB67DBA11A4144121CA5FD).
 
 } r_6V448SEZNVP40ASEQXC59PDTV9

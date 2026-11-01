@@ -1,0 +1,286 @@
+Import "../Physics.lingua"
+
+Investigate rotational accounts constraints and internal exchange (@physics-rotation-study: 0, is #chapter, #hephaestus-core "Review-angular-momentum-with-its-geometry-constraints-and-evidence.lingua#r_0026B43764A153597C72C79D2D") { r_002C1C42745EA90F6446369066
+Investigate three different questions using one explicit rotational account: how mass geometry determines angular momentum and kinetic energy, when a rolling constraint is dynamically admissible, and what internal angular impulse does to two coaxial rotors. Derive the preceding results before running the programs. All inputs are hypothetical except the clearly attributed washer checkpoint; exact arithmetic verifies model consequences, not material properties or contact laws.
+
+Use SI values consistently. The implementation accepts exact integers and Fraction values through the unchanged scalar/vector helpers from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B). It rejects Boolean and floating-point quantities instead of silently interpreting rounded measurements as exact rationals. This is an arithmetic contract for the investigation, not a requirement that experimental data be rationally exact. Convert a finite supplied decimal to a declared rational and keep its measurement uncertainty separately. Positive masses, inertias, radii, normal force and κ are required; duration and friction coefficient must be nonnegative. Signed velocities, torque, force, couple and angular impulse are allowed.
+
+Extract `linear_space_study.py` from the linked mathematics study and save it beside the following original `rotation_study.py` and `rotation_checks.py`. Run the study and then the checker with Python 3 through the repository Nix environment, or an independently recorded Python environment. The study prints exact fractions as strings. Its washer energy output is the coefficient of π², not an approximation to π. The checker uses the shared linear-system eliminator for an independent solution of rolling balances and common-speed equations. Preserve the module names and record the actual interpreter, inputs and outputs when reproducing the work.
+
+Start with the expected accounts. The published six-washer model yields I=7/2000 kg·m² and the reduced arrangement 17/5000 kg·m². Its original kinetic energy is (7/40)π² J at five revolutions/s. The two horizontal rolling candidates both give a=2 m/s² but require f=−2 N and +4 N; with μ_s N=2 N only the first is admissible. For I₁=2,I₂=3,ω₁=8,ω₂=−2, synchronization gives common speed 2 rad/s and loss 60 J; half the synchronizing impulse loses 45 J, while twice that impulse loses zero and falls outside the monotone friction interval.
+
+The independent evidence has several forms. For particle geometry, calculate momentum and kinetic energy directly from all particle velocities and compare with central tensor expressions, origin-shift accounts, symmetry and the cross-product quadratic form. For the rod, compare midpoint sums with the integrated answer and its exact 1/n² relative deficit. For constant torque, compare impulse, work, endpoint kinetic energy and composition of time intervals. For rolling, solve the three linear equations without using the closed-form evaluator; check the friction boundary, a below-boundary rejection and the total/contact powers. For exchange, solve common velocity from conservation plus equality, compare endpoint energy with the fixed-L minimum and test impulses on both sides of the passive interval. These checks exercise different calculations; the written derivations establish the general claims beyond the finite grid.
+
+**Investigation:** make a report with one diagram or coordinate description, assumptions, derivations, outputs and a counterexample for each question. Explain which quantities change when the origin shifts, when mass geometry changes, and when an internal impulse changes. Separate an inadmissible rolling candidate from an input-format error. Explain why a valid conserved-L endpoint is not sufficient evidence for a passive contact history. Use [Investigate a traceable report correction and fresh restoration](../../inquiry/core/Investigate-a-traceable-report-correction-and-fresh-restoration.lingua#r_00E2E70343DD382577BCA102F6) to preserve the claim, source checkpoint, program dependencies and a correction record if an assumption changes.
+
+**Independent extension:** replace the uniform rod by a nonnegative piecewise constant line density with fixed total mass. Derive its center, central inertia and translated inertia by integration; independently approximate them with refined mass elements and justify the error or convergence claim. Couple that inertia to a second declared rotor, predict the common speed and energy loss, and compare at least two distributions with the same mass. Determine what observations could distinguish the distributions and what remains ambiguous if only the final speed is observed. Include an alternative loading/contact model for the rolling example and state the additional law needed after slip. A symbolic or supplied-data study is sufficient; hardware construction is not required.
+
+**Defense and revision:** have another reader challenge the choice of origin, signs, constant-inertia premise and energy boundary. Supply a reproducible calculation independent of one implementation branch. Describe a result that would reject the model and revise the strongest conclusion it supports. Finite successful checks do not establish a contact coefficient, an experimental inertia, a full rigid-body theory or completion of a learner's independent investigation.
+
+
+```python file=rotation_study.py
+from fractions import Fraction as F
+from linear_space_study import scalar, vector, dot, action
+import json
+
+
+def positive(value):
+    value = scalar(value)
+    if value <= 0:
+        raise ValueError('a positive quantity is required')
+    return value
+
+
+def cross(a, b):
+    a, b = vector(a, 3), vector(b, 3)
+    return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+
+
+def add(a, b):
+    return tuple(x+y for x, y in zip(vector(a, 3), vector(b, 3)))
+
+
+def scale(c, a):
+    return tuple(scalar(c)*x for x in vector(a, 3))
+
+
+def particles(masses, positions):
+    masses = tuple(positive(m) for m in masses)
+    positions = tuple(vector(r, 3) for r in positions)
+    if not masses or len(masses) != len(positions):
+        raise ValueError('paired positive masses and positions are required')
+    return masses, positions
+
+
+def account(masses, positions, velocities, origin=(0, 0, 0)):
+    masses, positions = particles(masses, positions)
+    velocities = tuple(vector(v, 3) for v in velocities)
+    origin = vector(origin, 3)
+    if len(velocities) != len(masses):
+        raise ValueError('one velocity per particle is required')
+    total = sum(masses)
+    center = tuple(sum(m*r[j] for m, r in zip(masses, positions))/total for j in range(3))
+    momentum = (F(0),)*3
+    angular = (F(0),)*3
+    energy = F(0)
+    for m, r, v in zip(masses, positions, velocities):
+        p = scale(m, v)
+        momentum = add(momentum, p)
+        angular = add(angular, cross(add(r, scale(-1, origin)), p))
+        energy += m*dot(v, v)/2
+    return {'mass': total, 'center': center, 'momentum': momentum, 'angular': angular, 'energy': energy}
+
+
+def inertia(masses, positions, origin=(0, 0, 0)):
+    masses, positions = particles(masses, positions)
+    origin = vector(origin, 3)
+    relative = tuple(add(r, scale(-1, origin)) for r in positions)
+    return tuple(tuple(sum(m*((dot(r, r) if i == j else 0)-r[i]*r[j])
+                           for m, r in zip(masses, relative)) for j in range(3)) for i in range(3))
+
+
+def torque_step(moment, torque, omega, time):
+    moment, torque, omega, time = positive(moment), scalar(torque), scalar(omega), scalar(time)
+    if time < 0:
+        raise ValueError('time must be nonnegative')
+    alpha = torque/moment
+    angle = omega*time+alpha*time*time/2
+    final = omega+alpha*time
+    return {'alpha': alpha, 'angle': angle, 'omega': final,
+            'impulse': torque*time, 'work': torque*angle,
+            'energy_change': moment*(final*final-omega*omega)/2}
+
+
+def rolling(mass, radius, kappa, force, couple, normal, friction):
+    mass, radius, kappa = positive(mass), positive(radius), positive(kappa)
+    force, couple = scalar(force), scalar(couple)
+    normal, friction = positive(normal), scalar(friction)
+    if friction < 0:
+        raise ValueError('friction coefficient must be nonnegative')
+    acceleration = (force+couple/radius)/(mass*(1+kappa))
+    contact = (couple/radius-kappa*force)/(1+kappa)
+    return {'acceleration': acceleration, 'angular_acceleration': acceleration/radius,
+            'contact_force': contact, 'admissible': abs(contact) <= friction*normal,
+            'minimum_friction': abs(contact)/normal}
+
+
+def exchange(i1, i2, omega1, omega2, impulse):
+    i1, i2 = positive(i1), positive(i2)
+    omega1, omega2, impulse = scalar(omega1), scalar(omega2), scalar(impulse)
+    final1, final2 = omega1-impulse/i1, omega2+impulse/i2
+    before = (i1*omega1*omega1+i2*omega2*omega2)/2
+    after = (i1*final1*final1+i2*final2*final2)/2
+    synchronization = (omega1-omega2)/(1/i1+1/i2)
+    passive_interval = min(F(0), synchronization) <= impulse <= max(F(0), synchronization)
+    return {'omega1': final1, 'omega2': final2, 'momentum': i1*final1+i2*final2,
+            'energy_before': before, 'energy_after': after, 'loss': before-after,
+            'synchronizing_impulse': synchronization, 'monotone_friction_interval': passive_interval}
+
+
+def synchronize(i1, i2, omega1, omega2):
+    i1, i2 = positive(i1), positive(i2)
+    omega1, omega2 = scalar(omega1), scalar(omega2)
+    return exchange(i1, i2, omega1, omega2, (omega1-omega2)/(1/i1+1/i2))
+
+
+def investigation():
+    masses = (F(1, 50),)*6
+    positions = tuple((F(v, 20), 0, 0) for v in (-5, -3, -1, 1, 3, 5))
+    full = inertia(masses, positions)[2][2]
+    reduced = inertia((F(1, 50),)*4, tuple(positions[j] for j in (0, 1, 4, 5)))[2][2]
+    return {'published_washers': {'inertia': full, 'reduced_inertia': reduced, 'energy_coefficient_of_pi_squared': full*50},
+            'center_force': rolling(2, F(1, 2), F(1, 2), 6, 0, 20, F(1, 10)),
+            'drive_couple': rolling(2, F(1, 2), F(1, 2), 0, 3, 20, F(1, 10)),
+            'synchronized': synchronize(2, 3, 8, -2), 'partial': exchange(2, 3, 8, -2, 6),
+            'overshoot': exchange(2, 3, 8, -2, 24)}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=rotation_checks.py
+from fractions import Fraction as F
+from itertools import product
+from linear_space_study import eliminate, action, dot
+from rotation_study import account, inertia, cross, add, scale, torque_step, rolling, exchange, synchronize, investigation
+import json
+
+
+checks = 0
+
+
+def require(condition):
+    global checks
+    if not condition:
+        raise AssertionError('rotational evidence check failed')
+    checks += 1
+
+
+def rejects(action):
+    try:
+        action()
+    except ValueError:
+        require(True)
+    else:
+        raise AssertionError('expected rejection')
+
+
+geometry_cases = 0
+for mass1, mass2, stretch, shift in product((1, 2, 3), (1, 3), (1, 2), (-2, 0, 3)):
+    masses = (mass1, mass2, F(3, 2))
+    positions = ((stretch, 0, 1), (0, stretch, -1), (-stretch, 1, 0))
+    velocity = (F(2), F(-1), F(3))
+    omega = (F(1), F(2), F(-1))
+    center = account(masses, positions, ((0, 0, 0),)*3)['center']
+    rel = tuple(add(r, scale(-1, center)) for r in positions)
+    speeds = tuple(add(velocity, cross(omega, r)) for r in rel)
+    result = account(masses, positions, speeds)
+    about_center = account(masses, positions, speeds, center)
+    tensor = inertia(masses, positions, center)
+    require(about_center['angular'] == action(tensor, omega))
+    kinetic = result['mass']*dot(velocity, velocity)/2+dot(omega, action(tensor, omega))/2
+    require(result['energy'] == kinetic)
+    for i in range(3):
+        for j in range(3):
+            require(tensor[i][j] == tensor[j][i])
+    c = (F(shift), F(1), F(-2))
+    shifted = account(masses, positions, speeds, c)
+    require(shifted['angular'] == add(result['angular'], scale(-1, cross(c, result['momentum']))))
+    new_origin = add(center, c)
+    translated = inertia(masses, positions, new_origin)
+    for i in range(3):
+        for j in range(3):
+            require(translated[i][j] == tensor[i][j]+result['mass']*((dot(c, c) if i == j else 0)-c[i]*c[j]))
+    for q in ((1, 0, 0), (1, 2, -1)):
+        independent = sum(m*dot(cross(q, r), cross(q, r)) for m, r in zip(masses, rel))
+        require(dot(q, action(tensor, q)) == independent >= 0)
+    geometry_cases += 1
+rod_cases = 0
+for mass, length, pieces in product((F(1), F(3)), (F(4, 5), F(2)), (1, 2, 5, 12)):
+    positions = tuple((length*(F(2*j+1, 2*pieces)-F(1, 2)), 0, 0) for j in range(pieces))
+    approximate = inertia((mass/pieces,)*pieces, positions)[2][2]
+    exact = mass*length*length/12
+    require(exact-approximate == exact/(pieces*pieces))
+    end = inertia((mass/pieces,)*pieces, positions, (length/2, 0, 0))[2][2]
+    require(end-approximate == mass*length*length/4)
+    rod_cases += 1
+require(F(3)*F(4, 5)**2/12 == F(4, 25))
+require(F(3)*F(4, 5)**2/3 == F(16, 25))
+singular = inertia((1, 2), ((-1, 0, 0), (1, 0, 0)))
+require(action(singular, (1, 0, 0)) == (0, 0, 0))
+torque_cases = 0
+for moment, torque, speed, time in product((1, 3, F(1, 2)), (-3, 0, 2), (-2, 0, 4), (0, 1, F(3, 2))):
+    result = torque_step(moment, torque, speed, time)
+    require(result['energy_change'] == result['work'])
+    require(moment*(result['omega']-speed) == result['impulse'])
+    midpoint_speed = F(speed)+F(torque)*F(time)/(2*F(moment))
+    require(result['angle'] == midpoint_speed*time)
+    first = torque_step(moment, torque, speed, F(time)/2)
+    second = torque_step(moment, torque, first['omega'], F(time)/2)
+    require(first['angle']+second['angle'] == result['angle'])
+    require(first['work']+second['work'] == result['work'])
+    torque_cases += 1
+rolling_cases = 0
+for mass, radius, kappa, force, couple in product((1, 2), (F(1, 2), 1), (F(2, 5), F(1, 2), 1), (-6, 0, 6), (-3, 0, 3)):
+    moment = kappa*mass*radius*radius
+    expected = eliminate(((mass, 0, -1), (0, moment, radius), (1, -radius, 0)), (force, couple, 0))['particular']
+    result = rolling(mass, radius, kappa, force, couple, 10*mass, F(1, 10))
+    require((result['acceleration'], result['angular_acceleration'], result['contact_force']) == expected)
+    boundary = abs(result['contact_force'])/(10*mass)
+    require(rolling(mass, radius, kappa, force, couple, 10*mass, boundary)['admissible'])
+    if boundary:
+        require(not rolling(mass, radius, kappa, force, couple, 10*mass, boundary/2)['admissible'])
+    speed = F(3)
+    omega = speed/radius
+    total_power = mass*speed*result['acceleration']+moment*omega*result['angular_acceleration']
+    require(total_power == force*speed+couple*omega)
+    require(result['contact_force']*speed-result['contact_force']*radius*omega == 0)
+    rolling_cases += 1
+exchange_cases = 0
+for i1, i2, w1, w2 in product((1, 2, 3), (1, 3), (-2, 0, 8), (-3, 0, 4)):
+    final = synchronize(i1, i2, w1, w2)
+    expected = eliminate(((i1, i2), (1, -1)), (i1*w1+i2*w2, 0))['particular']
+    require((final['omega1'], final['omega2']) == expected)
+    reduced = F(i1*i2, i1+i2)
+    require(final['loss'] == reduced*(w1-w2)**2/2)
+    for multiplier in (F(-1), F(0), F(1, 2), F(1), F(2), F(3)):
+        impulse = multiplier*final['synchronizing_impulse']
+        r = exchange(i1, i2, w1, w2, impulse)
+        require(r['momentum'] == i1*w1+i2*w2)
+        require(r['loss'] == impulse*(w1-w2)-impulse*impulse*(F(1, i1)+F(1, i2))/2)
+        require(r['energy_after'] >= final['energy_after'])
+        require(r['monotone_friction_interval'] == (w1 == w2 or 0 <= multiplier <= 1))
+    scaled = synchronize(2*i1, 2*i2, w1, w2)
+    require(scaled['omega1'] == final['omega1'] and scaled['loss'] == 2*final['loss'])
+    exchange_cases += 1
+example = investigation()
+require(example['published_washers'] == {'inertia': F(7, 2000), 'reduced_inertia': F(17, 5000), 'energy_coefficient_of_pi_squared': F(7, 40)})
+require(example['center_force']['contact_force'] == -2 and example['center_force']['admissible'])
+require(example['drive_couple']['contact_force'] == 4 and not example['drive_couple']['admissible'])
+require(example['synchronized']['omega1'] == example['synchronized']['omega2'] == 2)
+require(example['synchronized']['loss'] == 60 and example['partial']['loss'] == 45)
+require(example['overshoot']['loss'] == 0 and not example['overshoot']['monotone_friction_interval'])
+g, sine, cosine, mass = F(981, 100), F(3, 5), F(4, 5), F(2)
+slope = rolling(mass, F(1, 2), F(1, 2), mass*g*sine, 0, mass*g*cosine, F(1, 4))
+require(slope['acceleration'] == F(981, 250) and slope['minimum_friction'] == F(1, 4) and slope['admissible'])
+invalid = [lambda: inertia((), ()), lambda: inertia((0,), ((1, 0, 0),)),
+           lambda: inertia((1,), ((0, 0),)), lambda: account((1,), ((0, 0, 0),), ()),
+           lambda: torque_step(0, 1, 0, 1), lambda: torque_step(1, 1, 0, -1),
+           lambda: torque_step(1, True, 0, 1), lambda: torque_step(1, 1.0, 0, 1),
+           lambda: rolling(1, 0, 1, 1, 0, 1, 1), lambda: rolling(1, 1, -1, 1, 0, 1, 1),
+           lambda: rolling(1, 1, 1, 1, 0, 0, 1), lambda: rolling(1, 1, 1, 1, 0, 1, -1),
+           lambda: exchange(0, 1, 1, 1, 1)]
+for case in invalid:
+    rejects(case)
+print(json.dumps({'checks': checks, 'geometry_cases': geometry_cases, 'rod_cases': rod_cases,
+                  'constant_torque_cases': torque_cases, 'rolling_cases': rolling_cases,
+                  'rotor_initial_cases': exchange_cases, 'invalid_inputs': len(invalid)}, indent=2))
+```
+
+**Author verification:** 3,266 exact checks passed through Nix/Python 3.14.8: 36 particle-geometry cases, sixteen rod discretizations, 81 constant-torque cases, 108 rolling candidates, 54 rotor initial states with six impulse multipliers each, the published washer checkpoint, original counterexamples and thirteen rejected inputs. Direct particle accounts, linear-system solutions, integrated rod limits and independent impulse/energy identities complement the implementation. General claims rely on the written derivations; no physical experiment, measured contact law or completed learner research is claimed.
+
+**Continue:** [Review angular momentum with its geometry constraints and evidence](Review-angular-momentum-with-its-geometry-constraints-and-evidence.lingua#r_0026B43764A153597C72C79D2D).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_002C1C42745EA90F6446369066

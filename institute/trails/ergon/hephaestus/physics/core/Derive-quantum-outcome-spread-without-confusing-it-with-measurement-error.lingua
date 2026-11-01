@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Derive quantum outcome spread without confusing it with measurement error (@physics-quantum-uncertainty: 0, is #chapter, #hephaestus-core "Connect-a-Hamiltonian-to-unitary-evolution-and-measurable-phase-differences.lingua#r_001692F75C18D33546CD6B40A9") { r_00ED2673F9FDB95BDE04601BBA
+For a normalized pure ψ and Hermitian A,B, let a=(A−⟨A⟩I)ψ and b=(B−⟨B⟩I)ψ. Their squared norms are the outcome variances (ΔA)² and (ΔB)². Apply the shared complex Cauchy–Schwarz inequality: (ΔA)²(ΔB)²≥|⟨a,b⟩|²≥(Im⟨a,b⟩)². Conjugate symmetry and Hermiticity give 2i Im⟨a,b⟩=⟨ψ|[A,B]|ψ⟩, where [A,B]=AB−BA. Therefore ΔAΔB≥|⟨[A,B]⟩|/2. This finite derivation has no unbounded-operator domain issue; applying a corresponding position/momentum statement requires the appropriate state and operator domains.
+
+The lower bound depends on the state. A nonzero matrix commutator does not guarantee that its expectation is nonzero in every state. Nor does it generally exclude a common eigenvector. For an explicit three-coordinate example, let A=diag(0,1,−1) and let B have only B₂₃=B₃₂=1 nonzero. AB−BA≠0 on the last two coordinates, yet e₁=(1,0,0) is a zero-eigenvalue eigenvector of both, giving both variances zero. The unqualified statement in Tong's printed page 85 therefore needs this qualification; the state-dependent inequality above remains valid.
+
+For Pauli X and Z, a y-plus state gives Var(X)=Var(Z)=1 and |⟨[X,Z]⟩|/2=1, saturating the inequality. Restoring S_i=(ℏ/2)σ_i gives ΔS_xΔS_z=ℏ²/4. In a z-plus state ΔS_z=0 but ΔS_x=ℏ/2, while this particular commutator expectation vanishes. Explain why a zero lower bound is not a prediction that both spreads vanish.
+
+These spreads describe the distribution of results on repeated, identically prepared systems under ideal measurements. They are not the calibration uncertainty of the apparatus, a finite-sample confidence interval for the mean, or a general theorem quantifying how an invasive instrument disturbs the system. Successive measurements also change the state under the declared instrument rule. Keep these questions distinct when interpreting an experiment.
+
+**Read:** [Quantum Mechanics — David Tong](../../engineering/materials-engineering/sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), sections 3.3.1 and 3.4.1, with the source note's qualification. **Work:** supply every step of the finite proof, verify the three-coordinate counterexample and the two spin cases, and propose a repeated-preparation design for estimating each outcome spread. Use [Review continuous models estimation and the scope of coverage](../../inquiry/core/Review-continuous-models-estimation-and-the-scope-of-coverage.lingua#r_0092AAD67F9A97EFCB0180340A) and [Describe a chance quantity by its weighted mean and spread](../../inquiry/core/Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA) for the separate sampling and measurement accounts. A precise estimate of the wrong preparation's spread does not test the intended inequality.
+
+**Continue:** [Connect a Hamiltonian to unitary evolution and measurable phase differences](Connect-a-Hamiltonian-to-unitary-evolution-and-measurable-phase-differences.lingua#r_001692F75C18D33546CD6B40A9).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00ED2673F9FDB95BDE04601BBA

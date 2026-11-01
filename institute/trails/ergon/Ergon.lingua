@@ -1,7 +1,19 @@
-Ergon — useful labor and productive knowledge (@ergon: 0, is #chapter, #ergon "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #ergon "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21") { r_FE78A5A2D2A3261F711703DCC1
+Import "hephaestus/Hephaestus.lingua"
+Import "gaia/Nature.lingua"
+Import "connected-systems/Connected-system-journeys.lingua"
+
+Ergon — useful labor and productive knowledge (@ergon: 0, is #chapter, #ergon "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #ergon "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #contains "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #contains "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #contains "connected-systems/Connected-system-journeys.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA") { r_FE78A5A2D2A3261F711703DCC1
 Follow [Hephaestus](hephaestus/Hephaestus.lingua) for mathematics, hard sciences, engineering, computing, and productive infrastructure. Follow [Gaia](gaia/Nature.lingua) for Earth, life, food, and health. Shared productive journeys connect their Records without duplicating them. Questions about reasons, values, and institutions connect to [Philosophy](../scholazein/philosophy/Philosophy.lingua).
 
-[Development register](../lince/Trails.lingua#r_07E6A8FE1217C77B83EEDF55EC).
+[Trail authoring](../lince/Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+
+**Scope:** Ergon joins the knowledge and work that sustain collective life. Hephaestus covers hard sciences and their productive applications; Gaia covers Earth, living systems, food, and health. Connected system journeys reuse both branches and relevant social knowledge.
+
+**Branches:**
+
+- [Hephaestus — hard sciences and productive work](hephaestus/Hephaestus.lingua#r_00000000000000000000002001)
+- [Gaia — Earth, living systems, and their relationships](gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21)
+- [Connected system journeys](connected-systems/Connected-system-journeys.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA)
 } r_FE78A5A2D2A3261F711703DCC1
 
 Extension @ergon "lince.vocabulary" {

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Reconstruct a historical distance calculation without circular validation (@physics-astronomy-evidence: 0, is #chapter, #hephaestus-core "Investigate-an-astronomical-measurement-chain-and-its-unresolved-alternatives.lingua#r_0009599DE5F7197F559EAB8037") { r_00801894D8EC4DDBC5ABEAE629
+[Hubble 1929 distance and radial velocity paper](../sources/Hubble-1929-distance-and-radial-velocity-paper.lingua#r_00C02689A8E7292BFB5F12F63F) supplies a bounded historical primary calculation. In its Table 2 row for NGC 278, measured velocity v=650 km/s, adopted solar-motion contribution v_s=−110 km/s and K=500 km/s per million parsecs give r=(v−v_s)/K=760/500=1.52 Mpc. The listed apparent magnitude m=12 then gives M=12−5 log₁₀(1.52×10⁶/10)=−13.9092179…, rounding to the table's −13.9. Retain the velocity-frame convention and the old photographic/visual calibration context.
+
+This reproduces two entries from supplied summary quantities. It does not remeasure the spectrum, reconstruct the solar-motion fit or validate a present distance scale. The paper itself distinguishes distances estimated from stars in Table 1 from those inferred from velocities in Table 2. If K is assumed when calculating Table 2 distances, plotting those distances against the same corrected velocities cannot provide an independent test of K. It mostly restates the calculation.
+
+The paper's common cluster motion and group-weighting discussion also matters. Treating several galaxies with a shared peculiar velocity as independent identical errors can overstate the information about the cosmic relation. Its numerical K is historical, not a recommended current expansion rate. A modern inference would require independent distance anchors, selection and calibration models, velocity-frame definitions and uncertainties; no current cosmological parameter is adopted in this lesson.
+
+An original changed case holds corrected velocity fixed and replaces K by K/2. The inferred distance doubles; the inferred absolute magnitude decreases by 5 log₁₀2. The observed flux or spectrum did not change. Similarly, in a synthetic affine fit v=α+Hd+e, rescaling every supplied d by k changes the fitted H to H/k while preserving fitted velocities and residuals. Residuals alone therefore cannot identify an externally uncertain distance scale.
+
+**Deliverable:** show the arithmetic and units, the magnitude calculation by a second logarithm method, and a dependency diagram marking assumed K, corrected velocity, derived distance and derived luminosity. Propose independent evidence that could break the circularity. Distinguish historical observation, original reanalysis, a mathematical counterexample and new physical measurements. No full-table dataset, scan or source figure is bundled; only the few attributed numbers needed for this bounded calculation appear here.
+
+**Continue:** [Investigate an astronomical measurement chain and its unresolved alternatives](Investigate-an-astronomical-measurement-chain-and-its-unresolved-alternatives.lingua#r_0009599DE5F7197F559EAB8037).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00801894D8EC4DDBC5ABEAE629

@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Prove parameter bounds before screening a design (@engineering-electrical-bounds: 0, is #chapter, #hephaestus-core "Electrical-observation-loading-and-identifiability.lingua#r_00EEBD1BA46C0A10C2842CDFF9") { r_00E07F85F9615342B24454DB4E
+Let D=AB+r(A+B), with A=r₁+L₁, B=r₂+L₂ and r=R_s+R_c. The load voltages are v₁=E L₁B/D and v₂=E L₂A/D. For positive parameters, v₁ increases with E,L₁,B and decreases with r,r₁. To see the less obvious own-load derivative, ∂v₁/∂L₁=EB[r₁B+r(r₁+B)]/D²>0. Also ∂v₁/∂B=E L₁rA/D²>0. Increasing the other branch's total resistance unloads the source and raises this branch's voltage. The signs for v₂ follow by exchanging branch labels.
+
+Therefore the minimum v₁ uses low E,L₁,r₂,L₂ and high R_s,R_c,r₁. Its maximum reverses those choices. For v₂, exchange the branch roles. Every parameter has a fixed monotonic direction over the positive box, so these corner extrema bound the entire continuous box, not merely the sampled points. Explicitly retain the distinction between the load's own resistance and the other branch's resistance.
+
+Source current I=E/[r+AB/(A+B)] increases with E and decreases with every resistance. Branch current i₁=E/[A+r+rA/B] increases with E,B and decreases with A,r; exchange roles for i₂. These signs likewise locate exact maximum currents at box corners. The companion compares those expressions with the full corner enumeration and tests additional interior points. The algebra supplies the general guarantee; the finite samples check implementation.
+
+Power in a component is R I_component². R and its current are coupled, and the power need not be monotone in R. Use the valid conservative bound P≤R_max I_component,max², even when the two maxima cannot occur together. This bound can overestimate actual worst power. It is sufficient for acceptance when below the limit; exceeding the limit is inconclusive without a sharper analysis. The maximum-power example in [Preserve port behavior while distinguishing power and efficiency objectives](Port-equivalents-and-design-objectives.lingua#r_000EAC2105FC12CF0A41AD15D9) explains why arbitrary corner enumeration alone would be insufficient for power.
+
+For B, exact voltage extrema are approximately [7.6314,9.5126] V and [7.6440,9.5029] V. Thus allowed parameter corners actually violate the 8 V lower requirement. The common-connection conservative loss bound also exceeds 4 W, but that separate bound exceedance is not being used as proof of an actual power violation.
+
+For C, exact bounds are v₁∈[258552/30347,426888/41467] V and v₂∈[258552/30325,426888/41485] V, approximately [8.5198,10.2947] and [8.5260,10.2902]. Source current is at most 56/17 A<3.4 A. Conservative loss bounds for (R_s,R_c,r₁,r₂) are approximately (5.9682,2.9841,0.6925,1.3551) W, within (6,4,2,3) W. The exact rational comparisons, not rounded displayed values, establish this screen. C passes the stipulated model requirements over the entire box.
+
+**Work:** derive all monotonic directions, identify the distinct corners producing the two minimum voltages, and reproduce the conservative loss bounds. Explain why an in-range nominal solution, a dense grid or a favorable mean does not replace the universal argument. Distinguish uncertainty of measured parameters, manufacturing variation and deliberate operating range; a shared interval representation does not make them the same physical cause.
+
+**Continue:** [Choose observations that separate source and connection explanations](Electrical-observation-loading-and-identifiability.lingua#r_00EEBD1BA46C0A10C2842CDFF9).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00E07F85F9615342B24454DB4E

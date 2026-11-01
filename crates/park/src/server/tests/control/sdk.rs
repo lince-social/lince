@@ -75,11 +75,13 @@ fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cann
     let (finished, result) = channel();
     let thread = std::thread::spawn(move || {
         let mut client = ControlClient::from_connection(Connection::from_socket(stream).unwrap()).unwrap();
+        assert_eq!(client.reply_timeout_for_test(Duration::from_millis(500)), Duration::from_secs(12));
         ready.send(()).unwrap();
         proceed.recv_timeout(Duration::from_secs(5)).unwrap();
         let error = client.invoke(&call()).unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::TimedOut);
         assert!(error.to_string().contains("outcome may be unknown"));
+        client.reply_timeout_for_test(Duration::from_secs(12));
         expired.send(()).unwrap();
         refreshed.recv_timeout(Duration::from_secs(5)).unwrap();
         assert!(matches!(client.snapshot(0, 0).unwrap(), Response::Snapshot { .. }));

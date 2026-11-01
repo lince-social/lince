@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Use prediction practice and feedback while recording the help given (@inquiry-learning-practice: 0, is #chapter, #hephaestus-core "Connect-assessment-tasks-to-the-claims-their-responses-can-support.lingua#r_002B495CD7777FBC8C28058BF0") { r_0089565C8D0577F645F3195311
+A worked example makes a method inspectable. Practice asks the learner to produce some of that method. Feedback compares the attempt with a stated criterion and provides something usable for revision. In our lesson, begin with a prediction, inspect the demonstrated schedule, reconstruct it with the example hidden, then solve a changed calendar. Keep the initial answer and revision. A corrected response after a hint is evidence of a different condition from an unaided first response.
+
+For supported practice leave a calendar partially filled: A:J in slot 0 and B:J in slot 1. Ask where A:K and B:K can go. If the learner chooses B:K in slot 1, ask when K's A operation ends. If they cannot decide, show the time boundary and let them repair the schedule. On the next task remove that aid. Removing support is a deliberate change of conditions; it does not guarantee that learning occurred.
+
+An actionable feedback statement is: “Your slot 1 contains A:K and B:K. Under this task's rule, B must start after A finishes. Move one operation and then check whether the deadline still holds.” It names the evidence, criterion and next action. “Wrong” supplies none of these. “You are bad at scheduling” makes a personal claim the response cannot justify. After feedback, require the learner to explain the repair and attempt a different case; copying the corrected arrangement would not establish independent use.
+
+For self-study, keep an attempt sheet separate from the answer key. Record whether the key was open, confidence before checking, errors and the reason for each repair. Revisit the idea after a declared delay with a fresh task and without the previous solution. This is a proposed study routine whose success must be judged from evidence, not from the number of minutes recorded. If the learner has forgotten the notation, restore that prerequisite rather than treating every failed recall as a conceptual failure.
+
+[How People Learn II by the National Academies](../sources/How-People-Learn-II-by-the-National-Academies.lingua#r_001EAADFB87A1DA628F6FE9CB0) chapter 5 surveys retrieval, distributed practice, variation and explanation, with qualifications about task and context. It does not establish a single optimal schedule for this investigation. Choose a feasible revisit interval, record intervening practice and inspect the result. A harder practice task may be informative, but difficulty alone is not evidence of educational value.
+
+**Work:** produce a short explanation, a partially completed example, an independent problem and a delayed revisit. State the assistance allowed at each point. Write feedback for a wrong dependency, a station collision and a correct answer without reasoning. Explain how you would tell whether the revision reflects a repaired method or a remembered answer. Use [Compare learning arrangements without confusing practice with evidence of an effect](Compare-learning-arrangements-without-confusing-practice-with-evidence-of-an-effect.lingua#r_0045A77E6ECD510BD893851188) before attributing improvement to this teaching sequence.
+
+**Continue:** [Connect assessment tasks to the claims their responses can support](Connect-assessment-tasks-to-the-claims-their-responses-can-support.lingua#r_002B495CD7777FBC8C28058BF0).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0089565C8D0577F645F3195311

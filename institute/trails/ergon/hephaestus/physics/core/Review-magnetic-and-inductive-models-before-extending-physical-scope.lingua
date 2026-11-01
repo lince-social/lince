@@ -1,0 +1,20 @@
+Import "../Physics.lingua"
+
+Review magnetic and inductive models before extending physical scope (@physics-magnetic-review: 0, is #chapter, #hephaestus-core "Describe-events-clocks-and-the-comparison-of-inertial-frames.lingua#r_0066EF1C04ECAE6E24E72A9C47") { r_000E98B82895476DF83343BB5E
+Explain what B means operationally through a specified force and motion comparison, and distinguish physical laws from the cross product and integral identities used to express them. Derive the uniform-field solution with signed frequency, center and energy. Show why deflection alone does not supply work, why an atomic state is not this classical orbit, and what evidence would invalidate the prescribed-field assumptions.
+
+Connect steady current conservation, the complete source/return geometry and Biot–Savart to the symmetry reduction of Ampère's law. State exactly what permits taking B outside a loop integral. Distinguish circulation from flux and show why either zero total leaves many possible nonzero fields. Read the three reused specialist lessons at their common-block boundary while retaining their broader assignments for later study.
+
+Choose a normal and loop direction before computing induction. Derive a fixed-loop flux/circulation example and the moving-boundary ribbon term, stating the smoothness and divB premise. Obtain the sliding-bar result directly at its contacts. Separate open-loop emf, passive voltage drop and resulting current. Derive RL storage and uniqueness, and defend the current-only parameter ambiguity for the whole time history.
+
+Explain why displacement current restores consistency with local charge balance, without treating consistency as experimental proof of all Maxwell dynamics. Derive the initial divergence constraints and their propagation. Derive Poynting's balance with the correct matter-transfer sign, and verify a wave pair against both curl equations before its energy calculation. Explain the limits of vacuum, quasistatic, fixed-geometry and finite observation-region assumptions.
+
+Complete [Investigate magnetic deflection induction and energy evidence](Investigate-magnetic-deflection-induction-and-energy-evidence.lingua#r_005AF08B850568F58BE76E9AF4) with independent calculations, a changed case, a bounded source reconstruction, a discriminating observation plan and criticism/revision. The authored exact checks establish the teaching calculations and implementation; they do not certify an apparatus, measure a field or substitute for learner capability. Source notes retain actual inspected sections and reuse terms separately from full reading assignments.
+
+The common physics route now has 124 learning Records. This supplies magnetic/inductive preparation for engineering, materials, computing and later physical branches; it does not complete electromagnetism anew or finish the whole physics core. Continue with spacetime, gravitation and orbits, then astronomical evidence. Revisit the same 134-scope coverage mapping before major branches. Advanced magnetic matter, field solvers, machines, radiation and specialized optical/electronic production remain at their proper later depth.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue through spacetime gravity and orbits:** [Describe events clocks and the comparison of inertial frames](Describe-events-clocks-and-the-comparison-of-inertial-frames.lingua#r_0066EF1C04ECAE6E24E72A9C47). Connect events, clocks, inertial transformations, relativistic energy, gravity and orbital evidence before the common astronomical entrance.
+
+} r_000E98B82895476DF83343BB5E

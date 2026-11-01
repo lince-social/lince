@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Separate a stored state from the logic that computes its successor (@computing-state-storage: 0, is #chapter, #hephaestus-core "Describe-representable-spacing-before-interpreting-a-floating-result.lingua#r_0E9AB5CBCE46D32FBC5701E90D") { r_0FA638CDB4720F2F649A33F408
+Combinational logic specifies outputs from current inputs. Sequential behavior also depends on a stored state. Write a discrete transition as s_next=F(s,input). A register in a synchronous abstraction captures its specified next value at a clock event, while the logic between registers computes from the old state. This lets us reason about a sequence of states without claiming the physical transition is instantaneous.
+
+For two registers updated simultaneously by a_next=b and b_next=a, old state (1,2) becomes (2,1). Sequential software assignments a=b followed by b=a instead produce (2,2) unless the old a is saved. The distinction is not syntax trivia: the transition function must specify which version of each value is read. The interpreter later constructs a new immutable state from the old one so its trace preserves that meaning.
+
+The physical circuit must meet propagation, setup and hold constraints before the logical sampling model is trustworthy. Different paths can settle at different times; metastability and crossing clock domains require further treatment. A simulation step count is not a measured clock frequency, energy cost or timing margin. The original common machine is an abstract instruction transition system, not a gate-level timing simulation.
+
+A memory model adds addresses. A finite array M maps each valid address to a stored word. Reading M[3] retrieves the contents of location 3; the address 3 and those contents are different values. Writing one location changes that location according to the declared write rule, not every location containing an equal value. Copying a reference in a language can instead share a mutable collection, as the earlier collection lesson showed. Keep abstract memory semantics separate from host-language aliasing.
+
+**Read and explain:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 5’s stored-state and register timing passages, then topic 9’s memory/instruction discussion. Trace the simultaneous swap, draw old-state and next-state boundaries, and distinguish address, contents and object identity. Explain what physical evidence is missing from an accurate logical simulation. This common step does not complete sequential circuit design, memory technology or synchronization.
+
+**Continue:** [Describe representable spacing before interpreting a floating result](Describe-representable-spacing-before-interpreting-a-floating-result.lingua#r_0E9AB5CBCE46D32FBC5701E90D).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0FA638CDB4720F2F649A33F408

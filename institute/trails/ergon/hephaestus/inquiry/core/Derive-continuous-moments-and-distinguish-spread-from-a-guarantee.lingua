@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Derive continuous moments and distinguish spread from a guarantee (@inquiry-continuous-moments: 0, is #chapter, #hephaestus-core "Construct-an-average-distribution-from-a-declared-joint-experiment.lingua#r_00EC9152CEA661437ABDED65BB") { r_003300B25CBBCE011AA44DDFAC
+For the bounded density models here, define E[h(X)]=∫h(x)f(x)dx for the integrable functions used. A partition sum with weights from interval probabilities motivates this integral and connects it to [Describe a chance quantity by its weighted mean and spread](Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA); the integral is the model definition, not an assertion that a finite observation average equals it. Let μ=E[X] and Var(X)=E[(X−μ)²]. Expanding the square gives Var(X)=E[X²]−μ²≥0. Units are those of X for μ and the standard deviation, and squared units for variance. Unbounded models additionally require existence of the relevant integrals.
+
+For E uniform on [−a,a], symmetry gives E[E]=0, and ∫₋ₐᵃ e²/(2a)de=a²/3. More generally, odd moments vanish and E[Eⁿ]=aⁿ/(n+1) for even nonnegative integers n. A shift b+sE has mean b and variance s²a²/3. Its mean-square distance from a reference θ is Var(X)+(E[X]−θ)², from expanding X−θ=(X−E[X])+(E[X]−θ) and using a zero cross term. Bias and variability therefore contribute differently to squared estimation error.
+
+A variance alone does not determine an interval probability. One general bound follows directly: for t>0, (X−μ)²≥t² on the event |X−μ|≥t. Integrating over that event and its complement gives P(|X−μ|≥t)≤Var(X)/t², with the trivial upper bound one also available. This is a bound, often loose, rather than a claim of normality or exact coverage. It provides no information if the variance does not exist.
+
+The finite covariance and affine arguments in [Derive affine propagation and common source cancellation](Derive-affine-propagation-and-common-source-cancellation.lingua#r_0048ADA9C3341D57921ECA3B7D) carry over for joint models with the needed finite moments. In particular Var(X+Y)=Var(X)+Var(Y)+2Cov(X,Y). Independence with integrable products gives zero covariance, while zero covariance alone does not establish independence. For n mutually independent errors with common variance v, the mean has variance v/n; a common random component contributes a term that does not disappear through repetition. Specify the joint model before using either claim.
+
+**Work:** derive the uniform moments and affine formulas by integration. Compare the variance bound with the exact uniform tail for t=a/2 and t=2a. Explain why knowing a standard deviation does not automatically supply a hard range or a 95% interval. Read [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71) section 6.3; infinite-tail examples, asymptotic laws and full convergence proofs retain later preparation.
+
+**Continue:** [Construct an average distribution from a declared joint experiment](Construct-an-average-distribution-from-a-declared-joint-experiment.lingua#r_00EC9152CEA661437ABDED65BB).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_003300B25CBBCE011AA44DDFAC

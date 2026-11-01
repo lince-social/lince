@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Connect an electrochemical cell with a balanced reaction and energy account (@gc-cells: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A") { r_71ACM8HAWDABKYZHW6E653JQJX
+Connect an electrochemical cell with a balanced reaction and energy account (@gc-cells: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A", #hephaestus-core "../../core/Reaction-products-collection-and-evidence.lingua#r_009C72EF3E678A04900EC544DA") { r_71ACM8HAWDABKYZHW6E653JQJX
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 17 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), All about electrochemistry completely; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit IV’s redox and cell material; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), electrochemical quantities and conventions.
 
 An electrochemical cell couples reaction changes with charge transfer through an external path under specified conditions. Identify the electrodes, electrolyte, phases, half-reaction conventions, reaction extent, and electron amount. Oxidation occurs at the anode and reduction at the cathode; electrode sign also depends on whether the cell is operated galvanically or electrolytically.
@@ -16,4 +16,9 @@ Read the complete electrochemistry chapter and Chem1 unit, then the MIT redox/ce
 **Continue:** [Use the Nernst relation with the actual reaction quotient](Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Fifth chemistry-block reading:** Use electrode roles, phases, external/ionic paths, extent and electron amount with the preceding common boundary/sign definitions. The Gibbs relation and reversible/standard potential discussion are retained as a preview requiring subsequent common entropy, chemical-potential and reversible-work preparation; they are not derived or used to predict voltage here. Full chapter/course assignments and the original Nernst continuation remain for their prepared route.
+
+**Continue in the fifth chemistry block:** [Separate conversion charge allocation collection and purity](../../core/Reaction-products-collection-and-evidence.lingua#r_009C72EF3E678A04900EC544DA).
+
 } r_71ACM8HAWDABKYZHW6E653JQJX

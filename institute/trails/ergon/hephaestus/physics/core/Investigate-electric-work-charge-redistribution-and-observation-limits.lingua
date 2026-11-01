@@ -1,0 +1,297 @@
+Import "../Physics.lingua"
+
+Investigate electric work charge redistribution and observation limits (@physics-electric-study: 0, is #chapter, #hephaestus-core "Review-charge-fields-circuits-and-electrical-evidence.lingua#r_004685691CEC87C6BB2FEB8A8E") { r_00E6095DF06C1A01CC1DE14045
+This original investigation joins force, work, charge conservation, storage and observation. It uses finite static sources and a stipulated lumped network. The calculations verify those models and their implementations; no apparatus, capacitor, source or meter was built or validated. Use explicit units and boundaries to prevent a mathematically correct result from answering a different physical question.
+
+First place scaled sources +2 at ξ=0 and −1 at ξ=3. The reference units are L for distance, Q* for source charge, kₑQ*/L for potential, kₑQ*/L² for field and kₑQ*²/L for energy. Predict fields and potentials at ξ=1,2,4. Explain φ(2)=0 alongside E(2)=3/2. Derive the field work on a positive probe Q*/100 moved from L to 2L and verify its sign against potential-energy change. Use an independent midpoint integration of the axial field, with a proved error bound, to check the exact endpoint result. On an interval [a,b] inside (0,3), a bound on the field's second derivative is M₂=6(|α|/a⁴+|β|/(3−b)⁴); the composite midpoint error with N equal intervals is at most M₂(b−a)³/(24N²). Reuse the earlier calculus argument rather than interpreting the bound as empirical error.
+
+Next use potential differences relative to ξ=4 to recover two unknown source amounts. Show why one difference leaves a family and two independent differences determine the pair only within the specified geometry/model. Check vector cancellation with equal and opposite source choices at (−3,0),(3,0), observed at (0,4). The exact evaluator below accepts only rational distances, so these 3–4–5 examples are in its arithmetic domain. General physical geometries are not thereby excluded; they require a different exact representation or controlled numerical approximation.
+
+For the circuit part derive the two-capacitor charge equations and their unique solution before running the program. Use C₁=2 μF, C₂=3 μF, R=5 kΩ, a=5 V and b=0. Confirm the charge, time constant, intermediate voltages, current and every energy in [Solve charge redistribution and account for the dissipated energy](Solve-charge-redistribution-and-account-for-the-dissipated-energy.lingua#r_00AA29526C7EBA203EF2EA6FB9). The program takes z=e^(−t/τ) as an exact parameter in [0,1]; z=1 is the initial state and z=0 the limiting state. Rational z gives exact states at the corresponding t=−τ ln z for 0<z≤1. Such checks are not uniformly spaced time samples or floating exponential evaluations.
+
+For a bounded time evaluation, `decay_bracket(s,N)` returns consecutive odd/even Taylor bounds for e^(−s) on 0≤s≤1 with even N. The integral remainder is (−1)^(N+1)/N! times ∫₀ˢe^(−u)(s−u)^N du. Repeated integration by parts, starting from the fundamental theorem, proves this identity. Its sign makes the even partial sum an upper bound and the next odd partial sum a lower bound. Their width is exactly s^(N+1)/(N+1)!. At s=1,N=20, width is 1/21!, less than 2×10⁻²⁰. This is a mathematical truncation certificate. The companion's independent 90-digit Decimal comparison is an additional numerical check, not the source of the proof.
+
+Finally compare the doubled-capacitance/halved-resistance rival for every z, and compute the loaded instantaneous derivatives at the half-decay state with R_m=100 kΩ. Present the voltage ambiguity, distinguishing observation and meter-induced changes before interpreting any estimated parameter. Full loaded dynamics, general electromagnetic propagation and actual device error remain outside this bounded model.
+
+Save the two original programs under their displayed filenames together. Run `python3 electric_checks.py`, or in this repository `nix shell nixpkgs#python3 -c python3 electric_checks.py`. Inputs are exact integers/Fractions; invalid component signs, decay domains and arithmetic geometries are rejected. These small models are designed for inspectable reasoning rather than production simulation.
+
+```python file=electric_study.py
+from fractions import Fraction as F
+from math import isqrt
+import json
+
+
+def exact(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)):
+        raise ValueError('exact integer or Fraction required')
+    return F(value)
+
+
+def rational_root(value):
+    value = exact(value)
+    if value <= 0:
+        raise ValueError('positive squared distance required')
+    top, bottom = isqrt(value.numerator), isqrt(value.denominator)
+    if top*top != value.numerator or bottom*bottom != value.denominator:
+        raise ValueError('this exact evaluator requires rational distances')
+    return F(top, bottom)
+
+
+def potential_field(sources, point):
+    point = tuple(exact(v) for v in point)
+    if not point:
+        raise ValueError('nonempty coordinates required')
+    potential = F(0)
+    field = [F(0)]*len(point)
+    for amount, position in sources:
+        amount = exact(amount)
+        position = tuple(exact(v) for v in position)
+        if len(position) != len(point):
+            raise ValueError('coordinate dimension mismatch')
+        displacement = tuple(x-y for x, y in zip(point, position))
+        distance = rational_root(sum(v*v for v in displacement))
+        potential += amount/distance
+        field = [v+amount*d/distance**3 for v, d in zip(field, displacement)]
+    return potential, tuple(field)
+
+
+def infer_two_sources(first_difference, second_difference):
+    first_difference, second_difference = map(exact, (first_difference, second_difference))
+    return 4*second_difference, 6*second_difference-2*first_difference
+
+
+def sharing(c1, c2, resistance, first, second, decay):
+    c1, c2, resistance, first, second, decay = map(exact, (c1, c2, resistance, first, second, decay))
+    if min(c1, c2, resistance) <= 0 or not 0 <= decay <= 1:
+        raise ValueError('positive components and decay in [0,1] required')
+    total = c1+c2
+    reduced = c1*c2/total
+    charge = c1*first+c2*second
+    final = charge/total
+    difference = (first-second)*decay
+    v1 = final+c2*difference/total
+    v2 = final-c1*difference/total
+    current = difference/resistance
+    initial_energy = (c1*first**2+c2*second**2)/2
+    final_energy = total*final**2/2
+    energy = final_energy+reduced*difference**2/2
+    loss = reduced*(first-second)**2*(1-decay**2)/2
+    return {'voltages': (v1, v2), 'current': current,
+            'derivatives': (-current/c1, current/c2),
+            'charge': charge, 'transferred': reduced*(first-second)*(1-decay),
+            'tau': resistance*reduced, 'energy': energy,
+            'initial_energy': initial_energy, 'final_energy': final_energy,
+            'dissipated': loss, 'resistor_power': current**2*resistance}
+
+
+def loaded_derivatives(c1, c2, resistance, meter_resistance, v1, v2):
+    c1, c2, resistance, meter_resistance, v1, v2 = map(exact, (c1, c2, resistance, meter_resistance, v1, v2))
+    if min(c1, c2, resistance, meter_resistance) <= 0:
+        raise ValueError('positive components required')
+    current = (v1-v2)/resistance
+    leakage = v2/meter_resistance
+    return -current/c1, (current-leakage)/c2
+
+
+def decay_bracket(s, even_order=20):
+    s = exact(s)
+    if not 0 <= s <= 1 or isinstance(even_order, bool) or not isinstance(even_order, int) or even_order < 2 or even_order % 2:
+        raise ValueError('s in [0,1] and positive even order at least two required')
+    term, upper = F(1), F(1)
+    for k in range(1, even_order+1):
+        term *= -s/k
+        upper += term
+    lower = upper+term*(-s)/(even_order+1)
+    return lower, upper
+
+
+def investigation():
+    sources = ((2, (0,)), (-1, (3,)))
+    values = {str(x): potential_field(sources, (x,)) for x in (1, 2, 4)}
+    differences = (values['1'][0]-values['4'][0], values['2'][0]-values['4'][0])
+    half = sharing(F(2, 10**6), F(3, 10**6), 5000, 5, 0, F(1, 2))
+    rival = sharing(F(4, 10**6), F(6, 10**6), 2500, 5, 0, F(1, 2))
+    return {'field_values': values, 'voltage_differences': differences,
+            'inferred_sources': infer_two_sources(*differences),
+            'probe_work_scaled': F(1, 100)*(values['1'][0]-values['2'][0]),
+            'half_decay': half, 'rival': rival,
+            'loaded_derivatives': loaded_derivatives(F(2, 10**6), F(3, 10**6), 5000, 100000, *half['voltages']),
+            'one_tau_decay_bracket': decay_bracket(F(1))}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=electric_checks.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from itertools import product
+from math import factorial
+import json
+from electric_study import decay_bracket, infer_two_sources, investigation
+from electric_study import loaded_derivatives, potential_field, rational_root, sharing
+
+
+checks = 0
+
+
+def check(value):
+    global checks
+    checks += 1
+    if not value:
+        raise AssertionError(checks)
+
+
+def field_axis(charges, x):
+    total = F(0)
+    for charge, origin in zip(charges, (0, 3)):
+        if x > origin:
+            total += charge/(x-origin)**2
+        elif x < origin:
+            total -= charge/(x-origin)**2
+        else:
+            raise ValueError('source point')
+    return total
+
+
+def midpoint_work(charges, left, right, steps):
+    width = (right-left)/steps
+    value = width*sum(field_axis(charges, left+(F(j)+F(1, 2))*width) for j in range(steps))
+    minimums = (left, 3-right)
+    second_derivative_bound = 6*sum(abs(q)/d**4 for q, d in zip(charges, minimums))
+    error = second_derivative_bound*(right-left)**3/(24*steps**2)
+    return value, error
+
+
+field_cases = 0
+work_cases = 0
+for q1, q2 in product(range(-2, 3), repeat=2):
+    sources = ((q1, (0,)), (q2, (3,)))
+    for x in (F(-2), F(-1), F(1, 2), F(1), F(3, 2), F(2), F(5, 2), F(4), F(5)):
+        potential, field = potential_field(sources, (x,))
+        check(potential == q1/abs(x)+q2/abs(x-3))
+        check(field == (field_axis((q1, q2), x),))
+        h = F(1, 1000)
+        before = potential_field(sources, (x-h,))[0]
+        after = potential_field(sources, (x+h,))[0]
+        derivative = (after-before)/(2*h)
+        bound = sum(abs(F(q))*h*h/(abs(x-p)-h)**4 for q, p in zip((q1, q2), (0, 3)))
+        check(abs(derivative+field[0]) <= bound)
+        shifted = tuple((q, (p[0]+7,)) for q, p in sources)
+        check(potential_field(shifted, (x+7,)) == (potential, field))
+        field_cases += 1
+    values = [potential_field(sources, (F(x),))[0] for x in (1, 2, 4)]
+    check(infer_two_sources(values[0]-values[2], values[1]-values[2]) == (q1, q2))
+    for left, right in ((F(1, 2), F(1)), (F(1), F(2)), (F(1, 2), F(5, 2))):
+        exact_work = potential_field(sources, (left,))[0]-potential_field(sources, (right,))[0]
+        for steps in (2, 4, 8, 16):
+            value, error = midpoint_work((F(q1), F(q2)), left, right, steps)
+            check(abs(value-exact_work) <= error)
+            work_cases += 1
+
+check(potential_field(((1, (-3, 0)), (1, (3, 0))), (0, 4)) == (F(2, 5), (F(0), F(8, 125))))
+check(potential_field(((1, (-3, 0)), (-1, (3, 0))), (0, 4)) == (F(0), (F(6, 125), F(0))))
+check(potential_field(((1, (-1, 0)), (1, (1, 0))), (0, 0)) == (F(2), (F(0), F(0))))
+check(potential_field((), (0, 0)) == (F(0), (F(0), F(0))))
+
+sharing_cases = 0
+rival_cases = 0
+loading_cases = 0
+for c1, c2, resistance, first, second in product((F(1), F(2), F(3)), (F(1), F(2), F(4)), (F(1), F(3)), (F(-2), F(0), F(5)), (F(-1), F(0), F(2))):
+    for decay in (F(0), F(1, 4), F(1, 2), F(3, 4), F(1)):
+        result = sharing(c1, c2, resistance, first, second, decay)
+        v1, v2 = result['voltages']
+        total_charge = c1*first+c2*second
+        difference = (first-second)*decay
+        reference_v2 = (total_charge-c1*difference)/(c1+c2)
+        reference_v1 = reference_v2+difference
+        check((v1, v2) == (reference_v1, reference_v2))
+        check(c1*v1+c2*v2 == total_charge)
+        check(c1*(first-v1) == c2*(v2-second) == result['transferred'])
+        check((c1*v1*v1+c2*v2*v2)/2 == result['energy'])
+        check(result['initial_energy']-result['energy'] == result['dissipated'])
+        check(result['dissipated'] >= 0)
+        current = (v1-v2)/resistance
+        check(result['current'] == current)
+        d1, d2 = result['derivatives']
+        check(c1*d1 == -current and c2*d2 == current)
+        check(c1*v1*d1+c2*v2*d2 == -current*current*resistance)
+        check(d1-d2 == -(v1-v2)/result['tau'])
+        direct_integral = (first-second)**2*result['tau']*(1-decay**2)/(2*resistance)
+        check(direct_integral == result['dissipated'])
+        for scale in (F(1, 2), F(2)):
+            rival = sharing(scale*c1, scale*c2, resistance/scale, first, second, decay)
+            check(rival['voltages'] == result['voltages'] and rival['tau'] == result['tau'])
+            check(rival['current'] == scale*current)
+            check(rival['energy'] == scale*result['energy'])
+            rival_cases += 1
+        for meter in (F(2), F(7)):
+            d1, d2 = loaded_derivatives(c1, c2, resistance, meter, v1, v2)
+            check(c1*d1+c2*d2 == -v2/meter)
+            check(c1*v1*d1+c2*v2*d2 == -current**2*resistance-v2**2/meter)
+            loading_cases += 1
+        sharing_cases += 1
+
+bracket_cases = 0
+with localcontext() as ctx:
+    ctx.prec = 90
+    for s in (F(j, 20) for j in range(21)):
+        reference = (-(D(s.numerator)/D(s.denominator))).exp()
+        for order in (2, 4, 8, 12, 20):
+            lower, upper = decay_bracket(s, order)
+            lo, hi = D(lower.numerator)/D(lower.denominator), D(upper.numerator)/D(upper.denominator)
+            check(lo <= reference <= hi)
+            check(upper-lower == s**(order+1)/factorial(order+1))
+            check(0 <= lower <= upper <= 1)
+            bracket_cases += 1
+
+study = investigation()
+check(study['field_values']['1'] == (F(3, 2), (F(9, 4),)))
+check(study['field_values']['2'] == (F(0), (F(3, 2),)))
+check(study['voltage_differences'] == (F(2), F(1, 2)))
+check(study['inferred_sources'] == (F(2), F(-1)))
+check(study['probe_work_scaled'] == F(3, 200))
+half = study['half_decay']
+check(half['voltages'] == (F(7, 2), F(1)))
+check(half['current'] == F(1, 2000))
+check(half['tau'] == F(3, 500))
+check(half['transferred'] == F(3, 10**6))
+check(half['initial_energy'] == F(25, 10**6))
+check(half['final_energy'] == F(10, 10**6))
+check(half['energy'] == F(55, 4*10**6))
+check(half['dissipated'] == F(45, 4*10**6))
+check(study['loaded_derivatives'] == (F(-250), F(490, 3)))
+check(study['rival']['current'] == F(1, 1000))
+check(study['one_tau_decay_bracket'][1]-study['one_tau_decay_bracket'][0] == F(1, factorial(21)))
+
+invalid = [lambda: potential_field(((1, (0,)),), (0,)),
+           lambda: potential_field(((1, (0, 0)),), (1, 1)),
+           lambda: potential_field(((1, (0,)),), (1, 2)),
+           lambda: potential_field((), ()), lambda: rational_root(F(-1)),
+           lambda: sharing(0, 1, 1, 1, 0, 1), lambda: sharing(1, 1, 0, 1, 0, 1),
+           lambda: sharing(1, 1, 1, 1, 0, 2), lambda: sharing(1, 1, 1, 1, 0, 0.5),
+           lambda: loaded_derivatives(1, 1, 1, 0, 1, 0),
+           lambda: decay_bracket(F(2)), lambda: decay_bracket(F(1), 3),
+           lambda: decay_bracket(F(1), True)]
+for call in invalid:
+    try:
+        call()
+    except ValueError:
+        check(True)
+    else:
+        raise AssertionError('invalid domain accepted')
+
+print(json.dumps({'checks': checks, 'field_cases': field_cases, 'work_cases': work_cases,
+                  'sharing_cases': sharing_cases, 'rival_cases': rival_cases,
+                  'loading_cases': loading_cases, 'bracket_cases': bracket_cases}))
+```
+
+**Submit and defend:** retain derivations, units, exact inputs, independent checks and limits in one reproducible report. Change source sign, reference, initial voltages, component scale and observation loading separately, predicting each effect. Prove the charge/energy identities for symbolic positive C₁,C₂,R, then use numerical cases to test the implementation. Explain which evidence would distinguish two rival physical models, what preparation is missing for an actual experiment, and why a small residual alone is insufficient. Obtain an independent critique and revise a claim whose assumptions were initially too broad.
+
+**Author verification:** the independent companion passed 18,583 checks through Nix/Python 3.14.8: 225 axial field cases, 300 bounded work integrals, 810 sharing states, 1,620 scale rivals, 1,620 loading cases and 105 exponential brackets, plus vector examples, the original investigation and invalid domains. Fraction arithmetic checks the charge/energy identities; a separate midpoint field integral and 90-digit Decimal exponential provide additional comparisons with explicit mathematical bounds. No physical apparatus or input accuracy is validated.
+
+**Continue:** [Review charge fields circuits and electrical evidence](Review-charge-fields-circuits-and-electrical-evidence.lingua#r_004685691CEC87C6BB2FEB8A8E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00E6095DF06C1A01CC1DE14045

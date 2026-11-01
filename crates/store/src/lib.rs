@@ -108,6 +108,7 @@ pub use sqlx;
 #[derive(Debug, Clone)]
 pub struct Store {
     pub pool: SqlitePool,
+    execution_identity: Option<&'static nucleus::projection::ExecutionIdentity>,
 }
 
 pub type StoreError = sqlx::Error;
@@ -123,6 +124,25 @@ pub async fn write_tx(
 }
 
 impl Store {
+    pub fn from_pool(pool: SqlitePool) -> Self {
+        Self {
+            pool,
+            execution_identity: None,
+        }
+    }
+
+    pub fn with_execution_identity(
+        mut self,
+        identity: &'static nucleus::projection::ExecutionIdentity,
+    ) -> Self {
+        self.execution_identity = Some(identity);
+        self
+    }
+
+    pub fn execution_identity(&self) -> Option<&nucleus::projection::ExecutionIdentity> {
+        self.execution_identity
+    }
+
     pub async fn open_readonly(path: &std::path::Path) -> Result<Store, StoreError> {
         if !path.is_file() {
             return Err(StoreError::Protocol(format!(
@@ -163,7 +183,7 @@ impl Store {
         )
         .fetch_one(&pool)
         .await?;
-        Ok(Store { pool })
+        Ok(Store::from_pool(pool))
     }
 
     pub async fn open(url: &str) -> Result<Store, StoreError> {
@@ -174,12 +194,12 @@ impl Store {
     pub async fn open_durable(url: &str) -> Result<Store, StoreError> {
         let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, true, true).await?;
         migrate(&pool).await?;
-        Ok(Store { pool })
+        Ok(Store::from_pool(pool))
     }
 
     pub async fn open_existing_durable(url: &str) -> Result<Store, StoreError> {
         let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, false, true).await?;
-        Ok(Store { pool })
+        Ok(Store::from_pool(pool))
     }
 
     pub async fn open_memory() -> Result<Store, StoreError> {
@@ -233,7 +253,7 @@ async fn initialize(pool: SqlitePool) -> Result<Store, StoreError> {
     migrate(&pool).await?;
     linguas::ensure_local(&pool).await?;
     ensure_identity(&pool).await?;
-    Ok(Store { pool })
+    Ok(Store::from_pool(pool))
 }
 
 async fn migrate(pool: &SqlitePool) -> Result<(), StoreError> {

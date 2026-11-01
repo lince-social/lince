@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Integrate normal flux through an oriented surface (@math-fields-flux: 0, is #chapter, #hephaestus-core "Derive-divergence-and-curl-from-small-oriented-regions.lingua#r_00EF5AFE90AD97472C601E6023") { r_00E051A00D25D4243A519862A1
+For a regular parameterized surface φ over U, scalar surface accumulation is ∬_U f(φ)|φ_u×φ_v|du dv. Oriented flux is ∬_U F(φ)·(φ_u×φ_v)du dv, also written ∬_S F·n dA. Here n is a unit normal compatible with the chosen orientation. The last two formulas agree because n dA combines direction with the area factor. Do not normalize the cross product and then omit the area factor. A change reversing parameter orientation requires a sign adjustment if the physical chosen normal is to stay fixed.
+
+For φ=(u,v,2u−v), 0≤u≤2,−1≤v≤1, the cross product is (−2,1,1). The surface area is 4√6. A constant upward F=(0,0,3) has upward flux 12. A scalar density 3 instead accumulates 12√6. Downward flux is −12; area and scalar accumulation do not change. The projected area and the actual surface area serve different integrals.
+
+A closed boundary of a bounded solid is oriented outward. On a box, the low-x face has normal −e₁ and the high-x face +e₁; similarly for y and z. Write all six signs before integrating. For adjacent volumes, the shared face has opposite outward normals and the same field trace, so its two exact flux integrals cancel. If two models assign different interface traces, that discrepancy is a residual to explain, not permission to cancel unequal terms. Flux at a physical boundary can describe transport only after defining what field is transported.
+
+If F has amount/(area·time) units, its flux integral has amount/time units. For velocity itself the flux has volume/time units. Mass flux is density times velocity; a density change prevents replacing mass flow by volume flow. Connect this distinction to [Integral and local conservation of mass](../../physics/fluid-dynamics/balances/Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q) without assuming its entire fluid course has already been completed.
+
+**Work:** calculate the six faces for F=(x,0,0) on [0,2]×[−1,1]×[0,3]; the outward total is 12. Repeat for constant F and show that closed-box flux vanishes even though individual faces generally have nonzero flux. A zero total does not establish a zero field or absence of two-way transport. Read the shared [Gradient, divergence, curl and integral theorems](../../physics/electromagnetism/mathematics/Gradient-divergence-curl-and-integral-theorems.lingua#r_05M47N16QDCC5B927TEYXAMMA4) meanings with these surface definitions now explicit.
+
+**Continue:** [Derive divergence and curl from small oriented regions](Derive-divergence-and-curl-from-small-oriented-regions.lingua#r_00EF5AFE90AD97472C601E6023).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00E051A00D25D4243A519862A1

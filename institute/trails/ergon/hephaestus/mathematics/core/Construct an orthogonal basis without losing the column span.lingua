@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Construct an orthogonal basis without losing the column span (@math-gram-orthogonal: 0, is #chapter, #hephaestus-core "Derive least squares from orthogonality and a squared norm.lingua#r_0014DEEF56C47EADBBE05BB395") { r_0057292CEFC8166FB3AE577CDF
+The single-line projection in [Resolve a vector into a projection and an orthogonal remainder](Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B) extends to a finite subspace once we have mutually orthogonal nonzero directions. For an orthogonal list w₁,…,wᵣ, the coefficients of any vector in its span follow from dot products: if v=Σcᵢwᵢ, then wⱼ·v=cⱼ(wⱼ·wⱼ). This also proves independence, because a zero combination forces every coefficient to vanish.
+
+Construct such a list from columns a₁,…,aₙ, in order. For the current column a, subtract Σᵢ[(wᵢ·a)/(wᵢ·wᵢ)]wᵢ using the nonzero orthogonal directions already retained. Call the remainder v. Its dot product with each retained wⱼ is zero by expansion; the cross terms vanish and the jth term cancels wⱼ·a. If v=0, a is already in their span, so retain no new vector and continue with the next column. If v≠0, append v. The old list together with a and the updated list span exactly the same space, because v is a minus an old combination and a is v plus that combination. Induction proves orthogonality and preservation of the span after every column.
+
+This unnormalized Gram–Schmidt construction works in exact rational arithmetic for rational inputs: it divides only by the nonzero rational wᵢ·wᵢ. Normalizing qᵢ=wᵢ/‖wᵢ‖ gives an orthonormal list, but can introduce irrational square roots. The number retained is the column rank by the basis result. For the zero matrix the retained list is empty and its span is {0}. A dependent column is skipped, not divided by a zero norm. Skipping it must not prevent processing later independent columns.
+
+For c₁=(1,0,1,2) and c₂=(0,1,1,−1), c₁·c₁=6 and c₁·c₂=−1. Thus w₁=c₁ and w₂=c₂+c₁/6=(1/6,1,7/6,−2/3), with w₂·w₂=17/6. A third column c₁+c₂ has zero remainder and adds no direction. Verify each cancellation rather than relying on rounded decimals.
+
+When all n columns are independent, normalized construction gives A=QR, with Q's n columns orthonormal and R an n×n upper-triangular matrix. Specifically Rᵢⱼ=qᵢ·aⱼ for i≤j, Rᵢⱼ=0 for i>j, and Rⱼⱼ=‖vⱼ‖>0. Earlier columns lie in the earlier span, explaining the zeros. Expanding each column in its q directions proves the factorization; QᵀQ=Iₙ follows from orthonormality. The nonzero diagonal lets us solve Rx=d uniquely from the last row upward. For dependent columns, the full-column-rank square-R argument does not apply; the retained orthogonal basis remains useful without that claim.
+
+**Work:** apply the algorithm to (1,0,0), (2,0,0), (0,1,0). The middle remainder is zero, but the last column must still be retained. Derive Q and R symbolically for the two c columns, keeping square roots exact. Explain why a rectangular Q can preserve input lengths without satisfying QQᵀ=Iₘ. No floating-point stability result follows from these exact identities: a tiny rounded remainder may be dominated by numerical error, and choosing a rank tolerance requires a scale and evidence about the inputs.
+
+**Reading:** [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW) section 5.4 and section 10.4. The book's independence-checking algorithm can stop at the first dependent vector; the original skip-and-continue variant here has a different purpose, finding a basis of the full column span. Reconstruct the span proof for both stopping and continuing. Full numerical factorization analysis remains later work.
+
+**Continue:** [Derive least squares from orthogonality and a squared norm](Derive least squares from orthogonality and a squared norm.lingua#r_0014DEEF56C47EADBBE05BB395).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0057292CEFC8166FB3AE577CDF

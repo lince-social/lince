@@ -1,0 +1,28 @@
+Import "../Engineering.lingua"
+
+Compare alternatives under constraints and explicit tradeoffs (@engineering-alternatives: 0, is #chapter, #hephaestus-core "Connect-realization-to-verification-and-intended-use.lingua#r_0C593F4A7A204FABB3B5876653") { r_0848D9CBAED01BC33DD0081EA7
+A design decision needs alternatives that achieve the same intended function. First ask which candidates violate a necessary condition. Then compare the remaining candidates using quantities that matter for the stated use. A preferred technology, a single attractive number or a detailed drawing cannot replace this comparison.
+
+**Read:** [NASA Systems Engineering Handbook](../mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) section 4.4, connecting candidate solutions to the requirements already read. Revisit [Slocum topic 1](../mechanical-engineering-and-machine-design/sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ)'s opening discussion of the progression from concepts toward details. Generate alternatives before committing to detailed component calculations. A manual arrangement, changed work sequence and altered product interface can be meaningful alternatives alongside different machines.
+
+The following numbers are invented teaching data. Output is only an aggregate upper bound; area and energy describe the same assumed ten-hour accounting interval and include the same declared equipment boundary.
+
+| Candidate | Area, m² | Energy, kWh | Acceptable-output upper bound in ten hours |
+| --- | --- | --- | --- |
+| A | 4 | 6 | 931 |
+| B | 6 | 4 | 1,005.48 |
+| C | 5 | 7 | 900 |
+| D | 3 | 3 | 760 |
+
+For a requirement of at least 800 accepted cards, D fails even the relaxed capacity screen. Passing that screen does not prove A, B or C can actually deliver 800: timing and product evidence remain missing. Among these listed attributes, A is no worse than C and is strictly better on each, so C is dominated. A and B trade area against energy and output capacity. A is preferable under a 5 m² space limit; B remains a candidate when the limit is 7 m² and energy use has greater importance. No claim is made that any real device has these properties.
+
+The comparison changes if maintainability, acquisition resources, noise, working conditions, repair time or another important attribute differs. Dominance established on an incomplete table is conditional on that table. A weighted score also needs justified scales: adding square metres directly to kilowatt-hours is meaningless. Normalize quantities against explicit references, explain the preference weights, and test whether a plausible change of weight reverses the result. Keeping several non-dominated candidates can be more honest than inventing a precise universal score.
+
+Sensitivity asks how a conclusion responds to changed inputs. In the previous line model, increasing r_A from 120 to 200/h leaves the final upper bound at 931 while B remains limiting. Increasing r_B to 110/h changes its input capacity to 1,045, so A's 1,026 becomes limiting and the final bound is 1,005.48. This is an aggregate relaxation; an observed accepted count must be integral. Neither change establishes a real improvement until its effects on yield, availability, resources and interfaces are examined.
+
+**Work:** reject D by a necessary condition, show A's dominance over C with componentwise inequalities, and state why A and B cannot be ordered without further preferences or constraints. Add one invented maintenance attribute that removes C's dominance, clearly labeling the new assumption. Distinguish a candidate worth investigating from a verified working design. Propose the next observation most likely to change your choice.
+
+**Continue:** [Connect realization to verification and intended use](Connect-realization-to-verification-and-intended-use.lingua#r_0C593F4A7A204FABB3B5876653).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0848D9CBAED01BC33DD0081EA7

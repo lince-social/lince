@@ -1,0 +1,19 @@
+Import "../Chemistry.lingua"
+
+Determine phase amounts from composition balances and a declared basis (@chemistry-phase-amounts: 0, is #chapter, #hephaestus-core "../../engineering/materials-engineering/thermodynamics/Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5") { r_006071148641AD2A0369C96ADA
+Once coexisting phase compositions x_α<x_β are established at a given T,p, let z be the overall mole fraction of B and n>0 the total amount. Conservation gives n_α+n_β=n and n_αx_α+n_βx_β=nz. Solving these two linear equations yields n_β=n(z−x_α)/(x_β−x_α) and n_α=n(x_β−z)/(x_β−x_α). The fractions are nonnegative exactly when z lies in the tie interval. An overall composition outside it cannot be represented by this phase pair with positive amounts.
+
+At z=x_α or z=x_β one phase has zero amount; the finite two-phase assemblage disappears at that boundary. If the phase compositions coincide, the balances no longer determine the division, so a formula that divides by their difference is inappropriate. Near coinciding endpoints the inferred fractions can be sensitive to small composition errors. Phase composition and phase amount answer different questions.
+
+Use [Common tangents and conservation across coexisting phases](../../engineering/materials-engineering/thermodynamics/Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5) for the existing example x_α=0.2,x_β=0.8,z=0.35: amount fractions are 3/4 and 1/4. For n=4 mol, the phase amounts are 3 and 1 mol. If the hypothetical component molar masses are 20 and 40 g/mol, the phase molar masses are 24 and 36 g/mol, so their masses are 72 and 36 g. The mass fractions are 2/3 and 1/3, not 3/4 and 1/4. If their stipulated densities are 2 and 1 g/cm³, the phase volumes are both 36 cm³. These numbers illustrate basis conversion, not material data or an assumption that mixing volumes always add ideally.
+
+**Bounded published reconstruction:** [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), section 13.2.2, equation 13.2.1, has a 1 mol binary example with overall B fraction 0.40, pure-A solid and liquid B fraction 0.50. Direct balances give 0.20 mol solid and 0.80 mol liquid. Reconstruct these amounts without copying the figure; the broader eutectic cooling sequence remains assigned reading, not a performed thermal-analysis experiment.
+
+For three phases, total amount and one binary-component balance give only two independent equations for three amounts. Additional information such as a specified enthalpy can resolve a remaining amount degree of freedom if independent and physically appropriate. This does not contradict an invariant intensive phase state. Conversely, specifying both total composition and arbitrary phase fractions may overconstrain a two-phase account.
+
+**Work:** reconstruct the two examples in mole, mass and volume bases. Propose a phase pair incompatible with the overall composition and explain the failed nonnegativity condition. Analyze the coincident-endpoint case before using a numerical solver. Read [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1) section 13.2 progressively and the following shared materials lesson; conservation comes after selecting a physically admissible phase assemblage.
+
+**Continue:** [Common tangents and conservation across coexisting phases](../../engineering/materials-engineering/thermodynamics/Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_006071148641AD2A0369C96ADA

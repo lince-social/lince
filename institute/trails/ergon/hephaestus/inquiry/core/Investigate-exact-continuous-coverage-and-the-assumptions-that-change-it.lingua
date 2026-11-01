@@ -1,0 +1,232 @@
+Import "../Inquiry.lingua"
+
+Investigate exact continuous coverage and the assumptions that change it (@inquiry-density-study: 0, is #chapter, #hephaestus-core "Review-continuous-models-estimation-and-the-scope-of-coverage.lingua#r_0092AAD67F9A97EFCB0180340A") { r_000A2640C64970EAA40BE1670B
+This original executable investigation uses exact hypothetical measurements in millimetres. The baseline model is Yᵢ=θ+Eᵢ with independent uniforms Eᵢ∈[−2,2], known half-width a=2 and unknown fixed θ. The mean error has triangular density (2−|z|)/4 on [−2,2], zero mean and variance 2/3 mm². Use the declared interval procedure [M−1,M+1], whose coverage is exactly 3/4 for every θ under that model. No real measurement, calibration or instrument distribution is claimed.
+
+Take the constructed readings y₁=9 and y₂=23/2 mm. Their mean is 41/4=10.25 mm; the interval is [37/4,45/4]=[9.25,11.25] mm. The exact-support intersection is [19/2,11]=[9.5,11] mm, also the clipped interval here. In a synthetic generating account θ=10 mm, both intervals contain θ. This single inclusion does not demonstrate 75% coverage; the coverage proof is the integral over all possible repeated pairs. Exact constructed values are mathematical inputs rather than claims about the resolution of a physical instrument.
+
+Reconstruct the mean CDF from the area of the square below e₁+e₂=2z and independently from the two density integrals. Check arbitrary intervals by CDF differences and area differences, with zero, support endpoints and exterior intervals explicit. Integrate powers to recover normalization, symmetry, variance and higher finite moments. Do not interpret the deterministic grids in the checker as random experimental samples or their counts as measured frequencies.
+
+For coverage p=19/20, the half-width is 2(1−1/√20), between 1.552786404499 and 1.552786404502 mm. The exact bisection bracket after forty subdivisions has width at most 2/2⁴⁰ mm; stored rational endpoints and their coverage comparisons are the certificate, not the displayed decimals. The program returns a bracket after its declared budget; it does not confuse an approximate width with exact equality to an irrational target.
+
+Now change the joint errors to identical uniforms, opposite uniforms, or independent uniforms with a fixed +1 mm offset. At half-width 1 mm their parameter coverages are 1/2, 1 and 1/2 respectively. Derive these changes before computing them. The first two retain centered uniform marginals; the third changes location. A pair such as 0 and 5 mm cannot fit any θ with half-width 2 under the exact support account and must be rejected as inconsistent with that declared model.
+
+The geometric reference uses a convex polygon: a square clipped by one straight inequality remains convex. Join its first vertex to the other nonadjacent vertices to make triangles. For two edge vectors (u₁,u₂),(v₁,v₂), signed triangle area is (u₁v₂−u₂v₁)/2, from the coordinate base/height area rule. Expanding the triangle sum cancels internal edges and leaves half the cyclic sum xᵢyᵢ₊₁−yᵢxᵢ₊₁. Its absolute value supplies polygon area. Empty and line-only intersections have zero area.
+
+**Run and inspect:** save `density_study.py` and `density_checks.py` together and run `python3 density_checks.py`. The study uses exact Fraction piecewise formulas. The independent reference clips the joint square by a half-plane and computes polygon area with the signed cross-product formula; it does not reuse the triangular CDF branches. Piecewise polynomial integrals independently check moments. Rational bisection is checked against geometric coverage, and support/intersection checks verify the event equivalence. Every numerical input is an integer or Fraction; invalid scales, interval order and budgets are rejected. No source software or datasets are bundled.
+
+**Independent contribution:** derive a different bounded error or dependence model and its informative observation. Specify the estimator and interval rule before calculating its coverage; give both a proof and an independently checked example. Criticize at least one assumption that finite output comparisons cannot establish. Reproduce a bounded source result only with its exact edition, assumptions and independent evidence, and distinguish that later scholarly work from these original synthetic examples.
+
+```python file=density_study.py
+from fractions import Fraction as F
+
+
+def exact(value):
+    if type(value) not in (int,F):
+        raise ValueError('integer or Fraction required')
+    return F(value)
+
+
+def scale(value):
+    value=exact(value)
+    if value<=0:
+        raise ValueError('positive half-width required')
+    return value
+
+
+def uniform_cdf(x,a):
+    x=exact(x);a=scale(a)
+    return max(F(0),min(F(1),(x+a)/(2*a)))
+
+
+def mean_density(x,a):
+    x=exact(x);a=scale(a)
+    return max(F(0),(a-abs(x))/(a*a))
+
+
+def mean_cdf(x,a):
+    x=exact(x);a=scale(a)
+    if x<=-a:
+        return F(0)
+    if x<=0:
+        return (x+a)**2/(2*a*a)
+    if x<a:
+        return 1-(a-x)**2/(2*a*a)
+    return F(1)
+
+
+def interval_probability(lo,hi,a,shared=False):
+    lo,hi=map(exact,(lo,hi));a=scale(a)
+    if lo>hi:
+        raise ValueError('ordered interval required')
+    cdf=uniform_cdf if shared else mean_cdf
+    return cdf(hi,a)-cdf(lo,a)
+
+
+def coverage(a,width,offset=0,shared=False):
+    a=scale(a);width,offset=map(exact,(width,offset))
+    if width<0:
+        raise ValueError('nonnegative interval half-width required')
+    return interval_probability(-width-offset,width-offset,a,shared)
+
+
+def width_bracket(a,probability,steps=40):
+    a=scale(a);probability=exact(probability)
+    if not 0<=probability<=1 or type(steps) is not int or steps<0:
+        raise ValueError('probability and nonnegative integer budget required')
+    if probability==0:
+        return (F(0),F(0))
+    if probability==1:
+        return (a,a)
+    lo,hi=F(0),a
+    for _ in range(steps):
+        mid=(lo+hi)/2
+        value=coverage(a,mid)
+        if value==probability:
+            return (mid,mid)
+        if value<probability:
+            lo=mid
+        else:
+            hi=mid
+    return lo,hi
+
+
+def estimate_pair(first,second,a):
+    first,second=map(exact,(first,second));a=scale(a)
+    support=(max(first,second)-a,min(first,second)+a)
+    if support[0]>support[1]:
+        raise ValueError('observations incompatible with declared error support')
+    estimate=(first+second)/2
+    interval=(estimate-a/2,estimate+a/2)
+    clipped=(max(interval[0],support[0]),min(interval[1],support[1]))
+    return dict(estimate=estimate,interval=interval,support=support,clipped=clipped)
+```
+
+```python file=density_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import density_study as m
+
+checks=0
+
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejected(call):
+    global checks
+    try:
+        call()
+    except ValueError:
+        checks+=1
+    else:
+        raise AssertionError('expected rejection')
+
+
+def square_area_cdf(z,a):
+    polygon=[(-a,-a),(a,-a),(a,a),(-a,a)]
+    clipped=[]
+    for first,second in zip(polygon,polygon[1:]+polygon[:1]):
+        v1=first[0]+first[1]-2*z
+        v2=second[0]+second[1]-2*z
+        if v1<=0:
+            clipped.append(first)
+        if (v1<0 and v2>0) or (v1>0 and v2<0):
+            weight=v1/(v1-v2)
+            clipped.append(tuple(x+weight*(y-x) for x,y in zip(first,second)))
+    if len(clipped)<3:
+        return F(0)
+    area=abs(sum(p[0]*q[1]-q[0]*p[1] for p,q in zip(clipped,clipped[1:]+clipped[:1])))/2
+    return area/(4*a*a)
+
+
+def integrated_power(n,lo,hi,constant,slope):
+    return constant*(hi**(n+1)-lo**(n+1))/(n+1)+slope*(hi**(n+2)-lo**(n+2))/(n+2)
+
+
+scales=[F(1,10),F(1),F(2),F(7,3)]
+cdf_cases=0
+for a,t in product(scales,[F(i,16) for i in range(-32,33)]):
+    z=a*t
+    value=m.mean_cdf(z,a)
+    check(value==square_area_cdf(z,a))
+    check(0<=value<=1)
+    check(value+m.mean_cdf(-z,a)==1)
+    cdf_cases+=1
+interval_cases=0
+for a,i,j in product(scales,range(-8,9),range(-8,9)):
+    if i>j:
+        continue
+    lo,hi=a*F(i,4),a*F(j,4)
+    expected=square_area_cdf(hi,a)-square_area_cdf(lo,a)
+    check(m.interval_probability(lo,hi,a)==expected)
+    mid=(lo+hi)/2
+    check(m.interval_probability(lo,hi,a)==m.interval_probability(lo,mid,a)+m.interval_probability(mid,hi,a))
+    intersection=max(F(0),min(hi,a)-max(lo,-a))
+    check(m.interval_probability(lo,hi,a,True)==intersection/(2*a))
+    interval_cases+=1
+moment_cases=0
+for a,n in product(scales,range(9)):
+    integral=integrated_power(n,-a,F(0),1/a,1/(a*a))+integrated_power(n,F(0),a,1/a,-1/(a*a))
+    expected=F(0) if n%2 else 2*a**n/((n+1)*(n+2))
+    check(integral==expected)
+    uniform=integrated_power(n,-a,a,1/(2*a),F(0))
+    check(uniform==(F(0) if n%2 else a**n/(n+1)))
+    moment_cases+=1
+coverage_cases=0
+for a,s,b in product(scales,[F(i,8) for i in range(17)],[F(i,4) for i in range(-8,9)]):
+    c=a*s;offset=a*b
+    check(m.coverage(a,c,offset)==square_area_cdf(c-offset,a)-square_area_cdf(-c-offset,a))
+    if b==0 and s<=1:
+        check(m.coverage(a,c)==2*s-s*s)
+        check(m.coverage(a,c,shared=True)==s)
+    coverage_cases+=1
+bracket_cases=0
+for a,p,budget in product(scales,[F(0),F(1,4),F(3,4),F(19,20),F(1)],[0,1,8,40]):
+    lo,hi=m.width_bracket(a,p,budget)
+    check(0<=lo<=hi<=a)
+    check(square_area_cdf(hi,a)-square_area_cdf(-hi,a)>=p)
+    check(square_area_cdf(lo,a)-square_area_cdf(-lo,a)<=p)
+    check(hi-lo<=a/(2**budget))
+    bracket_cases+=1
+for a,s in product(scales,[F(i,16) for i in range(17)]):
+    p=2*s-s*s
+    check(m.width_bracket(a,p,20)==(a*s,a*s))
+pair_cases=0
+for theta,a,u,v in product([F(-3),F(0),F(10)],scales,[F(i,4) for i in range(-4,5)],[F(i,4) for i in range(-4,5)]):
+    out=m.estimate_pair(theta+a*u,theta+a*v,a)
+    lo,hi=out['support'];clo,chi=out['clipped'];ilo,ihi=out['interval']
+    check(lo<=theta<=hi)
+    check((ilo<=theta<=ihi)==(clo<=theta<=chi))
+    check(out['estimate']-theta==a*(u+v)/2)
+    pair_cases+=1
+out=m.estimate_pair(9,F(23,2),2)
+check(out==dict(estimate=F(41,4),interval=(F(37,4),F(45,4)),support=(F(19,2),F(11)),clipped=(F(19,2),F(11))))
+check(m.coverage(2,1)==F(3,4))
+check(m.coverage(2,1,shared=True)==F(1,2))
+check(m.coverage(2,1,offset=1)==F(1,2))
+check(m.mean_density(0,F(1,10))==10)
+for value in [True,0.1,'1',None]:
+    rejected(lambda value=value:m.exact(value))
+for a in [0,-1]:
+    rejected(lambda a=a:m.mean_cdf(0,a))
+rejected(lambda:m.interval_probability(1,0,1))
+rejected(lambda:m.coverage(1,-1))
+rejected(lambda:m.width_bracket(1,F(11,10)))
+rejected(lambda:m.width_bracket(1,F(1,2),True))
+rejected(lambda:m.width_bracket(1,F(1,2),-1))
+rejected(lambda:m.estimate_pair(0,5,2))
+print(json.dumps(dict(checks=checks,cdf_cases=cdf_cases,interval_cases=interval_cases,moment_cases=moment_cases,
+                      coverage_cases=coverage_cases,bracket_cases=bracket_cases,pair_cases=pair_cases)))
+```
+
+**Author verification:** the independent companion passed 7,237 exact checks through Nix/Python 3.14.8: 260 CDF cases, 612 interval cases, 36 moment cases, 1,156 coverage cases, 80 width brackets and 972 observation pairs, plus invalid-domain and study checks. A clipped-square polygon-area reference checks the piecewise distribution. Deterministic test grids are not sampled observations or empirical coverage estimates.
+
+**Continue:** [Review continuous models estimation and the scope of coverage](Review-continuous-models-estimation-and-the-scope-of-coverage.lingua#r_0092AAD67F9A97EFCB0180340A).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_000A2640C64970EAA40BE1670B

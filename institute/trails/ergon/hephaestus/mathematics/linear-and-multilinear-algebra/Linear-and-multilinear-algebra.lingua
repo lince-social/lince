@@ -1,0 +1,7 @@
+Linear and multilinear algebra (@linear-and-multilinear-algebra: 0, is #chapter, #outline) { r_4C8YDS3J7HYQNE68NZX2EEFHGN
+Linear algebra studies vector spaces and transformations; multilinear algebra extends that language to interacting quantities and tensors. This material covers matrices, linear systems, eigenvalues, decompositions, inner products, and tensor representations, connecting geometry, mechanics, computation, and data analysis.
+
+**Common preparation developed:** the [finite complex geometry and evolution review](../core/Review-finite-complex-geometry-and-evolution-before-assigning-physical-meaning.lingua) follows conjugate inner products, projections, adjoints, Hermitian/unitary maps, explicit eigencomponents and basis/metric changes. Completeness is proved for the chosen involution family, not assumed from an unproved general spectral theorem. Full linear/multilinear algebra and advanced formation remain pending.
+
+**Parent:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_4C8YDS3J7HYQNE68NZX2EEFHGN

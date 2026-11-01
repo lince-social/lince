@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Distinguish a state differential from a path dependent account (@math-exact-differential: 0, is #chapter, #hephaestus-core "Check-feasible-directions-boundaries-and-global-evidence.lingua#r_00C9503CB678B21E9AA8585F8D") { r_00204337E177A0330276621E37
+The differential df at a is the linear map Df(a), conventionally written f_x dx+f_y dy in two coordinates. Along a differentiable path γ(t), it evaluates to f_x(γ(t))x′(t)+f_y(γ(t))y′(t), multiplied by dt in integral notation. It is not an unexplained infinitesimal number, and df evaluated at one point is generally only the linear part of a finite change.
+
+If f is continuously differentiable along a piecewise continuously differentiable path, the chain rule and the one-variable fundamental theorem give ∫[f_x x′+f_y y′]dt=f(γ(b))−f(γ(a)). Apply the theorem to each smooth segment and cancel internal endpoints. Thus integrating an exact differential depends only on endpoints. This statement uses the prepared one-variable integral; no general surface or volume integral theorem is needed.
+
+For F=x²y+2y²+3x, integrate its differential from (0,0) to (1,1). On x-first then y, the horizontal contribution is ∫₀¹3 dx=3 and the vertical contribution ∫₀¹(1+4y)dy=3. On y-first then x, contributions are 2 and 4. On the diagonal x=y=t, the integrand is 3t²+4t+3 and its integral is 6. Every total agrees with F(1,1)−F(0,0)=6, though the pieces differ.
+
+For contrast, define the path account ω=−y dx+x dy. Between those same endpoints, x-first gives 1, y-first gives −1, and the diagonal gives 0. Around the unit square counterclockwise its total is 2. Therefore it cannot be df for a single scalar function on a domain containing those paths. Calling a pair of coefficient functions a differential does not make the account exact.
+
+If A=f_x and B=f_y with continuous mixed derivatives, A_y=B_x is necessary by the earlier rectangle argument. Equality of these derivatives is not by itself a global endpoint-independence claim on an arbitrary domain: holes and domain components matter. The full converse and topology belong to later vector calculus. Here endpoint independence is established by an explicit scalar f and the chain rule, while nonexactness is established by two explicit unequal path accounts.
+
+**Context and work:** [Exact differentials, partial derivatives and thermal models](../../physics/thermodynamics-and-heat-transfer/mathematics/Exact-differentials-partial-derivatives-and-thermal-models.lingua#r_58NJQNAS8V4TVM3FAKB7HAK9QP) distinguishes state functions from heat/work accounts; retain its physical hypotheses and complete later thermal readings. Reuse [Connect accumulated change and local rate under stated conditions](Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0). Integrate a new explicit polynomial differential over two polygonal routes, and compare a deliberately nonexact account. The study program's straight-segment integrand is quadratic, so its three-point rule is exact: verify weights (1,4,1)/6 on 1,t,t² over [0,1]. Do not transfer that exactness to arbitrary integrands.
+
+**Continue:** [Check feasible directions boundaries and global evidence](Check-feasible-directions-boundaries-and-global-evidence.lingua#r_00C9503CB678B21E9AA8585F8D).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00204337E177A0330276621E37

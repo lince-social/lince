@@ -13,6 +13,15 @@ use crate::{Engine, EngineError};
 
 mod schedule;
 
+pub fn execution_identity() -> &'static nucleus::projection::ExecutionIdentity {
+    static IDENTITY: std::sync::LazyLock<nucleus::projection::ExecutionIdentity> =
+        std::sync::LazyLock::new(|| {
+            nucleus::projection::ExecutionIdentity::parse(env!("LINCE_EXECUTION_BUILD_HASH"))
+                .expect("execution build identity")
+        });
+    &IDENTITY
+}
+
 #[derive(Clone, PartialEq, Eq)]
 struct Request {
     context: Context,
@@ -102,7 +111,7 @@ impl Engine {
         };
         store::projection::set_runtime(&self.store.pool, config.projection_identity()?.as_str())
             .await?;
-        if let Some(cached) = store::projection::read(&self.store.pool, &context, now).await? {
+        if let Some(cached) = store::projection::read(&self.store, &context, now).await? {
             arm_expiry(
                 &self.projection.expiry,
                 cached.expires_ms,
@@ -114,7 +123,7 @@ impl Engine {
         let mut context = context;
         context.window.from_ms = context.window.from_ms.max(now);
         if let Some((from, until)) =
-            store::projection::covered_window(&self.store.pool, &context, now).await?
+            store::projection::covered_window(&self.store, &context, now).await?
         {
             extend_window(&mut context.window, from, until);
         }
@@ -178,7 +187,7 @@ impl Engine {
                         Ok(calculated) => {
                             if calculated.source_revision == request.revision {
                                 match store::projection::publish_schedule(
-                                    &store.pool,
+                                    &store,
                                     &request.context,
                                     calculated.source_revision,
                                     base,
@@ -202,7 +211,7 @@ impl Engine {
                         Err(error) => {
                             tracing::warn!(%error, "projection calculation failed");
                             let _ = store::projection::publish(
-                                &store.pool,
+                                &store,
                                 &request.context,
                                 request.revision,
                                 base,
@@ -334,7 +343,7 @@ pub async fn calculate(
         store::Store::open_existing_durable(&format!("sqlite://{}", path.display())).await?;
     result.source_revision = store::projection::revision(&private.pool).await?;
     let key = context
-        .key()
+        .key(execution_identity())
         .map_err(|error| EngineError::Consequence(error.to_string()))?;
     let entropy = nucleus::fact::sha256_hex(
         format!("{key:?}:{}:{base_ms}", result.source_revision).as_bytes(),

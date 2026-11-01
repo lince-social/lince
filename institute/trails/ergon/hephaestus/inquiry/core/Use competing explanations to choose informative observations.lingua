@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Use competing explanations to choose informative observations (@inquiry-fit-rivals: 0, is #chapter, #hephaestus-core "Partition replicated variation before interpreting lack of fit.lingua#r_00DD59967EC8F06A432063A5FE") { r_0077B280D63642B767F8BF007D
+Take x=(−2,−1,0,1,2), mean 2+3x and independent errors ε_i=±1, each sign equally probable. Units are U for response and dimensionless x. The 32 error vectors are equally probable. For the observed signs (1,−1,1,−1,1), α̂=11/5, β̂=3, residuals are (4/5,−6/5,4/5,−6/5,4/5), SSE=24/5 and s²=8/5. A single s² differs from the true variance 1 even though its expectation over the model is 1.
+
+First rival: add a fixed uncorrected offset c=2 to every response while keeping the intended physical target 2+3x. The intercept estimate shifts by 2; slope, residuals and SSE remain unchanged. The earlier centre-mean interval with half-width 3/5 now misses the intended mean in all 32 states. If the target instead includes the offset, that is a different estimand. A stable residual plot cannot decide which target was intended or calibrate a hidden common reference.
+
+Second rival: add independent common C=±1 to every observation, in addition to the individual ε_i. There are 64 equally probable joint states and error covariance I+11ᵀ. Intercept variance becomes 6/5, slope variance stays 1/10 and E(SSE) stays 3. Fitting has absorbed the common error. Repeating readings under the same reference does not sample its full uncertainty; changing independent references or adding a justified external comparison may provide the missing information.
+
+Third rival: true mean is 2+3x+κx², with κ=1/2. The affine fitted mean coefficients have E(α̂)=3 and E(β̂)=3. The systematic residual is κ(x²−2)=(1,−1/2,−1,−1/2,1). Its squared norm is 14κ², so E(SSE)=3+14κ²=13/2 and E(s²)=13/6. For the same observed signs, α̂=16/5, β̂=3 and SSE=123/10. The centre fit is biased by 1 U in expectation. Derive these statements using the symmetry of the inputs rather than assuming that any polynomial fit is unbiased for the original target.
+
+**Work:** propose observations that discriminate the three rivals. Additional repeat readings at existing levels can estimate within-level scatter; new levels test curvature in a wider domain; an independent reference can address common offset. None alone resolves every issue. Specify what evidence would change your preferred model and what would remain unidentified. Connect [Model discrepancy, double counting, and sensitivity to assumptions](../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3) to the earlier design and provenance formation.
+
+A higher-degree fit always has at least as much flexibility on the training data. Lower training SSE is not by itself evidence for a physical mechanism or future predictive advantage. Reserve independent evaluation observations and document model choices made after inspecting data.
+
+**Continue:** [Partition replicated variation before interpreting lack of fit](Partition replicated variation before interpreting lack of fit.lingua#r_00DD59967EC8F06A432063A5FE).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0077B280D63642B767F8BF007D

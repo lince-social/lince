@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Account for persistence cost and the limits of retained copies (@computing-storage-cost: 0, is #chapter, #hephaestus-core "Investigate-durable-updates-crashes-and-retries.lingua#r_00E0361A5584392811B997F505") { r_00681EF1E53770749F60612B4C
+The correct two-slot update issues four candidate-word writes and one selector write. It has two ordered persistence barriers. It uses eight payload words plus one selector, while one logical record has four fields. A duplicate of the latest committed request issues no writes. These are exact counts in this model, not measured device traffic, physical space allocation or elapsed time.
+
+Let w be an assigned cost per persisted word and b an assigned cost per barrier completion. Under an explicitly additive accounting model one successful new update costs 5w+2b. If w=1 and b=10 in invented cost units, the total is 25. A duplicate costs zero in this persistence-only account, but it still needs reads, validation, processing and a reply that the account excludes. A direct two-stock overwrite costs two word writes in an even narrower account and fails the old-or-new contract. Comparing costs is meaningful only after comparing guarantees and boundaries.
+
+For m candidate fields, the analogous copy/selector construction issues m+1 writes and two barriers, assuming an atomic selector can identify the entire candidate. It uses roughly two versions of the payload in this fixed-slot construction. Parallel device completion can change time without changing write count. Batching several logical changes may amortize barriers but changes when each can be acknowledged and what recovery treats as committed. Derive that contract before claiming a speedup.
+
+Two slots do not constitute an independent backup. They share a failure domain, and the inactive slot is overwritten during later updates. With requests (1,3), (2,2), (3,1), the active stocks progress (9,11), (7,13), (6,14); the first committed version is eventually overwritten. A valid but unwanted later update is still a correctly committed update. The protocol has no mechanism to recover an arbitrarily old state.
+
+Separate crash consistency, corruption detection, redundancy, retained versions and backup restoration. Each answers a different question. Provenance adds the input/schema/method identity needed to interpret a preserved result. A stored hash without a trusted expected value is not complete provenance; a retained copy without a tested reading/restoration path is weak evidence of future availability.
+
+**Work:** derive the write/barrier counts for normal, duplicate and interrupted attempts; explain why repeated unsuccessful attempts have no fixed total cost bound. Compare two hypothetical barrier costs without presenting them as hardware measurements. Construct a retention table for three updates and identify exactly when each old slot becomes disposable under the model. Then specify what a scientific archive would additionally preserve: data, schema, units, method, dependencies and a restoration procedure.
+
+[Measure a memory hierarchy under a declared cost model](Measure-a-memory-hierarchy-under-a-declared-cost-model.lingua#r_008EC6006BF0912737390C8789) supplies the earlier distinction between operation count, assigned cost and measured time. [Handle interrupted work without confusing partial and completed results](../../inquiry/reproducible-computation/workflows/Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX) connects coherent result publication to research workflows. Their original scopes remain intact.
+
+**Continue:** [Investigate every crash boundary in a durable update model](Investigate-durable-updates-crashes-and-retries.lingua#r_00E0361A5584392811B997F505).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00681EF1E53770749F60612B4C

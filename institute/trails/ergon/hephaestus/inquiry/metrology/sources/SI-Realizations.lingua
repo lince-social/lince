@@ -10,4 +10,7 @@ Use these particular documents rather than assuming an exact defining constant p
 The documents are freely accessible from BIPM, with their individual publication and reuse notices. Do not transfer the SI Brochure’s licence automatically to every linked technical document. Index and document identities checked on 28 October 2026; no collection is downloaded into the repository.
 
 **Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+
+**Third physics-core temperature note — 31 October 2026:** the official [BIPM kelvin definition](https://www.bipm.org/en/web/guest/si-base-units/kelvin) was inspected for the fixed Boltzmann constant, and the [NIST temperature-unit page](https://www.nist.gov/pml/owm/si-units-temperature) for the Celsius/kelvin offset and interval conversion. These bounded unit-definition checks do not constitute a fresh complete kelvin-realization audit. The common lesson distinguishes the defining constant, practical realization, sensor indication, contact and equilibrium assumptions; original advanced realization assignments and component rights remain unchanged.
+
 } r_240WHEHDVW9TR241AXP6T4STM0

@@ -1,0 +1,16 @@
+Import "../Engineering.lingua"
+
+Review continuing service with its observations resources and limits (@engineering-service-review: 0, is #chapter, #hephaestus-core "Include-people-and-operating-conditions-in-the-engineering-function.lingua#r_00251664228CAF775198D8DB57") { r_0030B9D7AC42BBFEFA5EBE5F15
+Explain the continuing-service argument without treating an installation test as lifetime evidence. Begin from the intended function and realized configuration. Choose the exposure clock and observation window, distinguish first-failure survival from repaired availability, and state whether demand requires one unit, two units or uninterrupted output. Explain which statement each denominator supports.
+
+A complete account of this common block includes the clipped log and its units; the common-support derivation and a dependence counterexample; the conditional cycle-average proof with its limiting premises; the finite one-crew model, event order, probability conservation and mission/output recurrences; an independently checked numerical investigation; the bounded source reconstruction; and a changed model criticized against service evidence. Assigned work is not completed learner work. Published formulas, synthetic observations and real operating histories must remain distinguishable.
+
+**Questions for defense:** Why can a single successful inspection coexist with poor reliability? Why does restoring service not repair an interrupted mission retrospectively? Which numerator changes when demand increases? Why is a surviving unit not a failure at its observation end? What observation could invalidate the independent-component assumption? Why can adding a redundant unit leave a shared dependency unchanged? When can mean up/(mean up+mean down) fail as a forecast? What changed physical state and evidence justify returning a repaired system to use?
+
+This block prepares entry to reliability, maintenance, production, systems and discipline-specific engineering. It does not complete those branches, select a maintenance policy for actual equipment, certify a facility or retire ERG-146. Full failure mechanisms, survival analysis, repair optimization, field trials and specialized realization remain later branch work. Continue inquiry at comparable breadth, then review the shared preparation of all six areas before choosing the middle-layer work. Do not extend this common model indefinitely into specialist machinery.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue through people and operation:** [Include people and operating conditions in the engineering function](Include-people-and-operating-conditions-in-the-engineering-function.lingua#r_00251664228CAF775198D8DB57). Connect operating tasks, physical state, observation, errors, recovery and handover before deeper engineering specializations.
+
+} r_0030B9D7AC42BBFEFA5EBE5F15

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Connect relativistic momentum energy and electromagnetic frame changes (@physics-spacetime-energy: 0, is #chapter, #hephaestus-core "../electromagnetism/dynamics/Special-relativity-electric-and-magnetic-fields.lingua#r_789H7ACJDQAKVB8H10HXAM09PC") { r_00AA5B239C317ABD18D2FE89BC
+For a particle with positive invariant rest mass m, define four-velocity by differentiating (ct,x,y,z) with respect to proper time: U=(γc,γu). The particle four-momentum is P=mU=(E/c,p), with E=γmc² and p=γmu. Identifying its time component with energy and conserving total four-momentum are physical dynamical commitments, not consequences of algebra alone. The low-speed work account and experimental comparisons motivate them; a variational/Noether derivation belongs to the later mechanics branch. See [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426) 7.4.1–7.4.4.
+
+Its invariant gives E²−c²|p|²=m²c⁴. The physical massive-particle branch used here has E>0, and u=c²p/E. K=E−mc² can also be written K=c²|p|²/(E+mc²), avoiding subtraction of nearly equal energies in a numerical calculation. At small |p|/(mc), K≈|p|²/(2m); for fixed positive m, finite energy never reaches |u|=c. A massless particle instead has E=c|p| and no timelike rest frame. Do not insert m=0 into γmu at a singular speed; use the null energy-momentum relation. Combining this with the earlier photon E=hν is a connection between relativistic and quantum models, not a derivation of quantization.
+
+In units c=1, two particles each with rest mass 1 and velocities ±3/5 have individual energies 5/4 and opposite momenta ±3/4. Their closed system has total energy 5/2 and momentum zero, hence invariant mass 5/2, although the sum of their individual rest masses is 2. If they form one resting composite without energy leaving, its invariant mass includes that internal energy. If radiation leaves, include it in the system account. Conserved four-momentum does not mean separate sums of rest mass or kinetic energy are always conserved.
+
+Read [Special relativity joins electric and magnetic fields](../electromagnetism/dynamics/Special-relativity-electric-and-magnetic-fields.lingua#r_789H7ACJDQAKVB8H10HXAM09PC) next at the bounded common level: standard boost, complete parallel/perpendicular split and its invariants. The E and B split depends on frame. For the earlier +x plane wave E=(0,A,0), B=(0,0,A/c), a +x boost gives E′_y=γ(1−β)A and B′_z=E′_y/c. At β=3/5 both amplitudes acquire factor 1/2, retaining a nonzero propagating field. The phase and photon frequency acquire the same longitudinal factor. Field energy density is frame-dependent; no contradiction follows from changing its numerical value.
+
+**Work:** transform the two particles individually with a common boost and recover the same total invariant mass. Compare this with transforming their summed four-momentum. Verify E·B and E²−c²B² for the wave. Specify what additional theory is needed for interacting fields, stress and distributed energy; the next shared Record's tensor and full-course assignments remain branch work.
+
+**Continue:** [Special relativity joins electric and magnetic fields](../electromagnetism/dynamics/Special-relativity-electric-and-magnetic-fields.lingua#r_789H7ACJDQAKVB8H10HXAM09PC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00AA5B239C317ABD18D2FE89BC

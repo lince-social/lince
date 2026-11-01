@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Derive a reservoir work bound and state its limits (@physics-cycle-bound: 0, is #chapter, #hephaestus-core "../thermodynamics-and-heat-transfer/balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua#r_1FJ3QB261EXN8ET1NADXP55MQG") { r_00A8A4CE4C2C96E80783BC419C
+Consider a cyclic device exchanging heat only with reservoirs at T_h≥T_c>0 and an ideal work receiver. Let Q_h>0 be heat taken from the hot reservoir, Q_c≥0 heat delivered to the cold reservoir, and W≥0 work delivered. Energy requires W=Q_h−Q_c. The composite reservoir entropy change is −Q_h/T_h+Q_c/T_c; the cyclic device has no net state change and the ideal work receiver carries no entropy transfer. The second law therefore requires Q_c≥Q_h T_c/T_h and
+
+W≤Q_h(1−T_c/T_h).
+
+Equality is the reversible comparison under these boundary assumptions. Efficiency W/Q_h is dimensionless. At equal reservoir temperatures the bound is zero. Using Celsius ratios would change the answer under an arbitrary shift of temperature origin; thermodynamic absolute temperature is essential.
+
+At 400 K and 100 K, Q_h=200 J permits at most 150 J of work. The reversible comparison has Q_c=50 J and zero total entropy generation. A proposal for W=175 J has Q_c=25 J and conserves energy, but its composite entropy change is −1/4 J/K. It fails this second-law screen. A nonnegative entropy account is necessary; it does not certify a proposed machine, its materials, dynamics or losses.
+
+An ideal-gas Carnot construction connects the state formula to the bound. Two reversible isotherms at T_h,T_c are joined by reversible adiabats. On an adiabat, C_V ln(T₂/T₁)+A ln(V₂/V₁)=0, so T V^(A/C_V) is constant. Consequently the expansion ratio on the hot isotherm equals the compression-volume ratio on the cold isotherm, say r>1. The heat magnitudes are Q_h=AT_h ln r and Q_c=AT_c ln r; their ratio gives the same bound. Powers of positive quantities are interpreted through the prepared logarithm/exponential functions, with consistent reference ratios.
+
+For A=C_V=1 J/K, choose successive states (T,V)=(400 K,1 m³),(400 K,2 m³),(100 K,8 m³),(100 K,4 m³). The two adiabatic legs preserve TV. The isothermal heats have magnitudes 400 ln2 and 100 ln2 joules; net work is 300 ln2 joules. The adiabatic energy decreases/increases cancel over the cycle. No finite-time realization is asserted.
+
+**Read critically:** [Cycles, efficiency and useful output](../thermodynamics-and-heat-transfer/balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua#r_1FJ3QB261EXN8ET1NADXP55MQG), [Carnot limits and thermodynamic temperature](../thermodynamics-and-heat-transfer/entropy/Carnot-limits-and-thermodynamic-temperature.lingua#r_6R2GGRMXKFWVNTD3STTQ272GNC) and selected Yan 6.4. The efficiency bound has no cycle-duration or transfer-rate parameter. A source sentence about maximum power must not be inferred from this derivation: power needs time and physical transfer constraints. Two devices with the same per-cycle efficiency can have different powers. Finite bodies or multiple heat temperatures require a different account, developed below.
+
+**Continue:** [Cycles, efficiency and useful output](../thermodynamics-and-heat-transfer/balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua#r_1FJ3QB261EXN8ET1NADXP55MQG).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00A8A4CE4C2C96E80783BC419C

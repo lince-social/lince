@@ -1,0 +1,22 @@
+Import "../Chemistry.lingua"
+
+Review molecular identity through representations transformations and evidence (@chemistry-identity-review: 0, is #chapter, #hephaestus-core "Describe-phases-components-and-the-constraints-on-a-material-sample.lingua#r_00B2D4B910F9BD44A183D65846") { r_0076E2B38375A5256FCEB27DAE
+Begin with a familiar structural description and state its level: formula, connectivity, electron-account drawing, conformation, configuration or sample composition. Restore suppressed atoms and compare proposed structures by an explicit correspondence. Explain why resonance contributors, constitutional alternatives, conformers and mixtures are different kinds of objects. Identify what isotope, charge, state and environment information the chosen description retains.
+
+Derive the saturated acyclic carbon hydrogen count and the small n=4 and n=5 classifications. Prove why the canonical rooted-tree construction works and why the minimum over roots identifies unrooted trees. Explain the independent leaf-code reconstruction and the role of automorphisms in counting labeled drawings. Supply the same-degree-sequence counterexample. A formula or degree summary is not a complete molecular structure, and a graph satisfying valence rules is not evidence of stability.
+
+Distinguish whole-object rotation from internal torsion and derive the original four-point distance example. Explain the average-coordinate counterexample and separate equilibrium populations from transition rates. Define the permitted transformation in a spatial comparison. Derive the signed-volume behavior under translation, rotation, reflection and label swapping; reconcile mirror-identical distance data with different handedness.
+
+Prove the single regular-tetrahedron label counts and their repeated-label boundary. Apply a simple inspected priority rule and viewing convention to a tetrahedral center, then explain why the program's arbitrary labels do not automatically assign R/S. Critique the 2^k shortcut using the published meso example and distinguish a center from the chirality of a whole molecule. State which extended stereochemical rules and conformational restrictions require later study.
+
+Connect a structural claim to observations with an explicit alternative. Reconstruct the bounded published small-alkane counts and functional-group spectral comparison without claiming new experimental data. Derive the synthetic optical-mixture account and its nonnegativity condition, then show its ambiguity when total concentration, baseline or purity is unknown. Zero rotation does not distinguish an achiral compound from an equal enantiomer mixture by itself.
+
+**Completion evidence for this block:** a connected explanation with meaningful atom/ligand correspondences, derived counting and geometry claims, independently checked calculations, a substantive labeled-graph or geometric extension, and a defended/revised interpretation of structural evidence. Record what the source actually supplied, what was independently reconstructed and what remains an assumption. Successful finite program checks support the implementation; the general mathematical statements retain their proofs and chemical predictions retain empirical limits.
+
+This block strengthens molecular identity and representation within the chemistry core. Full organic/inorganic chemistry, electronic-structure theory, spectroscopy, synthesis, extended solids, nonideal phases and advanced research remain unfinished. All sixteen pending chemistry subject scopes remain pending. Continue the seventh pass with [Computing — representation, algorithms and working systems](../../computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641) and communication/protocol boundaries, then engineering production flow and inquiry learning/teaching, before extending an isolated stereochemical specialty. Existing chemical, physical, mathematical and inquiry Records remain shared preparation.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the eighth common pass:** [Describe phases components and the constraints on a material sample](Describe-phases-components-and-the-constraints-on-a-material-sample.lingua#r_00B2D4B910F9BD44A183D65846). Connect phase identity, coexistence, conserved amounts, nonideal stability and material evidence before continuing computing at comparable breadth.
+
+} r_0076E2B38375A5256FCEB27DAE

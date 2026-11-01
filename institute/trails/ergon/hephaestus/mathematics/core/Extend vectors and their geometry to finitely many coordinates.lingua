@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Extend vectors and their geometry to finitely many coordinates (@math-finite-vectors: 0, is #chapter, #hephaestus-core "Read rectangular maps and the transpose through their dimensions.lingua#r_00DA69E3E3C8873C7D5F0CCB01") { r_00D53162E53742785582936BBE
+The earlier [Use linear combinations to explain span independence and coordinates](Use-linear-combinations-to-explain-span-independence-and-coordinates.lingua#r_004D242DF23E1A3D1718672EAE) and [Resolve a vector into a projection and an orthogonal remainder](Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B) use a plane and a line. A record of four readings or three unknown coefficients needs more coordinates, but the basic operations remain explicit. This block works over real numbers with finite positive dimensions. Exact rational examples support those arguments; they do not restrict the theorems to rational vectors.
+
+A vector x in Rⁿ is an ordered list (x₁,…,xₙ). Equality means equality at every position. Define (x+y)ᵢ=xᵢ+yᵢ and (cx)ᵢ=cxᵢ. The zero list and the list −x give the additive identity and inverse. Coordinatewise real arithmetic proves associativity, distributivity and the other vector laws. There is no need to imagine a physical fourth spatial direction to use four coordinates. Each position must still have a declared meaning, order, unit and reference.
+
+For same-sized real lists define x·y=Σᵢxᵢyᵢ and ‖x‖=√(x·x). The dot product is symmetric and linear in each argument; x·x≥0, with equality only at zero. Orthogonal means x·y=0. For x=(1,−2,2), ‖x‖=3. The vector y=(2,1,0) is orthogonal to x. This is a stated Euclidean geometry. Adding squared metres to squared kelvins is not a physical error measure until scales or a different metric have been specified.
+
+Prove the fundamental bound rather than assuming an angle picture in every dimension. For y≠0, expand ‖x−ty‖² at t=(x·y)/(y·y). Nonnegativity yields (x·y)²≤(x·x)(y·y), the Cauchy–Schwarz inequality; y=0 is immediate. Then ‖x+y‖²=‖x‖²+2x·y+‖y‖²≤(‖x‖+‖y‖)². Taking nonnegative square roots proves the triangle inequality. Equality in Cauchy–Schwarz for y≠0 holds exactly when x is a multiple of y, because the remaining squared norm is zero. Orthogonality gives the finite-dimensional Pythagorean identity directly.
+
+The span of v₁,…,vₖ consists of all Σcⱼvⱼ with real coefficients. Independence means the only coefficients giving zero are all zero. A basis is an independent spanning list. The standard lists eⱼ, with one 1 and all other entries 0, form a basis of Rⁿ: x=Σxⱼeⱼ, and inspecting each coordinate proves uniqueness. For any chosen independent spanning list, subtracting two representations proves uniqueness of its coefficients. Later elimination will show how to find such lists and count independent directions without a spatial sketch.
+
+**Work and evidence:** prove the two inequalities with the zero cases included. Check the example and construct a nonzero vector orthogonal to both x and y by solving their two dot-product constraints. One answer is (−2,4,5); substitution supplies the check. Explain why (1,2) and (1,2,0) inhabit different coordinate spaces even though an embedding can relate them. Give one mixed-unit record for which raw Euclidean distance has no stated interpretation. Complex vectors require conjugation in a positive inner product: the real formula applied to (i) gives −1, so it is not the complex norm rule.
+
+**Reading:** revisit [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW) sections 1.1–1.4, 3.1–3.2 and 5.1–5.3. Reconstruct the coordinate proofs above before using the later projection sections. The full reading and exercises are learner work; the source Record states what was inspected.
+
+**Continue:** [Read rectangular maps and the transpose through their dimensions](Read rectangular maps and the transpose through their dimensions.lingua#r_00DA69E3E3C8873C7D5F0CCB01).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00D53162E53742785582936BBE

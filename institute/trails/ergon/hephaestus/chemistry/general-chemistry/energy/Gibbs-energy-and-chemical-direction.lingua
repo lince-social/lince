@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Relate chemical direction to Gibbs energy under stated constraints (@gc-gibbs: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM") { r_2YN613CG9VVK1CXP2XFHZMF9Z6
+Relate chemical direction to Gibbs energy under stated constraints (@gc-gibbs: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM", #hephaestus-core "../../core/Prove-an-equilibrium-composition-and-calculate-a-finite-change.lingua#r_00759EA4E4647C3A4DC7A61E04") { r_2YN613CG9VVK1CXP2XFHZMF9Z6
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 16 in full with exercises; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit III’s thermodynamics lectures and problems; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Gibbs energy and equilibrium completely.
 
 For appropriate constant-temperature, constant-pressure conditions, Gibbs energy G = H−TS provides a criterion for allowed change and equilibrium when the other work/exchange conditions are specified. Derive the criterion from the total entropy account rather than treating ΔG as an unexplained sign rule. Different constraints can call for a different potential.
@@ -18,4 +18,9 @@ Read the full chapter and MIT thermodynamics unit, solving the problems before l
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 
 **Continue in thermodynamics and heat transfer:** [Thermodynamic potentials, natural variables and constraints](../../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM).
+
+**Sixth chemistry-block reading:** Use the distinction between finite system changes, local reaction quantities and standard quantities, now derived through balances and reaction extent. The next original ideal-mixture investigation supplies an explicit global minimum and independently integrated finite change. Whole chapters and problem sets remain assignments; the complete existing source and thermal continuation are preserved.
+
+**Continue in the sixth chemistry block:** [Prove an equilibrium composition and calculate a finite change](../../core/Prove-an-equilibrium-composition-and-calculate-a-finite-change.lingua#r_00759EA4E4647C3A4DC7A61E04).
+
 } r_2YN613CG9VVK1CXP2XFHZMF9Z6

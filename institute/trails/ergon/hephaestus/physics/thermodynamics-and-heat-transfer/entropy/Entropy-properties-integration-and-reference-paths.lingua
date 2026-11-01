@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Entropy properties, integration and reference paths (@th-entropy-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE") { r_5PBN5Q06X2XF6SN21MCCWR8VJY
+Entropy properties, integration and reference paths (@th-entropy-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE", #hephaestus-core "../../core/Derive-a-reservoir-work-bound-and-state-its-limits.lingua#r_00A8A4CE4C2C96E80783BC419C") { r_5PBN5Q06X2XF6SN21MCCWR8VJY
 **Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), specific entropy and applications; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), entropy properties, heat capacities and phase changes.
 
 For a calorically perfect ideal gas on a mass basis, Δs = c_p ln(T₂/T₁)−R ln(p₂/p₁), equivalently c_v ln(T₂/T₁)+R ln(v₂/v₁). The formulas require absolute temperatures and pressures and constant capacities over the range. A real fluid requires the appropriate property relations.
@@ -12,4 +12,9 @@ Compute the same entropy change along two allowed reversible reference paths and
 **Continue:** [Local entropy production and transport assumptions](Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Sixth physics-block reading:** Use the now-derived fixed-composition ideal-gas and single-phase constant-capacity state differences, keeping mass/molar/total bases distinct. The common investigation supplies original reference-path and finite-body comparisons. Actual phase-change properties, broad real-fluid data and full source exercises remain assignments with their own preparation.
+
+**Continue in the sixth physics block:** [Derive a reservoir work bound and state its limits](../../core/Derive-a-reservoir-work-bound-and-state-its-limits.lingua#r_00A8A4CE4C2C96E80783BC419C).
+
 } r_5PBN5Q06X2XF6SN21MCCWR8VJY

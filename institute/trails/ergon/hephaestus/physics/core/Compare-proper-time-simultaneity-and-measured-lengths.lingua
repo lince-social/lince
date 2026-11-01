@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Compare proper time simultaneity and measured lengths (@physics-spacetime-clocks: 0, is #chapter, #hephaestus-core "Preserve-causal-order-and-distinguish-clock-rates-from-received-frequencies.lingua#r_00F4F31E0DC57AC39F51E3B5DA") { r_006928CA31D62CBBBA7969C5C8
+An ideal material clock follows a future-directed timelike path. Its infinitesimal proper time obeys c²dτ²=c²dt²−|dx|², so dτ=dt√(1−u²/c²) with dt>0. Integrate along the actual path. For a constant-velocity straight segment, cΔτ=√s²; for a bent or accelerated path the square root of the endpoint interval is generally not the accumulated proper time. The ideal-clock hypothesis concerns a clock's local rate; a real instrument can also suffer acceleration-dependent disturbances and calibration changes.
+
+Two clocks depart together at (T,x)=(0,0) and reunite at (10,0). One remains at x=0. The other travels at β=3/5 to (5,3), then at β=−3/5 back. The stationary path has cτ=10; each moving segment has cΔτ=4, hence cτ=8. The sudden reversal is an ideal piecewise-path limit, not a finite-force mechanism. Smooth return paths can be compared by integration. No global inertial frame keeps the traveling clock at rest throughout both legs; a reciprocal time-dilation slogan cannot replace the reunion calculation.
+
+For separated events simultaneous in S, ΔT=0 gives ΔT′=−γβΔx. For Δx=4 and β=3/5, ΔT′=−3. The disagreement persists after signal delays have been corrected. Events at the same spatial location in S instead obey ΔT′=γΔT. These are different event-pair constraints, so the formulas are not contradictory.
+
+A rod's rest length L₀ compares its endpoint positions at equal rest-frame time. To measure its length in S when it moves along x, choose endpoint events with ΔT=0 in S. Their separation in the rod frame is Δx′=γΔx=L₀, hence L=L₀/γ. With L₀=5 and β=3/5 the measured coordinate length is 4. A photograph records different emission times along incoming light paths; its apparent shape is a different problem. Transverse dimensions do not contract under this standard boost.
+
+**Work:** redraw the reunion in a frame with β=−3/5 and add the proper times of the transformed segments. Obtain the same 8 and 10. Calculate the rod endpoint time difference in its rest frame and explain why holding both frame times equal selects an impossible pair for a moving rod. Read the selected proper-time and time-dilation passages of [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426); complete the wider 7.2.3–7.2.4 reading as an assignment, not as a claim of an author clock experiment.
+
+**Continue:** [Preserve causal order and distinguish clock rates from received frequencies](Preserve-causal-order-and-distinguish-clock-rates-from-received-frequencies.lingua#r_00F4F31E0DC57AC39F51E3B5DA).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_006928CA31D62CBBBA7969C5C8

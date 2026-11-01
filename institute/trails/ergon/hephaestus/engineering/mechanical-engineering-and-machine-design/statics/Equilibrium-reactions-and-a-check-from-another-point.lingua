@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Equilibrium, reactions and a check from another point (@mech-equilibrium: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX") { r_39SFWBJ218F97HCA4Z63PF2X5H
+Equilibrium, reactions and a check from another point (@mech-equilibrium: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX", #hephaestus-core "Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX") { r_39SFWBJ218F97HCA4Z63PF2X5H
 **Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapters 3 and 5, completing the planar and three-dimensional exercises. Begin with a well-defined free-body diagram.
 
 Rigid-body static equilibrium requires zero resultant force and moment. In a plane these give two force equations and one independent moment equation. Taking moments about a support often eliminates its unknown force, but it does not remove that force from the physical system.
@@ -11,5 +11,10 @@ For an original simply supported beam of span 4 m, a downward 300 N point load a
 
 **Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
 **Continue:** [Constraint independence, stability and static indeterminacy](Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX).
+
+
+**Second physics-block reading:** Work the planar example after the common uniform-load resultant argument. Use sections 5.2–5.4 for the present equilibrium account; complete the original three-dimensional exercises when that spatial preparation is supplied.
+
+**Continue in the second physics block:** [Constraint independence, stability and static indeterminacy](Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX).
 
 } r_39SFWBJ218F97HCA4Z63PF2X5H

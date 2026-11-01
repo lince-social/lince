@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Condition on information without assuming independence (@inquiry-conditional-dependence: 0, is #chapter, #hephaestus-core "Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA") { r_07DA2E41CFC98507FD5297EA72
+Suppose an event F with positive probability is known to have occurred. Retain only outcomes in F and divide their old weights by P(F), making their new weights sum to one. The conditional probability of E given F is therefore P(E given F)=P(E and F)/P(F). The denominator must be positive; conditioning on a zero-probability event is not defined by this finite formula. Knowing an event occurred changes the information being used, not necessarily the physical mechanism that generated it.
+
+Use three distinct cards O1, O2 and B, with two orange cards and one blue. Draw twice uniformly without replacement. The six ordered labeled outcomes are (O1,O2), (O1,B), (O2,O1), (O2,B), (B,O1), (B,O2). Four start orange and four end orange, so each position has orange probability 2/3. Only two are orange at both positions: the joint probability is 1/3. Given an orange first card, only four outcomes remain and two end orange; the conditional probability is 1/2. The second draw has the same marginal orange probability as the first but is not independent of it.
+
+Events E and F are independent when P(E and F)=P(E)P(F). For positive P(F), this is equivalent to P(E given F)=P(E). Independence is an additional property of a joint model, not a consequence of different names or separate observations. With replacement and an independent uniform second draw, the card model has nine ordered outcomes and joint-orange probability 4/9. Replacement alone is not enough if the mechanism still links successive draws.
+
+Let I_i be one when unit i receives Q and zero otherwise in the uniform three-of-six design. Each unit has probability 1/2 of receiving Q. Conditional on one particular unit receiving Q, only two of the remaining five can receive Q, so another specified unit has conditional probability 2/5. Assignments are dependent because their total is fixed at three. In the paired design, a unit's partner must receive P when it receives Q; choices across different pairs are independent under the stipulated mechanism. Marginal balance and independence are different assertions.
+
+**Read and reconstruct:** [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71), section 4.1's finite conditional-probability and independence discussion. Explain every denominator in the card example from a labeled outcome table. Reverse the condition and state the new question before calculating. Derive P(E and F)=P(E given F)P(F) from the definition and explain why replacing the conditional term by P(E) needs justification.
+
+**Transfer:** [Preserve shared causes when comparing dimensional alternatives](../../engineering/core/Preserve-shared-causes-when-comparing-dimensional-alternatives.lingua#r_096EB930A4D4801B02F0B0B349) preserved a common input in a dimensional model; it did not assign a probability distribution to it. Here dependence concerns joint probabilities. A shared physical influence can motivate a joint probability model, but interval bounds alone do not determine that model. Give two probability assignments on the same bounded outcomes with different means. Retain the distinction between admissible values, probabilities and evidence supporting those probabilities.
+
+**Continue:** [Describe a chance quantity by its weighted mean and spread](Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_07DA2E41CFC98507FD5297EA72

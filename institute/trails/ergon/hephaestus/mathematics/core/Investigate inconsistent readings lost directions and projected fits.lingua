@@ -1,0 +1,325 @@
+Import "../Mathematics.lingua"
+
+Investigate inconsistent readings lost directions and projected fits (@math-linear-system-study: 0, is #chapter, #hephaestus-core "Review finite systems projections and the evidence for a fit.lingua#r_008D79B5C2EC2A98B1C4B2DA46") { r_005B6E212C56EB47DF7702079B
+This is an original mathematical investigation, with stipulated dimensionless coefficients and readings. It is not an actual instrument calibration, empirical regression or reconstructed published dataset. Its purpose is to make consistency, identifiable combinations, projection, basis choice and sensitivity answerable by independent arguments before relying on a numerical package.
+
+The model takes x∈R³ to four readings: x₁+x₃, x₂+x₃, x₁+x₂+2x₃, and 2x₁−x₂+x₃. Use b=(2,1,4,2). First reduce the exact augmented system and exhibit its contradiction rows. Then recover its image basis and kernel, and compare with the consistent b₀=(2,1,3,3). Prove the complete real solution family for b₀ and explain the consequences of restricting its unknowns to nonnegative integers.
+
+Next declare the unweighted squared Euclidean objective for b. Derive its projection with the unnormalized orthogonal columns and independently solve the two-coordinate normal equations. The required report includes p=(33,28,61,38)/17, r=(1,−11,7,−4)/17 and ‖r‖²=11/17, with exact substitutions. Explain the complete coefficient family (33/17−t,28/17−t,t). Add a direct fifth reading x₃=1/2, derive the unique fitted coefficient vector, and prove why the first four contradictions do not disappear.
+
+Change the image basis from (c₁,c₂) to (c₁,c₁+c₂). Record the new coordinate vector and verify identical fitted output. Then double the third row and reading before minimizing, explicitly treating it as a changed residual metric. Recover u=51/25, v=91/50 and weighted error 41/50. Contrast that change with mere reexpression of input coordinates. Finally derive the ε,δ sensitivity family in [Keep coordinate choices error metrics and sensitivity distinct](Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7), with the specified maximum norms; test both ε>0 and ε=0. A solver residual on supplied numbers does not bound input uncertainty.
+
+The two original programs below use Python's standard library. Save them under their displayed filenames in the same directory and run `python3 linear_space_checks.py`; in this repository use `nix shell nixpkgs#python3 -c python3 linear_space_checks.py`. The main program rejects floating inputs and Boolean values, accepts integers/Fractions, and requires positive matrix dimensions. It provides exact rectangular elimination, kernel bases, unnormalized orthogonal-column construction, projection and normal-equation solving. The examples are intentionally small; Fraction numerator growth and exhaustive checks are not efficient large-system methods.
+
+The companion checks every matrix on four declared finite grids: 2×2, 2×3 and 3×2 entries in {−1,0,1}, and 3×3 entries in {0,1}. Right-hand-side sets are explicit in the program. It checks rank against an independently enumerated minor determinant, consistency against augmented rank, kernel independence and annihilation, geometric projection against normal-equation fitting, orthogonal residuals, basis changes and the exact cost-increment identity. The determinant reference uses the signed permutation definition, not the elimination algorithm. Its algebraic rank criterion is an established independent finite-matrix characterization used by the checker, rather than a theorem proved by passing tests. The lessons prove their rank claims by elimination and basis arguments. Direct scalar substitution supplies the case-specific oracle.
+
+```python file=linear_space_study.py
+from fractions import Fraction as F
+import json
+
+
+def scalar(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)):
+        raise ValueError('supply exact integers or Fractions')
+    return F(value)
+
+
+def matrix(values):
+    rows = tuple(tuple(scalar(x) for x in row) for row in values)
+    if not rows or not rows[0] or any(len(row) != len(rows[0]) for row in rows):
+        raise ValueError('a nonempty rectangular matrix is required')
+    return rows
+
+
+def vector(values, size):
+    result = tuple(scalar(x) for x in values)
+    if len(result) != size:
+        raise ValueError('vector dimension mismatch')
+    return result
+
+
+def dot(left, right):
+    left = tuple(scalar(x) for x in left)
+    right = vector(right, len(left))
+    return sum((x*y for x, y in zip(left, right)), F(0))
+
+
+def action(a, x):
+    a = matrix(a)
+    x = vector(x, len(a[0]))
+    return tuple(dot(row, x) for row in a)
+
+
+def transpose(a):
+    return tuple(zip(*matrix(a)))
+
+
+def multiply(a, b):
+    a, b = matrix(a), matrix(b)
+    if len(a[0]) != len(b):
+        raise ValueError('matrix dimension mismatch')
+    return tuple(tuple(dot(row, col) for col in transpose(b)) for row in a)
+
+
+def eliminate(a, b):
+    a = matrix(a)
+    m, n = len(a), len(a[0])
+    b = vector(b, m)
+    rows = [list(row) + [value] for row, value in zip(a, b)]
+    pivots = []
+    for col in range(n):
+        level = len(pivots)
+        candidate = next((i for i in range(level, m) if rows[i][col]), None)
+        if candidate is None:
+            continue
+        rows[level], rows[candidate] = rows[candidate], rows[level]
+        pivot = rows[level][col]
+        rows[level] = [v/pivot for v in rows[level]]
+        for i in range(m):
+            if i != level:
+                factor = rows[i][col]
+                rows[i] = [v-factor*w for v, w in zip(rows[i], rows[level])]
+        pivots.append(col)
+    free = [j for j in range(n) if j not in pivots]
+    kernel = []
+    for col in free:
+        v = [F(0)]*n
+        v[col] = F(1)
+        for i, pivot in enumerate(pivots):
+            v[pivot] = -rows[i][col]
+        kernel.append(tuple(v))
+    inconsistent = any(not any(row[:n]) and row[n] for row in rows)
+    particular = None
+    if not inconsistent:
+        particular = [F(0)]*n
+        for i, col in enumerate(pivots):
+            particular[col] = rows[i][n]
+        particular = tuple(particular)
+    return {'rank': len(pivots), 'pivots': tuple(pivots),
+            'particular': particular, 'kernel': tuple(kernel),
+            'reduced': tuple(tuple(row) for row in rows)}
+
+
+def orthogonal_columns(a):
+    basis = []
+    for col in transpose(a):
+        remainder = list(col)
+        for w in basis:
+            coefficient = dot(w, col)/dot(w, w)
+            remainder = [v-coefficient*z for v, z in zip(remainder, w)]
+        if any(remainder):
+            basis.append(tuple(remainder))
+    return tuple(basis)
+
+
+def project(a, b):
+    a = matrix(a)
+    b = vector(b, len(a))
+    fitted = [F(0)]*len(a)
+    for w in orthogonal_columns(a):
+        coefficient = dot(w, b)/dot(w, w)
+        fitted = [v+coefficient*z for v, z in zip(fitted, w)]
+    return tuple(fitted)
+
+
+def least_squares(a, b):
+    a = matrix(a)
+    b = vector(b, len(a))
+    at = transpose(a)
+    solutions = eliminate(multiply(at, a), action(at, b))
+    if solutions['particular'] is None:
+        raise ArithmeticError('normal equations must be consistent')
+    fitted = action(a, solutions['particular'])
+    residual = tuple(v-w for v, w in zip(b, fitted))
+    return {'coefficients': solutions['particular'], 'kernel': solutions['kernel'],
+            'fitted': fitted, 'residual': residual, 'squared_error': dot(residual, residual)}
+
+
+def investigation():
+    a = matrix(((1, 0, 1), (0, 1, 1), (1, 1, 2), (2, -1, 1)))
+    b = (2, 1, 4, 2)
+    fit = least_squares(a, b)
+    reduced = tuple(row[:2] for row in a)
+    transformed = multiply(reduced, ((1, 1), (0, 1)))
+    added = least_squares(a+((F(0), F(0), F(1)),), b+(F(1, 2),))
+    scaled = tuple(tuple((2 if i == 2 else 1)*v for v in row) for i, row in enumerate(a))
+    weighted = least_squares(scaled, (2, 1, 8, 2))
+    return {'exact': eliminate(a, b), 'fit': fit,
+            'projection': project(a, b),
+            'new_coordinates': least_squares(transformed, b)['coefficients'],
+            'extra_observation': added, 'weighted': weighted}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=linear_space_checks.py
+from fractions import Fraction as F
+from itertools import combinations, permutations, product
+import json
+from linear_space_study import action, dot, eliminate, investigation, least_squares
+from linear_space_study import matrix, multiply, orthogonal_columns, project, transpose
+
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    if not condition:
+        raise AssertionError(checks)
+
+
+def determinant(a):
+    n = len(a)
+    total = F(0)
+    for perm in permutations(range(n)):
+        inversions = sum(perm[i] > perm[j] for i in range(n) for j in range(i+1, n))
+        term = F((-1)**inversions)
+        for i, j in enumerate(perm):
+            term *= a[i][j]
+        total += term
+    return total
+
+
+def minor_rank(a):
+    m, n = len(a), len(a[0])
+    for size in range(min(m, n), 0, -1):
+        for rows in combinations(range(m), size):
+            for cols in combinations(range(n), size):
+                if determinant(tuple(tuple(a[i][j] for j in cols) for i in rows)):
+                    return size
+    return 0
+
+
+def direct_product(a, x):
+    return tuple(sum((F(a[i][j])*x[j] for j in range(len(x))), F(0)) for i in range(len(a)))
+
+
+def independent_cost(a, b, x):
+    predicted = direct_product(a, x)
+    return sum((b[i]-predicted[i])**2 for i in range(len(b)))
+
+
+matrix_cases = 0
+system_cases = 0
+basis_cases = 0
+for m, n, entries, bs in [
+    (2, 2, (-1, 0, 1), tuple(product((-1, 0, 1), repeat=2))),
+    (2, 3, (-1, 0, 1), ((0, 0), (1, -1), (1, 1))),
+    (3, 2, (-1, 0, 1), ((0, 0, 0), (1, -1, 0), (1, 1, 1))),
+    (3, 3, (0, 1), ((0, 0, 0), (1, -1, 1)))]:
+    for cells in product(entries, repeat=m*n):
+        a = tuple(tuple(F(v) for v in cells[i*n:(i+1)*n]) for i in range(m))
+        rank = minor_rank(a)
+        ws = orthogonal_columns(a)
+        check(len(ws) == rank)
+        for i, w in enumerate(ws):
+            check(dot(w, w) > 0)
+            for z in ws[:i]:
+                check(dot(w, z) == 0)
+        for b in bs:
+            result = eliminate(a, b)
+            augmented = tuple(row+(F(value),) for row, value in zip(a, b))
+            consistent = minor_rank(augmented) == rank
+            check(result['rank'] == rank)
+            check((result['particular'] is not None) == consistent)
+            check(len(result['kernel']) == n-rank)
+            if result['kernel']:
+                check(minor_rank(result['kernel']) == n-rank)
+            for v in result['kernel']:
+                check(direct_product(a, v) == (F(0),)*m)
+            if consistent:
+                check(direct_product(a, result['particular']) == tuple(b))
+            fit = least_squares(a, b)
+            geometric = project(a, b)
+            check(fit['fitted'] == geometric)
+            check(len(fit['kernel']) == n-rank)
+            check(direct_product(transpose(a), fit['residual']) == (F(0),)*n)
+            check(independent_cost(a, b, fit['coefficients']) == fit['squared_error'])
+            check((fit['squared_error'] == 0) == consistent)
+            for w in result['kernel']:
+                x = tuple(v+2*z for v, z in zip(fit['coefficients'], w))
+                check(direct_product(a, x) == fit['fitted'])
+            for scale in (-1, 0, 2):
+                h = tuple(F(scale*(j+1)) for j in range(n))
+                x = tuple(v+w for v, w in zip(fit['coefficients'], h))
+                ah = direct_product(a, h)
+                check(independent_cost(a, b, x) == fit['squared_error']+sum(v*v for v in ah))
+            if n == 2:
+                changed = multiply(a, ((1, 1), (0, 1)))
+                check(project(changed, b) == geometric)
+                y = least_squares(changed, b)['coefficients']
+                check(direct_product(a, (y[0]+y[1], y[1])) == geometric)
+                basis_cases += 1
+            system_cases += 1
+        matrix_cases += 1
+
+study = investigation()
+check(study['exact']['rank'] == 2)
+check(study['exact']['particular'] is None)
+check(study['exact']['kernel'] == ((F(-1), F(-1), F(1)),))
+check(study['fit']['coefficients'] == (F(33, 17), F(28, 17), F(0)))
+check(study['fit']['fitted'] == (F(33, 17), F(28, 17), F(61, 17), F(38, 17)))
+check(study['fit']['residual'] == (F(1, 17), F(-11, 17), F(7, 17), F(-4, 17)))
+check(study['fit']['squared_error'] == F(11, 17))
+check(study['new_coordinates'] == (F(5, 17), F(28, 17)))
+check(study['extra_observation']['coefficients'] == (F(49, 34), F(39, 34), F(1, 2)))
+check(study['extra_observation']['kernel'] == ())
+check(study['extra_observation']['squared_error'] == F(11, 17))
+check(study['weighted']['coefficients'] == (F(51, 25), F(91, 50), F(0)))
+check(study['weighted']['squared_error'] == F(41, 50))
+
+a = matrix(((1, 0, 1), (0, 1, 1), (1, 1, 2), (2, -1, 1)))
+for t in range(-20, 21):
+    check(action(a, (F(33, 17)-t, F(28, 17)-t, F(t))) == study['fit']['fitted'])
+consistent = eliminate(a, (2, 1, 3, 3))
+check(consistent['particular'] == (F(2), F(1), F(0)))
+check(least_squares(((1,), (1,)), (0, 2))['coefficients'] == (F(1),))
+check(least_squares(((1,), (2,)), (0, 4))['coefficients'] == (F(8, 5),))
+check(eliminate(((1,), (1,)), (0, 2))['particular'] is None)
+check(eliminate(((1,), (2,)), (0, 4))['particular'] is None)
+
+sensitivity_cases = 0
+for k in range(1, 13):
+    epsilon = F(1, 10**k)
+    a = ((1, 1), (1, 1+epsilon))
+    for multiplier in (-2, -1, 0, 1, 3):
+        delta = multiplier*epsilon
+        b = (F(2), F(2)+epsilon+delta)
+        x = eliminate(a, b)['particular']
+        check(x == (1-delta/epsilon, 1+delta/epsilon))
+        check(max(abs(v-1) for v in x) == abs(delta/epsilon))
+        check(action(a, x) == b)
+        sensitivity_cases += 1
+check(eliminate(((1, 1), (1, 1)), (2, 2))['rank'] == 1)
+check(eliminate(((1, 1), (1, 1)), (2, 3))['particular'] is None)
+
+invalid = [lambda: matrix(()), lambda: matrix(((),)),
+           lambda: matrix(((1,), (2, 3))), lambda: matrix(((0.1,),)),
+           lambda: matrix(((True,),)), lambda: action(((1, 2),), (1,)),
+           lambda: eliminate(((1,),), ()), lambda: project(((1,),), (1, 2)),
+           lambda: multiply(((1, 2),), ((1,),)), lambda: dot((1,), (1, 2))]
+for call in invalid:
+    try:
+        call()
+    except ValueError:
+        check(True)
+    else:
+        raise AssertionError('invalid domain accepted')
+
+print(json.dumps({'checks': checks, 'matrix_cases': matrix_cases,
+                  'system_cases': system_cases, 'basis_cases': basis_cases,
+                  'sensitivity_cases': sensitivity_cases}))
+```
+
+**Submit and defend:** give the mathematical derivation before program output; retain exact arrays, changed assumptions and residual conventions. Show why the orthogonal and normal-equation procedures must agree in exact arithmetic, then identify how their implementations differ. Change a declared observation, a redundant column, a row scale and the extra reading separately, predicting each result before running it. Include a case where a zero or dependent early column is followed by an independent one. Explain why finite enumeration does not prove all-dimensional correctness or floating stability. An independent reviewer should be able to reproduce the calculations using the written equations and a different implementation.
+
+**Author verification:** the independent companion passed 97,264 exact checks through Nix/Python 3.14.8: 2,051 matrices, 6,127 systems, 2,916 basis changes and 60 sensitivity cases, plus the stated study, metric and invalid-domain checks. Rank uses a separate minor-determinant reference; orthogonal projection and normal-equation elimination are independently organized. These finite tests do not establish input accuracy, floating stability or physical validation.
+
+**Continue:** [Review finite systems projections and the evidence for a fit](Review finite systems projections and the evidence for a fit.lingua#r_008D79B5C2EC2A98B1C4B2DA46).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_005B6E212C56EB47DF7702079B

@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Count legal histories by reflection and recursive decomposition (@math-discrete-histories: 0, is #chapter, #hephaestus-core "Check-what-a-quotient-preserves-before-merging-graph-states.lingua#r_009AE8B87EF9B264029366B97B") { r_0059D95D38A4225F4F21826562
+From (N,0,0) to (0,0,N), a complete forward history has N moves A:0→1 and N moves B:1→2. Encoding the moves as a word of length 2N forgets no information, because each move determines the next state. There are C(2N,N) words with N letters of each kind. A word is executable exactly when every prefix has at least as many A letters as B letters: the middle box count is #A−#B. The donor in box 0 is also available whenever another A occurs because the whole word has only N A letters.
+
+For N≥1, count invalid words by a bijection. At the first prefix with one more B than A, swap A and B throughout that prefix. The transformed word has N+1 A letters and N−1 B letters. Conversely, any word with those totals first reaches one more A than B somewhere; swapping that initial prefix gives a balanced word whose first negative balance occurs there. These transformations undo each other. Therefore the number of invalid words is C(2N,N+1), and the number of legal histories is
+
+C_N=C(2N,N)−C(2N,N+1)=C(2N,N)/(N+1).
+
+For N=0 there is one empty history, so C_0=1. The first values are 1,1,2,5,14,42,132,429,1430. A table of these values is a check, not the proof of the formula. This construction uses unweighted histories; it assigns no probability that a scheduler chooses any particular history.
+
+There is a second counting argument. Every nonempty legal word has a unique decomposition A u B v, where the displayed B is the first return of the balance to zero. Inside it, u is a legal word with k pairs; after it, v is a legal word with N−1−k pairs. Conversely any such pair of legal words gives one legal word. Disjoint cases and the product rule yield C_N=Σ_(k=0 to N−1)C_k C_(N−1−k). Together with C_0 this defines the counts uniquely by strong induction. It is not justified merely by observing that a numerical sequence fits the recurrence.
+
+A third finite computation counts walks by their final edge. Let W₀(v)=1 at the initial state and 0 elsewhere; set W_(m+1)(v)=Σ_(u→v)W_m(u). Induction on m proves that W_m counts walks of exactly m steps. The dynamic program uses this recurrence, while the checker independently enumerates balanced words and tests prefix legality and the reflection bijection. Separate proofs, alternative computations and exhaustive small cases support different parts of the result.
+
+**Work:** list all five legal histories for N=3 and identify the first-return decomposition of each. Explain why the six states at N=2 yield only two complete histories, whereas the fifteen states at N=4 yield fourteen. Modify the rule to limit the middle box to one token and derive which words survive. Do not reuse the unrestricted formula after adding that constraint. The history model and its calculations are original; advanced enumerative combinatorics remains later formation.
+
+**Continue:** [Check what a quotient preserves before merging graph states](Check-what-a-quotient-preserves-before-merging-graph-states.lingua#r_009AE8B87EF9B264029366B97B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0059D95D38A4225F4F21826562

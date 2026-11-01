@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Derive orbital shape timing and the limits of parameter inference (@physics-spacetime-orbits: 0, is #chapter, #hephaestus-core "Distinguish-local-free-fall-from-tidal-gravitational-structure.lingua#r_002F361B1AE054B0044156D39E") { r_003B0A54AD3132E93CD761C01A
+For a nonradial attractive inverse-square orbit, choose its plane and orientation so the specific angular momentum h=r²θ̇>0. The polar acceleration follows by differentiating e_r=(cosθ,sinθ) and e_θ=(−sinθ,cosθ): a_r=r̈−rθ̇², a_θ=rθ̈+2ṙθ̇. Angular conservation makes a_θ=0; the radial equation is r̈−h²/r³=−μ/r². This is a different h from Planck's constant, used only within this orbit account.
+
+Let u=1/r and primes mean d/dθ. Since θ̇=hu², ṙ=−hu′ and r̈=−h²u²u″. Substitution gives u″+u=μ/h². The shared oscillation mathematics solves it: choose periapsis at θ=0 and write r=p/(1+e cosθ), p=h²/μ. Eccentricity e≥0 fixes the shape. The elliptic case 0≤e<1 has periapsis p/(1+e), apoapsis p/(1−e), and semimajor axis a=p/(1−e²). For e≥1 the allowed angular domain has 1+e cosθ>0 and no finite elliptic period; radial h=0 motion requires a separate reduction.
+
+Differentiate x=r cosθ,y=r sinθ and use r²θ̇=h to obtain velocity (−μ sinθ/h, μ(e+cosθ)/h). Substituting in ε=|u_velocity|²/2−μ/r gives ε=μ²(e²−1)/(2h²)=−μ/(2a) for an ellipse. Thus |u_velocity|²=μ(2/r−1/a), the vis-viva relation. It depends on both location and orbit, so a radius alone does not fix a general speed.
+
+Area is swept at r²θ̇/2=h/2. Completing the square in x²+y²=(p−ex)² yields an ellipse centered at x=−ae, with axes a and b=a√(1−e²). Its area is πab, obtained by scaling the unit disk. A complete period is therefore P=2πab/h and P²=4π²a³/μ. Circular motion e=0 has v²=μ/r, half the squared escape speed there. Equal swept areas follow for any central force; an elliptic shape and this period relation require the inverse-square model.
+
+For normalized μ=1,h=1,e=3/5, p=1, periapsis=5/8, apoapsis=5/2, a=25/16 and ε=−8/25. Speeds at the two apsides are 8/5 and 2/5. The velocity direction changes; energy and angular momentum remain fixed. The investigation checks points by rational values of (cosθ,sinθ); these are samples of the orbit shape, not equally spaced times or a numerical time integrator.
+
+**Work and reading:** reconstruct the polar derivatives and ellipse completion, then study [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426) 4.3–4.3.2. Change e while fixing μ,h and compare apsides, energy and period. Infer μ=4π²a³/P² from independent length/time observations, retaining uncertainties, inclination and the two-body convention. A μ fitted to those same observations is not independent validation of the inverse-square law. Propose a held-out position/time comparison and a model with perturbations; classify which residuals could arise from measurement geometry rather than a new force.
+
+**Continue:** [Distinguish local free fall from tidal gravitational structure](Distinguish-local-free-fall-from-tidal-gravitational-structure.lingua#r_002F361B1AE054B0044156D39E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_003B0A54AD3132E93CD761C01A

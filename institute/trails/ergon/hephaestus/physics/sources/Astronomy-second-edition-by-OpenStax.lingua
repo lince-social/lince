@@ -1,0 +1,11 @@
+Import "../Physics.lingua"
+
+Astronomy second edition by OpenStax (@physics-source-astronomy: 0, is #reference) { r_00466D09500F8EEF3B1876A23F
+Andrew Fraknoi, David Morrison and Sidney C. Wolff, *Astronomy 2e*, OpenStax/Rice University. [Preface and scope](https://openstax.org/books/astronomy-2e/pages/preface). Inspected 1 November 2026: preface contents/rights; selected parallax geometry in [19.2](https://openstax.org/books/astronomy-2e/pages/19-2-surveying-the-stars); luminosity/brightness/magnitude in [17.1](https://openstax.org/books/astronomy-2e/pages/17-1-the-brightness-of-stars); thermal-radiation opening in [5.2](https://openstax.org/books/astronomy-2e/pages/5-2-the-electromagnetic-spectrum); hydrostatic/energy opening in [16.3](https://openstax.org/books/astronomy-2e/pages/16-3-the-solar-interior-theory); property-classification opening in [18.4](https://openstax.org/books/astronomy-2e/pages/18-4-the-h-r-diagram); spherical mass/rotation account in [25.3](https://openstax.org/books/astronomy-2e/pages/25-3-the-mass-of-the-galaxy); expansion/redshift in [29.2](https://openstax.org/books/astronomy-2e/pages/29-2-a-model-of-the-universe), and selected opening thermal-history/background connections in [29.3](https://openstax.org/books/astronomy-2e/pages/29-3-the-beginning-of-the-universe) and [29.4](https://openstax.org/books/astronomy-2e/pages/29-4-the-cosmic-microwave-background).
+
+These passages support an accessible introduction. The common lessons add original explicit observation models, assumptions and derivations. Wider chapter assignments in instruments, planetary science, spectra, evolution and cosmology are progressive reading, not a claim that the entire book or its linked media were audited. Distinguish spherical/circular simplifications from general galactic dynamics, hydrostatic from thermal balance and rounded magnitude rules from exact logarithmic definitions. Historical mission numbers and cosmological parameter estimates are not adopted as current measurements.
+
+The current preface declares CC BY-NC-SA 4.0; component credits and website terms also apply. Keep source media external and retain attribution. No figures, textbook exercises or author code are copied here.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00466D09500F8EEF3B1876A23F

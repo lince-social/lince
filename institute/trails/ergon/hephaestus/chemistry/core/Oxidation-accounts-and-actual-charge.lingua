@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Distinguish oxidation accounts from the charge of a species (@chemistry-redox-language: 0, is #chapter, #hephaestus-core "../general-chemistry/reactions/Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9") { r_00954A9C5D7E6BDFF7CF77D273
+**Begin with a question:** when an iron species changes from Fe³⁺ to Fe²⁺, what changes, what is conserved, and what would need measurement? The preceding solution block supplies species, element inventories and charge balance. [Distinguish formal charge, oxidation state, and delocalized bonding](../general-chemistry/bonding/Formal-charge-and-delocalization.lingua#r_43EAP1EC5N8J3HRPWV4D9T51AF) supplies formal charge and electronic delocalization. [Connect signed current to accumulated and stored charge](../../physics/core/Connect-signed-current-to-accumulated-and-stored-charge.lingua#r_00A2CB2AB667C70FE4724DA940) supplies signed electrical charge crossing a boundary. These are related accounts with different meanings.
+
+The charge number of a specified ion is its net charge divided by the positive elementary charge e. Fe³⁺ and Fe²⁺ therefore differ by one negative elementary charge per ion. A formula unit and a chemical amount must name the entities being counted. In an ordinary chemical reaction the nuclei are preserved; electrons can be redistributed between species and across the chosen boundary.
+
+An oxidation state is an assignment under a bond-electron bookkeeping convention. A formal charge in a Lewis representation instead divides a bonding pair equally between bonded atoms. Neither assignment generally equals a measured spatial partial charge in a covalent substance. For neutral water, the familiar oxidation assignments give two H(+I) and O(−II); the ordinary Lewis representation gives zero formal charge on each atom. The molecular net charge is zero in both accounts. That agreement of sums does not turn either atom assignment into a uniquely measured charge density.
+
+For a monatomic ion the oxidation-state number agrees with its charge number. Hence Fe³⁺ + e⁻ → Fe²⁺ is an unambiguous one-electron reduction account. Zn → Zn²⁺ + 2e⁻ is an oxidation account. Electrons are not created in the first equation or destroyed in the second: they are input/output entities of a chosen partial account. When coupled consistently their amounts cancel from the overall reaction.
+
+By contrast Fe(OH)₃ + 3H⁺ → Fe³⁺ + 3H₂O preserves iron's +III assignment. Its charge and proton account changes without an iron reduction. A color change or dissolution is not, by itself, proof of electron transfer. Even a balanced electron account does not establish the mechanism, speed or feasibility under an unspecified set of conditions.
+
+**Work:** build separate columns for formula, species charge, selected atom's oxidation state, and the Lewis representation used for formal charge. Compare Fe³⁺, Fe²⁺, H₂O and OH⁻. Check the sums without inventing fractional populations of unspecified ions. Explain why the oxidation states in water cannot be used as the literal ionic species of a solution balance.
+
+**Reading:** use [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), section 17.1's redox review, alongside the following shared Record. Its original broader reading remains part of the eventual general-chemistry formation. The common path here develops inspectable equations before electrode potentials or material-specific processes.
+
+**Continue:** [Balance redox changes while keeping oxidation state and charge distinct](../general-chemistry/reactions/Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00954A9C5D7E6BDFF7CF77D273

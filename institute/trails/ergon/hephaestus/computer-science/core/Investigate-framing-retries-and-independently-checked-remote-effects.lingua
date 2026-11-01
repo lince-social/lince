@@ -1,0 +1,366 @@
+Import "../Computing.lingua"
+
+Investigate framing retries and independently checked remote effects (@computing-communication-study: 0, is #chapter, #hephaestus-core "Review-communication-contracts-identity-and-conditional-completion.lingua#r_00AEE3B68FE4F0253687A55642") { r_0026D1A44A0804C35C72987DCD
+Build two connected but distinct investigations: a byte-stream decoder and a remote ledger under arbitrary whole-message loss/duplication. Reconstruct the schema and state variables on paper first. Predict the outputs for jobs (2,5,3), identify the interval where the server has committed but the client does not know it, and derive the state-count formula before running the supplied programs.
+
+Save the following original programs as communication_study.py and communication_checks.py in one directory. Run the checks through the repository's Nix Python environment. They use only the Python standard library. Earlier representation, persistence, concurrency and discrete lessons are reused as conceptual prerequisites; no copied networking implementation is hidden in these programs. The explorer's effects field records a witness history for checking; receive never consults it.
+
+The checker compares encoding against explicit byte arithmetic; tries all partitions of a two-request stream and a request/result stream; rejects every other two-byte payload length; and tests incomplete fields, malformed kinds and range limits. The protocol checker independently constructs an abstract graph containing only client/server prefix lengths and identity sets, compares states and transitions, reconstructs sums and actual effects, and checks reverse reachability of completion. It repeats three-job analysis with a different amount list. These are bounded exhaustive checks with a general written safety proof, not a deployed network experiment.
+
+**Bounded published reconstruction:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4) chapter 48, Figures 48.4 and 48.5 on printed pages 6–7 show lost-request and lost-reply retry patterns. Reconstruct just those event orders using our original amount two: the first drops a request before a retry; the second drops a reply after receipt. Both finish with one logical effect and result two under our added durable duplicate suppression. We do not reproduce the figures, socket library, timer implementation or a physical measurement. The two reconstructions preserve the loss distinction, not every implementation assumption of the source.
+
+**Original extension:** the arbitrary-old-message, crash-between-durable-actions and independently projected finite-state study goes beyond those two traces. Replay stale requests and replies, identity exhaustion and each defective variant. Keep actual effects, returned results and numbers of messages distinct. Graph sizes and check totals document coverage of a model; they do not measure protocol reliability in the wild.
+
+**Independent work:** choose either a bounded pipelined protocol with explicit out-of-order result retention, or a durable epoch extension that permits new sessions while old messages survive. Define the serial specification, states, transitions, failure/lifetime premises and storage obligations before programming. Supply a paper invariant, an independent oracle and at least one counterexample to a tempting defective version. Compare your change with the original state count and explain why the count changes. Separately extend the frame schema and test all chunk partitions for a small complete exchange. Do not silently upgrade the original result into a claim about authentication, real clocks, consensus or physical action.
+
+Submit a reproducible package, provenance for sources and changes, a report distinguishing assumptions from observations, and a response to a peer's counterexample. Revise any claim that the evidence does not support. These are learner requirements; author-run checks below do not assert that independent research or a physical network experiment has already been performed.
+
+
+```python file=communication_study.py
+from collections import deque
+from dataclasses import dataclass, replace
+
+
+def natural(value, low, high):
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError('integer outside declared range')
+    return value
+
+
+def encode(kind, identity, value):
+    natural(kind, 1, 2)
+    natural(identity, 1, 255)
+    natural(value, 1 if kind == 1 else 0, 15 if kind == 1 else 65535)
+    payload = bytes((kind, identity)) + value.to_bytes(kind, 'big')
+    return len(payload).to_bytes(2, 'big') + payload
+
+
+class Decoder:
+    def __init__(self):
+        self.pending = bytearray()
+        self.failed = False
+
+    def feed(self, chunk):
+        if self.failed or type(chunk) is not bytes:
+            raise ValueError('closed decoder or non-byte input')
+        completed = []
+        for octet in chunk:
+            self.pending.append(octet)
+            if len(self.pending) < 2:
+                continue
+            length = int.from_bytes(self.pending[:2], 'big')
+            if length not in (3, 4):
+                self.failed = True
+                raise ValueError('invalid payload length')
+            if len(self.pending) == length + 2:
+                kind, identity = self.pending[2:4]
+                value = int.from_bytes(self.pending[4:], 'big')
+                try:
+                    if encode(kind, identity, value) != bytes(self.pending):
+                        raise ValueError('kind and length disagree')
+                except ValueError:
+                    self.failed = True
+                    raise
+                completed.append((kind, identity, value))
+                self.pending.clear()
+        return tuple(completed)
+
+    def finish(self):
+        if self.failed or self.pending:
+            self.failed = True
+            raise ValueError('invalid or truncated stream')
+        self.failed = True
+
+
+def receive(record, request):
+    last, total, amount = record
+    identity, incoming = request
+    natural(identity, 1, 255)
+    natural(incoming, 1, 15)
+    if identity == last and incoming == amount:
+        return record, (identity, total), False
+    if identity == last + 1 and total + incoming <= 65535:
+        return (identity, total + incoming, incoming), (identity, total + incoming), True
+    return record, None, False
+
+
+@dataclass(frozen=True)
+class State:
+    results: tuple = ()
+    record: tuple = (0, 0, 0)
+    requests: frozenset = frozenset()
+    replies: frozenset = frozenset()
+    effects: tuple = ()
+
+
+def successors(state, jobs):
+    done = len(state.results)
+    yield ('crash',), state
+    if done < len(jobs):
+        request = (done + 1, jobs[done])
+        yield ('send', done + 1), replace(state, requests=state.requests | {request})
+    for request in sorted(state.requests):
+        identity, amount = request
+        yield ('drop-request', identity), replace(state, requests=state.requests - {request})
+        record, reply, applied = receive(state.record, request)
+        effects = state.effects + (request,) if applied else state.effects
+        replies = state.replies | {reply} if reply is not None else state.replies
+        yield ('deliver-request', identity), replace(state, record=record, replies=replies, effects=effects)
+    for reply in sorted(state.replies):
+        identity, total = reply
+        yield ('drop-reply', identity), replace(state, replies=state.replies - {reply})
+        results = state.results
+        if done < len(jobs) and identity == done + 1:
+            results += (total,)
+        yield ('deliver-reply', identity), replace(state, results=results)
+
+
+def explore(jobs):
+    jobs = tuple(jobs)
+    natural(len(jobs), 0, 3)
+    for value in jobs:
+        natural(value, 1, 15)
+    first = State()
+    paths = {first: ()}
+    graph = {}
+    queue = deque((first,))
+    while queue:
+        state = queue.popleft()
+        outgoing = tuple(successors(state, jobs))
+        graph[state] = outgoing
+        for event, following in outgoing:
+            if following not in paths:
+                paths[following] = paths[state] + (event,)
+                queue.append(following)
+    return graph, paths
+
+
+def replay(jobs, events):
+    state = State()
+    history = [state]
+    for event in events:
+        matches = [target for label, target in successors(state, jobs) if label == event]
+        if len(matches) != 1:
+            raise ValueError('event not enabled')
+        state = matches[0]
+        history.append(state)
+    return tuple(history)
+
+
+def investigation():
+    return {str(jobs): len(explore(jobs)[0]) for jobs in [(), (2,), (2, 5), (2, 5, 3)]}
+
+
+if __name__ == '__main__':
+    print(investigation())
+```
+
+```python file=communication_checks.py
+from collections import deque
+from itertools import product
+from fractions import Fraction as F
+import json
+from communication_study import Decoder, State, encode, explore, receive, replay
+
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def rejects(action):
+    global checks
+    checks += 1
+    try:
+        action()
+    except ValueError:
+        return
+    raise AssertionError('invalid input accepted')
+
+
+def partitions(data):
+    for cuts in product((False, True), repeat=len(data) - 1):
+        start = 0
+        chunks = []
+        for index, cut in enumerate(cuts, 1):
+            if cut:
+                chunks.append(data[start:index])
+                start = index
+        yield chunks + [data[start:]]
+
+
+def projection(state):
+    return (len(state.results), state.record[0], frozenset(x[0] for x in state.requests), frozenset(x[0] for x in state.replies))
+
+
+def abstract_graph(size):
+    first = (0, 0, frozenset(), frozenset())
+    graph = {}
+    queue = deque((first,))
+    seen = {first}
+    while queue:
+        state = queue.popleft()
+        done, committed, requests, replies = state
+        following = {state}
+        if done < size:
+            following.add((done, committed, requests | {done + 1}, replies))
+        for identity in requests:
+            following.add((done, committed, requests - {identity}, replies))
+            if identity == committed + 1:
+                following.add((done, identity, requests, replies | {identity}))
+            elif identity == committed:
+                following.add((done, committed, requests, replies | {identity}))
+            else:
+                following.add(state)
+        for identity in replies:
+            following.add((done, committed, requests, replies - {identity}))
+            following.add((done + 1, committed, requests, replies) if identity == done + 1 and done < size else state)
+        graph[state] = following
+        for target in following - seen:
+            seen.add(target)
+            queue.append(target)
+    return graph
+
+
+frames = 0
+for identity in range(1, 256):
+    for kind, values in [(1, range(1, 16)), (2, (0, 1, 255, 256, 3825, 65535))]:
+        for value in values:
+            packet = encode(kind, identity, value)
+            width = kind
+            expected = bytes((0, 2 + width, kind, identity)) + bytes((value,)) if kind == 1 else bytes((0, 4, 2, identity, value // 256, value % 256))
+            check(packet == expected)
+            decoder = Decoder()
+            check(decoder.feed(packet) == ((kind, identity, value),))
+            decoder.finish()
+            frames += 1
+partition_cases = 0
+for messages in [((1, 1, 2), (1, 2, 5)), ((1, 1, 2), (2, 1, 2))]:
+    data = b''.join(encode(*message) for message in messages)
+    for chunks in partitions(data):
+        decoder = Decoder()
+        output = ()
+        for chunk in chunks:
+            output += decoder.feed(chunk)
+            check(len(decoder.pending) <= 5)
+            check(decoder.feed(b'') == ())
+        check(output == messages)
+        decoder.finish()
+        partition_cases += 1
+for message in [(1, 1, 2), (2, 1, 258)]:
+    packet = encode(*message)
+    for cut in range(1, len(packet)):
+        decoder = Decoder()
+        check(decoder.feed(packet[:cut]) == ())
+        rejects(decoder.finish)
+for length in range(65536):
+    if length not in (3, 4):
+        decoder = Decoder()
+        rejects(lambda: decoder.feed(length.to_bytes(2, 'big')))
+malformed = [bytes(x) for x in [(0,3,0,1,2),(0,3,2,1,2),(0,4,1,1,0,2),(0,3,1,0,2),(0,3,1,1,0),(0,3,1,1,16),(0,4,2,0,0,1)]]
+for packet in malformed:
+    decoder = Decoder()
+    rejects(lambda: decoder.feed(packet))
+    rejects(lambda: decoder.feed(encode(1,1,1)))
+for args in [(True,1,1),(1,True,1),(1,256,1),(1,1,16),(2,1,-1),(2,1,65536)]:
+    rejects(lambda: encode(*args))
+decoder = Decoder()
+rejects(lambda: decoder.feed('bytes'))
+decoder.finish()
+rejects(lambda: decoder.feed(b''))
+model_cases = []
+for jobs in [(), (2,), (2,5), (2,5,3), (15,1,15)]:
+    graph, paths = explore(jobs)
+    prefixes = tuple(sum(jobs[:i]) for i in range(1, len(jobs)+1))
+    abstract = abstract_graph(len(jobs))
+    projected = {projection(state): state for state in graph}
+    check(len(projected) == len(graph))
+    check(set(projected) == set(abstract))
+    reverse = {state: set() for state in graph}
+    for state, outgoing in graph.items():
+        done, committed = len(state.results), state.record[0]
+        check(done <= committed <= min(done + 1, len(jobs)))
+        check(state.effects == tuple(enumerate(jobs[:committed], 1)))
+        check(state.record == (committed, sum(jobs[:committed]), jobs[committed-1] if committed else 0))
+        check(state.results == prefixes[:done])
+        check(all(request == (request[0], jobs[request[0]-1]) and 1 <= request[0] <= min(done+1,len(jobs)) for request in state.requests))
+        check(all(1 <= identity <= committed and value == prefixes[identity-1] for identity,value in state.replies))
+        check({projection(target) for _,target in outgoing} == abstract[projection(state)])
+        check(replay(jobs, paths[state])[-1] == state)
+        for _, target in outgoing:
+            reverse[target].add(state)
+    can_finish = {state for state in graph if len(state.results) == len(jobs)}
+    queue = deque(can_finish)
+    while queue:
+        for previous in reverse[queue.popleft()] - can_finish:
+            can_finish.add(previous)
+            queue.append(previous)
+    check(can_finish == set(graph))
+    expected_count = 1 if not jobs else 4 ** len(jobs) + sum(6 * 4 ** c for c in range(len(jobs)))
+    check(len(graph) == expected_count)
+    model_cases.append({'jobs':jobs,'states':len(graph),'edges':sum(map(len,graph.values()))})
+lost_request = [('send',1),('drop-request',1),('send',1),('deliver-request',1),('deliver-reply',1)]
+lost_reply = [('send',1),('deliver-request',1),('drop-reply',1),('send',1),('deliver-request',1),('deliver-reply',1)]
+for events in [lost_request,lost_reply]:
+    history = replay((2,),events)
+    check(history[-1].results == (2,))
+    check(history[-1].effects == ((1,2),))
+before_response = replay((2,),[('send',1),('deliver-request',1),('drop-reply',1)])[-1]
+without_effect = replay((2,),[('send',1),('drop-request',1)])[-1]
+check(before_response.results == without_effect.results == ())
+check(before_response.effects != without_effect.effects)
+record, reply, effect = receive((0,0,0),(1,2))
+check((record,reply,effect) == ((1,2,2),(1,2),True))
+check(receive(record,(1,2)) == (record,reply,False))
+check(receive(record,(1,3)) == (record,None,False))
+check(receive(record,(3,2)) == (record,None,False))
+record2, _, _ = receive(record,(2,5))
+check(receive(record2,(1,2)) == (record2,None,False))
+last = (254,3810,15)
+last,reply,effect = receive(last,(255,15))
+check((last,reply,effect) == ((255,3825,15),(255,3825),True))
+check(receive(last,(255,15)) == (last,reply,False))
+rejects(lambda: receive(last,(256,1)))
+record = (0,0,0)
+naive_effects = []
+for request in [(1,2),(1,2)]:
+    naive_effects.append(request)
+check(tuple(naive_effects) != ((1,2),))
+forgotten = (0,2,0)
+repeated,_,_ = receive(forgotten,(1,2))
+check(repeated[1] == 4)
+state = replay((2,5),[('send',1),('deliver-request',1),('deliver-reply',1)])[-1]
+wrong_results = state.results + (next(iter(state.replies))[1],)
+check(wrong_results == (2,2) and state.record[0] == 1)
+early_results, durable_total = (2,), 0
+check(early_results[-1] != durable_total)
+expected_bit, delivered = 0, []
+for bit, value in [(0,2),(1,5),(0,2)]:
+    if bit == expected_bit:
+        delivered.append(value)
+        expected_bit ^= 1
+check(delivered == [2,5,2])
+check(delivered != [2,5,3])
+check(sum((1,4)) == sum((2,3)))
+cycle = F(11,1000) + 2 * F(20,1000) + F(4,1000)
+check(cycle == F(11,200))
+check(1 / cycle == F(200,11))
+check(1 / (F(3,4) * F(2,3)) == 2)
+for size in range(20):
+    check(sum(F(1,2) ** n for n in range(size+1)) == 2 - F(1,2) ** size)
+for jobs in [(1,2,3,4),(0,), (True,), (16,)]:
+    rejects(lambda: explore(jobs))
+rejects(lambda: replay((2,), [('deliver-reply',1)]))
+print(json.dumps({'checks':checks,'frames':frames,'stream_partitions':partition_cases,'invalid_lengths':65534,'models':model_cases,'published_traces':2,'defective_variants':5}))
+```
+
+**Author verification:** 99,305 checks passed through Nix/Python: 5,355 frame round trips, 1,536 complete stream partitions, 65,534 rejected length values and five finite model cases with 1,10,46,190,190 reachable states. Independent byte arithmetic, prefix-sum reconstruction, an abstract identity-only graph, exact state counts and reverse completion reachability support the original model. Two bounded published loss traces and five defective variants are reconstructed. General safety and conditional progress retain written proofs. No deployed network or independent learner research is claimed.
+
+**Continue:** [Review communication contracts identity and conditional completion](Review-communication-contracts-identity-and-conditional-completion.lingua#r_00AEE3B68FE4F0253687A55642).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0026D1A44A0804C35C72987DCD

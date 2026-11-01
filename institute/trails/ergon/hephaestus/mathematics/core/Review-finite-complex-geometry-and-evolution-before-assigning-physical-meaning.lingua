@@ -1,0 +1,18 @@
+Import "../Mathematics.lingua"
+
+Review finite complex geometry and evolution before assigning physical meaning (@math-operator-review: 0, is #chapter, #hephaestus-core "Accumulate-scalar-quantities-over-rectangles-and-volumes.lingua#r_00EBDB50A31BF3955DD0E3A3B7") { r_00830E077A601AFC41FCE357A6
+Return to the shared concepts rather than only the final program. Given a complex map and a declared basis, explain its domain, codomain, scalar field and inner product. Derive its adjoint, distinguish inverse from adjoint, and decide whether a square map is Hermitian or unitary. Translate the inner-product convention used by the assigned source. Supply a counterexample to confusing real-linearity with complex-linearity.
+
+Prove the projection and norm inequality, resolve the explicit Hermitian involution through its projectors, and explain precisely why this proves a complete decomposition for the chosen family. Give a square matrix that has no eigenbasis and show why the exponential method still works. Change to an oblique basis, carry the metric, and recover the original length and self-adjointness claim.
+
+For a constant finite generator, justify the exponential series, its derivative, group law, initial condition and uniqueness. Provide a numerical cutoff with a valid tail certificate. Derive the norm-preserving coupled example and distinguish it from a general matrix evolution. Show by exact calculations how transformation order and an inappropriate numerical method can change the answer. State the difference between mathematical truncation, arithmetic rounding, uncertain inputs and failure of a physical model.
+
+Use [Linear Algebra Done Right by Sheldon Axler](../sources/Linear-Algebra-Done-Right-by-Sheldon-Axler.lingua#r_00F8D5FB7EBA74EA7A7E1AEA27) and [Differential Equations — MIT 18.03SC](../../physics/thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE) for the selected readings and bounded reconstructions. Broader finite spectral theory, generalized eigenvectors, multilinear algebra, functional analysis, nonlinear/time-varying systems and advanced numerical methods remain branch work. This block closes the identified finite-complex-operator prerequisite for the next physical foundations, not the entire mathematics core. The remaining common oriented-field/local-balance bridge is still pending.
+
+The next cross-area work is quantum foundations in [Physics — fields, matter, motion and physical evidence](../../physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W): preparation, amplitudes, outcome probabilities, observables and evolution need physical premises and experimental evidence beyond this algebra. Reuse [Review oscillations waves boundaries and physical evidence](../../physics/core/Review-oscillations-waves-boundaries-and-physical-evidence.lingua#r_003B1CBD2375314B99BCD448E3) and [Review chemical structure interactions and thermal evidence](../../chemistry/core/Review-chemical-structure-interactions-and-thermal-evidence.lingua#r_08EE3B7D98E627A9ECA27D9787) where relevant, without treating classical waves or an orbital picture as a complete quantum account. Keep developing the common layer across the tree before specialist research routes.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue through oriented fields:** [Accumulate scalar quantities over rectangles and volumes](Accumulate-scalar-quantities-over-rectangles-and-volumes.lingua#r_00EBDB50A31BF3955DD0E3A3B7). Connect accumulated quantities, coordinate measure, boundary orientation and local balance before their shared physical applications.
+
+} r_00830E077A601AFC41FCE357A6

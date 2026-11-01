@@ -1,0 +1,268 @@
+Import "../Computing.lingua"
+
+Investigate intent permissions uncertain outcomes and minimal receipts (@computing-trust-study: 0, is #chapter, #hephaestus-core "Review-human-intent-authority-accessible-evidence-and-recovery.lingua#r_00639CE7BBAFF02F9242DBEFCB") { r_006DE209B98FF46901A89BC981
+This original investigation joins a person's proposed addition to a bounded service and the evidence returned. Extract the unchanged `communication_study.py` from [Investigate framing retries and independently checked remote effects](Investigate-framing-retries-and-independently-checked-remote-effects.lingua#r_0026D1A44A0804C35C72987DCD), and save the two blocks below alongside it as `trust_study.py` and `trust_checks.py`. Run `python3 -B trust_checks.py`. Standard-library Python is sufficient. Importing the study performs no I/O. The programs change no application, network, physical inventory or persistent service.
+
+`dispatch` accepts internally valid tuples for public objects alpha and beta, a trusted grant set and an authenticated-actor value supplied by its caller. It validates the incoming request and reuses `receive`; it implements no identity establishment. Each ledger has one established client namespace. Calls are sequential, and permission observation plus ledger effect is atomic relative to grant changes. A matching duplicate requires read; a new addition requires read and add. All other protocol cases retain the existing receiver semantics. The no-reply result intentionally does not disclose whether absent authority or a protocol mismatch caused rejection. Timing and other side channels are outside the model.
+
+The interaction explorer fixes one reviewed request (alpha,1,2). It records draft/pending/unknown/confirmed, the server tuple, whether a copy of the request/reply remains in flight, current read/add grants, an accepted receipt and the count of effects. Delivery may repeat while a message remains in flight; drop removes its availability. Grant changes are trusted external events. Timeout changes only the client's phase. An authentic reply can still arrive after read revocation if it was already emitted. No client/server restart, real clock, authentication or scheduling fairness is implemented here; persistence and message authenticity are inherited assumptions. `surface` depends on client-visible phase, not hidden server tuple or permission state. Its two input adapters are abstract event mappings, not UI drivers.
+
+**Investigation sequence:**
+
+1. Derive the task and authority contracts before reading the code. Predict the outcomes for revocation before delivery and after commit. Identify which operation arguments must remain fixed.
+2. Reconstruct the selected MIT distinction between acknowledging an input and observing its result with a pending screen and a receipt screen. Reconstruct the protection reading's cached-authority concern with prepare → revoke → deliver. These are original applications of inspected arguments, not replications of a published user experiment.
+3. Trace submit → deliver-request → drop-reply → timeout → revoke-add → retry → deliver-request → deliver-reply. The server adds once and returns the old receipt after add revocation while read remains. Compare submit → drop-request → timeout → revoke-add: the same visible unknown state has no effect yet.
+4. Prove the invariant: the server is either (0,0,0) with zero effects or (1,2,2) with one; confirmed implies an authentic emitted receipt and one effect. Fresh commit requires both current grants. Receipt delivery may follow revocation because revocation cannot withdraw an earlier disclosure. Explain each transition case.
+5. Run the independent history-based dispatcher oracle and the reachable-state checks. Classify them separately: the oracle constructs the expected result from serial histories without calling `receive`; the explorer shares the implemented transitions, so its invariants and distinguishing witnesses matter more than replay agreement alone. Finite enumeration supports these cases, not every future extension.
+6. Refute three rivals: cached permission can accept after revocation; a new identity after lost confirmation can duplicate the intended addition; erasing the server tuple and reopening its namespace can accept a delayed old request. A changed amount under the latest identity is rejected. State what each counterexample does and does not establish.
+7. Vary name and note while holding receipt fields fixed. Check the projection equality, then demonstrate that changing a task field changes the output. Explain why this field property neither removes linkability nor establishes deletion of copies. Write a retention proposal that preserves the retry assumptions it needs.
+8. Produce the proposed interaction and evaluation artifacts from the preceding lessons. Criticize the fixed-draft simplification, lack of real rendering and absence of participants. Propose an extension with two editable tasks, but do not claim its correctness without reworking identity, observation and authority assumptions.
+
+**Deliver:** a task account, transition table, inductive argument, source reconstruction, executable results, failed-rival traces, data-purpose account and a revised evaluation plan. Distinguish what was derived, simulated, inspected in a source and actually observed. The next review tests transfer to another task rather than memorization of this one.
+
+```python file=trust_study.py
+from collections import deque
+from dataclasses import dataclass, replace
+from communication_study import natural, receive
+
+
+OBJECTS = ('alpha', 'beta')
+
+
+def dispatch(records, grants, actor, object_name, request):
+    if object_name not in OBJECTS:
+        raise ValueError('unknown object')
+    if type(request) is not tuple or len(request) != 2:
+        raise ValueError('request must be an identity and amount')
+    identity, amount = request
+    natural(identity, 1, 255)
+    natural(amount, 1, 15)
+    if (actor, object_name, 'read') not in grants:
+        return records, None, False
+    index = OBJECTS.index(object_name)
+    record = records[index]
+    repeated = (identity, amount) == (record[0], record[2])
+    if not repeated and (actor, object_name, 'add') not in grants:
+        return records, None, False
+    following, reply, applied = receive(record, request)
+    changed = records[:index] + (following,) + records[index + 1:]
+    return changed, reply, applied
+
+
+@dataclass(frozen=True)
+class Interaction:
+    phase: str = 'draft'
+    record: tuple = (0, 0, 0)
+    request_in_flight: bool = False
+    reply_in_flight: bool = False
+    can_read: bool = True
+    can_add: bool = True
+    receipt: tuple | None = None
+    effects: int = 0
+
+
+def transitions(state):
+    yield 'revoke-read', replace(state, can_read=False)
+    yield 'grant-read', replace(state, can_read=True)
+    yield 'revoke-add', replace(state, can_add=False)
+    yield 'grant-add', replace(state, can_add=True)
+    if state.phase == 'draft':
+        yield 'submit', replace(state, phase='pending', request_in_flight=True)
+    if state.phase in ('pending', 'unknown'):
+        yield 'timeout', replace(state, phase='unknown')
+        yield 'retry', replace(state, request_in_flight=True)
+    if state.request_in_flight:
+        yield 'drop-request', replace(state, request_in_flight=False)
+        grants = frozenset(('operator', 'alpha', operation) for operation, enabled
+                           in (('read', state.can_read), ('add', state.can_add)) if enabled)
+        records, reply, applied = dispatch((state.record, (0, 0, 0)), grants,
+                                           'operator', 'alpha', (1, 2))
+        yield 'deliver-request', replace(state, record=records[0],
+                                        reply_in_flight=state.reply_in_flight or reply is not None,
+                                        effects=state.effects + int(applied))
+    if state.reply_in_flight:
+        yield 'drop-reply', replace(state, reply_in_flight=False)
+        yield 'deliver-reply', replace(state, phase='confirmed', receipt=(1, 2))
+
+
+def explore():
+    first = Interaction()
+    paths = {first: ()}
+    graph = {}
+    queue = deque((first,))
+    while queue:
+        state = queue.popleft()
+        graph[state] = tuple(transitions(state))
+        for event, following in graph[state]:
+            if following not in paths:
+                paths[following] = paths[state] + (event,)
+                queue.append(following)
+    return graph, paths
+
+
+def replay(events):
+    state = Interaction()
+    for event in events:
+        options = dict(transitions(state))
+        if event not in options:
+            raise ValueError('event is not enabled')
+        state = options[event]
+    return state
+
+
+def surface(state):
+    if state.phase == 'draft':
+        return ('Draft: add 2 to alpha; no request submitted.',
+                (('submit', 'Submit this addition', 'button'),))
+    if state.phase == 'confirmed':
+        return ('Confirmed: alpha request 1 added 2; resulting total 2.', ())
+    if state.phase == 'pending':
+        text = 'Submitted: alpha request 1 for 2; confirmation pending.'
+    else:
+        text = 'Outcome unknown: alpha request 1 for 2 may have committed.'
+    return text, (('retry', 'Retry the same request', 'button'),)
+
+
+def activate(state, action, channel):
+    if channel not in ('keyboard', 'pointer'):
+        raise ValueError('unsupported abstract input channel')
+    offered = {identity for identity, name, role in surface(state)[1]}
+    if action not in offered:
+        raise ValueError('action is not offered')
+    return dict(transitions(state))[action]
+
+
+def receipt_projection(row):
+    return tuple((key, row[key]) for key in ('object', 'identity', 'amount', 'total'))
+```
+
+```python file=trust_checks.py
+from dataclasses import replace
+from itertools import product
+import json
+import trust_study as t
+
+
+checks = 0
+def verify(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def summary(history):
+    return (len(history), sum(history), history[-1] if history else 0)
+
+
+rights = (('operator', 'alpha', 'read'), ('operator', 'alpha', 'add'),
+          ('operator', 'beta', 'read'), ('operator', 'beta', 'add'),
+          ('reviewer', 'alpha', 'read'), ('reviewer', 'beta', 'read'))
+dispatch_cases = 0
+for bits in product((False, True), repeat=len(rights)):
+    grants = frozenset(right for right, enabled in zip(rights, bits) if enabled)
+    for histories in product(((), (2,), (2, 3)), ((), (1,))):
+        records = tuple(summary(history) for history in histories)
+        for actor, object_name, identity, amount in product(
+                ('operator', 'reviewer', 'guest'), t.OBJECTS, range(1, 4), range(1, 4)):
+            index = t.OBJECTS.index(object_name)
+            history = histories[index]
+            authorized = (actor, object_name, 'read') in grants
+            same = bool(history) and identity == len(history) and amount == history[-1]
+            new = identity == len(history) + 1 and (actor, object_name, 'add') in grants
+            expected_histories = histories
+            expected_reply = None
+            expected_applied = False
+            if authorized and (same or new):
+                if new:
+                    expected_histories = histories[:index] + (history + (amount,),) + histories[index+1:]
+                    expected_applied = True
+                expected_reply = (identity, sum(expected_histories[index]))
+            result = t.dispatch(records, grants, actor, object_name, (identity, amount))
+            verify(result == (tuple(summary(h) for h in expected_histories), expected_reply, expected_applied))
+            verify(records == tuple(summary(h) for h in histories))
+            dispatch_cases += 1
+
+graph, paths = t.explore()
+transition_count = 0
+for state, outgoing in graph.items():
+    verify(state.effects in (0, 1))
+    verify(state.record == ((1, 2, 2) if state.effects else (0, 0, 0)))
+    verify((state.phase == 'confirmed') == (state.receipt == (1, 2)))
+    verify(state.receipt is None or state.effects == 1)
+    verify(t.replay(paths[state]) == state)
+    for event, following in outgoing:
+        transition_count += 1
+        verify(following.effects >= state.effects)
+        if following.effects > state.effects:
+            verify(event == 'deliver-request' and state.can_add and state.can_read)
+        if not state.can_read and event == 'deliver-request':
+            verify(following.reply_in_flight == state.reply_in_flight)
+        if event == 'timeout':
+            verify(following.record == state.record and following.receipt == state.receipt)
+        if event == 'deliver-reply':
+            verify(state.reply_in_flight and state.effects == 1)
+    for action, name, role in t.surface(state)[1]:
+        verify(bool(name) and role == 'button')
+        verify(t.activate(state, action, 'keyboard') == t.activate(state, action, 'pointer'))
+
+lost = t.replay(('submit', 'deliver-request', 'drop-reply', 'timeout', 'revoke-add'))
+verify(lost.phase == 'unknown' and lost.effects == 1)
+recovered = t.replay(('submit', 'deliver-request', 'drop-reply', 'timeout', 'revoke-add',
+                     'retry', 'deliver-request', 'deliver-reply'))
+verify(recovered.phase == 'confirmed' and recovered.effects == 1)
+not_committed = t.replay(('submit', 'drop-request', 'timeout', 'revoke-add'))
+verify(not_committed.effects == 0)
+verify(t.surface(lost) == t.surface(not_committed))
+verify(t.surface(replace(lost, can_read=False, can_add=False)) == t.surface(lost))
+blocked = t.replay(('submit', 'revoke-add', 'deliver-request', 'timeout'))
+verify(blocked.effects == 0 and not blocked.reply_in_flight)
+later = t.replay(('submit', 'revoke-add', 'deliver-request', 'timeout', 'grant-add',
+                 'deliver-request', 'deliver-reply'))
+verify(later.effects == 1 and later.phase == 'confirmed')
+in_flight = t.replay(('submit', 'deliver-request', 'revoke-read', 'deliver-reply'))
+verify(in_flight.phase == 'confirmed' and not in_flight.can_read)
+base = {'object': 'alpha', 'identity': 1, 'amount': 2, 'total': 2}
+for name, note in product(('A', 'B', ''), ('private', 'other', '')):
+    row = base | {'name': name, 'note': note}
+    verify(t.receipt_projection(row) == tuple(base.items()))
+verify(t.receipt_projection(base | {'amount': 3}) != t.receipt_projection(base))
+
+denied = frozenset({('operator', 'alpha', 'read')})
+old = ((0, 0, 0), (0, 0, 0))
+verify(t.dispatch(old, denied, 'operator', 'alpha', (1, 2))[0] == old)
+cached = frozenset({('operator', 'alpha', 'read'), ('operator', 'alpha', 'add')})
+verify(t.dispatch(old, cached, 'operator', 'alpha', (1, 2))[2])
+verify(t.dispatch(((1, 2, 2), (0, 0, 0)), cached, 'operator', 'alpha', (2, 2))[0][0][1] == 4)
+verify(t.dispatch(((1, 2, 2), (0, 0, 0)), cached, 'operator', 'alpha', (1, 2))[0][0][1] == 2)
+verify(t.dispatch(((1, 2, 2), (0, 0, 0)), cached, 'operator', 'alpha', (1, 3))[1] is None)
+reset = t.dispatch(old, cached, 'operator', 'alpha', (1, 2))
+verify(reset[2])
+
+rejected = 0
+bad_calls = [lambda: t.dispatch(old, cached, 'operator', 'missing', (1, 2)),
+             lambda: t.dispatch(old, cached, 'operator', 'alpha', [1, 2]),
+             lambda: t.activate(t.Interaction(), 'retry', 'keyboard'),
+             lambda: t.activate(t.Interaction(), 'submit', 'voice'),
+             lambda: t.replay(('deliver-reply',))]
+for identity, amount in ((True, 2), (0, 2), (256, 2), (1, True), (1, 0), (1, 16), ('1', 2)):
+    bad_calls.append(lambda i=identity, a=amount: t.dispatch(old, cached, 'operator', 'alpha', (i, a)))
+for call in bad_calls:
+    try:
+        call()
+    except ValueError:
+        rejected += 1
+    else:
+        raise AssertionError('invalid input accepted')
+    verify(True)
+
+print(json.dumps({'checks': checks, 'dispatch_cases': dispatch_cases, 'reachable_states': len(graph),
+                  'transitions': transition_count, 'rejected': rejected,
+                  'limits': 'finite authored model; no authentication, UI rendering or user study'}, indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 42,526 assertions, including 20,736 dispatcher cases against a separate serial-history oracle, 68 reachable interaction states with 484 outgoing transitions, nonmutation, lost-reply and revocation witnesses, equal abstract input transitions, field-selection comparisons and twelve rejected calls. These checks concern the finite authored model. No real authentication, rendered interface, participant study, accessibility conformance or privacy compliance is established.
+
+**Continue:** [Review human intent authority accessible evidence and recovery](Review-human-intent-authority-accessible-evidence-and-recovery.lingua#r_00639CE7BBAFF02F9242DBEFCB).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_006DE209B98FF46901A89BC981

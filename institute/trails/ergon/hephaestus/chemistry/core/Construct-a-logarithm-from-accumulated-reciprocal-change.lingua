@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Construct a logarithm from accumulated reciprocal change (@chemistry-logarithm-bridge: 0, is #chapter, #hephaestus-core "Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359") { r_048F416B6E95AE137A181635B7
+This reusable mathematical preparation supplies a function needed in chemical time and signal accounts. It builds on [Connect accumulated change and local rate under stated conditions](../../mathematics/core/Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0), [Use derivative information with explicit interval and error bounds](../../mathematics/core/Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629) and [Derive differentiation rules and preserve composition assumptions](../../mathematics/core/Derive-differentiation-rules-and-preserve-composition-assumptions.lingua#r_0FCCEC518E4158271D78D0E3DA). A logarithm is not assumed from a calculator button.
+
+For a positive dimensionless number x define L(x)=∫₁ˣ du/u, with a reversed integral when 0<x<1. The integrand is continuous on every closed positive interval; the continuous-integrability foundation already stated in mathematics applies. The fundamental theorem gives L′(x)=1/x. Thus L(1)=0, L is continuous and strictly increasing, L(x)>0 for x>1 and L(x)<0 for x<1. Its real domain excludes zero and negative inputs; one must not cross zero in this definition.
+
+Fix a>0. By the chain rule the derivative of L(ax)−L(x) is a/(ax)−1/x=0. The mean value theorem makes this difference constant on (0,∞); at x=1 its value is L(a). Hence L(ax)=L(a)+L(x), L(1/a)=−L(a), and L(aⁿ)=nL(a) for integer n by repeated multiplication and reciprocals. Since L(2)>0, L(2ⁿ)=nL(2) grows without bound and L(2⁻ⁿ)=−nL(2) decreases without bound. Continuity and the intermediate value theorem therefore make its range every real number. This establishes the inverse needed next rather than presuming it from a plotted curve.
+
+We call L the natural logarithm, written ln. For b>0 and b≠1, define log_b(x)=ln(x)/ln(b). In particular log₁₀(x)=ln(x)/ln(10). The product rule for logarithms becomes a difference for ratios, but there is no corresponding rule ln(x+y)=ln x+ln y. Testing x=y=1 already refutes that proposed rule.
+
+Chemical arguments are ratios such as c(t)/c(0), activities relative to a standard state, or an intensity ratio. Taking ln of the numerical concentration after changing its unit shifts the number unless a reference is included. Write ln(c/c_ref), state the reference and require c>0. A reported zero or negative background-corrected signal cannot be inserted into a real logarithm as if it were a positive concentration. The observation model and uncertainty must be reconsidered.
+
+For an original bound on ln 2, put 1/u between its decreasing endpoint values on each interval in a partition of [1,2]. On n equal intervals this gives explicit lower and upper sums with gap 1/(2n). These bounds come from the integral definition and can check a numerical logarithm without calling the same logarithm routine again. The later study supplies a faster rational bound derived from a finite geometric identity.
+
+**Read and prove:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 2 section 2.7, logarithm definition and properties. Reproduce the constant-derivative product proof, justify the positive domain and unbounded range, and derive the stated endpoint-sum gap. Compare ln(4/2) with ln4−ln2. Explain why a change of concentration unit leaves ln(c/c_ref) unchanged when both use the same unit. General integration techniques and complex logarithms remain later mathematics.
+
+**Continue:** [Define exponential change by an inverse and prove its rate law](Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_048F416B6E95AE137A181635B7

@@ -4,10 +4,9 @@ use std::path::{Path, PathBuf};
 const SHOWN_PER_RULE: usize = 40;
 
 pub fn teach(manifest_dir: impl AsRef<Path>) {
-    let sources = sources_of(manifest_dir.as_ref());
-    for path in &sources {
-        println!("cargo:rerun-if-changed={}", path.display());
-    }
+    let manifest_dir = manifest_dir.as_ref();
+    let sources = sources_of(manifest_dir);
+    println!("cargo:rerun-if-changed={}", manifest_dir.display());
     if let Some(complaint) = examine(&sources) {
         panic!("\n{complaint}\n");
     }
@@ -16,9 +15,7 @@ pub fn teach(manifest_dir: impl AsRef<Path>) {
 pub fn teach_workspace(root: impl AsRef<Path>) {
     let root = root.as_ref();
     let sources = workspace_sources(root);
-    for path in &sources {
-        println!("cargo:rerun-if-changed={}", path.display());
-    }
+    println!("cargo:rerun-if-changed={}", root.join("crates").display());
     if let Some(complaint) = examine(&sources) {
         panic!("\n{complaint}\n");
     }
@@ -32,6 +29,9 @@ pub fn examine(sources: &[PathBuf]) -> Option<String> {
     }
 
     for path in sources {
+        if !lessons.iter().any(|(rule, _, _)| rule.wants(path)) {
+            continue;
+        }
         let Ok(source) = std::fs::read_to_string(path) else {
             continue;
         };

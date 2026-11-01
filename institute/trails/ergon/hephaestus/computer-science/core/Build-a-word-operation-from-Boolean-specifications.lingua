@@ -1,0 +1,28 @@
+Import "../Computing.lingua"
+
+Build a word operation from Boolean specifications (@computing-boolean-logic: 0, is #chapter, #hephaestus-core "Separate-a-stored-state-from-the-logic-that-computes-its-successor.lingua#r_0FA638CDB4720F2F649A33F408") { r_02F42AB6FDA5DC0617C57FAEA5
+A Boolean function maps specified input bits to output bits. NOT reverses a bit, AND is one only when both inputs are one, OR is one when at least one is one, and XOR is one when exactly one of two inputs is one. These truth-value functions differ from a programming language’s short-circuit operators that may return non-Boolean operands. Read [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ) before equating the notation of a circuit with language evaluation.
+
+A full adder has input bits a,b,c, with c the incoming carry. Its output bits satisfy a+b+c=s+2d. The eight rows are:
+
+| a | b | c | s | d |
+| --- | --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 0 | 1 | 1 | 0 |
+| 0 | 1 | 0 | 1 | 0 |
+| 0 | 1 | 1 | 0 | 1 |
+| 1 | 0 | 0 | 1 | 0 |
+| 1 | 0 | 1 | 0 | 1 |
+| 1 | 1 | 0 | 0 | 1 |
+| 1 | 1 | 1 | 1 | 1 |
+
+The equations s=a XOR b XOR c and d=(a AND b) OR (c AND (a XOR b)) reproduce every row. Connect the carry output at position i to the carry input at i+1, beginning with zero. After k positions, the sum of the low k operand portions equals the low k result plus 2ᵏ times the current carry. The one-bit identity preserves this invariant, proving the complete word result and outgoing carry.
+
+A selector chooses x when control z=0 and y when z=1: out=(NOT z AND x) OR (z AND y), applied to each bit for a word. Combining selected inputs, an adder and other Boolean functions supplies a model of a datapath. The truth table specifies the eventual stable logical result, not the time it takes a physical circuit to settle. Cascading carry stages introduces timing questions that a Boolean proof alone does not answer.
+
+**Read and derive:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 4’s functional specifications, truth tables and selection logic. Reconstruct the equations from the table, prove the carry invariant and enumerate the selector’s cases. Describe a circuit with the right static truth table but insufficient time to settle before its output is sampled. Physical transistor implementation, hazards and detailed timing remain later engineering.
+
+**Continue:** [Separate a stored state from the logic that computes its successor](Separate-a-stored-state-from-the-logic-that-computes-its-successor.lingua#r_0FA638CDB4720F2F649A33F408).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_02F42AB6FDA5DC0617C57FAEA5

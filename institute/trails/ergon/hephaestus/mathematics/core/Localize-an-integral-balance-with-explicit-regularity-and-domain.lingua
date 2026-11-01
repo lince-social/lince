@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Localize an integral balance with explicit regularity and domain (@math-fields-balance: 0, is #chapter, #hephaestus-core "Investigate-oriented-boundaries-coordinates-and-local-conservation.lingua#r_008752CDDEC92582D0542CEC80") { r_0083DE48564035390466617B57
+Consider a fixed bounded region V. Let ρ(x,t) be amount per volume, J(x,t) outward transport per area per time, and s(x,t) local production per volume per time. A proposed balance is
+
+d/dt ∭_V ρ dV + ∬_∂V J·n dA = ∭_V s dV.
+
+This is a physical or accounting premise; vector calculus alone does not establish that a real system obeys it. Under continuous ρ and ∂tρ on a compact spatial region and a time neighborhood, differentiation under the integral is justified: the time difference quotient converges uniformly in space to ∂tρ by the fundamental theorem in t and uniform continuity of ∂tρ. The error in the integral is bounded by volume times the uniform error. Assume also J is spatially C¹ near the closure and s continuous. The box divergence theorem then converts the balance to ∭_V R dV=0, where R=∂tρ+divJ−s is continuous.
+
+To infer R(p,t)=0 locally, require the balance for every sufficiently small box in the open spatial domain at that time. If R(p,t)>0, continuity gives a neighborhood where R>R(p,t)/2. A box there has a strictly positive integral, contradiction. The negative case is analogous. Therefore ∂tρ+divJ=s. Conversely, integrating this equation and applying the same justified operations gives the integral balance for permitted fixed regions. One global region is insufficient: R=x on [−1,1]×[0,1]×[0,1] integrates to zero but is nonzero on most points, and its positive-half integral is 1/2.
+
+Continuity is also material to the pointwise conclusion. A residual equal to 1 at one point and zero elsewhere has zero Riemann integral on every box but is not identically zero. One needs a weaker almost-everywhere statement and a different framework for less regular fields; it is not established by the continuous proof. Moving boundaries need an additional boundary-motion term. They are not covered by silently keeping the same fixed-region formula.
+
+In the polynomial box family of [Relate a closed boundary flux to a volume derivative](Relate-a-closed-boundary-flux-to-a-volume-derivative.lingua#r_00066E42C5FCE3F4B938BBA483), set J=F, s=5 and ρ=100+t(5−2x−6y−4z) on the same box for 0≤t≤1. This density remains positive because the bracket lies between −17 and 11. Storage changes at −36, outward flow is 96 and production is 60, so −36+96=60. The supplied program verifies this constructed account; it does not identify a real transport law or measure a material. Without a constitutive relation for J and appropriate initial/boundary data, a balance alone usually does not determine evolution.
+
+**Connect and work:** revisit [Integral and local conservation of mass](../../physics/fluid-dynamics/balances/Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q) and [Define the boundary ports and stored quantities before a balance](../../engineering/core/Define-the-boundary-ports-and-stored-quantities-before-a-balance.lingua#r_007A17F7243A9F54EDDD173BA3). Derive J=ρu for mass transported with a common velocity under that modeling premise; constant density plus no source yields divu=0, while varying density retains the full product. Show how two adjacent fixed regions cancel their shared face. Give one physical reason a measured residual might persist and distinguish that explanation from a failed mathematical identity.
+
+**Continue:** [Investigate oriented boundaries coordinates and local conservation](Investigate-oriented-boundaries-coordinates-and-local-conservation.lingua#r_008752CDDEC92582D0542CEC80).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0083DE48564035390466617B57

@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Count by disjoint cases products and explicit bijections (@math-discrete-counting: 0, is #chapter, #hephaestus-core "Prove-recursive-constructions-with-a-base-and-a-decreasing-dependency.lingua#r_00AEC3D470E37C51E964F8B0AB") { r_00310CC3F2A2C1C4D9E6CF5397
+Counting principles are arguments about finite sets. If A and B are disjoint, |A∪B|=|A|+|B|. Without disjointness, subtract the overlap: |A∪B|=|A|+|B|−|A∩B|. The product rule |A×B|=|A||B| counts one choice from each set. For dependent choices the general count is Σ_a(number of permitted second choices after a); multiplication by one common number is justified only when that number is constant.
+
+An ordered list of k distinct members of an n-element set has n(n−1)…(n−k+1) possibilities for 0≤k≤n. Every k-element subset gives exactly k! such orderings, so C(n,k)=n!/[k!(n−k)!]. Define 0!=1 and C(n,0)=1 to include the empty list/subset. Exchanging a subset with its complement proves C(n,k)=C(n,n−k). Separating subsets according to whether a chosen element is present proves Pascal's relation C(n,k)=C(n−1,k−1)+C(n−1,k), with out-of-range terms zero.
+
+To count S_N, encode (a,b,c) by a row of N identical marks and two separators: a marks, a separator, b marks, a separator, c marks. Consecutive or end separators represent empty boxes. Choosing the two separator positions among N+2 positions gives a bijection, so |S_N|=C(N+2,2)=(N+1)(N+2)/2. For k≥1 labeled boxes the same argument gives C(N+k−1,k−1). It does not apply unchanged to capacities, individually labeled tokens or unlabeled boxes.
+
+Count the forward one-token transitions separately from states. A transition from box 0 to box 1 exists at each state with a≥1. Removing one token from box 0 gives a bijection from those starting states to S_(N−1), of size C(N+1,2). Transitions from box 1 to box 2 have the same count and are distinct directed edges. Thus the forward state graph has N(N+1) edges for N≥1; N=0 has none. At N=4 there are 15 states and 20 edges. Counting histories through the graph is a third question, addressed later.
+
+A bounded published checkpoint uses [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), Example 3.24 in section 3.9: six distinct members of {0,…,9} must contain a pair summing to 9. Independently partition those ten numbers into the five complementary pairs {j,9−j},0≤j≤4. Choosing six numbers forces one pair to be fully represented. The program checks all C(10,6)=210 selections. Five is insufficient: {0,1,2,3,4} has no such pair. This reconstructs one finite mathematical example, not the complete source chapter or its exercises.
+
+**Work:** derive the configuration and edge counts without running the enumerator. Change the model to capacity one in each box and explain why the separator formula no longer applies. Count subsets satisfying either of two conditions with an explicit overlap correction. Read [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 3 progressively; the displayed token construction and investigation are original.
+
+**Continue:** [Prove recursive constructions with a base and a decreasing dependency](Prove-recursive-constructions-with-a-base-and-a-decreasing-dependency.lingua#r_00AEC3D470E37C51E964F8B0AB).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00310CC3F2A2C1C4D9E6CF5397

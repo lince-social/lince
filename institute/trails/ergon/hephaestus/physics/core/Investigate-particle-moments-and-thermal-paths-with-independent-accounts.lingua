@@ -1,0 +1,147 @@
+Import "../Physics.lingua"
+
+Investigate particle moments and thermal paths with independent accounts (@physics-thermal-study: 0, is #chapter, #hephaestus-core "Review-matter-temperature-and-thermal-energy-without-losing-model-limits.lingua#r_05768CD06AF8B093DFC94E7348") { r_09AD947C70D415B571ECFEB02F
+This original investigation has two separate model studies. The first checks momentum/energy moments of a finite particle table. The second compares macroscopic equilibrium paths of a stipulated ideal gas. Passing the first table’s arithmetic does not turn it into an equilibrium molecular ensemble for the second study. No physical gas experiment, thermometer calibration, vessel or heating apparatus was built or measured.
+
+**Part A — microscopic accounting:** use the eight triples (±2,±2,±2)v₀, equal masses m₀ and cube side 2ℓ₀. Compute mean velocity, each wall-pressure contribution from impulse per return time, and total translational energy. In units p₀=m₀v₀²/ℓ₀³ the pressures are (4,4,4), and in units m₀v₀² the energy is 48. Compare the directional table (±4,±1,±1), whose pressures are (16,1,1) and energy 72. Explain the difference between zero mean, equal second moments, full rotational symmetry and thermodynamic equilibrium. Do not infer a temperature for these finite fixtures.
+
+**Part B — macroscopic paths:** use the states and paths from the preceding lesson, with nR=1 J/K, negligible macroscopic kinetic/potential changes, only pressure-volume work, and U=κpV+constant. Initially take κ=3/2. Each path gives ΔU=450 J; high/low/diagonal work is 200/150/175 J and heat is 650/600/625 J. Joining the high path forward to the low path backward gives zero net state-energy change and 50 J net work and heat. This cycle account requires heat transfers along its segments; it is not a one-reservoir efficiency claim.
+
+Now change only the stipulated caloric law to κ=5/2. The same p,V,nR information leaves the temperatures and work unchanged but gives ΔU=750 J and diagonal heat 925 J. This illustrates missing caloric information; it does not assert that a particular real species follows either constant κ over every temperature. Contrast the separate free-expansion final state and the rigid electrical-input case. State all assumptions before calculating.
+
+Save the following as `thermal_study.py` and run it with Python 3. States are (volume in m³, absolute pressure in Pa), with exact rational coordinates. The `account` helper assumes piecewise-affine equilibrium p-V paths, fixed composition and the stipulated caloric law. It does not infer an unknown trajectory from sparse measurements. `moments` assumes a nonempty table of equal-mass particles with three numerical velocity components and positive volume. Its pressure formula belongs to the stated stationary-box model; the finite-table checks do not provide general flow-stress or equilibrium inference.
+
+```python file=thermal_study.py
+from fractions import Fraction as F
+from itertools import product
+
+A = (F(1,500), F(150000))
+B = (F(3,1000), F(200000))
+paths = {
+    'high': (A, (A[0], B[1]), B),
+    'low': (A, (B[0], A[1]), B),
+    'diagonal': (A, B),
+}
+
+
+def account(states, kappa=F(3,2)):
+    work = sum((p+q)*(w-v)/2 for (v,p),(w,q) in zip(states,states[1:]))
+    change = kappa*(states[-1][0]*states[-1][1]-states[0][0]*states[0][1])
+    return change, work, change+work
+
+
+def moments(velocities, mass=F(1), volume=F(8)):
+    count = len(velocities)
+    means = tuple(sum(v[j] for v in velocities)/F(count) for j in range(3))
+    pressures = tuple(mass*sum(v[j]**2 for v in velocities)/volume for j in range(3))
+    kinetic = mass*sum(sum(x*x for x in v) for v in velocities)/2
+    return means, pressures, kinetic
+
+
+if __name__ == '__main__':
+    for name, states in paths.items():
+        print(name, 'temperatures', tuple(v*p for v,p in states), 'dU W Q', account(states))
+    print('alternative caloric model', account(paths['diagonal'], F(5,2)))
+    print('cycle', account(paths['high']+tuple(reversed(paths['low']))[1:]))
+    symmetric = tuple(product((-2,2), repeat=3))
+    directional = tuple(product((-4,4),(-1,1),(-1,1)))
+    print('symmetric moments', moments(symmetric))
+    print('directional moments', moments(directional))
+```
+
+The printed energy account is ordered ΔU, W_by, Q, in joules for the macroscopic fixture. The particle output is ordered mean velocity, directional pressures and kinetic energy in the normalized units stated above. Keep these two unit systems and model interpretations separate.
+
+Save the companion as `thermal_checks.py` beside the main program. It independently checks work with endpoint/rectangle expressions, sums segment energy changes, reverses paths, and subdivides a straight path without changing its integral. Particle checks calculate wall impulse divided by return time separately from the aggregate squared-velocity formula, including zero-component cases. The mean-motion decomposition is checked independently for nonsymmetric tables.
+
+```python file=thermal_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import thermal_study as m
+
+checks=0
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+for name,expected in [('high',(450,200,650)),('low',(450,150,600)),('diagonal',(450,175,625))]:
+    check(m.account(m.paths[name])==expected)
+    check(m.account(tuple(reversed(m.paths[name])))==tuple(-x for x in expected))
+check(m.account(m.paths['diagonal'],F(5,2))==(750,175,925))
+cycle=m.paths['high']+tuple(reversed(m.paths['low']))[1:]
+check(m.account(cycle)==(0,50,50))
+check(tuple(v*p for v,p in m.paths['high'])==(300,400,600))
+check(tuple(v*p for v,p in m.paths['low'])==(300,450,600))
+families=0
+for va,vb,pa,pb,kappa in product((F(1,1000),F(2,1000),F(3,1000)),repeat=5):
+    if va==vb:
+        continue
+    families+=1
+    pa=pa*100000000
+    pb=pb*100000000
+    kappa=kappa*1000
+    a,b=(va,pa),(vb,pb)
+    high=(a,(va,pb),b)
+    low=(a,(vb,pa),b)
+    diagonal=(a,b)
+    dU=kappa*(pb*vb-pa*va)
+    for path,expected_work in [(high,pb*(vb-va)),(low,pa*(vb-va)),(diagonal,(pa+pb)*(vb-va)/2)]:
+        result=m.account(path,kappa)
+        check(result==(dU,expected_work,dU+expected_work))
+        check(m.account(tuple(reversed(path)),kappa)==tuple(-x for x in result))
+        steps=[m.account((left,right),kappa) for left,right in zip(path,path[1:])]
+        check(tuple(sum(step[j] for step in steps) for j in range(3))==result)
+    check(m.account(high,kappa)[1]-m.account(low,kappa)[1]==(pb-pa)*(vb-va))
+    check(m.account(diagonal,kappa)[1]==(m.account(high,kappa)[1]+m.account(low,kappa)[1])/2)
+    for fraction in (F(1,4),F(1,2),F(3,4)):
+        interior=(va+fraction*(vb-va),pa+fraction*(pb-pa))
+        check(m.account((a,interior,b),kappa)==m.account(diagonal,kappa))
+particle_families=0
+for speeds,mass,length in product(product(range(4),repeat=3),(F(1,2),F(1),F(3)),(F(1),F(2),F(3))):
+    particle_families+=1
+    velocities=tuple(product(*[(-s,s) for s in speeds]))
+    volume=length**3
+    means,pressures,kinetic=m.moments(velocities,mass,volume)
+    check(means==(0,0,0))
+    check(pressures==tuple(8*mass*s*s/volume for s in speeds))
+    check(kinetic==4*mass*sum(s*s for s in speeds))
+    check(sum(pressures)*volume==2*kinetic)
+    for j in range(3):
+        impulses=F(0)
+        for v in velocities:
+            speed=abs(v[j])
+            if speed:
+                impulses+=2*mass*speed/(2*length/speed)
+        check(impulses/length**2==pressures[j])
+check(m.moments(tuple(product((-2,2),repeat=3)))==((0,0,0),(4,4,4),48))
+check(m.moments(tuple(product((-4,4),(-1,1),(-1,1))))==((0,0,0),(16,1,1),72))
+decompositions=0
+for vx,vy,vz in product(range(-2,3),repeat=3):
+    decompositions+=1
+    velocities=((F(vx),F(vy),F(vz)),(F(1),F(2),F(-1)),(F(-2),F(0),F(1)))
+    means,_,kinetic=m.moments(velocities)
+    drift=F(len(velocities),2)*sum(x*x for x in means)
+    residual=F(1,2)*sum(sum((v[j]-means[j])**2 for j in range(3)) for v in velocities)
+    check(kinetic==drift+residual)
+    check(all(sum(v[j]-means[j] for v in velocities)==0 for j in range(3)))
+check(F(300)-F(27315,100)==F(537,20))
+check(F(600)-F(27315,100)==F(6537,20))
+check(F(600,300)==2)
+check(F(6537,537)!=2)
+check(F(30)/F(3,2)==20)
+check(F(300)/F(3,1000)==100000)
+result={'checks':checks,'path_families':families,'particle_families':particle_families,'drift_decompositions':decompositions,'path_dU_J':450,'path_work_J':[200,150,175],'path_heat_J':[650,600,625],'cycle_work_J':50,'symmetric_pressures':[4,4,4],'directional_pressures':[16,1,1]}
+print(json.dumps(result,indent=2))
+```
+
+**Revise and defend:** change a path endpoint, mass/velocity scale, box length or caloric coefficient and predict which results change before running code. Give an example where the p-V model is insufficient to find heat, another where a single pressure is inappropriate, and another where a stable thermometer reading does not establish uniform equilibrium. Preserve one critic’s objection and your corrected argument. Reuse [Connect an assembly prediction to a bounded inspection decision](../../engineering/core/Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua#r_0AE23276AAB728BEDBFC0AC47E) to distinguish a model calculation from acceptance evidence, and [Specify which result another investigator can reconstruct](../../inquiry/core/Specify-which-result-another-investigator-can-reconstruct.lingua#r_0B84B9BB7199B19E8B2B61EF3F) to state exactly what another reader can reconstruct.
+
+Extend later work toward realistic intermolecular behavior, internal degrees of freedom, heat transport, entropy and measured-model comparison. The present study supplies an accessible bridge; it neither completes thermodynamics/statistical physics nor replaces the earlier chemical phase-energy investigation.
+
+**Author verification:** both original programs ran with Python 3.14.8. The companion passed 6,568 exact checks across 162 path families, 576 particle families and 125 mean-motion decompositions, plus the stated fixtures and unit/limit checks. They verify analytical/model arithmetic and program behavior, not experimental validation, equilibrium formation or real-material properties.
+
+**Continue:** [Review matter temperature and thermal energy without losing model limits](Review-matter-temperature-and-thermal-energy-without-losing-model-limits.lingua#r_05768CD06AF8B093DFC94E7348).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_09AD947C70D415B571ECFEB02F

@@ -10,6 +10,7 @@ description = "Shared presentation models and Bevy UI primitives for Lince hosts
 
 [features]
 default = ["ui"]
+dev-dynamic-linking = ["ui", "bevy/dynamic_linking"]
 ui = ["dep:bevy", "dep:fontique", "dep:tokio", "dep:nucleus", "dep:chrono", "dep:accesskit", "dep:parley", "bevy/bevy_picking"]
 models = ["dep:nucleus", "dep:protein", "dep:chrono", "dep:qrcode", "dep:pulldown-cmark"]
 map-presentation = ["ui", "models", "dep:lince-map", "bevy/bevy_render", "bevy/bevy_core_pipeline", "bevy/bevy_ui_render"]
@@ -18,6 +19,7 @@ images = ["dep:image", "dep:reqwest", "dep:base64"]
 activation = ["dep:tokio", "tokio/net", "tokio/io-util", "tokio/rt", "tokio/macros", "dep:rustix", "dep:getrandom", "dep:tempfile"]
 native-presentation = [
     "dep:anicca",
+    "dep:fiote",
     "map-presentation",
     "dep:lince-ailuros",
     "activation",
@@ -129,6 +131,7 @@ serde = { workspace = true }
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 nucleus = { workspace = true, optional = true }
 protein = { optional = true, workspace = true }
+fiote = { optional = true, workspace = true }
 chrono = { workspace = true, optional = true }
 qrcode = { optional = true, version = "=0.14.1", default-features = false }
 pulldown-cmark = { version = "=0.13.4", default-features = false, optional = true }
@@ -166,7 +169,6 @@ toml = { workspace = true, optional = true }
 iroh = { workspace = true, optional = true }
 
 [dev-dependencies]
-fiote = { workspace = true }
 utils = { workspace = true }
 tempfile = "=3.27.0"
 tokio = { version = "1.53.1", features = ["macros", "net", "io-util", "rt"] }

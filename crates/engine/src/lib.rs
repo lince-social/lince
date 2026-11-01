@@ -216,6 +216,7 @@ impl Engine {
     }
 
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
+        let store = store.with_execution_identity(projection::execution_identity());
         let mut custody_cleanup = store.pool.begin().await?;
         store::evidence_forwarding::interrupted_on(
             &mut custody_cleanup,

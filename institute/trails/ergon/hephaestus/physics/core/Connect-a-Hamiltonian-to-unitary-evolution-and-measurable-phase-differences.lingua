@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Connect a Hamiltonian to unitary evolution and measurable phase differences (@physics-quantum-dynamics: 0, is #chapter, #hephaestus-core "Connect-finite-state-models-to-a-normalized-wavefunction-with-explicit-boundaries.lingua#r_00F087864FC26AFF0916C22CA8") { r_001692F75C18D33546CD6B40A9
+For an isolated finite quantum model with a time-independent Hermitian energy operator H, the Schrödinger law is iℏ dψ/dt=Hψ. H has units of energy and t/ℏ converts it to a dimensionless exponential argument. The common mathematics proves ψ(t)=exp(−iHt/ℏ)ψ(0), uniqueness and norm preservation under these assumptions. It does not identify the correct physical H; interactions, parameters and neglected degrees of freedom need physical theory and evidence. A general open subsystem does not obey an isolated unitary model merely because a matrix calculation is convenient.
+
+Take H=E₀I+(ℏΩ/2)σ_n with real Ω and a fixed unit axis n. Its eigenenergies are E₀±ℏΩ/2. Put θ=Ωt/2. The evolution is exp(−iE₀t/ℏ)[cos θ I−i sin θ σ_n]. The first factor is a common phase and has no effect on probabilities within this model; the relative eigenphase does. For a z-plus input and n=x, p(z,+ at t)=cos²(Ωt/2). Preparing an energy eigenstate instead produces only a common phase and stationary outcome distributions for fixed observables.
+
+For the shared original direction n=(0,−4/5,3/5), the same input has p(z,− at t)=(16/25)sin²(Ωt/2). Derive this from the existing two-coordinate solution. A fitted Ω alone does not establish that this Hamiltonian is the true physical model; changing preparation and measurement axes supplies discriminating predictions. Constant shifts of all energies are invisible to these closed-system probabilities, while differences affect phase evolution.
+
+In density form, ρ(t)=Uρ(0)U† and dρ/dt=−(i/ℏ)[H,ρ]. Derive this by the product rule. For constant H, Tr(ρH) is conserved. For a fixed observable A, d⟨A⟩/dt=(i/ℏ)Tr(ρ[H,A]); if A also changes explicitly with time, add Tr(ρ dA/dt). Preserving total norm does not imply that each measurement probability stays fixed.
+
+The program uses rational c,s with c²+s²=1 to inspect exact transformations. Those parameters specify a phase point, not an exact elapsed time unless θ and Ω have been independently connected to it. The earlier matrix-exponential evaluator and truncation certificate handle specified rational time arguments. Forward Euler's norm growth is already analyzed there; renormalizing every step changes the numerical method and is not evidence for correct physical dynamics.
+
+**Read:** MIT note 6, sections 2.1–2.3, especially the constant-H case and the conditions required for different-time generators to commute. **Work:** derive the probabilities and units, compare an energy eigenstate with a coherent energy superposition, and recover the same prediction after a passive unitary basis change. Explain why an instantaneous projective state update is not obtained by treating it as another invertible unitary evolution on the same isolated two-state space.
+
+**Continue:** [Connect finite state models to a normalized wavefunction with explicit boundaries](Connect-finite-state-models-to-a-normalized-wavefunction-with-explicit-boundaries.lingua#r_00F087864FC26AFF0916C22CA8).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_001692F75C18D33546CD6B40A9

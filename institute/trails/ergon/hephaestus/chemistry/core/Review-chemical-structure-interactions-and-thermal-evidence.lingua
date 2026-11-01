@@ -1,0 +1,24 @@
+Import "../Chemistry.lingua"
+
+Review chemical structure interactions and thermal evidence (@chemistry-structure-review: 0, is #chapter, #hephaestus-core "Relate-reaction-progress-to-amounts-concentrations-and-observed-rates.lingua#r_0AAA65374BC254C65DF16A76C6") { r_08EE3B7D98E627A9ECA27D9787
+This second chemical block connects spectral quantities, electronic-state models, periodic structure, valence/formal-charge accounts, geometry/polarity, interactions, phases and energy. Ten existing general-chemistry lessons supply the substantive shared formation. New preparation, worked accounts and an investigation connect their meanings while preserving their deeper original routes and assignments.
+
+**Represent:** distinguish frequency, wavelength, photon energy and power; orbital labels, probability density and a classical trajectory; formula, connectivity and geometry; formal charge, oxidation state and partial charge. Explain which quantities require a chosen state, environment or measurement convention. Enumerate a simple shell's states without mistaking capacity for universal many-electron filling order.
+
+**Reason:** show why shifting all energy levels preserves spectral differences. Check valence-electron and charge totals. Use a declared vector convention for a polarity illustration and distinguish it from an actual electronic calculation. Explain why resonance contributors do not describe different chemical species switching in time. Connect interaction hypotheses to conditions and evidence rather than inferring every bulk property from one attractive force.
+
+**Account:** state a thermal boundary and sign convention, derive the constant-pressure enthalpy relation, and distinguish heating within a phase, phase change and chemical reaction. Reconstruct the hypothetical phase-energy study through both stages and reference states. Diagnose the use of a heat-capacity formula through a latent-energy interval. Separate equation closure from calibration, model validity and an experiment that has actually been performed.
+
+**Read and practise:** work the accessible selected Chemistry 2e sections and exercises attached to the shared lessons. Use the original Portuguese, MIT, Chem1 and evaluated-data continuations as their preparation becomes available; a link does not claim all of those readings or practical studies were completed. Revise a structural explanation and a thermal account after another reader changes the conditions.
+
+Rates, equilibrium, solutions, chemical potential and deeper thermodynamics, analytical measurement, fuller quantum/electronic theory, descriptive/organic chemistry and advanced academic/practical formation remain. This block does not complete general chemistry anew, the broad chemical core or any of the sixteen pending chemical subjects. Continue the second computing block on collections, abstractions and algorithm comparisons before extending chemical specializations.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Next common area:** [review the first computing block](../../computer-science/core/Review-representations-algorithms-and-execution-evidence.lingua#r_0B2570961958EAF1D0D1911243) and develop collections, abstractions and algorithm comparisons at comparable depth.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the third common pass:** [Relate reaction progress to amounts concentrations and observed rates](Relate-reaction-progress-to-amounts-concentrations-and-observed-rates.lingua#r_0AAA65374BC254C65DF16A76C6). Mathematical change and physical thermal-state preparation are now present; the original structure/phase investigation remains unchanged.
+
+} r_08EE3B7D98E627A9ECA27D9787

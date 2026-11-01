@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Separate a prediction from a fitted description (@physics-model-evidence: 0, is #chapter, #hephaestus-core "Investigate-a-cart-with-motion-momentum-and-energy.lingua#r_005C89AACDDC8AD7217B4BF754") { r_07A97F390AC6E5D127D08C8E42
+A model needs both a mathematical rule and a statement of what its symbols describe. Deriving a trajectory from measured mass, specified forces and initial information tests a different claim from adjusting a trajectory formula to match observed positions. Fitting can be useful, but agreement with the observations used in the fit is not an independent validation.
+
+Suppose a hypothetical position table gives 0 m at 0 s, 1 m at 1 s and 4 m at 2 s. The model x(t) = (1 m/s²)t² matches it and predicts 9 m at 3 s. A second rule can add a term proportional to t(t − 1 s)(t − 2 s), with a coefficient carrying the required units, and still match all three samples while predicting something else at 3 s. A new sample can distinguish these two rules. The rules' agreement at three times alone does not establish a physical mechanism.
+
+Ask which parameters were estimated from which observations. Compare predictions at withheld times or changed conditions and preserve the raw observations. A difference between observed and predicted values is a residual. A pattern in residuals can suggest a missing effect, but timing offsets, coordinate errors, changing forces and correlated measurement errors can produce similar patterns. An informative next observation separates competing explanations rather than merely producing more points under the same ambiguity.
+
+For the cart model, a force reading and a position record can offer complementary evidence only if their calibration, timing and definitions are sufficiently independent. Inferring force from the same measured acceleration and then using that inferred force to “verify” F = ma would be circular as a test of that relation. It can still be a legitimate force estimate when the relation is an accepted model; label the purpose correctly.
+
+**Work:** state a prediction made before viewing a new sample, identify its inputs and describe their uncertainty. Propose two explanations for an observed deviation and an observation that could distinguish them. Explain what a successful check would support and what it would leave unresolved. Compare a repeated calculation on the same data with an independent observation of a new event.
+
+**Shared support:** use metrology's measurand and uncertainty formation and the mathematics stock-model investigation. The point is not to fit every phenomenon with a polynomial, but to keep deduction, measurement and inference distinct while allowing them to inform one another.
+
+**Related investigations:** [Investigate a stock model and defend its alternatives](../../mathematics/core/Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838) examines finite-data ambiguity in a different setting; [Begin with a question and specify the measurand](../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) develops the definition of an observed quantity.
+
+**Continue:** [Investigate a cart with motion, momentum and energy](Investigate-a-cart-with-motion-momentum-and-energy.lingua#r_005C89AACDDC8AD7217B4BF754).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_07A97F390AC6E5D127D08C8E42

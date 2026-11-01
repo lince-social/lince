@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Prove recursive constructions with a base and a decreasing dependency (@math-discrete-induction: 0, is #chapter, #hephaestus-core "Separate-equivalence-classes-from-ordering-and-reachability.lingua#r_00844E60FB32CCD3D5D2D1B50D") { r_00AEC3D470E37C51E964F8B0AB
+A finite list of successful examples does not establish a statement for all nonnegative integers. Mathematical induction uses a base case P(0) and a proof that P(n) implies P(n+1) for every n≥0. Taking the least possible counterexample explains the principle: it cannot be 0, and its predecessor would force it to be true. The well-ordering of nonnegative integers is the accepted foundation here, rather than something established by testing a large range.
+
+Strong induction permits all earlier cases P(0),…,P(n) in the step to P(n+1). It follows from ordinary induction applied to the cumulative statement that every case up to n holds. For a recursive definition, each dependency must move to an already defined smaller argument and the base values must be supplied. Merely writing an equation with the unknown on both sides does not prove existence or uniqueness of a sequence.
+
+The allocation set can be defined recursively. With one box, the only allocation is (N). With k>1 boxes, choose a first count a from 0 toN and append an allocation of N−a among k−1 boxes. The recursion decreases k. Induction on k proves that every generated tuple is nonnegative and sums toN, every valid tuple appears, and no tuple appears twice: its first coordinate chooses one case, and its tail has a unique occurrence by the hypothesis. This proves the enumerator's mathematical specification before checking its implementation.
+
+Induction also proves transition invariants. Initially a+b+c=N and each count is nonnegative. A legal move subtracts one from a positive donor and adds one to a recipient, preserving both properties. Induction on history length proves them for every finite legal history. This is a safety statement. It does not prove that every state satisfying the invariant can be reached, nor that a process eventually stops. The next lessons supply separate reachability and termination arguments.
+
+For a simple recurrence, let q_0=1 and q_(n+1)=2q_n. The induction step q_n=2^n gives q_(n+1)=2^(n+1), and the base agrees. This sequence counts subsets because adding one labeled element separates old subsets into those omitting or including it. A recurrence needs its combinatorial derivation, not merely a fitted match to initial values. Later the complete-history count will obey a different convolution recurrence derived by a unique decomposition.
+
+**Read and work:** [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), sections 10.1–10.3, extending the earlier direct proof preparation. Write the complete allocation induction with its quantified statement before assuming the hypothesis. Critique an attempted proof that starts at n=1 while claiming n=0 too, and a recursive rule that calls itself without decreasing any well-founded argument. Keep recursive definitions, algorithms and proofs distinct even when one motivates another.
+
+**Continue:** [Separate equivalence classes from ordering and reachability](Separate-equivalence-classes-from-ordering-and-reachability.lingua#r_00844E60FB32CCD3D5D2D1B50D).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00AEC3D470E37C51E964F8B0AB

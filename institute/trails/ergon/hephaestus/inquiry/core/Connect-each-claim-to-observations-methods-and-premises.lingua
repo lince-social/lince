@@ -1,0 +1,26 @@
+Import "../Inquiry.lingua"
+
+Connect each claim to observations methods and premises (@inquiry-report-chain: 0, is #chapter, #hephaestus-core "Choose-what-reproduction-and-agreement-must-mean.lingua#r_0007920F72B17072C61C9F4689") { r_00085ECCDE383B7726ECB440F6
+A claim has a chain of support: original evidence or declared construction, identified rows, transformations, model premises, method and dependencies, checked numerical results, a presentation and an interpretation. Preserve the links in both directions. Starting from a table cell, a reader should be able to find the input rows and method; starting from a corrected row, the author should be able to identify every affected result and sentence.
+
+Give each observation an identifier independent of its display order. In the original package, affine-3 means the constructed response at x=0. Separate the input file from the fitting method, the report renderer and the generated output. A checksum identifies particular bytes relative to a saved value. It does not explain those bytes, authenticate their author, establish that the recorded input is correct, or prove that the archived environment will remain available.
+
+The report's evidence table can be read without running a program:
+
+| Claim | Input and method | Required premise | What remains open |
+| --- | --- | --- | --- |
+| The affine fit gives intercept 11/5 and slope 3 | Five declared rows; exact least squares | Those rows and the stated equal-weight objective | Whether any physical observation follows that model |
+| A shared shift of 2 leaves residuals unchanged | Same x and every y increased by 2 | An intercept is included and weights are unchanged | Independent information about a physical offset |
+| SSE/(n−2)=8/5 | SSE=24/5 and n=5 | For unbiased variance estimation, the fixed-input affine error premises | Distribution shape, coverage and model discrepancy |
+| The report regenerates in a fresh location | Archived method/input and exact output comparison | Available compatible interpreter and trusted method files | Outside review, independent implementation and experimental replication |
+
+The fitting program imports exact linear elimination from the earlier mathematics study. Archive both methods as well as the reporting program. A version label without the corresponding method bytes leaves an important link missing. Interpreter/platform information records what was used; it is not itself an executable environment image. The current exercise uses the standard library and requires no network during calculation, but obtaining the interpreter is a separately declared prerequisite.
+
+Retain exclusions and transformations even when they are empty. Here every supplied observation is retained, no rows are judged outliers, and all weights are one. The offset and curvature datasets are declared constructions rather than preprocessing applied secretly to one dataset. Repeated-input rows are individually preserved; replacing them by group means before recording within-group variation would destroy evidence needed by the lack-of-fit partition.
+
+**Read and work:** [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../reproducible-computation/sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), especially the inspected workflow, manual-operation and method-version passages, supplies the traceability context. Draw the dependency chain for one result. Remove one file or change one input and predict which checks should fail. Explain why a valid checksum can coexist with an unsupported scientific conclusion. The exercise manifest is a local evidence aid, not a new publication feature or a security trust system.
+
+**Continue:** [Choose what reproduction and agreement must mean](Choose-what-reproduction-and-agreement-must-mean.lingua#r_0007920F72B17072C61C9F4689).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00085ECCDE383B7726ECB440F6

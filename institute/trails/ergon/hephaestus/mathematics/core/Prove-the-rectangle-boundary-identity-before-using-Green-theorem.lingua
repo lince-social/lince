@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Prove the rectangle boundary identity before using Green theorem (@math-fields-green: 0, is #chapter, #hephaestus-core "Relate-a-closed-boundary-flux-to-a-volume-derivative.lingua#r_00066E42C5FCE3F4B938BBA483") { r_00FB6CB9DAC1D8370E23D0CC0A
+On R=[a,b]×[c,d], write the counterclockwise boundary as bottom, right, top and left. For C¹ P,Q on a neighborhood of R, its circulation is
+
+∫_a^b P(x,c)dx + ∫_c^d Q(b,y)dy − ∫_a^b P(x,d)dx − ∫_c^d Q(a,y)dy.
+
+The one-dimensional fundamental theorem replaces the P difference by −∫_c^d P_y dy and the Q difference by ∫_a^b Q_x dx. The continuous-case iterated-integral result combines them into ∬_R(Q_x−P_y)dA. This is a proof for every such field on a rectangle, not a check of one polynomial. Finite unions of rectangles follow by shared-edge cancellation where the orientations oppose and the field is single-valued.
+
+For a bounded planar region with finitely many piecewise smooth boundary components, the broader Green theorem holds under C¹ field regularity on a neighborhood of the region's closure. The positive boundary keeps the region on its left: the outer boundary is counterclockwise and boundaries around holes clockwise. This general statement is accepted here; approximating a curved boundary by stair steps alone is not its full proof. [Vector Calculus — David Tong](../../physics/electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), chapter 4.3 is the further reading for the extension.
+
+For P=−a y²,Q=b x², the integrand is 2bx+2ay. On [0,2]×[−1,1], the boundary and area integrals both give 8b. Compute each of the four edges independently; do not obtain both claimed answers by calling the same area formula. Reversing all edges gives −8b. Dropping the negative signs on the top and left generally breaks the identity.
+
+To obtain the flux form, write the outward normal-length element for a positively oriented planar boundary as (dy,−dx). Thus ∮F·n ds=∮P dy−Q dx. Apply the circulation identity with coefficients (−Q,P) to obtain ∬(P_x+Q_y)dA. This derivation fixes the sign from the orientation convention. **Work:** use F=(x,y) on the same rectangle, obtaining outward flux 8 and circulation 0. Cut the rectangle in half and exhibit the internal-edge cancellation explicitly before considering a hole.
+
+**Continue:** [Relate a closed boundary flux to a volume derivative](Relate-a-closed-boundary-flux-to-a-volume-derivative.lingua#r_00066E42C5FCE3F4B938BBA483).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00FB6CB9DAC1D8370E23D0CC0A

@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Connect reversible electrical work to a reaction quantity (@chemistry-reversible-cell: 0, is #chapter, #hephaestus-core "Separate-chemical-equilibrium-evidence-from-rates-and-fitted-models.lingua#r_00DA32ADB90E1CBAE83339D4A4") { r_0052896A62DF82CBCB952B9B6B
+Return to [Integrate terminal work without assuming a reversible cell](Terminal-work-and-chemical-energy-questions.lingua#r_00209B14724D4B97F9739006A6) and [Connect an electrochemical cell with a balanced reaction and energy account](../general-chemistry/electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX) after the preceding free-energy derivation. For an overall charge-balanced cell reaction, let positive extent dξ transfer external charge magnitude dQ_e=zF dξ, with z>0 the dimensionless electron coefficient for the written reaction and F=N_Ae in C/mol. The reaction includes its chemical reservoirs; electrical and interfacial storage must be accounted for separately where they change. Use a complete cell convention with E positive for delivered electrical work in the chosen forward orientation.
+
+In an ideal reversible, isothermal/isobaric comparison where electrical work is the only non-pressure-volume output, dW_e=E_rev dQ_e=−dG. Hence Δ_rG=−zF E_rev. For a suitable cell thermodynamic model with specified activities and reference conventions, substitution of Δ_rG=Δ_rG°+RT ln Q yields
+
+E_rev=E°−(RT/(zF))ln Q, with E°=−Δ_rG°/(zF).
+
+This is a reversible potential relation, not a finite-current terminal constitutive law. A measured open-circuit voltage can require junction, mixed-potential, composition and equilibrium qualifications. Under load, polarization, ohmic loss, transport and other reactions can matter. A whole-cell reaction account must not double-count the external electrical work as a chemical contribution. Single-ion and electrochemical potentials require explicit conventions; the preceding neutral single-phase derivation alone does not settle all electrode-interface terms.
+
+For a hypothetical cell with specified K,Q,z, the same relation is E_rev=(RT/(zF))ln(K/Q). Multiplying the written reaction by c multiplies Δ_rG and z by c and replaces K,Q by K^c,Q^c, leaving E_rev unchanged. Reversing the cell orientation changes the signed potential. These normalization checks are essential; the phrase number of moles of electrons must not blur z with the actual transferred amount zξ.
+
+For a finite composition change, reversible electrical work would be ∫zF E_rev(ξ)dξ=−ΔG under the same restrictions. Using a single initial voltage times all the charge assumes a constant voltage that generally does not hold. The neutral A⇌B investigation demonstrates this integral issue but does not assert that those hypothetical species form a cell.
+
+**Read and reconstruct:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), selected section 17.4 and Example 17.8; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), equilibrium electrode potential, electron coefficient and current conventions. The source's concentration-cell example uses equal standard potentials, z=2, an ideal concentration quotient 0.10/0.50, and its rounded 298 K coefficient 0.0592 V. Its calculation gives (0.0592/2)log₁₀5=0.0206895121… V, rounding to 0.021 V. Reproduce that numerical model without constructing a cell. Concentration is standing in for activity, and omitted junction effects remain an approximation. The exact-constant program comparisons are separate from this deliberately source-rounded reconstruction.
+
+**Continue:** [Separate chemical equilibrium evidence from rates and fitted models](Separate-chemical-equilibrium-evidence-from-rates-and-fitted-models.lingua#r_00DA32ADB90E1CBAE83339D4A4).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0052896A62DF82CBCB952B9B6B

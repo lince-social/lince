@@ -10,4 +10,10 @@ Read all nine chapters and work the exercises: Getting Started with Python; Comp
 The publisher identifies the full book as open access and supplies the PDF. Preserve the actual edition’s licence and third-party notices before adapting it; this Record links the authorized edition rather than reproducing it. Publisher metadata, contents, and availability checked on 29 October 2026. Examples here are independently authored teaching material; the book stays external.
 
 **Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+
+**Computing-core reading — 31 October 2026:** publisher authorship, open-access metadata and nine-chapter contents were checked again. Chapters 1–5 supply the beginner formula, loop, function and error-handling progression for the new area block. The remaining chapters continue later data and abstraction formation. No complete chapter/exercise audit is claimed by this inspection; original trail code and examples remain separate from the linked textbook.
+
+
+**Second computing-block reading — 31 October 2026:** rechecked the publisher contents and authorized chapter pages. Inspected selected chapter 3 loop/list/slicing/tuple passages and chapter 7's mapping/dictionary opening in their PDFs. [Chapter 3](https://link.springer.com/chapter/10.1007/978-3-030-50356-7_3) and [chapter 7](https://link.springer.com/chapter/10.1007/978-3-030-50356-7_7) identify CC BY 4.0 with exceptions for separately credited material. Work these chapters progressively using the earlier function/error preparation; the full nine-chapter assignment remains. Qualify simplified copy-independence claims using the official shallow-copy contract, and dictionary-key descriptions using hashability rather than immutability alone. The new lessons supply original nested-list traces and duplicate-preserving examples. No complete chapter/exercise audit or fresh classes-chapter inspection is claimed; source media remain external.
+
 } r_1V7KWH76GSD7XMA9TQVSTEQSWB

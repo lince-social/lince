@@ -227,7 +227,9 @@ pub fn run(
         [Fourcc::Argb8888, Fourcc::Xrgb8888, Fourcc::Abgr2101010, Fourcc::Argb2101010],
         formats,
     );
-    let commands = crate::commands::Commands::load(&configuration.directory.join("park.json"))?;
+    let command_file = configuration.directory.join("park.json");
+    crate::commands::Commands::initialize(&command_file)?;
+    let commands = crate::commands::Commands::load(&command_file)?;
     let mut hardware = Hardware {
         devices: devices::Devices::new(commands.pointer),
         catalog: Vec::new(),

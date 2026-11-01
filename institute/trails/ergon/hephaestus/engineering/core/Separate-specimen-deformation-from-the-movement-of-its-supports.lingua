@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Separate specimen deformation from the movement of its supports (@engineering-observation-compliance: 0, is #chapter, #hephaestus-core "Carry-a-response-requirement-through-realization-and-inspection.lingua#r_00B6F25CACF583F02249520A8B") { r_00F1BF6CAE5185F3E5F6A39604
+The observation model must identify its endpoints. A local gauge between specimen reference marks may report δ; an actuator/frame observation may report X=δ+C_sP. With fixed mismatch, δ=ḡ+P/K and X=ḡ+(1/K+C_s)P. Even exact force–movement data for arbitrarily many loads determine only the intercept ḡ and combined compliance 1/K+C_s. They do not separately identify K and C_s. More repeated samples of the same observable cannot remove this structural ambiguity.
+
+For an original hypothetical example, K=4×10⁶ N/m and C_s=1/(8×10⁶) m/N give combined compliance 3/(8×10⁶) m/N. The rival K'=8×10⁶ N/m and C_s'=1/(4×10⁶) m/N gives exactly the same value. Keep ḡ=30 μm in both. Every X(P) then agrees, although at P=400 N the first specimen extends 130 μm and the rival 80 μm. A local specimen measurement distinguishes them if its uncertainty and loading conditions permit; another actuator measurement alone does not.
+
+Uncertainty still matters after choosing an informative observation. If a conditional local reading has a declared hard interval [126,134] μm and the requirement is δ≤150 μm, that interval supports the stated displacement comparison within its assumptions. A [146,154] μm interval crosses the boundary and is inconclusive. Neither interval validates the model, certifies the material or establishes a probability unless that additional interpretation was justified. Reuse [Connect an assembly prediction to a bounded inspection decision](Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua#r_0AE23276AAB728BEDBFC0AC47E) and [Review sensitivity dependence and the scope of an uncertain claim](../../inquiry/core/Review-sensitivity-dependence-and-the-scope-of-an-uncertain-claim.lingua#r_000B35720D754EE82413312EED) rather than treating a numerical tolerance as a universal acceptance rule.
+
+Design the evidence around the possible explanations. Record reference marks, geometry, load path, temperature, material/processing identity and instrument configuration. A separate support-compliance measurement, local strain observation, unloaded reference check or revised connection can distinguish different rivals. A load–unload loop, time-dependent drift or nonrepeatable offset can reject the fixed elastic model, but needs its own uncertainty and apparatus account. The coming study supplies synthetic exact evidence only; no instrument or specimen was actually tested.
+
+**Work:** prove the ambiguity by constructing a continuous family C_s'=C_total−1/K'≥0. Determine the allowed K' domain for a positive C_total. If two local observations determine slope, explain why that still does not identify E without A,L and model evidence. Use [Challenge a fitted model with evidence it did not fit](../../inquiry/core/Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418) to propose an observation not used to fit the original line and a result that would force revision.
+
+**Continue:** [Carry a response requirement through realization and inspection](Carry-a-response-requirement-through-realization-and-inspection.lingua#r_00B6F25CACF583F02249520A8B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00F1BF6CAE5185F3E5F6A39604

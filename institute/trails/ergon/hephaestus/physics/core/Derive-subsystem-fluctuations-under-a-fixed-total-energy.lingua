@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Derive subsystem fluctuations under a fixed total energy (@physics-statistical-constraints: 0, is #chapter, #hephaestus-core "Connect-state-counts-entropy-and-equilibrium-with-explicit-constraints.lingua#r_001BE2D7B39C11254F9CD156DD") { r_0070FE92B084AF3217F03BAC9F
+Divide the labeled two-state sites into an observed group A of a sites and its complement B of b=N−a sites. The isolated combined system has exactly Q excitations, energy Qε, and equal weights on its C(N,Q) configurations. Let J be the number in A. For a permitted value j, independent counting of compatible configurations gives
+
+P(J=j)=C(a,j)C(b,Q−j)/C(N,Q),
+
+where max(0,Q−b)≤j≤min(a,Q). These are dependent subsystem energies even though the counted configurations have additive energies. Summing the numerator over j gives C(N,Q), because the disjoint cases partition the full set. Uniform microstate weights therefore produce nonuniform macrostate weights.
+
+For a single site, P(x_i=1)=Q/N=p. For distinct sites i,k, choosing both as excited gives E[x_i x_k]=Q(Q−1)/[N(N−1)] when N>1. Subtracting p² gives Cov(x_i,x_k)=−p(1−p)/(N−1). Expanding J=Σ_(i in A)x_i then yields E[J]=ap and Var(J)=ap(1−p)(N−a)/(N−1). The covariance is an ensemble property caused by the fixed total; it does not assert a direct force between sites. For N=1 every allowed fixed-total configuration is deterministic, so use variance zero rather than the undefined formula.
+
+An original fixture has N=8,Q=3,a=3,b=5. The weights for j=0,1,2,3 are (10,30,15,1)/56. Thus E[J]=9/8 and Var(J)=225/448. Energy units restore E[E_A]=9ε/8 and Var(E_A)=225ε²/448. Neither the expected excitation count nor its energy need be a possible single realization. The complement has J_B=3−J, so Cov(J,J_B)=−Var(J) and Var(J+J_B)=0. Dropping that covariance would falsely predict fluctuation of the isolated total.
+
+If only the macrostate j is observed, the configurations inside it are still conditionally uniform in this model. A particular A configuration with j excitations has probability C(b,Q−j)/C(N,Q), not P(J=j). Multiplying by C(a,j) converts its weight to the macrostate weight. This degeneracy distinction will matter for thermal weighting.
+
+**Work:** derive the count and the moment formulas without simulating random samples. Reconstruct the eight-site fixture by listing binary configurations independently of the combination formula. Test a=0,a=N,Q=0 and Q=N. Explain why treating each allowed j as equally likely changes the model. Reuse [Count by disjoint cases products and explicit bijections](../../mathematics/core/Count-by-disjoint-cases-products-and-explicit-bijections.lingua#r_00310CC3F2A2C1C4D9E6CF5397) and [Describe a chance quantity by its weighted mean and spread](../../inquiry/core/Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA) rather than introducing a second counting or variance convention.
+
+**Continue:** [Connect state counts entropy and equilibrium with explicit constraints](Connect-state-counts-entropy-and-equilibrium-with-explicit-constraints.lingua#r_001BE2D7B39C11254F9CD156DD).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0070FE92B084AF3217F03BAC9F

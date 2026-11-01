@@ -1,0 +1,285 @@
+Import "../Mathematics.lingua"
+
+Investigate local change path accounts and constrained extrema (@math-multivariable-study: 0, is #chapter, #hephaestus-core "Review-multivariable-change-with-its-hypotheses-and-bounds.lingua#r_00C5489B3B33A8B3C3CBC6D260") { r_00B49342C72C3CFCAF4863EBCF
+Develop one connected mathematical report from the original polynomial F=x²y+2y²+3x and quadratic allocation family Q=a x²+b y². Declare normalized coordinates and domain before calculating. The polynomial is a teaching function; no physical response law is asserted. Use [Investigate inconsistent readings lost directions and projected fits](Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) for the unchanged shared `linear_space_study.py`, placed beside the two programs below.
+
+First derive F's exact increment and remainder, including the box bound. At (1,2) with increment (1/10,−1/20), reproduce linear change 1/4, actual change 529/2000, remainder 29/2000 and bound 71/2000. Show why a finite list of samples cannot replace the proof of that bound for a continuous box.
+
+Second compare the curved path γ(t)=(1+t,2−t+t²), the transformed coordinates (u,v), and two input metrics. The curve polynomial is 13−2t+11t²−3t³+3t⁴; its rate at zero is −2 and its total change from zero to one is 9. The code checks many quadratic paths by polynomial convolution and differentiation independently of the gradient formula. For straight segments, the derivative integrand is at most quadratic; the proved three-point integral rule and endpoint differences agree. Piecewise routes test path independence of the exact differential.
+
+Third obtain the constrained quadratic candidate from the shared exact solver and independently from a completed square. Compare interior and capped solutions, endpoint maxima and a singular constraint. Mathematical global optimality here follows from the square identity and the complete feasible interval, not from a grid. Compare metric rates using a weighted Cauchy–Schwarz inequality, including equality in the proposed maximizing direction.
+
+**Bounded published reconstruction:** OpenStax Calculus Volume 3, section 4.4, Checkpoint 4.22 supplies f(x,y)=4y²+x²y−2xy, base (1,−1), and increments h=3/100,k=−1/50. Attribution and access remain in [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3). Recalculation gives base value 5, gradient (0,−9), differential 9/50, exact finite change 90341/500000 and remainder 341/500000. Independently the remainder is 4k²−h²+h²k. This reconstructs one published exercise's requested calculation, not its whole section or an experimental result. The published source media remain external.
+
+Save the programs and run `nix shell nixpkgs#python3 -c python3 multivariable_checks.py`. Only exact integers/Fractions are accepted; invalid dimensions, floating values, booleans, nonpositive weights and infeasible negative totals/caps are rejected. The solver is reused, not copied into this lesson. The companion's polynomial expansion and completed-square checks are separately organized from the study formulas.
+
+**Independent extension:** choose a different two-variable polynomial and an explicit nonlinear path. Prove a remainder bound over a declared neighborhood, compare direct composition with the chain rule, and find an equality-constrained problem with both boundary and interior candidates. Include a counterexample to one tempting inference, a source criticism and a revision after another learner's objection. The supplied finite checks support the implementation; the preceding proofs support the infinite-domain claims.
+
+
+```python file=multivariable_study.py
+from fractions import Fraction as F
+from linear_space_study import eliminate, scalar
+import json
+
+
+def pair(values):
+    values = tuple(scalar(v) for v in values)
+    if len(values) != 2:
+        raise ValueError('two exact coordinates are required')
+    return values
+
+
+def value(point):
+    x, y = pair(point)
+    return x*x*y+2*y*y+3*x
+
+
+def gradient(point):
+    x, y = pair(point)
+    return 2*x*y+3, x*x+4*y
+
+
+def change(point, increment):
+    x, y = pair(point)
+    h, k = pair(increment)
+    gx, gy = gradient((x, y))
+    linear = gx*h+gy*k
+    remainder = y*h*h+2*x*h*k+2*k*k+h*h*k
+    bound = abs(y)*h*h+2*abs(x*h*k)+2*k*k+abs(h*h*k)
+    return {'linear': linear, 'remainder': remainder, 'bound': bound,
+            'actual': value((x+h, y+k))-value((x, y))}
+
+
+def path_rate(point, velocity):
+    gx, gy = gradient(point)
+    vx, vy = pair(velocity)
+    return gx*vx+gy*vy
+
+
+def segment_integral(start, end):
+    start, end = pair(start), pair(end)
+    velocity = tuple(b-a for a, b in zip(start, end))
+    midpoint = tuple((a+b)/2 for a, b in zip(start, end))
+    return (path_rate(start, velocity)+4*path_rate(midpoint, velocity)
+            +path_rate(end, velocity))/6
+
+
+def allocation(a, b, total, cap=None):
+    a, b, total = (scalar(v) for v in (a, b, total))
+    if a <= 0 or b <= 0 or total < 0:
+        raise ValueError('positive quadratic weights and nonnegative total are required')
+    upper = total if cap is None else min(total, scalar(cap))
+    if upper < 0:
+        raise ValueError('cap must be nonnegative')
+    system = ((2*a, 0, -1), (0, 2*b, -1), (1, 1, 0))
+    x, y, multiplier = eliminate(system, (0, 0, total))['particular']
+    chosen = min(upper, max(F(0), x))
+    other = total-chosen
+    return {'free_stationary': (x, y), 'multiplier': multiplier,
+            'chosen': (chosen, other), 'objective': a*chosen**2+b*other**2,
+            'upper': upper}
+
+
+def metric_direction(point, weights):
+    weights = pair(weights)
+    if min(weights) <= 0:
+        raise ValueError('positive diagonal metric required')
+    g = gradient(point)
+    direction = tuple(v/w for v, w in zip(g, weights))
+    return {'direction': direction, 'max_rate_squared': sum(v*d for v, d in zip(g, direction))}
+
+
+def published_checkpoint():
+    x, y, h, k = F(1), F(-1), F(3, 100), F(-1, 50)
+    def source_value(a, b):
+        return 4*b*b+a*a*b-2*a*b
+    linear = (2*x*y-2*y)*h+(8*y+x*x-2*x)*k
+    actual = source_value(x+h, y+k)-source_value(x, y)
+    return {'linear': linear, 'actual': actual, 'remainder': actual-linear}
+
+
+def investigation():
+    return {'local_change': change((1, 2), (F(1, 10), F(-1, 20))),
+            'path_initial_rate': path_rate((1, 2), (1, -1)),
+            'segment_integral': segment_integral((0, 0), (1, 1)),
+            'allocation': allocation(1, 2, 3),
+            'capped_allocation': allocation(1, 2, 3, F(3, 2)),
+            'metric': metric_direction((1, 2), (4, 1)),
+            'published_checkpoint': published_checkpoint()}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=multivariable_checks.py
+from fractions import Fraction as F
+from itertools import product
+from multivariable_study import value, gradient, change, path_rate, segment_integral
+from multivariable_study import allocation, metric_direction, published_checkpoint, investigation
+import json
+
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def add(*polynomials):
+    result = [F(0)]*max(map(len, polynomials))
+    for p in polynomials:
+        for i, v in enumerate(p):
+            result[i] += v
+    return tuple(result)
+
+
+def scale(p, c):
+    return tuple(c*v for v in p)
+
+
+def multiply(p, q):
+    result = [F(0)]*(len(p)+len(q)-1)
+    for i, a in enumerate(p):
+        for j, b in enumerate(q):
+            result[i+j] += a*b
+    return tuple(result)
+
+
+def evaluate(p, t):
+    result = F(0)
+    for coefficient in reversed(p):
+        result = result*t+coefficient
+    return result
+
+
+def derivative(p):
+    return tuple(i*p[i] for i in range(1, len(p))) or (F(0),)
+
+
+def compose(x, y):
+    return add(multiply(multiply(x, x), y), scale(multiply(y, y), 2), scale(x, 3))
+
+
+def run():
+    change_cases = 0
+    for a, b, h, k in product(range(-2, 3), range(-2, 3),
+                              (F(-1, 5), F(-1, 20), F(0), F(1, 10), F(1, 4)),
+                              (F(-1, 5), F(-1, 20), F(0), F(1, 10), F(1, 4))):
+        polynomial = compose((F(a), h), (F(b), k))
+        result = change((a, b), (h, k))
+        check(result['linear'] == polynomial[1])
+        check(result['remainder'] == sum(polynomial[2:]))
+        check(result['actual'] == result['linear']+result['remainder'])
+        check(abs(result['remainder']) <= result['bound'])
+        rho = max(abs(h), abs(k))
+        check(abs(result['remainder']) <= (abs(b)+2*abs(a)+2+rho)*rho*rho)
+        gx = compose((F(a), F(1)), (F(b), F(0)))[1]
+        gy = compose((F(a), F(0)), (F(b), F(1)))[1]
+        check(gradient((a, b)) == (gx, gy))
+        change_cases += 1
+    curve_cases = 0
+    for coefficients in product((-1, 0, 2), repeat=6):
+        xp = tuple(map(F, coefficients[:3]))
+        yp = tuple(map(F, coefficients[3:]))
+        polynomial = compose(xp, yp)
+        dp = derivative(polynomial)
+        for t in (F(-1), F(0), F(1, 2), F(1), F(2)):
+            point = (evaluate(xp, t), evaluate(yp, t))
+            velocity = (evaluate(derivative(xp), t), evaluate(derivative(yp), t))
+            check(path_rate(point, velocity) == evaluate(dp, t))
+            check(value(point) == evaluate(polynomial, t))
+        curve_cases += 1
+    segment_cases = 0
+    for a, b, c, d in product((-2, 0, 3), repeat=4):
+        polynomial = compose((F(a), F(c-a)), (F(b), F(d-b)))
+        dp = derivative(polynomial)
+        integral = sum(v/F(i+1) for i, v in enumerate(dp))
+        direct = segment_integral((a, b), (c, d))
+        check(direct == integral)
+        check(direct == value((c, d))-value((a, b)))
+        check(direct == segment_integral((a, b), (c, b))+segment_integral((c, b), (c, d)))
+        check(direct == -segment_integral((c, d), (a, b)))
+        segment_cases += 1
+    allocation_cases = 0
+    for a, b, total, cap in product((F(1, 2), F(1), F(3)), (F(1), F(2), F(5)),
+                                     (F(0), F(1), F(3)), (None, F(0), F(1, 2), F(2), F(5))):
+        result = allocation(a, b, total, cap)
+        free = b*total/(a+b)
+        minimum = a*b*total*total/(a+b)
+        check(result['free_stationary'] == (free, total-free))
+        check(result['multiplier'] == 2*a*b*total/(a+b))
+        x, y = result['chosen']
+        check(x+y == total and 0 <= x <= result['upper'] and y >= 0)
+        check(result['objective'] == minimum+(a+b)*(x-free)**2)
+        check(x == min(result['upper'], free))
+        for i in range(21):
+            candidate = result['upper']*F(i, 20)
+            q = a*candidate*candidate+b*(total-candidate)**2
+            check(q >= result['objective'])
+            check(q == minimum+(a+b)*(candidate-free)**2)
+        allocation_cases += 1
+    metric_cases = 0
+    for x, y, m, n in product((-1, 0, 2), (-1, 0, 2), (F(1, 2), F(1), F(4)),
+                                (F(1), F(2), F(3))):
+        result = metric_direction((x, y), (m, n))
+        g = gradient((x, y))
+        u, v = result['direction']
+        maximum_squared = result['max_rate_squared']
+        check((m*u, n*v) == g)
+        check(m*u*u+n*v*v == maximum_squared)
+        for h, k in product(range(-3, 4), repeat=2):
+            check((g[0]*h+g[1]*k)**2 <= maximum_squared*(m*h*h+n*k*k))
+        metric_cases += 1
+    for denominator in range(1, 33):
+        t = F(1, denominator)
+        check(t*t/(t*t+t*t) == F(1, 2))
+        check(t*t*t*t/(t**4+(t*t)**2) == F(1, 2))
+        for u, v in product(range(-2, 3), repeat=2):
+            if u or v:
+                directional = (t*u)**3/((t*u)**2+(t*v)**2)/t
+                check(directional == F(u**3, u*u+v*v))
+                check(abs((t*u)**3/((t*u)**2+(t*v)**2)) <= abs(t*u))
+    result = investigation()
+    check(result['local_change'] == {'linear': F(1, 4), 'remainder': F(29, 2000),
+                                     'bound': F(71, 2000), 'actual': F(529, 2000)})
+    check(result['path_initial_rate'] == -2)
+    check(result['segment_integral'] == 6)
+    check(result['allocation']['chosen'] == (2, 1))
+    check(result['allocation']['objective'] == 6)
+    check(result['capped_allocation']['chosen'] == (F(3, 2), F(3, 2)))
+    check(result['capped_allocation']['objective'] == F(27, 4))
+    check(result['metric'] == {'direction': (F(7, 4), F(9)), 'max_rate_squared': F(373, 4)})
+    check(published_checkpoint() == {'linear': F(9, 50), 'actual': F(90341, 500000),
+                                     'remainder': F(341, 500000)})
+    h, k = F(3, 100), F(-1, 50)
+    check(4*k*k-h*h+h*h*k == published_checkpoint()['remainder'])
+    for call in (lambda: value((1,)), lambda: value((True, 2)), lambda: value((1.0, 2)),
+                 lambda: change((1, 2), (0, float('nan'))), lambda: allocation(0, 1, 2),
+                 lambda: allocation(1, -1, 2), lambda: allocation(1, 1, -1),
+                 lambda: allocation(1, 1, 2, -1), lambda: metric_direction((1, 2), (1, 0)),
+                 lambda: metric_direction((1, 2), (False, 1))):
+        try:
+            call()
+        except ValueError:
+            check(True)
+        else:
+            raise AssertionError('invalid input accepted')
+    print(json.dumps({'checks': checks, 'change_cases': change_cases, 'curve_cases': curve_cases,
+                      'segment_cases': segment_cases, 'allocation_cases': allocation_cases,
+                      'metric_cases': metric_cases, 'published_checkpoint': 'passed'}))
+
+
+if __name__ == '__main__':
+    run()
+```
+
+**Author verification:** the companion passed 23,460 exact checks through Nix/Python 3.14.8: 625 local-change cases, 729 quadratic paths, 81 straight segments, 135 constrained allocations and 81 metric cases, plus counterexamples, a published exercise and invalid inputs. Independent polynomial convolution, scalar square completion and path integration check the explicit formulas and shared elimination. The proofs establish continuous-domain claims; finite checks support implementation. No physical system is validated.
+
+**Continue:** [Review multivariable change with its hypotheses and bounds](Review-multivariable-change-with-its-hypotheses-and-bounds.lingua#r_00C5489B3B33A8B3C3CBC6D260).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00B49342C72C3CFCAF4863EBCF

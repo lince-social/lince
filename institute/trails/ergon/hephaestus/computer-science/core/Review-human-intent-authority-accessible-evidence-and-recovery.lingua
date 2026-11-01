@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Review human intent authority accessible evidence and recovery (@computing-trust-review: 0, is #chapter) { r_00639CE7BBAFF02F9242DBEFCB
+Explain how a person moves from a task to a proposed operation, a submitted request and evidence of its result. Distinguish local input feedback, server effect and client confirmation. Derive why two different server histories can leave the same client evidence, and what observation would resolve that ambiguity. Explain why retry, cancel, revoke and delete require different contracts.
+
+Defend a precise authority policy. Name the actor, object, operation, grant source and atomic decision boundary. Trace revocation on both sides of commit and disclosure. Distinguish structural validity, provenance, authentication, permission and domain truth. Explain which controls enforce the finite model and which facts it assumes. Preserve the earlier one-client namespace rather than silently claiming concurrent-client support.
+
+Transfer to a benign archive task: a person proposes adding a description to one of two practice collections, a reviewer can inspect an existing result, and a reply may be lost. Specify the reviewed value, retained request identity, visible states, error handling and receipt. Explain which assumptions from the additive ledger survive and which need a new service specification. An archive append is not automatically represented correctly by a numeric total.
+
+Describe a complete accessible interaction with meaningful controls, perceivable state, supported input paths, recoverable errors and actual checks for the intended platforms. Separate the finite program's equal event transitions from evidence about rendering and people using it. Design contrasting tasks that expose wrong interpretations without treating hidden server knowledge as something a participant should possess. State what you would record, with what assistance and data handling.
+
+Defend a purpose and retention account. Identify why minimal receipts can still be identifying, why an authorized disclosure can still create privacy concerns and why erasing deduplication evidence can change the meaning of retry. Supply a failed rival, a repair and the new assumptions introduced by the repair. Use [Investigate intent permissions uncertain outcomes and minimal receipts](Investigate-intent-permissions-uncertain-outcomes-and-minimal-receipts.lingua#r_006DE209B98FF46901A89BC981) and the selected sources as evidence, not as a claim that the HCI, security or privacy branches are complete.
+
+This block prepares shared computing formation and the engineering treatment of people operating systems. Full user research, accessibility implementation/evaluation, cryptography, secure systems, privacy engineering, deployment and advanced academic/practical formation remain branch work. Continue the breadth-first common gaps before developing those specializations.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00639CE7BBAFF02F9242DBEFCB

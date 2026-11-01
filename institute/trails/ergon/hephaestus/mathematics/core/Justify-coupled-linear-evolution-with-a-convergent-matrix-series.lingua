@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Justify coupled linear evolution with a convergent matrix series (@math-operator-matrix-exponential: 0, is #chapter, #hephaestus-core "Derive-a-norm-preserving-coupled-evolution-and-its-conserved-quantities.lingua#r_00D29C62BAD6E0BC98DBCA25BC") { r_0090EA7895C6945F8644B96E47
+Let A be a constant n-by-n complex matrix and t a real scalar. Define E(t)=ΣₖtᵏAᵏ/k!, where A⁰=I. For a concrete bound, let m(a+ib)=|a|+|b| and M(A)=maxᵢΣⱼm(Aᵢⱼ). The scalar triangle and product inequalities imply M(A+B)≤M(A)+M(B) and M(AB)≤M(A)M(B): expand each product entry, take absolute bounds and sum a row before taking its maximum. M(I)=1. This row-sum bound is convenient and submultiplicative; it is not the Euclidean operator norm and need not be preserved by unitary changes of basis.
+
+Each series term satisfies M(tᵏAᵏ/k!)≤(|t|M(A))ᵏ/k!. Thus the matrix series converges entrywise and uniformly on every bounded time interval. Its derivative series is similarly bounded by M(A)(TM(A))ᵏ⁻¹/(k−1)! for |t|≤T. Apply the previously proved uniform derivative theorem separately to real and imaginary entries. It gives E′(t)=AE(t)=E(t)A and E(0)=I. There is no assumption here that A has an eigenbasis.
+
+The total-degree argument from the scalar lesson gives E(t+s)=E(t)E(s): powers of the same A commute, and the absolute double-tail majorant is the scalar exponential with argument (|t|+|s|)M(A). Therefore E(−t)E(t)=I. The solution of x′=Ax with prescribed x(0)=x₀ is x(t)=E(t)x₀. For uniqueness, differentiate E(−t)y(t) for any other differentiable solution y. Product differentiation and commutation with A cancel its derivative, so it equals the constant x₀. This establishes the claim for finite constant-coefficient systems and real time. Time-varying or unbounded operators need separate arguments.
+
+An explicit truncation certificate follows from the same majorant. Let B=|t|M(A), and retain terms k=0,…,N. If q=B/(N+2)<1, each successive omitted scalar term has ratio at most q, so
+
+M(E(t)−Σₖ₌₀ᴺtᵏAᵏ/k!) ≤ Bᴺ⁺¹/[(N+1)!(1−q)].
+
+For B=0 the tail is zero. Failure of q<1 means this particular certificate is unavailable at that N; the exponential still exists. The program rejects that certificate request and asks for a larger degree. This is a mathematical truncation bound. Rational arithmetic adds no rounding error, but measured input uncertainty and model mismatch remain separate.
+
+**Read:** [Differential Equations — MIT 18.03SC](../../physics/thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), the selected Matrix Exponentials note. **Bounded reconstruction:** its example 3B uses N=((0,1),(0,0)). Since N²=0, exp(tN)=I+tN exactly despite its missing eigenbasis. For example 3C, A=2I+N and x₀=(1,2); commutation gives x(t)=exp(2t)(1+2t,2). Verify the initial value and both derivative equations independently. Reproducing these formulas is mathematical source reconstruction, not a physical experiment.
+
+**Work:** prove submultiplicativity and the tail certificate; derive the vector bound maxᵢm((Rx)ᵢ)≤M(R)maxⱼm(xⱼ). Explain why taking a matrix exponential entry by entry would be wrong. The source note assumes termwise differentiation in its short proof; identify how the uniform argument above supplies that missing justification for our finite constant matrices.
+
+**Continue:** [Derive a norm preserving coupled evolution and its conserved quantities](Derive-a-norm-preserving-coupled-evolution-and-its-conserved-quantities.lingua#r_00D29C62BAD6E0BC98DBCA25BC).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0090EA7895C6945F8644B96E47

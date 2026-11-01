@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Separate stored bytes names and the schema that gives them meaning (@computing-file-meaning: 0, is #chapter, #hephaestus-core "Storage-contracts-and-persistence-order.lingua#r_00C17999D9A870BEF97CB7A385") { r_009C242CFD97528897E1B8CB5E
+A stored byte sequence becomes useful only with a declared interpretation. [Interpret finite words only after declaring their encoding](Interpret-finite-words-only-after-declaring-their-encoding.lingua#r_02C6715D46F125388428D7A956) showed that the same bits can represent different values. A schema states the order, size, units and permitted values of fields. A path identifies a route through a namespace; it is not itself the contents or a permanent identity independent of directory changes. [Files, paths, processes, and the working directory](../../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K) supplies the initial file/path vocabulary.
+
+For the original model, one logical record has four unsigned eight-bit fields in this order: sequence, last transfer amount, left stock, right stock. A byte is the modeled atomic storage word. The record (1,3,9,11) is encoded as four bytes 01 03 09 0B in hexadecimal. There is no multi-byte integer byte-order question within these fields. A different schema, text encoding or word width would be a different representation. The program uses integer tuples to represent those bytes; it does not write a physical disk.
+
+The independent configuration supplies total stock T≤255. The initial sequence and amount are zero. A later record has positive sequence and amount, nonnegative stocks, left+right=T, and amount≤right. The latter constraint follows from the model's last positive transfer from left to right. It is a useful consistency check, not proof of the complete history. Reject booleans, floats, out-of-range values, invalid selectors and records violating this schema before using them as application state.
+
+Two record slots and a selector need nine bytes in the abstract layout: address 0 selects slot 0 or 1; addresses 1–4 hold slot 0; addresses 5–8 hold slot 1. Recovery reads the selected slot. The selector is a publication choice. It is not a cryptographic authenticator or a promise that the other slot is a backup. The configured T and schema must remain available after restart; they are outside the nine mutable words.
+
+Suppose the active record is (0,0,12,8) and a transfer of 3 is requested. The new record is (1,3,9,11). Both sum to 20. A mixed record (1,3,12,8) also sums to 20 and passes the local schema, yet falsely claims a request identity without applying its stock change. This is why local format checks and an application invariant do not replace a correct publication protocol. Conversely, a selected record summing to 17 is visibly inconsistent but does not identify which field was intended.
+
+**Work:** encode both records as bytes and decode under the declared schema. Construct a schema-valid but history-invalid record. Explain why a content digest can help detect a mismatch against an independently trusted expected digest yet does not, by itself, identify the latest committed version. Name the additional schema, configuration and method identity needed to interpret an archived scientific result.
+
+Read [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 39's distinction between file bytes and directory naming. Its filesystem terminology provides context; our nine-word selector is a separate original model, not a statement about an actual inode layout.
+
+**Continue:** [Distinguish write acceptance atomicity ordering and persistence](Storage-contracts-and-persistence-order.lingua#r_00C17999D9A870BEF97CB7A385).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_009C242CFD97528897E1B8CB5E

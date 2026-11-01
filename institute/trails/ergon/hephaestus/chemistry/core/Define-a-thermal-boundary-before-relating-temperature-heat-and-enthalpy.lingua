@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Define a thermal boundary before relating temperature heat and enthalpy (@chemistry-thermal-bridge: 0, is #chapter, #hephaestus-core "../general-chemistry/energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE") { r_0944AD7B55F0D1168D9ACB8E2A
+A temperature reading is not an energy balance. Begin with a specified system, its boundary, composition, initial/final states and allowed exchanges. In this block use closed systems, with no mass crossing the boundary, and neglect changes in whole-body kinetic and gravitational energy. An open flowing system needs a different accounting of carried energy.
+
+**Read:** Chemistry 2e sections 5.1–5.3, beginning with energy/temperature, heat capacity, calorimetric interpretation and the first-law/enthalpy definitions. Reuse the [physics work-energy lesson](../../physics/core/Connect-work-energy-and-power-with-the-model.lingua#r_0FD59423D49E5DCBEFBAC05C2A) and the [shared chemical energy lesson](../general-chemistry/energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE) next. Its general pressure-volume integral remains later mathematical work; derive the constant-external-pressure case first.
+
+Use the chemistry convention ΔU=q+w: heat q and work w are positive when they transfer energy into the system. For expansion against a constant external pressure p_ext, pressure-volume work is w=−p_ext ΔV. If p_ext=100,000 Pa and ΔV=2×10⁻⁶ m³, this work is −0.2 J. Receiving q=5 J then gives ΔU=4.8 J. Pa·m³ is a joule. The signs describe the chosen boundary and convention; they are not inherent labels attached to an apparatus.
+
+Enthalpy is H=U+pV. Between states at the same pressure p, ΔH=ΔU+pΔV. If that pressure equals the constant external pressure, only pressure-volume work occurs and the preceding energy assumptions apply, substitution gives ΔH=q. Electrical or shaft work, a different boundary or changing pressure requires the additional terms or a different derivation. Heat and work describe transfers during a process; U and H describe states.
+
+A heat capacity relates a temperature change to an energy change under stated conditions. For a single phase with approximately constant specific heat capacity c_p at constant pressure, its enthalpy change is m c_p ΔT. If an apparatus with effective heat capacity C_app follows the same temperature change, its contribution adds, giving (m c_p+C_app)ΔT. Multiplication follows from the assumed constant relation; varying properties, temperature gradients and phase changes need a richer account. A Celsius temperature difference has the same numerical size as a kelvin difference, while absolute Celsius and kelvin temperatures differ by an offset.
+
+Melting a pure substance at its coexistence temperature and pressure can absorb energy while the phase fraction changes without a temperature rise. Let ℓ denote a specified mass-specific enthalpy of fusion. Melting mass m then changes enthalpy by mℓ under that model; it does not use m c_p ΔT with a guessed temperature increase. The molecular identities need not change during the phase transition. Treat a reaction, a change of phase and heating within a phase as different accounts.
+
+**Work:** derive both constant-pressure results and state every assumption. Change the boundary so that an electrical heater lies inside rather than outside it; distinguish electrical work from heat crossing that boundary. Compare two samples at the same temperature with different masses. Explain why a temperature plateau can be compatible with positive energy transfer and why an unexplained plateau is not, by itself, proof of a particular phase transition.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Continue:** [Choose a system and track heat, work, and enthalpy](../general-chemistry/energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0944AD7B55F0D1168D9ACB8E2A

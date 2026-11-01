@@ -1,0 +1,17 @@
+Import "laboratory-facilities-and-scientific-equipment/Laboratory-facilities-and-scientific-equipment.lingua"
+Import "construction-housing-and-production-facilities/Construction-housing-and-production-facilities.lingua"
+Import "recycling-remanufacturing-and-material-recovery/Recycling-remanufacturing-and-material-recovery.lingua"
+Import "digital-infrastructure-manufacture-and-operation/Digital-infrastructure-manufacture-and-operation.lingua"
+
+Facilities and maintenance (@facilities-and-maintenance: 0, is #chapter, #outline, #contains "laboratory-facilities-and-scientific-equipment/Laboratory-facilities-and-scientific-equipment.lingua#r_2Z45HQW78EK8ZB4CSZ8FHZSE3F", #contains "construction-housing-and-production-facilities/Construction-housing-and-production-facilities.lingua#r_50DH2REJNVWRJWE6TAVKG4G9VY", #contains "recycling-remanufacturing-and-material-recovery/Recycling-remanufacturing-and-material-recovery.lingua#r_2W91J10QZNAGYA0V9EERXN18AK", #contains "digital-infrastructure-manufacture-and-operation/Digital-infrastructure-manufacture-and-operation.lingua#r_76YZE6F8M0406MXGDC353TJBKQ") { r_6QB4YPHCAEQ6YT4X71ZT7SYD28
+Maintain a selected tool, room, facility, or digital service; document a fault and hand over upkeep. Start with the specific equipment and observations; add its relevant mechanics, electricity, materials, computing, or inspection methods rather than all engineering.
+
+**Parent:** [Engineering — systems, design, construction, and operation](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Branches:**
+
+- [Laboratory facilities and scientific equipment](laboratory-facilities-and-scientific-equipment/Laboratory-facilities-and-scientific-equipment.lingua#r_2Z45HQW78EK8ZB4CSZ8FHZSE3F)
+- [Construction, housing, and production facilities](construction-housing-and-production-facilities/Construction-housing-and-production-facilities.lingua#r_50DH2REJNVWRJWE6TAVKG4G9VY)
+- [Recycling, remanufacturing, and material recovery](recycling-remanufacturing-and-material-recovery/Recycling-remanufacturing-and-material-recovery.lingua#r_2W91J10QZNAGYA0V9EERXN18AK)
+- [Digital infrastructure manufacture and operation](digital-infrastructure-manufacture-and-operation/Digital-infrastructure-manufacture-and-operation.lingua#r_76YZE6F8M0406MXGDC353TJBKQ)
+} r_6QB4YPHCAEQ6YT4X71ZT7SYD28

@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Separate equilibrium weights from a law of relaxation and sampling (@physics-statistical-dynamics: 0, is #chapter, #hephaestus-core "Investigate-finite-reservoirs-fluctuations-and-distinct-relaxation-laws.lingua#r_0072F92BB90961036B562C796E") { r_00EE492F15A9D8710F97287B36
+A probability distribution over states does not specify how the system moves between them. Introduce a separate discrete-time binary model: during one declared time step, state 0 changes to 1 with probability a, and state 1 changes to 0 with probability b, with 0≤a,b≤1. The remaining probabilities retain the current state. Transition probabilities are conditional on the present state; this Markov premise discards additional memory and must be justified if applied to observations.
+
+If u_t is the probability of state 1, the two disjoint ways to arrive there give u_(t+1)=a(1−u_t)+(1−b)u_t=a+(1−a−b)u_t. For a+b>0, the stationary probability is p=a/(a+b). Subtracting it gives u_t=p+(u_0−p)λ^t, λ=1−a−b. When |λ|<1 the marginal converges to p. If a=b=1, λ=−1 and generic marginals alternate; if a=b=0, every initial distribution remains stationary. Stationarity alone is not convergence from all preparations.
+
+At stationarity, (1−p)a=pb, so opposite probability flows balance. This is detailed balance for the two-state chain. To match the positive-temperature two-state weights, require a/b=exp(−βε) when b>0; that ratio alone leaves the overall time scale unspecified. With a=1/6,b=1/3, p=1/3 and λ=1/2. Starting at state 1 gives u_3=5/12. Halving both transitions keeps p=1/3 but changes λ to 3/4 and gives u_3=59/96. The same equilibrium distribution therefore allows different relaxation rates.
+
+Stationarity in a larger network does not imply detailed balance. A directed three-state cycle that advances by one state every step preserves the uniform distribution but carries a probability current of 1/3 along each directed edge and has no reverse flow. It is an explicit stochastic-model counterexample; interpreting it as a driven physical device would require an energy, reservoir and work account. A stationary measured signal alone is insufficient evidence for thermal equilibrium.
+
+Sampling at adjacent times can retain memory. For the binary model started in its stationary distribution, conditioning on X_0 gives E[X_h|X_0]=p+(X_0−p)λ^h. Multiplying by X_0−p and averaging gives Cov(X_0,X_h)=p(1−p)λ^h. For the mean of m consecutive observations,
+
+Var((X_0+…+X_(m−1))/m)=p(1−p)[m+2Σ_(h=1 to m−1)(m−h)λ^h]/m².
+
+This follows by expanding the variance and counting m−h pairs at each lag. It requires stationary preparation and this transition law. For the first transition pair above and m=3 it gives 11/81, versus 2/27 under independent sampling. Exact enumeration of all finite paths verifies the formula for selected rational cases. The two chains' equilibrium weights match while their finite-time sampling errors differ.
+
+**Work:** solve the recurrence, identify its exceptional boundaries and reconstruct both time-three examples. Derive the covariance and variance formulas independently, then design a hypothetical observation that distinguishes the two rates. Explain why a finite trajectory histogram does not by itself verify equilibrium, independence or a microscopic law. This begins nonequilibrium questions; transport equations, kinetic theory, driven thermodynamics and general convergence theory remain unfinished.
+
+**Continue:** [Investigate finite reservoirs fluctuations and distinct relaxation laws](Investigate-finite-reservoirs-fluctuations-and-distinct-relaxation-laws.lingua#r_0072F92BB90961036B562C796E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00EE492F15A9D8710F97287B36

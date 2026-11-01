@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Explain bulk properties through interactions and collective states (@gc-interactions: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863") { r_2QKWV1YDBB61H0GZN5A4GWRAYH
+Explain bulk properties through interactions and collective states (@gc-interactions: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863", #hephaestus-core "../../core/Define-a-thermal-boundary-before-relating-temperature-heat-and-enthalpy.lingua#r_0944AD7B55F0D1168D9ACB8E2A") { r_2QKWV1YDBB61H0GZN5A4GWRAYH
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 10’s intermolecular-force material, continuing through the whole chapter; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), States of matter and the interaction sections; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 16–17.
 
 Separate intramolecular bonding from interactions among molecules, ions, surfaces, and solvent. Electrostatic interactions, polarization, dispersion, hydrogen bonding, and solvent reorganization can contribute together. Their relative importance depends on structure, separation, orientation, temperature, and the surrounding medium.
@@ -16,4 +16,9 @@ Complete the liquid/solid chapter and Chem1's corresponding unit as the progress
 **Continue:** [Use a gas model with defined pressure, temperature, volume, and composition](Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Second chemistry-block reading:** Use Chemistry 2e 10.1 and the qualitative comparison of molecular and collective accounts. The next common lesson supplies thermal quantities before energy/phase calculations. Full gas, liquid/solid and advanced interaction treatments remain later formation.
+
+**Continue in the second chemistry block:** [Define a thermal boundary before relating temperature heat and enthalpy](../../core/Define-a-thermal-boundary-before-relating-temperature-heat-and-enthalpy.lingua#r_0944AD7B55F0D1168D9ACB8E2A).
+
 } r_2QKWV1YDBB61H0GZN5A4GWRAYH

@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Describe a field without confusing position and time (@physics-wave-field: 0, is #chapter, #hephaestus-core "Relate-a-traveling-profile-to-its-motion-and-phase.lingua#r_00D39A23468A856A9F39DD0AEC") { r_00D94239F63BAA1888D124877B
+A single oscillator assigns a displacement to each time. A field assigns a value to each location and time: y(x,t) describes the transverse displacement of a string element labeled by its equilibrium coordinate x. At fixed t, its graph is a spatial profile. At fixed x, its graph is one element's motion. These are different experimental questions even when both graphs look sinusoidal.
+
+Here x is an equilibrium material label whose longitudinal motion is neglected. The model places that element at (x,y(x,t)); its velocity is (0,y_t), not the velocity of a crest. This restriction will be part of the string approximation, not a universal claim about all waves or fluids.
+
+Define y_t by the limit [y(x,t+h)−y(x,t)]/h holding x fixed. Define y_x by [y(x+h,t)−y(x,t)]/h holding t fixed. A second time derivative differentiates y_t again while holding x fixed; y_xx differentiates the spatial slope. For displacement in metres, y_t has units m/s, y_x is dimensionless and y_xx has units 1/m. The mixed derivative y_xt records how slope changes in time. Assume continuous second partial derivatives in the calculations below, so the mixed derivatives agree. [Build a local sensitivity approximation without hiding its remainder](../../inquiry/core/Build-a-local-sensitivity-approximation-without-hiding-its-remainder.lingua#r_00A188972204572AAE92C46790) supplies a previous bounded partial-derivative bridge; the present restriction does not complete multivariable analysis.
+
+Example: y=a x t has y_t=ax, y_x=at, both pure second derivatives zero and y_xt=a. The units of a are s⁻¹ if x and y are lengths and t is time. A crest trajectory x_c(t), when it exists, is instead a moving location. The chain rule gives d[y(x_c(t),t)]/dt=y_x x_c'+y_t. Keeping the crest height constant constrains this total derivative, not each partial derivative separately.
+
+Initial data for a second-order wave model specify two spatial functions, y(x,0) and y_t(x,0). Boundary conditions constrain values or forces at the ends for all times. An initial picture alone lacks the velocities; an end constraint alone lacks the initial state. Measurements add sensor locations, time response and calibration. A finite set of readings need not specify a whole field.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 16.2, and the common trigonometric calculus. Draw a profile and a time trace with their own axes and units. Calculate the two derivatives for y=a x t and for y=A cos(kx−ωt), stating the units of every parameter. Explain what two observations at different locations can reveal that repeated readings at one location cannot. Do not infer an entire function from a drawing of a few points.
+
+**Continue:** [Relate a traveling profile to its motion and phase](Relate-a-traveling-profile-to-its-motion-and-phase.lingua#r_00D39A23468A856A9F39DD0AEC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00D94239F63BAA1888D124877B

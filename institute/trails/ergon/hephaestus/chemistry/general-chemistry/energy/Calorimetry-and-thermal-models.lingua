@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Interpret a temperature change through a calibrated thermal model (@gc-calorimetry: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Reaction-enthalpies-and-reference-states.lingua#r_4KZGWMKS0V45XNRJ5ABNM0FWV7", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Heat-capacity-temperature-dependence-and-calorimetry.lingua#r_03R86BMA4QVQGH84GXHZZDNJKZ") { r_55B9CZ9RST5E8CANA6GZ0SNPEY
+Interpret a temperature change through a calibrated thermal model (@gc-calorimetry: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Reaction-enthalpies-and-reference-states.lingua#r_4KZGWMKS0V45XNRJ5ABNM0FWV7", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Heat-capacity-temperature-dependence-and-calorimetry.lingua#r_03R86BMA4QVQGH84GXHZZDNJKZ", #hephaestus-core "../states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_55B9CZ9RST5E8CANA6GZ0SNPEY
 **Read:** [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete thermochemistry/calorimetry activity; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 5’s calorimetric examples and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), calorimetry and First Law applications.
 
 A calorimeter turns observed temperature behavior into an energy estimate through a model. In a simple well-mixed approximation, heat received by solution and apparatus is q = (mc_p + C_cal)ΔT. Specify which material mass, heat capacity, apparatus contribution, and interval the model describes. Calibration, heat loss, mixing, evaporation, and the time of observation can affect the inference.
@@ -18,4 +18,9 @@ For an advanced account compare fitted time-curve methods with a single endpoint
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 
 **Continue in thermodynamics and heat transfer:** [Heat capacity, temperature dependence and calorimetry](../../../physics/thermodynamics-and-heat-transfer/properties/Heat-capacity-temperature-dependence-and-calorimetry.lingua#r_03R86BMA4QVQGH84GXHZZDNJKZ).
+
+**Second chemistry-block reading:** Use Chemistry 2e 5.2 and the existing hypothetical calculation first. Define sample/apparatus terms and the model assumptions before interpreting a temperature change. The complete laboratory activity, calibration and time-curve work remain later practical formation; no experiment is claimed by this core.
+
+**Continue in the second chemistry block:** [Interpret vapor pressure, phase change, and a phase diagram](../states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
 } r_55B9CZ9RST5E8CANA6GZ0SNPEY

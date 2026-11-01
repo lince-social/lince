@@ -1,0 +1,24 @@
+Import "../Engineering.lingua"
+
+Review engineering claims from function to continuing service (@engineering-foundation-review: 0, is #chapter, #hephaestus-core "Connect-projections-and-interfaces-to-a-declared-reference-frame.lingua#r_0475C7C1DBB15BA404CFEA8D83") { r_0226B0839C667959908DA37D5B
+Explain a design to someone who has not seen your calculations. Start with the useful effect and the conditions of use. State the requirements, describe at least two alternatives, and show which model answers each question. Keep the predicted result attached to its assumptions and the observed result attached to the configuration and measurement that produced it.
+
+**Read again:** your selected NASA requirements and verification/validation passages alongside your own study. Return to the shared machine-function, interface and model lessons. Compare how the same questions apply to a mechanical assembly, electrical supply, civil structure, chemical process, material selection, software service and production line. The questions are shared; the physical models and evidence methods require further discipline-specific formation.
+
+Demonstrate that you can distinguish a function from a chosen component; a requirement from its evidence; a quantity from a unit; stock from flow; capacity from output; an aggregate balance from a time-resolved state; a model result from a measurement; and conformity to specified conditions from usefulness in context. Explain each distinction with an example where confusing it would change a decision.
+
+Use the card study as a closed-notes examination. Derive the 931-card aggregate upper bound, reconcile every counted stream, and explain the coordinated 1,000-blank alternative. Produce two schedules with equal aggregate capacities and different final outputs. Show why improving only A's rate may have no effect on the line's bound. Interpret a reading whose permitted error interval crosses a tolerance. Identify an apparently attractive design rejected by a necessary condition and two remaining designs that require a genuine preference tradeoff.
+
+Now transfer the reasoning. For an ordinary shelf, describe loading, support interfaces, access and permitted motion without pretending an inventory model proves structural strength. For a small software archive, describe information identity, successful retrieval, interruption and recovery without treating byte counts as proof that the right information was retained. For a water-transfer service, identify material and energy boundaries without proposing unverified equipment or a construction procedure. State which later physics, chemistry, computing, measurement or engineering lessons are needed to resolve each unanswered question.
+
+**Evidence of understanding:** submit the revised study and a short explanation of a mistake found during checking. Defend one modeling simplification and one decision to seek more evidence. Let another reader challenge the requirements and interpretation, then preserve the changes and reasons. Correct arithmetic is necessary for the numerical argument; it is insufficient evidence of an actual working service.
+
+The first block is complete when this bounded reasoning can be demonstrated, not when its files have been opened. The broad engineering core remains unfinished: fuller force, energy, transport, circuit, material and structural reasoning; drawings and tolerances; design and optimization; controls and reliability; realization and commissioning; human use; environmental and resource accounts; and advanced experimental, computational and independent work must develop with the shared sciences. The first pass is present across all six areas. Continue below through drawings, dimensional models and evidence in the second common pass, then bring inquiry forward before extending a specialist manufacturing leaf.
+
+**Next broad area:** [Scientific inquiry: questions, quantities and evidence](../../inquiry/core/Questions-evidence-and-reproducible-claims.lingua#r_0148905A021EECB61916C70B2C).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the second common pass:** [Connect projections and interfaces to a declared reference frame](Connect-projections-and-interfaces-to-a-declared-reference-frame.lingua#r_0475C7C1DBB15BA404CFEA8D83).
+
+} r_0226B0839C667959908DA37D5B

@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Differentiate a slice while stating what remains fixed (@math-partial-derivatives: 0, is #chapter, #hephaestus-core "Require-a-linear-approximation-with-a-controlled-remainder.lingua#r_0032A09B51DFEE9C2FC70DCE4C") { r_003FDB567E526DF76A8B13FE66
+The partial derivative f_x(a,b) is the limit [f(a+h,b)−f(a,b)]/h as h→0 with b held fixed; f_y changes the second input with the first fixed. These are ordinary derivatives of slices. The resulting coefficients have output-unit/input-unit dimensions. Their existence describes only those slices until a stronger approximation has been established.
+
+For F=x²y+2y²+3x, slice differentiation gives F_x=2xy+3 and F_y=x²+4y. At (1,2) they are 7 and 9. A motion changing both inputs does not generally have either of those rates. In physical coordinates, ∂[U₀F(X/X₀,Y/Y₀)]/∂X=(U₀/X₀)F_x, holding Y fixed. The label of the fixed variable matters when coordinates or constraints change.
+
+Second partial derivatives differentiate the first coefficients. Define f_xy=∂_y(∂_x f) here, spelling out order because notation varies. For the study, F_xx=2y, F_xy=F_yx=2x and F_yy=4. Their matrix is the Hessian H. Equality of mixed derivatives is not an unconditional symbolic rule: a sufficient hypothesis is existence of first partials and continuity of the two mixed partials in a neighborhood.
+
+To see that hypothesis at work, form the rectangle difference Δ=f(a+h,b+k)−f(a+h,b)−f(a,b+k)+f(a,b). Apply the one-variable mean value theorem first to x↦f(x,b+k)−f(x,b), then to y↦f_x(ξ,y). It gives Δ=hk f_xy(ξ,η), with ξ,η between the endpoints. Reversing the two steps gives Δ=hk f_yx(ξ′,η′). Divide by nonzero hk and let h,k→0; continuity makes both limits equal at (a,b). The reasoning uses the stated local existence and continuity, not a drawing of a smooth surface.
+
+The earlier g=xy/(x²+y²), completed by zero at the origin, has both partial derivatives zero there but is not even continuous. Thus partial derivatives cannot alone justify a tangent approximation or the multivariable chain rule. Later we will also distinguish all directional derivatives from one linear derivative.
+
+**Read and work:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 4.3. Reconstruct the study partials from difference quotients. Write units for each first and second derivative after introducing X₀,Y₀,U₀. Compare fixed-volume and along-a-constraint derivatives contextually in [Exact differentials, partial derivatives and thermal models](../../physics/thermodynamics-and-heat-transfer/mathematics/Exact-differentials-partial-derivatives-and-thermal-models.lingua#r_58NJQNAS8V4TVM3FAKB7HAK9QP); the later physics block supplies the thermodynamic meaning.
+
+**Continue:** [Require a linear approximation with a controlled remainder](Require-a-linear-approximation-with-a-controlled-remainder.lingua#r_0032A09B51DFEE9C2FC70DCE4C).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_003FDB567E526DF76A8B13FE66

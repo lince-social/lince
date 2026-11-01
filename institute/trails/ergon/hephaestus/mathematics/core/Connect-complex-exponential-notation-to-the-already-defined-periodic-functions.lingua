@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Connect complex exponential notation to the already defined periodic functions (@math-operator-scalar-exponential: 0, is #chapter, #hephaestus-core "Justify-coupled-linear-evolution-with-a-convergent-matrix-series.lingua#r_0090EA7895C6945F8644B96E47") { r_0019BF32E27ECBE9EFB337E5D9
+The existing [Turn a finite Taylor remainder into a justified series representation](Turn-a-finite-Taylor-remainder-into-a-justified-series-representation.lingua#r_00495C8F3915BF7C2DBC7E592E) establishes the sine, cosine and real-exponential Taylor representations from finite remainders. Define exp(z)=Σₖzᵏ/k! for a complex z. Absolute convergence follows by comparison with Σ|z|ᵏ/k!=exp(|z|), the already justified real series. On a fixed disk |z|≤R, the same majorant controls every partial sum tail. This definition extends the real exponential rather than presupposing a trigonometric interpretation.
+
+For real t, the even terms of exp(it) are Σ(−1)ʲt²ʲ/(2j)! and the odd terms are iΣ(−1)ʲt²ʲ⁺¹/(2j+1)!. Absolute convergence permits separating these subseries. The previous Taylor identities therefore give exp(it)=cos(t)+i sin(t), and exp(−it)=cos(t)−i sin(t). This supplies the Euler notation absent from the earlier geometric complex-rotation lesson. It does not define every complex power or choose a branch of logarithm.
+
+To justify exp(z+w)=exp(z)exp(w), first multiply finite partial sums. Group terms of total degree k and use the binomial identity Σⱼzʲwᵏ⁻ʲ/[j!(k−j)!]=(z+w)ᵏ/k!. The discarded terms in the infinite double sum have total degree beyond a cutoff and absolute sum bounded by the tail of Σ(|z|+|w|)ᵏ/k!, which tends to zero. This proves that grouping is legitimate. Hence exp(−z) is the inverse of exp(z), because exp(0)=1. This scalar law will require a commutation condition when two different matrices replace z and w.
+
+For differentiating exp(tz) in real t, use [Justify exchanging a limit with an integral or derivative](Justify-exchanging-a-limit-with-an-integral-or-derivative.lingua#r_001E30FA67E83674F48C0427F2) componentwise. On |t|≤T, derivative terms are bounded by |z|(|z|T)ᵏ⁻¹/(k−1)! for k≥1. Their uniformly convergent majorant and the value at t=0 justify the derivative z exp(tz). A termwise formal calculation without this control would not prove the result.
+
+**Work:** carry out the total-degree tail argument, including the zero cases. Recover the product rule for geometric rotations and distinguish “an exact point on the unit circle” from “a phase known at an exact specified time.” The rational parameter c=(1−q²)/(1+q²), s=2q/(1+q²) gives c²+s²=1, but the program using that parameter does not claim q is the elapsed time or the angle. Compare this exact rational parameterization with evaluating sin(t),cos(t) at a rational t with a certified remainder.
+
+**Continue:** [Justify coupled linear evolution with a convergent matrix series](Justify-coupled-linear-evolution-with-a-convergent-matrix-series.lingua#r_0090EA7895C6945F8644B96E47).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0019BF32E27ECBE9EFB337E5D9

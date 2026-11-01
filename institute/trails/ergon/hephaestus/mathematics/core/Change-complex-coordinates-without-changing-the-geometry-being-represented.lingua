@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Change complex coordinates without changing the geometry being represented (@math-operator-basis: 0, is #chapter, #hephaestus-core "Connect-complex-exponential-notation-to-the-already-defined-periodic-functions.lingua#r_0019BF32E27ECBE9EFB337E5D9") { r_00F3E28C190908F570F20A405A
+Let the columns of an invertible square S be a new basis expressed in old coordinates. The same vector has x=Sx′, so x′=S⁻¹x; the same operator has H′=S⁻¹HS because Hx=SH′x′. This is a change of representation. Applying S to a fixed coordinate column while retaining the old basis is a different operation and can change the vector itself.
+
+In the new coordinates, ⟨x,y⟩=(x′)†Gy′ where G=S†S. G is Hermitian and positive definite: (x′)†Gx′=||Sx′||²>0 for nonzero x′. The pairing must change with a nonorthonormal basis. If H is Hermitian in the old standard metric, then (H′)†G=GH′. Derive this by substituting S⁻¹HS and canceling the invertible factors. Thus H′ can fail the ordinary conjugate-transpose test while still representing the same self-adjoint operator with the correct metric.
+
+For S=((1,1),(0,1)), S⁻¹=((1,−1),(0,1)) and G=((1,1),(1,2)). The vector x=(2,1) has x′=(1,1). Its old squared norm is 5; the unweighted coordinate sum in the new basis is 2, but (x′)†Gx′=5. With the H from the preceding lesson, compute H′ and verify (H′)†G=GH′ even though (H′)†≠H′. Treating the new coordinates as orthonormal would change the question.
+
+When S=Q is unitary, G=I, Q⁻¹=Q† and H′=Q†HQ. Inner products and norms then keep the simple coordinate formulas. For example Q=((3/5,4i/5),(4i/5,3/5)) is unitary; verify the diagonal norms and off-diagonal cancellation. Do not confuse its columns with the different eigenbasis of H unless their eigenvector equations have been checked.
+
+A unitary basis change preserves eigenvalues: Hv=λv implies H′(Q†v)=λ(Q†v). More generally any invertible similarity does this, but preservation of coordinate norm additionally needs the metric account. **Work:** derive the metric expression for the adjoint of a general square map, A♯=G⁻¹A†G, and verify its defining pairing. Compute the oblique-basis example independently by reconstructing the original vectors. Explain what remains unchanged under a basis change, and what evidence would be needed before interpreting a coordinate as an actual instrument reading.
+
+**Continue:** [Connect complex exponential notation to the already defined periodic functions](Connect-complex-exponential-notation-to-the-already-defined-periodic-functions.lingua#r_0019BF32E27ECBE9EFB337E5D9).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00F3E28C190908F570F20A405A

@@ -1,0 +1,11 @@
+Import "../Physics.lingua"
+
+Hubble 1929 distance and radial velocity paper (@physics-source-hubble1929: 0, is #reference) { r_00C02689A8E7292BFB5F12F63F
+Edwin Hubble, *A Relation between Distance and Radial Velocity among Extra-Galactic Nebulae*, Proceedings of the National Academy of Sciences 15 (1929), 168–173, [DOI 10.1073/pnas.15.3.168](https://doi.org/10.1073/pnas.15.3.168). [Primary article metadata](https://pmc.ncbi.nlm.nih.gov/articles/PMC522427/). Inspected a [five-page university-hosted transcription PDF](https://www.astro.rug.nl/~weygaert/tim1publication/cosmo2007/literature/hubble.1929.pdf), not an original six-page facsimile. The old NASA HTML link redirected to the APOD landing page during this inspection and is not used as a successful article access.
+
+Inspected 1 November 2026: opening distance-calibration discussion; Table 1 column definitions and shared-cluster qualification; fitted solar-motion/distance equation; adopted K; Table 2 NGC 278 row; and prose distinguishing velocities used to infer distances from independent distance estimates. The bounded reconstruction uses v=650, v_s=−110 km/s, K=500 km/s/Mpc, m=12, r=1.52 Mpc and M=−13.9. It does not reproduce the full observational fit, data acquisition or current cosmological measurements.
+
+The primary article dates from 1929; the accessed transcription has its own provenance and remains external. No blanket licence is asserted for host-site components. No full table, source figure, scan or media is bundled. Only attributed numerical quantities for the small calculation are used. See [Reconstruct a historical distance calculation without circular validation](../core/Reconstruct-a-historical-distance-calculation-without-circular-validation.lingua#r_00801894D8EC4DDBC5ABEAE629) for its circular-inference critique and original changed case.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00C02689A8E7292BFB5F12F63F

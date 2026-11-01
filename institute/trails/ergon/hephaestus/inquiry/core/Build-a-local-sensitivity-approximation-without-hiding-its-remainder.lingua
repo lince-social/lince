@@ -1,0 +1,23 @@
+Import "../Inquiry.lingua"
+
+Build a local sensitivity approximation without hiding its remainder (@inquiry-local-sensitivity: 0, is #chapter, #hephaestus-core "../metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR") { r_00A188972204572AAE92C46790
+For one input, the prepared derivative explains a local change. For a function f(x,y), define ∂f/∂x by varying x while holding y fixed, and ∂f/∂y by varying y while holding x fixed. These partial derivatives have output-unit/input-unit dimensions. Their existence at one point alone does not guarantee a good simultaneous linear approximation. Here assume continuous partial derivatives in a rectangle containing the changes.
+
+Change x by h first, then y by k. The fundamental theorem along each coordinate gives an exact decomposition:
+
+f(x+h,y+k)−f(x,y)=∫₀ʰ f_x(x+s,y) ds + ∫₀ᵏ f_y(x+h,y+t) dt.
+
+Subtract f_x(x,y)h+f_y(x,y)k. If the respective derivative differences along those paths are bounded by M_x and M_y, the remainder satisfies |R|≤M_x|h|+M_y|k|. Continuity makes those derivative differences small as the rectangle shrinks. This proves the local approximation under stated conditions rather than presenting partial derivatives as a magic error formula. Each term in the bound has output units. For different input units use stated reference scales when comparing the size of changes.
+
+At input estimates μ_i, write f(X)≈f(μ)+Σ_i c_i(X_i−μ_i), with c_i the partial sensitivities at μ. Apply the exact affine result to this approximation: output variance is approximately cᵀΣc. The approximation enters through the nonlinear model; the variance calculation for the affine surrogate is exact. Its mean is f(μ), which need not equal E(f(X)). Assess the remainder over the input range and compare directly with exact propagation when possible.
+
+For a thermal conductance estimate G=P/(X−Y), hold power P fixed and require a positive rise D=X−Y bounded away from zero. Then c_X=−P/D² and c_Y=+P/D²; their units are W/K², so multiplying by a temperature change gives W/K. If power also has uncertainty, c_P=1/D has units 1/K and its covariance contributions must be included. Treating P as exact is an explicit simplification, not a property of a real power measurement.
+
+At P=6 W and D=2 K, the two temperature sensitivities are −3/2 and +3/2 W/K². In the shared model, first-order variance is (3/2)²(1/8)=9/32 (W/K)². With independent offsets it is 45/32 (W/K)². Compare these with direct nonlinear propagation in the next lesson. A denominator close to zero can make both the derivative and the neglected part large.
+
+**Practice:** derive the partial sensitivities independently by ordinary single-variable differentiation. Change one input at a time, then both together; keep the common-offset cancellation. Use [Use derivative information with explicit interval and error bounds](../../mathematics/core/Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629) for the meaning of an approximation and [Propagate uncertainty with sensitivities and covariance](../metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR) for the shared general formulation after this preparation. Its multivariate, coverage and advanced source assignments remain progressive later reading.
+
+**Continue:** [Propagate uncertainty with sensitivities and covariance](../metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00A188972204572AAE92C46790

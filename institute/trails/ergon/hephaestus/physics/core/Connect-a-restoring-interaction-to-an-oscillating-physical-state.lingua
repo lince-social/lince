@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Connect a restoring interaction to an oscillating physical state (@physics-restoring: 0, is #chapter, #hephaestus-core "Account-for-oscillation-losses-and-external-work.lingua#r_008D203213F706CB6E90BC8692") { r_008CD8E3B5B6619C71A1297FF2
+An equilibrium position is a location where the net force vanishes under the declared constraints. Let x measure displacement from that position along one fixed axis. For a smooth position-dependent force F with F(0)=0, differentiability gives F(x)=F'(0)x+r(x), where r(x)/x tends to zero as x tends to zero. If F'(0)=−k with k>0, the leading force opposes a small displacement. This motivates F≈−kx; it does not prove that a real spring, support or other interaction is linear over every displacement. The units of k are N/m. An equilibrium with F'(0)>0 instead pushes small displacements away; zero derivative requires higher-order information.
+
+For a constant mass m>0 and negligible other forces, Newton's law gives m x''=−kx. Write ω₀=√(k/m)>0, with units s⁻¹, and apply [Solve a second order initial problem and test boundary data](../../mathematics/core/Solve-a-second-order-initial-problem-and-test-boundary-data.lingua#r_0072284625C39BA0E04DDA3D2E). With x(0)=x₀ and x'(0)=v₀,
+
+x(t)=x₀ cos(ω₀t)+(v₀/ω₀) sin(ω₀t).
+
+This is a physical prediction only to the extent that the constant-mass, linear-force and neglected-interaction assumptions hold. Its amplitude is √(x₀²+(v₀/ω₀)²). A nonzero oscillation has period P=2π/ω₀ and frequency f=1/P in Hz. Angular frequency is not frequency in cycles per second. At zero amplitude the state stays at equilibrium and its observations do not identify a period. If k=0 the model is uniform motion, not an oscillator with an infinite measured period.
+
+Define potential energy relative to equilibrium by U(x)=−∫₀ˣF(s)ds. For this force U=kx²/2, so E=mv²/2+kx²/2. The product and chain rules give E'=v(mx''+kx)=0. The mathematical invariant Q=v²+ω₀²x² becomes energy only after multiplication by m/2; Q alone has units m²/s². Conservation constrains the motion but does not supply the force law or establish its empirical range. In a vertical spring, gravity shifts the equilibrium; with constant gravitational field and the same linear spring, displacement from that shifted equilibrium obeys the same equation. Derive the shift rather than counting gravity twice.
+
+Original hypothetical example: m=2 kg, k=8 N/m, x₀=0.03 m, v₀=0.08 m/s. Then ω₀=2 s⁻¹, x=0.03 cos(2t)+0.04 sin(2t) m, amplitude 0.05 m, period π s and E=0.010 J. Independently calculate the energy at equilibrium crossing and at a turning point. The numbers define an exercise, not a tested apparatus.
+
+A rival law F=−kx−αx³ has potential kx²/2+αx⁴/4. For α≥0 it also restores toward equilibrium, but a nonzero cosine with ω₀²=k/m leaves an unbalanced cubic term. On |x|≤A, the relative force correction away from x=0 is at most αA²/k. With k=8 N/m and α=80 N/m³, it is at most 0.025 for A=0.05 m, but 0.4 for A=0.2 m. These are force discrepancy bounds, not proved period-error bounds. A small-displacement fit must be challenged across amplitude and with independent force information; connect [Challenge a fitted model with evidence it did not fit](../../inquiry/core/Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418).
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 15.1, with [Differentiate periodic functions and connect their accumulated values](../../mathematics/core/Differentiate-periodic-functions-and-connect-their-accumulated-values.lingua#r_00D9B07DB0E8262348D597FDAC) and the proved second-order argument. Reconstruct all units and initial values, explain why a linear coefficient and an energy conservation statement answer different questions, and compare two amplitudes under the cubic rival. Identify which observations would test the approximation rather than merely determine its parameters.
+
+**Continue:** [Account for oscillation losses and external work](Account-for-oscillation-losses-and-external-work.lingua#r_008D203213F706CB6E90BC8692).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_008CD8E3B5B6619C71A1297FF2

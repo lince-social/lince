@@ -8,4 +8,7 @@ Read the full paper in later numerical study, including rounding error, represen
 The host explicitly identifies an edited reprint used with ACM permission. Free authorized reading is available; it is not represented as a public-domain or unrestricted-adaptation text. Keep the actual notices and distinguish the host’s later addenda from Goldberg’s original paper. Citation, reprint identity, and access checked on 29 October 2026. No paper is copied into the repository.
 
 **Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+
+**Third computing-core inspection — 31 October 2026:** rechecked the Oracle-hosted edited-reprint/ACM-permission notice and selected opening passages on finite representation, significand/exponent and rounding. The shared numerical lesson retains its original program and complete-paper assignment; no fresh whole-paper or modern IEEE-standard audit is claimed. The new 49-value floating set is an original exact teaching construction with its own explicitly stated nearest/lower-tie rule, not a claimed IEEE format. The source remains an authorized external reading reference; no reprint text, diagrams or media are bundled.
+
 } r_4FHXH9WWX5Q535CD32ESSVSEHH

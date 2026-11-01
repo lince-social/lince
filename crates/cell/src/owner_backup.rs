@@ -156,7 +156,7 @@ async fn open_database(path: &Path, readonly: bool) -> io::Result<store::Store> 
         .connect_with(options)
         .await
         .map_err(io::Error::other)?;
-    Ok(store::Store { pool })
+    Ok(store::Store::from_pool(pool))
 }
 
 async fn prepare_snapshot(

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Connect astronomical photons to detector counts and uncertainty (@physics-astronomy-detectors: 0, is #chapter, #hephaestus-core "Separate-luminosity-distance-extinction-and-magnitude.lingua#r_00FC1BF76C7838A0F9BE86C9BF") { r_0048E4DAB79D3D3479E310ACE4
+An astronomical image or spectrum is a detector record shaped by a measurement chain. Collecting area, exposure duration, atmosphere, optics, filters, detector efficiency, pixel response and processing all matter. Resolving power, field of view and collecting area describe different capabilities. A larger mirror does not by itself identify an unresolved companion, establish a wavelength zero point or remove background.
+
+Let F_λ be incident spectral energy flux per area, time and wavelength, and let T(λ) and η(λ) be throughput and photon-detection efficiency. A photon has energy hc/λ, so expected detected signal is N=tA∫F_λ Tη λ/(hc) dλ. Add expected integrated background B to obtain total expected counts N+B. This model assumes a linear unsaturated detector and a defined aperture and exposure. A wavelength density must be integrated with its bin width; energy flux and photon flux are not the same quantity. Shared [Use spectra to connect energy changes with atomic structure](../../chemistry/general-chemistry/atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG) and the wave/quantum lessons supply the photon-energy connection.
+
+An original two-bin calculation uses consistent normalized units hc=1, area A=3, duration t=2, unit bin widths, wavelengths (1,2), flux densities (2,1), unit throughput and efficiencies (1/2,1/4). Expected source counts are 9; adding integrated background 3 gives 12. These are expectations, not a promise that each exposure records exactly twelve events. Splitting a constant-density bin into two equal widths preserves the result. Omitting λ/hc incorrectly treats unequal-energy photons as identical energy packets.
+
+For independent ideal Poisson source and background counts, variance equals the corresponding expected counts. If a separately measured background region has area k times the target region at equal exposure, subtract its count divided by k: the variance of the difference is S+B+B/k, before read noise and calibration uncertainty. This follows by adding variances and squaring the factor 1/k. A shared calibration error instead correlates exposures and need not decrease with repeated counting. Saturation, correlated pixels, variable sources and subtraction artifacts require different models.
+
+**Work:** reconstruct the two-bin result, double the exposure with an explicitly rescaled background and compare expected signal-to-noise. Explain why the program accepts the total background as an input rather than silently scaling it. Specify dark/bias, flat-response, wavelength and reference-source evidence for a hypothetical observing sequence. Chapter 6 of [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F) is a larger instrument reading assignment, not an author claim to have audited an observatory.
+
+**Continue:** [Separate luminosity distance extinction and magnitude](Separate-luminosity-distance-extinction-and-magnitude.lingua#r_00FC1BF76C7838A0F9BE86C9BF).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0048E4DAB79D3D3479E310ACE4

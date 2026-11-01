@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Choose what reproduction and agreement must mean (@inquiry-report-comparison: 0, is #chapter, #hephaestus-core "Present-fitted-results-without-changing-their-meaning.lingua#r_007FB1C73A1E7E95BA1ABE68C8") { r_0007920F72B17072C61C9F4689
+Name the comparison before declaring success. Byte identity asks whether two serialized artifacts are exactly the same. Numerical agreement asks whether specified values match under a declared criterion. Method reconstruction asks whether another implementation obtains the same mathematical result. Independent observation asks whether newly collected evidence supports a claim. Robustness asks what happens when a premise, model, sample or method changes. These activities can complement each other, but success at one does not entail success at all the others.
+
+The present fitting arithmetic is rational. Compare coefficients, residual sums and partitions exactly, with no tolerance. The renderer uses canonical JSON, UTF-8 and LF line endings; compare its three output files byte for byte in the actual restoration exercise. Environment metadata can differ across hosts and is reported separately. A future floating-point reconstruction must specify which quantities are compared, their scale and justified absolute/relative tolerance. Reusing a tolerance as a physical uncertainty would confuse distinct questions.
+
+Row order gives an instructive counterexample. Permuting the five affine rows leaves sums and the unique least-squares coefficients unchanged. It permutes ordered residuals and observation identifiers, and changes the input bytes. Consequently the exact summary CSV is invariant, while the evidence JSON and report change because they include input identity and provenance. The checking program examines all 120 orderings. Calling all changed bytes a failed scientific reproduction would miss the invariant; accepting equal coefficients without retaining row identity would lose traceability.
+
+An independent arithmetic check uses centered sums rather than the solver's normal-equation elimination: x̄=Σx/n, ȳ=Σy/n, β=Σ(x−x̄)(y−ȳ)/Σ(x−x̄)² and α=ȳ−βx̄. With at least two distinct input levels the denominator is positive. Substituting these coefficients into the residuals checks the numerical results by a separate calculation. Both calculations still implement the same affine objective and share the input; their agreement cannot validate that objective for an unknown physical process.
+
+Define this block's actual outcome carefully: author self-restoration from copied artifacts in a fresh directory, a new interpreter process, no dependency on the original working directory, and exact output agreement. It is not a different researcher's review, a separately collected dataset or a different operating-system trial. The interpreter is the same installed runtime. Broader portability and preservation remain tasks rather than conclusions from this one run.
+
+**Work:** classify five proposed checks by what they can establish. Explain why an exact rerun of the intentionally erroneous first revision remains erroneous. Construct a comparison that should ignore row order and one that must preserve it. Defend the chosen equivalence relation before examining the results. Reuse [Let an unfamiliar reader test the reconstruction and the claim](../reproducible-computation/publication/Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN) for the later outside-review task; its full assignment is broader than the author work performed here.
+
+**Continue:** [Present fitted results without changing their meaning](Present-fitted-results-without-changing-their-meaning.lingua#r_007FB1C73A1E7E95BA1ABE68C8).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0007920F72B17072C61C9F4689

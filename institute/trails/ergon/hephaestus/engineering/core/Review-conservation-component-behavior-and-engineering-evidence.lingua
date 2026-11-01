@@ -1,0 +1,20 @@
+Import "../Engineering.lingua"
+
+Review conservation component behavior and engineering evidence (@engineering-network-review: 0, is #chapter, #hephaestus-core "Connect-material-response-to-geometry-history-and-intended-function.lingua#r_0002F52C0C0519A796BF8AB448") { r_00CEE9876C1F6E9B9A6C941F00
+Reconstruct an engineering account from a stated function and boundary. Name the stored quantities, ports, rates, units, initial state and imposed environment. Distinguish conservation, component relations and boundary conditions. Explain why a mass balance does not determine volume flow without density information and why a heat-rate equation needs constitutive and storage models.
+
+**Derive and defend:** assemble signed network balances, prove internal cancellation, solve the anchored two-node case and verify each edge independently. Derive the nonnegative quadratic and explain anchoring, nonuniqueness and incompatible steady inputs. Do not treat a singular solver error as one physical diagnosis. Explain why a quadratic with W·K units is not a heat rate.
+
+**Connect time and decisions:** derive the constant-input transient from the exponential initial-value preparation, check energy accumulation and the G=0 case, and distinguish a time constant from attainment of equilibrium. Compare nominal and bounded design conclusions. Identify which parameters a response can actually determine and what observations could reject the lumped model. Preserve the distinction between mathematical sensitivity, hard bounds, probability and physical model discrepancy; inquiry's next block develops those distinctions further.
+
+**Communicate:** provide the original equations, source references, units, executable inputs and outputs, one failed assumption and the revision. Explain the result to a reader using the diagram before using the matrix. Demonstrate an unfamiliar example without copying the supplied numbers. Keep the earlier service and dimensional assembly investigations as parts of the same function-to-evidence progression.
+
+The engineering core remains unfinished. Common formation still requires material/structural response, electrical and transport behavior beyond simple analogies, realization and production, control, reliability, human use, environmental/resource accounts and increasingly independent academic/practical work. This block does not complete those branches or the clean-manufacturing specialization.
+
+**Next common area:** return to [Review design dependence and the scope of finite evidence](../../inquiry/core/Review-design-dependence-and-the-scope-of-finite-evidence.lingua#r_0B79BA988B7379FFA3C6499DD5) and develop sensitivity, uncertainty and model checking using the mathematical change, physical thermal, chemical observation and engineering response examples. Compare coverage across all six area cores before another specialist extension.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the fourth common pass:** [Connect material response to geometry history and intended function](Connect-material-response-to-geometry-history-and-intended-function.lingua#r_0002F52C0C0519A796BF8AB448). The next connected engineering block develops material/component response, compatible deformation, stored work, observation ambiguity and realization evidence. Preserve the earlier service, dimensional and thermal-network studies; inquiry follows at comparable depth.
+
+} r_00CEE9876C1F6E9B9A6C941F00

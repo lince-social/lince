@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Atomic models are explanations constrained by evidence (@gc-atomic-evidence: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3") { r_4HT48V97KV1TDBR18MBRR0HCE4
+Atomic models are explanations constrained by evidence (@gc-atomic-evidence: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3", #hephaestus-core "Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3") { r_4HT48V97KV1TDBR18MBRR0HCE4
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 2 in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 2’s historical models and atomic properties; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the beginning of Unit I, with notes and concept questions.
 
 Read the development of atomic models as a sequence of questions and observations rather than a list of superseded pictures. Composition ratios, electrical behavior, scattering, and spectra constrain different aspects of matter. A later model can explain an earlier model's useful approximation while changing its interpretation.
@@ -16,4 +16,7 @@ Complete the atomic-theory reading in both a first textbook and the Portuguese c
 **Continue:** [Isotopic composition, atomic mass, and a material’s molar mass](Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in the chemistry core:** [Isotopic composition, atomic mass, and a material’s molar mass](Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3).
+
 } r_4HT48V97KV1TDBR18MBRR0HCE4

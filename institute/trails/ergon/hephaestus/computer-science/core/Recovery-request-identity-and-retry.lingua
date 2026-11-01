@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Recover a committed identity before deciding whether to retry (@computing-recovery-retry: 0, is #chapter, #hephaestus-core "../../inquiry/reproducible-computation/workflows/Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX") { r_00808A26E92166D742D797AA5D
+Recovery here has no writes: read the durable selector, select its record, validate the representation and return that tuple. Running recovery repeatedly on the same durable image returns the same result and leaves the image unchanged. The crash-reset operation is also idempotent: clearing already-cleared volatile state changes nothing. This property is simple because copying and publication did the difficult work before recovery.
+
+The request carries (sequence,amount). Sequence is a positive unsigned eight-bit number. A new request must have sequence=current sequence+1 and 0<amount≤left stock. The new record stores that same identity and amount alongside the resulting stocks. A request matching the current positive sequence and stored amount is recognized as a duplicate and acknowledged with no writes. The same sequence with a different amount, an older sequence or a gap is rejected. This service remembers only the latest committed request; it does not offer an unbounded history lookup.
+
+If a crash occurs before publication, the old sequence remains active and retrying the same next request constructs the new record again, overwriting every candidate field. If publication completed but its acknowledgment was lost, recovery finds the new sequence and the retry returns its stored result without transferring stock a second time. A second crash during a retry is covered by the same invariant: the active slot is complete and the other is disposable until its new publication.
+
+For old (0,0,12,8), request (1,3) yields (1,3,9,11). Request (1,3) again leaves it unchanged. Request (2,2) yields (2,2,7,13), selecting the previously inactive slot. The old request (1,3) is now stale and rejected, not reinterpreted as another transfer. Sequence 255 may be recognized as a duplicate, but no next sequence is representable. The program rejects 256; it never wraps to zero and accidentally reuses an identity. Extending the range or introducing epochs requires a new representation and proof.
+
+After a crash, discard all old volatile pending writes before restarting. If an asynchronous writer from the old attempt could still complete later, it could overwrite a newly reused slot. Likewise, a concurrent reader retaining an old slot reference would require a lifetime rule before reclamation. Both mechanisms are outside this single-writer reboot model. Slot reuse is safe here because recovery selects a complete current record and there are no surviving old operations/readers.
+
+This is a bounded retry guarantee for one local state transition. Sending a message, moving a physical object or charging an independent external service introduces another system whose effects are not atomically published by our selector. Do not call the present proof universal exactly-once execution. A journal or retained request history can support different contracts, but needs its own retention, replay and cleanup rules.
+
+**Work:** distinguish recovery idempotence from applying a transfer twice. Trace both lost-acknowledgment cases and a second crash during retry. Explain why persisting the request identity separately after the stocks would reopen an ambiguity window. State how increasing writer/reader concurrency changes the premises before proposing locks or other mechanisms.
+
+**Continue:** [Handle interrupted work without confusing partial and completed results](../../inquiry/reproducible-computation/workflows/Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00808A26E92166D742D797AA5D

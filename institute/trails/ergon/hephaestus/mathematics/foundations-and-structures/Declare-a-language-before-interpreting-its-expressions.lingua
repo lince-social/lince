@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Declare a language before interpreting its expressions (@math-structures-language: 0, is #chapter, #math-structures "Evaluate-terms-and-quantified-statements-in-a-declared-model.lingua#r_005F4DEF67F10EF22F085DD086") { r_0078C9FB7FDB06339D08F572A1
+A written symbol is not yet a mathematical object. In this block choose a language with variables x,y,z,…, a constant symbol e, a binary operation symbol *, equality, a binary relation R, the connectives ¬, ∧, ∨, →, and quantifiers ∀, ∃. The number of inputs of a symbol is its arity. A term names a potential object: a variable, e, or (s*t) when s and t are terms. A formula asserts something: s=t, R(s,t), a connective applied to formulas, or a quantified formula. A formula is not an allowed input of * in this one-sorted language.
+
+For example, (x*e)*y and x*(e*y) are different expression trees. They need not have different values in a particular interpretation, but syntactic difference is decided before assigning values. Associativity, if assumed or proved, concerns their values; it does not erase the distinction between the trees. Parentheses remove ambiguity. The expression ∀x(x*e=x) is a sentence, while x*e=x leaves x free.
+
+Define the free variables recursively. A variable term contributes its name, e contributes none, and an operation takes the union of its input sets. An atomic formula takes the union from its terms; connectives take the union from their formulas; binding x removes x. Thus ∃y R(x,y) has free-variable set {x}, and ∀x∃y R(x,y) has none. In (∀x R(x,y))∧R(x,e), x is bound in the first part and free in the second. Scope belongs to occurrences, not to a variable name globally.
+
+Structural induction is ordinary induction on a construction tree. To prove that every term has finitely many variable occurrences, handle variables and e, then add the finite counts of the two children of *. Every term has finite construction depth; this is part of the language definition. It does not assert that every mathematical object is finite. Reuse [Prove recursive constructions with a base and a decreasing dependency](../core/Prove-recursive-constructions-with-a-base-and-a-decreasing-dependency.lingua#r_00AEC3D470E37C51E964F8B0AB) for why a well-founded construction supports induction.
+
+**Work:** draw the trees for the associativity equation and for ∀x∃y R(x,y). Compute the free variables of ∃x(R(x,y)∧∀y R(y,x)). Give two different terms with the same value under integer addition. Explain why a parser cannot establish a mathematical theorem merely by accepting its syntax.
+
+**Reading:** [forall x Calgary formal logic](../sources/forall-x-Calgary-formal-logic.lingua#r_00A7D972F37307C8A2E5871D87), chapters 27 and 31, as preparation for scope and interpretation. Its introductory language differs from the operation-bearing language deliberately specified here; do not silently treat the notations as identical.
+
+**Continue:** [Evaluate terms and quantified statements in a declared model](Evaluate-terms-and-quantified-statements-in-a-declared-model.lingua#r_005F4DEF67F10EF22F085DD086).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0078C9FB7FDB06339D08F572A1

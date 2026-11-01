@@ -1,0 +1,11 @@
+Import "transport-logistics-warehousing-and-trade-infrastructure/Transport-logistics-warehousing-and-trade-infrastructure.lingua"
+
+Logistics and exchange (@logistics-and-exchange: 0, is #chapter, #outline, #contains "transport-logistics-warehousing-and-trade-infrastructure/Transport-logistics-warehousing-and-trade-infrastructure.lingua#r_451QT681ESAD7CZ6W89GXF0AGV") { r_40D59MXC3BX7K9FEVGCRY5S6F1
+Keep reliable stock; follow replenishment; plan movement and capacity; coordinate an exchange. Begin with arithmetic, units, balances, and lead time. Uncertain demand adds probability; optimisation adds its own methods; CAD is needed only if the selected design work actually uses it.
+
+**Parent:** [Engineering — systems, design, construction, and operation](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Branches:**
+
+- [Transport, logistics, warehousing, and trade infrastructure](transport-logistics-warehousing-and-trade-infrastructure/Transport-logistics-warehousing-and-trade-infrastructure.lingua#r_451QT681ESAD7CZ6W89GXF0AGV)
+} r_40D59MXC3BX7K9FEVGCRY5S6F1

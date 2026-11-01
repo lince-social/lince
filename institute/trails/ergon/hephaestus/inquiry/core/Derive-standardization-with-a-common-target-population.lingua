@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Derive standardization with a common target population (@inquiry-causal-standardization: 0, is #chapter, #hephaestus-core "Derive-inverse-weighting-and-separate-population-identities-from-sample-estimators.lingua#r_00AE2B43054AE59C571FEE42F0") { r_004DE1AAF43D50B02CD6B18F9A
+Use total expectation to average the intervention outcome over baseline strata: E[Y(a)]=ΣₗP(L=l)E[Y(a)|L=l]. Conditional exchangeability replaces the conditional mean by E[Y(a)|A=a,L=l]. Consistency then replaces Y(a) by observed Y in that group. Positivity makes every required conditional mean defined. Therefore
+
+E[Y(a)]=ΣₗP(L=l)E[Y|A=a,L=l].
+
+Every equality has a reason. Let mₐ(l)=E[Y|A=a,L=l] and p(l)=P(L=l). Standardization compares Σp(l)m₁(l) with Σp(l)m₀(l), using the same population weights for both arms. The crude contrast instead averages with P(L=l|A=a), which can differ between arms. The arithmetic standardization is computable without exchangeability; its causal interpretation is the part that depends on the assumptions.
+
+An original exact population has four equally weighted response types. L=0 contains (Y(0),Y(1))=(2,3) and (4,5); L=1 contains (8,9) and (10,11). Within L=0, choose A=1 with probability 3/4 for either type; within L=1, use probability 1/4. Assignment depends only on L, so the stipulated model supplies conditional exchangeability and overlap. Every unit gains one work unit. True intervention means are 6 and 7.
+
+The treated group contains L=0 and L=1 in proportions 3/4 and 1/4; its observed mean is (3/4)4+(1/4)10=11/2. The untreated group has opposite proportions and mean (1/4)3+(3/4)9=15/2. The crude difference is −2, despite the stipulated effect +1. Standardizing both arms to half of each class gives 6 and 7. This reversal comes from comparing different workload mixtures, not a numerical fault in the crude means.
+
+These are exact population masses, not four actual experimental observations and not a simulation of their sampling error. The program can inspect the complete response table because it is invented. In a real study, the missing potential responses remain unknown.
+
+**Work:** change the target mixture to one-third L=0 and two-thirds L=1. Recalculate both standardized means. Then change the effect in L=1 to −1 and compare targets. Explain why applying a new target's weights requires a justified relationship between its stratum-specific intervention responses and the source population; knowing the target mixture alone does not prove transportability. Reuse [Describe a chance quantity by its weighted mean and spread](Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA) for each weighted sum.
+
+**Continue:** [Derive inverse weighting and separate population identities from sample estimators](Derive-inverse-weighting-and-separate-population-identities-from-sample-estimators.lingua#r_00AE2B43054AE59C571FEE42F0).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_004DE1AAF43D50B02CD6B18F9A

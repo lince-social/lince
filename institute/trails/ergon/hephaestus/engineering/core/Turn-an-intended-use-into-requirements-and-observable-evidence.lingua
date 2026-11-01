@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Turn an intended use into requirements and observable evidence (@engineering-requirements: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/foundations/Parts-interfaces-and-the-path-of-a-load.lingua#r_0GDXXPH3HG15NE437QEDYMSTZ8") { r_0C3988C75ECA342B8BFC943458
+Someone wants an effect: a shelf that keeps books accessible, a pump that transfers water, a program that preserves a record, or a process that makes useful parts. Start by describing who uses the result, what they do with it, and the conditions in which it must work. A requirement states a condition the result must satisfy. A proposed mechanism explains how we might satisfy it. Keeping those statements separate leaves room for alternatives.
+
+**Read:** [NASA Systems Engineering Handbook](../mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) sections 4.1 and 4.2, in that order. First identify the people affected and describe ordinary use; then follow how the handbook makes the technical conditions explicit. Its institutional approval arrangements belong to its own setting. In your notebook, retain the connection between a condition and the reason for it without copying a large project's administrative structure.
+
+For an original teaching example, consider a hypothetical line that cuts and labels paper teaching cards. One incoming blank can become one card; no joining or splitting is permitted in the counting model. Suppose the intended service is to supply a class with at least 800 accepted cards during a specified ten-hour preparation window. State when counting begins and ends, the starting inventory, what counts as accepted, and whether repair and later delivery count. A nominal speed in cards per hour does not answer all these questions.
+
+Separate requirements for the service, the product and its interfaces. A product condition might be a width from 49.5 through 50.5 mm, inclusive, together with a correctly matched readable label. The delivery condition counts only cards satisfying all specified acceptance conditions. Neither fast production of illegible cards nor a correct label on the wrong card fulfils that contract. A proposed optical reader is an implementation; a requirement to detect mismatched labels does not itself choose that reader.
+
+For each condition write its quantity or categorical decision, unit where applicable, permitted set, circumstances and evidence method. Explain who needs it and what happens when evidence is inconclusive. Measurement has limits: an indicated width of 50.45 mm with an assumed hard error bound of 0.10 mm permits widths up to 50.55 mm. That reading alone cannot establish conformity to the upper limit. An indicated 50.30 mm with the same bound gives [50.20, 50.40] mm, inside the permitted interval. These are conditional interval arguments, not a universal acceptance rule or a conversion of standard uncertainty into a hard bound.
+
+**Work:** write five requirements for the card service, separating function, performance, interface and continuing-use needs. Rewrite “use a fast automated cutter” as a requirement and at least two possible implementations. Give a way an apparently successful ten-hour trial could fail to establish the requested service. Explain why a maximum, an average and a minimum over every delivery window are different claims. Keep the numbers in this example hypothetical; actual limits need evidence from the intended use.
+
+**Shared measurement preparation:** [Specify the measurand](../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6). Use the interval reasoning here before later statistical uncertainty and conformity work.
+
+**Continue:** [Parts, interfaces and the path of a load](../mechanical-engineering-and-machine-design/foundations/Parts-interfaces-and-the-path-of-a-load.lingua#r_0GDXXPH3HG15NE437QEDYMSTZ8).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0C3988C75ECA342B8BFC943458

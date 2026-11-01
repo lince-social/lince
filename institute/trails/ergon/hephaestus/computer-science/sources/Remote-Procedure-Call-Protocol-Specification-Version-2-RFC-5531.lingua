@@ -1,0 +1,7 @@
+Import "../Computing.lingua"
+
+Remote Procedure Call Protocol Specification Version 2 RFC 5531 (@computing-source-rpc: 0, is #reference) { r_0058E17EDA89658DCF6713FD72
+Robert Thurlow. RPC: Remote Procedure Call Protocol Specification Version 2, RFC 5531, May 2009. The [RFC Editor record](https://www.rfc-editor.org/info/rfc5531/) identifies Draft Standard status and an update by RFC 9289. On 1 November 2026 the metadata, copyright notice and actual [sections 4–5 and 11](https://www.rfc-editor.org/rfc/rfc5531.html) were inspected: remote-call boundaries, transport/execution semantics and record delimiting. The update's contents, full protocol and implementations were not audited. This bounded reading is not a current secure deployment recipe.
+
+Read the selected sections after the original channel/schema examples and revisit the full document in the distributed-systems branch. Copyright belongs to the IETF Trust and contributors under the applicable Trust/BCP 78 provisions. Free access does not imply unrestricted adaptation. Source media and code remain external. Our numeric monotone request identities differ from this RFC's equality-only transaction-ID use; our frame format also differs from its record marking. Neither teaching program claims ONC RPC conformance.
+} r_0058E17EDA89658DCF6713FD72

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Introduce composite states and separate entanglement from a classical correlation (@physics-quantum-composite: 0, is #chapter, #hephaestus-core "Compare-quantum-predictions-with-counts-losses-and-alternative-preparation-accounts.lingua#r_00A8DFF14011FB6266AF5D3CFB") { r_002A260BF999C8071224251C96
+For two distinguishable two-state systems A and B, define the four orthonormal joint basis vectors |00⟩,|01⟩,|10⟩,|11⟩ in that order. A product of columns a=(a₀,a₁), b=(b₀,b₁) has coordinates a⊗b=(a₀b₀,a₀b₁,a₁b₀,a₁b₁). Extend by linear combinations to arbitrary four-coordinate states. This concrete definition introduces the needed tensor product without assuming the later multilinear-algebra branch. Norms multiply for a product, and (M⊗N)(a⊗b)=(Ma)⊗(Nb) defines the corresponding matrix action. Local M⊗I and I⊗N commute by direct coordinate calculation.
+
+For pure ψ, the joint outcome probability for local projectors P_s,Q_t is ⟨ψ|P_s⊗Q_t|ψ⟩. For a product state it factors into its two local probabilities. A general pure state need not factor. For Φ=(|00⟩+|11⟩)/sqrt(2), any proposed product would require a₀b₀ and a₁b₁ nonzero but a₀b₁=a₁b₀=0, a contradiction. This is an entangled pure state. The meaning concerns factorization across the declared subsystems, not merely whether a coordinate expression contains a plus sign.
+
+Compare Φ with a classical equal lottery over |00⟩ and |11⟩. Both give equal probabilities for ++ and −− in joint z measurements and no mismatched results. In joint x measurements, Φ again gives matched results with probability one-half each; the lottery gives all four combinations with probability one-quarter. Thus the z correlation alone does not distinguish entanglement from a classical mixture. The difference lies in the coherent joint state and its predictions for other measurements. The inspected MIT note 8 defines this Bell state as Φ₀; reproduce that bounded definition before changing the example.
+
+For axes a,b and Φ, Pauli multiplication gives E(a,b)=aₓbₓ−aᵧbᵧ+a_zb_z and p(s,t)=[1+st E(a,b)]/4 for s,t=±1. Derive it by expanding the tensor projectors. Each local marginal is one-half independently of the other measurement axis. More generally Σ_tP_s⊗Q_t=P_s⊗I, so performing a local complete projective measurement and ignoring its result does not change the remote outcome distribution. Conditioning on a reported remote result can change the conditional description, but communicating that result is a separate operation. These model identities do not provide a signal exceeding light speed.
+
+**Work:** compute the four probabilities for changed rational axes; check marginals and normalization. Construct a product state and recover factorization. Explain why a classical correlated preparation is mixed and why its distinction from the entangled state requires more than one setting. General entanglement measures, Bell-inequality experimental tests, identical-particle constraints and quantum-information protocols belong to branches; this common lesson establishes state composition and the role of joint evidence.
+
+**Continue:** [Compare quantum predictions with counts losses and alternative preparation accounts](Compare-quantum-predictions-with-counts-losses-and-alternative-preparation-accounts.lingua#r_00A8DFF14011FB6266AF5D3CFB).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_002A260BF999C8071224251C96

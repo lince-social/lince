@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Build a proof from definitions and preserved assumptions (@math-first-proofs: 0, is #chapter, #hephaestus-core "Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838") { r_0616F35DE35A48DA7F91EC9D6A
+A proof connects definitions and accepted results to a stated conclusion for every allowed case. Start with a small claim whose assumptions are visible. Numerical trials can suggest the result and expose mistakes, but the argument must explain why an untested allowed case cannot behave differently.
+
+Consider the sum of two rational numbers. By definition, write them as a/b and c/d, where a, b, c, d are integers and b and d are nonzero. Their sum is (ad + bc)/(bd). Integer addition and multiplication make the numerator and denominator integers, and bd is nonzero. The result is rational by the same definition. The proof uses closure and the nonzero-denominator condition; listing several successful fraction sums would not replace it.
+
+For a second example, let f(x) = ax + b on the reals with a ≠ 0. Suppose f(u) = f(v). Then au + b = av + b, hence a(u − v) = 0, and division by the nonzero a gives u = v. Thus different inputs cannot share an output: f is one-to-one. This supports its inverse construction. If a = 0, the proof fails exactly at the division step and the function is constant. That failure identifies a necessary assumption rather than a reason to hide a case.
+
+Keep the claim separate from its possible converse. The product of two integers divisible by 3 is divisible by 9, because writing them as 3m and 3n gives product 9mn. A product divisible by 9 need not have both factors divisible by 3: 1 × 9 is a counterexample. Define “divisible by 3” as an integer equal to three times an integer before using the statement.
+
+**Read:** [Book of Proof](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 4, after the set and logical preparation. Work its exercises independently and compare the structure of your arguments, not merely their final answers. Later formation must develop other proof methods; this block does not claim to complete mathematical foundations.
+
+**Work:** prove that the product of two rational numbers is rational, stating every restriction. Prove that adding a fixed real number preserves a strict inequality. Identify the error in a proof that cancels x from x² = x and concludes that 1 is the only solution. Write a peer-review note that identifies the precise missing condition and repairs the claim.
+
+**Check:** a reader should be able to identify the domain, definitions, arbitrary objects, reversible steps and final conclusion. Explain which facts are assumed at this stage and which result your argument establishes.
+
+**Continue:** [Investigate a stock model and defend its alternatives](Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0616F35DE35A48DA7F91EC9D6A

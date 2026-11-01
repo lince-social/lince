@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Specify one outstanding operation and a retained durable result (@computing-request-protocol: 0, is #chapter, #hephaestus-core "Prove-the-remote-ledger-refines-a-serial-prefix.lingua#r_00DCF55733BDF283803289BC1C") { r_00529B7EA6239E5D1C8E61D93C
+Our service accounts for accepted pieces in a simulation. Its serial specification starts at zero; each new requested positive amount is appended once, and the returned result is the cumulative sum. For jobs (2,5,3), the specified results are (2,7,10). The effects are logical ledger additions. No physical object, independent payment service or second database is changed by this model.
+
+There is one established client/server pair for a single identity namespace. The client durably retains its ordered job list and accepted results. If c results have been accepted and work remains, its only outstanding request is (c+1, jobs[c]). Sending or retrying uses exactly this pair. A reply is (identity,total). The client accepts it only when its identity equals c+1 and a job remains, then durably appends the returned total. Other replies leave its results unchanged. Authentic replies are assumed; an identity check by itself would not reject a forged plausible total.
+
+The server's durable tuple is (r,T,a): last committed identity, cumulative total, and that operation's amount. Initially it is (0,0,0). On valid request (i,x), use three cases. If i=r and x=a, return (i,T) without applying an addition. If i=r+1 and the total remains representable, atomically publish (i,T+x,x), then make reply (i,T+x) eligible for sending. Otherwise reject without a success reply or effect. In particular, gaps, stale identities and changed arguments under the latest identity do not become new operations. Identity 256 is unrepresentable and is rejected before these cases; there is no wrap.
+
+The protocol's general workload may contain up to 255 jobs, each at most fifteen. Therefore every cumulative result is at most 3825 and fits the chosen two-byte result field. The explorer intentionally restricts workloads to at most three jobs so that all channel subsets can be enumerated; this exploration limit is separate from the representation and the general invariant proof. The receiver's explicit overflow guard remains useful if its internal initial state is changed, but a new initialization also needs a new specification.
+
+The two endpoints do not publish together. The server can commit while the client still has no reply; that gap is the central new boundary beyond [Recover a committed identity before deciding whether to retry](Recovery-request-identity-and-retry.lingua#r_00808A26E92166D742D797AA5D). Server commit and client confirmation are separate atomic durable actions. A crash between them does not undo the server's effect. A subsequent retry recovers the retained result. If the client has advanced to operation i+1, a delayed reply for i is ignored. If the server has advanced past i, a delayed request for i is stale and rejected. Keeping only the latest result suffices for this one-outstanding client; it does not offer old-result queries or support arbitrary concurrent clients.
+
+The code's receive function assumes its record argument is an internally valid durable state; it validates incoming request fields. The state explorer constructs records only through the specified transition. It is not a decoder for untrusted disk images. Serialization checks, storage recovery, authenticated identity, concurrency control and crash-safe persistence must all be established before using this abstract transition in a real service.
+
+**Work:** trace requests (1,2),(1,2),(1,3),(3,1),(2,5),(1,2). State the tuple, reply or rejection, and effect for each. Explain why the final old request cannot change seven into nine. Then give a two-client collision and explain why assigning both clients identity one violates the namespace premise rather than disproving the stated single-pair construction.
+
+**Continue:** [Prove the remote ledger refines a serial prefix](Prove-the-remote-ledger-refines-a-serial-prefix.lingua#r_00DCF55733BDF283803289BC1C).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00529B7EA6239E5D1C8E61D93C

@@ -1,0 +1,31 @@
+Import "../Engineering.lingua"
+
+Derive a coupled electrical model and verify its power account (@engineering-node-model: 0, is #chapter, #hephaestus-core "../electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6") { r_00C1FA6F14BA58242B0111E3A7
+Let r=R_s+R_c, and orient source current I toward the feed and branch currents i₁,i₂ toward their loads. Under the declared steady lumped model, I=(E−v₀)/r, i₁=(v₀−v₁)/r₁ and i₂=(v₀−v₂)/r₂. Charge balance gives I=i₁+i₂, i₁=v₁/L₁ and i₂=v₂/L₂. The assumptions linking these finite balances with physical charge/field behavior are developed in [Connect signed current to accumulated and stored charge](../../physics/core/Connect-signed-current-to-accumulated-and-stored-charge.lingua#r_00A2CB2AB667C70FE4724DA940) and [State the physical assumptions behind a lumped circuit](../../physics/core/State-the-physical-assumptions-behind-a-lumped-circuit.lingua#r_001A7088BC509FE999669C908D).
+
+Collecting terms produces Gv=b:
+
+[(1/r+1/r₁+1/r₂), −1/r₁, −1/r₂] · v = E/r;
+
+[−1/r₁, (1/r₁+1/L₁), 0] · v = 0;
+
+[−1/r₂, 0, (1/r₂+1/L₂)] · v = 0,
+
+where v=(v₀,v₁,v₂). G has units S and b has units A. The exact elimination from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) can solve these equations. It does not supply or verify their physical premises.
+
+To prove uniqueness, take any nonzero real vector x. Direct expansion gives xᵀGx=x₀²/r+(x₀−x₁)²/r₁+(x₀−x₂)²/r₂+x₁²/L₁+x₂²/L₂>0. If G had a nonzero null vector, this positive expression would equal zero, a contradiction. Thus the stated positive, connected, referenced network has a unique solution. This is a proof for this G; a floating, open or differently constrained network needs its own rank/reference account. [Solve an anchored network and interpret singular cases](Solve-an-anchored-network-and-interpret-singular-cases.lingua#r_008ED1E88ECE57E655276C68F3) supplies the earlier common reasoning.
+
+An independent reduction uses A=r₁+L₁ and B=r₂+L₂. The parallel resistance is R_p=AB/(A+B). Then I=E/(r+R_p), v₀=I R_p, i₁=v₀/A, i₂=v₀/B, v₁=i₁L₁ and v₂=i₂L₂. Compare the entire solution with the coupled equations rather than checking one displayed voltage.
+
+For power, E=Ir+v₀ and v₀=i₁r₁+v₁=i₂r₂+v₂. Multiply the first relation by I, use I=i₁+i₂, then substitute the two branch relations. The result is
+
+EI=I²R_s+I²R_c+i₁²r₁+i₂²r₂+v₁²/L₁+v₂²/L₂.
+
+The ideal source delivers EI; every listed positive resistance absorbs its term. The actual source terminal satisfies V_t=E−IR_s, so power crossing that source boundary is V_t I, with R_s dissipation on the source side. State the boundary before quoting efficiency. This exact identity is a strong implementation check, but cannot detect every wrong topology if that topology is solved consistently.
+
+**Work:** derive both formulations and the power identity without the programs. Replace an ideal return by a positive resistance and identify which equations must change. Explain why an exact solution and a closed power balance still leave component temperature, waveform response and realized connections unverified. Read the prepared DC portions of [DC Electrical Circuit Analysis — James M. Fiore](../electrical-power-engineering/sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV), especially section 7.2, before the following shared circuit Record.
+
+**Continue:** [Network theorems, nodal equations and references](../electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00C1FA6F14BA58242B0111E3A7

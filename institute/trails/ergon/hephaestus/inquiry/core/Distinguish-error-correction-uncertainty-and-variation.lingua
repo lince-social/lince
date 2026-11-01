@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Distinguish error correction uncertainty and variation (@inquiry-uncertainty-meaning: 0, is #chapter, #hephaestus-core "../metrology/uncertainty/Model-and-budget.lingua#r_0QB7F1RTYH2F2P1VDT1AW3TY7R") { r_0045C26C08EFF750F1BF509B4E
+A reading becomes evidence only through a question and a model. Name the measurand: the particular quantity intended to be measured, including relevant time, location and conditions. A surface temperature, a body's volume-average temperature and a sensor's internal temperature are different quantities. Reuse [Begin with a question and specify the measurand](../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) and [Review design dependence and the scope of finite evidence](Review-design-dependence-and-the-scope-of-finite-evidence.lingua#r_0B79BA988B7379FFA3C6499DD5) when the boundary or observation unit is unclear.
+
+An error is the difference between a reported quantity value and a reference value in a stated comparison. Its actual value may be unknown. A correction compensates for an estimated systematic effect; it does not make the remaining result exact. Uncertainty describes the values reasonably attributable to the quantity given available evidence and assumptions. A standard uncertainty is expressed as a standard deviation. It is not an automatically known magnitude of error, a permitted manufacturing tolerance or a guaranteed maximum deviation.
+
+Distinguish sources of variation. Repeated readouts can fluctuate while a common sensor offset stays fixed. Different objects can vary even if each is measured precisely. Sampling only one location can miss spatial variation. Numerical rounding changes a computed representation; an inadequate model can omit a physical effect even with exact arithmetic. Keep these questions separate before combining quantities.
+
+A hard interval and a probability model contain different information. If a dimension lies in [−1,1] relative to a nominal value, the bound alone supplies no weights inside it. Equal mass at −1 and +1 gives variance 1; weights 1/4,1/2,1/4 at −1,0,+1 give variance 1/2. Both obey that interval. Neither follows merely from writing a ± sign. Conversely, knowing a standard deviation does not imply all possible values lie within one or two such deviations.
+
+A finite distribution can model repeated random allocation, as in the earlier inquiry investigation, or represent a stipulated state of knowledge about a fixed unknown quantity. Identify which interpretation is intended and what evidence supports its weights. The arithmetic can be the same while the question and justification differ. The new measurement study uses explicitly stipulated knowledge distributions; it does not infer them from a performed experiment or claim a frequentist confidence procedure.
+
+**Read:** [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../metrology/sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), orientation and sections 2–5 progressively, and [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../metrology/sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the introductory distinctions, measurement formulation and uncertainty evaluation. Only the documented selected passages have been freshly inspected; fuller reading remains assigned. The following shared model/budget Record connects inputs, corrections, dependencies and intended use before adding numerical uncertainty entries.
+
+**Practice:** for a temperature comparison, name one correction, one uncertain common effect, one repeatability contribution and one potentially omitted physical process. Explain what repeated readings could learn and what they would leave unresolved. State whether your output concerns one body, an average across bodies or a future operating condition.
+
+**Continue:** [Build the measurement model before filling the uncertainty budget](../metrology/uncertainty/Model-and-budget.lingua#r_0QB7F1RTYH2F2P1VDT1AW3TY7R).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0045C26C08EFF750F1BF509B4E

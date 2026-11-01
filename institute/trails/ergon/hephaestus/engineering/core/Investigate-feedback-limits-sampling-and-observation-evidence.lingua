@@ -1,0 +1,364 @@
+Import "../Engineering.lingua"
+
+Investigate feedback limits sampling and observation evidence (@engineering-feedback-study: 0, is #chapter, #hephaestus-core "Review-feedback-requirements-dynamics-and-realization-evidence.lingua#r_003878F402F646426D07E046F6") { r_001F53EF1EF8FC5D84983E0478
+Save `feedback_study.py` and `feedback_checks.py` below beside the unchanged `network_study.py` from [Investigate balances network solutions and a thermal design decision](Investigate-balances-network-solutions-and-a-thermal-design-decision.lingua#r_00FC8512FE7F1A6C8D72CABF3B). The study imports its exact rational-to-decimal conversion and first-order response evaluator. Run the new study and then its checks with Python 3. The dependency is reused directly; its earlier steady-network and thermal investigations retain their own scope.
+
+The original investigation connects continuous proportional response, a physical energy ledger, exact limited equilibria, sampled held inputs, a saturation-induced two-cycle, parameter ambiguity and a bounded design screen. Loop parameters use exact rational or Decimal inputs; binary floating values and Boolean loop parameters are rejected. Capacity is positive and conductance/gain nonnegative. Internal model state is trusted teaching data. The limited-equilibrium API requires positive conductance; a separate trajectory branch treats zero conductance. Nonnegative time, positive sample period and an exact nonnegative integer step count are checked where used.
+
+`continuous` reuses the existing response with effective coefficient G+K and then reconstructs actual actuator, disturbance, stored and outward energies. `sampled` instead holds each computed command and applies the open plant over an interval; it does not integrate the continuous closed-loop equation by Euler. `sampled_coefficients` supplies the independently derived affine recurrence. `limited_equilibrium` uses the proved projection formula and is checked against direct bisection of the clipped balance. `startup_screen` is specific to the declared original requirement box, not a general controller selector.
+
+The checking program compares trajectories with exact rational exponential enclosures, verifies actual energy closure and interval composition, checks the clipped root and its restoring inequality, propagates independent interval bounds over sampled recurrences, verifies the constructed two-cycle and bounded-input envelopes, and enumerates the uncertainty corners that attain the requirement bounds. It also tests the full observed-history ambiguity, reconstructs the selected published gains and rejects invalid parameter domains. General stability and monotonicity claims rely on the accompanying proofs; finite checks verify this implementation and its declared cases.
+
+**Investigation:** derive the nominal equilibrium, transient, physical energy account and uncertainty screen before running the programs. Predict which of the four gain alternatives meet all continuous requirements. Compare exact sampled behavior with forward Euler at h=3 and with the instability threshold near 4.39445 seconds. Reconstruct the two-cycle without treating boundedness as successful regulation. Explain every difference between measured and true tracking error.
+
+**Independent work and defense:** change one useful requirement or observation boundary, formulate a competing model with an extra stored state or timing delay, and identify the additional mathematics and observations needed to distinguish it. Do not claim the new model checked merely because the scalar suite passes. Preserve a reproducible evidence package and ask a critic to remove one premise or propose a counterexample. Revise and defend the decision with explicit source, calculation and practical limits. This is assigned work, not a claim that a physical controller has been built.
+
+
+```python file=feedback_study.py
+from dataclasses import dataclass
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from network_study import response, number
+import json
+
+
+@dataclass(frozen=True)
+class Loop:
+    capacity: F
+    conductance: F
+    gain: F
+    reference: F
+    baseline: F
+    disturbance: F = F(0)
+    bias: F = F(0)
+
+    def __post_init__(self):
+        for name in self.__dataclass_fields__:
+            raw = getattr(self, name)
+            if isinstance(raw, (bool, float)):
+                raise ValueError('use exact rational or decimal parameters')
+            object.__setattr__(self, name, F(raw))
+        if self.capacity <= 0 or min(self.conductance, self.gain) < 0:
+            raise ValueError('positive capacity and nonnegative conductance/gain required')
+
+    def forcing(self):
+        return self.baseline+self.gain*(self.reference-self.bias)+self.disturbance
+
+    def command(self, state):
+        return self.baseline+self.gain*(self.reference-F(state)-self.bias)
+
+
+def clip(value, low, high):
+    value, low, high = map(F, (value, low, high))
+    if low > high:
+        raise ValueError('ordered actuator bounds required')
+    return min(high, max(low, value))
+
+
+def equilibrium(loop):
+    effective = loop.conductance+loop.gain
+    if not effective:
+        raise ValueError('zero restoring coefficient has no unique equilibrium')
+    return loop.forcing()/effective, loop.capacity/effective
+
+
+def continuous(loop, initial, time):
+    initial, time = map(F, (initial, time))
+    theta, storage, effective_outflow = response(loop.capacity, loop.conductance+loop.gain,
+                                                loop.forcing(), initial, time)
+    with localcontext() as ctx:
+        ctx.prec = 70
+        effective = loop.conductance+loop.gain
+        if effective:
+            integral = effective_outflow/number(effective)
+        else:
+            integral = number(initial*time+loop.forcing()*time*time/(2*loop.capacity))
+        supplied = number((loop.baseline+loop.gain*(loop.reference-loop.bias))*time)-number(loop.gain)*integral
+        disturbance = number(loop.disturbance*time)
+        leakage = number(loop.conductance)*integral
+        return {'state': theta, 'stored': storage, 'actuation': supplied,
+                'disturbance': disturbance, 'leakage': leakage, 'integral_state': integral}
+
+
+def limited_equilibrium(loop, low, high):
+    low, high = map(F, (low, high))
+    if loop.conductance <= 0 or low > high:
+        raise ValueError('positive conductance and ordered bounds required')
+    candidate, tau = equilibrium(loop)
+    state = clip(candidate, (low+loop.disturbance)/loop.conductance,
+                 (high+loop.disturbance)/loop.conductance)
+    return state, clip(loop.command(state), low, high)
+
+
+def sampled_coefficients(loop, period):
+    period = F(period)
+    if period <= 0:
+        raise ValueError('positive sample period required')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        if loop.conductance:
+            decay = response(loop.capacity, loop.conductance, 0, 1, period)[0]
+            rho = decay-number(loop.gain/loop.conductance)*(1-decay)
+            offset = (1-decay)*number(loop.forcing()/loop.conductance)
+        else:
+            rho = 1-number(period*loop.gain/loop.capacity)
+            offset = number(period*loop.forcing()/loop.capacity)
+        return rho, offset
+
+
+def sampled(loop, initial, period, steps, limits=None):
+    period = F(period)
+    if period <= 0 or type(steps) is not int or steps < 0:
+        raise ValueError('positive period and nonnegative integer count required')
+    if limits is not None:
+        clip(0, *limits)
+    state = F(initial)
+    trajectory = [state]
+    commands = []
+    for k in range(steps):
+        command = loop.command(state)
+        if limits is not None:
+            command = clip(command, *limits)
+        state = F(response(loop.capacity, loop.conductance, command+loop.disturbance, state, period)[0])
+        commands.append(command)
+        trajectory.append(state)
+    return tuple(trajectory), tuple(commands)
+
+
+def startup_screen(gain):
+    gain = F(gain)
+    if gain < 0:
+        raise ValueError('nonnegative gain required')
+    error_bound = (1+gain/10)/(3+gain)
+    tau = 12/(3+gain)
+    maximum_start = 6+F(21,10)*gain
+    return {'error_bound': error_bound, 'time_constant': tau, 'maximum_startup': maximum_start,
+            'passes': error_bound <= F(1,4) and tau <= 2 and maximum_start <= 20}
+
+
+def published_comparison():
+    volume, flow, concentrate = F(6), F(1,50), F(400)
+    result = {}
+    for gain in (F(0), F(1,10000), F(3,10000), F(9,10000)):
+        factor = 1+concentrate*gain/flow
+        result[str(gain)] = {'time_constant': volume/flow/factor,
+                            'disturbance_gain': 1/factor,
+                            'reference_gain': (factor-1)/factor}
+    return result
+
+
+def study():
+    loop = Loop(12,3,6,2,6)
+    with localcontext() as ctx:
+        ctx.prec = 70
+        decay = (-D(2)).exp()
+        upper = 6/(1+3*decay)
+        lower = decay*upper
+        return {'alternatives': {str(k):startup_screen(k) for k in (1,3,6,9)},
+                'continuous_t4': continuous(loop,0,4),
+                'sample_rho': {str(h):sampled_coefficients(loop,h)[0] for h in (1,3,4,5,8)},
+                'saturated_cycle': {'lower': lower,'upper': upper},
+                'limited_10W_equilibrium': limited_equilibrium(Loop(12,3,6,5,6),0,10),
+                'published': published_comparison()}
+
+
+if __name__ == '__main__':
+    print(json.dumps(study(), default=str, indent=2))
+```
+
+```python file=feedback_checks.py
+from dataclasses import replace
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from itertools import product
+import feedback_study as m
+import json
+
+
+checks = 0
+tolerance = F(1,10**57)
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def close(actual, expected):
+    check(abs(F(actual)-F(expected)) < tolerance)
+
+
+def decay_enclosure(x, n=128):
+    x = F(x)
+    if x < 0 or x >= n:
+        raise ValueError('enclosure requires 0 <= exponent < panels')
+    return (1-x/n)**n, 1/(1+x/n)**n
+
+
+def affine_enclosure(bounds, slope, intercept):
+    return tuple(sorted((intercept+slope*bounds[0],intercept+slope*bounds[1])))
+
+
+def encloses(bounds, value):
+    check(bounds[0]-tolerance <= F(value) <= bounds[1]+tolerance)
+
+
+def root_oracle(loop, low, high, iterations=120):
+    a = (F(low)+loop.disturbance)/loop.conductance
+    b = (F(high)+loop.disturbance)/loop.conductance
+    for k in range(iterations):
+        mid = (a+b)/2
+        rate = min(F(high),max(F(low),loop.baseline+loop.gain*(loop.reference-mid-loop.bias)))+loop.disturbance-loop.conductance*mid
+        if rate > 0:
+            a = mid
+        elif rate < 0:
+            b = mid
+        else:
+            return mid, mid
+    return a,b
+
+
+def run():
+    continuous_cases = limited_cases = sampled_cases = requirements = 0
+    for capacity, conductance, gain, initial, time in product((F(3),F(12)),(F(0),F(1),F(3)),
+                                                              (F(0),F(2),F(6)),(F(-1),F(0),F(4)),
+                                                              (F(0),F(1,2),F(2),F(4))):
+        loop = m.Loop(capacity,conductance,gain,2,6,F(-1,2),F(1,10))
+        result = m.continuous(loop,initial,time)
+        effective = conductance+gain
+        forcing = F(11,2)+gain*F(19,10)
+        if effective:
+            equilibrium = forcing/effective
+            low,high = decay_enclosure(effective*time/capacity)
+            encloses(affine_enclosure((low,high),initial-equilibrium,equilibrium),result['state'])
+            check(min(initial,equilibrium)-tolerance <= F(result['state']) <= max(initial,equilibrium)+tolerance)
+            close(m.equilibrium(loop)[0],equilibrium)
+            check(loop.command(equilibrium)+loop.disturbance-conductance*equilibrium == 0)
+        else:
+            close(result['state'],initial+forcing*time/capacity)
+        close(F(result['actuation'])+F(result['disturbance']),F(result['stored'])+F(result['leakage']))
+        close(result['stored'],capacity*(F(result['state'])-initial))
+        half = m.continuous(loop,initial,time/2)
+        later = m.continuous(loop,F(half['state']),time/2)
+        close(later['state'],result['state'])
+        for key in ('stored','actuation','disturbance','leakage'):
+            close(F(half[key])+F(later[key]),result[key])
+        continuous_cases += 1
+    for conductance,gain,reference,disturbance,bias in product((F(1),F(3)),(F(0),F(2),F(6)),
+                                                              (F(-2),F(2),F(5)),(F(-1),F(0),F(1)),
+                                                              (F(-1,10),F(1,10))):
+        loop=m.Loop(12,conductance,gain,reference,6,disturbance,bias)
+        state,actuation=m.limited_equilibrium(loop,0,10)
+        check(actuation+disturbance-conductance*state==0)
+        check(0 <= actuation <= 10)
+        lo,hi=root_oracle(loop,0,10)
+        check(lo <= state <= hi)
+        for shift in (F(-3),F(-1,100),F(1,100),F(3)):
+            displaced=state+shift
+            rate=m.clip(loop.command(displaced),0,10)+disturbance-conductance*displaced
+            check(rate*shift <= -conductance*shift*shift)
+        limited_cases += 1
+    with localcontext() as ctx:
+        ctx.prec=70
+        for conductance,gain,period,initial in product((F(0),F(1),F(3)),(F(0),F(2),F(6)),
+                                                       (F(1,2),F(1),F(3)),(F(0),F(3))):
+            loop=m.Loop(12,conductance,gain,2,6,F(1,2),F(-1,10))
+            rho,offset=m.sampled_coefficients(loop,period)
+            states,commands=m.sampled(loop,initial,period,6)
+            low,high=initial,initial
+            for j in range(6):
+                close(states[j+1],F(rho)*states[j]+F(offset))
+                check(commands[j]==loop.command(states[j]))
+                if conductance:
+                    decay=decay_enclosure(conductance*period/12)
+                    corners=[]
+                    for a,x in product(decay,(low,high)):
+                        held=(loop.baseline+gain*(loop.reference-loop.bias-x)+loop.disturbance)/conductance
+                        corners.append(a*x+(1-a)*held)
+                    low,high=min(corners),max(corners)
+                else:
+                    low,high=affine_enclosure((low,high),1-period*gain/12,period*loop.forcing()/12)
+                encloses((low,high),states[j+1])
+            sampled_cases+=1
+        loop=m.Loop(12,3,6,2,6)
+        for period,stable in ((1,True),(3,True),(4,True),(5,False),(8,False)):
+            rho,offset=m.sampled_coefficients(loop,period)
+            check((abs(rho)<1)==stable)
+            a=decay_enclosure(F(period,4),512)
+            encloses(affine_enclosure(a,3,-2),rho)
+        check(abs(1-F(3)*9/12)>1)
+        decay=(-D(2)).exp()
+        upper=6/(1+3*decay)
+        lower=decay*upper
+        states,commands=m.sampled(loop,F(lower),8,2,limits=(0,20))
+        close(states[1],upper)
+        close(states[2],lower)
+        check(commands[1]==0 and 0 < commands[0] < 20)
+        check(lower < 2 < upper)
+        check(abs(decay*(3*decay-2))<1)
+        for start in (-2,0,2,5,9):
+            states,commands=m.sampled(loop,start,8,24,limits=(0,20))
+            for x,u in zip(states,commands):
+                check(0 <= u <= 20)
+                check(min(F(start),F(0)) <= x <= max(F(start),F(20,3)))
+    for gain in (F(0),F(1),F(5,3),F(3),F(6),F(20,3),F(7),F(9)):
+        screen=m.startup_screen(gain)
+        errors=[]
+        starts=[]
+        for disturbance,bias in product((F(-1),F(1)),(F(-1,10),F(1,10))):
+            loop=m.Loop(12,3,gain,2,6,disturbance,bias)
+            state,tau=m.equilibrium(loop)
+            errors.append(abs(2-state))
+            starts.append(loop.command(0))
+        check(screen['error_bound']==max(errors))
+        check(screen['maximum_startup']==max(starts))
+        check(screen['passes']==(3 <= gain <= F(20,3)))
+        if screen['passes']:
+            for disturbance,bias in product((F(-1),F(0),F(1)),(F(-1,10),F(0),F(1,10))):
+                loop=m.Loop(12,3,gain,2,6,disturbance,bias)
+                final,tau=m.equilibrium(loop)
+                for x in (F(0),final):
+                    check(0 <= loop.command(x) <= 20)
+        requirements+=1
+    loop=m.Loop(12,3,6,2,6,F(1,2),F(1,10))
+    delta=F(2,5)
+    shifted=replace(loop,bias=loop.bias+delta,disturbance=loop.disturbance-loop.conductance*delta)
+    for time in (0,1,4):
+        left=m.continuous(loop,0,time)
+        right=m.continuous(shifted,-delta,time)
+        close(F(left['state'])+loop.bias,F(right['state'])+shifted.bias)
+    published=m.published_comparison()
+    check([v['time_constant'] for v in published.values()]==[F(300),F(100),F(300,7),F(300,19)])
+    check([v['disturbance_gain'] for v in published.values()]==[F(1),F(1,3),F(1,7),F(1,19)])
+    check([v['reference_gain'] for v in published.values()]==[F(0),F(2,3),F(6,7),F(18,19)])
+    check(F(8)+F(400)*F(1,10000)/F(1,50)==10)
+    with localcontext() as ctx:
+        ctx.prec=70
+        peak=m.continuous(m.Loop(300,1,6,0,0,1),0,100)['state']
+        encloses(affine_enclosure(decay_enclosure(F(7,3)),F(-1,7),F(1,7)),peak)
+        check(peak > D('0.1'))
+        lower_peak=m.continuous(m.Loop(300,1,18,0,0,1),0,100)['state']
+        check(lower_peak < D('0.1'))
+    for call in (lambda:m.Loop(0,1,1,0,0),lambda:m.Loop(1,-1,1,0,0),lambda:m.Loop(1,1,-1,0,0),
+                 lambda:m.Loop(True,1,1,0,0),lambda:m.Loop(1.0,1,1,0,0),lambda:m.clip(1,2,0),
+                 lambda:m.equilibrium(m.Loop(1,0,0,0,0)),lambda:m.limited_equilibrium(m.Loop(1,0,1,0,0),0,1),
+                 lambda:m.sampled(loop,0,0,1),lambda:m.sampled(loop,0,1,True),lambda:m.sampled(loop,0,1,-1),
+                 lambda:m.continuous(loop,0,-1),lambda:m.sampled_coefficients(loop,0),lambda:m.startup_screen(-1)):
+        try:call()
+        except ValueError:check(True)
+        else:raise AssertionError('invalid domain accepted')
+    print(json.dumps({'checks':checks,'continuous_cases':continuous_cases,'limited_equilibria':limited_cases,
+                      'sampled_cases':sampled_cases,'requirement_gains':requirements,'study':m.study()},default=str))
+
+
+if __name__ == '__main__':
+    run()
+```
+
+**Author verification:** 4,390 checks passed through Nix/Python 3.14.8, covering 216 continuous cases, 108 limited equilibria, 54 sampled configurations, eight requirement gains and their uncertainty corners, plus energy accounts, interval composition, a two-cycle, ambiguity, published predictions and invalid inputs. The existing network response program is reused unchanged. Rational bounds verify finite computations; the written proofs establish general model claims. No physical controller, experiment or apparatus is validated.
+
+**Continue:** [Review feedback requirements dynamics and realization evidence](Review-feedback-requirements-dynamics-and-realization-evidence.lingua#r_003878F402F646426D07E046F6).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_001F53EF1EF8FC5D84983E0478

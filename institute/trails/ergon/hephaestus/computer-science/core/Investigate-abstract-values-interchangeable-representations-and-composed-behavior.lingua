@@ -1,0 +1,354 @@
+Import "../Computing.lingua"
+
+Investigate abstract values interchangeable representations and composed behavior (@computing-abstraction-study: 0, is #chapter, #hephaestus-core "Review-abstraction-representation-independence-and-software-construction.lingua#r_00471F0107816D8D52C639694B") { r_00A94DD49118D07A2BA269E0AC
+Create a connected software argument from names and interfaces through implementation and client behavior. Trace the original binding/closure examples. State the abstract slot value, valid inputs, observations, failure behavior and effects before inspecting the concrete representations. Give the tuple and mask invariants and abstraction functions, and prove initialization, observation agreement, operation preservation and retained-value behavior.
+
+Reconstruct the bounded MIT character-range example under its stated ASCII adaptation, distinguishing an interpreted range from a list of members. Preserve its source attribution and the even-length/domain restriction. The source's interactive exercises and full course are assigned formation, not claimed completed by this reconstruction.
+
+Implement and inspect the pure batch client using only the interface. Derive its malformed-input, conflict and successful branches; the old value must survive each. Compare the two implementations against an independently expressed mathematical-set reference. Include the incremental-failure and XOR-removal rivals and an aliasing escape. Preserve a distinguishing state/result trace, not just a passing or failing label.
+
+Save the following original blocks as abstraction_study.py and abstraction_checks.py and run `python3 abstraction_checks.py` through the repository's Nix Python environment. They use the standard library. The study has no top-level application input/output; the checker runs finite cases and prints its evidence summary. Interpreter module loading or bytecode caches are separate runtime behavior. Class annotations do not enforce the invariant: the explicit constructor/input checks do. The two concrete classes are interchangeable only for clients obeying the stated observation/effect boundary, not arbitrary reflection or timing tests.
+
+The checker independently enumerates abstract subsets through width 8 and compares every valid insert/remove transition for those states; it also checks all operation histories through length five at width 3, retaining earlier values. It enumerates ordered distinct reservation batches through width 4, exercises wider masks across several digit boundaries, reconstructs valid bounded character-range accounts, and checks rejected inputs and failing rivals. These finite tests complement the all-valid-state proofs. They do not claim exhaustive testing of all widths, all histories, all Python programs or external reservation systems.
+
+**Independent extension:** implement a third representation using disjoint intervals, or redesign the abstraction to retain insertion history or reservation multiplicity. For a representation change, define its invariant and abstraction map, prove the same interface laws and run unchanged clients against an independent reference. For a changed abstract model, identify which old equivalences intentionally cease to hold and revise the contracts before code. Add a failure that the old tests would miss, explain why, and supply a new discriminating check.
+
+Present the source reconstruction, proofs, implementation, failed rival, cost model and changed requirement as one report. Ask a critic to challenge the observation boundary, element-type assumptions and the separation between proposal and commitment. Revise the argument or implementation in response. No learner performance, deployed application behavior or external reservation is claimed by the author's checks.
+
+
+```python file=abstraction_study.py
+from dataclasses import dataclass
+
+
+def width(value):
+    if type(value) is not int or not 0 <= value <= 256:
+        raise ValueError('exact width from 0 through 256 required')
+    return value
+
+
+def slot(m, value):
+    if type(value) is not int or not 0 <= value < m:
+        raise ValueError('exact slot within the declared universe required')
+    return value
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class TupleSlots:
+    _m: int
+    _items: tuple
+
+    def __post_init__(self):
+        width(self._m)
+        if type(self._items) is not tuple:
+            raise ValueError('tuple representation required')
+        for value in self._items:
+            slot(self._m, value)
+        if any(a >= b for a, b in zip(self._items, self._items[1:])):
+            raise ValueError('strictly increasing representation required')
+
+    @classmethod
+    def empty(cls, m):
+        return cls(m, ())
+
+    def extent(self):
+        return self._m
+
+    def members(self):
+        return self._items
+
+    def contains(self, value):
+        slot(self._m, value)
+        return value in self._items
+
+    def insert(self, value):
+        slot(self._m, value)
+        if value in self._items:
+            return self
+        index = 0
+        while index < len(self._items) and self._items[index] < value:
+            index += 1
+        return TupleSlots(self._m, self._items[:index]+(value,)+self._items[index:])
+
+    def remove(self, value):
+        slot(self._m, value)
+        return TupleSlots(self._m, tuple(x for x in self._items if x != value))
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class MaskSlots:
+    _m: int
+    _bits: int
+
+    def __post_init__(self):
+        width(self._m)
+        if type(self._bits) is not int or not 0 <= self._bits < (1 << self._m):
+            raise ValueError('nonnegative mask confined to the declared width required')
+
+    @classmethod
+    def empty(cls, m):
+        return cls(m, 0)
+
+    def extent(self):
+        return self._m
+
+    def members(self):
+        return tuple(x for x in range(self._m) if (self._bits >> x) & 1)
+
+    def contains(self, value):
+        slot(self._m, value)
+        return bool(self._bits & (1 << value))
+
+    def insert(self, value):
+        slot(self._m, value)
+        return MaskSlots(self._m, self._bits | (1 << value))
+
+    def remove(self, value):
+        slot(self._m, value)
+        return MaskSlots(self._m, self._bits & ~(1 << value))
+
+
+def from_values(kind, m, values):
+    width(m)
+    if type(values) is not tuple:
+        raise ValueError('tuple of exact slots required')
+    for value in values:
+        slot(m, value)
+    result = kind.empty(m)
+    for value in values:
+        result = result.insert(value)
+    return result
+
+
+def same_value(left, right):
+    return left.extent() == right.extent() and left.members() == right.members()
+
+
+def reserve_many(state, requests):
+    if type(requests) is not tuple:
+        raise ValueError('tuple of distinct exact slots required')
+    seen = set()
+    for value in requests:
+        slot(state.extent(), value)
+        if value in seen:
+            raise ValueError('repeated reservation request')
+        seen.add(value)
+    conflicts = tuple(value for value in requests if state.contains(value))
+    if conflicts:
+        return state, ('conflict', min(conflicts))
+    result = state
+    for value in requests:
+        result = result.insert(value)
+    return result, ('accepted', len(requests))
+
+
+def make_offset(amount):
+    def apply(value):
+        return value+amount
+    return apply
+
+
+def binding_trace():
+    amount = 4
+    def read():
+        return amount
+    def local():
+        amount = 90
+        return amount
+    first = read()
+    second = local()
+    amount = 7
+    return first, second, read()
+
+
+def bad_offset_family():
+    return tuple(lambda value: value+amount for amount in (1, 3))
+
+
+def good_offset_family():
+    return tuple(make_offset(amount) for amount in (1, 3))
+
+
+def range_meaning(text):
+    if type(text) is not str or len(text) % 2:
+        raise ValueError('even-length string required')
+    if any(not 'a' <= char <= 'z' for char in text):
+        raise ValueError('lowercase ASCII teaching alphabet required')
+    if any(a > b for a, b in zip(text, text[1:])):
+        raise ValueError('nondecreasing endpoints required')
+    values = set()
+    for index in range(0, len(text), 2):
+        values.update(chr(code) for code in range(ord(text[index]), ord(text[index+1])+1))
+    return tuple(sorted(values))
+```
+
+```python file=abstraction_checks.py
+from dataclasses import FrozenInstanceError
+from itertools import combinations, combinations_with_replacement, permutations, product
+import json,platform
+import abstraction_study as m
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def subset_space(size):
+    return [frozenset(items) for length in range(size+1) for items in combinations(range(size), length)]
+
+
+def observe(state, expected, size):
+    check(state.extent() == size)
+    check(state.members() == tuple(sorted(expected)))
+    check(type(state.members()) is tuple)
+    for value in range(size):
+        check(state.contains(value) == (value in expected))
+
+
+states = 0
+transitions = 0
+for size in range(9):
+    for abstract in subset_space(size):
+        items = tuple(sorted(abstract))
+        left = m.from_values(m.TupleSlots, size, items)
+        right = m.from_values(m.MaskSlots, size, items)
+        observe(left, abstract, size)
+        observe(right, abstract, size)
+        check(m.same_value(left, right))
+        for value in range(size):
+            for operation, expected in [('insert', abstract | {value}), ('remove', abstract - {value})]:
+                a = getattr(left, operation)(value)
+                b = getattr(right, operation)(value)
+                observe(a, expected, size)
+                observe(b, expected, size)
+                check(m.same_value(a, b))
+                check(left.members() == items and right.members() == items)
+                transitions += 1
+        states += 1
+
+history_cases = 0
+alphabet = [(operation, value) for operation in ('insert', 'remove') for value in range(3)]
+for length in range(6):
+    for history in product(alphabet, repeat=length):
+        left, right = m.TupleSlots.empty(3), m.MaskSlots.empty(3)
+        expected = frozenset()
+        retained = []
+        for operation, value in history:
+            retained.append((left, right, expected))
+            left = getattr(left, operation)(value)
+            right = getattr(right, operation)(value)
+            expected = expected | {value} if operation == 'insert' else expected - {value}
+        check(left.members() == right.members() == tuple(sorted(expected)))
+        for a, b, previous in retained:
+            check(a.members() == b.members() == tuple(sorted(previous)))
+        history_cases += 1
+
+batch_cases = 0
+for size in range(5):
+    for abstract in subset_space(size):
+        for length in range(size+1):
+            for request in permutations(range(size), length):
+                conflicts = abstract.intersection(request)
+                expected = abstract if conflicts else abstract.union(request)
+                status = ('conflict', min(conflicts)) if conflicts else ('accepted', length)
+                left = m.from_values(m.TupleSlots, size, tuple(sorted(abstract)))
+                right = m.from_values(m.MaskSlots, size, tuple(sorted(abstract)))
+                a, answer_a = m.reserve_many(left, request)
+                b, answer_b = m.reserve_many(right, request)
+                check(answer_a == answer_b == status)
+                check(a.members() == b.members() == tuple(sorted(expected)))
+                check(left.members() == right.members() == tuple(sorted(abstract)))
+                batch_cases += 1
+
+wide_cases = 0
+for size in (9, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256):
+    abstract = frozenset((0, size//2, size-1))
+    left = m.from_values(m.TupleSlots, size, tuple(abstract))
+    right = m.from_values(m.MaskSlots, size, tuple(abstract))
+    observe(left, abstract, size)
+    observe(right, abstract, size)
+    for value in (0, 1, size//2, size-1):
+        a = left.remove(value).insert(value)
+        b = right.remove(value).insert(value)
+        check(a.members() == b.members() == tuple(sorted(abstract | {value})))
+    wide_cases += 1
+
+check(m.binding_trace() == (4, 90, 7))
+check(tuple(fn(4) for fn in m.bad_offset_family()) == (7, 7))
+check(tuple(fn(4) for fn in m.good_offset_family()) == (5, 7))
+check(m.range_meaning('acgg') == ('a', 'b', 'c', 'g'))
+check(m.range_meaning('acfg') == ('a', 'b', 'c', 'f', 'g'))
+check(m.range_meaning('eeee') == ('e',))
+range_cases = 0
+for length in (0, 2, 4, 6):
+    for chars in combinations_with_replacement('abcd', length):
+        text = ''.join(chars)
+        expected = tuple(c for c in 'abcd' if any(text[i] <= c <= text[i+1] for i in range(0, length, 2)))
+        check(m.range_meaning(text) == expected)
+        range_cases += 1
+
+rejected = 0
+invalid = [lambda:m.TupleSlots(-1, ()), lambda:m.MaskSlots(True, 0), lambda:m.TupleSlots(257, ()), lambda:m.MaskSlots(2, 4), lambda:m.MaskSlots(2, -1), lambda:m.MaskSlots(2, True), lambda:m.TupleSlots(2, [0]), lambda:m.TupleSlots(2, (1, 0)), lambda:m.TupleSlots(2, (0, 0)), lambda:m.TupleSlots(2, (False,))]
+for kind in (m.TupleSlots, m.MaskSlots):
+    for value in (-1, 3, True, 0.0, '0'):
+        for operation in ('contains', 'insert', 'remove'):
+            invalid.append(lambda kind=kind, value=value, operation=operation:getattr(kind.empty(3), operation)(value))
+    invalid.extend([lambda kind=kind:m.from_values(kind, 3, [0]), lambda kind=kind:m.from_values(kind, 3, (0, True)), lambda kind=kind:m.reserve_many(m.from_values(kind, 3, (0,)), (0, True)), lambda kind=kind:m.reserve_many(m.from_values(kind, 3, (0,)), (0, 0)), lambda kind=kind:m.reserve_many(kind.empty(3), [1])])
+for text in ('a', 'abc', 'adad', 'Az', 'aaZz'):
+    invalid.append(lambda text=text:m.range_meaning(text))
+for call in invalid:
+    try:
+        call()
+    except ValueError:
+        rejected += 1
+    else:
+        raise AssertionError('invalid input accepted')
+check(rejected == 55)
+for state in (m.TupleSlots.empty(3), m.MaskSlots.empty(3)):
+    try:
+        state._m = 4
+    except FrozenInstanceError:
+        check(True)
+    else:
+        raise AssertionError('ordinary field rebinding accepted')
+check(m.from_values(m.TupleSlots, 4, (2, 0, 2)).members() == (0, 2))
+check(m.from_values(m.MaskSlots, 4, (2, 0, 2)).members() == (0, 2))
+check(not m.same_value(m.TupleSlots.empty(2), m.MaskSlots.empty(3)))
+
+
+def incremental_failure(state, requests):
+    result = state
+    for value in requests:
+        if result.contains(value):
+            return result, ('conflict', value)
+        result = result.insert(value)
+    return result, ('accepted', len(requests))
+
+
+initial = m.from_values(m.TupleSlots, 5, (3,))
+correct, status = m.reserve_many(initial, (1, 3))
+wrong, wrong_status = incremental_failure(initial, (1, 3))
+check(status == wrong_status == ('conflict', 3))
+check(correct.members() == (3,) and wrong.members() == (1, 3))
+check((0 ^ (1 << 2)) != 0)
+shared = [1]
+leaky_rep = shared
+shared.append(3)
+check(leaky_rep == [1, 3])
+snapshot = m.from_values(m.TupleSlots, 5, tuple(shared)).members()
+shared.append(4)
+check(snapshot == (1, 3))
+check(m.from_values(m.TupleSlots, 5, (1, 3))._items != m.from_values(m.MaskSlots, 5, (1, 3))._bits)
+
+print(json.dumps({'runtime':platform.python_version(),'checks':checks,'abstract_states':states,'paired_operation_cases':transitions,'histories_through_length_five':history_cases,'ordered_batch_cases':batch_cases,'wide_universe_cases':wide_cases,'source_range_reconstruction_cases':range_cases,'rejected_inputs':rejected,'scope':'finite checks plus separate all-valid-state proofs; no runtime or physical reservation guarantee'},indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 232,901 finite assertions: 511 abstract states, 7,172 paired operation cases, 9,331 histories through length five, 1,193 ordered batch cases, twelve wider-universe fixtures, 130 bounded source-range cases and 55 rejected inputs. Counts describe distinct case families with several assertions each; they are not a percentage of all programs or learner completion. The general representation and composition arguments remain separate from the finite implementation evidence.
+
+**Continue:** [Review abstraction representation independence and software construction](Review-abstraction-representation-independence-and-software-construction.lingua#r_00471F0107816D8D52C639694B).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00A94DD49118D07A2BA269E0AC

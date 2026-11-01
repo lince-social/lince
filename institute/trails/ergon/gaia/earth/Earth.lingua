@@ -1,4 +1,19 @@
-Earth — materials, processes, and geological history (@earth-map: 0, is #chapter, #earth "geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06", #earth "mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN") { r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH
+Import "geophysics/Geophysics.lingua"
+Import "geochemistry/Geochemistry.lingua"
+Import "paleontology-and-earth-history/Paleontology-and-Earth-history.lingua"
+Import "meteorology-and-atmospheric-science/Meteorology-and-atmospheric-science.lingua"
+Import "climate-science/Climate-science.lingua"
+Import "ocean-and-cryosphere-sciences/Ocean-and-cryosphere-sciences.lingua"
+Import "hydrology-and-water-science/Hydrology-and-water-science.lingua"
+Import "soil-science/Soil-science.lingua"
+Import "environmental-systems-science/Environmental-systems-science.lingua"
+Import "geodesy-and-surveying/Geodesy-and-surveying.lingua"
+Import "remote-sensing-and-earth-observation/Remote-sensing-and-Earth-observation.lingua"
+Import "natural-hazards-and-disaster-science/Natural-hazards-and-disaster-science.lingua"
+Import "geology/Geology.lingua"
+Import "mineralogy-and-petrology/Mineralogy-and-petrology.lingua"
+
+Earth — materials, processes, and geological history (@earth-map: 0, is #chapter, #earth "geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06", #earth "mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN", #contains "geophysics/Geophysics.lingua#r_5MNCAE58SMN0ASJ3H3K7WGA2KF", #contains "geochemistry/Geochemistry.lingua#r_4E66G7A511KVVFHFH52AKSDXQE", #contains "paleontology-and-earth-history/Paleontology-and-Earth-history.lingua#r_6X35H9K5RCNYDB8NFB2570CZ4C", #contains "meteorology-and-atmospheric-science/Meteorology-and-atmospheric-science.lingua#r_0PDR5YA2K07ZYX6QZ552Q50PDH", #contains "climate-science/Climate-science.lingua#r_0BYK3NE79KP7V11207TWTDMN35", #contains "ocean-and-cryosphere-sciences/Ocean-and-cryosphere-sciences.lingua#r_420J99N8348VC7TXPVN3M9KN8M", #contains "hydrology-and-water-science/Hydrology-and-water-science.lingua#r_54WB3G2TZZMH1E36ZR5SBGWV25", #contains "soil-science/Soil-science.lingua#r_0584H12JAENF0M2AJR1TX2NFFK", #contains "environmental-systems-science/Environmental-systems-science.lingua#r_52CP06B7XRSDSDAA5CW1A7ZHX6", #contains "geodesy-and-surveying/Geodesy-and-surveying.lingua#r_6GBPZ19JAZBNEFE3TGJGADQ159", #contains "remote-sensing-and-earth-observation/Remote-sensing-and-Earth-observation.lingua#r_7X3J1RYQ2MCDDY7QQS9KGTH782", #contains "natural-hazards-and-disaster-science/Natural-hazards-and-disaster-science.lingua#r_7KMZES106VYJCENNKXGCYBV0KY", #contains "geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06", #contains "mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN") { r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH
 Begin with [Geology — Earth materials, processes, history, and investigation](geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06): describe a material or landscape, read maps and time, and connect observations with Earth's physical, chemical, and historical processes. The route continues through complete books, field/laboratory studies, structural and chronological methods, water, resources, infrastructure, and independent research.
 
 Different questions reuse the same evidence. A rock can matter to geological history, a groundwater pathway, a construction site, and a material supply chain. Follow the particular foundations and methods needed rather than treating disciplinary names as walls.
@@ -8,6 +23,25 @@ Return to [Gaia — Earth, living systems, and their relationships](../Nature.li
 [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN) deepens mineral structure/composition, microscopy, diffraction/microanalysis, phase relations, and igneous/sedimentary/metamorphic processes through complete books, laboratories, graduate cases, and independent practical/scholarly studies. It reuses shared [Geology — Earth materials, processes, history, and investigation](geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), chemical, measurement, and computational Records.
 
 **Water and sanitation:** [Water, sanitation and industrial utilities — from sources to continuing service](../../hephaestus/utilities/water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN) follows water sources, quality, delivery, treatment, recovery and the work required to maintain service.
+
+**Scope:** Observe a landscape, water system, soil, or weather record; connect local observations to larger processes. Begin with the chosen observations, quantities, and map use; add the relevant chemistry, mechanics, statistics, or modelling with the selected investigation.
+
+**Branches:**
+
+- [Geophysics](geophysics/Geophysics.lingua#r_5MNCAE58SMN0ASJ3H3K7WGA2KF)
+- [Geochemistry](geochemistry/Geochemistry.lingua#r_4E66G7A511KVVFHFH52AKSDXQE)
+- [Paleontology and Earth history](paleontology-and-earth-history/Paleontology-and-Earth-history.lingua#r_6X35H9K5RCNYDB8NFB2570CZ4C)
+- [Meteorology and atmospheric science](meteorology-and-atmospheric-science/Meteorology-and-atmospheric-science.lingua#r_0PDR5YA2K07ZYX6QZ552Q50PDH)
+- [Climate science](climate-science/Climate-science.lingua#r_0BYK3NE79KP7V11207TWTDMN35)
+- [Ocean and cryosphere sciences](ocean-and-cryosphere-sciences/Ocean-and-cryosphere-sciences.lingua#r_420J99N8348VC7TXPVN3M9KN8M)
+- [Hydrology and water science](hydrology-and-water-science/Hydrology-and-water-science.lingua#r_54WB3G2TZZMH1E36ZR5SBGWV25)
+- [Soil science](soil-science/Soil-science.lingua#r_0584H12JAENF0M2AJR1TX2NFFK)
+- [Environmental systems science](environmental-systems-science/Environmental-systems-science.lingua#r_52CP06B7XRSDSDAA5CW1A7ZHX6)
+- [Geodesy and surveying](geodesy-and-surveying/Geodesy-and-surveying.lingua#r_6GBPZ19JAZBNEFE3TGJGADQ159)
+- [Remote sensing and Earth observation](remote-sensing-and-earth-observation/Remote-sensing-and-Earth-observation.lingua#r_7X3J1RYQ2MCDDY7QQS9KGTH782)
+- [Natural hazards and disaster science](natural-hazards-and-disaster-science/Natural-hazards-and-disaster-science.lingua#r_7KMZES106VYJCENNKXGCYBV0KY)
+- [Geology — Earth materials, processes, history, and investigation](geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06)
+- [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN)
 } r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH
 
 Extension @earth-map "lince.vocabulary" {

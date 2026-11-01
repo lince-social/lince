@@ -1,0 +1,273 @@
+Import "../Engineering.lingua"
+
+Investigate operating state observation and handover on a finite card board (@engineering-operation-study: 0, is #chapter, #hephaestus-core "Review-operating-evidence-recovery-handover-and-discipline-entry.lingua#r_00F5C065E1FD91E52024353E0C") { r_004C8B3546F6B259002ECC6C21
+Save the two original programs below as `operation_study.py` and `operation_checks.py`. Extract unchanged `production_study.py` from [Investigate production schedules rework and inventory time](Investigate-production-schedules-rework-and-inventory-time.lingua#r_00A308F2C75A43925C580DC3C9) alongside them; only its exact-integer validator is reused by this new model. Run `python3 -B operation_checks.py`. The study imports silently and has no physical, network or persistent effects. Its finite-state account is different from the earlier scheduling optimization and does not alter that program or its claims.
+
+`Board` validates the declared two-card state. `outcomes` returns a set of permitted successors: command events have at most one, while tick includes idle and each enabled single physical movement. An empty set means the requested command is inadmissible in that state. The current rules conserve cards, restrict the buffer and preserve completed output. `universe` enumerates the structurally valid states. The initial state can reach all sixteen; the graph has forty-nine labeled state-to-state edges including idle/self transitions.
+
+`allowed` intersects permitted command sets across a nonempty possible-state set. `advance` first propagates a known event and then filters by an exact observation. It rejects an inconsistent empty result. No probability or elapsed time is assigned. `sufficient` groups states by selected observation fields and checks agreement of command sets; `minimal_fields` searches all thirty-two field subsets. The claim concerns decision sufficiency under this exact model, not complete physical-state estimation in general. The checks compare grouping with a separate pairwise indistinguishability test, and enumerate all 65,535 nonempty possible-state subsets. The command semantics remain shared implementation, so these are not independent tests of the real world.
+
+**Investigation:**
+
+1. Derive the state table and conservation argument before reading the program. Enumerate the legal card distributions combinatorially, then add pending/mode conditions. Compare that independently constructed set with the program and its reachable closure.
+2. Reconstruct command acknowledgement versus physical effect by requesting one card and allowing zero or one movement. Give the corresponding observations. Reconstruct the HSE handover preparation/exchange/cross-check argument with these original cases, without claiming to replicate a published participant experiment.
+3. Propagate the possible states after an unobserved tick and after hold. Show why no single cancel/recover/resume choice is justified from the unresolved pair. Add one current observation and recompute the permissible choice. Explain how an additional unobserved tick can invalidate a previous reading.
+4. Prove preservation of card total, buffer capacity, pending-input consistency and nondecreasing finished output. For every held state, exhibit a cancel/recover sequence leading to a resumable state. Distinguish existence of such a path from guaranteed progress or operator performance.
+5. Derive the three minimal field sets and show counterexamples for omitted information. Reject counts-only handover, a run-mode lamp used as universal readiness evidence, command-as-completion, unconditional startup reset and an assumed fair tick schedule. Explain which failed rival is checked directly and which requires the written argument.
+6. Supply a task analysis, accessible information/control specification, recovery table, handover sheet and evaluation proposal. Reuse [Evaluate task evidence without treating a model as observed usability](../../computer-science/core/Evaluate-task-evidence-without-treating-a-model-as-observed-usability.lingua#r_00702DC8214B4953486BC85FE3) and [Hand over a practical method and make its limits observable](../../inquiry/core/Hand-over-a-practical-method-and-make-its-limits-observable.lingua#r_003F2F980FE4FCF88BC8DFD75D). No observation sheet may be filled with invented participant outcomes.
+7. Change one premise: permit a lost card, make observation stale, or allow hold to take effect after a delay. Identify the counterexample to the old invariant or decision claim, then revise the model and the evidence account. The current code does not implement these extensions.
+
+**Deliver:** the derivations, source comparison, executable results, distinguishing traces and revised operating/evaluation account. State what is stipulated, computed and actually observed. Physical protection, real actuator dynamics, field instrumentation, human reliability and professional competence remain outside this paper investigation and belong in their full discipline formation.
+
+```python file=operation_study.py
+from dataclasses import dataclass, replace
+from itertools import combinations, product
+from production_study import integer
+
+
+FIELDS = ('incoming', 'buffer', 'finished', 'pending', 'mode')
+COMMANDS = ('request', 'hold', 'cancel', 'recover', 'resume')
+
+
+@dataclass(frozen=True)
+class Board:
+    incoming: int = 2
+    buffer: int = 0
+    finished: int = 0
+    pending: bool = False
+    mode: str = 'hold'
+
+    def __post_init__(self):
+        for value in (self.incoming, self.buffer, self.finished):
+            integer(value, 0, 2)
+        if self.buffer > 1 or self.incoming + self.buffer + self.finished != 2:
+            raise ValueError('invalid two-card account')
+        if type(self.pending) is not bool or type(self.mode) is not str or self.mode not in ('run', 'hold'):
+            raise ValueError('invalid operating state')
+        if self.pending and self.incoming == 0:
+            raise ValueError('pending request has no remaining input')
+
+
+def outcomes(state, event):
+    if type(state) is not Board or type(event) is not str or event not in COMMANDS + ('tick',):
+        raise ValueError('invalid board or event')
+    if event == 'hold':
+        return frozenset({replace(state, mode='hold')})
+    if event == 'request' and state.mode == 'run' and state.incoming and not state.pending:
+        return frozenset({replace(state, pending=True)})
+    if event == 'cancel' and state.mode == 'hold' and state.pending:
+        return frozenset({replace(state, pending=False)})
+    if event == 'recover' and state.mode == 'hold' and state.buffer:
+        return frozenset({replace(state, incoming=state.incoming + 1, buffer=0)})
+    if event == 'resume' and state.mode == 'hold' and not state.pending and not state.buffer:
+        return frozenset({replace(state, mode='run')})
+    if event == 'tick':
+        values = {state}
+        if state.mode == 'run':
+            if state.pending and state.buffer == 0:
+                values.add(replace(state, incoming=state.incoming-1, buffer=1, pending=False))
+            if state.buffer:
+                values.add(replace(state, buffer=0, finished=state.finished+1))
+        return frozenset(values)
+    return frozenset()
+
+
+def universe():
+    values = set()
+    for incoming, buffer, finished, pending, mode in product(range(3), range(2), range(3), (False, True), ('run', 'hold')):
+        if incoming + buffer + finished == 2 and (not pending or incoming > 0):
+            values.add(Board(incoming, buffer, finished, pending, mode))
+    return frozenset(values)
+
+
+def field_names(fields):
+    if type(fields) is not tuple or any(type(f) is not str or f not in FIELDS for f in fields) or len(set(fields)) != len(fields):
+        raise ValueError('invalid field selection')
+    return fields
+
+
+def observe(state, fields):
+    if type(state) is not Board:
+        raise ValueError('invalid board')
+    return tuple(getattr(state, field) for field in field_names(fields))
+
+
+def belief(value):
+    if type(value) is not frozenset or not value or any(type(s) is not Board for s in value):
+        raise ValueError('belief must be a nonempty finite set of valid boards')
+    return value
+
+
+def allowed(states):
+    states = belief(states)
+    return frozenset(action for action in COMMANDS if all(outcomes(s, action) for s in states))
+
+
+def advance(states, event, fields=(), reading=()):
+    states = belief(states)
+    fields = field_names(fields)
+    if type(reading) is not tuple or len(reading) != len(fields):
+        raise ValueError('reading does not match selected fields')
+    if any(type(value) is not type(getattr(Board(),field)) for field,value in zip(fields,reading)):
+        raise ValueError('reading has wrong field types')
+    following = frozenset(target for s in states for target in outcomes(s, event)
+                          if observe(target, fields) == reading)
+    if not following:
+        raise ValueError('event and observation inconsistent with this model')
+    return following
+
+
+def sufficient(states, fields):
+    states = belief(states)
+    fields = field_names(fields)
+    groups = {}
+    for s in states:
+        key = observe(s, fields)
+        actions = allowed(frozenset({s}))
+        if key in groups and groups[key] != actions:
+            return False
+        groups[key] = actions
+    return True
+
+
+def minimal_fields(states):
+    states = belief(states)
+    found = []
+    for size in range(len(FIELDS)+1):
+        for fields in combinations(FIELDS, size):
+            if not any(set(old) <= set(fields) for old in found) and sufficient(states, fields):
+                found.append(fields)
+    return tuple(found)
+```
+
+```python file=operation_checks.py
+from itertools import combinations, product
+import json
+import operation_study as o
+
+
+checks = 0
+def verify(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+states = o.universe()
+count_states = {(i,b,2-i-b,p,m) for i in range(3) for b in range(min(1,2-i)+1)
+                for p in (False,True) if not p or i for m in ('run','hold')}
+verify({tuple(getattr(s,f) for f in o.FIELDS) for s in states} == count_states)
+reached = {o.Board()}
+frontier = set(reached)
+edges = set()
+while frontier:
+    following = set()
+    for s in frontier:
+        for event in o.COMMANDS + ('tick',):
+            for target in o.outcomes(s,event):
+                edges.add((s,event,target))
+                following.add(target)
+    frontier = following-reached
+    reached |= frontier
+verify(reached == states)
+for s,event,target in edges:
+    verify(target.incoming + target.buffer + target.finished == 2)
+    verify(0 <= target.buffer <= 1 and target.finished >= s.finished)
+    verify(not target.pending or target.incoming > 0)
+    if event != 'tick':
+        verify(target.finished == s.finished)
+    if event == 'request':
+        verify((target.incoming,target.buffer,target.finished)==(s.incoming,s.buffer,s.finished))
+    if event == 'hold':
+        verify(target.pending == s.pending)
+    if event == 'tick' and s.mode == 'hold':
+        verify(target==s)
+
+field_cases = 0
+independent_minimal = []
+for size in range(6):
+    for fields in combinations(o.FIELDS,size):
+        witnesses = [(a,b) for a,b in combinations(states,2)
+                     if all(getattr(a,f)==getattr(b,f) for f in fields)
+                     and o.allowed(frozenset({a})) != o.allowed(frozenset({b}))]
+        expected = not witnesses
+        verify(o.sufficient(states,fields) == expected)
+        if expected and not any(set(old)<=set(fields) for old in independent_minimal):
+            independent_minimal.append(fields)
+        field_cases += 1
+verify(o.minimal_fields(states)==tuple(independent_minimal))
+
+belief_cases = 0
+ordered = tuple(sorted(states,key=lambda s:tuple(getattr(s,f) for f in o.FIELDS)))
+for mask in range(1,1 << len(states)):
+    belief = frozenset(s for k,s in enumerate(ordered) if mask & (1 << k))
+    expected = set(o.COMMANDS)
+    for s in belief:
+        expected.intersection_update(event for event in o.COMMANDS if o.outcomes(s,event))
+    verify(o.allowed(belief)==frozenset(expected))
+    verify('hold' in o.allowed(belief))
+    belief_cases += 1
+
+initial = frozenset({o.Board()})
+running = o.advance(initial,'resume')
+requested = o.advance(running,'request')
+uncertain = o.advance(requested,'tick')
+verify({(s.incoming,s.buffer,s.finished) for s in requested}=={(2,0,0)})
+verify({(s.incoming,s.buffer,s.finished) for s in uncertain}=={(2,0,0),(1,1,0)})
+verify(len(o.advance(uncertain,'tick'))==3)
+held = o.advance(uncertain,'hold')
+verify('resume' not in o.allowed(held))
+verify('cancel' not in o.allowed(held) and 'recover' not in o.allowed(held))
+verify(o.allowed(held)==frozenset({'hold'}))
+known_pending = o.advance(held,'tick',('pending',),(True,))
+known_buffer = o.advance(held,'tick',('buffer',),(1,))
+verify('cancel' in o.allowed(known_pending))
+verify('recover' in o.allowed(known_buffer))
+verify(o.advance(known_pending,'cancel')==initial)
+verify(o.advance(known_buffer,'recover')==initial)
+empty = o.Board(2,0,0,False,'hold')
+queued = o.Board(2,0,0,True,'hold')
+verify(o.observe(empty,('incoming','buffer','finished','mode'))==o.observe(queued,('incoming','buffer','finished','mode')))
+verify('resume' in o.allowed(frozenset({empty})) and 'resume' not in o.allowed(frozenset({queued})))
+verify(o.observe(o.Board(0,1,1,False,'run'),('mode',))==o.observe(o.Board(2,0,0,False,'run'),('mode',)))
+verify(o.allowed(frozenset({o.Board(0,1,1,False,'run')})) != o.allowed(frozenset({o.Board(2,0,0,False,'run')})))
+
+pair_updates = 0
+for a,b in combinations(states,2):
+    belief=frozenset({a,b})
+    possible=set(o.outcomes(a,'tick'))|set(o.outcomes(b,'tick'))
+    for field in o.FIELDS:
+        for value in {getattr(s,field) for s in possible}:
+            expected=frozenset(s for s in possible if getattr(s,field)==value)
+            verify(o.advance(belief,'tick',(field,),(value,))==expected)
+            pair_updates+=1
+
+rejected=0
+bad_calls=[lambda:o.Board(True,0,1),lambda:o.Board(1,2,-1),lambda:o.Board(0,0,2,True),
+           lambda:o.Board(2,0,0,1),lambda:o.Board(2,0,0,False,'unknown'),
+           lambda:o.allowed(frozenset()),lambda:o.advance(initial,'resume',('buffer',),(1,)),
+           lambda:o.observe(empty,('mode','mode')),lambda:o.observe(empty,('missing',)),
+           lambda:o.advance(initial,'bogus'),lambda:o.advance(initial,'tick',('mode',),()),
+           lambda:o.outcomes((), 'hold'),lambda:o.observe((),()),lambda:o.observe(empty,([],)),
+           lambda:o.advance(initial,'tick',('pending',),(0,)),
+           lambda:o.advance(initial,'tick',('incoming',),(True,)),
+           lambda:o.allowed({empty}),lambda:o.outcomes(empty,[])]
+for call in bad_calls:
+    try:
+        call()
+    except ValueError:
+        rejected+=1
+    else:
+        raise AssertionError('invalid call accepted')
+    verify(True)
+print(json.dumps({'checks':checks,'states':len(states),'edges':len(edges),'field_subsets':field_cases,
+                  'minimal_fields':o.minimal_fields(states),'belief_subsets':belief_cases,
+                  'pair_observation_updates':pair_updates,'rejected':rejected},indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 132,365 assertions across sixteen states, forty-nine labeled edges, thirty-two field subsets, all 65,535 nonempty possible-state subsets, 1,026 paired-state observation updates, distinguishing traces and eighteen rejected calls. Structural state enumeration and pairwise field comparisons provide separate checks; transition semantics remain shared. No actual operator study, physical measurement or equipment certification is claimed.
+
+**Continue:** [Review operating evidence recovery handover and discipline entry](Review-operating-evidence-recovery-handover-and-discipline-entry.lingua#r_00F5C065E1FD91E52024353E0C).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_004C8B3546F6B259002ECC6C21

@@ -1,0 +1,5 @@
+Algorithms and data structures (@algorithms-and-data-structures: 0, is #chapter, #outline) { r_28TSMEZQJCBACYC5VRD4G8T2Q5
+Algorithms are procedures for solving problems; data structures organise information for those procedures. The material connects correctness, complexity, searching, sorting, graphs, indexing, parallel methods, and approximation with practical choices about time, memory, scale, and the shape of data.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_28TSMEZQJCBACYC5VRD4G8T2Q5

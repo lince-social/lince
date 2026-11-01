@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Require a linear approximation with a controlled remainder (@math-total-differentiability: 0, is #chapter, #hephaestus-core "Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412") { r_0032A09B51DFEE9C2FC70DCE4C
+For an interior point a, total differentiability of f:Rⁿ→R means there is a linear map L such that f(a+h)=f(a)+Lh+r(h), with |r(h)|/‖h‖→0 for h→0, h≠0. Define r(0)=0. For vector outputs use an output norm. The linear map is the derivative Df(a); it need not be an invertible map. Reuse [Read rectangular maps and the transpose through their dimensions](Read rectangular maps and the transpose through their dimensions.lingua#r_00DA69E3E3C8873C7D5F0CCB01) and [Use derivative information with explicit interval and error bounds](Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629).
+
+If two maps L₁,L₂ satisfy the definition, set h=tv for each fixed v. Dividing their difference by t and letting nonzero t→0 gives (L₁−L₂)v=0. Hence the derivative is unique. Taking v to be each coordinate basis vector shows that its entries, if it exists, are the partial derivatives. A finite linear map is bounded in the maximum norm by the largest absolute row sum, so Lh+r(h)→0: differentiability implies continuity.
+
+For a two-variable function with partial derivatives throughout a neighborhood and both partials continuous at (a,b), write the total increment as a horizontal increment at height b+k followed by the vertical increment at x=a. The mean value theorem makes these h f_x(a+θh,b+k)+k f_y(a,b+ηk), with suitable intermediate points. Subtract h f_x(a,b)+k f_y(a,b). Continuity makes each coefficient error arbitrarily small throughout a sufficiently small neighborhood; the remainder is then bounded by ε(|h|+|k|)≤2ερ. Zero h or k contributes zero directly. This proves a sufficient differentiability criterion; continuity of partials is not claimed necessary.
+
+For the study F at (a,b), D F(h,k)=(2ab+3)h+(a²+4b)k and the exact remainder is R=b h²+2a hk+2k²+h²k. It satisfies |R|≤(|b|+2|a|+2+ρ)ρ². Dividing by ρ proves differentiability. For separate limits |h|≤H,|k|≤K, use |R|≤|b|H²+2|a|HK+2K²+H²K. This is a bound on approximation error within the stated box, not a probability or a physical-model validation.
+
+At (1,2), h=1/10,k=−1/20 gives linear change 1/4, remainder 29/2000 and exact change 529/2000. The separate box H=1/10,K=1/20 gives the conservative bound 71/2000. Also R=½(h,k)H(a,b)(h,k)ᵀ+h²k here; this exact cubic identity does not require invoking an unproved general Taylor theorem.
+
+**Read and work:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 4.4. Derive each remainder term by expansion. Choose smaller H,K to guarantee a requested absolute error, checking the whole box. Keep input uncertainty, approximation error and physical discrepancy distinct. General higher-order Taylor theory remains later analysis.
+
+**Continue:** [Compose local maps and derive change along a path](Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0032A09B51DFEE9C2FC70DCE4C

@@ -1,0 +1,27 @@
+Import "../Computing.lingua"
+
+Trace mutation and sharing across a collection boundary (@computing-aliasing: 0, is #chapter, #hephaestus-core "Maintain-a-stable-ordering-without-losing-occurrences.lingua#r_06F37ABB974E19CF35EB730FCA") { r_0E243F4674D6A5A66298639599
+Reuse [Translate quantities into values, types, and expressions](../../inquiry/reproducible-computation/foundations/Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V) and [Functions, branching, repetition, and visible state](../../inquiry/reproducible-computation/foundations/Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF): a name refers to a value, and a function call can receive a reference to a mutable object. The question is what changes are visible to the caller. Trace this independently authored example before running it:
+
+```python
+a = [[1], [2]]
+b = a
+c = a.copy()
+a.append([3])
+a[0].append(9)
+```
+
+At the end a and b denote the same outer list, containing `[[1, 9], [2], [3]]`. The outer list c is different and contains `[[1, 9], [2]]`. Appending an outer member did not extend c; mutating the shared first inner list changed the value seen through both. Draw boxes for the two outer lists and arrows to their inner objects. Replacing `c[0]` and appending to `c[0]` are different operations. Equality of displayed values does not prove shared identity.
+
+Python assignment establishes a binding; a shallow copy creates a new outer collection while retaining references to its members. An immutable outer tuple can still refer to a mutable inner list. Consult [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ)'s copy reference when interpreting broad textbook statements about copies. Sundnes chapter 3.5 introduces slices; qualify independence claims by the depth at which mutation occurs. Copying everything recursively also has costs and may copy relationships that should remain shared. Choose the boundary deliberately.
+
+Our catalog accepts a list or tuple of two-item list/tuple rows. Each row must contain a nonempty exact string and an exact integer. It rejects Boolean payloads even though Python's Boolean type is an integer subtype. Normalization creates a tuple of new two-item tuples. Its string and integer members are immutable, so later changes to the caller's outer or inner lists cannot alter the normalized values. This claim relies on the accepted types; it would need revision if arbitrary user-defined objects or mutable payloads were admitted.
+
+The builder sorts a private list made from those normalized rows and returns an immutable tuple. It never sorts the caller's list in place. A lookup takes that prepared result unchanged. Immutability protects the ordering assumption against ordinary element mutation, but a caller can still pass the wrong object; a tuple is not proof that its rows are sorted. The prepared-lookup function therefore has a documented precondition. Validating every row and the entire order on every call would require a full traversal and change the cost claim. Encapsulating that invariant in a class or stronger type is useful later formation, not an invisible guarantee supplied by this example.
+
+**Work:** predict both outer-list replacement and inner-list mutation variants. Explain why returning a tuple of the caller's original mutable rows would fail our promise. Use [Specify inputs, results and failure before implementing](Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D) to separate validation at construction from the caller's obligation at lookup. Read the copy reference alongside the beginner exercises; neither a diagram nor one successful run proves correctness for all nested object graphs.
+
+**Continue:** [Maintain a stable ordering without losing occurrences](Maintain-a-stable-ordering-without-losing-occurrences.lingua#r_06F37ABB974E19CF35EB730FCA).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0E243F4674D6A5A66298639599

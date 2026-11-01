@@ -1,27 +1,48 @@
-Hephaestus — hard sciences and productive work (@hephaestus: 0, is #chapter, #making-and-maintenance "inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #making-and-maintenance "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #making-and-maintenance "materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D", #making-and-maintenance "utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX", #hephaestus "inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #hephaestus "chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0", #hephaestus "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #hephaestus "physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #part-of "../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1", #hephaestus "materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D", #hephaestus "utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX", #hephaestus "production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4", #making-and-maintenance "production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4") { r_00000000000000000000002001
-Within [Ergon — useful labor and productive knowledge](../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1), Hephaestus connects mathematics, hard sciences, engineering, computing and productive infrastructure. Pure theory belongs here as fully as its applications. [Gaia](../gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21) supplies connected Earth, life, food and health knowledge.
+Import "mathematics/Mathematics.lingua"
+Import "physics/Physics.lingua"
+Import "chemistry/Chemistry.lingua"
+Import "computer-science/Computing.lingua"
+Import "engineering/Engineering.lingua"
+Import "inquiry/Inquiry.lingua"
 
-Choose an existing entrance and follow the question that interests you:
+Hephaestus — hard sciences and productive work (@hephaestus: 0, is #chapter, #hephaestus "mathematics/Mathematics.lingua#r_0BDE857C410434BA79D017008C", #hephaestus "physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #hephaestus "chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0", #hephaestus "computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641", #hephaestus "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #hephaestus "inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #hephaestus-core "mathematics/Mathematics.lingua#r_0BDE857C410434BA79D017008C", #hephaestus-core "physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #hephaestus-core "chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0", #hephaestus-core "computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641", #hephaestus-core "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #hephaestus-core "inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #contains "mathematics/Mathematics.lingua#r_0BDE857C410434BA79D017008C", #contains "physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #contains "chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0", #contains "computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641", #contains "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #contains "inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB") { r_00000000000000000000002001
+Within Ergon, Hephaestus develops the hard sciences and the engineering and computing knowledge needed to understand, reproduce and sustain modern technical systems. Begin from ordinary questions and explicit quantities, then deepen into theory, practical work, critical scholarship and independent research. [Gaia](../gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21) supplies connected Earth, life, food and health knowledge.
 
-- [Inquiry](inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB): quantitative literacy, measurement and reproducible computation.
-- [Physics](physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W): electromagnetism, thermodynamics, heat transfer and fluid dynamics.
-- [Chemistry](chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0): general and industrial chemistry.
-- [Engineering](engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68): mining/mineral engineering, electrical power engineering and mechanical engineering, from foundations through machine design, construction, measurement, continuing service and independent research. Materials engineering develops observations and structure, equilibrium and kinetics, material families, mechanical/functional behavior, fabrication/state control, degradation, selection, service, recovery and life-cycle comparisons. Multiscale models, measurement inference, integrated process-to-service investigations and independent research deepen the full materials formation.
-- [Resources and materials](materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D): metallurgical production and chemical feedstock/supply systems.
-- [Utilities](utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX): water and sanitation, from sources through treatment, distribution, wastewater, industrial reuse and continuing service. Industrial gases and vacuum develop production, purity, pumps, surfaces, delivery, measurement, operation and recovery through independent research.
-- [Production and quality](production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4): clean manufacturing, from useful function and unwanted material to sampling, measurement, particle transport and collection, adhesion, wetting, surface storage, contamination chemistry, cleaning, rinsing and preservation. Facility material develops layout, airflow, filtration, pressure, transfers, utilities and control. Aerosol measurement connects sampling, instrument response, calibration and inference. Surface measurement, qualification and monitoring connect imaging, chemical evidence, operating domains, acceptance sampling and change detection. Inspectable calculations and twenty-four investigations connect the concepts. Manufacturing and continuing-service studies remain in development, with a sensitive-data TODO recorded for specialist microbial laboratory methods.
+Choose one of six broad areas. Each begins with a common introductory lesson; its full core and major branches are being developed before further specialist extensions.
 
-For an existing introduction to circuits, controllers and connected devices, read [Basic electronics](computer-science/Basic%20Eletronics.lingua). [Reproducible computational work](inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) provides a connected programming and investigation foundation. The wider computing subjects remain in the development register.
+- [Mathematics — quantity, structure, space, change and proof](mathematics/Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+- [Physics — matter, motion, fields and physical evidence](physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+- [Chemistry — substances, structure and transformations](chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+- [Computing — representation, algorithms and working systems](computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641).
+- [Engineering — useful systems from design through continuing service](engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+- [Scientific inquiry and practice — questions, evidence and shared knowledge](inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
 
-Follow materials, energy, equipment, information, skills, transport and maintenance across these branches. Reuse specific Records as their ideas become useful; a connection does not require completing every neighbouring subject. Questions about explanation, evidence and purpose return to [Philosophy](../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001).
+Engineering contains production, materials, utilities, facilities, logistics, maintenance and recovery. Clean manufacturing belongs within production engineering. Astronomy and astrophysics belong within physics. Shared quantitative and investigative methods remain reusable across every area.
 
-[Hephaestus development register](../../lince/Trails.lingua#r_B6CB9BDC51A6B67584422A89AE) contains the full remaining scope, including mathematics, space, computing, production, logistics and facilities. Subject directories belong beneath their field homes. Books, articles, software and media are referenced through their sources.
+Development proceeds outward in successive passes: establish the six area cores, develop their major branches across the tree, then deepen specialized subjects. A core must teach and support substantive work; an entrance or list of topics does not complete it. Each trail ultimately runs from an accessible beginning through advanced academic and practical formation. Existing specialist work remains available and retains its scope and identities.
 
+Use the opening lessons to understand the shared questions of each area. Return to existing specialist material when a particular problem needs it, and follow the linked foundations where preparation is missing.
+
+**Trail authoring:** [Trails](../../lince/Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+
+**Parent:** [Ergon](../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1).
+
+**Scope:** This is the home of the former STEM hard-science plans: mathematics, physics, chemistry, engineering, computing, astronomy, materials, energy, manufacturing, logistics, facilities, and maintenance, with shared inquiry and learning methods. Start from [Hephaestus](Hephaestus.lingua). Develop each subject in a descriptive subdirectory beneath its field directory. Pure theory belongs here as fully as its applications; immediate industrial usefulness is not a requirement.
+
+**Branches:**
+
+- [Mathematics — quantity, structure, space, change and proof](mathematics/Mathematics.lingua#r_0BDE857C410434BA79D017008C)
+- [Physics — fields, matter, motion and physical evidence](physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W)
+- [Chemistry — substances, transformations, and evidence](chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0)
+- [Computing — representation, algorithms and working systems](computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641)
+- [Engineering — systems, design, construction, and operation](engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68)
+- [Scientific inquiry and practice — questions, evidence and shared knowledge](inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB)
 } r_00000000000000000000002001
 
 Extension @hephaestus "lince.vocabulary" {
     definitions {
-        hephaestus "A continuation through mathematics, hard sciences, engineering, production and maintenance."
+        hephaestus "A continuation into one of the six broad areas of hard science, engineering, computing and shared inquiry."
+        hephaestus-core "A continuation through the shared opening formation of the six Hephaestus areas."
         making-and-maintenance "A continuation into knowledge and practical examples for producing and maintaining useful things."
     }
 }

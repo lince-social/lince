@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Keep conditional state change separate from discarded and coherent alternatives (@physics-quantum-measurement: 0, is #chapter, #hephaestus-core "Describe-preparation-mixtures-and-lost-coherence-with-finite-density-matrices.lingua#r_00A61A36241CEC41AC1100D5A5") { r_001C98D3B17DDB7F3851FF3463
+The outcome probabilities do not by themselves specify what an apparatus leaves behind. For the ideal projective instrument used here, obtaining outcome j with pⱼ>0 leaves the conditional state Pⱼψ/sqrt(pⱼ). This additional state-update rule predicts repeatability for an immediate identical measurement with no intervening evolution. Real instruments can destroy the system or implement other state changes even when their outcome probabilities agree. A zero-probability outcome has no conditional state under this model.
+
+Reconstruct the bounded analyzer example in MIT note 2, Figure 5 and printed pages 5–7. Start after a z-plus preparation. An x analyzer produces plus/minus with probabilities one-half. The source's last arrangement blocks x-plus and retains x-minus. The next z analyzer gives plus/minus with conditional probabilities one-half each among survivors. Relative to the beam entering the x analyzer, each final z output has probability one-quarter, and one-half was rejected. If an earlier unpolarized beam supplied the initial z-plus filter, that preparation's acceptance adds another factor; do not change the denominator silently.
+
+Now compare three operations. Keeping only x-minus gives a conditional pure state and loses half this input. Measuring x but forgetting its result retains an ensemble of both conditional states. Coherently splitting and recombining amplitudes with the original relative phase is a different controlled transformation; in the ideal mathematical model Pₓ+ + Pₓ−=I, so it can restore the original state. Physically achieving that coherent operation requires preserving and controlling the path/environment information. Summing two recorded outcome counts cannot restore discarded phase information.
+
+For a sequence retaining outcomes P and then Q, the joint probability from the original pure input is ||QPψ||². If the first probability is nonzero this equals p(P) times the conditional probability of Q. Exchanging P and Q can change the result. This is an ordered measurement process, not conditioning on two pre-existing classical labels. The ordinary conditional probability identity still applies to the actual sequence of records; the physical state update determines its probabilities.
+
+**Work:** reproduce the source's minus-selection sequence using exact unnormalized vectors, report both survivor and original-input denominators, and compare a changed intermediate axis. Give separate predictions for postselection, forgotten measurement and ideal coherent recombination. Identify what physical evidence distinguishes those operations. Reuse [Condition on information without assuming independence](../../inquiry/core/Condition-on-information-without-assuming-independence.lingua#r_07DA2E41CFC98507FD5297EA72) for probability bookkeeping without replacing quantum state evolution by an unsupported classical hidden-label assumption.
+
+**Continue:** [Describe preparation mixtures and lost coherence with finite density matrices](Describe-preparation-mixtures-and-lost-coherence-with-finite-density-matrices.lingua#r_00A61A36241CEC41AC1100D5A5).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_001C98D3B17DDB7F3851FF3463

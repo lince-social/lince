@@ -1,0 +1,7 @@
+Quantum information science (@quantum-information-science: 0, is #chapter, #outline) { r_6XAN2RY6M9Z21MB8AYGKGBA08R
+Quantum information science studies information encoded in quantum systems and the operations performed on it. This material connects entanglement, communication, computation, sensing, error correction, and physical implementations, explaining theoretical capabilities alongside noise, control, and practical resource requirements.
+
+**Common preparation developed:** the [composite-state lesson](../core/Introduce-composite-states-and-separate-entanglement-from-a-classical-correlation.lingua) defines the finite tensor coordinates it uses, joint outcome laws, a bounded Bell-state reconstruction and a comparison with a classical mixture under changed settings. Quantum-information protocols, general entanglement theory, error correction and physical implementations remain branch work.
+
+**Parent:** [Physics — fields, matter, motion and physical evidence](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_6XAN2RY6M9Z21MB8AYGKGBA08R

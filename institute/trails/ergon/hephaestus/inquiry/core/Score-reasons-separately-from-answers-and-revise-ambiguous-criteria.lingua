@@ -1,0 +1,26 @@
+Import "../Inquiry.lingua"
+
+Score reasons separately from answers and revise ambiguous criteria (@inquiry-learning-scoring: 0, is #chapter, #hephaestus-core "Compare-learning-arrangements-without-confusing-practice-with-evidence-of-an-effect.lingua#r_0045A77E6ECD510BD893851188") { r_009149C37E000E70167C72EC5A
+A scoring rule records a judgment under stated criteria. It should preserve the evidence needed to inspect that judgment. For each scheduling case use three separate binary criteria: N, the maximum-output number is correct; W, a valid schedule attains the claimed output; and B, a valid upper-bound or impossibility argument proves no larger output is possible. Record the vector (N,W,B) with the response and assistance. For a zero claim, doing nothing is a feasible witness W but supplies no impossibility proof B. A false or contradictory argument does not earn B merely because it mentions capacity.
+
+For case D, compare these invented responses:
+
+| Response | N | W | B | Interpretation of the evidence |
+| --- | --- | --- | --- | --- |
+| “One.” | 1 | 0 | 0 | Correct number; method unobserved |
+| “One: A:J at 0, B:J at 1; two are impossible because only B at 1 can follow any A.” | 1 | 1 | 1 | Witness and bound establish the optimum in this model |
+| “One: A:J at 0, B:J at 1; dividing the two A slots by two proves the limit.” | 1 | 1 | 0 | Valid witness; invalid bound because a completed AB job needs one A slot |
+| “Two: A:J and B:J at 0; A:K and B:K at 1.” | 0 | 0 | 0 | Same-slot chaining violates the declared rule |
+
+A total of two points hides the difference between (1,1,0) and (1,0,1): one has a construction without a bound, the other a bound without an exhibited construction. A total is convenient for some summaries but discards this distinction. For this investigation, evidence for independent mastery requires valid reasoning on contrasting cases and the transfer task, under recorded unaided conditions. This is a local assessment criterion, not a calibrated threshold for an entire discipline.
+
+Have two reviewers score the same deidentified response set independently, retain both judgments and reconcile disagreements against the actual work. A disagreement about whether “the last B is too early” earns B may expose insufficiently explicit criteria. Clarify what ordering fact must be stated or demonstrated, then rescore all affected responses and retain the earlier version. Consensus after discussion is not the original independent agreement.
+
+Correlation is not agreement. In a constructed example one scorer assigns (0,1,2,3) and another (1,2,3,4). Centering removes the constant offset, giving Pearson correlation 1, while their exact scores disagree on all four responses. A consistently applied answer-only rule can likewise be reproducible while missing the capability of explaining a bound. Consistency alone cannot repair a mismatch between the target and the task.
+
+**Work:** score the four responses before inspecting the table. Add an equivalent spoken or drawn proof and a superficially polished but invalid proof. State what the rubric should accept independently of presentation style. Explain when timing or fluency is actually part of the target. Propose a criterion revision and trace its effect through every affected score, following [Review reporting criticism and the limits of reproduced evidence](Review-reporting-criticism-and-the-limits-of-reproduced-evidence.lingua#r_00938E8A05E83C0B28227241FA).
+
+**Continue:** [Compare learning arrangements without confusing practice with evidence of an effect](Compare-learning-arrangements-without-confusing-practice-with-evidence-of-an-effect.lingua#r_0045A77E6ECD510BD893851188).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_009149C37E000E70167C72EC5A

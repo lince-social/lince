@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+State what a mathematical claim says about its objects (@math-quantified-claims: 0, is #chapter, #hephaestus-core "Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A") { r_096B0C0E0744E81B6D17247FEA
+Mathematical statements need a specified universe of objects. “x is positive” leaves x free. “Every integer x is positive” is a complete claim and is false. “There exists a positive integer” is true. The words every and exists change what evidence must establish.
+
+Use ∀ for “for every” and ∃ for “there exists.” Over integers, ∀x ∃y such that y > x is true: for any chosen x, choose y = x + 1. Reversing the quantifiers gives ∃y ∀x such that y > x, which is false: given a proposed y, choose x = y. The first permits the answer y to depend on x; the second requires one answer to work for all x. Mathematical statements about approximation, algorithms and bounds often depend on precisely this distinction.
+
+The negation of “every inspected item meets the tolerance” is “at least one inspected item does not meet the tolerance,” not “every inspected item fails.” A universal claim needs a proof covering every allowed case; one counterexample defeats it. An existence claim needs at least one valid witness, while denying existence requires excluding every allowed candidate. A finite table can exhaust a finite domain, but a long finite table cannot exhaust the integers.
+
+For an elementary counterexample, the claim “if a real number has a positive square, it is positive” fails at −2. Its converse, “if a real number is positive, its square is positive,” holds by multiplication of positive numbers. Naming the assumption and conclusion helps distinguish these directions. Evidence supporting one direction does not establish the other.
+
+**Read:** [Book of Proof](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 2, especially the sections on quantifiers and negation. The explanations and examples here are independently written; the source develops a fuller logical language than this opening lesson.
+
+**Work:** write a claim about all values in the finite list −2, 0, 3, and another about all integers. State each negation and show what would establish or refute it. Compare “each task has some completion time” with “one time bounds the completion of every task.” Specify the task population and whether the bound can depend on the task.
+
+**Check:** translate your symbolic claims back into ordinary language. State which variable may depend on which other variable and whether your evidence is a witness, a counterexample, exhaustive checking or a general argument.
+
+**Continue:** [Build a proof from definitions and preserved assumptions](Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_096B0C0E0744E81B6D17247FEA

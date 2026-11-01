@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Let an unfamiliar reader test the reconstruction and the claim (@rc-review: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "../research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS") { r_64PY9JV0XV95ZA0SE54TYNBQWN
+Let an unfamiliar reader test the reconstruction and the claim (@rc-review: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "../research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS", #hephaestus-core "../../core/Review-reporting-criticism-and-the-limits-of-reproduced-evidence.lingua#r_00938E8A05E83C0B28227241FA") { r_64PY9JV0XV95ZA0SE54TYNBQWN
 **Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the whole article after the practical reconstruction; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), the whole article after the practical reconstruction; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Code Reviewing Process and research compendia.
 
 An independent reconstruction review starts from the published artifacts and instructions, with the author's implicit knowledge withheld. The reviewer records the entry point, obtained versions, environment procedure, exact attempted commands, checks, discrepancies, and any assistance required. A successful run should be accompanied by the comparison that establishes the particular reproduction claim.
@@ -16,4 +16,9 @@ Read the full practices and rules papers again, comparing their recommendations 
 **Continue:** [Sustained project — reconstructible material accounting and calibration](../research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Sixth inquiry-block reading:** Use the distinction between executing a package and challenging its scientific argument. The new constructed critic exchange and automated self-restoration are identified as author teaching work. An unfamiliar external reviewer and independent observations remain learner assignments; none were performed or contacted during authoring. Preserve the full original review task and specialist continuation.
+
+**Continue in the sixth inquiry block:** [Review reporting criticism and the limits of reproduced evidence](../../core/Review-reporting-criticism-and-the-limits-of-reproduced-evidence.lingua#r_00938E8A05E83C0B28227241FA).
+
 } r_64PY9JV0XV95ZA0SE54TYNBQWN

@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Account for data purpose exposure retention and recovery together (@computing-trust-privacy: 0, is #chapter, #hephaestus-core "Evaluate-task-evidence-without-treating-a-model-as-observed-usability.lingua#r_00702DC8214B4953486BC85FE3") { r_009E3580D265E2CF048AF92903
+Begin with the person's task and the data actions it needs. Recording a simulated addition requires an object, operation identity, amount and result. A personal note, contact detail or fine-grained activity history may serve a different purpose. Adding those fields changes who can learn what, how long the information persists and what a later use can infer. Privacy is not a single flag attached to a correct computation.
+
+[NIST Privacy Framework version 1.0 data actions and risk](../sources/NIST-Privacy-Framework-version-1.0-data-actions-and-risk.lingua#r_00F81336B2F197F93A060F1A81) distinguishes privacy risk from cybersecurity incidents and follows data through its life cycle. Use its selected passage to criticize the claim that a service is private whenever outsiders cannot read its database. Our original example can expose a participant's activity through a perfectly authorized report. Access controls address part of that problem; deciding whether to collect, infer or retain the information addresses another part.
+
+Draw the data path: local proposal, retained client request, server's latest receipt, in-flight reply, displayed receipt and any exported report. At each point name the purpose, audience, retention boundary and possible inference. The finite receipt projection keeps only object, identity, amount and total from an internally valid row. Varying a personal name or note does not change its output. This is a field-selection property, not anonymization: the remaining fields may link events, and an observer with other information may infer who acted. It also says nothing about copies elsewhere.
+
+Retention and recovery interact. The existing ledger keeps its last identity and amount to recognize a retry. Deleting that record while reopening the same identity namespace can turn a delayed old request into a new accepted operation. Resetting the tuple to zero is not a valid deletion protocol for a continuing service. A design might preserve minimal deduplication evidence for a defined horizon, retire the namespace and reject old messages, or establish a stronger coordinated closing protocol. Each changes assumptions and requires evidence. Merely renaming the erase button does not solve the conflict. Conversely, retaining every personal note forever is not required by the tuple's small recovery contract.
+
+Separate deleting a display entry, deleting primary data, expiring replicas and backups, and eliminating future linkability. They are different operations. A promise to delete should specify which copies and derived data it concerns, its timing, how recovery interacts with it, and how completion will be evidenced. No legal compliance claim follows from the toy ledger or the voluntary source framework.
+
+**Work:** compare retaining the full input row, retaining the four-field receipt and retiring a finished namespace under explicit assumptions. State what each supports, exposes and cannot recover. Demonstrate the delayed-request counterexample after an unsafe reset. Propose a revised purpose/retention account, identify the participants whose views are missing and explain which technical and organizational checks would be needed before using it.
+
+**Continue:** [Evaluate task evidence without treating a model as observed usability](Evaluate-task-evidence-without-treating-a-model-as-observed-usability.lingua#r_00702DC8214B4953486BC85FE3).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_009E3580D265E2CF048AF92903

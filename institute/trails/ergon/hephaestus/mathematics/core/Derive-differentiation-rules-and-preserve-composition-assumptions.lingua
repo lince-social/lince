@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Derive differentiation rules and preserve composition assumptions (@math-derivative-rules: 0, is #chapter, #hephaestus-core "Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629") { r_0FCCEC518E4158271D78D0E3DA
+Derivative rules save repeated limiting arguments only when their hypotheses hold. If f and g are differentiable at a and c is a constant, splitting a difference quotient and using finite limit laws gives (f+g)′(a)=f′(a)+g′(a) and (cf)′(a)=cf′(a). For a product, add and subtract f(a+h)g(a): its quotient becomes f(a+h)[g(a+h)−g(a)]/h+g(a)[f(a+h)−f(a)]/h. Differentiability gives f(a+h)→f(a), hence (fg)′=fg′+gf′. Multiplying the two derivatives would describe a different expression.
+
+Repeatedly applying the product rule yields (xⁿ)′=nx^(n−1) for positive integers n: the case n=1 is immediate, and the step from n to n+1 differentiates xⁿ·x. A constant has derivative zero. This proves the finite polynomial rule without assuming a power formula for arbitrary real exponents. Negative/fractional exponents, logarithms and trigonometric functions need additional domain and limit arguments later; the current examples do not silently establish them.
+
+Composition requires the outer function to be differentiable at the inner value. Suppose g is differentiable at a, let b=g(a), and suppose f is differentiable near b. Define e(k)=[f(b+k)−f(b)]/k−f′(b) when k≠0 and e(0)=0. Then e(k)→0 and f(b+k)−f(b)=k[f′(b)+e(k)] for all small k, including zero. Put k=g(a+h)−g(a). Continuity of g gives k→0, and division by h≠0 gives the composite quotient as (k/h)[f′(b)+e(k)]. Its limit is g′(a)f′(b). This argument covers increments for which the inner function does not change; dividing directly by k would exclude them.
+
+For f(u)=u³ and g(x)=2x−1, the derivative of (2x−1)³ is 6(2x−1)². Expansion into 8x³−12x²+6x−1 gives the same result, 24x²−24x+6. Use those independent forms to check the algebra. If g is constant, its derivative is zero and the composite is constant; the proof still works even though k is always zero. Notation resembling cancellation of differentials can help remember the chain rule, but the limiting argument supplies its justification.
+
+**Read and compare:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 sections 3.3 and 3.6. The source labels its displayed chain-rule proof informal and temporarily assumes a nonzero inner change. Explain how the remainder definition above handles that omitted case. Work polynomial sums, products and compositions first; retain the broader source exercises for their actual prerequisite stage.
+
+**Practice:** differentiate (x²+1)(3x−2) by expansion and by the product rule. Differentiate (x²+1)³ by expansion and composition. State the domain and units of each inner/outer function before applying a physical model. Give an example with an absolute-value corner where the proposed differentiability hypotheses fail. An identity proved on a domain does not authorize crossing a singularity or a piecewise boundary.
+
+**Continue:** [Use derivative information with explicit interval and error bounds](Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0FCCEC518E4158271D78D0E3DA

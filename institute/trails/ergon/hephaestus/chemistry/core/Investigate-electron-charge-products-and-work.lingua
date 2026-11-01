@@ -1,0 +1,253 @@
+Import "../Chemistry.lingua"
+
+Investigate what electrical and product records can identify (@chemistry-electron-study: 0, is #chapter, #hephaestus-core "Review-electron-charge-products-and-work.lingua#r_0072FD178E3BC3AAC82E035558") { r_00B3E33BAA2CE03EF3C2A5F8BA
+**Question:** what can charge, voltage and collected-product records establish about a reaction? This is an original aggregate accounting investigation. The chemical identities are ordinary Cu²⁺/Cu, Fe³⁺/Fe²⁺ and Zn/Zn²⁺. Their rates, interface response and terminal record are stipulated. No electrolyte, apparatus, operating recipe, product selectivity or physical feasibility is specified or established.
+
+Use n*=1 μmol and species order (Cu²⁺,Cu,Fe³⁺,Fe²⁺,Zn,Zn²⁺,X⁻). Initial amounts in n* units are (3,0,4,0,5,0,18). X⁻ is a conserved monovalent spectator. Initial Cu, Fe and Zn totals are 3,4,5; total chemical charge is 2×3+3×4−18=0. Use the two reaction columns derived in [Derive half reactions with independent atom and charge constraints](Half-reactions-and-independent-constraints.lingua#r_0065DB67DBA11A4144121CA5FD). Let x and y denote extents divided by n*.
+
+**Derive the trajectory.** On 0≤τ≤2 prescribe dx/dτ=(1+τ)/4, dy/dτ=3(1+τ)/8, ds/dτ=(1+τ)/8, with x=y=s=0 initially. If g(τ)=τ+τ²/2, integration gives x=g/4, y=3g/8, s=g/8. Their electron-equivalent sum 2x+y+s=g has derivative 1+τ. Since g grows from 0 to 4, every extent is nonnegative and every reactant stock decreases monotonically to a nonnegative endpoint. This proves stock admissibility throughout the interval, rather than checking only its end.
+
+At τ=2, (x,y,s)=(1,3/2,1/2). Final amounts are (2,1,5/2,3/2,13/4,7/4,18). Verify all three element totals and chemical charge independently. Zn consumption 7/4 gives 7/2 electron-equivalent units; the two accepting reactions consume 2+3/2=7/2. External transfer is 4; the remaining 1/2 is the explicitly paired surface-charge change explained in [Keep electrode reactions ionic transport and charge storage separate](Cell-boundaries-transport-and-storage.lingua#r_004C91BC24CBBFB3B68858E025). This is an aggregate balance, not a solved ionic-transport field.
+
+**Connect observations.** Set recovery r=3/4, giving c=3/4 and uncollected copper 1/4. Reproduce every denominator in [Separate conversion charge allocation collection and purity](Reaction-products-collection-and-evidence.lingua#r_009C72EF3E678A04900EC544DA). Then hide x,y,r and derive the complete feasible interval from N,s,c and the initial stocks. Draw the interval of feasible x values and its corresponding y and r. Add the independent y=3/2 observation and solve the two linear equations. The shared elimination program from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) is reused, not copied into a second implementation. Direct scalar algebra provides the independent check.
+
+**Connect energy.** Use the time-varying terminal record from [Integrate terminal work without assuming a reversible cell](Terminal-work-and-chemical-energy-questions.lingua#r_00209B14724D4B97F9739006A6). Recover 17/6 energy units by polynomial integration and independently by Simpson's quadratic-exact rule. Check the discrepancy from multiplying means. Add the independently stipulated ΔU only for the conditional first-law calculation. Do not infer a thermodynamic cell potential, heat or interface energy from the current record alone.
+
+**Executable reconstruction.** Save the two programs below and the unchanged `linear_space_study.py` from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) into one directory. Use Python 3.14 through the established Nix environment. Run `python3 redox_study.py` to inspect the account and `python3 redox_checks.py` for verification. Inputs are integers or exact fractions; the main program rejects floats, booleans, negative stocks and inconsistent observation domains. All amounts are normalized by n*, apart from explicitly named coulomb/joule outputs. The polynomial helpers perform exact algebra; they do not establish physical admissibility of arbitrary traces.
+
+The companion checks conserved totals and electron donation/acceptance independently of the stoichiometric matrix, compares exact integration with a separately written Simpson rule, compares the shared linear solver with scalar inversion, and enumerates a finite quarter-unit grid to check feasible intervals. Every interval endpoint in that enumeration lies on the chosen grid, so it is a valid independent check for those cases; the symbolic inequality argument establishes the general result. Finite tests support implementation, not the truth of an unmeasured device model.
+
+
+```python file=redox_study.py
+from fractions import Fraction as F
+from linear_space_study import eliminate
+
+AVOGADRO = 602214076 * 10**15
+ELEMENTARY_CHARGE = F(1602176634, 10**28)
+FARADAY = AVOGADRO * ELEMENTARY_CHARGE
+AMOUNT_UNIT = F(1, 10**6)
+INITIAL = (F(3), F(0), F(4), F(0), F(5), F(0), F(18))
+STOICH = ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -F(1, 2)), (1, F(1, 2)), (0, 0))
+
+
+def exact(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)):
+        raise ValueError('Use exact integers or fractions')
+    return F(value)
+
+
+def integral(coefficients, start, stop):
+    coefficients = tuple(exact(v) for v in coefficients)
+    start, stop = exact(start), exact(stop)
+    if not coefficients or stop < start:
+        raise ValueError('Require a polynomial and an ordered interval')
+    return sum((c * (stop**(k + 1) - start**(k + 1)) / (k + 1)
+                for k, c in enumerate(coefficients)), F(0))
+
+
+def multiply(left, right):
+    left, right = tuple(map(exact, left)), tuple(map(exact, right))
+    if not left or not right:
+        raise ValueError('Require nonempty polynomials')
+    result = [F(0)] * (len(left) + len(right) - 1)
+    for i, a in enumerate(left):
+        for j, b in enumerate(right):
+            result[i + j] += a * b
+    return tuple(result)
+
+
+def account(x, y, stored, recovery):
+    x, y, stored, recovery = map(exact, (x, y, stored, recovery))
+    if min(x, y, stored, recovery) < 0 or recovery > 1:
+        raise ValueError('Require nonnegative channels and recovery in [0,1]')
+    final = tuple(n + a*x + b*y for n, (a, b) in zip(INITIAL, STOICH))
+    if min(final) < 0:
+        raise ValueError('A species stock would be negative')
+    reacted = 2*x + y
+    total = reacted + stored
+    collected = recovery*x
+    fractions = None if total == 0 else (2*x/total, y/total, stored/total)
+    faradaic = None if reacted == 0 else (2*x/reacted, y/reacted)
+    return {'final': final, 'reacted': reacted, 'total': total,
+            'collected': collected, 'uncollected': x-collected,
+            'fractions': fractions, 'faradaic': faradaic,
+            'conversion': x/3,
+            'collected_equivalent': None if total == 0 else 2*collected/total,
+            'charge_C': FARADAY*AMOUNT_UNIT*total,
+            'surface_charges_C': (FARADAY*AMOUNT_UNIT*stored, -FARADAY*AMOUNT_UNIT*stored)}
+
+
+def feasible_interval(total, stored, collected):
+    total, stored, collected = map(exact, (total, stored, collected))
+    if min(total, stored, collected) < 0 or stored > total:
+        raise ValueError('Inconsistent nonnegative charge or collection account')
+    reacted = total-stored
+    lower = max(F(0), (reacted-4)/2, collected)
+    upper = min(F(3), reacted/2)
+    if reacted/2 > 5 or lower > upper:
+        raise ValueError('No stock-compatible reaction amounts')
+    return lower, upper
+
+
+def infer(total, stored, collected, measured_iron):
+    total, stored, collected, measured_iron = map(exact, (total, stored, collected, measured_iron))
+    lower, upper = feasible_interval(total, stored, collected)
+    solution = eliminate(((2, 1), (0, 1)), (total-stored, measured_iron))
+    x, y = solution['particular']
+    if x < lower or x > upper or y < 0 or y > 4:
+        raise ValueError('Independent chemical observation contradicts the model')
+    recovery = None if x == 0 else collected/x
+    return x, y, recovery
+
+
+def study():
+    result = account(1, F(3, 2), F(1, 2), F(3, 4))
+    current, voltage = (F(1), F(1)), (F(1), -F(1, 4))
+    total = integral(current, 0, 2)
+    work = integral(multiply(current, voltage), 0, 2)
+    return {'account': result, 'integrated_total': total,
+            'work_units': work, 'work_J': work*FARADAY*AMOUNT_UNIT,
+            'product_of_means_work': integral(current, 0, 2)*integral(voltage, 0, 2)/2,
+            'conditional_heat_in_units': -4+work,
+            'interval': feasible_interval(4, F(1, 2), F(3, 4)),
+            'identified': infer(4, F(1, 2), F(3, 4), F(3, 2))}
+
+
+if __name__ == '__main__':
+    print(study())
+```
+
+```python file=redox_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+from redox_study import FARADAY, AMOUNT_UNIT, account, feasible_interval, infer, integral, multiply, study
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    if not condition:
+        raise AssertionError(checks)
+
+
+def rejects(function, *args):
+    try:
+        function(*args)
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def atom_charge_sum(terms):
+    species = {'FeOH3': (0, 1, 3, 3, 0), 'H': (0, 0, 0, 1, 1),
+               'e': (0, 0, 0, 0, -1), 'Fe2': (0, 1, 0, 0, 2),
+               'Fe3': (0, 1, 0, 0, 3), 'water': (0, 0, 1, 2, 0),
+               'OH': (0, 0, 1, 1, -1)}
+    return tuple(sum(coefficient*species[name][i] for name, coefficient in terms.items()) for i in range(5))
+
+
+def simpson(left, right, start, stop):
+    value = lambda t: (left[0]+left[1]*t)*(right[0]+right[1]*t)
+    middle = (start+stop)/2
+    return (stop-start)*(value(start)+4*value(middle)+value(stop))/6
+
+
+check(FARADAY == F('96485.3321233100184'))
+check(atom_charge_sum({'FeOH3': -1, 'H': -3, 'e': -1, 'Fe2': 1, 'water': 3}) == (0,)*5)
+check(atom_charge_sum({'FeOH3': -1, 'e': -1, 'Fe2': 1, 'OH': 3}) == (0,)*5)
+check(atom_charge_sum({'FeOH3': -1, 'H': -3, 'Fe3': 1, 'water': 3}) == (0,)*5)
+case = study()
+a = case['account']
+check(a['final'] == (2, 1, F(5, 2), F(3, 2), F(13, 4), F(7, 4), 18))
+check(a['fractions'] == (F(1, 2), F(3, 8), F(1, 8)))
+check(a['faradaic'] == (F(4, 7), F(3, 7)))
+check(a['collected_equivalent'] == F(3, 8))
+check(case['work_units'] == F(17, 6))
+check(case['product_of_means_work'] == 3)
+check(case['conditional_heat_in_units'] == -F(7, 6))
+check(case['identified'] == (1, F(3, 2), F(3, 4)))
+check(case['interval'] == (F(3, 4), F(7, 4)))
+check(case['integrated_total'] == 4)
+check(F(3)/(3-2) == 3)
+check(account(0, 0, 0, 1)['fractions'] is None)
+check(account(0, 0, 1, 1)['faradaic'] is None)
+check(infer(0, 0, 0, 0) == (0, 0, None))
+ledger_cases = 0
+for x, y, s, r in product((F(0), F(1, 2), F(1), F(3, 2), F(2), F(3)),
+                           (F(0), F(1, 2), F(1), F(2), F(4)),
+                           (F(0), F(1, 4), F(1, 2)),
+                           (F(0), F(1, 2), F(3, 4), F(1))):
+    a = account(x, y, s, r)
+    final = a['final']
+    check(final[0]+final[1] == 3)
+    check(final[2]+final[3] == 4)
+    check(final[4]+final[5] == 5)
+    check(2*final[0]+3*final[2]+2*final[3]+2*final[5]-final[6] == 0)
+    check(final[0]+a['collected']+a['uncollected'] == 3)
+    check(a['charge_C'] == (2*x+y+s)*FARADAY*AMOUNT_UNIT)
+    check(sum(a['surface_charges_C']) == 0)
+    donor_electrons = 2*(5-final[4])
+    acceptor_electrons = 2*final[1]+final[3]
+    check(donor_electrons == acceptor_electrons == a['reacted'])
+    integer_fe_extent = y/2
+    check(final[5] == x+integer_fe_extent)
+    if a['fractions'] is not None:
+        check(sum(a['fractions']) == 1)
+    if a['faradaic'] is not None:
+        check(sum(a['faradaic']) == 1)
+    lo, hi = feasible_interval(a['total'], s, a['collected'])
+    check(lo <= x <= hi)
+    found = infer(a['total'], s, a['collected'], y)
+    check(found == (x, y, None if x == 0 else r))
+    check(found[0] == (a['total']-s-y)/2)
+    ledger_cases += 1
+integral_cases = 0
+for c0, c1, v0, v1, duration in product((F(0), F(1), F(2)), (F(-1), F(0), F(1)),
+                                       (F(-1), F(1), F(2)), (F(-1, 4), F(0), F(1, 2)),
+                                       (F(1, 2), F(1), F(2))):
+    current, voltage = (c0, c1), (v0, v1)
+    check(integral(multiply(current, voltage), 0, duration) == simpson(current, voltage, F(0), duration))
+    check(integral(current, 0, duration) == duration*(c0+c0+c1*duration)/2)
+    integral_cases += 1
+interval_cases = 0
+for h, c in product((F(k, 2) for k in range(23)), (F(k, 4) for k in range(17))):
+    candidates = [F(k, 4) for k in range(13) if 0 <= h-2*F(k, 4) <= 4 and h/2 <= 5 and F(k, 4) >= c]
+    if candidates:
+        lo, hi = feasible_interval(h+F(1, 2), F(1, 2), c)
+        check((lo, hi) == (min(candidates), max(candidates)))
+        for x in (lo, (lo+hi)/2, hi):
+            a = account(x, h-2*x, F(1, 2), 0 if x == 0 else c/x)
+            check(a['collected'] == c and a['total'] == h+F(1, 2))
+    else:
+        rejects(feasible_interval, h+F(1, 2), F(1, 2), c)
+    interval_cases += 1
+for x in (F(3, 4), F(7, 4)):
+    rival = account(x, F(7, 2)-2*x, F(1, 2), F(3, 4)/x)
+    check(rival['total'] == 4 and rival['collected'] == F(3, 4))
+for args in ((-1, 0, 0, 1), (4, 0, 0, 1), (0, 5, 0, 1), (0, 0, -1, 1),
+             (0, 0, 0, 2), (True, 0, 0, 1), (0.1, 0, 0, 1)):
+    rejects(account, *args)
+for args in ((1, 2, 0), (-1, 0, 0), (1, 0, -1), (2, 0, 2), (11, 0, 0)):
+    rejects(feasible_interval, *args)
+rejects(infer, 4, F(1, 2), F(3, 4), 3)
+rejects(infer, 4, F(1, 2), F(3, 4), -1)
+rejects(integral, (), 0, 1)
+rejects(integral, (1,), 2, 1)
+rejects(multiply, (), (1,))
+print(json.dumps({'checks': checks, 'ledger_cases': ledger_cases, 'integral_cases': integral_cases, 'interval_cases': interval_cases}))
+```
+
+**Independent extension:** replace the stored-charge observation by an interval and determine the resulting two-dimensional feasible reaction region. First state the inequalities symbolically, then use exact arithmetic to check corners and selected interior points. Explain why a more precise collected mass cannot separate recovery from reaction extent without another constraint. To introduce purity, add an explicit collected-impurity amount and a separate observation equation; do not treat recovery as purity.
+
+**Submission:** include the species/reaction table, boundary diagram with signed charges, trajectory proof, all ratio definitions, inverse family and distinguishing measurement, work/heat account, program output and a list of physical questions the model leaves unresolved. Another reader should reconstruct every number from the stated premises. No experiment has been performed and no source experimental result is claimed reproduced.
+
+**Author verification:** the companion passed 6,523 checks through Nix/Python 3.14.8, including 360 species/electron/recovery accounts, 243 independently integrated polynomial records and 391 feasible-interval cases. Independent element/charge sums, reaction normalization, scalar inverse formulas and grid enumeration support the exact program checks. The shared linear elimination implementation is preserved. No apparatus, electrolyte, chemical selectivity or measured input accuracy is validated.
+
+**Continue:** [Review reaction charge chemical evidence and terminal work](Review-electron-charge-products-and-work.lingua#r_0072FD178E3BC3AAC82E035558).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00B3E33BAA2CE03EF3C2A5F8BA

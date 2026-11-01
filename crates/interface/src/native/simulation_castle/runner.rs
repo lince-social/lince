@@ -455,7 +455,7 @@ async fn capture_record(
         .max_connections(1)
         .connect_with(options)
         .await?;
-    let store = store::Store { pool };
+    let store = store::Store::from_pool(pool);
     let captured = simulation::proposal::Proposal::capture(
         &runtime.engine,
         &store,

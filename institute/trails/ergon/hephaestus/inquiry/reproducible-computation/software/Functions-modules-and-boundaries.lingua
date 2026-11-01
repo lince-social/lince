@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Separate scientific transformations from their surroundings (@rc-modules: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88", #reproducible-computation "Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674") { r_78TTB7C486WRJJGY0W3GR7H1WQ
+Separate scientific transformations from their surroundings (@rc-modules: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88", #reproducible-computation "Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674", #hephaestus-core "../../../computer-science/core/Derive-a-batch-operation-from-interface-guarantees.lingua#r_00B5EDC9D78BFFA550AB83560D") { r_78TTB7C486WRJJGY0W3GR7H1WQ
 **Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the program-organization, functions, and packaging chapters; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), Write decoupled code completely; [Environments, dependency records, and packaging — PyPA](../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88), distribution package versus import package.
 
 In the worked program, calculate receives interpreted values and returns quantities. load_rows owns the tabular contract. build_report owns output meaning and serialization preparation. run owns filesystem interaction, and main owns the command-line interface. These boundaries let another implementation or test exercise the mathematics without reproducing the shell or directory layout.
@@ -16,4 +16,9 @@ Read the complete organization and function material in the research-software bo
 **Continue:** [Expose parameters and make their interpretation reproducible](Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Eighth computing-block reading:** use the existing separation of interpretation, pure calculation, reporting and command-line/filesystem effects. Apply those boundaries to the slot interface without copying the research-software project. The complete book/packaging assignments and original reproducible-computation route retain their scope.
+
+**Continue in the eighth computing block:** [Derive a batch operation from interface guarantees](../../../computer-science/core/Derive-a-batch-operation-from-interface-guarantees.lingua#r_00B5EDC9D78BFFA550AB83560D).
+
 } r_78TTB7C486WRJJGY0W3GR7H1WQ

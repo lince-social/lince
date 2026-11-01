@@ -914,6 +914,8 @@
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
           localBuildHook = ''
+            read -r -d "" PATH < <(${pkgs.python3}/bin/python3 -c 'import os, sys; sys.stdout.buffer.write(b":".join(dict.fromkeys(os.environb[b"PATH"].split(b":"))) + b"\0")')
+            export PATH
             export LINCE_BUILD_ENVIRONMENT=1
             export RUSTUP_TOOLCHAIN="''${RUSTUP_TOOLCHAIN:-${(builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel}}"
             export RUSTC_WRAPPER="''${RUSTC_WRAPPER-${pkgs.sccache}/bin/sccache}"
@@ -1406,7 +1408,7 @@
 
             shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
-              export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
+              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails/lince}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LD_LIBRARY_PATH="${
@@ -1509,7 +1511,7 @@
 
             shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
-              export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
+              export LINCE_CONTENT="''${LINCE_CONTENT-$lince_build_root/institute/trails/lince}"
             ''
             + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               export LINCE_PARK_ATSPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"

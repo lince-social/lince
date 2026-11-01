@@ -115,7 +115,7 @@ async fn check_restart() {
                 .await
                 .unwrap();
             if let Some(cached) = store::projection::read(
-                &cell.engine().store.pool,
+                &cell.engine().store,
                 &context,
                 chrono::Utc::now().timestamp_millis(),
             )
@@ -194,7 +194,7 @@ async fn check_restart() {
         1
     );
     let cached = store::projection::read(
-        &cell.engine().store.pool,
+        &cell.engine().store,
         &context,
         chrono::Utc::now().timestamp_millis(),
     )

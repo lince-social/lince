@@ -1,0 +1,251 @@
+Import "../Inquiry.lingua"
+
+Investigate identification selection and competing causal accounts (@inquiry-causal-study: 0, is #chapter, #hephaestus-core "Review-causal-conclusions-with-their-design-assumptions-and-remaining-ambiguity.lingua#r_0075B44A727D0D560E9EDE6798") { r_007BAC0E4A319EE8A20507E8BC
+Develop one connected account of a question, an observation process and a conclusion. The original four-type service model, the two observationally indistinguishable models, the mediator/selection counterexamples and the incomplete-outcome bounds are teaching constructions. Their exact arithmetic supplies no measured effect for a real service.
+
+1. Define the intervention, unit, outcome, target and timing. State consistency, interference/carryover limits, exchangeability and positivity with a concrete possible failure of each. Reuse [Investigate complete and paired allocations with exact finite evidence](Investigate-complete-and-paired-allocations-with-exact-finite-evidence.lingua#r_025C0CC5AAE41742537448C79B) and [Investigate exact continuous coverage and the assumptions that change it](Investigate-exact-continuous-coverage-and-the-assumptions-that-change-it.lingua#r_000A2640C64970EAA40BE1670B) rather than presenting identification assumptions as a replacement for sampling or measurement uncertainty.
+2. Derive standardization and inverse weighting, labeling every use of an assumption. Reconstruct the original reversal: crude means 15/2 and 11/2, standardized intervention means 6 and 7. Change assignment and target weights. Keep exact population laws separate from finite sample frequencies.
+3. Derive the known-probability finite estimator's mean and its independent-assignment variance; enumerate assignments and compare. Explain why a ratio of estimated quantities does not inherit that unbiasedness proof. Reuse the existing exact mean, input validation and weighted covariance programs.
+4. Prove the two causal models give the same complete observed law and different intervention effects. Identify which assumption fails for the recorded L and what additional measurement or design could distinguish the models. Derive a sensitivity bound and defend its premises. Then reproduce the mediator and selection counterexamples without treating “adjust every column” as a rule.
+5. Reconstruct a bounded published calculation from [Causal Inference What If by Hernan and Robins](../sources/Causal-Inference-What-If-by-Hernan-and-Robins.lingua#r_00C7EB9DE7F8A7314754A058EE): Table 2.2 on printed page 17 and sections 2.3–2.4. Aggregate the source's illustrative observations by L, A and binary Y; do not relabel them as service data. The unadjusted means are 3/7 and 7/13. Within L=0 both arm means are 1/4; within L=1 both are 2/3. Using population proportions 2/5 and 3/5 gives 1/2 in either arm and ratio one. The source treats its named entries as representatives of large population groups, suppressing random variability. In an actual finite randomized sample, imbalance alone does not prove assignment was nonrandom or make conditional observed means equal counterfactual means. This reproduction covers that numerical illustration, not a clinical dataset, medical conclusion, full book or implementation of the authors' code.
+6. Enumerate all completions of the missing binary outcomes and reproduce the sharp contrast bounds. Change a missingness mechanism or introduce shared-resource interference. Define the changed target and state before calculating; explain why the original identification argument may no longer apply. Preserve uncertain and unobserved quantities rather than silently imputing the desired conclusion.
+7. Present a revised study design with rival explanations, source criticism, independent checks and a defensible statement of limits. Specify what would count as new evidence and what could overturn the causal interpretation. These are demands for learner investigation, not claims that participants performed an experiment or defended a result.
+
+Place these programs with unchanged `allocation_study.py` from [Investigate complete and paired allocations with exact finite evidence](Investigate-complete-and-paired-allocations-with-exact-finite-evidence.lingua#r_025C0CC5AAE41742537448C79B), `density_study.py` from [Investigate exact continuous coverage and the assumptions that change it](Investigate-exact-continuous-coverage-and-the-assumptions-that-change-it.lingua#r_000A2640C64970EAA40BE1670B) and `uncertainty_study.py` from [Investigate a conductance estimate from shared temperature evidence](Investigate-a-conductance-estimate-from-shared-temperature-evidence.lingua#r_00C193D005D33F686AE905C292). Only standard Python is needed. `observed` constructs a law from an explicitly synthetic complete potential-response population. `analyze` accepts observed joint masses; it never checks exchangeability. Its output labels describe arithmetic, not certification of causal validity. The program accepts exact integers/Fractions, positive normalized row weights and stratum labels 0 through 31. The finite estimator accepts one through sixteen matched units and strictly interior known assignment probabilities. These are stated implementation boundaries, not limits on the mathematical identities.
+
+```python file=causal_study.py
+from fractions import Fraction as F
+from allocation_study import mean
+from density_study import exact
+
+
+def bit(value):
+    if type(value) is not int or value not in (0, 1):
+        raise ValueError('integer zero or one required')
+    return value
+
+
+def label(value):
+    if type(value) is not int or not 0 <= value <= 31:
+        raise ValueError('stratum label must be an integer in 0 through 31')
+    return value
+
+
+def probability(value):
+    value = exact(value)
+    if not 0 <= value <= 1:
+        raise ValueError('probability outside unit interval')
+    return value
+
+
+def population(rows):
+    rows = tuple(rows)
+    if not rows or any(len(row) != 5 for row in rows):
+        raise ValueError('nonempty rows of weight stratum two responses and propensity required')
+    result = tuple((exact(w), label(l), exact(y0), exact(y1), probability(e)) for w, l, y0, y1, e in rows)
+    if any(w <= 0 for w, *_ in result) or sum(w for w, *_ in result) != 1:
+        raise ValueError('positive normalized population weights required')
+    return result
+
+
+def truth(rows):
+    rows = population(rows)
+    return tuple(sum(row[0] * row[2 + a] for row in rows) for a in (0, 1))
+
+
+def observed(rows):
+    masses = {}
+    for w, l, y0, y1, e in population(rows):
+        for a, y, chance in ((0, y0, 1 - e), (1, y1, e)):
+            if chance:
+                key = (l, a, y)
+                masses[key] = masses.get(key, F(0)) + w * chance
+    return tuple((w, l, a, y) for (l, a, y), w in sorted(masses.items()))
+
+
+def table(rows):
+    rows = tuple(rows)
+    if not rows or any(len(row) != 4 for row in rows):
+        raise ValueError('nonempty rows of weight stratum assignment and observation required')
+    result = tuple((exact(w), label(l), bit(a), exact(y)) for w, l, a, y in rows)
+    if any(w <= 0 for w, *_ in result) or sum(w for w, *_ in result) != 1:
+        raise ValueError('positive normalized observed weights required')
+    return result
+
+
+def analyze(rows, target=None):
+    rows = table(rows)
+    group_mass, cell_mass, cell_sum = {}, {}, {}
+    for w, l, a, y in rows:
+        group_mass[l] = group_mass.get(l, F(0)) + w
+        cell_mass[l, a] = cell_mass.get((l, a), F(0)) + w
+        cell_sum[l, a] = cell_sum.get((l, a), F(0)) + w * y
+    if target is None:
+        target = group_mass
+    else:
+        target = {label(l): probability(w) for l, w in target.items()}
+        if set(target) != set(group_mass) or sum(target.values()) != 1:
+            raise ValueError('target must give normalized weights for exactly the observed strata')
+    if any(target[l] > 0 and (l, a) not in cell_mass for l in target for a in (0, 1)):
+        raise ValueError('positive target stratum has an unobserved arm')
+    arm_mass = tuple(sum(w for w, l, b, y in rows if b == a) for a in (0, 1))
+    if any(w == 0 for w in arm_mass):
+        raise ValueError('both observed arms required')
+    crude = tuple(sum(w * y for w, l, b, y in rows if b == a) / arm_mass[a] for a in (0, 1))
+    standard = tuple(sum(target[l] * cell_sum[l, a] / cell_mass[l, a] for l in target if target[l]) for a in (0, 1))
+    weighted = tuple(sum(w * y * target[l] / cell_mass[l, a] for w, l, b, y in rows if b == a and target[l]) for a in (0, 1))
+    return {'crude': crude, 'standardized': standard, 'weighted': weighted}
+
+
+def horvitz_thompson(y0, y1, propensity, assignment):
+    y0, y1 = tuple(map(exact, y0)), tuple(map(exact, y1))
+    propensity, assignment = tuple(map(probability, propensity)), tuple(map(bit, assignment))
+    n = len(y0)
+    if not 1 <= n <= 16 or any(len(v) != n for v in (y1, propensity, assignment)):
+        raise ValueError('one through sixteen matched units required')
+    if any(e == 0 or e == 1 for e in propensity):
+        raise ValueError('strictly positive chance of each assignment required')
+    return mean(tuple(a * high / e - (1 - a) * low / (1 - e) for low, high, e, a in zip(y0, y1, propensity, assignment)))
+
+
+def completed_contrast_bounds(n0, s0, m0, n1, s1, m1):
+    for n, s, m in ((n0, s0, m0), (n1, s1, m1)):
+        if any(type(v) is not int for v in (n, s, m)) or n <= 0 or s < 0 or m < 0 or s + m > n:
+            raise ValueError('positive group sizes and feasible success and missing counts required')
+    return F(s1, n1) - F(s0 + m0, n0), F(s1 + m1, n1) - F(s0, n0)
+```
+
+```python file=causal_checks.py
+from fractions import Fraction as F
+from itertools import product
+from math import prod
+import json
+import platform
+from causal_study import analyze, completed_contrast_bounds, horvitz_thompson, observed, truth
+from allocation_study import mean
+from uncertainty_study import moments
+
+
+checks = 0
+
+
+def check(value):
+    global checks
+    assert value
+    checks += 1
+
+
+def difference(values):
+    return values[1] - values[0]
+
+
+example = tuple((F(1, 4), l, low, low + 1, e) for l, low, e in ((0, 2, F(3, 4)), (0, 4, F(3, 4)), (1, 8, F(1, 4)), (1, 10, F(1, 4))))
+summary = analyze(observed(example))
+check(truth(example) == (6, 7))
+check(summary == {'crude': (F(15, 2), F(11, 2)), 'standardized': (6, 7), 'weighted': (6, 7)})
+
+identification_cases = 0
+for responses in product((0, 1), repeat=8):
+    for e0, e1 in product((F(1, 4), F(1, 2), F(3, 4)), repeat=2):
+        population = tuple((F(1, 4), i // 2, responses[2 * i], responses[2 * i + 1], (e0, e1)[i // 2]) for i in range(4))
+        result = analyze(observed(population))
+        expected = (F(sum(responses[::2]), 4), F(sum(responses[1::2]), 4))
+        check(result['standardized'] == result['weighted'] == expected)
+        check(truth(population) == expected)
+        target = {0: F(1, 3), 1: F(2, 3)}
+        transported = analyze(observed(population), target)
+        direct = tuple(sum(target[i // 2] * population[i][2 + a] / 2 for i in range(4)) for a in (0, 1))
+        check(transported['standardized'] == transported['weighted'] == direct)
+        identification_cases += 1
+
+ht_cases = 0
+for responses in product((0, 1), repeat=6):
+    for propensity in ((F(1, 2),) * 3, (F(1, 4), F(1, 2), F(3, 4))):
+        y0, y1 = responses[::2], responses[1::2]
+        law = []
+        for assignment in product((0, 1), repeat=3):
+            weight = prod(e if a else 1 - e for e, a in zip(propensity, assignment))
+            value = horvitz_thompson(y0, y1, propensity, assignment)
+            law.append((weight, (value,)))
+        averages, covariance = moments(law)
+        true_effect = mean(tuple(high - low for low, high in zip(y0, y1)))
+        variance = sum(e * (1 - e) * (high / e + low / (1 - e)) ** 2 for low, high, e in zip(y0, y1, propensity)) / 9
+        check(averages == (true_effect,))
+        check(covariance == ((variance,),))
+        ht_cases += 1
+
+null_model = ((F(1, 2), 0, 0, 0, F(1, 4)), (F(1, 2), 0, 1, 1, F(3, 4)))
+effect_model = ((F(1, 4), 0, 0, 0, F(1, 2)), (F(1, 2), 0, 0, 1, F(1, 2)), (F(1, 4), 0, 1, 1, F(1, 2)))
+check(observed(null_model) == observed(effect_model))
+check(difference(truth(null_model)) == 0)
+check(difference(truth(effect_model)) == F(1, 2))
+check(difference(analyze(observed(null_model))['standardized']) == F(1, 2))
+
+mediator = tuple((F(1, 2) * (chance if m else 1 - chance), m, a, m) for a, chance in ((0, F(1, 4)), (1, F(3, 4))) for m in (0, 1))
+check(difference(analyze(mediator)['crude']) == F(1, 2))
+check(difference(analyze(mediator)['standardized']) == 0)
+unselected = tuple((F(1, 4), 0, a, u) for a, u in product((0, 1), repeat=2))
+selected = tuple((F(1, 2), 0, a, u) for a, u in product((0, 1), repeat=2) if a == u)
+check(difference(analyze(unselected)['crude']) == 0)
+check(difference(analyze(selected)['crude']) == 1)
+
+missing_cases = 0
+for n0, n1 in product(range(1, 5), repeat=2):
+    for s0, m0, s1, m1 in product(range(n0 + 1), range(n0 + 1), range(n1 + 1), range(n1 + 1)):
+        if s0 + m0 > n0 or s1 + m1 > n1:
+            continue
+        completions = tuple(F(s1 + sum(b1), n1) - F(s0 + sum(b0), n0) for b0 in product((0, 1), repeat=m0) for b1 in product((0, 1), repeat=m1))
+        check(completed_contrast_bounds(n0, s0, m0, n1, s1, m1) == (min(completions), max(completions)))
+        missing_cases += 1
+check(completed_contrast_bounds(10, 4, 2, 10, 5, 4) == (F(-1, 10), F(1, 2)))
+
+counts = ((3, 0, 0, 0), (1, 0, 0, 1), (3, 0, 1, 0), (1, 0, 1, 1), (1, 1, 0, 0), (2, 1, 0, 1), (3, 1, 1, 0), (6, 1, 1, 1))
+source = analyze(tuple((F(n, 20), l, a, y) for n, l, a, y in counts))
+check(source['crude'] == (F(3, 7), F(7, 13)))
+check(source['standardized'] == source['weighted'] == (F(1, 2), F(1, 2)))
+replicas = []
+for n, l, a, y in counts:
+    propensity = F(1, 2) if l == 0 else F(3, 4)
+    copies = F(3, 1) / (propensity if a else 1 - propensity)
+    check(copies.denominator == 1)
+    replicas.extend([(a, y)] * (n * int(copies)))
+check(tuple(F(sum(y for b, y in replicas if b == a), sum(b == a for b, y in replicas)) for a in (0, 1)) == (F(1, 2), F(1, 2)))
+
+rejections = [
+    lambda: observed(()),
+    lambda: observed(((1, 0, 0, 1, F(3, 2)),)),
+    lambda: observed(((1, True, 0, 1, F(1, 2)),)),
+    lambda: observed(((1, 0, 0.5, 1, F(1, 2)),)),
+    lambda: observed(((F(1, 2), 0, 0, 1, F(1, 2)),)),
+    lambda: analyze(((1, 0, 0, 1),)),
+    lambda: analyze(((F(1, 2), 0, 0, 1), (F(1, 2), 1, 1, 2))),
+    lambda: analyze(((F(1, 2), 0, False, 1), (F(1, 2), 0, 1, 2))),
+    lambda: analyze(observed(example), {0: 1}),
+    lambda: analyze(observed(example), {0: 1, 1: 1}),
+    lambda: horvitz_thompson((0,), (1,), (0,), (0,)),
+    lambda: horvitz_thompson((0,), (1,), (1,), (1,)),
+    lambda: horvitz_thompson((0,), (1, 2), (F(1, 2),), (1,)),
+    lambda: horvitz_thompson((0,), (1,), (F(1, 2),), (True,)),
+    lambda: completed_contrast_bounds(0, 0, 0, 1, 0, 0),
+    lambda: completed_contrast_bounds(2, 1, 2, 1, 0, 0),
+    lambda: completed_contrast_bounds(2, 1, -1, 1, 0, 0),
+]
+for reject in rejections:
+    try:
+        reject()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+print(json.dumps({'checks': checks, 'identification_cases': identification_cases, 'assignment_laws': ht_cases, 'binary_missing_cases': missing_cases, 'rejected_inputs': len(rejections), 'example': {k: list(map(str, v)) for k, v in summary.items()}, 'source_reconstruction': {k: list(map(str, v)) for k, v in source.items()}, 'python': platform.python_version()}, indent=2))
+```
+
+**Independent extension:** choose heterogeneous effects, imperfect baseline measurement, a different response-selection mechanism or interacting units. State the resulting observed law and intervention target; derive what is identified and what remains assumption-dependent. Provide a second implementation or independent enumeration, a rival account and a revised interpretation after criticism. Adding more rows with the same assumptions is not a substantive extension.
+
+**Author verification:** Python 3.14.8 passed 8,363 assertions: 2,304 exact identification examples including alternative target mixtures; 128 complete assignment laws checked against independently derived means and variances; 1,156 missing-outcome cases checked against all binary completions; observationally identical causal models, adjustment/selection counterexamples, bounded source reconstruction and 17 rejected inputs. General conditional proofs remain separate from this finite implementation evidence. No learner completion, empirical intervention or medical result is claimed.
+
+**Continue:** [Review causal conclusions with their design assumptions and remaining ambiguity](Review-causal-conclusions-with-their-design-assumptions-and-remaining-ambiguity.lingua#r_0075B44A727D0D560E9EDE6798).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_007BAC0E4A319EE8A20507E8BC

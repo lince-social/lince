@@ -1,0 +1,11 @@
+Import "../Computing.lingua"
+
+Software Construction MIT 6.102 abstraction functions and invariants (@computing-source-abstraction: 0, is #reference) { r_004B6A87180B561E2F2670B5D4
+MIT 6.102 course staff, Spring 2026; the staff page lists instructors Max Goldman, Mitchell Gordon and Rob Miller. [Course](https://web.mit.edu/6.102/www/sp26/) · [staff](https://web.mit.edu/6.102/www/sp26/general/staff.html) · [Reading 7: Abstraction Functions and Rep Invariants](https://web.mit.edu/6.102/www/sp26/classes/07-abstraction-functions-rep-invariants/).
+
+Read the invariant, representation-exposure, abstraction-function and operation-preservation sections progressively after the existing programming and contract preparation. The course uses TypeScript; our independent slot study uses Python with explicitly different enforcement assumptions. The broader course, exercises and projects remain later formation.
+
+On 1 November 2026 inspected the course/staff identity and selected actual Reading 7 passages: construction/observer exposure, character-set representations, endpoint-pair interpretation, invariant protection and encapsulating preconditions. The `acgg` example supplies the bounded reconstruction; no course solution or implementation is copied. Interactive answer evaluation and the entire course were not audited. Public reading access was available; no general open-reuse licence was identified on the inspected pages, so do not infer permission to redistribute the course. Source text, figures and software remain external.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_004B6A87180B561E2F2670B5D4

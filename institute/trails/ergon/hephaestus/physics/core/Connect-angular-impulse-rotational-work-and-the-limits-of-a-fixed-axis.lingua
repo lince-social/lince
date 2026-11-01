@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Connect angular impulse rotational work and the limits of a fixed axis (@physics-rotation-work: 0, is #chapter, #hephaestus-core "../../engineering/mechanical-engineering-and-machine-design/dynamics/Angular-momentum-and-rigid-body-equations-of-motion.lingua#r_5Q07B3SQ0DPMKV6XDW9HPZXN1E") { r_00611965E4175A12FDD2EED2C8
+For a rigid body held to a fixed z axis, L_z=I_zzω. If its mass distribution and axis are constant, dL_z/dt=I_zzα=τ_z. This scalar statement concerns the z component. The full angular-momentum vector may have other components for an asymmetric body, and supports may supply transverse moments to maintain the chosen axis. It is not the unrestricted vector equation τ=Iα in a rotating frame.
+
+A force at position r on this body has instantaneous power F·v=F·(ω×r)=ω·(r×F). Summing gives power τ_zω for the permitted fixed-axis motion. Integrating over time gives work W=∫τ_zω dt=∫τ_z dθ along the actual path. For constant I, d(Iω²/2)/dt=Iωα=τ_zω, so W=ΔK. Torque need not be constant; constant torque permits the additional simplification W=τ_zΔθ. If rotation reverses, use signed angular displacement and account for each portion of the motion.
+
+With constant τ and I, integration gives ω_f=ω₀+τt/I and Δθ=ω₀t+τt²/(2I). Independently, angular impulse is J=τt=I(ω_f−ω₀) and ΔK=I(ω_f²−ω₀²)/2=τΔθ. For I=2 kg·m², τ=−3 N·m, ω₀=4 rad/s and t=2 s, ω_f=1 rad/s, Δθ=5 rad, J=−6 N·m·s and W=−15 J. K decreases from 16 J to 1 J. The negative torque is not an energy sink by definition; the surrounding mechanism must account for the extracted energy.
+
+If I changes, τ=d(Iω)/dt=Iα+I_dot ω for the axial account. Applying τ=Iα while changing I loses a term. Under zero external axial torque, Iω is constant; if I halves, ω doubles and K=L²/(2I) doubles for the reduced rigid-rotation account. Internal deformation or actuation does work, and its energy must appear in the full system account. Conservation of angular momentum alone cannot determine that work or a deformation history.
+
+For a free rigid body with body-fixed inertia components, the rotating basis also changes. The inertial derivative of a vector with body components is its component derivative plus ω×that vector. Thus τ_body=Iω_dot+ω×(Iω). This relation explains the limitation of the scalar reduction, but solving general Euler equations and attitude evolution requires the fuller frame/orientation formation. Read [Translating and rotating reference frames](../../engineering/mechanical-engineering-and-machine-design/dynamics/Translating-and-rotating-reference-frames.lingua#r_0J66JQV19DX8MJZ371A3YE45Q6) later for that preparation rather than assuming the additional term vanishes for every axis.
+
+**Work:** derive the constant-torque example by integration and by endpoint energy. Split its two-second interval into halves and verify composition of displacement, impulse and work. Continue the same torque past the stopping time and explain why the sign of power changes after reversal. Give the assumptions under which axial conservation, full-vector conservation and kinetic-energy conservation each hold. Proceed to [Angular momentum and rigid-body equations of motion](../../engineering/mechanical-engineering-and-machine-design/dynamics/Angular-momentum-and-rigid-body-equations-of-motion.lingua#r_5Q07B3SQ0DPMKV6XDW9HPZXN1E) with the appended common-reading boundary; its full engineering dynamics assignment remains available for later depth.
+
+**Continue:** [Angular momentum and rigid-body equations of motion](../../engineering/mechanical-engineering-and-machine-design/dynamics/Angular-momentum-and-rigid-body-equations-of-motion.lingua#r_5Q07B3SQ0DPMKV6XDW9HPZXN1E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00611965E4175A12FDD2EED2C8

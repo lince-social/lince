@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Functions, tables, domains, and inverse questions (@ql-functions: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2") { r_0F4KMKK6ET8T22RG617S1RDZS2
+Functions, tables, domains, and inverse questions (@ql-functions: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2", #hephaestus-core "../../../mathematics/core/Domains-composition-and-inverse-questions.lingua#r_07C292DB06749E12B30235383A") { r_0F4KMKK6ET8T22RG617S1RDZS2
 **Read:** Algebra and Trigonometry 2e chapters 3–4 completely. Include domain and range, transformations, composition, inverses, and linear models. Use the chapter reviews to move between a verbal description, table, equation, and graph.
 
 A function specifies one output for each input within a stated domain. The model y = ax + b contains a slope and offset; a nonzero offset means the model is not proportional. Its domain may be restricted by the experiment or by physics. A fitted straight line outside the observed range is an extrapolation, not a new observation.
@@ -14,4 +14,7 @@ An inverse question asks which input could produce an observed output. A saturat
 **Continue:** [Read graphs, interpolate, and question a visual claim](Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in the mathematics core:** [Connect domains, composition and inverse questions](../../../mathematics/core/Domains-composition-and-inverse-questions.lingua#r_07C292DB06749E12B30235383A).
+
 } r_0F4KMKK6ET8T22RG617S1RDZS2

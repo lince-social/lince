@@ -1,0 +1,384 @@
+Import "../Computing.lingua"
+
+Investigate concurrent updates waiting and independent state evidence (@computing-concurrency-study: 0, is #chapter, #hephaestus-core "Review-concurrent-state-safety-progress-and-observation-limits.lingua#r_002962E53DB9AFD36AEA18CA3C") { r_0003B96BB09E60CBDBD0789C4F
+Develop a complete small investigation before adding another synchronization feature. Save the two original programs below as `concurrency_study.py` and `concurrency_checks.py` in one directory. Run the study, then the checks using an ordinary Python 3 interpreter. They need only the standard library. This enumerates an abstract concurrent specification; it does not launch threads, exercise an interpreter lock or test host atomic instructions. Source chapter media and simulators are not bundled.
+
+The counter model accepts a nonempty tuple of actor plans, each a possibly empty tuple of positive integer increments, and a nonnegative integer initial value. It rejects Boolean values where exact integers are required. All-empty plans represent already completed work. Internal states and transitions are trusted teaching objects produced by the model, not an input-validation boundary for arbitrary hostile state. Local triples reset after each completed job so graph identity matches the invariant's chosen representation.
+
+`step` makes one declared instruction transition; failed acquisition remains a labeled self-edge. `graph` uses breadth-first search and records each newly reached state once while preserving every outgoing transition. Its parent map gives a shortest path by number of transitions to a newly reached state, not all schedules or a shortest physical duration. Finite plans bound instruction positions and the retained numeric values, so the reachable graph is finite even though spin loops permit infinite executions. `execute` accepts prefixes; callers must check `finished` before interpreting a prefix as a complete job history.
+
+The independent checks use three different accounts. A multinomial schedule count verifies the generated words; a symbolic ancestry oracle computes plain final values without numeric stepping; a count-vector construction enumerates the entire locked invariant set without transition exploration. Reverse reachability verifies existence of completion from each locked state, and a rank checks that only spin edges fail to advance instructions. Mutation witnesses are replayed. The two waiting defects are checked by their explicit failure predicates and shortest paths. The small published counter trace is reconstructed in both numeric and symbolic forms.
+
+For two unit increments starting at zero, expected state counts are 21 plain, 20 locked, 72 split and 34 early-release. Plain, split and early-release permit terminal values one and two; locked permits only two. The study preserves eight self-edges in the locked two-job graph. With initial seven, the twenty plain complete schedules produce eighteen eights and two nines. Report counts as exhaustive facts about this finite model, not probabilities of real executions.
+
+The check suite covers 28 plain plan families and 16,646 complete schedules; 78 locked configurations with one to three actors, zero to two jobs each and two initial values, totaling 3,420 states; 16 defective-lock configurations; and six predicate-wait configurations. It additionally checks deliberately inserted spin costs, a published trace and invalid configurations. The test-case breadth is stated explicitly so that later readers can enlarge the domain or challenge a missing premise.
+
+**Investigation:** first predict a lost-update witness and prove the locked invariant without running the programs. Then compare your prediction, graph and independent oracle. Change a synchronization boundary deliberately, reproduce the resulting counterexample, and explain which proof case fails. For the wait model, distinguish a true predicate from a received notification and a possible spurious wake from a guaranteed one. Preserve a concise report of inputs, outputs, proofs, counterexamples and model limits.
+
+**Independent extension:** choose either two coordinated counter fields or a bounded producer/consumer predicate. State its abstract operation and additional state before coding. Construct an independent oracle or invariant and one deliberately broken design. Ask another reader to find an omitted schedule or unstated progress assumption, then revise and defend the result. This is assigned learner work; the author-run study below does not claim to complete the extension or validate a physical concurrent system.
+
+
+```python file=concurrency_study.py
+from collections import deque, Counter
+from dataclasses import dataclass
+import json
+
+
+PROTOCOLS = {
+    'plain': ('read', 'add', 'write'),
+    'locked': ('acquire', 'read', 'add', 'write', 'release'),
+    'split': ('check', 'set', 'read', 'add', 'write', 'release'),
+    'early': ('acquire', 'read', 'add', 'release', 'write'),
+}
+
+
+def configuration(plans, initial=0, variant='locked'):
+    if type(initial) is not int or initial < 0:
+        raise ValueError('nonnegative integer initial counter required')
+    plans = tuple(tuple(jobs) for jobs in plans)
+    if not plans or any(type(v) is not int or v <= 0 for jobs in plans for v in jobs):
+        raise ValueError('one or more actors with positive integer increments required')
+    if variant not in PROTOCOLS:
+        raise ValueError('unknown protocol')
+    return plans, State(initial, 0, tuple((0, 0, 0) for jobs in plans))
+
+
+@dataclass(frozen=True)
+class State:
+    counter: int
+    flag: int
+    actors: tuple
+
+
+def finished(state, plans):
+    return all(actor[0] == len(jobs) for actor, jobs in zip(state.actors, plans))
+
+
+def step(state, plans, variant, who):
+    if type(who) is not int or not 0 <= who < len(plans):
+        raise ValueError('invalid actor')
+    job, pc, local = state.actors[who]
+    if job == len(plans[who]):
+        raise ValueError('completed actor has no next instruction')
+    operations = PROTOCOLS[variant]
+    operation = operations[pc]
+    counter, flag = state.counter, state.flag
+    if operation in ('acquire', 'check'):
+        if flag:
+            return (who, 'spin'), state
+        if operation == 'acquire':
+            flag = 1
+    elif operation == 'set':
+        flag = 1
+    elif operation == 'read':
+        local = counter
+    elif operation == 'add':
+        local += plans[who][job]
+    elif operation == 'write':
+        counter = local
+    elif operation == 'release':
+        flag = 0
+    pc += 1
+    if pc == len(operations):
+        job, pc, local = job+1, 0, 0
+    actors = list(state.actors)
+    actors[who] = (job, pc, local)
+    return (who, operation), State(counter, flag, tuple(actors))
+
+
+def successors(state, plans, variant):
+    return tuple(step(state, plans, variant, who) for who, actor in enumerate(state.actors)
+                 if actor[0] < len(plans[who]))
+
+
+def graph(start, choices):
+    parents = {start: None}
+    pending = deque([start])
+    edges = {}
+    while pending:
+        state = pending.popleft()
+        edges[state] = choices(state)
+        for label, target in edges[state]:
+            if target not in parents:
+                parents[target] = (state, label)
+                pending.append(target)
+    return edges, parents
+
+
+def counter_graph(plans, initial=0, variant='locked'):
+    plans, start = configuration(plans, initial, variant)
+    return graph(start, lambda state: successors(state, plans, variant))
+
+
+def witness(parents, end):
+    path = []
+    while parents[end] is not None:
+        end, label = parents[end]
+        path.append(label)
+    return tuple(reversed(path))
+
+
+def execute(plans, schedule, initial=0, variant='locked'):
+    plans, state = configuration(plans, initial, variant)
+    labels = []
+    for actor in schedule:
+        label, state = step(state, plans, variant, actor)
+        labels.append(label)
+    return state, tuple(labels)
+
+
+def wait_successors(state, variant='guarded', spurious=False):
+    ready, publisher, waiter = state
+    if variant not in ('guarded', 'gap', 'once'):
+        raise ValueError('unknown wait protocol')
+    result = []
+    if publisher == 0:
+        result.append(('publish', (True, 1, waiter)))
+    elif publisher == 1:
+        awakened = (3 if variant == 'once' else 0) if waiter == 2 else waiter
+        result.append(('notify', (ready, 2, awakened)))
+    if waiter == 0:
+        target = 3 if ready else (1 if variant == 'gap' else 2)
+        result.append(('check-enroll', (ready, publisher, target)))
+    elif waiter == 1:
+        result.append(('late-enroll', (ready, publisher, 2)))
+    elif waiter == 2 and spurious:
+        result.append(('spurious', (ready, publisher, 3 if variant == 'once' else 0)))
+    return tuple(result)
+
+
+def wait_graph(variant='guarded', spurious=False):
+    return graph((False, 0, 0), lambda state: wait_successors(state, variant, spurious))
+
+
+def study():
+    plans = ((1,), (1,))
+    report = {}
+    for variant in PROTOCOLS:
+        edges, parents = counter_graph(plans, variant=variant)
+        final = [s for s in edges if finished(s, plans)]
+        bad = next((s for s in final if s.counter != 2), None)
+        report[variant] = {'states': len(edges), 'terminal_values': sorted({s.counter for s in final}),
+                           'self_edges': sum(s == target for s, choices in edges.items() for label, target in choices),
+                           'wrong_final_witness': None if bad is None else witness(parents, bad)}
+    for variant in ('guarded', 'gap', 'once'):
+        edges, parents = wait_graph(variant, spurious=variant == 'once')
+        bad = next((s for s in edges if (s[2] == 3 and not s[0]) or
+                    (not edges[s] and (s[1], s[2]) != (2, 3))), None)
+        report['wait-'+variant] = {'states': len(edges),
+                                  'bad_witness': None if bad is None else witness(parents, bad)}
+    source, labels = execute(plans, (0, 0, 1, 1, 1, 0), initial=50, variant='plain')
+    report['published_trace_final'] = source.counter
+    return report
+
+
+if __name__ == '__main__':
+    print(json.dumps(study(), indent=2))
+```
+
+```python file=concurrency_checks.py
+from collections import Counter, defaultdict, deque
+from functools import lru_cache
+from itertools import product
+from math import factorial, prod
+import concurrency_study as m
+import json
+
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def schedules(lengths):
+    if not any(lengths):
+        yield ()
+    for who, remaining in enumerate(lengths):
+        if remaining:
+            tail = list(lengths)
+            tail[who] -= 1
+            for suffix in schedules(tuple(tail)):
+                yield (who,)+suffix
+
+
+def symbolic_final(plans, schedule, initial):
+    occurrences = [0]*len(plans)
+    read_history = [() for jobs in plans]
+    memory_history = ()
+    for who in schedule:
+        job, part = divmod(occurrences[who], 3)
+        if part == 0:
+            read_history[who] = memory_history
+        elif part == 2:
+            memory_history = read_history[who]+((who, job),)
+        occurrences[who] += 1
+    return initial+sum(plans[who][job] for who, job in memory_history)
+
+
+def serial_prefix_oracle(plans, initial):
+    result = set()
+    quotas = tuple(len(jobs) for jobs in plans)
+    for counts in product(*(range(q+1) for q in quotas)):
+        base = initial+sum(sum(jobs[:count]) for jobs, count in zip(plans, counts))
+        idle = tuple((count, 0, 0) for count in counts)
+        result.add(m.State(base, 0, idle))
+        for who, count in enumerate(counts):
+            if count < quotas[who]:
+                amount = plans[who][count]
+                for pc in range(1, 5):
+                    local = 0 if pc == 1 else base+(amount if pc >= 3 else 0)
+                    actors = list(idle)
+                    actors[who] = (count, pc, local)
+                    result.add(m.State(base+(amount if pc == 4 else 0), 1, tuple(actors)))
+    return result
+
+
+def can_reach(edges, destinations):
+    reverse = defaultdict(set)
+    for state, choices in edges.items():
+        for label, target in choices:
+            reverse[target].add(state)
+    found = set(destinations)
+    queue = deque(found)
+    while queue:
+        for previous in reverse[queue.popleft()]-found:
+            found.add(previous)
+            queue.append(previous)
+    return found
+
+
+def run():
+    schedule_count = 0
+    plain_cases = 0
+    case_plans = [((a,), (b,)) for a, b in product((1, 2, 5), repeat=2)]
+    case_plans += [((a, b), (c, d)) for a, b, c, d in product((1, 3), repeat=4)]
+    case_plans += [((1,), (2,), (3,)), ((), (2, 3)), ((), ())]
+    worked_counts = None
+    for plans in case_plans:
+        initial = 7
+        lengths = tuple(3*len(jobs) for jobs in plans)
+        histogram = Counter()
+        for schedule in schedules(lengths):
+            state, labels = m.execute(plans, schedule, initial, 'plain')
+            check(m.finished(state, plans))
+            check(state.counter == symbolic_final(plans, schedule, initial))
+            histogram[state.counter] += 1
+            schedule_count += 1
+        check(sum(histogram.values()) == factorial(sum(lengths))//prod(factorial(n) for n in lengths))
+        edges, parents = m.counter_graph(plans, initial, 'plain')
+        check({s.counter for s in edges if m.finished(s, plans)} == set(histogram))
+        if plans == ((1,), (1,)):
+            worked_counts = dict(sorted(histogram.items()))
+            check(histogram == Counter({8: 18, 9: 2}))
+        plain_cases += 1
+    lock_cases = 0
+    locked_states = 0
+    for actors in (1, 2, 3):
+        for quotas in product(range(3), repeat=actors):
+            for initial in (0, 13):
+                plans = tuple(tuple(who+j+1 for j in range(q)) for who, q in enumerate(quotas))
+                edges, parents = m.counter_graph(plans, initial)
+                check(set(edges) == serial_prefix_oracle(plans, initial))
+                count = prod(q+1 for q in quotas)+4*sum(q*prod(quotas[j]+1 for j in range(actors) if j != i)
+                                                       for i, q in enumerate(quotas))
+                check(len(edges) == count)
+                expected = initial+sum(map(sum, plans))
+                final = {s for s in edges if m.finished(s, plans)}
+                check(len(final) == 1)
+                check(next(iter(final)).counter == expected)
+                check(can_reach(edges, final) == set(edges))
+                for state, choices in edges.items():
+                    active = [i for i, (job, pc, local) in enumerate(state.actors) if pc]
+                    check(len(active) == state.flag)
+                    committed = initial+sum(sum(plans[i][:job]) for i, (job, pc, local) in enumerate(state.actors))
+                    committed += sum(plans[i][job] for i, (job, pc, local) in enumerate(state.actors) if pc == 4)
+                    check(state.counter == committed)
+                    rank = sum(5*job+pc for job, pc, local in state.actors)
+                    for (who, operation), target in choices:
+                        check(target in edges)
+                        check(sum(5*job+pc for job, pc, local in target.actors) == rank+(operation != 'spin'))
+                        check((target == state) == (operation == 'spin'))
+                locked_states += len(edges)
+                lock_cases += 1
+    mutant_cases = 0
+    for variant, initial, a, b in product(('split', 'early'), (0, 9), (1, 2), (1, 3)):
+        plans = ((a,), (b,))
+        edges, parents = m.counter_graph(plans, initial, variant)
+        bad = [s for s in edges if m.finished(s, plans) and s.counter != initial+a+b]
+        check(bool(bad))
+        for end in bad:
+            path = m.witness(parents, end)
+            replay, labels = m.execute(plans, tuple(who for who, op in path), initial, variant)
+            check(replay == end)
+            check(labels == path)
+        if variant == 'split':
+            check(any(sum(pc >= 2 for job, pc, local in s.actors) > 1 for s in edges))
+        mutant_cases += 1
+    plans = ((1,), (1,))
+    holder, labels = m.execute(plans, (0,))
+    label, same = m.step(holder, plans, 'locked', 1)
+    check(same == holder and label == (1, 'spin'))
+    for spins in (0, 1, 2, 7, 100):
+        state, labels = m.execute(plans, (0,)+(1,)*spins+(0,)*4+(1,)*5)
+        check(state.counter == 2 and m.finished(state, plans))
+        check(Counter(op for who, op in labels)['spin'] == spins)
+        check(len(labels) == 10+spins)
+    wait_cases = 0
+    wait_counts = {}
+    for variant, spurious in product(('guarded', 'gap', 'once'), (False, True)):
+        edges, parents = m.wait_graph(variant, spurious)
+        final = {s for s in edges if s[1:] == (2, 3)}
+        check(bool(final))
+        premature = {s for s in edges if s[2] == 3 and not s[0]}
+        stuck = {s for s in edges if not edges[s] and s not in final}
+        if variant == 'guarded':
+            check(not premature and not stuck)
+            check(can_reach(edges, final) == set(edges))
+        if variant == 'gap' and not spurious:
+            check(stuck == {(True, 2, 2)})
+        if variant == 'once' and spurious:
+            check(bool(premature))
+        for end in premature | stuck:
+            state = (False, 0, 0)
+            for label in m.witness(parents, end):
+                state = dict(m.wait_successors(state, variant, spurious))[label]
+            check(state == end)
+        wait_counts[variant+('-spurious' if spurious else '')] = len(edges)
+        wait_cases += 1
+    source, labels = m.execute(plans, (0, 0, 1, 1, 1, 0), 50, 'plain')
+    check(source.counter == 51)
+    check(symbolic_final(plans, (0, 0, 1, 1, 1, 0), 50) == 51)
+    for call in (lambda: m.configuration((), 0), lambda: m.configuration(((0,),)),
+                 lambda: m.configuration(((True,),)), lambda: m.configuration(((1.0,),)),
+                 lambda: m.configuration(((1,),), -1), lambda: m.configuration(((1,),), True),
+                 lambda: m.configuration(((1,),), variant='unknown'),
+                 lambda: m.execute(plans, (2,)), lambda: m.execute(plans, (True,)),
+                 lambda: m.execute(((),), (0,)), lambda: m.wait_graph('unknown')):
+        try:
+            call()
+        except ValueError:
+            check(True)
+        else:
+            raise AssertionError('invalid configuration accepted')
+    report = m.study()
+    check(report['locked']['states'] == 20)
+    print(json.dumps({'checks': checks, 'plain_cases': plain_cases, 'schedules': schedule_count,
+                      'worked_final_counts_initial_7': worked_counts, 'locked_cases': lock_cases,
+                      'locked_states': locked_states, 'mutant_cases': mutant_cases,
+                      'wait_cases': wait_cases, 'wait_states': wait_counts, 'study': report}))
+
+
+if __name__ == '__main__':
+    run()
+```
+
+**Author verification:** 59,801 comparisons passed through Nix/Python 3.14.8. These cover 28 plain plan families and 16,646 schedules, 78 locked configurations and 3,420 reachable states, 16 defective-lock configurations, six predicate-wait configurations, spin-cost examples, a bounded published trace and rejected inputs. Proofs support the general invariant and conditional termination claims. No threaded application, processor behavior or physical performance was validated.
+
+**Continue:** [Review concurrent state safety progress and observation limits](Review-concurrent-state-safety-progress-and-observation-limits.lingua#r_002962E53DB9AFD36AEA18CA3C).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0003B96BB09E60CBDBD0789C4F

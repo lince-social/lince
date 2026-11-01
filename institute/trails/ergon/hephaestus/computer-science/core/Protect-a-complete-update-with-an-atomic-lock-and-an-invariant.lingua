@@ -1,0 +1,26 @@
+Import "../Computing.lingua"
+
+Protect a complete update with an atomic lock and an invariant (@computing-lock-invariant: 0, is #chapter, #hephaestus-core "Relate-protected-operations-to-a-serial-specification-and-test-broken-designs.lingua#r_00E7F13A69868429E44F8AC107") { r_006925ACEB66CB8ACA1D69C778
+Introduce a lock flag f initially zero. The modeled acquire is indivisible: if f=0, set f=1 and proceed; if f=1, stay at the same instruction. A failed attempt is a real transition back to the same global state, labeled spin. It must not disappear from a progress or cost argument. This behavior abstracts an atomic test-and-set primitive. A software read followed later by a software write is not the same indivisible operation.
+
+Each locked job executes acquire, read, add, write, release. After acquire succeeds, the actor is inside the critical region until release sets f=0. Every actor that changes x must obey this same protocol, and there are no failures while holding the lock. The assertion that at most one actor is inside follows inductively: only acquisition can enter; it succeeds only with flag zero; it changes the flag in that same step; only the holder can reach release. An arbitrary actor clearing the flag would invalidate this argument.
+
+Strengthen mutual exclusion into a state invariant. Let c_i count actor i's completed jobs and define S=x₀+Σ_i Σ_(j<c_i) a_i,j. For the five-instruction protocol, p=0 means waiting for acquisition or finished; p=1 means acquired before read; p=2 means read before add; p=3 means added before write; p=4 means written before release. At most one actor has p>0, and f is the number of such actors. All idle actors have temporary zero. If there is no holder, x=S. For the unique holder h with next increment a, the remaining cases are:
+
+| Holder position p | Shared x | Holder temporary l |
+| --- | --- | --- |
+| 1 | S | 0 |
+| 2 | S | S |
+| 3 | S | S+a |
+| 4 | S+a | S+a |
+
+Initially these claims hold with every c_i=0. Acquisition changes only flag and position; read copies S; add forms S+a; write changes x to S+a. Release increases c_h by one, resets its local triple and clears the flag, so the new sum S includes exactly that increment. Failed attempts change nothing. These cases prove the invariant for every finite reachable execution, not just tested examples. At completion no actor holds the lock and all jobs contribute, giving x=x₀+Σ_i,j a_i,j.
+
+The invariant also gives an exact independent reachable-state description. For any completed-count vector 0≤c_i≤q_i, serially perform those prefixes to reach its idle state. If c_h<q_h, execute one through four steps of h's next job to obtain each listed holder state. Every invariant state is therefore reachable, and every reachable state satisfies the invariant. The total number is ∏_i(q_i+1)+4Σ_i[q_i∏_(j≠i)(q_j+1)]. For two one-job actors this is 4+4(2+2)=20. The study constructs this set directly from count vectors rather than exploring transitions a second time.
+
+**Read and work:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 28's basic lock, evaluation criteria and test-and-set sections. Verify every invariant transition yourself. Explain why serializability of protected updates is not an implementation guarantee when another actor accesses x outside the protocol. Give a state that preserves the flag count but violates the stronger counter relation, and show why checking mutual exclusion alone would miss it.
+
+**Continue:** [Relate protected operations to a serial specification and test broken designs](Relate-protected-operations-to-a-serial-specification-and-test-broken-designs.lingua#r_00E7F13A69868429E44F8AC107).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_006925ACEB66CB8ACA1D69C778

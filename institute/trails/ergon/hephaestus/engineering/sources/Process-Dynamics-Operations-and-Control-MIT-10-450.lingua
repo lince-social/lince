@@ -1,0 +1,13 @@
+Import "../Engineering.lingua"
+
+Process Dynamics Operations and Control MIT 10 450 (@engineering-source-process-control: 0, is #reference) { r_003D567CD90DDFE67ADB65399E
+Barry S. Johnston. Process Dynamics, Operations, and Control, MIT 10.450, Spring 2006, undergraduate Chemical Engineering. [Official course](https://ocw.mit.edu/courses/10-450-process-dynamics-operations-and-control-spring-2006/) and [syllabus](https://ocw.mit.edu/courses/10-450-process-dynamics-operations-and-control-spring-2006/pages/syllabus/). The syllabus names differential equations and transport processes as preparation; full course work extends beyond the present scalar introduction.
+
+Begin with selected balance, first-order response, control-objective/equipment and proportional-feedback sections of [Lesson 3, The Blending Tank](https://ocw.mit.edu/courses/10-450-process-dynamics-operations-and-control-spring-2006/28cd628b5903b0bbabaef96f0d82f1d1_3_blend_tank.pdf). Read the whole lesson progressively as its mathematics becomes familiar, then use later lessons and substantial assignments for branch formation. The PDF carries revision 2005 Jan 13 despite the Spring 2006 course date. Do not confuse these dates or treat this historical course as a current equipment specification.
+
+On 1 November 2026, the official course/instructor/syllabus and selected actual lesson passages were inspected: 3.1–3.3 for balance and first-order response; 3.11 for supplied numerical conditions and approximation; 3.12–3.19 for roles, controller units and closed-loop gains; 3.20–3.24 for pulse/step response, offset and model limitations. Selected published gain/time-constant predictions are independently reconstructed in the common study. Complete course, every exercise, textbook companion and every plotted trace were not audited or performed. No chemical plant or physical controller is validated.
+
+The current [MIT OCW terms](https://ocw.mit.edu/pages/privacy-and-terms-of-use/) identify CC BY-NC-SA 4.0; retain attribution, noncommercial/share-alike and separately credited component restrictions. The linked course and PDF remain external. The new thermal model, requirements, sampled-cycle analysis and programs are original constructions, with a bounded factual comparison to the published equations. No lecture media, figures or source programs are bundled.
+
+**Return:** [Engineering — systems, design, construction, and operation](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_003D567CD90DDFE67ADB65399E

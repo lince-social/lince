@@ -152,10 +152,11 @@ impl Cell {
                 .await.map_err(IoError::other)?;
         }
         let engine = Arc::new(
-            engine::Engine::new(store.clone())
+            engine::Engine::new(store)
                 .await
                 .map_err(IoError::other)?,
         );
+        let store = engine.store.clone();
         let local_organ = store::organs::local(&store.pool)
             .await
             .map_err(IoError::other)?

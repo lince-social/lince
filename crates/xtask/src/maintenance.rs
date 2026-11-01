@@ -4,13 +4,15 @@ use std::{ffi::OsString, path::Path};
 #[path = "maintenance/browser.rs"]
 mod browser;
 #[path = "maintenance/fiote.rs"]
+#[cfg(any(feature = "authoring", test))]
 mod fiote;
 
 pub(crate) type Result<T> = std::result::Result<T, String>;
 
-pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
+pub(crate) fn dispatch(_root: &Path, args: &[OsString]) -> Result<()> {
     match args.first().and_then(|arg| arg.to_str()) {
-        Some("fiote") => fiote::dispatch(root, &args[1..]),
+        #[cfg(any(feature = "authoring", test))]
+        Some("fiote") => fiote::dispatch(_root, &args[1..]),
         #[cfg(target_os = "linux")]
         Some("browser") => browser::run(&args[1..]),
         #[cfg(target_os = "linux")]

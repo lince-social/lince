@@ -1,0 +1,286 @@
+Import "../Computing.lingua"
+
+Investigate private state shared pages and complete service effects (@computing-memory-study: 0, is #chapter, #hephaestus-core "Review-memory-process-boundaries-and-controlled-execution-evidence.lingua#r_00C14977D991779F8DF28B4CF6") { r_0044D31C76AB50C657C6A092BB
+This original executable investigation uses the sixteen-word virtual spaces and thirty-two-word physical memory defined above. Physical word i initially contains the eight-bit value i. The baseline maps give each process two private read/write pages and one shared read-only page; page 3 is absent. The model is a trusted state-transition experiment, not an operating system, a modification of the earlier encoded machine or a security test of the host.
+
+Use these programs:
+
+- Process 0: set(40), store(0), wait("input"), load(0), copy(0,8,1), halt().
+- Process 1: set(90), store(0), load(4), copy(0,8,1), halt().
+
+Select processes in order 0,1,0,1,0,1. Process 0 is now blocked at saved pc=3 with acc=40. Process 1 has pc=3 and acc=12 from the shared page. An attempt to select the blocked process is a controller error, not another executed instruction. Supply the matching input event to process 0, then select 0,1,0,1,0. Both finish after eleven total instruction steps, with pcs 6 and 5. The final physical words at 4,8,20,24 are 40,90,40,90 respectively; shared words 12 through 15 remain 12,13,14,15. Process 0 ends with acc=40 and process 1 with acc=12. Its copy service transfers memory values and returns a result in last, leaving acc unchanged.
+
+Check rejection without partial mutation using copy(0,3,2) in process 0. The destination's first word is writable but its second is read-only, so memory remains identical, pc advances once and last reports a permission error. A store to virtual 4 instead produces a stopped fault with the same pc and no memory change. A load at 12 faults as unmapped. An unsupported map operation cannot alter the tables. These outcomes distinguish contract-defined errors and faults rather than treating every non-success identically.
+
+Check overlap by copying [0,3) to [1,4), comparing with a saved pre-operation source tuple. Test a range crossing between noncontiguous physical frames; consecutive virtual addresses need not be consecutive physical addresses. Empty ranges, endpoint 16 and out-of-range numbers follow the earlier declared convention. Type checks reject Boolean values and noninteger address/length inputs.
+
+Then change the trusted configuration so both process page-2 mappings target writable frame 5. Process 0 sets acc=77 and stores to virtual 8; a later process-1 load from virtual 8 sees 77. This is an explicit new sharing policy. Explain why private-state assertions for the baseline cannot be blindly applied to this variant. A value observed at one virtual address without its process/map context cannot establish where it came from.
+
+The separate read-only cache traces retain the declared costs: four hits/four misses produce cost 28, while eight alternating conflicts produce cost 48. The independent checker derives expected hits from the most recent prior address with the same line class rather than reproducing the cache's tag-array update loop. It does not measure a real cache or assign the host deep-copy overhead to a modeled instruction.
+
+**Run and inspect:** save `space_study.py` and `space_checks.py` together and run `python3 space_checks.py`. The reference address maps are explicit per-address lists, independently compared with page/offset translation across a bounded domain. Every enumerated copy compares the full memory state against either the unchanged input or a pre-operation reference snapshot; permitted writes must preserve the other process's private words. The scheduled trace checks saved context and unchanged nonselected records/maps. Finite cache traces are compared with the history-based oracle. No source code from the assigned courses/books is bundled.
+
+**Independent contribution:** choose a new trusted map and state its sharing policy, then prove the corresponding permitted-write invariant and generate distinguishing tests. Add a proposed service only after writing its success, failure, range and scheduling contract. Supply a counterexample to a tempting incomplete validator, revise it and explain the assumptions still outside the model. Real kernel implementation, adversarial threat analysis, hardware and concurrent-device validation remain separate later work.
+
+```python file=space_study.py
+from copy import deepcopy
+
+
+class AccessError(Exception):
+    pass
+
+
+def translate(table,address,length,mode):
+    if mode not in ('r','w'):
+        raise ValueError('unknown access mode')
+    if type(address) is not int or type(length) is not int:
+        raise AccessError('range')
+    if not 0<=address<=16 or length<0 or length>16-address:
+        raise AccessError('range')
+    locations=[]
+    for virtual in range(address,address+length):
+        page,offset=divmod(virtual,4)
+        entry=table[page]
+        if entry is None:
+            raise AccessError('unmapped')
+        frame,permissions=entry
+        if type(frame) is not int or not 0<=frame<8:
+            raise ValueError('invalid trusted mapping')
+        if mode not in permissions:
+            raise AccessError('permission')
+        locations.append(4*frame+offset)
+    return tuple(locations)
+
+
+def copy_words(memory,table,source,destination,length):
+    origins=translate(table,source,length,'r')
+    targets=translate(table,destination,length,'w')
+    values=tuple(memory[index] for index in origins)
+    for index,value in zip(targets,values):
+        memory[index]=value
+    return length
+
+
+def initial(programs,shared_write=False):
+    tables=[[(1,'rw'),(3,'r'),(5,'rw'),None],[(2,'rw'),(3,'r'),(6,'rw'),None]]
+    if shared_write:
+        tables[1][2]=(5,'rw')
+    if len(programs)!=2:
+        raise ValueError('exactly two trusted program descriptions required')
+    return dict(memory=list(range(32)),tables=deepcopy(tables),programs=deepcopy(programs),
+                processes=[dict(pc=0,acc=0,status='ready',last=None,waiting=None) for _ in range(2)])
+
+
+def step(state,pid):
+    if type(pid) is not int or not 0<=pid<2:
+        raise ValueError('unknown process')
+    process=state['processes'][pid]
+    if process['status']!='ready':
+        raise ValueError('process is not ready')
+    out=deepcopy(state)
+    p=out['processes'][pid]
+    table=out['tables'][pid]
+    program=out['programs'][pid]
+    pc=p['pc']
+    if not 0<=pc<len(program):
+        p.update(status='fault',last='fetch')
+        return out
+    instruction=program[pc]
+    op=instruction[0] if instruction else None
+    args=instruction[1:]
+    try:
+        if op=='set' and len(args)==1 and type(args[0]) is int and 0<=args[0]<256:
+            p['acc']=args[0]
+            p['last']='ok'
+        elif op=='load' and len(args)==1:
+            location=translate(table,args[0],1,'r')[0]
+            p['acc']=out['memory'][location]
+            p['last']='ok'
+        elif op=='store' and len(args)==1:
+            location=translate(table,args[0],1,'w')[0]
+            out['memory'][location]=p['acc']
+            p['last']='ok'
+        elif op=='copy' and len(args)==3:
+            try:
+                count=copy_words(out['memory'],table,*args)
+                p['last']=('copied',count)
+            except AccessError as error:
+                p['last']=('error',str(error))
+        elif op=='wait' and len(args)==1 and type(args[0]) is str and args[0]:
+            p.update(status='blocked',waiting=args[0],last='waiting')
+        elif op=='halt' and not args:
+            p.update(status='done',last='halted')
+        else:
+            p.update(status='fault',last='instruction')
+            return out
+    except AccessError as error:
+        p.update(status='fault',last=str(error))
+        return out
+    p['pc']+=1
+    return out
+
+
+def wake(state,pid,event):
+    if type(pid) is not int or not 0<=pid<2:
+        raise ValueError('unknown process')
+    p=state['processes'][pid]
+    if p['status']!='blocked' or p['waiting']!=event:
+        raise ValueError('event does not match a waiting process')
+    out=deepcopy(state)
+    out['processes'][pid].update(status='ready',waiting=None,last='awakened')
+    return out
+
+
+def cache_cost(trace):
+    slots=[None,None]
+    hits=misses=0
+    for address in trace:
+        if type(address) is not int or not 0<=address<32:
+            raise ValueError('physical word address required')
+        index,tag=address%2,address//2
+        if slots[index]==tag:
+            hits+=1
+        else:
+            misses+=1
+            slots[index]=tag
+    return dict(hits=hits,misses=misses,cost=hits+6*misses)
+```
+
+```python file=space_checks.py
+from copy import deepcopy
+from itertools import product
+import json
+import space_study as m
+
+checks=0
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejected(call,kind=ValueError):
+    global checks
+    try:
+        call()
+    except kind:
+        checks+=1
+    else:
+        raise AssertionError('expected rejection')
+
+
+read_maps=[list(range(4,8))+list(range(12,16))+list(range(20,24))+[None]*4,
+           list(range(8,12))+list(range(12,16))+list(range(24,28))+[None]*4]
+write_maps=[[True]*4+[False]*4+[True]*4+[False]*4 for _ in range(2)]
+base=m.initial([[],[]])
+
+def reference(pid,address,length,mode):
+    if type(address) is not int or type(length) is not int or address<0 or address>16 or length<0 or address+length>16:
+        return None
+    wanted=list(range(address,address+length))
+    if any(read_maps[pid][v] is None for v in wanted):
+        return None
+    if mode=='w' and any(not write_maps[pid][v] for v in wanted):
+        return None
+    return tuple(read_maps[pid][v] for v in wanted)
+
+
+range_cases=0
+for pid,start,length,mode in product(range(2),range(-1,18),range(-1,19),('r','w')):
+    expected=reference(pid,start,length,mode)
+    try:
+        result=m.translate(base['tables'][pid],start,length,mode)
+    except m.AccessError:
+        result=None
+    check(result==expected)
+    range_cases+=1
+copy_cases=0
+for pid,source,destination,length in product(range(2),range(-1,18),range(-1,18),range(-1,18)):
+    memory=list(range(32))
+    before=memory.copy()
+    origins=reference(pid,source,length,'r')
+    targets=reference(pid,destination,length,'w')
+    if origins is None or targets is None:
+        rejected(lambda:m.copy_words(memory,base['tables'][pid],source,destination,length),m.AccessError)
+        check(memory==before)
+    else:
+        values=tuple(before[index] for index in origins)
+        expected=before.copy()
+        for target,value in zip(targets,values):
+            expected[target]=value
+        check(m.copy_words(memory,base['tables'][pid],source,destination,length)==length)
+        check(memory==expected)
+        other_private=(range(8,12),range(24,28)) if pid==0 else (range(4,8),range(20,24))
+        check(all(memory[i]==before[i] for group in other_private for i in group))
+    copy_cases+=1
+programs=[[('set',40),('store',0),('wait','input'),('load',0),('copy',0,8,1),('halt',)],
+          [('set',90),('store',0),('load',4),('copy',0,8,1),('halt',)]]
+s=m.initial(programs)
+for pid in [0,1,0,1,0,1]:
+    before=deepcopy(s)
+    next_state=m.step(s,pid)
+    check(s==before)
+    check(next_state['processes'][1-pid]==s['processes'][1-pid])
+    check(next_state['tables']==s['tables'])
+    s=next_state
+check(s['processes'][0]==dict(pc=3,acc=40,status='blocked',last='waiting',waiting='input'))
+check(s['processes'][1]['acc']==12)
+rejected(lambda:m.step(s,0))
+rejected(lambda:m.wake(s,0,'other'))
+s=m.wake(s,0,'input')
+for pid in [0,1,0,1,0]:
+    s=m.step(s,pid)
+check([p['status'] for p in s['processes']]==['done','done'])
+check([p['pc'] for p in s['processes']]==[6,5])
+check([s['memory'][i] for i in [4,8,20,24]]==[40,90,40,90])
+check(s['memory'][12:16]==[12,13,14,15])
+check(s['processes'][0]['acc']==40)
+check(s['processes'][1]['acc']==12)
+for instruction,kind,pc in [(('copy',0,3,2),'ready',1),(('load',12),'fault',0),(('store',4),'fault',0),(('map',0,0),'fault',0),(('set',256),'fault',0)]:
+    before=m.initial([[instruction],[]])
+    after=m.step(before,0)
+    check(after['memory']==before['memory'])
+    check(after['tables']==before['tables'])
+    check(after['processes'][0]['status']==kind)
+    check(after['processes'][0]['pc']==pc)
+    if kind=='ready':
+        check(after['processes'][0]['last']==('error','permission'))
+shared=m.initial([[('set',77),('store',8)],[('load',8)]],shared_write=True)
+for pid in [0,0,1]:
+    shared=m.step(shared,pid)
+check(shared['processes'][1]['acc']==77)
+check(shared['memory'][20]==77)
+cache_cases=0
+for length in range(6):
+    for trace in product(range(4),repeat=length):
+        hits=0
+        for i,address in enumerate(trace):
+            prior=[v for v in trace[:i] if (v-address)%2==0]
+            hits+=bool(prior and prior[-1]==address)
+        expected=dict(hits=hits,misses=length-hits,cost=length+5*(length-hits))
+        check(m.cache_cost(trace)==expected)
+        cache_cases+=1
+check(m.cache_cost([4,5,4,5,6,4,5,4])==dict(hits=4,misses=4,cost=28))
+check(m.cache_cost([4,6]*4)==dict(hits=0,misses=8,cost=48))
+check(m.translate(base['tables'][0],0,1,'r')!=(m.translate(base['tables'][1],0,1,'r')))
+check(m.translate(base['tables'][0],4,1,'r')==(m.translate(base['tables'][1],4,1,'r')))
+for value in [True,1.5,'1',None]:
+    rejected(lambda value=value:m.translate(base['tables'][0],value,1,'r'),m.AccessError)
+    rejected(lambda value=value:m.translate(base['tables'][0],0,value,'r'),m.AccessError)
+rejected(lambda:m.translate(base['tables'][0],0,1,'x'))
+rejected(lambda:m.step(base,True))
+rejected(lambda:m.cache_cost([32]))
+rejected(lambda:m.cache_cost([True]))
+empty=m.step(base,0)
+check(empty['processes'][0]['last']=='fetch')
+check(empty['memory']==base['memory'])
+print(json.dumps(dict(checks=checks,range_cases=range_cases,copy_cases=copy_cases,cache_traces=cache_cases,scheduled_steps=11)))
+```
+
+**Author verification:** the independent companion passed 31,408 checks through Nix/Python 3.14.8, including 1,520 address/range cases, 13,718 copy cases, 1,365 cache traces and the eleven-step process investigation. Finite checks support the explicit model arguments; they do not establish actual operating-system or host security.
+
+**Continue:** [Review memory process boundaries and controlled execution evidence](Review-memory-process-boundaries-and-controlled-execution-evidence.lingua#r_00C14977D991779F8DF28B4CF6).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0044D31C76AB50C657C6A092BB

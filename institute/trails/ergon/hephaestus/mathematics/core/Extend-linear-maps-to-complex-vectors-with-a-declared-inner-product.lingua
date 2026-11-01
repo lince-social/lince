@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Extend linear maps to complex vectors with a declared inner product (@math-operator-vectors: 0, is #chapter, #hephaestus-core "Derive-complex-orthogonality-projection-and-the-norm-inequality.lingua#r_0060036DEC992980B6D2E9B326") { r_0098CD5D43423980AB2E2A2134
+Reuse [Construct complex arithmetic and identify its algebraic limits](Construct-complex-arithmetic-and-identify-its-algebraic-limits.lingua#r_006DD1FF362C1C4973327211C7), [Relate complex products powers and roots to rotations](Relate-complex-products-powers-and-roots-to-rotations.lingua#r_007A555DF9E363BDCFDBD9976D) and [Read rectangular maps and the transpose through their dimensions](Read rectangular maps and the transpose through their dimensions.lingua#r_00DA69E3E3C8873C7D5F0CCB01). A vector x in Cⁿ is a finite column of complex coordinates; sums and multiplication by a complex scalar act coordinate by coordinate. The vectors with a single coordinate one and all others zero form the standard basis. The real and imaginary parts identify Cⁿ with R²ⁿ as a real vector space, but the allowed scalars matter. A complex-linear map A satisfies A(αx+βy)=αAx+βAy for complex α and β. Its columns are the images of the standard basis, so matrix multiplication again represents composition with the usual dimension constraints.
+
+Complex conjugation K(z)=conj(z) is additive and real-linear. It is not complex-linear: K(i·1)=−i differs from iK(1)=i. Thus not every real-linear rule on the doubled coordinates is represented by an n-by-n complex matrix. If A=B+iC with real matrices B,C and x=u+iv, then Ax=(Bu−Cv)+i(Cu+Bv). Its real representation is the block matrix with rows of blocks (B,−C) and (C,B), acting on the real column (u,v). This gives an independent route for checking complex calculations.
+
+Declare our inner product as ⟨x,y⟩=Σⱼconj(xⱼ)yⱼ, conjugate-linear in the first argument and linear in the second. This convention is common in physics. The norm is ||x||=sqrt(⟨x,x⟩)=sqrt(Σ|xⱼ|²). The squared norm is real, nonnegative and zero only for x=0. It obeys ||αx||=|α|||x||. The expression Σxⱼyⱼ without conjugation is a different bilinear form: for x=(1,i) it gives zero even though x is nonzero. It cannot provide this positive length.
+
+**Read:** [Linear Algebra Done Right by Sheldon Axler](../sources/Linear-Algebra-Done-Right-by-Sheldon-Axler.lingua#r_00F8D5FB7EBA74EA7A7E1AEA27), sections 6A and 7A in the stated progression. Axler takes the inner product linear in its first argument. Translate by ⟨x,y⟩here=⟨y,x⟩Axler; neither convention is an error. In particular a scalar moved out of our first slot is conjugated. Write the convention at the top of calculations rather than copying a projection coefficient from a source with the opposite order.
+
+**Work:** derive the real block representation for a rectangular map; show directly that it preserves composition. Compare multiplication by i with conjugation on R² and explain which is complex-linear. For x=(2,1) and v=(1,i), compute ⟨v,x⟩, ⟨x,v⟩ and both squared lengths. These coordinates are mathematical objects. Their units, empirical meaning and any probability interpretation require a separate model.
+
+**Continue:** [Derive complex orthogonality projection and the norm inequality](Derive-complex-orthogonality-projection-and-the-norm-inequality.lingua#r_0060036DEC992980B6D2E9B326).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0098CD5D43423980AB2E2A2134

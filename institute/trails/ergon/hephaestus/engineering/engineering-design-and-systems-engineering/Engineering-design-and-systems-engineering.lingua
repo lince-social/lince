@@ -1,0 +1,9 @@
+Engineering design and systems engineering (@engineering-design-and-systems-engineering: 0, is #chapter, #outline) { r_5D5DKFNT3H92YSKQDMK57J8C5R
+Engineering design translates needs into systems that can be built, operated, and maintained. This material connects requirements, alternatives, interfaces, modelling, trade-offs, verification, validation, and lifecycle planning, explaining how specialised contributions become a coherent system with explicit performance and resource boundaries.
+
+**Common preparation developed:** the eighth engineering block connects [operating service and its observation window](../core/Define-the-service-window-before-calculating-availability.lingua) to shared dependencies, restoration resources and changed configuration. Original calculations and an evidence investigation prepare entry to continuing-service design; the full systems-engineering scope remains pending.
+
+**Common preparation developed:** the [major-discipline entry lesson](../core/Connect-operating-evidence-to-the-major-engineering-disciplines.lingua) explicitly connects civil, chemical, materials, mechanical/electrical and production questions to existing common theory and evidence. This preserves the breadth-first hierarchy and identifies branch-specific premises; it does not complete any branch.
+
+**Parent:** [Engineering — systems, design, construction, and operation](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_5D5DKFNT3H92YSKQDMK57J8C5R

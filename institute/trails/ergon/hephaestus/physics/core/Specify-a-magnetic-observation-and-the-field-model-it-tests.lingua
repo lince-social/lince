@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Specify a magnetic observation and the field model it tests (@physics-magnetic-question: 0, is #chapter, #hephaestus-core "../electromagnetism/magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua#r_34G06XMD2AYC7EC9ADQQNQFA0R") { r_0026FFA29D3ABE4D35EB1264C1
+A compass turning, a moving charge deflecting and a changing current affecting another circuit are different observations. Begin with what changes, relative to which frame, and what quantity is read. A magnetic field B is a vector field in the classical account; it is not a count of drawn field lines. The charge, velocity and force measurements used to infer it need independently specified signs, scales and uncertainties.
+
+Use the empirical Lorentz law F=q(E+v×B) in a chosen inertial laboratory frame. The cross product and orientation are already defined in [Construct oriented area from tangent vectors](../../mathematics/core/Construct-oriented-area-from-tangent-vectors.lingua#r_008F296747E05726CB43E1FA62); the law's applicability is physical evidence rather than a consequence of that mathematics. In SI, E has N/C or V/m units and B has N/(A·m), named tesla. Since qv has A·m units, qv×B has force units. A stationary test charge does not determine B through this force law.
+
+At one location, hold E fixed and compare equally prepared opposite velocities. The mean force is qE and their difference is 2qv×B. Even ideal measurements with only one velocity direction leave the component of B parallel to v undetermined. Two nonparallel velocity directions remove this kernel in the ideal linear inference problem; calibration, motion through a nonuniform region, other forces and source disturbance can still limit a real inference. Reuse the distinction between mathematical identifiability and measured evidence in [Review charge fields circuits and electrical evidence](Review-charge-fields-circuits-and-electrical-evidence.lingua#r_004685691CEC87C6BB2FEB8A8E).
+
+For v=(v,0,0), B=(0,0,B), q>0, the magnetic force points in −y when v and B are positive. Reversing either q or v reverses it; reversing both preserves it. A current and a positive carrier velocity have the same direction only for positive carriers. Define conventional current by signed charge transport, not by an assumed microscopic carrier sign.
+
+**Read and work:** the following shared [Magnetic force, orbits and energy transfer](../electromagnetism/magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua#r_34G06XMD2AYC7EC9ADQQNQFA0R) supplies the force/motion questions. Use [University Physics Volume 2 — OpenStax](../electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q) section 11.3 for the bounded uniform-field discussion; larger chapter readings remain progressive assignments. Explain which component is invisible for probes moving along x, and design a second ideal velocity direction that reveals it. No actual probe experiment or calibrated B measurement is claimed. A compass or material magnet has internal degrees of freedom; its response is not derived merely by applying the point-charge equation to a rigid arrow.
+
+**Continue:** [Magnetic force, orbits and energy transfer](../electromagnetism/magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua#r_34G06XMD2AYC7EC9ADQQNQFA0R).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0026FFA29D3ABE4D35EB1264C1

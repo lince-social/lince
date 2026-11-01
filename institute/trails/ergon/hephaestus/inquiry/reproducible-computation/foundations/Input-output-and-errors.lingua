@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Input, output, and errors are part of the method (@rc-io: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE") { r_2QVCXPVQAFX2MASMBWC80KNWV8
+Input, output, and errors are part of the method (@rc-io: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE", #hephaestus-core "../data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH") { r_2QVCXPVQAFX2MASMBWC80KNWV8
 **Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapter 5 in full, including exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), input/output, exceptions, csv, json, and argparse.
 
 Reading a file turns bytes into text and then into values under a declared interpretation. Specify encoding, delimiter, column names, decimal conventions, and missing-value rules. A number parsed successfully can still be outside the physical model's domain. A failed conversion should identify the offending field and stop before publishing a plausible-looking partial answer.
@@ -16,4 +16,7 @@ Read the exact csv and json contracts while designing interchange, and argparse 
 **Continue:** [Run a first saved calculation and check it independently](First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the computing core:** [Give every input a meaning and a checkable schema](../data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH).
+
 } r_2QVCXPVQAFX2MASMBWC80KNWV8

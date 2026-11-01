@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Screen response requirements over a declared uncertainty box (@engineering-feedback-requirements: 0, is #chapter, #hephaestus-core "Compare-feedback-predictions-with-published-and-independent-evidence.lingua#r_007495D7B0A939ABFEED33FBC3") { r_00567D18E2141A826D03C97F71
+Use a finite design question to connect response, observation and actuator demand. Stipulate C=12 J/K,G=3 W/K,r=2 K,u₀=6 W and initial θ_i=0. Let constant disturbance range over−1≤d≤1 W and sensor bias over−0.1≤b≤0.1 K independently as hard bounds, not random distributions. Require true steady tracking error at most 0.25 K, continuous time constant at most 2 s, and an unsaturated startup and subsequent continuous trajectory with input 0≤u≤20 W. These are original teaching requirements; no hardware is selected.
+
+For K≥0, the exact worst steady error is E(K)=(1+0.1K)/(3+K). The numerator follows by maximizing |−d+Kb| over the box; the adverse corner d=−1,b=0.1 attains the positive error and its opposite attains the negative error. No sampling argument is needed. E≤1/4 is equivalent to K≥5/3 W/K. The time constant 12/(3+K)≤2 gives K≥3 W/K.
+
+The maximum startup command occurs at the most negative bias: u(0)=6+K(2−b)≤6+2.1K. Requiring this≤20 gives K≤20/3 W/K. Hence the three initial screens admit exactly 3≤K≤20/3. Check the complete trajectory as well: its state stays between 0 and its equilibrium, which lies within 2±1/4 under the error requirement. Thus u≥6−0.35K≥11/3 W throughout the admitted gain interval, while the startup maximum bounds the largest input. Both actuator bounds hold for every stipulated d,b. This closes the assumed unsaturated-trajectory argument rather than checking only t=0.
+
+Compare K=1,3,6,9. Their error bounds are 11/40,13/60,8/45,19/120 K; time constants 3,2,4/3,1 s; maximum startup commands 8.1,12.3,18.6,24.9 W. Gains 3 and 6 meet all stated continuous requirements. Gain 1 fails error and time; gain 9 fails the unsaturated-startup condition despite a smaller steady error. A clipped version of gain 9 would need a different transient requirement analysis, not automatic acceptance based on its unlimited time constant.
+
+Adding sampled control creates another requirement. At K=6, the exact held-command stability limit derived earlier is h<4ln3 s. A stable sampled loop can still have unacceptable oscillation, settling time or intersample extrema, so stability is only one gate. The continuous acceptance screen is explicitly conditional on continuous feedback and is not a certification of every digital realization. State the selected timing contract alongside the gain.
+
+**Work:** prove the box extrema and gain interval independently. Change one requirement, actuator ceiling or sensor bound and derive the new feasible interval, including a case where no gain works. Identify a useful physical measurement that would reduce the relevant uncertainty. Compare gain adjustment with improving the measurement or available actuator; explain which requirement each alternative changes. Reuse [Prove parameter bounds before screening a design](Electrical-parameter-ranges-and-sufficient-bounds.lingua#r_00E07F85F9615342B24454DB4E) for the distinction between an exact worst case and a conservative sufficient bound.
+
+**Continue:** [Compare feedback predictions with published and independent evidence](Compare-feedback-predictions-with-published-and-independent-evidence.lingua#r_007495D7B0A939ABFEED33FBC3).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00567D18E2141A826D03C97F71

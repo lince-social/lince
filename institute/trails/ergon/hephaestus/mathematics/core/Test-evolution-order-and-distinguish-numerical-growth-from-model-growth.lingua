@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Test evolution order and distinguish numerical growth from model growth (@math-operator-order: 0, is #chapter, #hephaestus-core "Investigate-complex-operators-coordinate-changes-and-certified-evolution.lingua#r_00DB3E45916EBAD5985DC5A91D") { r_0059A3E412A426A2F8DB6313B6
+Two norm-preserving transformations need not commute. Take Hₓ=((0,1),(1,0)) and H_z=((1,0),(0,−1)). Both are Hermitian involutions, but HₓH_z≠H_zHₓ. For c=3/5,s=4/5 define Uₓ=cI−isHₓ and U_z=cI−isH_z. Applying Uₓ then U_z gives U_zUₓx; reversing the order gives UₓU_zx. For x=(3/5,4/5), both outputs have squared norm one but the first coordinate's squared magnitude is respectively 337/625 and 15337/15625. Derive these exact values before running the check. Thus even a conserved total norm does not make all ordered results equivalent.
+
+The general claim exp(t(A+B))=exp(tA)exp(tB) needs justification. If AB=BA, the matrix binomial identity and absolutely controlled grouping prove it. Without commutation, compare second-order coefficients: the left side has (A²+AB+BA+B²)/2, while the right has A²/2+AB+B²/2. Their difference is (BA−AB)/2. This shows a second-order obstruction when the commutator is nonzero, rather than a universal finite-time identity. The definition [A,B]=AB−BA names this order dependence.
+
+A different failure comes from numerical stepping. Forward Euler for x′=−iHx with H²=I uses x_next=(I−ihH)x with real step h. Its one-step squared norm is (1+h²)||x||², obtained by multiplying (I+ihH)(I−ihH). After N steps totaling time T, the factor is (1+(T/N)²)ᴺ. It exceeds one when T≠0 although the exact model conserves norm. For fixed T it tends to one as N increases: using 1+a≤exp(a) bounds it between 1 and exp(T²/N). This proves convergence of that invariant error, not a complete global solution-error theorem.
+
+The exponential partial sum is a different approximation, with the explicit row-sum tail certificate from [Justify coupled linear evolution with a convergent matrix series](Justify-coupled-linear-evolution-with-a-convergent-matrix-series.lingua#r_0090EA7895C6945F8644B96E47). Neither a small residual at a few sampled times nor a visually smooth curve establishes every model invariant. Conversely, observing norm growth in exp(tN) is not automatically numerical failure: that different exact model genuinely permits it.
+
+**Work:** reproduce both ordered outputs, keep the rightmost-first convention explicit, and construct a vector for which a chosen component test happens to miss the order difference. Derive the Euler factor and its limit, then decide which check distinguishes an incorrect solver, a different generator, a changed metric and an empirical model failure. Do not infer physical conservation merely because an algorithm happens to preserve a norm.
+
+**Continue:** [Investigate complex operators coordinate changes and certified evolution](Investigate-complex-operators-coordinate-changes-and-certified-evolution.lingua#r_00DB3E45916EBAD5985DC5A91D).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0059A3E412A426A2F8DB6313B6

@@ -40,7 +40,9 @@ fn main() {
         "transport",
         "anicca",
     ] {
-        files(&root.join("crates").join(name), &mut sources);
+        let directory = root.join("crates").join(name);
+        println!("cargo:rerun-if-changed={}", directory.display());
+        files(&directory, &mut sources);
     }
     sources.sort();
     let mut hash = Sha256::new();
@@ -57,7 +59,14 @@ fn main() {
         hash.update(std::fs::read(path).expect("read tested source"));
         hash.update([0]);
     }
-    for key in ["TARGET", "PROFILE", "CARGO_ENCODED_RUSTFLAGS"] {
+    for key in [
+        "TARGET",
+        "PROFILE",
+        "OPT_LEVEL",
+        "DEBUG",
+        "CARGO_CFG_TARGET_FEATURE",
+        "CARGO_ENCODED_RUSTFLAGS",
+    ] {
         hash.update(std::env::var(key).unwrap_or_default());
         hash.update([0]);
     }
@@ -72,9 +81,13 @@ fn main() {
         hash.update([0]);
     }
     let rustc = std::process::Command::new(std::env::var_os("RUSTC").unwrap())
-        .arg("--version")
+        .arg("-vV")
         .output()
         .expect("compiler version");
+    assert!(
+        rustc.status.success() && !rustc.stdout.is_empty(),
+        "compiler identity unavailable"
+    );
     hash.update(rustc.stdout);
     let encoded: String = hash
         .finalize()

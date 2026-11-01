@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Thermodynamic potentials, natural variables and constraints (@th-potentials: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Termodinamica-Lesche-UFJF.lingua#r_0ABCKSRZBN8T4Y4FV1FQPWNY4Z", #thermodynamics-and-heat-transfer "Maxwell-relations-response-functions-and-consistency.lingua#r_2R3VH7BBR9QTY25J55ZQHHJ8Q7") { r_6V58CVPWD0BEY8MEKZQCVK1RHM
+Thermodynamic potentials, natural variables and constraints (@th-potentials: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Termodinamica-Lesche-UFJF.lingua#r_0ABCKSRZBN8T4Y4FV1FQPWNY4Z", #thermodynamics-and-heat-transfer "Maxwell-relations-response-functions-and-consistency.lingua#r_2R3VH7BBR9QTY25J55ZQHHJ8Q7", #hephaestus-core "../../../chemistry/core/Define-chemical-potential-as-a-constrained-change-of-amount.lingua#r_00B3C5E118A7E5D485373E95A5") { r_6V58CVPWD0BEY8MEKZQCVK1RHM
 **Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapter 5 in full and multicomponent equilibrium; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), fundamental relations and potentials; [Termodinâmica — Bernhard Lesche, UFJF](../sources/Termodinamica-Lesche-UFJF.lingua#r_0ABCKSRZBN8T4Y4FV1FQPWNY4Z), the complete available potentials chapter.
 
 For a simple compressible mixture at equilibrium, write the fundamental differential with the actual work modes and species variables. Under the usual restricted mechanical model, dU = T dS−p dV+Σμ_i dn_i. Additional electrical, surface, elastic or magnetic terms require explicit definitions.
@@ -12,4 +12,9 @@ Derive the four differentials and use one consistent state model to calculate th
 **Continue:** [Maxwell relations, response functions and consistency](Maxwell-relations-response-functions-and-consistency.lingua#r_2R3VH7BBR9QTY25J55ZQHHJ8Q7).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Sixth chemistry-block reading:** Use the already derived closed-system constraint criteria and the definitions of H, A and G. The following common lesson introduces the composition terms, held variables and homogeneous scaling explicitly. Full Maxwell relations, multiphase stability and generalized work-coordinate treatment retain later preparation. Original source assignments and thermal routes remain; no fresh audit of complete MIT or Portuguese chapters is claimed.
+
+**Continue in the sixth chemistry block:** [Define chemical potential as a constrained change of amount](../../../chemistry/core/Define-chemical-potential-as-a-constrained-change-of-amount.lingua#r_00B3C5E118A7E5D485373E95A5).
+
 } r_6V58CVPWD0BEY8MEKZQCVK1RHM

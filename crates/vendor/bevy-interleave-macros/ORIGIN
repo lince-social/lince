@@ -1,0 +1,7 @@
+bevy_interleave_macros 0.10.0
+https://github.com/mosure/bevy_interleave
+Commit: 5d50c3f679833d0b5e55de9a05a8128b9458b3c0
+Copyright (c) 2024 Mitchell Mosure
+License: MIT, included in LICENSE.
+Source files are unchanged from the published crate.
+The manifest removes unused host dependencies on bevy, bevy_interleave_interface, wgpu, bytemuck and sha1.

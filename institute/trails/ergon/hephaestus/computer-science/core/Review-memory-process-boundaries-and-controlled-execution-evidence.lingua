@@ -1,0 +1,22 @@
+Import "../Computing.lingua"
+
+Review memory process boundaries and controlled execution evidence (@computing-memory-review: 0, is #chapter, #hephaestus-core "Information-lifetime-and-durable-state.lingua#r_00ABBBC2E40324C33C0481988A") { r_00C14977D991779F8DF28B4CF6
+Distinguish a name, value, object, reference, virtual address and physical word. State object extent and lifetime separately from page accessibility. Trace nested activation records and explain why a process switch preserves more than a procedure return address. Connect the original programming, aliasing and finite-machine preparation without changing the definitions of those earlier studies.
+
+Derive the page/offset decomposition and physical bounds for both process contexts. Prove the baseline private-write invariant and identify exactly which premise changes under writable sharing. Explain read-only mapping versus globally immutable physical storage, absence versus forbidden access, and why an allowed page access may still violate an object-level contract.
+
+Reconstruct the full-range and snapshot-copy rules. Prove that rejected copies cannot partly mutate memory under the model's no-interleaving assumption, and demonstrate why checking one endpoint is insufficient. Explain the empty-range convention, integer-domain checks and finite-word overflow issue. Separate a returned service error, a process fault, blocking, successful termination and a finite observation budget.
+
+Reproduce the two-process trace, preserved continuation/accumulator values, matching wake event and all final private/shared words. State what the saved-state implementation represents and what hardware/privilege mechanisms it does not emulate. Criticize the trusted-host boundary explicitly; passing the finite suite does not establish a real OS's security or a concurrent implementation's correctness.
+
+Derive cache costs, predict the two contrasting traces and justify the independent history-based check. Explain why modeled access count, modeled cost and measured elapsed time are three different claims. Identify the extra work needed for writes, coherence, translation caches, asynchronous devices or a different policy.
+
+Develop and defend a new bounded case with contracts, invariants, independently checked transitions and a revised assumption. Read the assigned primary material progressively; full textbook/course study, implementation laboratories and independent scholarly reconstruction remain learner demands rather than claimed author accomplishments.
+
+The computing core remains unfinished. Deeper language/compilation and algorithms, concurrency, durable storage, communication, software construction/reliability, human use and advanced academic/practical formation still need connected development. Continue the fourth common pass with engineering's material response and realization, then inquiry's continuous probability and estimation. Do not turn this block into a complete OS specialization while those cores wait.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the fifth common pass:** [State which information must survive which interruption](Information-lifetime-and-durable-state.lingua#r_00ABBBC2E40324C33C0481988A). The fifth computing block develops durable information, storage contracts, interrupted updates, copy/publish invariants, request identity and recovery. Preserve the earlier representation, collection, finite-machine and memory/process investigations. Engineering follows at comparable depth before specialized branches.
+
+} r_00C14977D991779F8DF28B4CF6

@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Investigate a stock model and defend its alternatives (@math-foundation-study: 0, is #chapter, #hephaestus-core "Review-quantities-domains-and-mathematical-claims.lingua#r_05C49871382970924AB854ED53") { r_0149F4044C03C0F4316E216838
+Use a small stock account to connect arithmetic, domains, functions, equations and proof. All values here are hypothetical. No physical inventory or manufacturing experiment is claimed.
+
+A store begins with 18 pieces, receives 7 per day and issues 5 per day. Define S(n) as the count after n complete daily cycles, with each receipt preceding that day's issue and no other changes. Here n is a nonnegative integer. After one day the count is 20, after two it is 22, and the model is S(n) = 18 + 2n. The fixed daily net change explains the formula: n daily contributions of 2 sum to 2n, added to the initial 18. The formula follows from the assumptions, not from fitting the first two observations.
+
+The equation S(n) = 35 gives n = 8.5 over the reals, so there is no exact day-end count of 35 in this model. The first day-end count at least 35 occurs at n = 9, when S = 36. Now introduce a capacity of 40 pieces. With receipt before issue, the temporary count during day n is S(n − 1) + 7 = 23 + 2n. Day 8 temporarily holds 39 and ends at 34. Day 9 would temporarily hold 41, exceeding capacity even though its proposed day-end count is only 36. Checking only the day-end formula misses an interface condition.
+
+Develop three accounts. First, explain and prove the unlimited-capacity formula under its assumptions. Second, identify the feasible whole-day domain under the stated within-day ordering and capacity. Third, compare an issue-before-receipt schedule, checking both the lower bound of zero and the upper bound of 40 at every step. Do not silently change the schedule while retaining a conclusion derived for the original one.
+
+Criticize the inference from data. The table S(0) = 18, S(1) = 20, S(2) = 22 also agrees with T(n) = 18 + 2n + n(n − 1)(n − 2). At n = 3, T gives 30 while S gives 24. T is not consistent with the stated constant daily net contribution, but the three observed values alone do not rule it out. Distinguish knowledge of a mechanism from a finite list of values. Propose a new observation or a process record that would discriminate the accounts.
+
+**Work:** produce a ledger with before-receipt, after-receipt and after-issue counts. Solve the threshold and capacity questions first with exact arithmetic and then independently by enumerating the daily states. Change one assumption—delivery size, initial stock or schedule—and predict how the result changes before recalculating. Explain whether the apparent change is mathematical, physical or informational.
+
+**Evidence:** present definitions, domain, equations, a justified general claim, a counterexample to an invalid inference, checked calculations and a short revision after criticism. A correct spreadsheet without this account does not establish understanding; an elegant formula without the capacity checks does not establish feasible operation.
+
+**Continue:** [Review quantities, domains and mathematical claims](Review-quantities-domains-and-mathematical-claims.lingua#r_05C49871382970924AB854ED53).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0149F4044C03C0F4316E216838

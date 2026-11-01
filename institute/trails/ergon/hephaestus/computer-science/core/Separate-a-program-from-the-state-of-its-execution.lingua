@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Separate a program from the state of its execution (@computing-process-state: 0, is #chapter, #hephaestus-core "Derive-a-finite-address-translation-and-its-permissions.lingua#r_0026D372CB489BE7FC6DF59B8C") { r_00215351C844E50F14E1E11C36
+A stored program describes possible operations. A process is an executing instance with state: a current continuation, working values, address-space interpretation and resource/service bookkeeping. Two processes can execute the same program with different state. Reuse [Files, paths, processes, and the working directory](../../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K) for the familiar files, paths, working-directory and process entrance; its earlier common continuation remains unchanged.
+
+For the coming original model, a process record has pc, acc, status, last and waiting. pc is an index into a trusted list of service-level instructions; acc is an integer 0 through 255. status is ready, blocked, done or fault. last records the most recent result or reason, and waiting names a pending event only when blocked. Each process also has a protected translation table. Physical memory is a shared modeled resource whose accessibility follows those tables.
+
+These are complete definitions for this small model, not a list of every register or resource in a real OS. Instructions are not fetched from writable user memory; there is no encoded instruction decoder, executable-page permission, device bus, interrupt microcode or actual CPU mode bit. The earlier encoded machine remains available separately. This level lets us explain memory and service contracts before a later architecture-specific implementation.
+
+At a scheduling boundary, ready means eligible to execute; blocked means waiting for a specified event rather than merely not chosen; done means explicitly terminated; fault means stopped by a model violation. The currently executing step is transient rather than a fifth stored status. A finite schedule ending while a process is ready says only that observation stopped. It is neither proof of termination nor a process fault.
+
+The implementation stores each context separately and selects one by process identifier at every step. This represents the saved-state contract directly instead of emulating physical register save/restore instructions. It must preserve the unselected process record. A real implementation needs a mechanism that achieves that contract, including all relevant architecture and kernel state. Mechanism determines how a switch works; policy determines which eligible process runs next.
+
+**Reading and work:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 4's process/state discussion and chapter 6's controlled execution introduction; [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 17. Distinguish two executions of one program from two calls inside one execution. Give a trace in which one process is blocked while another progresses, then identify the event needed to make the blocked process ready. Do not assume repeated scheduling creates an event that never occurs.
+
+**Continue:** [Derive a finite address translation and its permissions](Derive-a-finite-address-translation-and-its-permissions.lingua#r_0026D372CB489BE7FC6DF59B8C).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00215351C844E50F14E1E11C36

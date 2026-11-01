@@ -1,0 +1,19 @@
+Import "../Chemistry.lingua"
+
+Define exponential change by an inverse and prove its rate law (@chemistry-exponential-bridge: 0, is #chapter, #hephaestus-core "Connect-a-rate-model-with-an-initial-value-and-an-admissible-trajectory.lingua#r_01743BDDD7178F3F01AE693646") { r_00708D2CC09F8E0AA4DEC25359
+The preceding [Construct a logarithm from accumulated reciprocal change](Construct-a-logarithm-from-accumulated-reciprocal-change.lingua#r_048F416B6E95AE137A181635B7) establishes that ln maps positive numbers continuously and strictly increasingly onto all real numbers. Define E(s) as its unique positive inverse: ln(E(s))=s. Existence and uniqueness follow from that range and monotonicity. A local bracket around E(s) shows the inverse is continuous: images of two nearby positive endpoints enclose a neighborhood of s.
+
+Let y=E(s), δ=E(s+h)−y. For h≠0, strict monotonicity makes δ≠0 and h=ln(y+δ)−ln y. Consequently δ/h is the reciprocal of [ln(y+δ)−ln y]/δ. As h→0, inverse continuity gives δ→0, and the latter quotient tends to 1/y. Thus E′(s)=y=E(s). This difference-quotient argument establishes differentiability before using a chain rule on the inverse.
+
+The logarithm product identity gives ln(E(s)E(t))=s+t, so uniqueness implies E(s+t)=E(s)E(t). Hence E(0)=1, E(−s)=1/E(s), and E is always positive. Define e=E(1) and write E(s)=exp(s)=eˢ; for integer and rational powers this agrees with repeated multiplication and positive roots. For any a>0 define aˢ=exp(s ln a). No irrational exponent is being defined by an unexplained finite multiplication.
+
+For a constant k, the chain rule gives d exp(−kt)/dt=−k exp(−kt). Here k has units inverse time, making kt dimensionless. For k>0 this function decreases from one toward zero without reaching zero at finite t. To justify the limit, exp(s) is increasing and unbounded: otherwise its inverse could not cover arbitrarily large positive s. Its reciprocal exp(−s) therefore tends to zero. Multiplying two equal-time decay factors gives the decay over the sum of the times.
+
+A half factor satisfies exp(−kτ)=1/2, so τ=ln2/k. A characteristic e-folding time is 1/k; it is not the same as the half time. For zero k the factor is one and neither finite positive decay time exists. Use [Connect accumulated change and local rate under stated conditions](../../mathematics/core/Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0) to check ∫₀ᵗ k exp(−ks) ds=1−exp(−kt), rather than treating accumulated loss as an additional independent law.
+
+**Read and establish:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 2 section 2.7, inverse definition, exponential identities and differentiation. Reconstruct the difference-quotient justification here, which makes the inverse differentiability assumption explicit. Derive the half-factor and accumulation formulas with units. Compare exp(−2kt) with exp(−kt)² and explain why a fixed fractional reduction differs from subtracting the same amount each interval. This is reusable preparation, not completion of transcendental analysis or differential equations.
+
+**Continue:** [Connect a rate model with an initial value and an admissible trajectory](Connect-a-rate-model-with-an-initial-value-and-an-admissible-trajectory.lingua#r_01743BDDD7178F3F01AE693646).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00708D2CC09F8E0AA4DEC25359

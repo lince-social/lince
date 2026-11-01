@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Use completeness to prove that a bounded approximation has a limit (@math-sequence-completeness: 0, is #chapter, #hephaestus-core "Define-an-infinite-sum-through-its-finite-partial-sums.lingua#r_00E1C4C68DEB473F10A7A3A9EE") { r_00F83D434154FB30935068D16C
+An upper bound of a set is at least every member. A least upper bound, or supremum, is an upper bound no larger than any other upper bound; it need not belong to the set. The infimum is defined similarly below. We accept the real-number completeness premise: every nonempty set of real numbers bounded above has a real supremum. Existence of this complete ordered field is foundational here, not constructed from rationals. [Basic Analysis I by Jiri Lebl](../sources/Basic-Analysis-I-by-Jiri-Lebl.lingua#r_00D018D5107F06EE77E9066592) section 1.2 makes that premise explicit.
+
+Completeness implies that positive integers have no real upper bound. Otherwise let s be their supremum. Some integer n must exceed s−1, since s−1 is not an upper bound; then n+1>s contradicts the definition of s. Hence the tail indices used in the previous lesson exist. This is the Archimedean property. An infimum exists for a nonempty set bounded below by taking the negative of the supremum of its negatives.
+
+Suppose a_n is nondecreasing and bounded above. Let L=sup{a_n}. For any ε>0, L−ε cannot be an upper bound, so some a_N>L−ε. Monotonicity gives L−ε<a_N≤a_n≤L for n≥N. Therefore a_n→L. Apply this to −a_n for a nonincreasing sequence bounded below. Eventual monotonicity suffices after discarding a finite prefix. A recurrence's fixed-point equation identifies possible limits only after convergence and the relevant continuity have been established.
+
+A sequence is Cauchy when, for every ε>0, there is N such that |a_n−a_m|<ε whenever n,m≥N. This compares all pairs in the tail without naming a candidate limit. Convergence implies the condition by two ε/2 bounds. A Cauchy sequence is bounded by taking ε=1, comparing all tail terms with a_N and adding the finite prefix.
+
+For the converse in the real numbers, define l_n=inf{a_k:k≥n} and u_n=sup{a_k:k≥n}. Boundedness makes these finite. The lower endpoints increase and the upper endpoints decrease, so both converge by the preceding theorem. Given ε>0, the Cauchy condition implies u_n−l_n≤ε for sufficiently large n: every tail value is within ε of every other, and taking suprema/infima preserves the weak inequality. Their limiting endpoints therefore coincide. Since l_n≤a_n≤u_n, the sequence converges to that common value. Completeness is the step that supplied these endpoints and their limits.
+
+This conclusion depends on the number system. Rational approximations to √2 can be Cauchy but have no rational limit. If a reduced fraction a/b had square 2, a²=2b² forces a even and then b even, contradicting reduction. Taking decimal truncations of the real √2 gives rational terms with arbitrarily small tail differences, but the missing rational limit remains. Construction of the reals themselves belongs to the fuller analysis branch.
+
+**Work:** distinguish maximum from supremum using (0,1). Prove the squeezing step above directly from tolerances. Give a bounded non-Cauchy sequence and a sequence whose successive differences tend to zero but which is not Cauchy; the harmonic partial sums in the next lesson supply the latter. Compare this direct tail-interval proof with the selected source's treatment of Cauchy sequences.
+
+**Continue:** [Define an infinite sum through its finite partial sums](Define-an-infinite-sum-through-its-finite-partial-sums.lingua#r_00E1C4C68DEB473F10A7A3A9EE).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00F83D434154FB30935068D16C

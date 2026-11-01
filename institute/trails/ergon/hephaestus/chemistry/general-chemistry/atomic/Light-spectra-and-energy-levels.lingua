@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Use spectra to connect energy changes with atomic structure (@gc-light: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #general-chemistry "Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P") { r_3Z2QB3MQ90C9GRT3XV9QNKN7KG
+Use spectra to connect energy changes with atomic structure (@gc-light: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #general-chemistry "Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P", #hephaestus-core "../../core/Read-electronic-states-and-orbital-pictures-as-models-of-evidence.lingua#r_05EBFD205C1399B2027FBE417B") { r_3Z2QB3MQ90C9GRT3XV9QNKN7KG
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 6’s light, spectra, and atomic-model sections; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit I in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 2’s atomic-model and quantum-number material.
 
 Frequency, wavelength, and photon energy are related by c = λν and E = hν for light in vacuum. Specify the propagation medium when using a wavelength relation. An emitted or absorbed photon can connect particular states through an energy difference; a spectrum is evidence about transitions under conditions, not a direct picture of a classical electron orbit.
@@ -16,4 +16,9 @@ Complete the electronic-structure chapter and MIT's corresponding lectures/probl
 **Continue:** [Read orbitals and electron configurations as quantum models](Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Second chemistry-block reading:** Use Chemistry 2e 6.1–6.2 for spectral quantities and the introductory atomic model, following the new period/frequency/energy preparation. The complete MIT/Portuguese assignments remain broader later reading; no fresh full-course inspection is claimed.
+
+**Continue in the second chemistry block:** [Read electronic states and orbital pictures as models of evidence](../../core/Read-electronic-states-and-orbital-pictures-as-models-of-evidence.lingua#r_05EBFD205C1399B2027FBE417B).
+
 } r_3Z2QB3MQ90C9GRT3XV9QNKN7KG

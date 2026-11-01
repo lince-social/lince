@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Choose a physical system and a question (@physics-system-question: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_03633FE49B5013971613976F7D
+Begin with something observable: a small cart changing position, a cooling cup or a lamp receiving electrical energy. A physical account starts by saying which object or region is being studied and what question the account should answer. A system boundary is a choice in the description. It helps identify exchanges and interactions; drawing it does not remove the surroundings.
+
+For a cart, one question concerns the motion of a marked point, another the motion of its center of mass, and another the deformation of its frame. The same observation may not answer all three. Treating the cart as a particle means retaining its mass and translational motion while neglecting size and rotation for the question at hand. That approximation can be useful for one calculation and inadequate for tipping or wheel motion.
+
+Choose a reference frame and a time interval. State what is known from observation, what is supplied as exercise data, and what is assumed. A printed mass, a measured mass and a mass chosen for an ideal model are different kinds of information. Keep a table of quantities, symbols, units, conditions and origins so another reader can reconstruct the question.
+
+If the cart alone is the system, a hand pushing it is an external interaction. If the cart and hand are considered together, their contact becomes internal, but the person, ground and other supports still require attention. Enlarging the boundary can simplify one balance while complicating another. It cannot make a physical exchange disappear from every consistent account.
+
+**Work:** draw two boundaries for the same benign example and list what crosses or acts across each. Define the position or temperature you intend to compare, where it is measured and at what times. Explain which features a first model neglects and what observation would make that neglect questionable.
+
+**Shared preparation:** the metrology lesson on specifying a measurand provides a fuller account of definitions. Revisit the mathematics lessons on quantities and model assumptions. The following units lesson supplies the common language for combining observations; treat unfamiliar pressure, energy and power examples there as previews to revisit after those quantities are introduced.
+
+**Check:** distinguish a system, a boundary, a physical object, a reference frame, a quantity and a model. This opening makes no claim that one boundary is universally best.
+
+**Preparation:** the first mathematics foundation block supplies arithmetic, fractions, signed quantities, equations and functions. Use [Begin with numbers, models and mathematical arguments](../../mathematics/core/Numbers-models-and-mathematical-arguments.lingua#r_0BC762DF1B7E019C36477207F3) if these are unfamiliar; the later physics steps introduce their spatial and rate notation as it is needed. For a precise observed quantity, use [Begin with a question and specify the measurand](../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+**Continue:** [Units, dimensions, and equations that can make sense](../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_03633FE49B5013971613976F7D

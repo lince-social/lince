@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Prove when conserved counts are sufficient for reachability (@math-discrete-reachability: 0, is #chapter, #hephaestus-core "Count-legal-histories-by-reflection-and-recursive-decomposition.lingua#r_0059D95D38A4225F4F21826562") { r_00EA195EBD1EE1E2AFB5B51D6C
+An invariant is a necessary condition for reachability when it has the same value along every allowed transition. It is not automatically sufficient. In the forward three-box model, total count N is preserved, yet (0,0,N) cannot reach (N,0,0) for N>0. The allowed direction carries information absent from the total.
+
+Let s=(s₀,s₁,s₂) and t=(t₀,t₁,t₂) lie in S_N, with base moves 0→1 and 1→2. Then s reaches t exactly when s₀≥t₀ and s₀+s₁≥t₀+t₁, equivalently s₀≥t₀ and s₂≤t₂. Necessity follows because tokens cannot move back across either cut. For sufficiency, first make s₀−t₀ moves 0→1. Then make t₂−s₂ moves 1→2. Both numbers are nonnegative. Before the second stage, box 1 contains s₁+s₀−t₀=t₁+t₂−s₂, enough for that stage and leaving exactly t₁. This constructs a legal witness for every pair satisfying the conditions.
+
+Define Φ(a,b,c)=b+2c. Each forward move increases Φ by 1, and 0≤Φ≤2N. Therefore no directed cycle exists, every history has length at most 2N−Φ(start), and any walk from s to t has exactly Φ(t)−Φ(s) steps. A maximal history ends at (0,0,N), because every other state has a token in box 0 or 1 and therefore an outgoing edge. This proves termination for a process that keeps taking enabled moves. A scheduler allowed to wait forever can still prevent completion; adding idle self-loops changes the timing/progress model.
+
+Now replace the forward base graph by any undirected graph on finitely many boxes and allow unit moves in both directions, with no capacity restriction. Total tokens in each connected component are invariant. These component totals are also sufficient for reachability. If a current state differs from its target within a component, choose a surplus box and a deficit box. Connect them by a path and carry one token along it. Intermediate boxes return to their previous counts after the token passes; no count becomes negative. The discrepancy at the two ends decreases. Repeating finitely many times reaches the target. Isolated vertices form one-box components and keep their counts fixed.
+
+The sufficiency proof relies on both directions, connectivity, unlimited box capacity and movable indistinguishable tokens. A directed edge, exclusion rule, blocked intermediate box or additional conserved label can invalidate it. Invariants should be tested against the actual transition rules rather than inherited from a drawing of a similar system.
+
+**Work:** prove the two-cut criterion and construct a witness for s=(3,1,0),t=(1,1,2). Find two states with the same total but no forward reachability. Remove a base edge in the reversible model and derive the new component invariants. Compare a reachability witness with a termination proof and a finite waiting-time guarantee. The program checks all pairs for N≤8, while the arguments cover every N under the declared premises.
+
+**Continue:** [Count legal histories by reflection and recursive decomposition](Count-legal-histories-by-reflection-and-recursive-decomposition.lingua#r_0059D95D38A4225F4F21826562).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00EA195EBD1EE1E2AFB5B51D6C

@@ -96,7 +96,7 @@ pub fn comments_in(source: &str) -> Vec<Comment> {
         }
 
         let previous = if at == 0 { b' ' } else { bytes[at - 1] };
-        if !is_word(previous) {
+        if matches!(byte, b'b' | b'c' | b'r') && !is_word(previous) {
             if let Some(next) = raw_string_end(bytes, at, &mut line) {
                 at = next;
                 continue;

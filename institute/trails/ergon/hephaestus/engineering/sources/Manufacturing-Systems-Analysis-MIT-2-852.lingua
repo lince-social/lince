@@ -1,0 +1,9 @@
+Import "../Engineering.lingua"
+
+Manufacturing Systems Analysis MIT 2 852 (@engineering-source-production: 0, is #reference) { r_00185E34168A41C88CE14E1828
+Stanley B. Gershwin, Manufacturing Systems Analysis, MIT 2.852, Spring 2010. The [official course](https://ocw.mit.edu/courses/2-852-manufacturing-systems-analysis-spring-2010/) identifies graduate prerequisites. Read the complete introductory lecture now, selected early flow-line material next, and the broader course progressively after probability and optimization preparation. The syllabus lists Manufacturing Systems Engineering, Prentice Hall, 1993, ISBN 9780135606087; full book contents were not inspected. The author's linked purchasing page is dated 2005, so current purchase availability is not established here.
+
+On 1 November 2026, metadata, syllabus and actual [Overview](https://ocw.mit.edu/courses/2-852-manufacturing-systems-analysis-spring-2010/resources/mit2_852s10_intro/) openings/resources/waiting passages were inspected; selected [Flow Lines](https://ocw.mit.edu/courses/2-852-manufacturing-systems-analysis-spring-2010/resources/mit2_852s10_transfer_lines/) assumptions and infinite/zero/finite-buffer passages; and [Quality and Quantity](https://ocw.mit.edu/courses/2-852-manufacturing-systems-analysis-spring-2010/resources/mit2_852s10_qq/) inspection/action/performance passages. The latter slides bear 2007 copyright, the first two 2010. Whole PDFs, projects and empirical results were not audited or reproduced.
+
+OCW links CC BY-NC-SA 4.0 with component qualifications; preserve author notices and separately credited material. No source media are bundled. The finite slot/rework solver and data are original constructions with their own timing and knowledge assumptions.
+} r_00185E34168A41C88CE14E1828

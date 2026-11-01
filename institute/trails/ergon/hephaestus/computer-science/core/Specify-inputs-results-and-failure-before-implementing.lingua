@@ -1,0 +1,23 @@
+Import "../Computing.lingua"
+
+Specify inputs, results and failure before implementing (@computing-contract: 0, is #chapter, #hephaestus-core "Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9") { r_0F6547BECCF6CA21F43948497D
+A specification says what an operation must accept, what it must return and what counts as failure. An implementation supplies a procedure that should meet that specification. The two can be written in different forms: ordinary language and a table may express the intended meaning before code exists. A valid program in a language can still implement the wrong question.
+
+For a stock model, let the initial stock and capacity be whole-number counts, with capacity nonnegative and the initial count between zero and capacity. Let changes be an ordered finite tuple of signed integer counts. Positive values are receipts and negative values are issues. A zero is a recorded change of zero, not a missing observation. Every quantity must use the same item and count basis.
+
+The operation returns the initial state and each subsequent accepted state. If a proposed change would leave the allowed interval, return the accepted prefix and the zero-based index and candidate value of the first rejected change. Do not apply that change or any later one. If every change is accepted, return the complete trace and a distinct no-failure value. An empty change tuple therefore returns the initial state alone and no failure.
+
+Malformed input is a different condition from a validly represented event that exceeds capacity. This teaching contract rejects text counts, floating-point values, Booleans, mutable input collections and an invalid initial state. All supplied event types are checked before simulation, so a malformed later event rejects the call even if an earlier well-formed event would cross a physical bound. The operation is a calculation: it performs no stock transfer, file write or other external action.
+
+**Work:** write expected outcomes for no events, an exactly full store, an issue below zero, a large receipt and an invalid event type. State whether event order matters. Explain why automatically converting "7" or True into a count would introduce a policy not specified here. Propose a different useful contract, such as rejecting an entire day's transactions together, and explain which outcomes would change.
+
+**Shared foundation:** the existing data-schema lesson develops the same distinction between structural validity and scientific meaning. The stock contract is deliberately narrower than its lot-processing example. Neither schema can establish that an entered count accurately describes the physical stock; that requires evidence outside the program.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Shared contract:** [Data meaning and schema](../../inquiry/reproducible-computation/data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH).
+
+**Continue:** [Derive a loop from an invariant and a stopping rule](Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0F6547BECCF6CA21F43948497D

@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Preserve port behavior while distinguishing power and efficiency objectives (@engineering-port-equivalent: 0, is #chapter, #hephaestus-core "Electrical-alternatives-and-component-limits.lingua#r_005E639D5F937C2C1C6CEA0834") { r_000EAC2105FC12CF0A41AD15D9
+Cut the circuit at the two terminals of L₁ and keep the other branch unchanged. The equivalent source seen by L₁ has E_th=E B/(r+B) and R_th=r₁+rB/(r+B). Derive these expressions directly rather than applying a source-removal rule without checking its conditions.
+
+Let a general current j leave the selected port into its attached load. Feed balance is (E−v₀)/r=j+v₀/B, so v₀=EB/(r+B)−[rB/(r+B)]j. The selected terminal is v₁=v₀−r₁j, giving v₁=E_th−R_th j. Connecting L₁ imposes j=v₁/L₁ and therefore v₁=E_th L₁/(R_th+L₁). This reproduces the nodal result for every positive L₁ while the rest of the stipulated linear network remains fixed.
+
+The equivalent preserves the port voltage/current relation in this model. It does not preserve the separate heat generated in R_s, R_c, r₁ or the other branch. In particular, R_th is not a physical resistor whose I²R necessarily equals the total internal dissipation of the original network. Keep the full account when assessing actual component losses. [Source equivalents, strength and boundaries](../electrical-power-engineering/networks/Source-equivalents-strength-and-boundary-conditions.lingua#r_1Y39223NHJKG5R37K1FESAWZZY) discusses the broader importance of state and boundary limits; its generator/converter dynamics require later preparation.
+
+At this fixed port, power delivered to a resistive load L is P=E_th² L/(R_th+L)². Since (R_th−L)²≥0, (R_th+L)²≥4R_th L, so P≤E_th²/(4R_th), with equality only at L=R_th. This proves a maximum-power result without assuming that it is the engineering objective. It also shows an interior maximum: powers cannot generally be bounded by checking parameter-box corners without further analysis.
+
+For a simple ideal voltage source and its one physical series resistance, the fraction reaching the load is L/(R_s+L). Matching L=R_s gives one half, while larger L gives higher efficiency but lower power beyond the maximum. In the two-load system, use its actual full useful-power/source-power definition instead; the port equivalent's formal internal dissipation is not a substitute.
+
+**Work:** compute E_th,R_th for design A, where E=12 V, r=2 Ω, r₁=2 Ω and B=6 Ω. Obtain E_th=9 V and R_th=7/2 Ω, then recover v₁=20/3 V for L₁=10 Ω. Determine the maximum possible L₁ power in this model and explain which other branch quantities change as L₁ changes. Identify which quantities the port equivalence does and does not preserve.
+
+Read [DC Electrical Circuit Analysis — James M. Fiore](../electrical-power-engineering/sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV), sections 6.4 and 6.6, progressively with the original full assignments retained. Here only the stated resistive DC port is derived; dependent-source, nonlinear, frequency-dependent and time-varying equivalents require their own models.
+
+**Continue:** [Compare realizations under explicit electrical and component limits](Electrical-alternatives-and-component-limits.lingua#r_005E639D5F937C2C1C6CEA0834).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_000EAC2105FC12CF0A41AD15D9

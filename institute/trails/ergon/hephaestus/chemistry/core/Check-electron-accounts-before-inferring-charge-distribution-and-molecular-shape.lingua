@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Check electron accounts before inferring charge distribution and molecular shape (@chemistry-charge-models: 0, is #chapter, #hephaestus-core "../general-chemistry/bonding/Geometry-polarity-and-properties.lingua#r_1ESH4EFVR6399WYBN1405EJ38F") { r_0A6EA0B02E9CA642280AEA7D19
+Reuse the shared Lewis and formal-charge lessons. A molecular formula supplies an entity count, a Lewis representation supplies a proposed connectivity and electron account, and a geometry model supplies nuclear positions. None alone determines the whole electronic distribution or bulk material behavior.
+
+**Read:** Chemistry 2e sections 7.3–7.4 and 7.6, with electron-account and shape exercises. Keep the separate definitions of species charge, formal charge, oxidation state and partial charge visible. The shared naming and bonding sources retain the more extensive conventions and later cases.
+
+In the ordinary Lewis account for H₂O, oxygen contributes six valence electrons and the two hydrogens contribute one each: eight in total. Two single bonds use four electrons, and oxygen's two lone pairs use the other four. Formal charge is neutral-atom valence count minus nonbonding electrons minus half the bonding electrons. It is zero on each atom here. The conventional oxidation-state assignments are instead +I for hydrogen and −II for oxygen. Both accounts give net zero, but they assign electrons by different rules; neither says that the actual molecule has no polarized electronic distribution.
+
+For carbonate, CO₃²⁻, the valence count is 4+3×6+2=24. In a contributor with one C=O double bond and two C−O single bonds, eight electrons are bonding and sixteen nonbonding. Carbon and the double-bonded oxygen have formal charge zero; each singly bonded oxygen has −1. The three choices of double-bond location retain the same total account. They are resonance contributors, not three different species between which the ion must physically jump. Their utility must be related to symmetry and electronic evidence, with the species and environment stated.
+
+A bond-dipole arrow is also a representation with a direction convention. For a purely geometrical illustration, let two equal vectors of magnitude d use directions (3/5,4/5) and (3/5,−4/5). Their sum is (6d/5,0); two opposite directions (1,0) and (−1,0) instead cancel. This compares stipulated vector arrangements. It does not assert the actual water bond angle, bond dipole or measured molecular dipole, which require an electronic/experimental account. Apply one consistent arrow convention throughout; chemistry bond-polarity arrows and physical dipole-vector conventions must not be mixed.
+
+Use the next [shared shape lesson](../general-chemistry/bonding/Geometry-polarity-and-properties.lingua#r_1ESH4EFVR6399WYBN1405EJ38F) to distinguish electron-domain arrangement from molecular geometry and to study actual textbook examples. Equal polar bonds can cancel under suitable symmetry; a nonzero molecular dipole does not by itself determine a boiling point, solubility or reaction rate. The surrounding particles and collective state matter.
+
+**Work:** verify electron totals and formal charges independently, preserving the ion's charge in the count. Compare the formal and oxidation-state accounts for water without treating either as a partial-charge measurement. Reconstruct the vector example, change one magnitude and identify which cancellation survives. Explain which further evidence is needed to infer geometry, equivalent bonds and bulk properties from these representations.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Shared representations:** [Build a Lewis structure and test what it represents](../general-chemistry/bonding/Lewis-structures-and-valence.lingua#r_6H377ERVG3W7RTQBA71Y29FEMQ); [Distinguish formal charge, oxidation state, and delocalized bonding](../general-chemistry/bonding/Formal-charge-and-delocalization.lingua#r_43EAP1EC5N8J3HRPWV4D9T51AF); [Distinguish a point a displacement and its coordinates](../../mathematics/core/Distinguish-a-point-a-displacement-and-its-coordinates.lingua#r_062423188E960EBAB9A92CE3E4); [Use linear combinations to explain span independence and coordinates](../../mathematics/core/Use-linear-combinations-to-explain-span-independence-and-coordinates.lingua#r_004D242DF23E1A3D1718672EAE).
+
+**Continue:** [Connect three-dimensional shape with polarity and behavior](../general-chemistry/bonding/Geometry-polarity-and-properties.lingua#r_1ESH4EFVR6399WYBN1405EJ38F).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0A6EA0B02E9CA642280AEA7D19

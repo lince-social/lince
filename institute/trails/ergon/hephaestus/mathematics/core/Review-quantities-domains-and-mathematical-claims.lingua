@@ -1,0 +1,20 @@
+Import "../Mathematics.lingua"
+
+Review quantities, domains and mathematical claims (@math-foundation-review: 0, is #chapter, #hephaestus-core "Derive-geometric-quantities-and-state-what-scaling-preserves.lingua#r_059C90E2E6CC1CCD2FAD802C6C") { r_05C49871382970924AB854ED53
+This block connects an absolute numerical beginning to the first mathematical habits needed across the sciences. It reuses quantity descriptions, arithmetic, fractions, ratios, equations and functions from quantitative literacy. The added lessons make domains, model assumptions, solution equivalence, composition, quantifiers and elementary proofs explicit.
+
+**Demonstrate the foundation:** choose a new small quantitative question and supply its objects, units or abstract interpretation, allowed domain and constraints. Move between words, a table, an equation and a graph. Solve a forward and an inverse question, explain every excluded case, and distinguish a mathematical deduction from a claim needing observation. Write one general proof and one counterexample, with no reliance on unexamined calculator output.
+
+**Reading evidence:** complete the assigned arithmetic and fraction/proportion work where it is not already fluent. Work the relevant algebra/function exercises and the assigned set, logic and direct-proof chapters. Keep difficult or unresolved exercises visible. A list of book links or a collection of final answers is not completion evidence. Return to the shared Records when the review exposes a gap.
+
+**Review with another reader:** ask them to change a domain, remove an assumption, reverse an implication or alter a denominator. Explain which conclusions survive and which require repair. In the stock investigation, defend the distinction between a day-end count and a temporary within-day count, and between a finite table and a justified rule.
+
+**Scope:** the completed authored block ends here. It does not complete the mathematics core or retire any planned mathematics subject. The next block develops geometry, vectors and elementary linear systems. Fuller proof methods, analysis, discrete structures, probability and advanced academic/practical formation remain. All six areas now have a first foundation block; the second common pass continues below, followed by comparable work in the other areas.
+
+**Connections:** [Physics: systems, change and explanations](../../physics/core/Systems-change-and-physical-explanations.lingua#r_0C0B264F8BB7FF26E566E6B5DB), [Chemistry: particles and accounting](../../chemistry/core/Substances-particles-and-chemical-accounting.lingua#r_06A721F480CCA6DC7EB5D006D8) and [Computing: representations and procedures](../../computer-science/core/Representations-procedures-and-computational-evidence.lingua#r_0D60F81B61A757D44B6977320D) use these foundations. These contextual links offer continuations without claiming that their full cores are developed or requiring completion of a specialist trail.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the second common pass:** [Derive geometric quantities and state what scaling preserves](Derive-geometric-quantities-and-state-what-scaling-preserves.lingua#r_059C90E2E6CC1CCD2FAD802C6C). The first blocks across all six areas are now present; deepen their foundations together.
+
+} r_05C49871382970924AB854ED53

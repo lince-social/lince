@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Choose actions from what the observations actually distinguish (@engineering-operation-observation: 0, is #chapter, #hephaestus-core "Investigate-error-in-the-task-equipment-and-working-conditions.lingua#r_00D90123A8C5984D3F7984EC40") { r_0045DE4CB159562B73B3AF4365
+Reuse [Make pending confirmed and unknown outcomes mean different things](../../computer-science/core/Make-pending-confirmed-and-unknown-outcomes-mean-different-things.lingua#r_00336329746CC5325F937E4856) and [Separate disturbance rejection from sensor bias and identifiable quantities](Separate-disturbance-rejection-from-sensor-bias-and-identifiable-quantities.lingua#r_0089FCA742A41805791FE10944). A person's information often identifies several possible physical states. Represent that uncertainty by a nonempty set K of states consistent with the available observations and transition assumptions. It is a set of possibilities, not a probability distribution or a psychological model of the person's beliefs.
+
+For an observation map h and a current reading y, keep the states satisfying h(s)=y. If event e has possible successors T(s,e), update by K′={s′: some s in K has s′ in T(s,e), and h(s′)=y}. The event must be known to have occurred in the sense modeled. For an accepted command, states where that command could not be accepted are excluded; this retrospective narrowing does not justify issuing an uncertain command prospectively. A command is uniformly admissible from K only when every s in K satisfies its precondition. An empty updated set signals disagreement among evidence, event account and model; it is not certainty that any action is safe.
+
+After starting from the known initial state, resuming and requesting, the counts are still (2,0,0). One unobserved tick leaves either that state with pending work or (1,1,0) with no pending work. After hold, both modes are hold. Resume is permitted in neither state; cancel is permitted only in the first and recover only in the second. The only universally permitted command is hold. A fresh observation of the pending flag or buffer can distinguish the alternatives. This conservative result follows from the information and contract, not a numerical risk score.
+
+A current reading is different from a remembered one. If the system can evolve after observation, propagate the possible states through that interval before choosing the next action. The model's tick closure makes this loss of information visible. Rechecking the display helps only if the display itself is current and relevant; a frozen sensor can repeat an obsolete value. Counting more pixels or recording more timestamps does not establish those premises.
+
+**Work:** derive the two possible histories and their permitted-command intersection. Supply a pair of run states with the same mode indication but different request eligibility. Explain which additional observation separates them. Then change the observation assumption from exact counts to an interval or missing reading and describe how the possible-state set changes. No probability of human failure follows from the number of remaining possibilities.
+
+**Continue:** [Investigate error in the task equipment and working conditions](Investigate-error-in-the-task-equipment-and-working-conditions.lingua#r_00D90123A8C5984D3F7984EC40).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0045DE4CB159562B73B3AF4365

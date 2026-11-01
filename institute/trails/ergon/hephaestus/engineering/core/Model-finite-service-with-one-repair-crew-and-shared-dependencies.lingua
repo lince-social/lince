@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Model finite service with one repair crew and shared dependencies (@engineering-service-resources: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP") { r_009187D1F4248E8A8ECB008F87
+Use a deliberately small model to connect physical resources to an exactly checkable account. The state x=(s,a,b) consists of three bits: common support and two units. Capacity is c(x)=s(a+b). Each slot has one unit of time; demand d is fixed at one or two work units per slot. Useful output during slot k is min(c(Xₖ),d). The entire slot is assigned the starting state; transitions take effect at its end. These probabilities are stipulated, not estimates of real component lifetimes.
+
+At the start of a slot choose at most one already-down component for repair, using a fixed priority permutation. Each currently up component i independently fails at the slot end with probability pᵢ. This exposure is per calendar slot while that component is up, including a unit waiting for support. The chosen repair independently succeeds with probability q; an unchosen down component remains down. A newly failed component cannot be repaired in that same slot. A restored component cannot also fail in that same slot. Thus the order and observation times are part of the model, not implementation conveniences. The crew, spares and diagnostic knowledge are assumed available; later changed-model work removes those assumptions.
+
+Given x and the chosen index j, define uᵢ=1−pᵢ when xᵢ=1, uⱼ=q when xⱼ=0 is selected, and uᵢ=0 for other down components. For target y, the transition probability is K(x,y)=∏ᵢ[uᵢ if yᵢ=1, otherwise 1−uᵢ]. Summing over all eight targets gives ∏ᵢ[uᵢ+(1−uᵢ)]=1. This proves conservation of probability for every permitted parameter value, including zero and one.
+
+For distribution πₖ, propagate πₖ₊₁(y)=Σₓπₖ(x)K(x,y). The expected cumulative output over n slots is Σₖ₌₀ⁿ⁻¹Σₓπₖ(x)min(c(x),d), by linearity of expectation; no independence between different slots is required for that sum. To retain the uninterrupted mission, propagate an additional, generally unnormalized mass mₖ: m₀=π₀ and mₖ₊₁(y)=Σₓmₖ(x)1[c(x)≥d]K(x,y). Its total mass is the probability of adequate service at all n slot starts. The endpoint probability uses πₙ and c(y)≥d instead. Induction over slots proves both recurrences from conditional probability.
+
+One crew creates competition. In state (0,0,1), repairing support first may restore a service path quickly; repairing a unit first may build capacity that still cannot be used. Neither priority is declared universally optimal. Compare finite horizons, demands and failure/repair parameters before making a claim. Even perfect repairs do not ensure sustained recovery: if every up component fails every slot, a single crew can be unable to assemble the two simultaneously up components required for service.
+
+**Work:** derive the row for state (0,0,1) under both priorities, p=(1/4,1/2,1/8) and q=1/2. List the events ruled out by the slot convention. Identify what extra state is needed for repair durations longer than one slot, spare depletion, imperfect diagnosis or a shared damaging event. Those extensions belong to the later reliability branch once their common principles are understood.
+
+**Continue:** [Condition observations, diagnosis and prediction](../mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_009187D1F4248E8A8ECB008F87

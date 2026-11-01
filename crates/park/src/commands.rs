@@ -49,6 +49,36 @@ impl Default for OutputPreference {
 }
 
 impl Commands {
+    pub fn initialize(path: &Path) -> io::Result<()> {
+        use std::{io::Write, os::unix::fs::OpenOptionsExt};
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        match std::fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(path) {
+            Ok(mut file) => file.write_all(b"{}\n"),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => Ok(()),
+            Err(error) => Err(error),
+        }
+    }
+
+    fn terminal_program(term: Option<std::ffi::OsString>, path: Option<std::ffi::OsString>) -> String {
+        use std::os::unix::fs::PermissionsExt;
+        let executable = |path: &Path| path.metadata().is_ok_and(|metadata| {
+            metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+        });
+        term.and_then(|term| term.into_string().ok())
+            .filter(|term| !term.is_empty())
+            .filter(|term| {
+                if term.contains('/') {
+                    executable(Path::new(term))
+                } else {
+                    path.as_ref().is_some_and(|path| std::env::split_paths(path)
+                        .any(|directory| executable(&directory.join(term))))
+                }
+            })
+            .unwrap_or_else(|| "ghostty".into())
+    }
+
     pub fn load(path: &Path) -> io::Result<Self> {
         Self::parse(&Self::read(path)?.unwrap_or_else(|| b"{}".to_vec()))
     }
@@ -346,7 +376,7 @@ impl Commands {
         let command = match action {
             DesktopAction::OpenTerminal => self.terminal.clone().or_else(|| {
                 Some(Description {
-                    program: "xdg-terminal-exec".into(),
+                    program: Self::terminal_program(std::env::var_os("TERM"), std::env::var_os("PATH")),
                     arguments: Vec::new(),
                     directory: None,
                     capabilities: Vec::new(),
@@ -371,6 +401,39 @@ impl Commands {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn initialization_creates_private_settings_and_preserves_existing_configuration() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("config/park.json");
+        Commands::initialize(&path).unwrap();
+        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        assert!(Commands::load(&path).unwrap().terminal.is_none());
+        let saved = br#"{"terminal":{"program":"chosen-terminal"}}"#;
+        std::fs::write(&path, saved).unwrap();
+        Commands::initialize(&path).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), saved);
+        assert_eq!(Commands::load(&path).unwrap().command(DesktopAction::OpenTerminal).unwrap().program, "chosen-terminal");
+    }
+
+    #[test]
+    fn terminal_default_uses_executable_term_and_falls_back_for_terminfo_or_missing_programs() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let terminal = directory.path().join("my-terminal");
+        std::fs::write(&terminal, b"terminal").unwrap();
+        std::fs::set_permissions(&terminal, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = Some(directory.path().as_os_str().to_owned());
+        assert_eq!(Commands::terminal_program(Some("my-terminal".into()), path.clone()), "my-terminal");
+        assert_eq!(Commands::terminal_program(Some(terminal.clone().into_os_string()), None), terminal.to_str().unwrap());
+        for term in [None, Some("".into()), Some("xterm-256color".into()), Some("missing".into())] {
+            assert_eq!(Commands::terminal_program(term, path.clone()), "ghostty");
+        }
+        std::fs::set_permissions(&terminal, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(Commands::terminal_program(Some("my-terminal".into()), path), "ghostty");
+        assert_eq!(Commands::terminal_program(Some(directory.path().as_os_str().to_owned()), None), "ghostty");
+    }
 
     #[test]
     fn device_saves_merge_preserve_disconnected_intent_and_reject_stale_or_invalid_candidates() {

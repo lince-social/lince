@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Derive a pure substance coexistence slope from chemical potentials (@chemistry-phase-coexistence: 0, is #chapter, #hephaestus-core "Reconstruct-a-bounded-vapor-pressure-correlation-and-its-interpretation.lingua#r_0085D7567BA2BB167C72A8FB15") { r_00F3CC35D72514466233FCB96F
+For a pure bulk phase, chemical potential is molar Gibbs energy μ=g. The earlier differential in [Define chemical potential as a constrained change of amount](Define-chemical-potential-as-a-constrained-change-of-amount.lingua#r_00B3C5E118A7E5D485373E95A5) reduces to dμ=−s_m dT+v_m dp. If two phases α and β coexist and can exchange the substance, μ_α(T,p)=μ_β(T,p). Following their coexistence curve preserves equality, so −s_α dT+v_α dp=−s_β dT+v_β dp. With Δ referring to β minus α and Δv≠0,
+
+dp/dT=Δs_m/Δv_m=Δh_m/(T Δv_m).
+
+The last equality follows from Δg=Δh−TΔs=0 on coexistence. This Clapeyron relation uses equilibrium state quantities. Its slope is in Pa/K if Δh is J/mol and Δv is m³/mol. It does not provide a nucleation rate or describe a nonequilibrium heating path. When both differences vanish near a critical endpoint, dividing them without a limiting analysis is invalid.
+
+For vaporization, approximate Δv by the vapor molar volume and then use an ideal vapor v_g=RT/p. These are separate physical approximations. They give dln(p/p°)/dT≈Δh_vap(T)/(RT²), where p° is a fixed pressure reference. Only after also treating Δh_vap as constant over the range may one integrate to ln(p₂/p₁)≈−(Δh_vap/R)(1/T₂−1/T₁). The logarithm has a dimensionless argument. This approximation is not a solid–liquid formula and generally deteriorates when the two phase volumes become comparable or the vapor is nonideal.
+
+The earlier invented example in [Interpret vapor pressure, phase change, and a phase diagram](../general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S) now has its missing derivation: with Δh_vap=40,000 J/mol, T₁=300 K and T₂=310 K, the pressure ratio is about 1.6775 using R=8.31446261815324 J/(mol K). No material was identified by that hypothetical enthalpy. Use the next source-based calculation to distinguish a conditional estimate from an evaluated correlation.
+
+A useful bound replaces the constant-enthalpy shortcut. If h_min≤Δh_vap(T)≤h_max throughout T₁≤T≤T₂, the same ideal-vapor model gives
+
+(h_min/R)(1/T₁−1/T₂)≤ln(p₂/p₁)≤(h_max/R)(1/T₁−1/T₂).
+
+This is a bound conditional on the constitutive approximation and enthalpy enclosure. It does not cover unmodeled vapor nonideality or an incorrectly identified condensed phase. For melting, a positive transition enthalpy can accompany either sign of Δv; pressure dependence follows the actual volume difference, not the slogan that heating favors a larger volume.
+
+**Work:** derive the slope and the bounded integral, check units and signs, and list each approximation needed for the logarithmic expression. Read [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1) section 8.4, with the full transition discussion in 8.3. Compare a phase boundary with an actual path crossing it; explain why equality of chemical potentials alone does not tell how quickly transformation occurs.
+
+**Continue:** [Reconstruct a bounded vapor pressure correlation and its interpretation](Reconstruct-a-bounded-vapor-pressure-correlation-and-its-interpretation.lingua#r_0085D7567BA2BB167C72A8FB15).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00F3CC35D72514466233FCB96F

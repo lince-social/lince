@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Assign continuous probability to intervals rather than individual density values (@inquiry-density-meaning: 0, is #chapter, #hephaestus-core "Use-cumulative-probabilities-transformations-and-quantiles-with-explicit-domains.lingua#r_00335F433A9AF6C45114F39ACD") { r_001CB0C3AE88E7CFC0E0B77898
+The finite model in [Build a finite chance model from outcomes and weights](Build-a-finite-chance-model-from-outcomes-and-weights.lingua#r_0ECC7C2601996048D46E15C104) assigns weights to separate outcomes. A continuous density model assigns probability to intervals by integration. For a quantity X with values in a bounded interval [l,u], choose an integrable f(x)≥0 with ∫ₗᵘ f(x)dx=1, and put f=0 outside that interval. Then P(c<X≤d)=∫_c^d f(x)dx for c≤d. The density has reciprocal units of X; probability is dimensionless. Reuse [Define the integral and distinguish net change from total magnitude](../../mathematics/core/Define-the-integral-and-distinguish-net-change-from-total-magnitude.lingua#r_0AEC763D73DF3124CDBB2E86D1) before interpreting the area.
+
+An ideal error E uniform on [−a,a], a>0, has density 1/(2a) within the interval. Its probability of lying in an interval is the length of overlap with [−a,a], divided by 2a. A uniform error of half-width 0.1 mm has density 5 per mm, greater than one, while every interval probability is at most one. Density is not the probability of the individual point. Changing units changes its numerical height and leaves the integrated probability unchanged.
+
+In this model any individual specified value has probability zero, although a realized value belongs to the sample space. Zero probability does not mean logical impossibility. An interval entirely outside the declared support is impossible under this specified model; an exact point within it is allowed but has zero probability. A recorded rounded measurement represents an interval or a separate rounding model, not an exact observation with positive point probability under the ideal continuous law.
+
+Density laws are not all probability laws. A discrete law can place positive mass at points; a mixture can combine a point mass with a density. Some continuous laws have no ordinary density. This block uses bounded, piecewise continuous densities and explicitly described dependent constructions; it does not claim a full measure-theoretic foundation. Finite approximations can approach integrals under appropriate conditions, but a finite simulation is not identical to the continuous model.
+
+**Reading and work:** [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71), section 2.2's density and interval discussion. Verify normalization and interval probabilities for three half-widths and express the same law in two units. Construct a nonnegative function that fails normalization and a normalized signed function that cannot be a density. Explain the difference between an impossible observation and a probability-zero point without using the latter to reject every exact real-valued outcome.
+
+**Continue:** [Use cumulative probabilities transformations and quantiles with explicit domains](Use-cumulative-probabilities-transformations-and-quantiles-with-explicit-domains.lingua#r_00335F433A9AF6C45114F39ACD).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_001CB0C3AE88E7CFC0E0B77898

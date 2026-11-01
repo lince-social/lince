@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Distinguish proportional change, offsets and model assumptions (@math-proportional-models: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ") { r_0E3D61E31A9CBF830E0E6BD6DB
+Two quantities are proportional over a stated domain when one equals a constant times the other: y = kx. The factor k carries the units needed to turn x into y. An exact unit conversion can be proportional by definition; a relationship inferred from production observations is a model whose conditions need evidence.
+
+In a hypothetical cutting plan, gross length needed for n pieces is L(n) = 0.25n + 0.10 metres, with n a positive integer. Each piece consumes 0.25 m and one fixed setup allowance consumes 0.10 m. Thus L(4) = 1.10 m, while L(8) = 2.10 m, not 2.20 m. The model is affine: it includes an offset. The average length per piece is L(n)/n = 0.25 + 0.10/n metres. It approaches 0.25 as positive n grows, but the formula gives no permission to extend n beyond the available stock or equipment capacity.
+
+Changing the input by Δn changes the required length by 0.25Δn. Here Δ means a change, so differences are proportional even though total length is not proportional to count. Confusing a total with a change is a common source of faulty scaling. The intercept is an allowance in this chosen model; its value is not established by the notation alone.
+
+The sign ≤ means “less than or equal to.” With 2 m of stock, the stated inequality 0.25n + 0.10 ≤ 2 gives n ≤ 7.6, so at most seven whole pieces are feasible under the model. Seven consume 1.85 m and leave 0.15 m. Eight are infeasible. This conclusion depends on the allowance and cut-length definitions: real kerfs, end cuts, defects or reuse of a remainder require a revised account.
+
+**Shared preparation:** revisit the preceding ratios lesson and its source readings. For a longer textbook continuation use [Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), chapter 4. The cutting model here is an original hypothetical example.
+
+**Work:** derive the answer for a 3 m stock under the same assumptions; compare a fixed allowance with an allowance of 0.01 m per piece. Choose a domain and describe the units of every coefficient. Explain why two observed input/output pairs cannot establish the model at every unobserved input. Draw the proportional and offset models on the same axes, labelling the physical meaning of the origin.
+
+**Check:** distinguish exact definition, assumed model and measured relationship. Preserve integer and capacity constraints when using a continuous graph to reason about a discrete process.
+
+**Continue:** [Equations, unknowns, systems, and constraints](../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0E3D61E31A9CBF830E0E6BD6DB

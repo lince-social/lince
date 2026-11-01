@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Relate concrete representations to abstract values and invariants (@computing-abstraction-representations: 0, is #chapter, #hephaestus-core "Prove-representation-independence-for-the-permitted-clients.lingua#r_008631FFAC6274EB0CF62F4E8E") { r_004B8AEF7722C03E763F0A6783
+An abstraction function assigns meaning to a valid concrete state. A representation invariant identifies the concrete states accepted by an implementation. Both must be explicit; a container type does not supply them automatically. Read the selected passages of [Software Construction MIT 6.102 abstraction functions and invariants](../sources/Software-Construction-MIT-6.102-abstraction-functions-and-invariants.lingua#r_004B6A87180B561E2F2670B5D4) and use [Separate equivalence classes from ordering and reachability](../../mathematics/core/Separate-equivalence-classes-from-ordering-and-reachability.lingua#r_00844E60FB32CCD3D5D2D1B50D) for the distinction between a relation and a function where useful.
+
+For TupleSlots, the concrete state is (m,t), where t is a tuple. Its invariant requires a valid m and exact integers in U_m appearing in strictly increasing order. Define α_T(m,t)=(m,{t_i}). Strict order makes the representation unique for a given set and gives the promised members ordering. For MaskSlots, the concrete state is (m,b) with exact integer 0≤b<2^m. Define α_B(m,b)=(m,{i∈U_m : floor(b/2^i) is odd}). For m=0 the only valid mask is zero and the only valid tuple is empty.
+
+Both can represent every abstract value: sort its members for t or form b=Σ_{i∈S}2^i. For m=5 and S={1,3}, t=(1,3) and b=10 are unequal concrete values with the same abstraction. Testing concrete equality is therefore not an implementation-independent equality test. Conversely, a sorted tuple containing a duplicate or an out-of-width mask violates the chosen invariant even if a permissive decoder could invent a set for it.
+
+Tuple insertion locates the first element greater than the new absent x and joins the lower prefix, x and the upper suffix. All earlier elements are less than x and all later ones are greater, so order and uniqueness are preserved. Removing all entries equal to x preserves the order of the remaining subsequence. Mask insertion uses b OR 2^x; removal uses b AND NOT 2^x. Bit x alone changes and every out-of-width bit remains zero. Python's unbounded signed NOT is harmless in this expression because the result is intersected with the original nonnegative bounded b. XOR would toggle an absent bit and violate removal's contract.
+
+The supplied classes validate the invariant in __post_init__, including exact runtime types. Their annotations and frozen dataclass declaration do not perform those value checks. Constructors establish valid states; methods construct only valid successors. Each proof has an initial-state and preservation obligation. An invariant is not established by adding an assert after an operation whose correctness has never been examined.
+
+**Work:** prove constructor coverage, each operation's invariant preservation and the claimed abstraction equations. Check m=0, x=0 and x=m−1. Use the existing bit-encoding formation rather than inventing a second integer encoding. Identify which proof would fail if tuples admitted mutable arbitrary objects, masks admitted negative integers or insertion used an unchecked position.
+
+**Continue:** [Prove representation independence for the permitted clients](Prove-representation-independence-for-the-permitted-clients.lingua#r_008631FFAC6274EB0CF62F4E8E).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_004B8AEF7722C03E763F0A6783

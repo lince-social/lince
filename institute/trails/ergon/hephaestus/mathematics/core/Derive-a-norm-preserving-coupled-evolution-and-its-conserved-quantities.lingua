@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Derive a norm preserving coupled evolution and its conserved quantities (@math-operator-evolution: 0, is #chapter, #hephaestus-core "Test-evolution-order-and-distinguish-numerical-growth-from-model-growth.lingua#r_0059A3E412A426A2F8DB6313B6") { r_00D29C62BAD6E0BC98DBCA25BC
+Return to the explicit Hermitian involution H from [Resolve a finite Hermitian model with explicit eigenvectors and projectors](Resolve-a-finite-Hermitian-model-with-explicit-eigenvectors-and-projectors.lingua#r_005654A44ED120041A95A87694) and define U(t)=exp(−itH) for real t. Because H²=I, split its exponential series into even and odd powers to obtain U(t)=cos(t)I−i sin(t)H. This is a coupled two-coordinate system x′=−iHx; the entries of x generally mix rather than evolving independently in the standard basis. Its initial condition is x(0)=x₀.
+
+Conjugate transposition gives U(t)†=cos(t)I+i sin(t)H, so U(t)†U(t)=I by H²=I and cos²t+sin²t=1. Consequently ||x(t)||² is constant. The differential check gives the same result: x′†x+x†x′=ix†Hx−ix†Hx=0. Also x†Hx is constant because its derivative is ix†H²x−ix†H²x=0. These identities establish invariants of the declared equation; their physical meaning is not supplied by their algebraic existence.
+
+The projectors give U(t)=exp(−it)P₊+exp(it)P₋, so each orthogonal eigencomponent changes only by its complex phase. In particular its squared norm remains constant. With x₀=e₁=(1,0) and H=((3/5,4i/5),(−4i/5,−3/5)), the coordinates are x₁(t)=cos(t)−(3i/5)sin(t), x₂(t)=−(4/5)sin(t). Their squared magnitudes sum to one, while the individual magnitudes vary. At cos(t)=3/5, sin(t)=4/5, these are x₁=3/5−12i/25 and x₂=−16/25. Check the sum of squared magnitudes and compare with the invariant eigencomponent split 4/5 and 1/5.
+
+More generally, for any finite Hermitian H the same exponential derivative proof shows that exp(−itH)†exp(−itH) has zero derivative and equals I at zero; the explicit cosine formula additionally needs H²=I. If the equation is x′=−iωHx with constant real ω, replace t by ωt. The product ωt must be dimensionless in a physical interpretation. This lesson does not derive a Hamiltonian, a quantum state postulate or a probability rule from mathematics.
+
+**Work:** solve an arbitrary initial column through P₊ and P₋, verify U(t+s)=U(t)U(s), and show uniqueness directly by applying norm conservation to the difference of two solutions. Change the basis consistently and recover the same vector and invariants. Identify which formulas survive for a general Hermitian H and which require the involution. Contrast with exp(tN) from the preceding lesson, which can change Euclidean length even though both are legitimate linear evolutions.
+
+**Continue:** [Test evolution order and distinguish numerical growth from model growth](Test-evolution-order-and-distinguish-numerical-growth-from-model-growth.lingua#r_0059A3E412A426A2F8DB6313B6).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00D29C62BAD6E0BC98DBCA25BC

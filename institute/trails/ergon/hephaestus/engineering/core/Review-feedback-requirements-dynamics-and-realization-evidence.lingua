@@ -1,0 +1,20 @@
+Import "../Engineering.lingua"
+
+Review feedback requirements dynamics and realization evidence (@engineering-feedback-review: 0, is #chapter, #hephaestus-core "Define-useful-production-and-the-boundary-of-its-account.lingua#r_0075DAD3F794332BBE9B3BCA87") { r_003878F402F646426D07E046F6
+Identify the useful controlled quantity, reference, plant state, input, disturbance, sensor and actuator. Give every variable and parameter its units. Explain negative-feedback sign, baseline/feedforward choice and the difference between true and measured error. State the constant-parameter, timing and physical boundaries of the model.
+
+Derive the continuous closed-loop equation, equilibrium, transient and uniqueness argument from the shared stored-energy preparation. Retain the actual energy ledger rather than interpreting the effective restoring coefficient as physical heat leakage. Treat the zero-restoring case separately. Distinguish stability, tolerance, settling and exact arrival.
+
+Derive disturbance and bias sensitivities and the unchanged-observation family. Explain why more samples on the same trajectory cannot resolve a structural ambiguity, and defend an independent observation that could. Identify which uncertainty is bounded, which would require a probability model and which reflects omitted physics.
+
+Prove the clipped equilibrium, uniqueness and restoring inequality for positive conductance. Verify the infeasible 5 K/10 W example from the power balance. Derive the exact sample-and-hold recurrence and stability range, then derive the Euler multiplier as a different approximation. Prove the saturation-induced two-cycle and explain why bounded operation fails tracking.
+
+Reconstruct the original continuous design screen, all worst-case corners and the exact feasible gain interval. Check the whole trajectory's actuator bounds. Reconstruct the selected published first-order gains with their approximation, distinguish the original pulse extension, and explain the rational enclosure and bisection checks. Present an independent challenge and revision with honest practical limits.
+
+This sixth engineering block supplies common feedback and dynamic-evidence preparation. It does not complete control engineering, production engineering, civil or other realization branches, reliability, human use, resource accounts or advanced independent practice. Continue inquiry's reporting and shared criticism at comparable depth, then review coverage across all six cores before deeper branches. Clean manufacturing remains nested within the later production branch.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the seventh common pass:** [Define useful production and the boundary of its account](Define-useful-production-and-the-boundary-of-its-account.lingua#r_0075DAD3F794332BBE9B3BCA87). Develop useful production, repeated visits, finite waiting spaces, scheduling, rework and inventory-time accounts through original investigations. Continue inquiry teaching and assessment at comparable breadth before deeper engineering specialization.
+
+} r_003878F402F646426D07E046F6

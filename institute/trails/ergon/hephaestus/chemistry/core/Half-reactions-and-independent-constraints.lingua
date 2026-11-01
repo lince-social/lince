@@ -1,0 +1,27 @@
+Import "../Chemistry.lingua"
+
+Derive half reactions with independent atom and charge constraints (@chemistry-half-reactions: 0, is #chapter, #hephaestus-core "Electron-amount-reaction-extent-and-charge.lingua#r_00195E0FB0DE74B01917A3CE4F") { r_0065DB67DBA11A4144121CA5FD
+Write a reaction as a vector ν of signed stoichiometric coefficients: reactants negative, products positive. An element-count row a requires a·ν=0; a species-charge row z requires z·ν=0. For several reactions these rows form a conservation matrix B and the reaction columns form S, giving BS=0. This is the same null-space language developed in [Count independent constraints and describe every lost direction](../../mathematics/core/Count independent constraints and describe every lost direction.lingua#r_009D1DD1D9B0EBCA56B64A22F0). It expresses necessary conservation constraints; its null space also contains combinations that may never occur in a particular material.
+
+For a specific acidic aqueous account, start with Fe(OH)₃ → Fe²⁺. There is one Fe on each side. The three oxygen atoms can be accounted for by 3H₂O on the right. The right now has six H, the left three, so add 3H⁺ to the left. Left charge is +3 and right charge +2. Adding one electron to the left closes charge:
+
+Fe(OH)₃ + 3H⁺ + e⁻ → Fe²⁺ + 3H₂O.
+
+Independently count Fe: 1=1, O: 3=3, H: 6=6, and charge: 0+3−1=2. Do not check the equation merely by rerunning the same balancing steps. Adding 3OH⁻ to both sides, replacing 3H⁺+3OH⁻ by 3H₂O and cancelling water gives the formal basic-medium rewrite Fe(OH)₃ + e⁻ → Fe²⁺ + 3OH⁻. This is algebraically balanced. It does not establish that free Fe²⁺ is the stable dissolved iron species in a basic solution. Solubility, complexation and chemical conditions require the preceding solution account and additional evidence.
+
+For the upcoming ledger, the accepting half accounts are Cu²⁺+2e⁻→Cu and Fe³⁺+e⁻→Fe²⁺; the donating account is Zn→Zn²⁺+2e⁻. One convenient independent overall basis is
+
+R₁: Cu²⁺ + Zn → Cu + Zn²⁺;
+
+R₂: Fe³⁺ + ½Zn → Fe²⁺ + ½Zn²⁺.
+
+If their extents are ξ₁ and ξ₂ mol, the electron amount transferred chemically is 2ξ₁+ξ₂ mol. R₂ can instead be written 2Fe³⁺+Zn→2Fe²⁺+Zn²⁺. Its new extent is ξ₂/2 and its electron coefficient is 2, so the physical electron amount is unchanged. A coefficient depends on how a reaction is written. An amount change does not.
+
+With species ordered (Cu²⁺, Cu, Fe³⁺, Fe²⁺, Zn, Zn²⁺, X⁻), the two reaction columns are (−1,1,0,0,−1,1,0) and (0,0,−1,1,−½,½,0). X⁻ denotes an unchanged monovalent spectator species, not an invented element. A row counting each of Cu, Fe and Zn annihilates both columns. So does the charge row (2,0,3,2,0,2,−1). The spectator inventory is separately conserved.
+
+**Work:** verify these four products without the program; then verify the normalized second reaction. Identify every assumption absent from BS=0: allowable phases, activities, reaction rates, transport and electrode response. Explain why a negative final species amount rejects a proposed extent even when its reaction column is perfectly balanced. Use [Reduce rectangular constraints with reversible row operations](../../mathematics/core/Reduce rectangular constraints with reversible row operations.lingua#r_0040C3CC99E7DD621AA0C570AA) to distinguish solving linear constraints from proving that the constrained system describes nature.
+
+**Continue:** [Connect reaction extent with integrated electrical charge](Electron-amount-reaction-extent-and-charge.lingua#r_00195E0FB0DE74B01917A3CE4F).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0065DB67DBA11A4144121CA5FD

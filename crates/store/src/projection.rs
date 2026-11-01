@@ -105,11 +105,15 @@ pub struct Cached {
 }
 
 pub async fn read(
-    pool: &SqlitePool,
+    store: &crate::Store,
     context: &Context,
     now_ms: i64,
 ) -> Result<Option<Cached>, StoreError> {
-    let key = context.key().map_err(protocol)?;
+    let Some(identity) = store.execution_identity() else {
+        return Ok(None);
+    };
+    let pool = &store.pool;
+    let key = context.key(identity).map_err(protocol)?;
     let mut tx = pool.begin().await?;
     let row = sqlx::query("SELECT base_ms, expires_ms, incomplete FROM projection_window WHERE id = 1 AND cache_key = ? AND source_revision = (SELECT revision FROM projection_source WHERE id = 1) AND expires_ms > ? AND base_ms <= ? AND from_ms <= MAX(?, base_ms) AND until_ms >= ?")
         .bind(key.as_str()).bind(now_ms).bind(now_ms).bind(context.window.from_ms).bind(context.window.until_ms).fetch_optional(&mut *tx).await?;
@@ -155,21 +159,29 @@ pub async fn read(
 }
 
 pub async fn covered_window(
-    pool: &SqlitePool,
+    store: &crate::Store,
     context: &Context,
     now_ms: i64,
 ) -> Result<Option<(i64, i64)>, StoreError> {
-    let key = context.key().map_err(protocol)?;
+    let Some(identity) = store.execution_identity() else {
+        return Ok(None);
+    };
+    let pool = &store.pool;
+    let key = context.key(identity).map_err(protocol)?;
     sqlx::query_as("SELECT from_ms, until_ms FROM projection_window WHERE id = 1 AND cache_key = ? AND source_revision = (SELECT revision FROM projection_source WHERE id = 1) AND expires_ms > ? AND base_ms <= ?")
         .bind(key.as_str()).bind(now_ms).bind(now_ms).fetch_optional(pool).await
 }
 
 pub async fn previous_schedule(
-    pool: &SqlitePool,
+    store: &crate::Store,
     context: &Context,
     now_ms: i64,
 ) -> Result<Vec<Scheduled>, StoreError> {
-    let key = context.key().map_err(protocol)?;
+    let Some(identity) = store.execution_identity() else {
+        return Ok(Vec::new());
+    };
+    let pool = &store.pool;
+    let key = context.key(identity).map_err(protocol)?;
     let rows: Vec<String> = sqlx::query_scalar("SELECT s.payload FROM projection_schedule s JOIN projection_window w ON w.id = 1 WHERE w.cache_key = ? AND w.base_ms <= ? AND w.expires_ms > ? AND s.from_ms >= ? AND s.from_ms < ? ORDER BY s.from_ms, s.id LIMIT ?")
         .bind(key.as_str()).bind(now_ms).bind(now_ms.saturating_sub(60_000)).bind(now_ms.max(context.window.from_ms)).bind(context.window.until_ms).bind(MAX_SPANS as i64).fetch_all(pool).await?;
     rows.iter()
@@ -178,7 +190,7 @@ pub async fn previous_schedule(
 }
 
 pub async fn publish(
-    pool: &SqlitePool,
+    store: &crate::Store,
     context: &Context,
     source: i64,
     base_ms: i64,
@@ -187,7 +199,7 @@ pub async fn publish(
     spans: &[Span],
 ) -> Result<bool, StoreError> {
     publish_schedule(
-        pool,
+        store,
         context,
         source,
         base_ms,
@@ -200,7 +212,7 @@ pub async fn publish(
 }
 
 pub async fn publish_schedule(
-    pool: &SqlitePool,
+    store: &crate::Store,
     context: &Context,
     source: i64,
     base_ms: i64,
@@ -231,7 +243,11 @@ pub async fn publish_schedule(
     {
         return Err(protocol("projection byte budget exceeded"));
     }
-    let key = context.key().map_err(protocol)?;
+    let Some(identity) = store.execution_identity() else {
+        return Err(protocol("projection publication requires execution identity"));
+    };
+    let pool = &store.pool;
+    let key = context.key(identity).map_err(protocol)?;
     let mut tx = crate::write_tx(pool).await?;
     let current: i64 = sqlx::query_scalar("SELECT revision FROM projection_source WHERE id = 1")
         .fetch_one(&mut *tx)

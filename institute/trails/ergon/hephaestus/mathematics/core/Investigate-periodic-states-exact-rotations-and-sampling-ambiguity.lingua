@@ -1,0 +1,255 @@
+Import "../Mathematics.lingua"
+
+Investigate periodic states exact rotations and sampling ambiguity (@math-periodic-study: 0, is #chapter, #hephaestus-core "Review-periodic-arguments-complex-algebra-and-second-order-evidence.lingua#r_00F2CBF2ECCEA9D81EC0188631") { r_001D348AE25C32431381761409
+Carry out an original mathematical investigation with three connected representations: a point rotated in a plane, complex multiplication, and a real function satisfying a second-order initial problem. Keep mathematical evidence separate from any claim about a fabricated oscillator or collected signal.
+
+1. Use u=3/5+4i/5 and z=2−i to obtain uz=2+i, u² and norm preservation. Prove the general norm identity and compare direct pair multiplication with its matrix action. Derive the fourth roots of one and their finite multiplication cycle.
+2. Solve x''+4x=0 with x(0)=3 and x'(0)=8. Recover x=3cos 2t+4sin 2t, amplitude 5, full-cycle mean square 25/2, and the constant (x')²+4x²=100. Derive its accumulated integral and verify the zero-frequency limit for a family of initial problems.
+3. Contrast initial and boundary data. At ωL=π, classify x(0)=0,x(L)=0 and x(0)=0,x(L)=1. Give an unfamiliar nonsingular endpoint example and verify both endpoints independently.
+4. Examine sampling. Let f(t)=3cos(πt/2)+4sin(πt/2) and g(t)=3cos(5πt/2)+4sin(5πt/2), with t numerical seconds and the angular frequencies in rad/s. At every integer n, the phases differ by 2πn, so f(n)=g(n). The samples repeat 3,4,−3,−4. Yet at t=1/2, f=7/√2 and g=−7/√2, and their initial slopes differ. This proves ambiguity even with every integer sample, not a general sampling theorem. Known bandwidth, extra times, derivative information or a justified physical model could add information; no finite array alone supplies those assumptions.
+
+The program uses exact rational pairs for complex arithmetic and exact quarter-turn powers for the sample identity. Its scalar trigonometric evaluator is deliberately limited to radian arguments of magnitude at most four and uses the method explained above. `state` handles nonnegative ω, treats zero separately and returns position, derivative, second derivative and the integral from zero. Negative time is allowed when the evaluation domain permits it. The implementation defines z⁰=1, including z=0 as an explicit computational convention; negative powers require a nonzero base. Boolean/noninteger exponents are rejected. These contracts are part of the evidence, not universal mathematical conventions.
+
+```python file=periodic_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+
+
+def multiply(z,w):
+    a,b=map(F,z)
+    c,d=map(F,w)
+    return a*c-b*d,a*d+b*c
+
+
+def conjugate(z):
+    a,b=map(F,z)
+    return a,-b
+
+
+def norm_squared(z):
+    a,b=map(F,z)
+    return a*a+b*b
+
+
+def divide(z,w):
+    denominator=norm_squared(w)
+    if denominator==0:
+        raise ValueError('zero divisor')
+    a,b=multiply(z,conjugate(w))
+    return a/denominator,b/denominator
+
+
+def power(z,n):
+    if type(n) is not int:
+        raise ValueError('integer exponent required')
+    z=tuple(map(F,z))
+    if n<0:
+        z=divide((1,0),z)
+        n=-n
+    result=(F(1),F(0))
+    for _ in range(n):
+        result=multiply(result,z)
+    return result
+
+
+def number(x):
+    x=F(x)
+    return D(x.numerator)/D(x.denominator)
+
+
+def sine_cosine(x):
+    x=F(x)
+    if abs(x)>4:
+        raise ValueError('teaching evaluator requires abs(radian argument) <= 4')
+    with localcontext() as ctx:
+        ctx.prec=80
+        y=number(x)
+        halvings=0
+        while abs(y)>D('0.5'):
+            y/=2
+            halvings+=1
+        sine=st=y
+        cosine=ct=D(1)
+        for j in range(1,25):
+            st*=-y*y/D((2*j)*(2*j+1))
+            ct*=-y*y/D((2*j-1)*(2*j))
+            sine+=st
+            cosine+=ct
+        for _ in range(halvings):
+            sine,cosine=2*sine*cosine,cosine*cosine-sine*sine
+        return sine,cosine
+
+
+def state(x0,v0,omega,time):
+    x0,v0,omega,time=map(F,(x0,v0,omega,time))
+    if omega<0:
+        raise ValueError('nonnegative omega required')
+    with localcontext() as ctx:
+        ctx.prec=80
+        x,v,w,t=map(number,(x0,v0,omega,time))
+        if omega==0:
+            return x+v*t,v,D(0),x*t+v*t*t/2
+        sine,cosine=sine_cosine(omega*time)
+        position=x*cosine+v*sine/w
+        velocity=-w*x*sine+v*cosine
+        integral=x*sine/w+v*(1-cosine)/(w*w)
+        return position,velocity,-w*w*position,integral
+
+
+if __name__=='__main__':
+    print('rational rotation:',multiply((F(3,5),F(4,5)),(2,-1)))
+    print('state and integral:',state(3,8,2,1))
+    for n in range(8):
+        first=multiply((3,-4),power((0,1),n))[0]
+        alias=multiply((3,-4),power((0,1),5*n))[0]
+        print('integer-time samples:',n,first,alias)
+```
+
+The companion checks complex products by matrix action and powers by an independent binomial expansion, including norm, inverse and associativity cases. Its trigonometric reference is a direct rational polynomial plus the proved remainder bound, independent of the halving/doubling implementation. Initial-state families are checked against those references, the constant quadratic, integrated equation, restart composition and degenerate limit. Exact integer-time samples check the algebraic alias example without approximating π. Save the two programs together and run them with Python 3 through the repository's Nix environment.
+
+```python file=periodic_checks.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from itertools import product
+from math import factorial,comb
+import json
+import periodic_study as m
+
+checks=0
+
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejected(call):
+    try:
+        call()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def reference(x):
+    x=F(x)
+    sine=sum(F((-1)**j)*x**(2*j+1)/factorial(2*j+1) for j in range(30))
+    cosine=sum(F((-1)**j)*x**(2*j)/factorial(2*j) for j in range(30))
+    bound=abs(x)**60/factorial(60)
+    return sine,cosine,bound
+
+
+def binomial(z,n):
+    a,b=z
+    real=imag=F(0)
+    for k in range(n+1):
+        term=F(comb(n,k))*a**(n-k)*b**k
+        if k%4==0:
+            real+=term
+        elif k%4==1:
+            imag+=term
+        elif k%4==2:
+            real-=term
+        else:
+            imag-=term
+    return real,imag
+
+
+points=list(product(map(F,range(-2,3)),repeat=2))
+for z,w in product(points,repeat=2):
+    result=m.multiply(z,w)
+    check(m.norm_squared(result)==m.norm_squared(z)*m.norm_squared(w))
+    check(result==m.multiply(w,z))
+    a,b=z
+    c,d=w
+    matrix=((a,-b),(b,a))
+    check(result==(matrix[0][0]*c+matrix[0][1]*d,matrix[1][0]*c+matrix[1][1]*d))
+    if w!=(0,0):
+        check(m.multiply(m.divide(z,w),w)==z)
+    for u in ((F(1),F(0)),(F(0),F(1)),(F(2),F(-1))):
+        check(m.multiply(m.multiply(z,w),u)==m.multiply(z,m.multiply(w,u)))
+for z in points:
+    check(m.multiply(z,m.conjugate(z))==(m.norm_squared(z),F(0)))
+    for n in range(8):
+        check(m.power(z,n)==binomial(z,n))
+    if z!=(0,0):
+        for n in range(1,5):
+            check(m.multiply(m.power(z,n),m.power(z,-n))==(1,0))
+check(m.multiply((F(3,5),F(4,5)),(2,-1))==(2,1))
+for z in [(1,0),(0,1),(-1,0),(0,-1)]:
+    check(m.power(z,4)==(1,0))
+for n in range(-16,17):
+    first=m.multiply((3,-4),m.power((0,1),n))[0]
+    alias=m.multiply((3,-4),m.power((0,1),5*n))[0]
+    check(first==alias==[3,4,-3,-4][n%4])
+midpoint=m.multiply((3,-4),(F(1,2),F(1,2)))[0]
+alias_midpoint=m.multiply((3,-4),(F(-1,2),F(-1,2)))[0]
+check(midpoint==F(7,2) and alias_midpoint==-midpoint)
+check(midpoint!=alias_midpoint and 2*midpoint*midpoint==F(49,2))
+angles={F(j,8):m.sine_cosine(F(j,8)) for j in range(-32,33)}
+tolerance=F(1,10**65)
+for x,(s,c) in angles.items():
+    sr,cr,bound=reference(x)
+    s,c=F(s),F(c)
+    check(abs(s-sr)<=bound+tolerance)
+    check(abs(c-cr)<=bound+tolerance)
+    check(abs(s*s+c*c-1)<tolerance)
+    ns,nc=map(F,angles[-x])
+    check(abs(ns+s)<tolerance and abs(nc-c)<tolerance)
+    if 0<abs(x)<=F(1,2):
+        check(abs(s/x-1)<=x*x/6+tolerance)
+for x,y in product((F(j,4) for j in range(-8,9)),repeat=2):
+    sx,cx=map(F,angles[x]);sy,cy=map(F,angles[y]);s,c=map(F,angles[x+y])
+    check(abs(s-sx*cy-cx*sy)<tolerance)
+    check(abs(c-cx*cy+sx*sy)<tolerance)
+states=0
+with localcontext() as ctx:
+    ctx.prec=80
+    for x0,v0,w,t in product((F(-2),F(0),F(3)),(F(-1),F(0),F(8)),(F(0),F(1,2),F(2)),(F(-1),F(0),F(1,2),F(1),F(2))):
+        x,v,acc,area=map(F,m.state(x0,v0,w,t))
+        if w==0:
+            check(abs(x-x0-v0*t)<tolerance)
+            check(v==v0 and acc==0)
+            check(abs(area-x0*t-v0*t*t/2)<tolerance)
+        else:
+            sr,cr,bound=reference(w*t)
+            xr=x0*cr+v0*sr/w
+            vr=-w*x0*sr+v0*cr
+            check(abs(x-xr)<=(abs(x0)+abs(v0/w))*bound+tolerance)
+            check(abs(v-vr)<=(abs(w*x0)+abs(v0))*bound+tolerance)
+            check(abs(v*v+w*w*x*x-v0*v0-w*w*x0*x0)<tolerance)
+            check(abs(v-v0+w*w*area)<tolerance)
+            check(abs(acc+w*w*x)<tolerance)
+        if t==0:
+            check(x==x0 and v==v0 and area==0)
+        states+=1
+    for x0,v0,w in product((F(0),F(3)),(F(-1),F(8)),(F(1,2),F(2))):
+        x,v,_,_=m.state(x0,v0,w,F(1,2))
+        stepped=m.state(F(x),F(v),w,F(1,2))
+        direct=m.state(x0,v0,w,1)
+        check(abs(F(stepped[0])-F(direct[0]))<tolerance)
+        check(abs(F(stepped[1])-F(direct[1]))<tolerance)
+    for w in (F(1,100),F(1,1000)):
+        x,_,_,_=map(F,m.state(3,8,w,1))
+        check(abs(x-11)<=F(3)*w*w/2+F(8)*w*w/6+tolerance)
+rejected(lambda:m.divide((1,0),(0,0)))
+rejected(lambda:m.power((0,0),-1))
+rejected(lambda:m.power((1,0),True))
+rejected(lambda:m.sine_cosine(F(41,10)))
+rejected(lambda:m.state(1,1,-1,1))
+result={'checks':checks,'complex_operand_pairs':len(points)**2,'trig_arguments':len(angles),'addition_pairs':17**2,'initial_value_cases':states,'exact_alias_samples':33}
+print(json.dumps(result))
+```
+
+The finite suite checks its declared input families. General identities, uniqueness and sample equality for every integer come from the arguments, not from finite enumeration. Neither the calculation nor the assigned textbook reading demonstrates real apparatus performance, an experiment or full harmonic/complex-analysis formation.
+
+**Independent work:** choose another exact rational unit point and another initial pair, reconstruct the algebra and analysis, and build a changed sampling ambiguity. State the accepted geometric facts, the derived claims and the numerical error bounds separately. Have a reader challenge one inverse-domain or sampling assumption and retain the revision. Compare selected source arguments with your own, then complete suitable source exercises before moving to the physical interpretation.
+
+**Author verification:** the companion passed 6,192 checks through Nix: 625 complex operand pairs, 65 bounded trigonometric arguments, 289 addition pairs, 135 initial-value cases, 33 exact alias samples, algebraic counterexamples and invalid inputs. General statements rest on the supplied proofs; finite checks do not establish physical oscillator performance.
+
+**Continue:** [Review periodic arguments complex algebra and second order evidence](Review-periodic-arguments-complex-algebra-and-second-order-evidence.lingua#r_00F2CBF2ECCEA9D81EC0188631).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_001D348AE25C32431381761409

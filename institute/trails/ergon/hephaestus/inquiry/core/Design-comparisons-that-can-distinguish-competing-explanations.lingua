@@ -1,0 +1,23 @@
+Import "../Inquiry.lingua"
+
+Design comparisons that can distinguish competing explanations (@inquiry-comparisons: 0, is #chapter, #hephaestus-core "../metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_0A7E63167B1C0C05400C73A84E
+A comparison should make plausible explanations predict different observations. List the quantity you intend to compare, the changes deliberately introduced and the other conditions that may change with them. If two influences always change together, the resulting observations may not distinguish them. This is confounding: the comparison does not identify separate effects without additional assumptions or evidence.
+
+**Read:** [NIST/SEMATECH sections](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN) 5.3.3, 5.3.3.1 and 5.3.3.2 for selecting a design, random assignment and blocks. Start with the experimental question and arrangement of observations; defer analysis-of-variance formulas until their statistical preparation. Use the [existing calibration-design lesson](../metrology/calibration/Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC) as a later application. The following small example is original and uses exact hypothetical reference values.
+
+Suppose reference lengths x = 10, 20 and 30 mm are observed at elapsed times t = 0, 1 and 2 minutes. The indicated values are 10.0, 20.1 and 30.2 mm. One explanation is a response depending only on reference length: R(x) = 1.01x − 0.1 mm. Another is a time-dependent offset: D(x,t) = x + (0.1 mm/min)t. Both fit every supplied observation. Along this schedule x = 10 mm + (10 mm/min)t, so the differences between these explanations are hidden.
+
+Propose a new observation at x = 10 mm and t = 3 min. R predicts 10.0 mm; D predicts 10.3 mm. A sufficiently informative observation under the stated conditions could discriminate these two simple explanations. Its real reference uncertainty, resolution and changing environment would matter. Neither explanation has been established as true; both could fail if the actual behavior differs from their assumptions.
+
+Random assignment determines the run or treatment allocation using a specified chance mechanism rather than an order chosen to favor an outcome. It helps prevent a deliberate or fixed association with unmodeled influences, but a particular finite assignment may still be imbalanced. Blocking compares alternatives within groups chosen to share an important condition. For repeated comparisons of two methods on the same object, object identity can define a block; order and any effect of the first measurement on the second still need attention.
+
+Repeated readings of one unchanged object, independently selected objects, and independently executed experimental runs support different claims. Record the unit to which a procedure was assigned and the unit actually observed. Ten readouts from one intervention are not automatically ten independent interventions. A random order of readings is also different from a random sample of objects from a population.
+
+**Work:** calculate the two predictions at each original point and at the proposed new point. Explain why adding more points on the same length/time relationship need not resolve this confounding. Design a small comparison of two harmless measuring procedures, recording object selection, order, repeated observations and possible carryover. Name an alternative explanation your arrangement can challenge and one it cannot. Propose and justify the comparison before seeing its results, retaining deviations and unsuccessful runs in the eventual account.
+
+**Next shared reading:** [A specimen, a sampling target, and a result about a population](../metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH). Begin with target, specimen and selection, and the conceptual distinction between repeated analysis and independent sampling. Its complete sampling-guide assignment and hierarchical uncertainty calculations continue later.
+
+**Continue:** [A specimen, a sampling target, and a result about a population](../metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0A7E63167B1C0C05400C73A84E

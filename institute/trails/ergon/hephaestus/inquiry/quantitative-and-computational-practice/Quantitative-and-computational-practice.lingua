@@ -1,0 +1,19 @@
+Import "../quantitative-literacy/Quantitative-literacy.lingua"
+Import "../reproducible-computation/Reproducible-computation.lingua"
+
+Quantitative and computational practice (@quantitative-and-computational-practice: 0, is #chapter, #outline, #contains "../quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2", #contains "../reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ") { r_7JPGRRFCD72G9ZT8EMV0FEPH00
+Shared quantitative and computational practice is available through the [Inquiry entrance](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Pathways:** Interpret quantities, tables, and graphs; keep a balance; reproduce a small calculation. Start from the required arithmetic and introduce units, notation, or code when used; operating a table does not require completing programming.
+
+**Available:** [Quantitative and technical literacy](../quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), from arithmetic and complete technical-mathematics books through drawings, balances, uncertainty, advanced model reasoning, and independent studies.
+
+**Available:** [Reproducible computational work](../reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), from a first saved calculation and complete programming/research-software books through independent checks, environments, workflows, numerical and stochastic validation, preservation, and sustained scholarly projects. It reuses quantitative and metrology Records with distinct continuations.
+
+**Parent:** [Scientific inquiry and practice — questions, evidence and shared knowledge](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Branches:**
+
+- [Quantitative and technical literacy](../quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2)
+- [Reproducible computational work](../reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ)
+} r_7JPGRRFCD72G9ZT8EMV0FEPH00

@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Use functions and fibers to justify a counting argument (@math-discrete-fibers: 0, is #chapter, #hephaestus-core "Count-by-disjoint-cases-products-and-explicit-bijections.lingua#r_00310CC3F2A2C1C4D9E6CF5397") { r_007F005168981CB5DB6A4D8B3A
+A function f:A→B assigns exactly one member of B to every member of A. Its image f(A) may be smaller than B. Reuse [Connect domains, composition and inverse questions](Domains-composition-and-inverse-questions.lingua#r_07C292DB06749E12B30235383A) for domains and composition. The fiber over b is f⁻¹({b})={a∈A:f(a)=b}; this preimage notation exists even when an inverse function does not. Nonempty fibers partition A because every input has one output and cannot belong to two fibers with different output labels.
+
+A function is injective if equal outputs force equal inputs, surjective if its image is B, and bijective if both hold. A bijection has an inverse function: existence of each preimage follows from surjectivity and uniqueness from injectivity. Conversely an inverse satisfying both composition identities proves bijectivity. Give both directions rather than assuming that an algebraic formula is automatically an inverse on every domain.
+
+For finite A and B, injectivity implies |A|≤|B| and surjectivity implies |A|≥|B|. The fibers give the exact identity |A|=Σ_(b∈B)|f⁻¹({b})|, with empty fibers contributing zero. If every fiber has exactly d>0 elements, then |A|=d|B|. Dividing a count by a supposed number of equivalent descriptions requires this equal-fiber premise. A rounding convention cannot repair an incorrect premise.
+
+For an original example, map each binary string of length n to its number of ones. The fiber over k contains the strings with k ones, whose count is C(n,k), rather than one constant d. For n=3 the fiber sizes are 1,3,3,1. There are eight strings and four possible counts, but this does not mean each count has two representations. Nor does counting four output labels assign equal probabilities to them. A probability law needs additional premises.
+
+The pigeonhole conclusion also follows from fibers: if |A|>|B| and f:A→B exists, at least one fiber has at least two members, since otherwise the sum of fiber sizes is at most |B|. More generally some fiber has size at least ceil(|A|/|B|) when B is nonempty. Empty domains/codomains require care: there is one function from ∅ to any B, but no function from nonempty A to ∅. On finite sets of equal size, injectivity and surjectivity are equivalent; do not transfer that conclusion to infinite sets without proof.
+
+**Read and work:** [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), sections 12.1–12.6 and 3.9, with finite-cardinality arguments first. Give a bijection between subsets of an n-element labeled set and binary strings of length n. Prove that observing only the middle-box count in S_N has fibers of sizes N−b+1. Explain why this observation cannot recover the whole configuration and why its ambiguity may matter for future transitions.
+
+**Continue:** [Count by disjoint cases products and explicit bijections](Count-by-disjoint-cases-products-and-explicit-bijections.lingua#r_00310CC3F2A2C1C4D9E6CF5397).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_007F005168981CB5DB6A4D8B3A

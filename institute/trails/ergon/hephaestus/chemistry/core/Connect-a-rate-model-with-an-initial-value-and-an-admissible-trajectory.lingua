@@ -1,0 +1,17 @@
+Import "../Chemistry.lingua"
+
+Connect a rate model with an initial value and an admissible trajectory (@chemistry-initial-value: 0, is #chapter, #hephaestus-core "../general-chemistry/kinetics/Integrated-laws-and-estimation.lingua#r_2WZTK2PWSJ27S4PB9K0BYCAJF3") { r_01743BDDD7178F3F01AE693646
+Use the newly established [Define exponential change by an inverse and prove its rate law](Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359) to solve a model, not merely select a curve that looks plausible. Suppose a single disappearing species in a closed constant-volume model obeys dc/dt=−kc with constant k≥0 and c(0)=c₀≥0. The product derivative of exp(kt)c(t) is exp(kt)(c′+kc)=0. The mean value theorem then makes the product constant, equal to c₀. Every differentiable solution under these assumptions is c(t)=c₀ exp(−kt). This argument proves uniqueness and includes c₀=0 without dividing by concentration or taking its logarithm.
+
+For k>0 and c₀>0, c stays positive and its fractional half time is ln2/k. The loss c₀−c(t) equals the integrated positive disappearance rate. A first-order k has units inverse time; the same process expressed in seconds has a numerical k sixty times smaller than when expressed in minutes. At t=0 or k=0 check the initial or unchanged state directly.
+
+Compare a zero-order model c′=−k₀ with c=c₀−k₀t, admissible only while this prediction stays nonnegative. It cannot continue through depletion without a changed model. For c′=−k₂c² and positive c₀, differentiate 1/c to obtain d(1/c)/dt=k₂; hence c=c₀/(1+k₂c₀t) and the half time is 1/(k₂c₀). Here k₀ has concentration/time units and k₂ has inverse concentration/time units. The zero-concentration solution must again be handled separately. These different laws can agree on an initial slope yet disagree later or under another initial concentration.
+
+Suppose c₀=1 in declared concentration units and c falls to 1/2 after a true first-order half time. If the observation is s=c+1/5, the observed ratio is (1/2+1/5)/(1+1/5)=7/12, not 1/2. Ignoring the baseline estimates k as ln(12/7)/τ, smaller than the correct ln2/τ. This follows from monotonicity of ln and requires no numerical fit. An apparently gentle decay may be a measurement offset rather than different chemistry.
+
+**Read and test:** [Derive and test integrated rate laws instead of selecting a convenient straight line](../general-chemistry/kinetics/Integrated-laws-and-estimation.lingua#r_2WZTK2PWSJ27S4PB9K0BYCAJF3) and its Chemistry 2e section 12.4 reading, now with the required functions established. Derive all three models from their equations and initial values, check dimensions and limits, and explain why an initially negative background-corrected observation cannot be treated as c₀. Distinguish model validity, parameter estimation and numerical approximation. Full nonlinear fitting, error models, temperature dependence and general differential equations remain later work.
+
+**Continue:** [Derive and test integrated rate laws instead of selecting a convenient straight line](../general-chemistry/kinetics/Integrated-laws-and-estimation.lingua#r_2WZTK2PWSJ27S4PB9K0BYCAJF3).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_01743BDDD7178F3F01AE693646

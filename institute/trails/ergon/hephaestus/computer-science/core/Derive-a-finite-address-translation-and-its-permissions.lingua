@@ -1,0 +1,28 @@
+Import "../Computing.lingua"
+
+Derive a finite address translation and its permissions (@computing-page-translation: 0, is #chapter, #hephaestus-core "Validate-a-complete-range-before-changing-its-destination.lingua#r_005694F6345B9E47E54BF7D899") { r_0026D372CB489BE7FC6DF59B8C
+Use a deliberately small machine-independent model: each process has sixteen virtual word addresses 0 through 15, divided into four pages of four words. Physical storage has thirty-two words in eight frames. Each word contains an eight-bit unsigned value. Page and frame sizes agree so offsets can be preserved.
+
+Euclidean division gives v=4p+o with p=v//4 and 0≤o=v%4<4. A table entry for virtual page p is either absent or a pair (physical frame f, permitted operations). If mapped and permitted, the physical word index is 4f+o. For valid f in 0 through 7, this lies in 0 through 31. This range argument is the first translation invariant. A table is protected model configuration, not an object the modeled user program can edit.
+
+The baseline tables are:
+
+| Virtual page | Process 0 | Process 1 |
+| --- | --- | --- |
+| 0 | frame 1, read/write | frame 2, read/write |
+| 1 | frame 3, read | frame 3, read |
+| 2 | frame 5, read/write | frame 6, read/write |
+| 3 | absent | absent |
+
+Virtual address 0 therefore denotes physical 4 for process 0 and physical 8 for process 1. Virtual address 5 denotes physical 13 for both: it is intentional shared read-only storage. A read/write check is local to a mapping. If a privileged configuration also offered a writable alias to the same frame, the read-only mapping would not make the physical frame globally immutable. The baseline avoids that alias; a later variant makes sharing writable explicitly.
+
+Absent and forbidden are different reasons for rejecting an access. The first has no physical translation; the second has a translation but lacks the requested permission. Real systems may handle some missing-page events by supplying a page, but this model simply reports the reason. No swapping, demand paging, translation cache, allocation or copy-on-write mechanism is implemented.
+
+An isolation statement can now be precise. Under these fixed tables, a permitted write by process 0 affects only frames 1 or 5, while process 1's private frames are 2 and 6. Those sets are disjoint. Therefore a single permitted write preserves the other process's private words; induction extends the property to a sequence of these writes. It says nothing about resources outside the model or a later map change. Read-only shared frame 3 remains unchanged by either modeled user writer.
+
+**Reading and work:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 18's paging introduction, and [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 16's translation discussion. Translate addresses 3,4,7,8,11,12 for both processes and separate absence from permission failure. Explain why a same-number address is neither proof of sharing nor proof of isolation. Keep historical textbook address sizes distinct from this explicit model and from current hardware.
+
+**Continue:** [Validate a complete range before changing its destination](Validate-a-complete-range-before-changing-its-destination.lingua#r_005694F6345B9E47E54BF7D899).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0026D372CB489BE7FC6DF59B8C

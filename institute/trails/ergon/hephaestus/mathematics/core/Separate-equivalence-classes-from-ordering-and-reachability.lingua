@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Separate equivalence classes from ordering and reachability (@math-discrete-relations: 0, is #chapter, #hephaestus-core "Define-a-graph-walk-before-reasoning-about-what-can-happen.lingua#r_00F6592164EEB9B8572CCD8486") { r_00844E60FB32CCD3D5D2D1B50D
+A binary relation R on A is a subset of A×A; aRb means (a,b)∈R. Reflexivity means every aRa. Symmetry means aRb implies bRa. Transitivity means aRb and bRc imply aRc. An equivalence relation has all three properties. These are quantified conditions; visual resemblance or an informal sense of closeness does not establish them.
+
+Equality of observations is an equivalence relation: for a function f, define a~b exactly when f(a)=f(b). Its classes are the nonempty fibers. More generally, for an equivalence relation define [a]={b:b~a}. Reflexivity puts a in[a]. If b∈[a] and c∈[b], transitivity puts c∈[a]; symmetry supplies the reverse inclusion, so [a]=[b]. If two classes intersect, the same argument shows they are equal. Thus the classes are nonempty, disjoint and cover A. Conversely, membership in the same block of a partition defines an equivalence relation. This connects a relational definition with a set of disjoint classes.
+
+A quotient set A/~ contains classes as its objects. Defining a quantity on a class requires representative independence: if a~b, the proposed value must be equal at a and b. For the observation f(a,b,c)=b on S_N, the middle count is well-defined on classes but the first count is not. A canonical representative is a convenient encoding of a class; it does not restore forgotten information or validate every operation on that encoding.
+
+A partial order is reflexive, transitive and antisymmetric: aRb and bRa force a=b. Antisymmetry is not the negation of symmetry, and it does not prohibit aRa. Subset inclusion is a partial order. Two subsets can be incomparable; an order need not place every pair in one direction. A strict order is instead irreflexive and transitive, with its own conventions. State which form is being used.
+
+Directed reachability will be reflexive and transitive because length-zero histories and concatenation are allowed. It need not be symmetric or antisymmetric. Mutual reachability, defined by a reaching b and b reaching a, is an equivalence relation. For an acyclic directed graph its reachability relation is a partial order. The converse needs care if self-loops are allowed: a one-vertex loop has antisymmetric reachability but is a directed cycle. These boundary cases prevent different notions of relation from being silently identified.
+
+**Read and work:** [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 11 and the needed function/preimage passages. For S_2, list the classes determined by the middle count and then the classes determined by reflection (a,b,c)~(c,b,a). Compare their sizes. Give a reflexive symmetric relation that fails transitivity. Explain why approximate numerical closeness under a tolerance generally fails to define equivalence classes without additional rules.
+
+**Continue:** [Define a graph walk before reasoning about what can happen](Define-a-graph-walk-before-reasoning-about-what-can-happen.lingua#r_00F6592164EEB9B8572CCD8486).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00844E60FB32CCD3D5D2D1B50D

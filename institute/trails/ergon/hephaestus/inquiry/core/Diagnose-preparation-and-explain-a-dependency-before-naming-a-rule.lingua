@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Diagnose preparation and explain a dependency before naming a rule (@inquiry-learning-prerequisites: 0, is #chapter, #hephaestus-core "Use-prediction-practice-and-feedback-while-recording-the-help-given.lingua#r_0089565C8D0577F645F3195311") { r_00A948449B90BC0C5A2F092202
+Before explaining scheduling, ask the learner to do four small things: count two jobs; place events in three successive slots; distinguish a workstation from a job; and explain the meaning of A before B for the same job. Let them use counters and a drawn calendar. A failure can arise from vocabulary, notation, vision, motor access, arithmetic or the dependency itself. Ask for a demonstration or restatement before assigning a cause. A diagnostic response proposes the next teaching action; it does not establish a permanent category of learner.
+
+Use two distinguishable paper tokens, J and K. Each must receive one A operation and then one B operation. Each operation occupies a whole slot; each station handles at most one job in a slot. A job cannot use B in the slot of its A operation. Both jobs start unprocessed. Waiting space is ample for these two tokens; there is no scrap, rework or transfer time. Slots are 0, 1 and 2, ending at times 1, 2 and 3. A is available in slots 0 and 1, B in slots 1 and 2.
+
+First ask for a prediction about completing both jobs by time 3. Then show A:J in slot 0; A:K and B:J in slot 1; B:K in slot 2. Trace J before tracing K, then check the shared station limits. At each step explain why it is allowed. The concurrency in slot 1 concerns different jobs; it does not erase either job's dependency. Have the learner cover the demonstration and reconstruct it. Mark any prompt given during reconstruction.
+
+Now keep two available slots per station but change the calendar: A is available in slots 1 and 2, B in slots 0 and 1. Neither job can complete. The earliest A completion is time 2, after the final B slot has begun. The same total resource counts support different maximum outputs. This counterexample separates the necessary capacity condition from a sufficient construction. It also shows why explaining only a successful example would leave a plausible wrong rule unchallenged.
+
+For a learner who swaps A and B, return to a single token and physically separate the completion boundary from the next start. For a learner who understands order but overloads a station, compare simultaneous actions on different stations with two actions on one station. For a learner who merely repeats “capacity is not enough,” ask which exact boundary prevents completion. These are proposed responses to observed errors; they require checking against the learner's next attempt.
+
+**Read:** [How People Learn II by the National Academies](../sources/How-People-Learn-II-by-the-National-Academies.lingua#r_001EAADFB87A1DA628F6FE9CB0) gives a scholarly account of knowledge and learning strategies. Its chapter 5 discusses how existing knowledge can help or bias new reasoning. Our token sequence is an original instructional design, not a tested intervention from that report.
+
+**Work:** prepare a second representation of the same example, such as an event list instead of a table. Explain what each representation makes visible and what it hides. Identify a prerequisite that would be unnecessary if the task were presented orally with tokens. Write the next diagnostic question for each of the three error patterns above.
+
+**Continue:** [Use prediction practice and feedback while recording the help given](Use-prediction-practice-and-feedback-while-recording-the-help-given.lingua#r_0089565C8D0577F645F3195311).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00A948449B90BC0C5A2F092202

@@ -1,0 +1,23 @@
+Import "../Engineering.lingua"
+
+Define the boundary ports and stored quantities before a balance (@engineering-port-balance: 0, is #chapter, #hephaestus-core "../../physics/fluid-dynamics/balances/Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q") { r_007A17F7243A9F54EDDD173BA3
+A drawing names parts; a balance accounts for a quantity through time. Begin with a question: will a reservoir keep supplying its outlet, or will a body remain within an allowed temperature range? Choose the boundary, the interval, what may cross it and what can accumulate inside. A fixed control region and a fixed collection of matter are different choices. Reuse [Separate stored energy from heat and work along a process](../../physics/core/Separate-stored-energy-from-heat-and-work-along-a-process.lingua#r_0F096B911F1CDDD09E34008C73) and [Relate reaction progress to amounts concentrations and observed rates](../../chemistry/core/Relate-reaction-progress-to-amounts-concentrations-and-observed-rates.lingua#r_0AAA65374BC254C65DF16A76C6) for the energy and species conventions already established.
+
+Let X(t) be the amount of an explicitly named quantity inside a fixed boundary. Give each port a signed inward rate f_k(t). In a model where that quantity is conserved and no other transfer exists,
+
+X(t₂)−X(t₁) = ∫ from t₁ to t₂ of Σf_k(t) dt.
+
+If the rates are continuous, the prepared fundamental theorem gives dX/dt = Σf_k. An outward rate can instead be declared positive and subtracted; changing convention must change both the arrow and sign. Amount and rate have different units. A statement at a single instant does not establish a steady interval. A constant stored amount can coexist with large continuing flows.
+
+For ordinary nonrelativistic mass accounts with all relevant matter included, M has units kg and mass flow has units kg/s. In a stipulated reservoir, M(0)=5 kg, inward flow is 2 kg/s and outward flow 3 kg/s: M(t)=5−t kg for t measured in seconds. The prediction ends by t=5 s unless the outlet law changes or another source appears. Continuing to negative mass diagnoses a failed continuation, not a new state of the reservoir. At one port with uniform density ρ, mass flow is ρ times volume flow. A steady 1 kg/s at densities 2 and 1 kg/m³ has volume flows 1/2 and 1 m³/s. Equal mass rates do not imply equal volume rates. Temperature-dependent density, mixing and spatial profiles need an appropriate model.
+
+For energy use E in joules and net inward energy rates in watts. Heat and work transfer energy; neither is a stored substance. If matter crosses the boundary, its transported energy must also be represented. For the coming thermal examples, matter remains fixed, mechanical changes are neglected, the specified input P enters as energy per time, and all exchange with the environment is accounted for explicitly. A reacting species needs its production/consumption term; it is not individually conserved merely because total mass is. Information and economic value also cannot simply be placed in an energy balance.
+
+**Read and compare:** [University Physics Volume 1 — OpenStax](../../physics/fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 14.5, especially volume rate and mass conservation. Its two-port continuity equation requires the stated no-accumulation reduction; do not extend it to the filling reservoir without storage. The next shared Record supplies a general mass account; use the port interpretation now and leave local vector-calculus notation for its later preparation.
+
+**Practice:** integrate two successive constant port schedules, identify the earliest physical limit and change the boundary to include a connecting pipe. Explain which formerly external transfer becomes internal. Given a measured residual, list distinguishable explanations—storage, an omitted port, uncertain readings or inadequate assumptions—and propose an observation that could separate two of them. A balance by itself does not determine the outlet rate.
+
+**Continue:** [Integral and local conservation of mass](../../physics/fluid-dynamics/balances/Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_007A17F7243A9F54EDDD173BA3

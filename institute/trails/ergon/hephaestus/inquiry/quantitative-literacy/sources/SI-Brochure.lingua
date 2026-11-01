@@ -10,4 +10,7 @@ Use chapter 2 for quantities and units, chapter 3 for prefixes, chapter 4 for ac
 The BIPM publication page states CC BY 4.0. Preserve BIPM attribution, edition, and revision date. Check the Portuguese edition's own publication notice for reuse. The official page and Inmetro metadata were checked on 28 October 2026; the page then identified an updated 2026 English/French brochure. No PDF is stored here.
 
 **Return:** [Quantitative literacy sources — books, standards, and articles](../Sources.lingua#r_7MMXWNA1B4YGA271KMHPPJEK9Q).
+
+**Fifth chemistry-core inspection — 1 November 2026:** freshly checked the official BIPM [ampere definition](https://www.bipm.org/en/si-base-units/ampere) and [mole definition](https://www.bipm.org/en/si-base-units/mole). Their exact defining values e=1.602176634×10⁻¹⁹ C and N_A=6.02214076×10²³ mol⁻¹ give F=96485.3321233100184 C mol⁻¹ by exact multiplication. The chemical lessons distinguish a positive Faraday constant from the electron's negative charge and require the counted entities to be specified. Exact defining constants do not remove uncertainty in measured current or chemical amounts. This is inspection of those definition pages, not a new complete Brochure audit; all original source identity, edition, rights and realization assignments remain.
+
 } r_0QS0FQDWGM0BE9ZM4099FGRXED

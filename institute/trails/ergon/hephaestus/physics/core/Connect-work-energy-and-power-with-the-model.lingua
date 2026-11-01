@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Connect work, energy and power with the model (@physics-work-energy: 0, is #chapter, #hephaestus-core "Separate-a-prediction-from-a-fitted-description.lingua#r_07A97F390AC6E5D127D08C8E42") { r_0FD59423D49E5DCBEFBAC05C2A
+For a constant force and a straight displacement, work is the component of force along the displacement multiplied by that displacement. The dot product introduced in the shared vector lesson expresses this as F·Δr. A force perpendicular to the displacement does no work in this particle account. The direction matters: a resisting force can do negative work even though its magnitude is positive.
+
+Kinetic energy for the constant-mass Newtonian particle model is K = mv²/2. For a straight motion with constant acceleration, the earlier kinematic relations imply v² − v₀² = 2aΔx. Multiplying by m/2 and using net force ma gives net work F_netΔx = K_final − K_initial. This derives the work-energy relation for the stated elementary case. Later calculus extends the argument to varying forces and curved motion; neither derivation claims that kinetic energy alone accounts for every energy store in a real system.
+
+Return to the 3 kg cart pulled by 8 N against 2 N resistance for 2 s from rest. The acceleration is 2 m/s², the displacement is 4 m and the final velocity is 4 m/s. The pulling force does +32 J of work, resistance does −8 J, and their net +24 J equals the change in kinetic energy. Joules are newton-metres. The negative work identifies a mechanical transfer out of this particle's translational kinetic account; the distribution into heating, deformation or other stores requires a more detailed physical model.
+
+Power describes energy transfer per time. The average pulling power in this example is 32 J/2 s = 16 W; it is not the same as the final instantaneous pulling power, 8 N × 4 m/s = 32 W. A complete electrical actuator would also need electrical losses, stored energy and the chosen system boundary. A particle calculation is not a claim about that actuator's efficiency.
+
+**Work:** check the energy account by both force-displacement products and the kinetic-energy change. Repeat with no resistance, and compare the final displacement and velocity rather than retaining the old trajectory. Explain why a momentum balance can hold when kinetic energy is not conserved, and why total energy accounting must include stores omitted by the particle model.
+
+**Read:** [University Physics Volume 1](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), chapters 7–8 progressively, beginning with constant-force work, kinetic energy and power. The shared mechanical work-energy lesson gives the later vector/calculus derivation; return after its mathematical prerequisites are developed.
+
+**Later derivation:** [Work, kinetic energy, potential and mechanical power](../../engineering/mechanical-engineering-and-machine-design/dynamics/Work-kinetic-energy-potential-and-mechanical-power.lingua#r_4VJ79D0Q8KT7CC39Q1GRSDAAZ8) connects this result with varying forces and mechanical power.
+
+**Continue:** [Separate a prediction from a fitted description](Separate-a-prediction-from-a-fitted-description.lingua#r_07A97F390AC6E5D127D08C8E42).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0FD59423D49E5DCBEFBAC05C2A

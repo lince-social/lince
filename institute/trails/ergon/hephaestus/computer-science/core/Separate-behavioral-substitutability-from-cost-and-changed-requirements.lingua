@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Separate behavioral substitutability from cost and changed requirements (@computing-abstraction-change: 0, is #chapter, #hephaestus-core "Investigate-abstract-values-interchangeable-representations-and-composed-behavior.lingua#r_00A94DD49118D07A2BA269E0AC") { r_0093E00EA98E496E9BC6C23AA1
+Representation independence preserves the stated observations, not every property of execution. Reuse [Count work and storage under an explicit cost model](Count-work-and-storage-under-an-explicit-cost-model.lingua#r_056CD81F8DB8FE38538185D3DC). With n=|S|, TupleSlots contains performs up to n integer comparisons. A fresh insertion locates a position, copies tuple entries and validates the new representation, all O(n) under a unit-cost model for these bounded slot integers. Removal also scans, copies and validates. members returns its existing tuple, so obtaining the reference is O(1), while consuming n members still takes Ω(n) work.
+
+For a generalized m-bit mask with machine digit width w, let W=ceil(m/w), at least one digit for the zero case. Mask operations on arbitrary-precision integers can take O(W) work rather than constant time merely because one Python expression is used. The simple members implementation checks all m positions by shifts and bit tests; O(mW) is a conservative digit-work bound, with output proportional to n. Its mask representation uses O(W) digits. These are algorithmic models, not measured Python implementation timings. Our executable width range stops at 256; the generalized model explains scaling rather than claiming an asymptotic experiment over an unbounded implemented domain.
+
+Constructing a tuple representation by repeated insertions can require quadratic cumulative copying in the number of distinct input members. The batch client also validates, tracks repetitions, checks membership and creates intermediate values. One must include those costs instead of quoting only a bit operation or a search primitive. Retaining every immutable historical version can increase storage, even though preserving old values simplifies the behavioral argument. No particular wall-clock performance claim is verified here.
+
+Suppose a changed requirement asks for the order in which slots were inserted. Our abstract state (m,S) does not contain that history: inserting 1 then 3 and 3 then 1 produce the same value. No alternative representation of that same abstract state can recover the missing distinction honestly. Change the abstract model and operations, then revise the client proof. Similarly, allowing repeated reservations as counts requires a multiset model; keeping set insertion and reporting tuple length would lose the new meaning.
+
+An internal representation change can leave the contract intact; a new public observable, failure policy or effect changes what must be established. Requirements should determine that boundary. A cache may improve a measured workload, but it adds a consistency invariant and possibly mutation/concurrency obligations. Keep the simple complete implementation and compare alternatives using both the proof obligations and the actual workload before selecting a more complicated structure.
+
+**Work:** count comparisons, copied elements and output size for a concrete state and batch. Give two histories collapsed by the current abstraction that a proposed new requirement must distinguish. Extend the abstract state first, then explain which interface laws and tests must change. Do not claim that green unit checks demonstrate a performance, security or whole-application guarantee they never measured.
+
+**Continue:** [Investigate abstract values interchangeable representations and composed behavior](Investigate-abstract-values-interchangeable-representations-and-composed-behavior.lingua#r_00A94DD49118D07A2BA269E0AC).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0093E00EA98E496E9BC6C23AA1

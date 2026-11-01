@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Construct complex arithmetic and identify its algebraic limits (@math-complex-arithmetic: 0, is #chapter, #hephaestus-core "Relate-complex-products-powers-and-roots-to-rotations.lingua#r_007A555DF9E363BDCFDBD9976D") { r_006DD1FF362C1C4973327211C7
+Define a complex number as an ordered pair of real numbers. Addition is (a,b)+(c,d)=(a+c,b+d); multiplication is (a,b)(c,d)=(ac−bd,ad+bc). The pair (a,0) represents a real number, and i=(0,1) satisfies i²=(−1,0). Thus write (a,b)=a+bi. The real part is a and the imaginary part is the real coefficient b, not the term bi. This construction defines multiplication explicitly rather than relying on an unexplained square root symbol.
+
+Pair addition is associative and commutative. The multiplication formula is symmetric in its factors, so multiplication is commutative. Expanding either grouping of (a+bi)(c+di)(e+fi) gives real part ace−bde−adf−bcf and imaginary part acf−bdf+ade+bce, proving associativity. Distribution over addition follows by expanding coordinates. The multiplicative identity is (1,0), and (0,0) is the additive identity. These computations explain the algebraic structure rather than just checking a few examples.
+
+Define conjugate z̄=a−bi and |z|=√(a²+b²). Then zz̄=a²+b²=|z|². For z≠0, its inverse is z̄/|z|² because the positive denominator is nonzero. Consequently division by c+di multiplies by c−di and divides both resulting coordinates by c²+d². Expanding the product norm proves |zw|²=|z|²|w|², hence |zw|=|z||w| since norms are nonnegative. A product of nonzero complex numbers cannot vanish.
+
+**Original calculation:** (2−i)(3/5+4i/5)=2+i. Both sides have squared norm 5 because the second factor has norm one. Recover 2−i by division. Compare this with the coordinate rotation already derived; the same formula now has an algebraic interpretation.
+
+Some real-number habits fail. There is no total order extending the usual real order and compatible with the field operations: squares would have to be nonnegative, but i²=−1 contradicts that requirement. Nor can the positive-real square-root product rule be applied indiscriminately: choosing √(−1)=i gives √(−1)√(−1)=−1 while √((-1)(-1))=1. An equation z²=−1 has the two solutions ±i; a selected square-root value is a convention, not the full solution set.
+
+**Read and practice:** [Algebra and Trigonometry 2e — Abramson and contributors](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), section 2.4. Prove the conjugate of a product is the product of the conjugates, compute a quotient by both direct multiplication and the inverse formula, and identify every excluded denominator. Explain why a complex extension solves some equations without proving the much stronger fundamental theorem of algebra.
+
+**Continue:** [Relate complex products powers and roots to rotations](Relate-complex-products-powers-and-roots-to-rotations.lingua#r_007A555DF9E363BDCFDBD9976D).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_006DD1FF362C1C4973327211C7

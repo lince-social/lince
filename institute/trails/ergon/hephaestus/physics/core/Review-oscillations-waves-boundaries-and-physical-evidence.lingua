@@ -1,0 +1,20 @@
+Import "../Physics.lingua"
+
+Review oscillations waves boundaries and physical evidence (@physics-wave-review: 0, is #chapter, #hephaestus-core "Begin-electrical-reasoning-with-charge-and-a-declared-system.lingua#r_002E4C685D007D6227F9770A73") { r_003B1CBD2375314B99BCD448E3
+Reconstruct the route from a restoring interaction to a time equation and from interval force balance to a field equation. State the units and empirical meaning of each mass, stiffness, damping, tension and density parameter. Explain why conservation alone does not determine any of these constitutive parameters. Derive the undamped initial solution, its energy, the damped energy account and the bounded underdamped change of variables. Identify the critical case and the preparation still needed for general driven response.
+
+Distinguish a spatial profile, a point's time trace, a moving phase and a material trajectory. Define the partial derivatives used, derive both directions of travel and explain what constrains ω/k physically. Reconstruct the small-slope string assumptions and compare a single mode with a summed state. Explain why a small displacement can have a large slope and why a small slope alone does not establish constant tension.
+
+Derive the allowed fixed-end modes and their initial functions. Identify a node, an antinode and an instantaneous zero. Show why listing modes does not prove arbitrary-data existence or convergence. Use the local energy account to prove uniqueness for smooth solutions with the same complete initial state and fixed boundaries, including the step from a zero integral to zero continuous nonnegative density.
+
+Reproduce the local balance and finite-segment investigation, retaining force directions and units. Explain how a standing wave can have nonzero instantaneous internal transport while its mean flux and boundary flux vanish. Derive the midpoint-invisible mode and the equal-speed material rival, then state exactly which new evidence distinguishes each. Preserve the mathematical proof, the independent exact calculation and the empirical limitation as different parts of one defensible account.
+
+For an independent contribution, formulate a new benign theoretical field or proposed supervised measurement comparison, justify its prerequisites, derive predictions and design a discriminating observation. Criticize the source assumptions, revise one model and communicate what changed. A proposed experiment is not a performed one. Work the assigned reading and exercises at increasing depth; none of the author checks substitutes for a learner's independent investigation.
+
+The physics core remains unfinished. Fields/circuits, fuller rotations and continua, statistical and quantum descriptions, relativity, astronomy, experimental reconstruction, general PDE/mode theory and advanced independent work still need connected formation. Continue the fourth common pass with chemistry's solutions and charge/species accounts, followed by computing, engineering and inquiry. The new oscillator/wave preparation does not complete acoustics or an engineering vibration specialty. [Review periodic arguments complex algebra and second order evidence](../../mathematics/core/Review-periodic-arguments-complex-algebra-and-second-order-evidence.lingua#r_00F2CBF2ECCEA9D81EC0188631) supplies the shared mathematical boundary; keep specialist references contextual until their required preparation is developed.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the fifth common pass:** [Begin electrical reasoning with charge and a declared system](Begin-electrical-reasoning-with-charge-and-a-declared-system.lingua#r_002E4C685D007D6227F9770A73). The fifth physics block develops signed charge, finite static fields, potential/work, current and storage, and elementary circuit-energy meaning. Preserve the earlier mechanics, thermal and wave investigations; chemistry follows at comparable depth before specialized branches.
+
+} r_003B1CBD2375314B99BCD448E3

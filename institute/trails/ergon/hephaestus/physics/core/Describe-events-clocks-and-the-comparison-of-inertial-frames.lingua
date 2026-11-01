@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Describe events clocks and the comparison of inertial frames (@physics-spacetime-events: 0, is #chapter, #hephaestus-core "Derive-a-Lorentz-boost-and-its-invariant-interval.lingua#r_005CCCB2ECA7D73A8802650C53") { r_0066EF1C04ECAE6E24E72A9C47
+A clock reading is a local event: something happened at a place on that clock's path. Before comparing two clocks, specify their paths, how they were set, how their signals travel and which events are compared. An inertial frame supplies spatial coordinates and a network of synchronized clocks at rest in that frame. It is not simply a person watching from one point. Reuse [Describe planar motion with components and a declared frame](Describe-planar-motion-with-components-and-a-declared-frame.lingua#r_0F215E6253BB0BF99F4B22E201) for the earlier fixed-axis account and [Connect electromagnetic propagation to the shared wave and energy accounts](Connect-electromagnetic-propagation-to-the-shared-wave-and-energy-accounts.lingua#r_004CCBA82FD7003C221B96293D) for electromagnetic propagation.
+
+For this flat-spacetime model adopt two physical postulates: inertial frames use the same laws, and vacuum light propagates at speed c in each such frame. A coordinate convention accompanies them. A clock A emits a pulse at its reading t₁, a stationary distant clock B reflects it, and A receives it at t₂. Assign the reflection coordinate time (t₁+t₂)/2 and radar distance c(t₂−t₁)/2. This Einstein synchronization assumes equal outward and return one-way coordinate speeds within the inertial frame. A round-trip measurement alone does not independently determine both one-way speeds. Accelerated frames, rotating networks and gravitational comparisons require further treatment.
+
+For events use X=(T,x,y,z), where T=ct has length units. In a diagram with T vertical and x horizontal, vacuum light rays have slopes ±1. A material clock has a worldline, the sequence of its events; it does not occupy every event on a coordinate-time slice. Ordinary seconds can be recovered by dividing T by c. The exact SI value c=299792458 m/s sets the length/time conversion; it does not remove uncertainty in an apparatus or its distances.
+
+Suppose two emission events have lab coordinates (T,x)=(0,0) and (0,6), with a stationary receiver at x=2. The left-going or right-going signals arrive at receiver T=2 and T=4 respectively. Unequal arrival times are compatible with simultaneous emissions. Conversely, simultaneous reception need not imply simultaneous emission. Correcting propagation delay is necessary before discussing frame-dependent simultaneity, and does not eliminate that separate effect.
+
+**Read and work:** [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426), selected 7.1–7.2.1. Draw the two emission events, receiver worldline and both light paths; annotate emission, arrival and assigned coordinate readings separately. Change the receiver to x=3 and then allow it to move. State which assumptions support each inferred emission time. A thought experiment supplies a model consequence, not an observed clock comparison.
+
+**Continue:** [Derive a Lorentz boost and its invariant interval](Derive-a-Lorentz-boost-and-its-invariant-interval.lingua#r_005CCCB2ECA7D73A8802650C53).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0066EF1C04ECAE6E24E72A9C47

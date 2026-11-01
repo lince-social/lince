@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Separate the fitted output from ambiguous coefficients (@math-rank-deficient-projection: 0, is #chapter, #hephaestus-core "Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7") { r_00084EE12BB22B58AB5FC115D4
+Return to A with rows (1,0,1), (0,1,1), (1,1,2), (2,−1,1), and b=(2,1,4,2). Exact elimination gave contradictions. Yet the image is the plane spanned by c₁ and c₂ in R⁴, and every b has a unique orthogonal projection onto that plane. Represent an output by u c₁+v c₂. The normal equations for these two independent columns are 6u−v=10 and −u+3v=3. Solving gives u=33/17 and v=28/17.
+
+The fitted output is p=(33,28,61,38)/17. The residual b−p=(1,−11,7,−4)/17 satisfies c₁·r=(1+7−8)/17=0 and c₂·r=(−11+7+4)/17=0. Its squared norm is (1+121+49+16)/17²=11/17. These checks independently certify the fit under the chosen objective. They do not explain why the supplied exact readings violate the column relations.
+
+The original coefficients are every vector (33/17−t,28/17−t,t), t∈R. This family follows from u=x₁+x₃ and v=x₂+x₃. The normal matrix for all three original columns is singular, so inserting its ordinary inverse into a formula is invalid. A particular solver may select t=0; that is a convention, not new information about x₃. Any other t gives the same fitted observations and squared residual. If coefficients must be nonnegative, the allowed fitted family is 0≤t≤28/17; it is still not a unique physical explanation.
+
+Now change the output basis to d₁=c₁ and d₂=c₁+c₂. With u=y₁+y₂ and v=y₂, the same fit has y=(5/17,28/17). The coordinates change while p and its residual do not. In general replacing an independent basis B by BS with invertible S preserves its image, so projection is unchanged and coefficient coordinates transform by S⁻¹. It does not follow that the coordinate lists have the same Euclidean lengths; basis geometry must be included when such lengths are used.
+
+Add a fifth reading that directly observes x₃=1/2, with row (0,0,1). The augmented coefficient matrix now has rank 3: its old kernel direction is detected. The least-squares coefficients become (49/34,39/34,1/2), with the same first four fitted values and an exact fifth fit. The minimal squared residual remains 11/17. Indeed the new objective is the old objective in u,v plus (x₃−1/2)², and these three variables can vary independently. This proves the result without rerunning a general algorithm. The inconsistent first four exact equations remain inconsistent.
+
+**Work:** derive all fractions by elimination and by the orthogonal basis of the preceding lesson. Verify the five-reading rank and the unchanged residual independently. Construct a fifth row that adds no rank, such as a repeat of the first row, and distinguish repetition from new input information. If the repeated value disagrees, explain how it changes least squares despite adding no new identifiable direction. Write a short argument for why collecting more readings with the same lost direction cannot identify the hidden parameter. Do not infer a measurement error law or a causal mechanism from rank alone.
+
+**Continue:** [Keep coordinate choices error metrics and sensitivity distinct](Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00084EE12BB22B58AB5FC115D4

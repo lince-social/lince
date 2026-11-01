@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Keep service evidence meaningful through change and recovery (@engineering-operation: 0, is #chapter, #hephaestus-core "Investigate-a-service-from-requirements-to-operating-evidence.lingua#r_0154834E27D6627BE8DA2ED738") { r_0593D3DFF3699AB8D9E3ACE10B
+A useful system keeps working through replenishment, interruptions, wear, changes and eventual retirement. Its delivered service depends on people, information and supporting supplies as well as its principal equipment. Begin by identifying what an operator must know, what a maintainer must reach, and what a replacement must preserve at each interface.
+
+**Read:** [NASA Systems Engineering Handbook](../mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) section 5.5 on transition and section 6.5 on configuration management. Compare the identity of the delivered system with the identity of the system described by its evidence. The general question is whether a later user can understand what was delivered and what changed; the particular NASA roles and forms are examples from that institution.
+
+For the card line, a replacement label reader may use the same connector but a different message format. A new program may count a repeated acknowledgement twice. A changed blank material may alter cutting behavior and accepted fraction. A replacement is therefore more than a matching name: identify the relevant properties, the changed assumptions and the checks affected. Keep the accepted configuration, the change and its supporting evidence understandable to the next person.
+
+Service time also matters. In the aggregate model with B's availability reduced from 0.95 to 0.70, its ten-hour input capacity becomes 700 and the final acceptable upper bound becomes 686. At availability 0.95 but accepted fraction 0.80, the bound is 760. Both miss the 800-card requirement even before temporal constraints. Inspecting more cards cannot restore lost operating time; maintenance that restores time does not by itself correct an unreadable label. Identify the mechanism of a failure before choosing the response.
+
+Reconcile stocks after an interruption. Distinguish unprocessed blanks, known acceptable intermediates, uncertain items, rejected cards and delivered cards. Do not count an uncertain item as accepted merely to close the balance. If an item's state is unknown, represent that uncertainty and obtain the evidence needed for its disposition. A restarted counter must not erase the relationship between earlier inputs and outputs.
+
+At recovery, distinguish material recovered from function restored. Recovering paper fibre does not recover a usable teaching card. In an invented service account, 100 delivered items later return as 60 usable items, 30 items directed to material recovery and 10 remaining elsewhere. The count closes at 100, but only 60 are available for the same service without further processing. Energy, added material and processing losses of recovery need their own boundaries; the count alone does not establish an environmental advantage.
+
+**Work:** describe an interruption and a replacement in the card service. List the information a second operator needs to resume without duplicate delivery or hidden uncertainty. Explain which earlier evidence survives each change. Draw separate accounts for restored products and recovered material, stating the functional unit you are comparing. Extend the reasoning to a building component, electrical instrument and software service without assuming their maintenance procedures are identical.
+
+**Continue:** [Investigate a service from requirements to operating evidence](Investigate-a-service-from-requirements-to-operating-evidence.lingua#r_0154834E27D6627BE8DA2ED738).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0593D3DFF3699AB8D9E3ACE10B

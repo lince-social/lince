@@ -1,0 +1,7 @@
+Calculus and vector analysis (@calculus-and-vector-analysis: 0, is #chapter, #outline) { r_3162WTR2P83XKAKSGCKV4486EV
+Calculus studies change, local behaviour, and accumulation. This material covers derivatives, integrals, series, multivariable calculus, gradients, fluxes, and integral theorems, relating their assumptions to motion, fields, growth, conservation, and the balances used throughout science and engineering.
+
+**Common preparation developed:** the [oriented-field review](../core/Review-oriented-field-identities-before-applying-physical-laws.lingua) connects scalar and oriented integration, coordinate measure, divergence/curl and Green/Gauss/Stokes identities. Elementary rectangle/box/patch cases are proved and broader theorems explicitly accepted; a connected investigation checks orientation, domain and independent calculations. The full calculus/vector-analysis formation remains pending.
+
+**Parent:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_3162WTR2P83XKAKSGCKV4486EV

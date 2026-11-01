@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Derive complex orthogonality projection and the norm inequality (@math-operator-projection: 0, is #chapter, #hephaestus-core "Derive-the-adjoint-from-the-pairing-and-preserve-composition-order.lingua#r_0059AAD309397F8950E26E3CEC") { r_0060036DEC992980B6D2E9B326
+Reuse the closest-point argument in [Resolve a vector into a projection and an orthogonal remainder](Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B). For nonzero v and any x, set a=⟨v,x⟩/⟨v,v⟩, p=av and r=x−p. Linearity in the second slot gives ⟨v,r⟩=0. Conjugate symmetry also gives ⟨r,v⟩=0. Expanding the squared norm therefore yields ||x||²=||p||²+||r||². If b is any complex scalar, ||x−bv||²=||r||²+|a−b|²||v||². The projection p is the unique closest point on the complex line through v; the proof ranges over every complex b, not only a real coefficient.
+
+For x=(2,1), v=(1,i), the coefficient is (2−i)/2. Then p=(1−i/2,1/2+i) and r=(1+i/2,1/2−i). Both squared norms are 5/2 and their sum is ||x||²=5. Replacing v by any nonzero complex multiple changes the coefficient but leaves p unchanged. A zero direction is excluded because it has no nonzero norm denominator.
+
+The same decomposition proves |⟨v,x⟩|²≤||v||²||x||² by discarding ||r||²≥0. Equality for nonzero v means r=0; if v=0 the equality is immediate. Thus equality holds exactly when the two vectors are linearly dependent. This is the complex Cauchy–Schwarz inequality. Expanding ||x+y||² and bounding 2Re⟨x,y⟩ by 2||x||||y|| gives the triangle inequality. These arguments extend the existing real geometry; they are not numerical observations about a few coordinates.
+
+For mutually orthonormal e₁,…,eₖ, the projection onto their span is p=Σeⱼ⟨eⱼ,x⟩. Verify that the remainder is orthogonal to every eⱼ. If the list spans Cⁿ, the remainder is zero and ||x||²=Σ|⟨eⱼ,x⟩|². If it does not span, the missing remainder retains squared length. Dividing these squared lengths by ||x||² for nonzero x gives nonnegative numbers summing to one for a complete orthogonal decomposition. Algebra alone does not identify them with frequencies of a physical experiment.
+
+**Read:** the source's numbered results 6.10–6.14, translating the slot convention before comparing proofs. **Work:** prove the multi-direction projection and its least-distance property; distinguish a coefficient from the vector it multiplies. Repeat the example after replacing v by iv. Explain why a nonorthogonal list cannot use these projection coefficients unchanged. Establish the general inequality before using the finite checks in the investigation.
+
+**Continue:** [Derive the adjoint from the pairing and preserve composition order](Derive-the-adjoint-from-the-pairing-and-preserve-composition-order.lingua#r_0059AAD309397F8950E26E3CEC).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0060036DEC992980B6D2E9B326

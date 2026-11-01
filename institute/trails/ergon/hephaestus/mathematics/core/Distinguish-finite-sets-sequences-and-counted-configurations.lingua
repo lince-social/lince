@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Distinguish finite sets sequences and counted configurations (@math-discrete-objects: 0, is #chapter, #hephaestus-core "Use-functions-and-fibers-to-justify-a-counting-argument.lingua#r_007F005168981CB5DB6A4D8B3A") { r_0057E5B3AF058E48063BE0EE3C
+A discrete question begins by deciding what an object is and when two descriptions mean the same object. A set records distinct members without order or repetition. A sequence records positions and allows repeated entries. A multiset records multiplicities but forgets order. Thus the sequences (0,1,0) and (0,0,1) differ, while both have underlying set {0,1} and the same multiset. Counting the wrong kind of object answers a different question even if the arithmetic is correct.
+
+Reuse [State what a mathematical claim says about its objects](Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA) and [Build a proof from definitions and preserved assumptions](Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A). Write x∈A for membership and A⊆B when every member of A is in B. The empty set ∅ has no members; {∅} has one member. Two sets are equal exactly when each is a subset of the other. A direct proof of equality therefore takes an arbitrary member of one side, proves membership in the other, and repeats in the reverse direction. For example, x∈A∩(B∪C) means x∈A and either x∈B or x∈C, which is equivalent to x∈(A∩B)∪(A∩C). The statement follows for every x in the declared universe.
+
+The Cartesian product A×B consists of ordered pairs (a,b) with a∈A and b∈B. Reversing the coordinates changes the pair unless the values happen to coincide. A configuration of N indistinguishable tokens in three labeled boxes is a triple (a,b,c) of nonnegative integers with a+b+c=N. The boxes retain their labels; exchanging the first and last box need not describe the same configuration. Tokens within one box have no individual names in this model.
+
+Define S_N={(a,b,c)∈ℕ₀³:a+b+c=N}, where ℕ₀ includes zero. For N=2 its six elements are (2,0,0),(1,1,0),(1,0,1),(0,2,0),(0,1,1),(0,0,2). This is a set of triples, not a set of tokens. S_0 contains the single configuration (0,0,0); it is not empty. If tokens were individually labeled, assigning each of N tokens to a box would instead give 3^N assignments. Forgetting those labels is a many-to-one map with generally unequal fiber sizes.
+
+The power set P(A) is the set of all subsets of A. For A={p,q}, it is {∅,{p},{q},{p,q}}. A subset specifies membership decisions; it does not arrange its members. These distinctions will support counting, relations, graph states and later questions about representation. The pure mathematical objects have meaning without a physical apparatus.
+
+**Read and work:** [Book of Proof — Richard Hammack](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 1 and the set-proof preparation in chapter 8. Work from definitions before relying on a diagram. List S_3, then explain why repetitions or permutations in a computer output would not create new members of that set. Give two different questions for which labeled and unlabeled tokens are appropriate. This block develops finite structures; axiomatic set theory and infinite cardinality retain later scope.
+
+**Continue:** [Use functions and fibers to justify a counting argument](Use-functions-and-fibers-to-justify-a-counting-argument.lingua#r_007F005168981CB5DB6A4D8B3A).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0057E5B3AF058E48063BE0EE3C

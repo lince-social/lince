@@ -1,0 +1,20 @@
+Import "../Chemistry.lingua"
+
+Review solution species balances approximations and evidence (@chemistry-solution-review: 0, is #chapter, #hephaestus-core "Oxidation-accounts-and-actual-charge.lingua#r_00954A9C5D7E6BDFF7CF77D273") { r_00B5D28110FDFE68CDF2F84B73
+Reconstruct a solution description from its boundary, solvent, conserved components, candidate species and observation relation. Distinguish dissolution from dissociation, equilibrium from approach rate, an analytical total from a free-species concentration and a clear appearance from an identified chemical state. State the preparation/volume assumptions that connect an input amount to the final total. Explain how a species distribution can change while the component ledger remains correct.
+
+Derive independent component and charge equations, including the signs and stoichiometric coefficients of every ion. Explain the bulk-neutrality assumption and why interface regions require different preparation. Compare neutral HA and a salt with the same A total; a spectator cancelled from a net reaction may still be required by the complete solution account. Preserve the distinction between a chemical group A and an actual chemical element.
+
+State the acid/water model and standard concentration before manipulating its equations. Define activity, the ideal concentration approximation and the dimensionless logarithm used for pH. Explain neutrality's dependence on the water relation and temperature, and distinguish a computed ideal pH from a procedure-based measurement. Full activity-coefficient prediction, chemical-potential derivation and operational measurement formation remain later work.
+
+Derive the rational hydrogen residual, cubic and hydroxide polynomial; prove existence/uniqueness only for the bounded four-species model; and reconstruct nonnegative species. Explain why sign-changing brackets and declared stopping criteria provide stronger numerical evidence than an unexplained decimal output. Use derivative monotonicity to justify the error certificate and species bounds, while keeping real-input uncertainty and model discrepancy separate.
+
+Reproduce the exact original state, amount ledger, approximation comparison, dilute failure and equal-hydrogen rival. Demonstrate how two errors can cancel, then design an observation that distinguishes the rival models without assuming the unknown coefficients. Defend a new case with independent calculation, source criticism and revision. The embedded checks are author evidence about finite mathematical examples; the learner's laboratory or independent research work remains to be performed.
+
+This common block does not complete aqueous analytical chemistry or the chemistry core. Chemical thermodynamics, electrochemistry, organic/inorganic and material families, richer coupled equilibria, synthesis, experimental reconstruction and advanced independent formation remain. Continue the fourth common pass with computing's managed memory and operating-system services, then engineering and inquiry. Reuse these solution/balance arguments later where they are needed rather than extending a specialized treatment process ahead of the other cores.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the fifth common pass:** [Distinguish oxidation accounts from the charge of a species](Oxidation-accounts-and-actual-charge.lingua#r_00954A9C5D7E6BDFF7CF77D273). The fifth chemistry block develops oxidation and half-reaction constraints, reaction electron amount, interfacial storage, chemical-product evidence and terminal work. Preserve the earlier composition, structure, reaction-dynamics and solution investigations. Computing follows at comparable depth before specialized branches.
+
+} r_00B5D28110FDFE68CDF2F84B73

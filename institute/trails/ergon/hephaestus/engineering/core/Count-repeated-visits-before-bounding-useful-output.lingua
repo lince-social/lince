@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Count repeated visits before bounding useful output (@engineering-production-visits: 0, is #chapter, #hephaestus-core "Declare-slot-timing-and-reserve-finite-waiting-spaces.lingua#r_0002BF35AFDA5D67B939E8E57B") { r_0042D69B36B9CD2481246608C5
+One item can consume the same resource more than once. Let operation A prepare a card and B inspect it. An ordinary route is AB. A card selected for one rework cycle follows ABAB: the first B routes it back to A, then the second B produces its final acceptance or scrap decision. Each letter denotes one full operation occupying its resource for one time slot. The model prescribes the route in advance; it does not infer a future defect from a measurement.
+
+If job j has completed p_j operations, A has served it ceil(p_j/2) times and B floor(p_j/2) times. These counts follow by separating odd and even positions in the alternating route. Sum across jobs to get the two resource visit counts V_A and V_B. Their difference counts jobs currently waiting for B at slot boundaries: unfinished jobs after an odd number of operations contribute one, all others zero. A finished four-visit item has consumed two A visits and two B visits, even though it contributes only one departure.
+
+For an H-slot calendar with binary availability a_t,b_t, V_A≤Σa_t and V_B≤Σb_t, because at most one operation uses a machine per available slot. These inequalities are necessary capacity bounds. If a proposed completed set contains jobs requiring k_j visits to each machine, then Σk_j over that set cannot exceed either total availability. Rejecting an infeasible proposal by this count is useful; satisfying the bound does not construct a schedule. Operations must still occur in route order and fit finite waiting space.
+
+For one accepted ABAB job and one accepted AB job, completion requires three visits on each machine. If A is available only in slots 0,1,2 and B only in slots 3,4,5, the aggregate visit capacities are both three. Yet the long job cannot finish: its second A visit must follow a B visit, and all A availability has ended before the first B opportunity. At most the short job is accepted. Our checker compares this case against an independent assignment of operation times. It extends the earlier two-slot example by making the repeated visit itself the obstruction.
+
+A bottleneck is relative to the workload, routing, availability and objective. A machine with a high nominal visit rate may limit useful output if every accepted item must revisit it many times. An infinite-buffer, perfect-yield serial line under the additional assumptions of the selected [Manufacturing Systems Analysis MIT 2 852](../sources/Manufacturing-Systems-Analysis-MIT-2-852.lingua#r_00185E34168A41C88CE14E1828) flow-line slides has a different long-run analysis from this finite deadline model. Read that limiting case as a contrast; do not substitute its minimum-average-rate formula for a finite schedule with rework.
+
+For a single nonpreemptive operation needing τ time units on one continuously available machine, at most floor(H/τ) complete operations fit from an empty start within H. This follows because disjoint processing intervals have total length at least nτ. Setups, maintenance, shared operators or different job times change the resource inequality. A rate 1/τ alone does not record those obligations. Likewise, a resource-hour budget is not automatically divisible into arbitrary fractions when jobs are discrete.
+
+**Work:** list the visit account for phases 0,1,2,3,4 of ABAB and 0,1,2 of AB. Explain why subtracting accepted items from machine visits is not a scrap balance. Propose a completed set, reject it using a capacity inequality, then give another set that passes that inequality but fails precedence. State what additional resource and routing information would be required before using the bound to justify equipment procurement or an operating commitment.
+
+**Continue:** [Declare slot timing and reserve finite waiting spaces](Declare-slot-timing-and-reserve-finite-waiting-spaces.lingua#r_0002BF35AFDA5D67B939E8E57B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0042D69B36B9CD2481246608C5

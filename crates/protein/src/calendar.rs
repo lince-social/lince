@@ -99,7 +99,7 @@ pub(super) async fn execute(
     let cached = if unavailable.is_some() {
         None
     } else {
-        store::projection::read(&store.pool, &context, now).await?
+        store::projection::read(store, &context, now).await?
     };
     let mut status = cached.as_ref().map_or_else(
         || {

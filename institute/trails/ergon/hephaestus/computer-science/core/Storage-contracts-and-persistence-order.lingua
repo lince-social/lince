@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Distinguish write acceptance atomicity ordering and persistence (@computing-storage-contract: 0, is #chapter, #hephaestus-core "Interrupted-updates-and-reachable-states.lingua#r_009433FC754E5B84607D18E3BF") { r_00C17999D9A870BEF97CB7A385
+An interface needs a contract before it can support a proof. For a byte range, specify valid offsets and lengths, the meaning of a returned count, how errors are reported, which state may already have changed, and what later readers may observe. [Validate a complete range before changing its destination](Validate-a-complete-range-before-changing-its-destination.lingua#r_005694F6345B9E47E54BF7D899) proved a complete-range rule for an in-memory service under its no-interleaving assumptions. A storage interface may allow partial transfer or asynchronous persistence instead. Do not carry that memory guarantee across a different boundary without justification.
+
+Separate four properties. Acceptance means a request was admitted or copied into an intermediate layer. Atomicity concerns indivisible observation or failure outcomes at a specified granularity. Ordering constrains which effects can become visible or persistent before others. Durability says which completed effects survive the stated failures. A complete logical record need not fit within an atomic storage unit, and ordered program calls need not imply the same persistence order.
+
+Our device model accepts a write of one word by placing (address,value) in a volatile pending set. Each pending write may persist independently in any order. Persistence atomically replaces that one durable word and removes the pending entry. No address has two outstanding writes in this small protocol. A barrier may return only when the pending set is empty; the program issues no subsequent operation until that return. There are no write errors in this model. If a real barrier reports an error, the success transition would be unjustified and requires a separate error/recovery contract.
+
+The state includes a program counter and an acknowledgment flag as well as durable words and pending writes. At any reachable point a crash discards the pending writes, counter and local flag while retaining the durable words. The checking observer remembers whether acknowledgment occurred before the crash, so it can test the stronger promise made to the caller. We do not equate the lost local flag with the caller's knowledge.
+
+**Real-interface boundary:** [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ) links Python's `os.replace` and `os.fsync` documentation. The inspected Python 3.14 documentation distinguishes atomic renaming, file synchronization, buffered-file flushing and platform-dependent underlying calls. Those entries do not establish our entire two-slot protocol on any particular filesystem or device. [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 39, also distinguishes file data from directory persistence. This model uses neither API to simulate hardware crashes.
+
+**Work:** list every assumption needed to translate a successful file update into our atomic-word/barrier transitions. Include partial writes, cached data, directory metadata, error returns, atomic-unit size and device behavior. Identify which assumptions you could test with ordinary process interruption and which require stronger fault injection or platform evidence. Keep the abstract proof even when a particular implementation mapping is unverified.
+
+**Continue:** [Find the states that an interrupted direct update can leave](Interrupted-updates-and-reachable-states.lingua#r_009433FC754E5B84607D18E3BF).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00C17999D9A870BEF97CB7A385

@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Connect names objects and addresses to a storage lifetime (@computing-memory-objects: 0, is #chapter, #hephaestus-core "Preserve-procedure-state-before-reusing-a-working-register.lingua#r_00D464ECA2CC2CD60D0B5B26C1") { r_00B53B9599A35F97006225DA42
+Reuse [Trace mutation and sharing across a collection boundary](Trace-mutation-and-sharing-across-a-collection-boundary.lingua#r_0E243F4674D6A5A66298639599) and [Specify an encoded machine before executing its instructions](Specify-an-encoded-machine-before-executing-its-instructions.lingua#r_02135B96E55F97B0360B787685). A program's name denotes something under its language rules; it is not inherently a physical memory address. A stored representation occupies locations, and an address selects a location under an execution context. Two references can designate the same object, and two identical numerical addresses in different contexts can designate different storage. Keep value equality, reference identity and storage location separate.
+
+An object needs a representation, an extent and a lifetime. A four-word object beginning at address a occupies the half-open range [a,a+4): a,a+1,a+2,a+3. The endpoint is not an additional element. A valid address in some allocated page does not by itself establish that an access is within the intended object or that the object's lifetime continues. Page permissions and language/object validity answer different questions.
+
+Suppose a temporary two-word record occupies 6 and 7 during a call. After return, the implementation may reuse those locations for another record. An old raw numerical address can still point inside an accessible page while no longer designating the former live object. A language may prevent the operation, track ownership, extend lifetime through managed references or leave the program responsible. This lesson does not assert that Python objects have the same lifetime rules as a raw-address language. Host-language references in the earlier studies remain governed by their actual language.
+
+A source-level array or record also requires a layout convention: element width, order, alignment and interpretation. Our coming model uses one independently addressable eight-bit value per word, avoiding alignment and multi-byte endianness. These omissions are explicit. Earlier four-bit arithmetic and byte instruction encodings retain their original meaning; the new model operates at a service/state level rather than silently changing that instruction set.
+
+**Reading and work:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), the procedure/memory context in topics 12 and 16, and [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), address-space preparation. Draw two names sharing one object, then two distinct objects holding equal values. Trace a lifetime ending without claiming the bits are erased. Explain why a bounds check, a page permission and a type/lifetime rule cannot generally substitute for one another. More complete language implementation and memory ownership remain later formation.
+
+**Continue:** [Preserve procedure state before reusing a working register](Preserve-procedure-state-before-reusing-a-working-register.lingua#r_00D464ECA2CC2CD60D0B5B26C1).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00B53B9599A35F97006225DA42

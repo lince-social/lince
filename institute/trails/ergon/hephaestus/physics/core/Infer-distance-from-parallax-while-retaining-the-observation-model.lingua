@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Infer distance from parallax while retaining the observation model (@physics-astronomy-parallax: 0, is #chapter, #hephaestus-core "Connect-astronomical-photons-to-detector-counts-and-uncertainty.lingua#r_0048E4DAB79D3D3479E310ACE4") { r_00AA339D3B96FFF6166AF65FB2
+For a symmetric triangulation with observer positions separated by 2b perpendicular to a target's central direction, half the total apparent shift is p and tan p=b/d. For small p in radians, p≈b/d. Annual stellar parallax uses a baseline scale of 1 astronomical unit, half the full opposite-side separation. One arcsecond is π/648000 radians; one milliarcsecond (mas) is one thousandth of an arcsecond. In the usual small-angle parallax model, d in parsecs is 1/p in arcseconds, or 1000/p in mas. A parsec is approximately 206265 AU. A light-year is a distance obtained from a light travel time, not a unit of elapsed age.
+
+Real astrometry fits directions over time. In one small tangent-plane coordinate use θ_i=θ₀+μt_i+ϖP_i+e_i, where μ is a proper-motion coefficient, ϖ is parallax, P_i is the known dimensionless parallax factor from observer geometry, and e_i contains errors and omitted effects. θ₀, μ and ϖ have different units. Choosing the time origin changes θ₀, not the physical proper motion or parallax. A full astrometric solution includes the other coordinate, reference-frame effects and a covariance model.
+
+For normalized epochs t=(−3,−1,1,3) and P=(1,−1,−1,1), the three design columns are orthogonal. Thus θ₀=Σθ_i/4, μ=Σt_iθ_i/20 and ϖ=ΣP_iθ_i/4 under equal squared-error weights. The readings (4.5,7.5,11.5,16.5) give (10,2,0.5). These are synthetic angular/time units. If instead P_i=t_i, only μ+ϖ is determined; the design has a nonzero kernel. Neither a solver nor more decimal places resolves it.
+
+Even an identified parallax is noisy. A stipulated positive interval p=2±0.2 mas maps monotonically to d in [1000/2.2,1000/1.8]=[454.545…,555.555…] pc, asymmetric around 500 pc. This interval example does not assign a confidence level. If the parallax interval reaches zero, it no longer gives a bounded positive-distance interval by inversion. Negative measured parallaxes can arise from noise and calibration, although the physical distance is positive.
+
+A declared Gaussian observation model has likelihood proportional to exp[−(p_obs−z−1000/d)²/(2σ²)] for d>0, where z is the parallax offset defined here as observed minus true. A prior and selection model give an explicit probabilistic distance inference. They add assumptions; they do not turn a noisy inverse into certainty. [Geometric and photogeometric Gaia distances by Bailer Jones and colleagues](../sources/Geometric-and-photogeometric-Gaia-distances-by-Bailer-Jones-and-colleagues.lingua#r_007956C9890AE867351FD7DD98) distinguishes geometric and photogeometric inference and records the inspected edition. The offset convention must be checked against any catalogue rather than copied by sign.
+
+**Work:** derive the three orthogonal estimates, change the time origin and exhibit the rank-deficient rival. Derive the local relative-error relation δd/d≈−δp/p and identify when it is inadequate. State what reference, binary-source and selection information an actual catalogue comparison needs.
+
+**Continue:** [Connect astronomical photons to detector counts and uncertainty](Connect-astronomical-photons-to-detector-counts-and-uncertainty.lingua#r_0048E4DAB79D3D3479E310ACE4).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00AA339D3B96FFF6166AF65FB2

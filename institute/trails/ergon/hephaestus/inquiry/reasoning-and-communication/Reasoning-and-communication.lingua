@@ -1,0 +1,13 @@
+Import "scientific-reasoning-and-method/Scientific-reasoning-and-method.lingua"
+Import "technical-reading-writing-and-visual-communication/Technical-reading-writing-and-visual-communication.lingua"
+
+Reasoning and communication (@reasoning-and-communication: 0, is #chapter, #outline, #contains "scientific-reasoning-and-method/Scientific-reasoning-and-method.lingua#r_1M32MPPA03R1H4RJ3M3SSG8TXT", #contains "technical-reading-writing-and-visual-communication/Technical-reading-writing-and-visual-communication.lingua#r_25XMNVFPR8DZ9N117APVD4ZDJ7") { r_4HHN23A6WFE0YZ8394FZ4A5DTB
+Reconstruct and question an argument; compare explanation with evidence; read and explain a technical passage. Introduce terminology and argument structure within the route; specialist notation gets its own linked preparation.
+
+**Parent:** [Scientific inquiry and practice — questions, evidence and shared knowledge](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Branches:**
+
+- [Scientific reasoning and method](scientific-reasoning-and-method/Scientific-reasoning-and-method.lingua#r_1M32MPPA03R1H4RJ3M3SSG8TXT)
+- [Technical reading, writing, and visual communication](technical-reading-writing-and-visual-communication/Technical-reading-writing-and-visual-communication.lingua#r_25XMNVFPR8DZ9N117APVD4ZDJ7)
+} r_4HHN23A6WFE0YZ8394FZ4A5DTB

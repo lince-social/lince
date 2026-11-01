@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Files, paths, processes, and the working directory (@rc-files: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB") { r_2AEWQC548X1MYJGK7RSQKDD96K
+Files, paths, processes, and the working directory (@rc-files: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB", #hephaestus-core "Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V") { r_2AEWQC548X1MYJGK7RSQKDD96K
 **Read:** [The Unix Shell — Software Carpentry](../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX), Navigating Files and Directories and Working With Files and Directories, with exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), pathlib and the tutorial on input/output.
 
 A file contains bytes; its name and location help a process find them. A relative path is interpreted from some base, often the process's current working directory. An absolute path names a location within a particular filesystem. Neither is a permanent identity for scientific data. Copying a project to another directory exposes assumptions that were invisible in its original location.
@@ -16,4 +16,7 @@ For later reconstruction, write the command, input locations or resolvable refer
 **Continue:** [Use the shell to run an explicit procedure](Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the computing core:** [Translate quantities into values, types, and expressions](Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V).
+
 } r_2AEWQC548X1MYJGK7RSQKDD96K

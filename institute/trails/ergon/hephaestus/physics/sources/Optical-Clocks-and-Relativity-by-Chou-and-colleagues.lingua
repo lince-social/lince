@@ -1,0 +1,11 @@
+Import "../Physics.lingua"
+
+Optical Clocks and Relativity by Chou and colleagues (@physics-source-optical-clocks: 0, is #reference) { r_00AEF309F5C11169468349E93D
+C. W. Chou, D. B. Hume, T. Rosenband and D. J. Wineland, *Optical Clocks and Relativity*, Science 329 (2010), 1630–1633, DOI [10.1126/science.1192720](https://doi.org/10.1126/science.1192720). [NIST-hosted four-page PDF](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=905055); [NIST catalogue](https://www.nist.gov/publications/relativity-and-optical-clocks). The catalogue reverses the title and labels the journal Nature; use the inspected article's identity. The PDF includes neighboring material.
+
+Inspected 1 November 2026: title/authors, opening comparison account, equation 2 and accompanying height-change text, Figure 3 caption and nearby Doppler-control discussion, and DOI. The bounded exercise uses 0.33 m, g≈9.80 m/s² and the reported (4.1±1.6)×10⁻¹⁷ shift. Figure 3 describes statistical uncertainties. Supplementary material, raw data, complete systematic uncertainty budgets and apparatus reproduction were not audited.
+
+Free institutional access does not establish a blanket licence for publisher figures or text. Source media remain external. The teaching calculation and code are original; reported numerical observations are attributed here and distinguished from new measurements. Use [Reconstruct a published optical clock comparison within its evidence limits](../core/Reconstruct-a-published-optical-clock-comparison-within-its-evidence-limits.lingua#r_005C21A503CEFC482EF37A51F5) for the reconstruction and its limits.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00AEF309F5C11169468349E93D

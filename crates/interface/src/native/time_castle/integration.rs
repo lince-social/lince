@@ -67,7 +67,7 @@ async fn ready(engine: &std::sync::Arc<engine::Engine>, context: &Context, now: 
     engine.request_projection(context.clone()).await.unwrap();
     tokio::time::timeout(std::time::Duration::from_secs(20), async {
         loop {
-            if let Some(cache) = store::projection::read(&engine.store.pool, context, now)
+            if let Some(cache) = store::projection::read(&engine.store, context, now)
                 .await
                 .unwrap()
             {

@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Read a matrix as a map and distinguish translation from linearity (@math-linear-maps: 0, is #chapter, #hephaestus-core "Investigate-an-affine-coordinate-model-and-the-information-it-preserves.lingua#r_07365437E80781900AA1FAF83B") { r_03CC45432746F4DD0737B769A4
+A linear map preserves vector addition and scalar multiplication. Equivalently, T(αu+βv)=αT(u)+βT(v) for all allowed vectors and scalars. In particular T(0)=0. An affine map has the form F(v)=T(v)+b for a fixed offset b; it preserves differences through its linear part but is not linear when b is nonzero.
+
+**Read:** Boyd and Vandenberghe sections 6.4, 7.1, 8.1, 10.1–10.2 and 11.1–11.2, progressing from matrix action to composition and inverse questions. Use OpenStax section 11.5 for matrix multiplication practice. Taylor approximation, regression, QR and pseudoinverses remain later preparation; these readings do not complete the book or linear algebra.
+
+In standard coordinates, a matrix's columns tell us where the standard unit directions go. If T(1,0)=(2,0) and T(0,1)=(1,1), linearity forces T(x,y)=(2x+y,y). Its matrix has rows (2,1) and (0,1). This is also the column combination x(2,0)+y(1,1). To recover the input from output (u,v), solve y=v and x=(u−v)/2. Both reconstruction and forward substitution hold for every real input and output, proving this map is invertible.
+
+Order matters in composition. Let D(x,y)=(2x,y) and S(x,y)=(x+y,y). Applying S first and D second gives D(S(1,1))=(4,1). Reversing the order gives S(D(1,1))=(3,1). The matrix product DS represents D after S, whereas SD represents S after D. Their columns or direct action explain the difference; matrix multiplication is not entrywise multiplication.
+
+Now add b=(5,−2) to T. The affine map F(x,y)=(2x+y+5,y−2) sends zero to b. Its inverse sends (u,v) to ((u−v−7)/2,v+2). The offset disappears from differences: F(q)−F(p)=T(q−p). Thus the same affine model can transform point locations while its linear part transforms displacements. Neither this mathematical identity nor exact invertibility proves that the model describes a physical instrument.
+
+Contrast P(x,y)=(x,0). It is linear but discards the second coordinate, so it cannot have a two-sided inverse on the plane. Its kernel, the set of inputs mapped to zero, is the vertical axis. Its image, the set of possible outputs, is the horizontal axis. These two sets identify lost information and attainable results. Their general dimensions and rank relations belong to later linear-algebra formation.
+
+**Work:** derive each map's matrix from its action on unit vectors. Check both compositions of F and its proposed inverse symbolically. Give a nonzero vector in P's kernel and an output outside its image. Explain why a straight-line graph with nonzero intercept can be called linear informally while failing the vector-space definition used here. Preserve the distinction when interpreting a fitted physical response.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Investigate an affine coordinate model and the information it preserves](Investigate-an-affine-coordinate-model-and-the-information-it-preserves.lingua#r_07365437E80781900AA1FAF83B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_03CC45432746F4DD0737B769A4

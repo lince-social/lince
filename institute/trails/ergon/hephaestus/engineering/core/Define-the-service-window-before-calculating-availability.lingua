@@ -1,0 +1,24 @@
+Import "../Engineering.lingua"
+
+Define the service window before calculating availability (@engineering-service-history: 0, is #chapter, #hephaestus-core "Distinguish-first-failure-from-restored-service.lingua#r_006C65B9E2B5F143EC63962FE9") { r_00A91BB3D08F5899C309280754
+A device can be present, powered and moving while failing to deliver its intended function. Begin from [Connect realization to verification and intended use](Connect-realization-to-verification-and-intended-use.lingua#r_0C593F4A7A204FABB3B5876653) and [Keep service evidence meaningful through change and recovery](Keep-service-evidence-meaningful-through-change-and-recovery.lingua#r_0593D3DFF3699AB8D9E3ACE10B): name the delivered function, configuration, conditions and evidence. This block studies continuing service rather than another acceptance inspection. Its invented example is two document-processing stations that need a common local support service. A station contributes one unit of usable capacity; the service is useful only if the requested output is correct. The numerical model assumes that correctness classification has already been established. It cannot establish it by counting powered stations.
+
+Let c(t) be usable capacity and d(t) the requested rate, both in work units per hour. For the observation interval [a,b), define capability time as the integral of 1[c(t)≥1], positive-demand time as the integral of 1[d(t)>0], fully met demand time as the integral of 1[d(t)>0 and c(t)≥d(t)], requested work as the integral of d(t), and delivered work as the integral of min(c(t),d(t)). The last expression assumes demand cannot be queued for later completion; if a backlog matters, reuse [Investigate production schedules rework and inventory time](Investigate-production-schedules-rework-and-inventory-time.lingua#r_00A308F2C75A43925C580DC3C9) and model arrivals and departures instead. These are different numerators and denominators. Use the calendar interval for capability availability, positive-demand time for demand-time availability, and requested work for the delivered fraction. A zero denominator is undefined, not perfect performance.
+
+An original twelve-hour record has four intervals:
+
+| Hours | Capacity | Requested rate |
+| --- | --- | --- |
+| [0,4) | 2 | 1 |
+| [4,6) | 0 | 2 |
+| [6,9) | 1 | 2 |
+| [9,12) | 2 | 0 |
+
+Capability availability is 10/12 = 5/6. Demand-time availability is 4/9. Requested work is 14 units; delivered work is 7, giving 1/2. None can replace the others. In particular the quiet final interval improves calendar capability time without satisfying any demand. Half-open intervals assign a transition to one interval and avoid double counting; isolated endpoints do not affect an ordinary time integral.
+
+**Work:** calculate every quantity on [3,10), with units. Separate planned shutdown, failure, diagnosis, waiting for parts, active repair and acceptance work when the log supports those distinctions. A planned stoppage may be excluded from a predeclared operating window, but changing the denominator after seeing it biases comparisons. Missing intervals are unknown: do not relabel them as up or down. Partition the observation window completely before integrating; overlapping event reports cannot simply be summed as downtime. The study reuses the existing clipped-window helper only after validating this partition.
+
+**Continue:** [Distinguish first failure from restored service](Distinguish-first-failure-from-restored-service.lingua#r_006C65B9E2B5F143EC63962FE9).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00A91BB3D08F5899C309280754

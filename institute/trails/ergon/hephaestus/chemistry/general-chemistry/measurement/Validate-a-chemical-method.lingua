@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Judge a chemical method for a specified use and specimen (@gc-method: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../../../inquiry/metrology/sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #general-chemistry "../connections/From-mineral-to-chemical-feedstock.lingua#r_4CZJW2BPR1WBMPVKS6J2PFH733") { r_35SBSG78BYDMNMGSEKHB7PGZBR
+Judge a chemical method for a specified use and specimen (@gc-method: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../../../inquiry/metrology/sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #general-chemistry "../connections/From-mineral-to-chemical-feedstock.lingua#r_4CZJW2BPR1WBMPVKS6J2PFH733", #hephaestus-core "../../core/Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A") { r_35SBSG78BYDMNMGSEKHB7PGZBR
 **Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapters 14–15 completely; [The Fitness for Purpose of Analytical Methods — Eurachem](../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the complete guide; [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](../../../inquiry/metrology/sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS), the complete uncertainty guide and relevant worked examples.
 
 A chemical method has a target quantity, specimen/matrix, preparation, selectivity, calibration, working range, observation model, uncertainty, and intended use. Validation gathers evidence that the method is fit for that use. Verification checks whether the particular implementation meets the stated requirements under its conditions. Read the shared metrology treatment rather than creating a separate incompatible vocabulary.
@@ -16,4 +16,9 @@ Read Harvey's method-development and quality-assurance chapters and the complete
 **Continue:** [Explain what changes between a mineral resource and a useful chemical feedstock](../connections/From-mineral-to-chemical-feedstock.lingua#r_4CZJW2BPR1WBMPVKS6J2PFH733).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Third chemistry-block reading:** Use the stated target, matrix, selectivity, baseline/calibration, uncertainty and intended-use questions now. The original complete Harvey 14–15 and Eurachem assignments remain advanced formation, not freshly completed inspections. Synthetic signal recovery establishes only conditional algebra. Reuse the existing metrology distinction between calibration, adjustment and validation.
+
+**Continue in the third chemistry block:** [Investigate reversible change and the evidence carried by a chemical signal](../../core/Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A).
+
 } r_35SBSG78BYDMNMGSEKHB7PGZBR

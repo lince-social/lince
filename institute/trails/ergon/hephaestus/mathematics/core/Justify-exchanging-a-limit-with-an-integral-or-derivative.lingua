@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Justify exchanging a limit with an integral or derivative (@math-series-operations: 0, is #chapter, #hephaestus-core "Turn-a-finite-Taylor-remainder-into-a-justified-series-representation.lingua#r_00495C8F3915BF7C2DBC7E592E") { r_001E30FA67E83674F48C0427F2
+Let continuous f_N on [a,b] converge uniformly to f. The preceding result makes f continuous, and the shared Riemann theory makes these functions integrable. Then |∫_a^b f_N−∫_a^b f|≤(b−a)sup_[a,b]|f_N−f|→0. The supremum bound follows from upper/lower integral bounds. Thus integration and this limit can be exchanged under the stated hypotheses. This argument also supplies an explicit integral error certificate.
+
+Pointwise convergence alone can fail dramatically. For integer n≥2 on [0,1], define a triangular spike: f_n(x)=n²x for 0≤x≤1/n; f_n(x)=2n−n²x for 1/n≤x≤2/n; and zero afterward. Each function is continuous and has integral one, from two triangles of total base 2/n and height n. At x=0 every value is zero, and for any fixed x>0 the support eventually lies to its left. Hence f_n→0 pointwise while the integrals remain one. The sequence is not uniformly convergent; its maximum is n.
+
+Uniform convergence of functions alone does not justify differentiating the limit. For f_n(x)=sin(nx)/n, |f_n(x)|≤1/n uniformly, so f_n→0. Yet f_n'(0)=1 for every n, whereas the derivative of the limit is zero. The derivative observes changes at scales invisible to the value bound. No numerical sampling of f_n substitutes for a derivative condition.
+
+Here is a sufficient theorem adequate for our later series. Suppose f_N are continuously differentiable on [a,b], f_N(x_0) converges to c at one point, and f_N' converge uniformly to g. The derivatives are continuous, so g is continuous. By the fundamental theorem, f_N(x)=f_N(x_0)+∫_(x_0)^x f_N'(t)dt. Uniform integral bounds show that f_N converge uniformly to f(x)=c+∫_(x_0)^x g(t)dt. The fundamental theorem then gives f'=g in the interior, with the appropriate one-sided endpoint interpretation. This proof explains both the single-point anchor and the uniform derivative control.
+
+Apply the theorem to G_N(x)=Σ_(n=0 to N)x^n on [−q,q] with 0<q<1. Its derivative terms satisfy |n x^(n−1)|≤n q^(n−1), whose series converges by the polynomial-geometric tail argument. The values at zero are one. Therefore Σ_(n=1 to ∞)n x^(n−1)=1/(1−x)² on the interior. Repeat with the second derivative, bounded by n(n−1)q^(n−2), to obtain Σn(n−1)x^(n−2)=2/(1−x)³. The point x=0 is handled by the polynomials or by choosing a positive q around it. These are justified derivative identities, not formal differentiation of an unexamined infinite expression.
+
+**Work:** prove the uniform integral inequality, calculate both pieces of the spike integral and locate the failed hypothesis. Explain why the sine example does not satisfy uniform derivative convergence. Derive Σn r^n=r/(1−r)² and Σn²r^n=r(1+r)/(1−r)³ for |r|<1. Reuse [Define the integral and distinguish net change from total magnitude](Define-the-integral-and-distinguish-net-change-from-total-magnitude.lingua#r_0AEC763D73DF3124CDBB2E86D1) and [Bound a finite trigonometric calculation before trusting decimals](Bound-a-finite-trigonometric-calculation-before-trusting-decimals.lingua#r_009546FA47C08EFAEFC38F8134); compare the sufficient theorem with [Basic Analysis I by Jiri Lebl](../sources/Basic-Analysis-I-by-Jiri-Lebl.lingua#r_00D018D5107F06EE77E9066592) section 6.2 without claiming all its stronger results have been proved here.
+
+**Continue:** [Turn a finite Taylor remainder into a justified series representation](Turn-a-finite-Taylor-remainder-into-a-justified-series-representation.lingua#r_00495C8F3915BF7C2DBC7E592E).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_001E30FA67E83674F48C0427F2

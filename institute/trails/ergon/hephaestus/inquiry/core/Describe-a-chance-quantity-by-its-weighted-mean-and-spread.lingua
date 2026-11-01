@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Describe a chance quantity by its weighted mean and spread (@inquiry-expectation-variation: 0, is #chapter, #hephaestus-core "Derive-what-randomized-comparisons-average-over.lingua#r_0BA266DD53DF13150425227195") { r_0A9487B256CD8C0ED0083290DA
+A numerical random variable X assigns a number X(ω) to each outcome. Its expectation is E[X]=Σ p(ω)X(ω), where the sum includes every outcome. Different outcomes may give the same value; their weights add when making a distribution over values. The expectation is a weighted account of the specified mechanism, not a promise about the next outcome. It need not be one of the possible values.
+
+Take weights (1/2,1/3,1/6) and corresponding values (0,1,3). The expectation is 0/2+1/3+3/6=5/6, although the variable never takes that value. Its variance is Var(X)=E[(X−E[X])²]=41/36. Expansion gives Var(X)=E[X²]−E[X]²: the cross term is −2E[X]E[X], and the constant contributes E[X]². Nonnegative weighted squares make variance nonnegative. A quantity expressed in millimetres has variance in square millimetres; its standard deviation is the nonnegative square root of variance and has millimetre units.
+
+For constants a and b, expanding the finite sums gives E[aX+b]=aE[X]+b and Var(aX+b)=a²Var(X). Thus a common added constant moves the mean without changing this spread. Also E[X+Y]=E[X]+E[Y] whether or not X and Y are independent, because each outcome's sum can be distributed before summing its weight. This does not imply that variances add: expanding the square leaves a cross term unless its weighted expectation is zero.
+
+Count orange cards in the previous two-draw example. Without replacement, the count is one in four of six outcomes and two in two of six, giving mean 4/3 and variance 2/9. With independent replacement, the same mean is 4/3 but variance is 4/9. Linearity recovers the mean by adding the two orange indicators' expectations, each 2/3. The joint mechanism is needed for the spread. Equal means therefore do not establish equal distributions or equally precise comparisons.
+
+These are exact expectations and variances over a fully specified finite model. The average and spread of a small observed dataset are different objects used in later inference. Dividing a finite model's weighted square deviations by an additional degrees-of-freedom adjustment would change the quantity being calculated. Estimating an unknown population variance is a later question with its own assumptions. Likewise, allocation variance here is not automatically an instrument's measurement uncertainty or the variation of manufactured parts.
+
+**Read and derive:** [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71), finite parts of 6.1–6.2. Work the weighted example with exact fractions and reproduce the card distributions. Prove the affine formulas directly from finite sums. Give a variable with variance zero and explain what happens to all its positive-weight outcomes. Connect the result to [Separate observed variation from uncertainty about a result](Separate-observed-variation-from-uncertainty-about-a-result.lingua#r_0A1A2CA3D01039474C1F5678C7) without merging the sources of variation it distinguishes.
+
+**Prepare the next comparison:** call an estimate unbiased for a target when its expectation under the declared mechanism equals that target. This property belongs to the estimate, target and mechanism together. It does not mean every realized estimate equals the target or has small error. The next lesson derives unbiasedness for the two allocation designs rather than assuming it from the word random.
+
+**Continue:** [Derive what randomized comparisons average over](Derive-what-randomized-comparisons-average-over.lingua#r_0BA266DD53DF13150425227195).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0A9487B256CD8C0ED0083290DA

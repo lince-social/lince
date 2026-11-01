@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Count work and storage under an explicit cost model (@computing-cost: 0, is #chapter, #hephaestus-core "Connect-a-program-trace-to-an-execution-environment.lingua#r_0CB0BF6E07DE35C7D4B9094477") { r_056CD81F8DB8FE38538185D3DC
+A procedure's cost depends on what is counted. Begin with additions and comparisons, then distinguish those abstract operations from elapsed time on a particular machine. For a valid sequence of n changes, a running-stock calculation forms n candidates by one addition each. Input validation also visits the n supplied changes. If a bound is violated early, fewer candidates are formed, but this implementation still checks all event types first.
+
+An independent reference calculation can recompute each prefix from the original input: first one change, then the first two, and so on. Summing k changes from zero uses k additions under this counting convention. Across all nonempty prefixes that gives 1 + 2 + … + n = n(n + 1)/2 additions, before adding the initial state to each prefix. The running method reuses the previous result and avoids this repeated summation. For n = 5, these change-summing counts are fifteen versus five; both methods can still compute the same mathematical states.
+
+Linear growth means that multiplying n by a factor multiplies this operation count by the same factor. The leading quadratic term in n(n + 1)/2 eventually grows with the square of that factor. Such statements describe a declared cost model. They do not predict seconds without information about arithmetic size, interpreter, hardware, allocation and other work. A fast run on one small input does not establish the general growth law.
+
+The stock study returns every accepted state. Its output therefore contains up to n + 1 integer values; it cannot claim constant output storage merely because it uses one loop index. A variant returning only the final state can keep fewer values but answers a different output contract. Python's exact integers also require more bits for larger magnitudes, so treating every addition as equal-cost is an explicit simplifying assumption.
+
+**Work:** count candidate additions for successful, immediately rejected and empty cases. Compare the full trace with a final-state-only variant, preserving the failure semantics before comparing costs. Derive the prefix-summation count by pairing the first and last terms. Measure a small implementation only after predicting the trend, record the environment, and separate observed timing from the argument about operation counts.
+
+**Connection:** abstraction makes comparison possible when the input/output contract and arithmetic conventions are held fixed. Later algorithms, data structures, complexity and machine architecture develop richer cost models; these first counts are preparation, not their completion.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Continue:** [Connect a program trace to an execution environment](Connect-a-program-trace-to-an-execution-environment.lingua#r_0CB0BF6E07DE35C7D4B9094477).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_056CD81F8DB8FE38538185D3DC

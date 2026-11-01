@@ -10,4 +10,7 @@ Read the complete book in sequence after the early programming preparation, comp
 The rendered 2021 edition states CC BY 4.0 for content and MIT for code, with attribution and component notices retained. The source repository directs readers to third-bit.com; an older merely-useful.tech address was not accessible during checking. Author, edition, full-book access, and licence statements checked on 29 October 2026. No book or companion corpus is copied into the repository.
 
 **Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+
+**Eighth computing-core inspection — 1 November 2026:** rechecked the author book's [opening identity, audience and reuse notice](https://third-bit.com/py-rse/) and selected opening passages of [chapter 14, Creating Packages with Python](https://third-bit.com/py-rse/packaging.html), including module/package organization and import-time execution. The rendered opening identifies 2021-10-14 and retains CC BY 4.0 content/MIT code notices. This is not a fresh whole-book, packaging-toolchain or exercise audit. The common block reuses the existing module-boundary lesson and original small calculation, without installing a package or copying the book project. Wider organization/function/packaging assignments remain; source media stay external.
+
 } r_07D4PDD4HGKNK3PW4M90YSV2QY

@@ -1,0 +1,29 @@
+Import "pathway-find-a-question-and-question-the-map/Find-a-question-and-question-the-map.lingua"
+Import "pathway-examine-a-philosophical-question/Examine-a-philosophical-question.lingua"
+Import "pathway-read-and-interpret-a-literary-work/Read-and-interpret-a-literary-work.lingua"
+Import "pathway-keep-reliable-stock-and-follow-replenishment/Keep-reliable-stock-and-follow-replenishment.lingua"
+Import "pathway-construct-and-explain-a-mathematical-proof/Construct-and-explain-a-mathematical-proof.lingua"
+Import "pathway-observe-and-explain-a-local-living-environment/Observe-and-explain-a-local-living-environment.lingua"
+Import "pathway-understand-build-and-maintain-a-low-voltage-instrument/Understand-build-and-maintain-a-low-voltage-instrument.lingua"
+Import "pathway-investigate-a-historical-change/Investigate-a-historical-change.lingua"
+Import "pathway-explain-work-power-and-distribution/Explain-work-power-and-distribution.lingua"
+Import "pathway-interpret-a-population-health-comparison/Interpret-a-population-health-comparison.lingua"
+
+First connected pathways (@first-connected-pathways: 0, is #chapter, #outline, #contains "pathway-find-a-question-and-question-the-map/Find-a-question-and-question-the-map.lingua#r_5NFNTGG6YY33QA6CPAZA6B13V8", #contains "pathway-examine-a-philosophical-question/Examine-a-philosophical-question.lingua#r_348ZV22NJFVQXHA0TAJ3RMNTS1", #contains "pathway-read-and-interpret-a-literary-work/Read-and-interpret-a-literary-work.lingua#r_6WK1QA9MVE8NRRCE9GAJ55JNJS", #contains "pathway-keep-reliable-stock-and-follow-replenishment/Keep-reliable-stock-and-follow-replenishment.lingua#r_1MJBA7PJ18G9S866H2E7W2NM4B", #contains "pathway-construct-and-explain-a-mathematical-proof/Construct-and-explain-a-mathematical-proof.lingua#r_2J4VJND0TG71WF59MMSQKH08JW", #contains "pathway-observe-and-explain-a-local-living-environment/Observe-and-explain-a-local-living-environment.lingua#r_0BXCDBNZD20KZQQZ7FM1JZT2Y3", #contains "pathway-understand-build-and-maintain-a-low-voltage-instrument/Understand-build-and-maintain-a-low-voltage-instrument.lingua#r_6HP73HYF8KR5641QDQY1TVM0YC", #contains "pathway-investigate-a-historical-change/Investigate-a-historical-change.lingua#r_1GP5K0FT8V18QN96V80XDSBVEY", #contains "pathway-explain-work-power-and-distribution/Explain-work-power-and-distribution.lingua#r_7QFBK4BWX85SFZSPDS3J7MVA24", #contains "pathway-interpret-a-population-health-comparison/Interpret-a-population-health-comparison.lingua#r_3Y92CA9RE44CKFM1ME82CR2WG0") { r_3RYVEGQ60GSD3XY3EVQH0JJRED
+Develop these first subjects incrementally through sources, explanations, and ordinary learning connections. Describe the depth of study and the evidence supporting a claimed result where useful.
+
+**Parent:** [Trails — Knowledge to learn and use](../lince/Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+
+**Branches:**
+
+- [Find a question and question the map](pathway-find-a-question-and-question-the-map/Find-a-question-and-question-the-map.lingua#r_5NFNTGG6YY33QA6CPAZA6B13V8)
+- [Examine a philosophical question](pathway-examine-a-philosophical-question/Examine-a-philosophical-question.lingua#r_348ZV22NJFVQXHA0TAJ3RMNTS1)
+- [Read and interpret a literary work](pathway-read-and-interpret-a-literary-work/Read-and-interpret-a-literary-work.lingua#r_6WK1QA9MVE8NRRCE9GAJ55JNJS)
+- [Keep reliable stock and follow replenishment](pathway-keep-reliable-stock-and-follow-replenishment/Keep-reliable-stock-and-follow-replenishment.lingua#r_1MJBA7PJ18G9S866H2E7W2NM4B)
+- [Construct and explain a mathematical proof](pathway-construct-and-explain-a-mathematical-proof/Construct-and-explain-a-mathematical-proof.lingua#r_2J4VJND0TG71WF59MMSQKH08JW)
+- [Observe and explain a local living environment](pathway-observe-and-explain-a-local-living-environment/Observe-and-explain-a-local-living-environment.lingua#r_0BXCDBNZD20KZQQZ7FM1JZT2Y3)
+- [Understand, build, and maintain a low-voltage instrument](pathway-understand-build-and-maintain-a-low-voltage-instrument/Understand-build-and-maintain-a-low-voltage-instrument.lingua#r_6HP73HYF8KR5641QDQY1TVM0YC)
+- [Investigate a historical change](pathway-investigate-a-historical-change/Investigate-a-historical-change.lingua#r_1GP5K0FT8V18QN96V80XDSBVEY)
+- [Explain work, power, and distribution](pathway-explain-work-power-and-distribution/Explain-work-power-and-distribution.lingua#r_7QFBK4BWX85SFZSPDS3J7MVA24)
+- [Interpret a population-health comparison](pathway-interpret-a-population-health-comparison/Interpret-a-population-health-comparison.lingua#r_3Y92CA9RE44CKFM1ME82CR2WG0)
+} r_3RYVEGQ60GSD3XY3EVQH0JJRED

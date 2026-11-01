@@ -1,0 +1,20 @@
+Import "../Mathematics.lingua"
+
+Review limits local change and accumulated quantities (@math-change-review: 0, is #chapter, #hephaestus-core "Define-periodic-functions-from-an-oriented-unit-circle.lingua#r_00ACDC81906359539979A61820") { r_0D7A97B4D2E7F344DF40026670
+Rebuild the progression from a function with a domain to a finite change, a limiting rate, a local approximation, a signed partition sum and an accumulated quantity. Distinguish each object and its units. Explain why a limit value need not equal a point value, why continuity does not imply differentiability, and why integrability does not imply an everywhere-differentiable accumulation.
+
+**Prove:** give a tolerance radius for the square function, demonstrate uniqueness of a limit, derive a polynomial derivative and the product rule, and explain the chain-rule remainder at a zero inner increment. State the continuity and differentiability hypotheses in Rolle's and the mean value theorems. Identify the general real-number extreme-value and continuous-integrability theorems being used as foundations rather than claiming their proofs were supplied by a graph.
+
+**Control error:** derive an exact local remainder, distinguish absolute and relative error near a stationary point, and justify an admissible increment. Build lower and upper sums and show why mesh must shrink. Recover the polynomial's equal-partition formulas and nonuniform bracket. Explain why the midpoint bound is sharper for this specific model and why a successful refinement check does not establish the model's physical validity.
+
+**Connect:** prove the two fundamental-theorem conclusions under the stated conditions, keeping the negative-increment case and initial constant visible. Recover the vessel's net change, transfer magnitude, minimum volume and infeasible low-initial-volume example. Explain why a discontinuous step rate does not have the same derivative/antiderivative properties at its jump. Link the mathematical quantities to earlier physical and engineering accounts without treating their stipulated numbers as measured facts.
+
+**Independent work and reading:** complete the accessible assigned limit, polynomial differentiation, approximation and integral exercises in [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3). Give a written argument and a checked numerical investigation for a new function, teach a distinction using a fresh example, and revise one claim after criticism. Preserve the earlier geometry/proof foundations. The general analysis proofs, transcendental functions, full differentiation/integration techniques, improper integrals, sequences/series, multivariable calculus, differential equations, abstract structures and advanced independent formation remain unfinished.
+
+The third common pass proceeds next to physics's matter and thermal behavior, drawing on this rate/accumulation preparation where needed and reusing the chemical thermal explanations. Continue the six areas at comparable depth before deeper branches or specialized leaves. This bounded block does not complete the mathematics core or retire any of its twenty planned subjects.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the fourth common pass:** [Define periodic functions from an oriented unit circle](Define-periodic-functions-from-an-oriented-unit-circle.lingua#r_00ACDC81906359539979A61820). All six areas now have three common blocks. This continuation develops periodic functions, complex algebra and second-order response; the earlier stock, affine-coordinate and change studies remain unchanged.
+
+} r_0D7A97B4D2E7F344DF40026670

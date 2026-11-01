@@ -1,0 +1,22 @@
+Import "../Engineering.lingua"
+
+Solve an anchored network and interpret singular cases (@engineering-anchored-network: 0, is #chapter, #hephaestus-core "Derive-a-stored-energy-response-and-its-limiting-cases.lingua#r_009E9E98E6B681AB3B149B7F71") { r_008ED1E88ECE57E655276C68F3
+For the two-node steady model, define D=(a+c)(b+c)−c²=ab+ac+bc. Its units are (W/K)². Elimination gives
+
+θ₁=((b+c)P₁+cP₂)/D,
+θ₂=(cP₁+(a+c)P₂)/D,
+
+when D>0. Numerators have units W²/K, so both answers are temperature differences. With nonnegative a,b,c, D>0 exactly when every connected component of these two nodes has a path to the fixed ambient: either both ambient links are positive, or an internal link and at least one ambient link are positive. Reuse [Solve simultaneous constraints without losing their solution set](../../mathematics/core/Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B); the determinant is a compact record of elimination, not a replacement for checking the equations.
+
+**Original example:** a=2, b=1, c=1 W/K and (P₁,P₂)=(10,0) W produce 3θ₁−θ₂=10 and −θ₁+2θ₂=0 in consistent units. Hence (θ₁,θ₂)=(4,2) K. The outward ambient flows are 8 and 2 W; the internal flow is 2 W. Node 1 receives 10 and releases 8+2; node 2 receives 2 and releases 2. Combined ambient release is 10 W. Switching the input to (0,10) W yields (2,6) K and an internal flow −4 W. The chosen arrow remains valid when flow reverses.
+
+**Why unique:** if two solutions exist, subtract them and call their difference (x,y). Multiply the first homogeneous equation by x and the second by y, then add. The result is ax²+by²+c(x−y)²=0. Every term is nonnegative. If each component is anchored, they force x=y=0. This quadratic is a mathematical positivity argument with units W·K; it is not thermal energy or an asserted entropy-production formula. The same argument extends to a finite network: edge differences vanish and every anchored component reaches zero. Positive input powers also give nonnegative θ values in the explicit two-node solution.
+
+**Singularity has meaning:** set a=b=0 and c=1 W/K. Steady equations require P₁+P₂=0. With (5,−5) W they only determine θ₁−θ₂=5 K, leaving any common offset possible. With (5,−4) W no steady solution exists: net energy input is 1 W. Positive capacities would then require continuing total storage, although temperature difference may also evolve. If c=0 and b=0, node 2 is isolated; it has arbitrary steady temperature when P₂=0 and no steady solution when P₂≠0. Pinning an arbitrary temperature numerically can hide either a missing boundary condition or an impossible balance.
+
+**Practice:** derive D by elimination, check an example with a=0,b>0,c>0, and compare it with a=b=0. Scale all conductances by a positive factor while holding input powers fixed; prove temperatures scale inversely and edge powers stay the same. State why a physical design may not permit that scaling. Keep exact arithmetic until the final reported approximation.
+
+**Continue:** [Derive a stored energy response and its limiting cases](Derive-a-stored-energy-response-and-its-limiting-cases.lingua#r_009E9E98E6B681AB3B149B7F71).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_008ED1E88ECE57E655276C68F3

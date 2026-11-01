@@ -1,0 +1,13 @@
+Import "../Mathematics.lingua"
+
+forall x Calgary formal logic (@math-source-forallx: 0, is #book) { r_00A7D972F37307C8A2E5871D87
+P. D. Magnus, Tim Button, Robert Trueman and Richard Zach, with contributions by J. Robert Loftis and Aaron Thomas-Bolduc. *forall x: Calgary*, displayed Fall 2025 edition, HTML revision bb86fe9 dated 22 October 2026; inspected 1 November 2026.
+
+[Project and credits](https://forallx.openlogicproject.org/) · [Edition contents and notice](https://forallx.openlogicproject.org/bookml/) · [Truth in FOL](https://forallx.openlogicproject.org/bookml/Ch31.html) · [Semantic concepts](https://forallx.openlogicproject.org/bookml/Ch32.html) · [Soundness](https://forallx.openlogicproject.org/bookml/Ch48.html).
+
+Inspected the edition/credits notice and selected passages on quantified truth, semantic consequence and the soundness invariant with induction and conjunction rules. Chapter 22's opening was also inspected; its complete argument was not audited. Assign chapters 27, 31–32 and 48 progressively, with the earlier natural-deduction preparation before the latter's complete exercises. Whole chapters, the complete proof system and all exercises are not claimed audited or performed.
+
+The project states CC BY 4.0 and identifies its contributing texts and permissions. Preserve those credits and edition when redistributing source material. The linked development version can change. No source media or copied proof-checker code is bundled. The trail's operation-bearing language, assignment presentation, equational calculus, examples and programs are independently specified; they are not claimed to implement the book's full notation or proof rules.
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00A7D972F37307C8A2E5871D87

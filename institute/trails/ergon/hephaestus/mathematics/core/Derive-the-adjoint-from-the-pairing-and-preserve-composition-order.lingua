@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Derive the adjoint from the pairing and preserve composition order (@math-operator-adjoint: 0, is #chapter, #hephaestus-core "Resolve-a-finite-Hermitian-model-with-explicit-eigenvectors-and-projectors.lingua#r_005654A44ED120041A95A87694") { r_0059AAD309397F8950E26E3CEC
+For an m-by-n complex matrix A, define A† as its n-by-m conjugate transpose: (A†)ⱼₖ=conj(Aₖⱼ). Directly expanding finite sums proves ⟨Ax,y⟩=⟨x,A†y⟩ for x in Cⁿ and y in Cᵐ. This identity specifies the adjoint uniquely: if two candidate maps agree in the pairing for every x, subtract them and choose x equal to their difference applied to y. Its squared norm is zero, so the difference vanishes.
+
+An adjoint is not generally an inverse. For A=(1,i), a one-by-two matrix, A† has column (1,−i). Then AA†=(2), while A†A has rows (1,i) and (−i,1). Neither product is an identity. Ordinary transpose would miss the conjugation. The rectangular dimensions also make clear why the two products act on different spaces.
+
+Finite sums give (A+B)†=A†+B†, (αA)†=conj(α)A†, (A†)†=A and (AB)†=B†A† whenever the products exist. For the last identity, pair ABx with y, move A and then B across the pairing, and invoke uniqueness. Reversing composition order is necessary even over real coordinates.
+
+A square H is Hermitian, or self-adjoint for this inner product, when H†=H. Its diagonal entries are real and opposite off-diagonal entries are conjugates. For every x, ⟨x,Hx⟩ equals its own conjugate and is real. A square U satisfying U†U=I preserves inner products: ⟨Ux,Uy⟩=⟨x,y⟩. It is injective because a vector mapped to zero has zero norm; in finite equal dimensions it is invertible by the existing rank argument, hence U⁻¹=U† and UU†=I. Such U is unitary. A rectangular Q with Q†Q=I is an isometric embedding; QQ† need not equal the identity on its larger target.
+
+**Read:** [Linear Algebra Done Right by Sheldon Axler](../sources/Linear-Algebra-Done-Right-by-Sheldon-Axler.lingua#r_00F8D5FB7EBA74EA7A7E1AEA27), definitions/results 7.1–7.5 and 7.10–7.12, then 7.51–7.54. Our coordinate derivation supplies existence directly; do not assume the source's more general representation theorem has already been proved. **Bounded source reconstruction:** Axler example 7.2 gives T:R³→R² with T(x₁,x₂,x₃)=(x₂+3x₃,2x₁). Derive its adjoint T†(y₁,y₂)=(2y₂,y₁,3y₁) by pairing arbitrary coordinates. The checker reconstructs that matrix and independently checks complex rectangular maps through real block matrices.
+
+**Work:** establish every displayed adjoint rule, construct a noninvertible Hermitian map and an invertible map that is not unitary, and explain why neither Hermitian nor unitary means “every entry is real.” State precisely where finite equal dimensions entered the inverse argument.
+
+**Continue:** [Resolve a finite Hermitian model with explicit eigenvectors and projectors](Resolve-a-finite-Hermitian-model-with-explicit-eigenvectors-and-projectors.lingua#r_005654A44ED120041A95A87694).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0059AAD309397F8950E26E3CEC

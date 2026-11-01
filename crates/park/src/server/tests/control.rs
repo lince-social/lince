@@ -269,7 +269,11 @@ fn an_unfinished_worker_reply_has_a_finite_deadline_and_retires_its_reservation(
     let work = harness.server.control_work().pop().unwrap();
     let remaining = harness.server.control_timeout().unwrap();
     assert!(remaining <= Duration::from_secs(10));
-    std::thread::sleep(remaining + Duration::from_millis(20));
+    harness.server.age_control_requests(Duration::from_secs(5));
+    harness.sync();
+    assert!(!harness.client.control.replies.contains_key(&1));
+    assert!(work.valid().is_ok());
+    harness.server.age_control_requests(Duration::from_secs(11));
     harness.sync();
     assert_eq!(failed(&harness.client.control.replies[&1]), Error::Cancelled);
     assert_eq!(harness.server.control_status().pending, 0);

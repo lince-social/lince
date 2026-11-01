@@ -1,0 +1,20 @@
+Import "../Chemistry.lingua"
+
+Review chemical rates equilibrium and the limits of analytical evidence (@chemistry-dynamics-review: 0, is #chapter, #hephaestus-core "Distinguish-a-dissolved-component-from-its-chemical-species.lingua#r_00F9AB4A31E0A317BDB0CC50C1") { r_06BA596F1D795709F9872DAC21
+Reconstruct a chemical explanation from its boundary, constituent balance, kinetic assumptions and observation relation. Define extent, signed stoichiometric numbers, amount rate, concentration rate and the effect of changing volume. Explain why the balanced overall equation need not supply empirical reaction orders. Reproduce the symbolic rate-table comparison and give a distinct law that also fits the finite observations.
+
+**Mathematical account:** construct ln from the reciprocal integral; prove its product identity, positive domain and full real range; define exp as the inverse and establish its derivative without circularly assuming inverse differentiability. Derive first-order disappearance with an initial value by an integrating factor, including the zero-concentration solution. Contrast zero- and second-order models, admissible domains and units. Explain why logarithms use dimensionless positive ratios and why an uncorrected baseline distorts a fitted rate.
+
+**Chemical account:** derive the closed A ⇌ B relaxation, its conserved total, unique solution and nonnegative interval. Interpret opposing fluxes, equilibrium ratio and relaxation time. Compare both sides of equilibrium, proportional acceleration, a zero directional constant, complete kinetic freezing and the separate driven stationary account. Bound K=k_f/k_r to the stipulated ideal elementary model; explain how activities and standard states enter the wider equilibrium statement. Neither thermal energy accounting nor a stationary indication alone supplies a kinetic mechanism or full equilibrium evidence.
+
+**Analytical account:** reproduce the blind and informative response examples and the unknown-baseline ambiguity. Explain the role of an independently known total, unequal sensitivity coefficients and condition-dependent uncertainty. Distinguish chemical identity from concentration, calibration from adjustment, and either from validation for a specified matrix/use. Explain why more repeated data cannot repair a structurally uninformative observation relation.
+
+**Evidence:** reproduce the original programs and independent rational brackets, then defend a changed example with source criticism and an explicit empirical limitation. An exact synthetic calculation is not a performed experiment. The original shared readings retain their larger academic/practical assignments; no complete textbook, laboratory course or independent published-result reconstruction is claimed here.
+
+The chemistry core still needs broader solution/aqueous accounts, chemical thermodynamics, electrochemistry, organic/inorganic/material families, more demanding measurement and synthesis reasoning, and advanced scholarly and practical formation. The third common pass proceeds to computing’s finite machine representation and execution, then engineering and inquiry at comparable depth. Reuse these logarithm/exponential and observation arguments where they are needed; do not duplicate them or divert into a specialized production leaf.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the fourth common pass:** [Distinguish a dissolved component from its chemical species](Distinguish-a-dissolved-component-from-its-chemical-species.lingua#r_00F9AB4A31E0A317BDB0CC50C1). All six areas now have three common blocks. The fourth chemistry block connects solution components and actual species, amount/charge accounts, acid/water equilibrium and approximation evidence. Earlier chemical studies and programs remain unchanged.
+
+} r_06BA596F1D795709F9872DAC21

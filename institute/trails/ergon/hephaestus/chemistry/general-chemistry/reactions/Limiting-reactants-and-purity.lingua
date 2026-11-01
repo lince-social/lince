@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Account for limiting reactants, specimen purity, and inert material (@gc-limiting: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3") { r_0B70BWF6HF4MK461M5Q92HPSH9
+Account for limiting reactants, specimen purity, and inert material (@gc-limiting: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3", #hephaestus-core "../../core/Investigate-composition-transfer-and-reaction-as-different-accounts.lingua#r_0360DE1F62D1CE75374608DDE1") { r_0B70BWF6HF4MK461M5Q92HPSH9
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s limiting-reactant and composition problems; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the full stoichiometric calculation lessons.
 
 The limiting reactant follows from available amounts divided by the corresponding required stoichiometric amounts, under the selected reaction model. A specimen's total mass is not necessarily the mass of reactive material. Convert an assay or purity into the amount of the specified reactant before comparing reaction ratios.
@@ -16,4 +16,7 @@ Then examine a textbook problem with an impure reactant and a measured product. 
 **Continue:** [Distinguish conversion, yield, selectivity, recovery, and purity](Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in the chemistry core:** [Investigate composition, transfer and reaction as different accounts](../../core/Investigate-composition-transfer-and-reaction-as-different-accounts.lingua#r_0360DE1F62D1CE75374608DDE1).
+
 } r_0B70BWF6HF4MK461M5Q92HPSH9

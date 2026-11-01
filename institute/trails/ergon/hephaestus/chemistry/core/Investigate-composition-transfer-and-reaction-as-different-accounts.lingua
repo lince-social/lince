@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Investigate composition, transfer and reaction as different accounts (@chemistry-foundation-study: 0, is #chapter, #hephaestus-core "Review-chemical-identity-amounts-and-conservation.lingua#r_0B848D430993C26623D91AFBAE") { r_0360DE1F62D1CE75374608DDE1
+Use two original paper models to connect chemical identity, measured amount, a system boundary and conservation. The supplied numbers describe hypothetical accounts. They are not operating instructions or reported measurements. State what additional evidence a real material would require before adopting either model.
+
+First consider a homogeneous 100 g mixture containing 8 g of a specified nonvolatile component S and 92 g of solvent. Withdraw a representative 25 g portion. Under the uniform-composition and no-loss assumptions, that portion contains 2 g S and 23 g solvent; the remaining stock contains 6 g S and 69 g solvent. A small sample is representative because of the stated sampling model, not merely because it is small.
+
+Now suppose 15 g of solvent leaves the portion, while S does not leave or react. The retained material has mass 10 g with 2 g S: its overall mass fraction is 20%. The original mixture was 8% S. This change in fraction does not mean new S was produced. Account for the 75 g remaining stock, 10 g retained material and 15 g removed solvent together. Their masses total 100 g and their S inventory totals 8 g.
+
+The account does not establish whether the retained material remains one liquid phase, forms crystals or changes molecular association. Nor does it tell you the concentration per volume: volume and its conditions have not been supplied. Draw the outer boundary around all three final portions, then a smaller boundary around the retained portion. Explain why the same event looks like a redistribution in one account and a loss of mass in the other.
+
+For a separate symbolic reaction, let A and B denote invented elements with teaching atomic molar masses 10 and 20 g/mol. Use the formal relation A₂ + 2 B₂ → 2 AB₂. Initially there are 3 mol A₂, 4 mol B₂ and 1 mol AB₂. For a single reaction in a closed system, the amounts are 3 − ξ, 4 − 2ξ and 1 + 2ξ mol when ξ is expressed in moles. Nonnegative amounts permit −0.5 ≤ ξ ≤ 2; restricting attention to forward change from the supplied state gives 0 ≤ ξ ≤ 2. The sign convention does not prove that a reverse or forward process is physically available.
+
+At ξ = 1 mol, the amounts are 2, 2 and 3 mol. Initially and finally there are 7 mol of A atoms and 10 mol of B atoms, and the teaching mass account is 270 g. The total amount of molecular species changes from 8 to 7 mol. Conserved element amounts do not require the sum of molecular amounts to stay fixed. Derive the limiting composition at ξ = 2 mol independently.
+
+An independently determined amount of 3 mol AB₂ would imply ξ = 1 mol under this single-reaction model and the given initial state. Observing only that total mass remains 270 g cannot identify ξ: every allowed extent has that mass. A new reaction or an unmeasured transfer can also invalidate the one-extent inference. Conservation restricts possibilities; additional evidence chooses among them.
+
+**Evidence:** present the two boundary diagrams, component/entity tables, fraction calculations, allowed extent interval and independent element/mass checks. Distinguish supplied data, assumptions, deductions and observations still needed. Explain how nonrepresentative sampling would affect the first model and an additional reaction would affect the second. Ask another reader to challenge a boundary or quantity definition, then revise the account. No balanced equation alone establishes reaction rate, equilibrium, mechanism or practical yield.
+
+**Shared account:** [Mass and component balances](../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H) and [Reaction extent](../general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y) supply the general relations. Revisit [observations, particle models and symbols](../general-chemistry/foundations/Observations-particles-and-symbols.lingua#r_1BMJ0JMYA9THS9B5K12C423YFC) when distinguishing the evidence from its representation.
+
+**Continue:** [Review chemical identity, amounts and conservation](Review-chemical-identity-amounts-and-conservation.lingua#r_0B848D430993C26623D91AFBAE).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0360DE1F62D1CE75374608DDE1

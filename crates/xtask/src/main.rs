@@ -9,11 +9,13 @@ mod android;
 mod android_clean;
 mod android_smoke;
 mod content;
+#[cfg(any(feature = "authoring", test))]
 mod design;
 mod hand_models;
 mod maintenance;
 mod park;
 mod prune;
+#[cfg(any(feature = "authoring", test))]
 mod workspace;
 
 type Result<T> = std::result::Result<T, String>;
@@ -63,6 +65,13 @@ fn dispatch() -> Result<()> {
     let caller_directory = env::current_dir().map_err(|error| error.to_string())?;
     let mut args = env::args_os().skip(1);
     let task = args.next().unwrap_or_default();
+    #[cfg(feature = "authoring")]
+    let (caller_directory, task) = if task == "--xtask-caller-directory" {
+        let caller = args.next().ok_or("missing xtask caller directory")?;
+        (PathBuf::from(caller), args.next().unwrap_or_default())
+    } else {
+        (caller_directory, task)
+    };
     let extra: Vec<_> = args.collect();
     let root = caller_directory.ancestors()
         .find(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
@@ -73,6 +82,19 @@ fn dispatch() -> Result<()> {
             .map(std::path::Path::to_path_buf))
         .ok_or("cannot find workspace root")?;
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
+
+    #[cfg(not(any(feature = "authoring", test)))]
+    if matches!(task.to_str(), Some("design" | "workspace"))
+        || (task == "maintenance" && extra.first().is_some_and(|arg| arg == "fiote"))
+    {
+        return checked(
+            cargo_command()
+                .args(["run", "--locked", "-p", "xtask", "--features", "authoring", "--", "--xtask-caller-directory"])
+                .arg(&caller_directory)
+                .arg(&task)
+                .args(&extra),
+        );
+    }
 
     match task.to_str() {
         Some("map-region") => {
@@ -113,6 +135,7 @@ fn dispatch() -> Result<()> {
         }
         Some("content") => content::package(&root, &caller_directory, &extra),
         Some("maintenance") => maintenance::dispatch(&root, &extra),
+        #[cfg(any(feature = "authoring", test))]
         Some("workspace") => workspace::dispatch(&root, &caller_directory, &extra),
         Some("ailuros") => ailuros::dispatch(&extra),
         Some("lingua") => {
@@ -153,6 +176,7 @@ fn dispatch() -> Result<()> {
             no_extra(&extra)?;
             hand_models::download(&root)
         }
+        #[cfg(any(feature = "authoring", test))]
         Some("design") => design::dispatch(&root, &extra),
         Some("park") => park::dispatch(&extra),
         Some("android") => android::dispatch(&root, &extra),

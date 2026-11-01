@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Derive thermal weights while keeping the finite reservoir visible (@physics-statistical-reservoir: 0, is #chapter, #hephaestus-core "Obtain-energy-entropy-and-response-from-a-normalized-thermal-model.lingua#r_008071436CDCAF56B4074E84AD") { r_007CEFD475C55DF492C764C2CC
+Let a system have microstates i with energies E_i and let a surrounding body R exchange energy with it. Keep the combined energy E_total fixed and approximate interaction energy as negligible in the energy ledger, while retaining enough coupling to permit exchange. Under equal weights on accessible combined microstates, the exact relative weight of system state i is Ω_R(E_total−E_i). Normalize by summing this quantity over system microstates. If instead summing over distinct energy values, multiply by the number of system states at each value. States with no compatible reservoir configuration have zero weight.
+
+The finite binary reservoir illustrates the distinction without an infinite approximation. For a specified A configuration with j excitations the relative weight is C(b,Q−j). Consecutive allowed weights have ratio (Q−j)/(b−Q+j+1). The ratio changes with j and can terminate at a support boundary. A finite reservoir cannot generally be replaced by one constant excitation penalty.
+
+To obtain a thermal approximation, choose a reference system energy E_* and write δE_i=E_i−E_*, E_R*=E_total−E_*. Suppose a smooth reservoir entropy S_R exists across every admitted E_R*−δE_i and has derivative 1/T at the reference, with T>0. Taylor's theorem gives
+
+S_R(E_R*−δE_i)=S_R(E_R*)−δE_i/T+R_i.
+
+If |S_R''|≤M on those intervals, |R_i|≤M δE_i²/2. Dropping R_i gives weights proportional to exp(−βE_i), β=1/(k_B T). An additive reference energy cancels upon normalization. The bound uses entropy curvature and the actual energy range; saying that a reservoir is large is not itself an accuracy certificate. Reuse [Use derivative information with explicit interval and error bounds](../../mathematics/core/Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629) for a finite remainder and [Define exponential change by an inverse and prove its rate law](../../chemistry/core/Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359) for exponential properties.
+
+For a finite common support, if |R_i|/k_B≤η uniformly, the exact and approximate unnormalized weights differ by factors between exp(−η) and exp(η). Their normalizers obey the same bounds, so each normalized probability ratio lies between exp(−2η) and exp(2η). If the approximation extends support or ignores a tail, this argument alone is insufficient: separately bound the omitted mass and relevant observable. For countable supports, convergence must also be established.
+
+There is a complementary exact limiting argument in the binary model. Fix the number a of observed sites while N grows with Q/N→p in (0,1). A particular observed configuration with j excited sites has probability (Q)_j (N−Q)_(a−j)/(N)_a, where (z)_k=z(z−1)…(z−k+1) and (z)_0=1. Divide each of the fixed number of factors by N: the limit is p^j(1−p)^(a−j). Thus these finitely many local probabilities approach independent Bernoulli weights, with ratio r=p/(1−p). This does not make the energy of the entire isolated N-site system fluctuate or prove unrestricted equivalence of ensembles. For a positive-temperature two-state bath require p<1/2; other finite weights remain mathematically possible without that interpretation.
+
+**Work:** derive the finite ratio and its support boundary. Compare the N=8,Q=3,a=3 distribution with independent sites having p=3/8; their means agree but their variances differ. Derive the fixed-a limit, state what is held fixed, and explain why the same argument fails if a=N. Read [Statistical Physics — David Tong](../../engineering/materials-engineering/sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2) section 1.3 and distinguish its reservoir approximation from the exact finite construction here.
+
+**Continue:** [Obtain energy entropy and response from a normalized thermal model](Obtain-energy-entropy-and-response-from-a-normalized-thermal-model.lingua#r_008071436CDCAF56B4074E84AD).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_007CEFD475C55DF492C764C2CC

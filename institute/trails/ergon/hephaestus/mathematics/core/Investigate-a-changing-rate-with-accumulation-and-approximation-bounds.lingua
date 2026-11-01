@@ -1,0 +1,157 @@
+Import "../Mathematics.lingua"
+
+Investigate a changing rate with accumulation and approximation bounds (@math-change-study: 0, is #chapter, #hephaestus-core "Review-limits-local-change-and-accumulated-quantities.lingua#r_0D7A97B4D2E7F344DF40026670") { r_0580A36881B6386A628584D117
+Consider a hypothetical vessel with an initial 5 L volume and a signed net transfer rate. Write s=t/(1 min), a dimensionless time coordinate restricted to 0≤s≤2. The stipulated rate is q(t)=(1 L/min)(s²−1). Positive means inward and negative outward. The corresponding volume is (1 L)V(s), with V(s)=5+s³/3−s. This is an original mathematical teaching model. It does not validate a vessel, flow-control mechanism, instrument or real liquid's behavior.
+
+**Derive before programming:** use the fundamental theorem and initial value to obtain V. The net change is 2/3 L and final volume 17/3 L. The volume decreases until s=1 and increases afterward because V′=s²−1 has the corresponding signs; the mean value theorem justifies that monotonicity on each interval. The minimum is 13/3 L. Both the minimum and endpoint maximum lie between 0 and a stipulated 6 L capacity, so this particular interval is not contradicted by those volume bounds. This is only one consistency check, not a construction or service qualification.
+
+Separate net change from total magnitude: the outward amount before s=1 is 2/3 L and inward amount afterward 4/3 L, totaling 2 L. This is the magnitude of a single signed transfer, not a measurement of two simultaneous streams. If the initial volume were 1/2 L under the same stipulated rate, the formula would give −1/6 L at s=1. That impossibility requires a revised physical model before that point; silently clipping the computed value to zero would no longer solve the original rate/initial-value problem.
+
+**Approximate with evidence:** for equal partitions the lower/upper bracket width is 8/n L. Any tagged sum and the exact integral are in the same bracket, so their difference is at most that width. Taking n≥800 guarantees this bound is at most 0.01 L. A midpoint-specific bound is much sharper for this polynomial. On an interval of width w centered at c, expand (c+u)²−1: the odd 2cu part integrates to zero and the u² part contributes w³/12. Thus exact accumulation minus the midpoint estimate is Σw³/12, and for total length 2 it is at most mesh²/6. With uniform widths this is 2/(3n²) L; n=16 gives 1/384 L. These formulas are proved for the stated polynomial, not asserted as universal errors for every function.
+
+At s=1+h the tangent prediction for volume remains 13/3 L, while the exact increment is h²+h³/3 L. Use the preceding local bound to distinguish a 0.1 min step that misses a 0.01 L absolute tolerance from the guaranteed |h|≤0.09 region. Numerical integration error, tangent-approximation error, uncertain physical inputs and discrepancy of the rate model are distinct.
+
+Save the main program as `change_study.py` and run it with Python 3. Its standard-library fractions give exact rational arithmetic. `partition_sums` assumes a strictly increasing tuple of rational knots starting at 0 and ending at 2; `uniform` assumes a positive integer. These are bounded teaching helpers, not validated general input-processing APIs. The polynomial is algebraically defined beyond this interval, but the physical interpretation is restricted to the stated two minutes.
+
+```python file=change_study.py
+from fractions import Fraction as F
+
+
+def rate(s):
+    return s*s - 1
+
+
+def accumulation(s):
+    return s**3/F(3) - s
+
+
+def volume(s, initial=F(5)):
+    return initial + accumulation(s)
+
+
+def partition_sums(knots):
+    lower = F(0)
+    upper = F(0)
+    midpoint = F(0)
+    for a, b in zip(knots, knots[1:]):
+        width = b-a
+        lower += width*rate(a)
+        upper += width*rate(b)
+        midpoint += width*rate((a+b)/2)
+    return lower, upper, midpoint
+
+
+def uniform(n):
+    return tuple(F(2*j, n) for j in range(n+1))
+
+
+if __name__ == '__main__':
+    exact = accumulation(F(2))-accumulation(F(0))
+    print('net, final, minimum', exact, volume(F(2)), volume(F(1)))
+    print('outward, inward, total', F(2,3), F(4,3), F(2))
+    for n in (4, 8, 16, 800):
+        lower, upper, midpoint = partition_sums(uniform(n))
+        print(n, lower, upper, midpoint, 'gap', upper-lower, 'midpoint error', exact-midpoint)
+    h = F(1,10)
+    print('local error at 1+h', volume(1+h)-volume(F(1)))
+    print('infeasible initial stock', volume(F(1), F(1,2)))
+```
+
+For n=4, the lower/upper/midpoint values are −1/4, 7/4 and 5/8 L; for n=16 they are 27/64, 59/64 and 85/128 L. The midpoint error at n=16 is 1/384 L, while the broader bracket width is 1/2 L. State which bound a reported accuracy relies on. The code's exact agreement with the formulas verifies the computation under its assumptions, not the real system.
+
+The companion below is reproducible as `change_checks.py` beside the main file. It checks equal partitions against closed sums, all 128 partitions formed from the seven internal quarter-step grid points, 640 tagged sums, and local/limit identities. It calculates interval accumulation independently using (b−a)[(a²+ab+b²)/3−1], and checks exact midpoint errors against the sum of cubed widths. General convergence and calculus results still require the arguments in the lessons.
+
+```python file=change_checks.py
+from fractions import Fraction as F
+from itertools import combinations, product
+from math import comb
+import json
+import change_study as m
+
+checks=0
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+def exact_interval(a,b):
+    return (b-a)*((a*a+a*b+b*b)/3-1)
+
+check(m.volume(F(2))==F(17,3))
+check(m.volume(F(1))==F(13,3))
+check(m.volume(F(1),F(1,2))==F(-1,6))
+check(exact_interval(F(0),F(1))==F(-2,3))
+check(exact_interval(F(1),F(2))==F(4,3))
+check(abs(exact_interval(F(0),F(1)))+abs(exact_interval(F(1),F(2)))==2)
+for n in range(1,129):
+    lower,upper,mid=m.partition_sums(m.uniform(n))
+    check(lower==F(2,3)-F(4,n)+F(4,3*n*n))
+    check(upper==F(2,3)+F(4,n)+F(4,3*n*n))
+    check(mid==F(2,3)-F(2,3*n*n))
+    check(upper-lower==F(8,n))
+    check(lower<=F(2,3)<=upper)
+    check(sum(k*k for k in range(1,n+1))==n*(n+1)*(2*n+1)//6)
+    check(sum(k for k in range(1,n+1))==n*(n+1)//2)
+check(m.partition_sums(m.uniform(800))[1]-m.partition_sums(m.uniform(800))[0]==F(1,100))
+partitions=0
+tagged_sums=0
+grid=tuple(F(j,4) for j in range(1,8))
+for count in range(len(grid)+1):
+    for interior in combinations(grid,count):
+        partitions+=1
+        knots=(F(0),)+interior+(F(2),)
+        lower,upper,mid=m.partition_sums(knots)
+        widths=tuple(b-a for a,b in zip(knots,knots[1:]))
+        mesh=max(widths)
+        exact=sum(exact_interval(a,b) for a,b in zip(knots,knots[1:]))
+        check(exact==F(2,3))
+        check(lower<=exact<=upper)
+        check(upper-lower<=4*mesh)
+        midpoint_error=sum((b-a)**3/F(12) for a,b in zip(knots,knots[1:]))
+        check(exact-mid==midpoint_error)
+        check(midpoint_error<=mesh*mesh/F(6))
+        for position in (F(0),F(1,3),F(1,2),F(2,3),F(1)):
+            tagged_sums+=1
+            total=sum((b-a)*m.rate(a+position*(b-a)) for a,b in zip(knots,knots[1:]))
+            check(lower<=total<=upper)
+            check(abs(total-exact)<=upper-lower)
+for a,h in product((F(j,4) for j in range(-8,9)),(F(j,20) for j in range(-10,11) if j)):
+    check((m.rate(a+h)-m.rate(a))/h==2*a+h)
+    check(m.accumulation(a+h)-m.accumulation(a)-m.rate(a)*h==a*h*h+h**3/F(3))
+    check(abs(a*h*h+h**3/F(3))<=h*h*(abs(a)+abs(h)/3))
+limit_cases=0
+for a,eps in product((F(j,2) for j in range(-8,9)),(F(1,100),F(1,10),F(1),F(10))):
+    delta=min(F(1),eps/(2*abs(a)+1))
+    for multiplier in (F(-9,10),F(-1,2),F(1,2),F(9,10)):
+        limit_cases+=1
+        h=multiplier*delta
+        check(abs((a+h)**2-a*a)<eps)
+for n,a,h in product(range(1,9),(F(-2),F(-1,2),F(0),F(3,2)),(F(-1,10),F(1,10),F(1,3))):
+    expansion=sum(F(comb(n,k))*a**(n-k)*h**k for k in range(1,n+1))
+    check((a+h)**n-a**n==expansion)
+    check(expansion/h==n*a**(n-1)+sum(F(comb(n,k))*a**(n-k)*h**(k-1) for k in range(2,n+1)))
+for h in (F(-1,10),F(1,10),F(1,2)):
+    check(abs(h)/h==(1 if h>0 else -1))
+    check(m.volume(1+h)-m.volume(F(1))==h*h+h**3/F(3))
+check(m.volume(F(11,10))-m.volume(F(1))==F(31,3000))
+check(F(9,100)**2*(1+F(9,100)/3)==F(8343,1000000))
+for a,b in combinations(tuple(F(j,4) for j in range(9)),2):
+    c2=(a*a+a*b+b*b)/3
+    check(a*a<c2<b*b)
+    check((m.accumulation(b)-m.accumulation(a))/(b-a)==c2-1)
+for point in (F(j,20) for j in range(41)):
+    check(F(13,3)<=m.volume(point)<=F(17,3)<6)
+result={'checks':checks,'uniform_partitions':128,'grid_partitions':partitions,'tagged_sums':tagged_sums,'limit_cases':limit_cases,'net_volume':'2/3 L','final_volume':'17/3 L','minimum_volume':'13/3 L','absolute_transfer':'2 L','midpoint_error_n16':'1/384 L','coarse_bound_n800':'1/100 L'}
+print(json.dumps(result,indent=2))
+```
+
+**Independent investigation:** choose a different benign polynomial rate and initial condition. Determine admissible intervals, sign changes and capacity constraints, derive a partition bound, and compare exact and approximate accumulation. Include a counterexample to an overbroad rule, such as using a smooth theorem at a jump or interpreting net flow as total throughput. Ask a reader to change the time unit or initial condition and reconstruct the conclusions. Preserve the correction they prompt.
+
+Use [Investigate a stock model and defend its alternatives](Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838) for the difference between a day-end stock model and within-day behavior, [Investigate an affine coordinate model and the information it preserves](Investigate-an-affine-coordinate-model-and-the-information-it-preserves.lingua#r_07365437E80781900AA1FAF83B) for representation/constraint reasoning, and [Investigate complete and paired allocations with exact finite evidence](../../inquiry/core/Investigate-complete-and-paired-allocations-with-exact-finite-evidence.lingua#r_025C0CC5AAE41742537448C79B) for the distinction between exact model calculations and empirical claims. The new continuous model supplements those studies without rewriting their original assumptions. Report all units, domains, formulas, program/environment versions, checks, accepted theorems and unresolved physical questions.
+
+**Author verification:** the main program and companion ran with Python 3.14.8. The companion passed 4,428 exact checks, including 128 equal-grid sizes and 128 grid-defined partitions, including nonuniform cases, 640 tagged sums and 272 limit-neighborhood cases. Finite checks support the original arithmetic and implementation; the stated proofs establish the general mathematical claims. No physical experiment is claimed.
+
+**Continue:** [Review limits local change and accumulated quantities](Review-limits-local-change-and-accumulated-quantities.lingua#r_0D7A97B4D2E7F344DF40026670).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0580A36881B6386A628584D117

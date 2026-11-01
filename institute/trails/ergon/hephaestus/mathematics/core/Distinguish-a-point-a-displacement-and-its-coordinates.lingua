@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Distinguish a point a displacement and its coordinates (@math-coordinate-frames: 0, is #chapter, #hephaestus-core "Use-linear-combinations-to-explain-span-independence-and-coordinates.lingua#r_004D242DF23E1A3D1718672EAE") { r_062423188E960EBAB9A92CE3E4
+A point identifies a location. A displacement describes a directed change from one point to another. Coordinates express either relative to a chosen origin, axes and unit convention. Write those choices next to a drawing; the same ordered pair can mean different things in different frames.
+
+**Read and reuse:** the [shared vector lesson](../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J) and OpenStax Algebra and Trigonometry 2e section 10.8, beginning with directed segments and component operations. Boyd and Vandenberghe sections 1.1–1.3 provide a broader account of coordinate lists and operations. Read the geometric interpretation first, then distinguish it from lists of measurements with unrelated units.
+
+In a two-dimensional orthonormal frame, whose axes are perpendicular and use the same length unit, let P = (1,2) and Q = (4,6). The displacement Q − P is (3,4), with magnitude 5 by the right-triangle relation. If the origin is moved by c = (10,−1), the new point coordinates are P′ = P − c = (−9,3) and Q′ = Q − c = (−6,7). Their difference is still (3,4). Translation of the origin changes position coordinates while canceling out of displacement.
+
+Rotate the coordinate axes through 90 degrees counterclockwise while holding the physical displacement fixed. The new unit axes, expressed in the old frame, are f₁ = (0,1) and f₂ = (−1,0). Because (3,4) = 4f₁ − 3f₂, the displacement's new components are (4,−3). Its magnitude remains 5. This differs from actively rotating the displacement while keeping the old axes: that operation sends (3,4) to (−4,3). Specify whether the object or the coordinate description changes.
+
+The formula √(x² + y²) for geometric length relies on the orthonormal convention. Suppose instead that coordinates (s,t) mean s(1,0) + t(1,1) in the old orthonormal frame. The coordinate pair (2,3) then represents the displacement (5,3), whose squared length is 34, not 13. The two coordinate directions are not perpendicular. We can recover the correct squared length as (s+t)² + t² after translating the representation back into the orthonormal frame.
+
+Physical units also remain part of the interpretation. A list containing one length and one temperature is a valid data representation, but its unweighted sum of squared entries is not automatically a geometric squared distance. A unit conversion must transform the numerical representation and its interpretation together.
+
+**Work:** check both origin-shift calculations and both 90-degree operations. Construct a second point pair with the same displacement. For the oblique directions, express an arbitrary displacement (x,y) as coordinates (s,t). Explain why changing the coordinate basis does not itself shear or stretch the physical object. Preserve this distinction when reading an image, drawing or motion record.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Use linear combinations to explain span independence and coordinates](Use-linear-combinations-to-explain-span-independence-and-coordinates.lingua#r_004D242DF23E1A3D1718672EAE).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_062423188E960EBAB9A92CE3E4

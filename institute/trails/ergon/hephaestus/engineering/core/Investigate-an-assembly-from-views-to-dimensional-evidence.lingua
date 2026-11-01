@@ -1,0 +1,43 @@
+Import "../Engineering.lingua"
+
+Investigate an assembly from views to dimensional evidence (@engineering-geometric-study: 0, is #chapter, #hephaestus-core "Review-dimensional-models-and-the-evidence-for-a-design-decision.lingua#r_014ED719C2EE20565F21353AD0") { r_0389B90567C4C9183DE77AC20A
+Prepare a coherent design-and-evidence account for the hypothetical tray and inserts. The bounded requirement is a longitudinal gap between 0.90 and 1.10 mm, inclusive, at the stipulated 20 °C, unloaded reference condition. A, B, C and g have the meanings established in the preceding lessons. No material, load capacity, lateral fit, lifetime or manufacturing process is validated by this exercise. Keep these unresolved requirements visible instead of treating a geometrical success as a complete working product.
+
+The original diagram below is a labeled longitudinal schematic, deliberately not to scale. Its vertical strokes denote reference planes in this one-dimensional model; the empty region is the modeled gap.
+
+```text
+x increases to the right; all indicated positions are in mm
+
+x0=0                 x1=B                 x2=B+C        x3=A
+ |------- insert B ----|------- insert C ----|---- gap g ----|
+ |<---------------- internal span A ---------------------->|
+
+nominal positions:  0                    20       49      50
+```
+
+Use the labeled coordinate expressions for quantitative work; the text diagram's spacing supplies no dimensions. The inserts have ideal cross-section 0≤y≤12, 0≤z≤5 mm. Construct XY, XZ and YZ coordinate views, labeling their directions explicitly, and a sectional description through y=6 mm. The outer tray wall shape is unspecified. State which views superpose B and C and which show their longitudinal interfaces. Show P=(20,3,5) mm and the point Q=(20,9,5) mm that shares its XZ projection. Translate and rotate the coordinate description using (u,v,w)=(100−y,20+x,5+z); retain the gap's length and identify its new direction.
+
+| Candidate | A, mm | B, mm | C, mm | Derived gap range, mm | Model conclusion |
+| --- | --- | --- | --- | --- | --- |
+| Baseline | 50±0.10 | 20±0.05 | 29±0.05 | 0.80–1.20 | Some combinations permitted; not all |
+| Tighter independent bounds | 50±0.04 | 20±0.02 | 29±0.02 | 0.92–1.08 | Every allowed combination permitted |
+| Longer C insert | 50±0.10 | 20±0.05 | 29.40±0.05 | 0.40–0.80 | No allowed combination permitted |
+
+For each row, compare the signed interval derivation with all eight endpoint combinations and with independently constructed positions (0,B,B+C,A). Check closure B+C+g=A, unit conversion and invariance under a common origin shift. Defend why corners suffice for this affine model and why this reasoning would need review for a nonlinear contact or deformation model. Write one inconsistent nominal drawing specification and locate its closure residual.
+
+Then investigate the coupled family A=50+δ+e_A, B=20+δ+e_B, C=29+e_C with the stated primitive bounds from [Preserve shared causes when comparing dimensional alternatives](Preserve-shared-causes-when-comparing-dimensional-alternatives.lingua#r_096EB930A4D4801B02F0B0B349). Derive the 0.96–1.04 mm gap range before enumerating cases. Compare it with the loose marginal range 0.76–1.24 mm. Show which apparent marginal corner is impossible, and distinguish physical coupling from a common observation error. Do not propose a real process on the strength of a stipulated cancellation.
+
+Design an inspection account for one actual gap quantity, naming reference features, conditions, access, sampling, alignment and the decision it must support. Apply the synthetic r/u cases from [Connect an assembly prediction to a bounded inspection decision](Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua#r_0AE23276AAB728BEDBFC0AC47E) under their explicit hard-bound assumption. Explain why measurement resolution, dimensional tolerance, uncertainty and production yield cannot be substituted for one another. Use the existing [Connect the drawing to a defined dimensional measurement](../mechanical-engineering-and-machine-design/measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua#r_101DKG7DGDQ1Q0GMRBRHBFHC4Q) reading for deeper physical interpretation.
+
+**Evidence and revision:** submit the views, quantity definitions, alternative comparison, independent calculations and inspection proposal. Have a reviewer challenge one assumption about contact, common variation or form. Revise the model or identify the additional evidence needed; do not adjust the requirement merely to make a preferred candidate pass. Compare the accounting discipline with the earlier card-service study, while stating why geometry, flow capacity and structural strength need different models. The result is an original analytical study, not a claim that a tray was made or inspected.
+
+**Author verification:** 5,174 exact rational checks passed, including 24 fixture corners, 1,000 affine interval families, 625 coupled-dimensional cases, 24 transformed points and 576 pairwise distance comparisons, and 205 synthetic decision cases. Signed bounds were checked against separately enumerated extrema; geometric closure against positions; decision inequalities against compatible finite-grid values. These support the original analytical examples, not actual manufacture, measurement or service validation.
+
+**Shared earlier study:** [the card-service investigation](Investigate-a-service-from-requirements-to-operating-evidence.lingua#r_0154834E27D6627BE8DA2ED738). Its original content and calculations are unchanged.
+
+**Reading companion:** [Engineering drawings for measurement — NPL Guide 79](../mechanical-engineering-and-machine-design/sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), printed pages 22–27, 40–41 and the bounded inspection discussion on 70–74. Keep historical convention/uncertainty language distinct from a current normative deliverable. The shared measurement sources supply deeper definitions.
+
+**Continue:** [Review dimensional models and the evidence for a design decision](Review-dimensional-models-and-the-evidence-for-a-design-decision.lingua#r_014ED719C2EE20565F21353AD0).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0389B90567C4C9183DE77AC20A

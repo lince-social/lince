@@ -1,0 +1,25 @@
+Import "../Computing.lingua"
+
+Make pending confirmed and unknown outcomes mean different things (@computing-trust-state: 0, is #chapter, #hephaestus-core "Specify-accessible-actions-feedback-and-recoverable-input-errors.lingua#r_007E1E3B2807ADC4AA74817156") { r_00336329746CC5325F937E4856
+Reuse [Specify one outstanding operation and a retained durable result](Specify-one-outstanding-operation-and-a-retained-durable-result.lingua#r_00529B7EA6239E5D1C8E61D93C) and [Recover a committed identity before deciding whether to retry](Recovery-request-identity-and-retry.lingua#r_00808A26E92166D742D797AA5D). In the existing one-outstanding-operation protocol, the server commits before the client necessarily receives a reply. A person's evidence can therefore lag behind the effect. Define the observation available to the interface before writing its status message.
+
+| Stage | Evidence available to this client | Appropriate account |
+| --- | --- | --- |
+| Draft | Local proposed amount and object; no submission | Proposal only; allow correction or discard |
+| Pending | The chosen request was submitted; no accepted receipt | Submission acknowledged locally; confirmation pending |
+| Unknown | Waiting ended without conclusive receipt | The effect may have happened; retain the request identity |
+| Confirmed | Authentic matching receipt accepted | Show object, amount, identity and resulting total |
+| Rejected before submission | Local validation failed and no request was emitted | Identify the field and explain how to correct it |
+
+The last row differs from an inconclusive remote result. If a request or reply can remain in flight, a timeout or current refusal does not prove that no effect occurred, or that no later delivery can occur. A definitive failed outcome would need additional evidence and a protocol that excludes outstanding effects. Our later finite study deliberately has no terminal remote-failure state. It uses only a prevalidated fixed draft, pending, unknown and confirmed.
+
+Trace two histories with identical visible evidence. In H₀ the request is dropped, then the wait expires. In H₁ the server adds two, its reply is dropped, then the wait expires. Both leave the client without a receipt. Any deterministic display based only on that client evidence must give the same result for both histories. Consequently it cannot truthfully say either definitely committed or definitely not committed. This is an information argument, not a guess about network speed. An additional authentic observation can distinguish the histories.
+
+Keep the same identity and arguments when retrying. Issuing a new identity after a lost reply can add twice; changing the amount under the same identity breaks the request contract. A cancel control needs similarly exact meaning. Before submission it can discard a draft. After submission, merely leaving a screen or stopping the wait cannot retract a committed operation. A compensating change would be a new operation with its own authority, evidence and failure possibilities.
+
+**Work:** annotate H₀ and H₁ with server state, client evidence and the person's possible belief. Explain why a button animation can confirm input handling without confirming the ledger effect, using the feedback reading in [User Interface Design and Implementation MIT task analysis and visibility](../sources/User-Interface-Design-and-Implementation-MIT-task-analysis-and-visibility.lingua#r_00344623022A36BF7031B5BCAE). Draft messages and offered actions for each stage; remove any promise unsupported by the available evidence. Prove why the same-identity retry remains safe under the existing ledger assumptions and why eventual confirmation still requires delivery and permission assumptions.
+
+**Continue:** [Specify accessible actions feedback and recoverable input errors](Specify-accessible-actions-feedback-and-recoverable-input-errors.lingua#r_007E1E3B2807ADC4AA74817156).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00336329746CC5325F937E4856

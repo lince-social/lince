@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Declare several inputs before interpreting a surface (@math-multivariable-domains: 0, is #chapter, #hephaestus-core "Control-every-nearby-direction-in-a-multivariable-limit.lingua#r_004BE7654C0E09317437A7DD6F") { r_0026E053A3967B03F953170F3D
+A quantity may depend on several independently specified inputs. A scalar function f:D⊆Rⁿ→R assigns one real value to each admissible input tuple; a vector function F:D→Rᵐ assigns m outputs. Reuse [Connect domains, composition and inverse questions](Domains-composition-and-inverse-questions.lingua#r_07C292DB06749E12B30235383A) and [Extend vectors and their geometry to finitely many coordinates](Extend vectors and their geometry to finitely many coordinates.lingua#r_00D53162E53742785582936BBE). An input tuple is one point of the domain, not a list of separate experiments. Before drawing a surface, state which combinations of inputs are allowed and what the output means.
+
+For example, f(x,y)=ln(y−x²) has domain y>x²; a quotient 1/(x+y) excludes the line x+y=0. The logarithm refers to a dimensionless positive argument. Reuse [Construct a logarithm from accumulated reciprocal change](../../chemistry/core/Construct-a-logarithm-from-accumulated-reciprocal-change.lingua#r_048F416B6E95AE137A181635B7) and [Define exponential change by an inverse and prove its rate law](../../chemistry/core/Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359) for these shared functions rather than reintroducing them from remembered formulas. A formula can have a mathematical domain larger than the range where it represents a physical system.
+
+A slice fixes some inputs. For f(x,y), the graph of x↦f(x,b) shows variation at fixed y=b. A level set instead fixes the output: all (x,y) with f(x,y)=c. A path γ(t)=(x(t),y(t)) specifies a sequence of inputs and produces the one-variable function f(γ(t)). Slice, level set and path answer different questions. The wave-field lesson [Describe a field without confusing position and time](../../physics/core/Describe-a-field-without-confusing-position-and-time.lingua#r_00D94239F63BAA1888D124877B) is one contextual example; no physical interpretation is needed to define these mathematical objects.
+
+In this block use the original dimensionless function F(x,y)=x²y+2y²+3x on R². If it represents an output with unit U, write the physical output as U₀F(X/X₀,Y/Y₀), with positive reference scales X₀,Y₀,U₀ and dimensionless x=X/X₀,y=Y/Y₀. A distance that adds squared metres and squared seconds without declared scales is not defined by ordinary Euclidean geometry. Later gradients depend on the chosen geometry of input changes.
+
+At (1,2), F=13. A slice with y=2 gives 2x²+3x+8; a slice with x=1 gives 2y²+y+3. The curved path γ(t)=(1+t,2−t+t²) gives 13−2t+11t²−3t³+3t⁴. Derive that polynomial by multiplication before using any multivariable derivative rule. It is an independent reference for the later chain calculation.
+
+**Read and work:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 4.1. Draw the domain of the logarithm example, two slices and a level set of a simple quadratic. Give an admissible path and another that leaves the domain. State which question each drawing answers. Keep the function, its graph and the input space distinct.
+
+**Continue:** [Control every nearby direction in a multivariable limit](Control-every-nearby-direction-in-a-multivariable-limit.lingua#r_004BE7654C0E09317437A7DD6F).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0026E053A3967B03F953170F3D

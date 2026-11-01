@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Describe representable spacing before interpreting a floating result (@computing-rounded-numbers: 0, is #chapter, #hephaestus-core "../../inquiry/reproducible-computation/numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR") { r_0E9AB5CBCE46D32FBC5701E90D
+Integer words preserve a residue class under the declared arithmetic. Finite floating representations instead choose values from a finite set with a scale-dependent spacing. A simplified normalized binary value has a sign, a significand containing p significant bits and a power-of-two exponent. Within one interval between adjacent powers of two, representable spacing is constant; moving to the next interval doubles that spacing at the same precision. Exponent bounds also limit the represented range.
+
+For an original exact model define the set F={0} together with ±m·2ᵉ for integer m=4,5,6,7 and e=−3,−2,−1,0,1,2. This represents three significant binary bits, a smallest positive value 1/2, a largest value 28 and 49 distinct values including zero. Choose nearest-value rounding R, resolving an exact tie toward the smaller numerical value. This explicit toy rule is not the default IEEE ties-to-even rule; the model omits subnormals, signed zeros, infinities and NaNs.
+
+Near one, values include 1, 5/4, 3/2 and 7/4; near four, they include 4,5,6,7. Thus R(9/8)=1 and R(11/8)=5/4 under the declared tie rule. R(1/10)=0 because this toy set has no small positive neighbor. For representable inputs 7,−7,1/2, rounding each operation gives R(R(7−7)+1/2)=1/2 but R(7+R(−7+1/2))=0. The first rounded inner sum on the latter path is −7. Associativity of real addition does not imply associativity of this operation.
+
+A finite binary fraction has a reduced denominator dividing a power of two. The reduced denominator of 1/10 contains a factor five, so no finite binary fraction equals it. A printed short decimal may name the nearest stored value without displaying its exact rational value. The existing [Understand representation, rounding, and the order of operations](../../inquiry/reproducible-computation/numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR) example demonstrates actual runtime behavior after this representation preparation; do not replace its explicit ordered loop with an assumed naive built-in sum.
+
+Distinguish representation error, operation rounding, overflow/underflow behavior, uncertain input and an incorrect physical model. Actual formats include further categories and rounding modes; inspect the chosen runtime and operation documentation. Nonfinite values may need explicit rejection in a numerical contract, and a tolerance needs units, scale and a purpose. Fewer printed digits do not repair an unstable calculation.
+
+**Read and compare:** [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../../inquiry/reproducible-computation/sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), the opening representation and rounding discussion, and [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), the exact-version floating-point tutorial. Enumerate F using exact fractions, reproduce the two groupings and explain why this small construction is not an IEEE implementation. Then work the shared runtime example with its original version qualifications. Full error analysis, exceptional values and hardware conformance remain later formation.
+
+**Continue:** [Understand representation, rounding, and the order of operations](../../inquiry/reproducible-computation/numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0E9AB5CBCE46D32FBC5701E90D

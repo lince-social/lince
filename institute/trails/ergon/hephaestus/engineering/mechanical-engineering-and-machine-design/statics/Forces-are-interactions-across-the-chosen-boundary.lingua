@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Forces are interactions across the chosen boundary (@mech-force: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM") { r_1QNSVHX3MYB97RR84V0HZXZRYA
+Forces are interactions across the chosen boundary (@mech-force: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM", #hephaestus-core "../../../physics/core/Relate-forces-to-momentum-and-system-boundaries.lingua#r_07F88E984BB76BB449F22A9467") { r_1QNSVHX3MYB97RR84V0HZXZRYA
 **Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapters 1–3, with the vector and particle-equilibrium exercises. Revisit your component and assembly boundaries.
 
 A force is an interaction, not a property stored in an isolated part. Contact, gravity, fluid pressure and electromagnetic actuation have different physical origins. The action/reaction pair acts on different bodies; both forces do not belong on the same isolated-body diagram merely because both exist.
@@ -11,5 +11,8 @@ An ideal cable transmits tension along its direction; a smooth unilateral contac
 
 **Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
 **Continue:** [Free-body diagrams connect the machine to equations](Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM).
+
+
+**Continue in the physics core:** [Relate forces to momentum and system boundaries](../../../physics/core/Relate-forces-to-momentum-and-system-boundaries.lingua#r_07F88E984BB76BB449F22A9467).
 
 } r_1QNSVHX3MYB97RR84V0HZXZRYA

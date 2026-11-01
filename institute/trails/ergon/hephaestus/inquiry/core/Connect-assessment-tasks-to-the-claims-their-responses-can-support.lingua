@@ -1,0 +1,26 @@
+Import "../Inquiry.lingua"
+
+Connect assessment tasks to the claims their responses can support (@inquiry-learning-assessment: 0, is #chapter, #hephaestus-core "Score-reasons-separately-from-answers-and-revise-ambiguous-criteria.lingua#r_009149C37E000E70167C72EC5A") { r_002B495CD7777FBC8C28058BF0
+[Knowing What Students Know by the National Research Council](../sources/Knowing-What-Students-Know-by-the-National-Research-Council.lingua#r_002D8379C7D931FD940084A5CF) chapter 2 treats assessment as reasoning from evidence: an account of competence, observations designed to illuminate it and an interpretation connecting the two. It distinguishes consistency of results from support for the intended interpretation. Use that framework to examine the following original assessment, not as automatic validation of it.
+
+Give two AB jobs and the same three-slot timing rules as before. In each case ask for the maximum number completed by time 3, a valid schedule attaining it and a reason why more cannot finish. State available slots explicitly:
+
+| Case | A slots | B slots | Capacity upper bound | Maximum completed |
+| --- | --- | --- | --- | --- |
+| F | 0, 1 | 1, 2 | 2 | 2 |
+| D | 0, 1 | 0, 1 | 2 | 1 |
+| O | 1, 2 | 0, 1 | 2 | 0 |
+| U | 0 | 1, 2 | 1 | 1 |
+
+The capacity bound is the smaller of the two station-slot counts and the number of jobs. It is necessary because each completed job consumes one slot on each station. For F use the earlier pipeline. For D use A:J at 0 and B:J at 1; a second completion would require a second B operation strictly after an A operation, but B at 0 cannot follow any A. For O no B slot follows an A slot. For U use A:J at 0 and B:J at 1; the sole A slot bounds completion at one.
+
+Consider four stipulated rules, constructed to test the task design rather than inferred from real learners. A capacity-only rule predicts (2,2,2,1); an always-one rule predicts (1,1,1,1); the correct rule predicts (2,1,0,1). Reversing the required order to B before A gives (0,1,2,0). Cases D and U alone cannot distinguish the always-one rule from correct reasoning by final numbers. F alone cannot distinguish capacity-only from correct reasoning. The task set matters before any score is calculated.
+
+Even four distinct answer patterns do not identify every possible mental process. A learner could remember this table, guess, consult a hidden answer or use a different valid proof. Request the witness and obstruction, change one calendar and ask for a prediction, and document assistance. These observations challenge specific alternative explanations; they do not provide direct access to thought. A failed response may also reflect an ambiguous prompt. Ask what the learner understood before revising the interpretation.
+
+**Work:** hide the maximum-output column and solve the four cases. Find the smallest subset of cases that distinguishes the four stipulated rules by their numerical predictions. Then invent a fifth rule agreeing with the correct one on that subset but disagreeing elsewhere. Explain why passing a finite diagnostic does not prove general understanding. Design an observation that would challenge your new rival and explain its limitations.
+
+**Continue:** [Score reasons separately from answers and revise ambiguous criteria](Score-reasons-separately-from-answers-and-revise-ambiguous-criteria.lingua#r_009149C37E000E70167C72EC5A).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_002B495CD7777FBC8C28058BF0

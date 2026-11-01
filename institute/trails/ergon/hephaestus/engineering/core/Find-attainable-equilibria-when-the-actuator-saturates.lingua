@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Find attainable equilibria when the actuator saturates (@engineering-feedback-limits: 0, is #chapter, #hephaestus-core "../electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX") { r_007033EFE8056B437FB9B91733
+Replace the unlimited command v=u₀+K(r−θ−b) by actual input u=clip(v,L,U), where L≤U are finite actuator bounds. The plant is now Cθ′=f(θ)=clip(v,L,U)+d−Gθ. Clipping is continuous, nondecreasing in its own argument and has slopes between zero and one; v is nonincreasing in θ. The state law is continuous and globally Lipschitz, with three possible affine regions. A saturated interval follows the plant with constant input L or U, not the unlimited closed-loop equation.
+
+For G>0, define θ_L=(L+d)/G and θ_U=(U+d)/G. Every equilibrium lies in this attainable interval. Let θ_free=(u₀+K(r−b)+d)/(G+K). Then the exact limited equilibrium is θ_sat=clip(θ_free,θ_L,θ_U). To prove it, first test the unlimited candidate. If it is within the interval, its required input Gθ_free−d is admissible. If θ_free<θ_L, the command at θ_L lies at or below L, so θ_L solves the clipped balance. The upper case is analogous.
+
+There is exactly one equilibrium: for x₂>x₁, f(x₂)−f(x₁)≤−G(x₂−x₁)<0, while f tends to opposite signs at the two infinities. For a deviation z=θ−θ_sat, z f(θ)≤−Gz². Thus d(z²)/dt≤−2Gz²/C, proving contraction toward the unique equilibrium. The local decay coefficient can be G in a saturated region and G+K in the unsaturated region; a single unlimited time constant cannot describe the whole clipped transition. At a switching boundary, state and rate remain continuous.
+
+For C=12,G=3,K=6,r=5,u₀=6,d=b=0 and bounds 0≤u≤10 in the stated thermal units, θ_free=4 K but θ_U=10/3 K. The limited equilibrium is 10/3 K at 10 W. No gain adjustment can hold 5 K under this 10 W ceiling with G=3 and d=0, because the required steady input would be 15 W. The example's tracking failure follows from an energy balance before any simulation.
+
+This equilibrium result requires G>0. If G=0, a bound can remove all restoring action or prevent any equilibrium; the program rejects that case for the limited-equilibrium function while retaining G=0 in the separate unlimited and sampled trajectory models. Do not infer the positive-G proof for an unanchored tank or an integrator.
+
+**Read and work:** [Control loops, bandwidth, delay, saturation and robustness](../electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX) supplies the broader saturation/robustness context, with its advanced converter and frequency-domain assignments retained for later preparation. Derive the three affine regions and test boundary equality. Use a bisection root calculation as an independent check of the closed-form equilibrium. Explain why a limited input can keep a response bounded yet fail its tracking requirement. Integral action introduces another state and windup questions; it is not implemented by this proportional model.
+
+**Continue:** [Control loops, bandwidth, delay, saturation and robustness](../electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_007033EFE8056B437FB9B91733

@@ -1,0 +1,13 @@
+Import "../foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua"
+
+Mathematical foundations, logic, and proof (@mathematical-foundations-logic-and-proof: 0, is #chapter, #outline, #contains "../foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua#r_00218B916C7BAB5B984FE5590E") { r_1K7J2A99Z4798HQEQ7Z0CKWAE7
+Foundations asks what mathematical statements mean and what justifies accepting them. This material covers logic, sets, axioms, proof, infinity, computability, and foundational approaches such as type and category theory, connecting informal reasoning with formal systems and their limits.
+
+**First major-branch block developed:** [Foundations, logic and algebraic structure](../foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua) supplies an opening in formal language, assignments, model truth, consequence, countermodels and a specified equational calculus with a soundness proof. Full first-order proof systems/metatheory, sets and infinity, computability and foundational alternatives remain pending.
+
+**Parent:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Branches:**
+
+- [Foundations logic and algebraic structure](../foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua#r_00218B916C7BAB5B984FE5590E)
+} r_1K7J2A99Z4798HQEQ7Z0CKWAE7

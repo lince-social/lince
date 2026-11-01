@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Ask which energy conserving processes can occur (@physics-process-direction: 0, is #chapter, #hephaestus-core "../thermodynamics-and-heat-transfer/entropy/Reversibility-reservoirs-and-physical-irreversibilities.lingua#r_4A9BNASZF5VTZYZ9WETP9N1QYY") { r_0009A8E18F6077F6BE1E4AFF5E
+The first law accounts for energy; it does not by itself select a direction of change. Two bodies could exchange equal and opposite heat while conserving their total energy, whether the proposed transfer is hot-to-cold or cold-to-hot. A second physical principle is needed to distinguish spontaneous transfer from a proposal requiring another effect. Reuse [Separate stored energy from heat and work along a process](Separate-stored-energy-from-heat-and-work-along-a-process.lingua#r_0F096B911F1CDDD09E34008C73) and [Connect boundary displacement to pressure work and path dependence](Connect-boundary-displacement-to-pressure-work-and-path-dependence.lingua#r_0C6366C3DAD812D2A1D81DFDC4) rather than treating a new balance as a replacement for energy conservation.
+
+Use heat Q positive into the selected system and work W positive out, so ΔU=Q−W when changes of bulk kinetic/potential energy are excluded. For a cyclic device ΔU=0, but its surroundings may change. A cycle of a working substance is not automatically a cycle of the bodies, reservoirs and work receiver around it. Draw those boundaries before discussing efficiency.
+
+A useful macroscopic second-law premise excludes a cyclic device whose only net effect is taking heat from one reservoir and turning it entirely into work. An equivalent formulation excludes a cyclic device whose only effect is transferring heat from a colder body to a hotter one. These are physical restrictions supported by thermodynamic evidence, not deductions from the first law or from the definition of a logarithm. The sources develop their relationship and the assumptions behind the classical treatment.
+
+A reservoir is an idealization that keeps a specified temperature during the heat exchange of interest. A finite body generally changes temperature. Absolute temperatures and a stated material/state model are necessary for the later entropy accounts. The present comparisons use ordinary positive-temperature macroscopic equilibrium states; statistical foundations and other specialized regimes remain later formation.
+
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../thermodynamics-and-heat-transfer/sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), selected section 6.3, and [Thermodynamics and Chemistry — Howard DeVoe](../thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected section 4.2. Compare the full-system restrictions, including the words specifying what else changes. Explain why a refrigerator with work input is consistent with the cold-to-hot restriction and why a body cooling while lifting a weight cannot be judged without the other changes in the device and surroundings.
+
+**Work:** write two hypothetical cycle accounts satisfying Q=W, one involving a single reservoir and another involving two. State what the first law establishes and what additional evidence or second-law test is needed. A balanced spreadsheet is not proof of physical realizability.
+
+**Continue:** [Reversibility, reservoirs and physical irreversibilities](../thermodynamics-and-heat-transfer/entropy/Reversibility-reservoirs-and-physical-irreversibilities.lingua#r_4A9BNASZF5VTZYZ9WETP9N1QYY).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0009A8E18F6077F6BE1E4AFF5E

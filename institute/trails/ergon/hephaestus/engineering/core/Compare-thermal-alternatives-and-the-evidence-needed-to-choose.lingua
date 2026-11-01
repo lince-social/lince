@@ -1,0 +1,25 @@
+Import "../Engineering.lingua"
+
+Compare thermal alternatives and the evidence needed to choose (@engineering-design-evidence: 0, is #chapter, #hephaestus-core "Investigate-balances-network-solutions-and-a-thermal-design-decision.lingua#r_00FC8512FE7F1A6C8D72CABF3B") { r_00B7A969633B37AA7737D882CB
+A calculation becomes an engineering decision only after its requirements and model limits are stated. Consider a hypothetical enclosed body's one-node model at constant ambient, beginning at ambient, with input P=6 W. Require equilibrium rise at most 1.6 K, time constant at most 3 s and a declared resource score at most 7. The score is an invented planning measure, not a market price. Response time is defined as τ; choosing a time to a specified fraction instead would change the requirement statement.
+
+| Alternative | C (J/K) | G (W/K) | Resource score | P/G (K) | C/G (s) |
+| --- | --- | --- | --- | --- | --- |
+| A | 12 | 3 | 5 | 2 | 4 |
+| B | 12 | 4 | 7 | 1.5 | 3 |
+| C | 8 | 3 | 6 | 2 | 8/3 |
+
+B alone satisfies all nominal constraints. Reducing capacity in C improves response but leaves the steady rise unchanged. Because each starts at ambient and has a monotone response, an acceptable equilibrium also bounds every transient temperature in this model. That inference fails for an initially hotter body, changing power/ambient or neglected nodes.
+
+Now suppose power lies in [5.7,6.3] W and B's conductance in [3.8,4.2] W/K, with C=12 J/K fixed. These are stipulated simultaneous hard bounds, not confidence intervals or measured production distributions. Worst equilibrium rise is 6.3/3.8=63/38 K, exceeding 1.6; worst τ is 12/3.8=60/19 s, exceeding 3. No nominal-only success guarantees these requirements. To cover the bounds, G_min must be at least max(6.3/1.6,12/3)=4 W/K. With a ±5% conductance bound around a nominal design, require nominal G≥80/19 W/K. No resource score or manufacturable realization is supplied for that change, so the robust choice remains open.
+
+Reuse the prepared derivative reasoning: at fixed P, a small conductance change gives dθ_eq/dG=−P/G²; with uncertain P and G, dθ_eq/θ_eq≈dP/P−dG/G for nonzero P. This is local first-order sensitivity, not a guaranteed finite bound or a probability law. The exact endpoint calculation above remains valid for the stated positive independent ranges. Shared causes may restrict which endpoint combinations are physically possible, as in [Investigate an assembly from views to dimensional evidence](Investigate-an-assembly-from-views-to-dimensional-evidence.lingua#r_0389B90567C4C9183DE77AC20A).
+
+A measured time constant alone identifies C/G, not C and G separately: multiplying both by the same positive factor preserves unforced normalized cooling. Add a known nonzero power and an equilibrium rise relative to measured ambient to infer G=P/θ_eq, then C=τG, conditional on this model. Alternatively an initial slope from θ_i=0 gives C=P/θ′(0), but estimating a derivative from noisy readings needs care. Sensor delay, an unknown power scale, changing ambient or multiple internal states can confound these inferences. Agreement with one exponential does not establish uniform internal temperature.
+
+**Decision evidence:** propose measurements at more than one position, at independently known power levels and through heating and cooling; record sensor response and ambient variation. Decide in advance which observations would reject a one-node constant-G model. Reuse [Investigate a service from requirements to operating evidence](Investigate-a-service-from-requirements-to-operating-evidence.lingua#r_0154834E27D6627BE8DA2ED738) for requirement/verification distinctions. Realization, contacts, material aging, production variation, maintenance and recovery remain additional engineering questions. Neither a fitted model nor the nominal resource score answers them.
+
+**Continue:** [Investigate balances network solutions and a thermal design decision](Investigate-balances-network-solutions-and-a-thermal-design-decision.lingua#r_00FC8512FE7F1A6C8D72CABF3B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00B7A969633B37AA7737D882CB

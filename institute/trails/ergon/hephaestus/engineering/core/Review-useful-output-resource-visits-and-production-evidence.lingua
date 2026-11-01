@@ -1,0 +1,24 @@
+Import "../Engineering.lingua"
+
+Review useful output resource visits and production evidence (@engineering-production-review: 0, is #chapter, #hephaestus-core "Define-the-service-window-before-calculating-availability.lingua#r_00A91BB3D08F5899C309280754") { r_0020116EB91E4F3F0E82819ED1
+Start from an intended useful output, product acceptance and delivery boundary. Distinguish a piece count, material mass, a machine visit and an accepted departure. Prove the finite item balance including initial and unfinished inventory, and show why rework creates visits without creating released items. Explain how changing the system boundary changes residence-time and inventory measurements.
+
+Derive A/B visit counts from job phases and the invariant V_A−V_B=Q_B. Obtain capacity inequalities from disjoint processing time, then construct the six-slot calendar in which aggregate resource sufficiency fails because a rework visit comes too late. Distinguish a necessary bottleneck bound, an attainable finite schedule and a long-run average formula under another model.
+
+Specify the finite-buffer timing convention completely: eligibility at slot start, simultaneous machine actions, end-of-slot completion, destination-space reservation and absence of same-slot chaining. Explain how zero buffer limits behave in this representation and why that is not a universal statement about physical zero-buffer lines. Identify starvation, blocked destinations and voluntary idling without conflating them with equipment failure.
+
+Prove the dynamic-programming recurrence, its state sufficiency and the minimum-area dominance argument. Reconstruct the four-slot optimum and its separate output/area bounds. Compare it with the busier lower-output schedule. Explain the independent operation-time assignment checker and why endpoint membership plus minimum-area agreement tests more than one chosen schedule. State what history-dependent quality or setup state would invalidate the current dominance argument.
+
+Derive the four conditional rework paths, accepted/scrap fractions, repeated-visit load and exact eight-item balance. Explain why rework can increase useful output per raw item while reducing useful output per constrained visit. State which additional assumptions turn the same algebra into an expected-value or long-run capacity claim, and why neither supplies a finite deadline guarantee.
+
+Derive the clipped residence-area identity. Reconcile the initially occupied and unfinished observation example. State the sufficient limiting hypotheses for L=λW, distinguish arrival from departure rates, handle the no-departure case and identify the omitted boundary term in a naive finite-window application. Reconstruct the selected published argument with original inputs, retaining source and practical limits.
+
+Present a conditional design screen and distinguish a perfect-information scenario optimum from a policy restricted to observed information. Explain why enumerating calendars does not assign them probabilities. Specify the records and checks needed to compare the model with an actual production process. Defend an independently changed model and revise its claims after criticism.
+
+This seventh engineering block develops common production reasoning. Manufacturing engineering, industrial engineering, standards/quality infrastructure, advanced scheduling, stochastic production, reliability and all forty-six pending engineering subject scopes remain unfinished. Clean manufacturing remains nested below production with its specialist continuation deferred. Continue inquiry learning, teaching and assessment at comparable breadth, then review all six cores before another layer of development.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the eighth common pass:** [Define the service window before calculating availability](Define-the-service-window-before-calculating-availability.lingua#r_00A91BB3D08F5899C309280754). Connect service histories, mission and availability claims, shared dependencies, restoration resources and return evidence before continuing inquiry at comparable breadth.
+
+} r_0020116EB91E4F3F0E82819ED1

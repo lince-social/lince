@@ -1,0 +1,191 @@
+Import "foundations-of-computer-science/Foundations-of-computer-science.lingua"
+Import "algorithms-and-data-structures/Algorithms-and-data-structures.lingua"
+Import "programming-languages-and-implementation/Programming-languages-and-implementation.lingua"
+Import "software-engineering-architecture-and-lifecycle/Software-engineering-architecture-and-lifecycle.lingua"
+Import "operating-systems-and-systems-programming/Operating-systems-and-systems-programming.lingua"
+Import "distributed-systems-and-cloud-computing/Distributed-systems-and-cloud-computing.lingua"
+Import "databases-and-data-engineering/Databases-and-data-engineering.lingua"
+Import "computer-networks-and-internet-systems/Computer-networks-and-Internet-systems.lingua"
+Import "cybersecurity-and-privacy-engineering/Cybersecurity-and-privacy-engineering.lingua"
+Import "artificial-intelligence/Artificial-intelligence.lingua"
+Import "machine-learning-and-predictive-modelling/Machine-learning-and-predictive-modelling.lingua"
+Import "language-and-speech-technology/Language-and-speech-technology.lingua"
+Import "computer-vision-and-image-analysis/Computer-vision-and-image-analysis.lingua"
+Import "computer-graphics-and-interactive-simulation/Computer-graphics-and-interactive-simulation.lingua"
+Import "humancomputer-interaction-and-accessibility/Humancomputer-interaction-and-accessibility.lingua"
+Import "scientific-computing-and-high-performance-computing/Scientific-computing-and-high-performance-computing.lingua"
+Import "embedded-and-real-time-systems/Embedded-and-real-time-systems.lingua"
+Import "semiconductor-devices-and-fabrication/Semiconductor-devices-and-fabrication.lingua"
+Import "integrated-circuit-design-and-microelectronics/Integrated-circuit-design-and-microelectronics.lingua"
+Import "signals-sensing-and-instrumentation-technology/Signals-sensing-and-instrumentation-technology.lingua"
+Import "data-storage-and-archival-technology/Data-storage-and-archival-technology.lingua"
+Import "quantum-and-emerging-computing-technologies/Quantum-and-emerging-computing-technologies.lingua"
+
+Import "core/Begin-an-interaction-with-the-person-and-the-task-being-attempted.lingua"
+Import "core/Make-pending-confirmed-and-unknown-outcomes-mean-different-things.lingua"
+Import "core/Specify-accessible-actions-feedback-and-recoverable-input-errors.lingua"
+Import "core/Check-authority-for-the-particular-object-and-effect-when-it-is-used.lingua"
+Import "core/Separate-input-validity-origin-authority-and-truth.lingua"
+Import "core/Account-for-data-purpose-exposure-retention-and-recovery-together.lingua"
+Import "core/Evaluate-task-evidence-without-treating-a-model-as-observed-usability.lingua"
+Import "core/Investigate-intent-permissions-uncertain-outcomes-and-minimal-receipts.lingua"
+Import "core/Review-human-intent-authority-accessible-evidence-and-recovery.lingua"
+Import "sources/User-Interface-Design-and-Implementation-MIT-task-analysis-and-visibility.lingua"
+Import "sources/WCAG-2.2-selected-interaction-criteria-and-conformance-scope.lingua"
+Import "sources/Protection-of-Information-in-Computer-Systems-by-Saltzer-and-Schroeder.lingua"
+Import "sources/NIST-Privacy-Framework-version-1.0-data-actions-and-risk.lingua"
+Import "core/Follow-names-procedure-calls-and-captured-environments.lingua"
+Import "core/Compose-procedure-contracts-with-explicit-effects-and-failures.lingua"
+Import "core/Specify-an-abstract-slot-value-before-choosing-its-representation.lingua"
+Import "core/Relate-concrete-representations-to-abstract-values-and-invariants.lingua"
+Import "core/Prove-representation-independence-for-the-permitted-clients.lingua"
+Import "core/Protect-representation-assumptions-across-construction-and-observation.lingua"
+Import "core/Derive-a-batch-operation-from-interface-guarantees.lingua"
+Import "core/Separate-behavioral-substitutability-from-cost-and-changed-requirements.lingua"
+Import "core/Investigate-abstract-values-interchangeable-representations-and-composed-behavior.lingua"
+Import "core/Review-abstraction-representation-independence-and-software-construction.lingua"
+Import "sources/Software-Construction-MIT-6.102-abstraction-functions-and-invariants.lingua"
+Import "../inquiry/reproducible-computation/software/Functions-modules-and-boundaries.lingua"
+Import "../inquiry/reproducible-computation/sources/Python-Reference.lingua"
+Import "../inquiry/reproducible-computation/sources/Research-Software-Engineering.lingua"
+Import "core/Separate-a-channel-from-the-meaning-of-a-remote-operation.lingua"
+Import "core/Recover-complete-messages-from-an-arbitrarily-divided-byte-stream.lingua"
+Import "core/Reason-from-missing-replies-without-inventing-remote-observations.lingua"
+Import "core/Specify-one-outstanding-operation-and-a-retained-durable-result.lingua"
+Import "core/Prove-the-remote-ledger-refines-a-serial-prefix.lingua"
+Import "core/Preserve-operation-identity-across-crashes-and-old-message-lifetimes.lingua"
+Import "core/Separate-eventual-confirmation-from-delay-and-throughput-guarantees.lingua"
+Import "core/Investigate-framing-retries-and-independently-checked-remote-effects.lingua"
+Import "core/Review-communication-contracts-identity-and-conditional-completion.lingua"
+Import "sources/Transmission-Control-Protocol-RFC-9293.lingua"
+Import "sources/Remote-Procedure-Call-Protocol-Specification-Version-2-RFC-5531.lingua"
+Import "core/Describe-concurrent-actors-and-declare-the-atomic-steps.lingua"
+Import "core/Enumerate-interleavings-and-explain-a-lost-update.lingua"
+Import "core/Protect-a-complete-update-with-an-atomic-lock-and-an-invariant.lingua"
+Import "core/Relate-protected-operations-to-a-serial-specification-and-test-broken-designs.lingua"
+Import "core/Separate-safety-from-progress-and-account-for-waiting.lingua"
+Import "core/Wait-for-a-predicate-without-losing-its-notification.lingua"
+Import "core/Build-evidence-for-a-concurrent-claim-under-an-explicit-execution-model.lingua"
+Import "core/Investigate-concurrent-updates-waiting-and-independent-state-evidence.lingua"
+Import "core/Review-concurrent-state-safety-progress-and-observation-limits.lingua"
+Import "../inquiry/reproducible-computation/performance/Scaling-parallelism-and-order.lingua"
+Import "core/Information-lifetime-and-durable-state.lingua"
+Import "core/Stored-bytes-names-and-schema.lingua"
+Import "core/Storage-contracts-and-persistence-order.lingua"
+Import "core/Interrupted-updates-and-reachable-states.lingua"
+Import "core/Copy-persist-publish-and-acknowledge.lingua"
+Import "core/Recovery-request-identity-and-retry.lingua"
+Import "core/Persistence-cost-retention-and-provenance.lingua"
+Import "core/Investigate-durable-updates-crashes-and-retries.lingua"
+Import "core/Review-persistence-publication-and-recovery.lingua"
+Import "../inquiry/reproducible-computation/workflows/Atomic-output-and-recovery.lingua"
+Import "core/Connect-names-objects-and-addresses-to-a-storage-lifetime.lingua"
+Import "core/Preserve-procedure-state-before-reusing-a-working-register.lingua"
+Import "core/Separate-a-program-from-the-state-of-its-execution.lingua"
+Import "core/Derive-a-finite-address-translation-and-its-permissions.lingua"
+Import "core/Validate-a-complete-range-before-changing-its-destination.lingua"
+Import "core/Define-controlled-services-and-distinguish-errors-from-process-faults.lingua"
+Import "core/Preserve-process-state-while-separating-eligibility-from-scheduling-policy.lingua"
+Import "core/Measure-a-memory-hierarchy-under-a-declared-cost-model.lingua"
+Import "core/Investigate-private-state-shared-pages-and-complete-service-effects.lingua"
+Import "core/Review-memory-process-boundaries-and-controlled-execution-evidence.lingua"
+Import "sources/Operating-Systems-Three-Easy-Pieces.lingua"
+Import "core/Interpret-finite-words-only-after-declaring-their-encoding.lingua"
+Import "core/Derive-modular-arithmetic-and-separate-carry-from-signed-overflow.lingua"
+Import "core/Build-a-word-operation-from-Boolean-specifications.lingua"
+Import "core/Separate-a-stored-state-from-the-logic-that-computes-its-successor.lingua"
+Import "core/Describe-representable-spacing-before-interpreting-a-floating-result.lingua"
+Import "core/Specify-an-encoded-machine-before-executing-its-instructions.lingua"
+Import "core/Connect-a-high-level-sum-with-an-encoded-loop-and-a-proof.lingua"
+Import "core/Investigate-finite-arithmetic-and-an-independently-checked-execution-trace.lingua"
+Import "core/Review-finite-representations-logic-and-machine-execution-evidence.lingua"
+Import "../inquiry/reproducible-computation/numerics/Floating-point-and-rounding.lingua"
+Import "sources/Computation-Structures-MIT-6004.lingua"
+Import "core/Choose-collection-meaning-before-its-representation.lingua"
+Import "core/Trace-mutation-and-sharing-across-a-collection-boundary.lingua"
+Import "core/Maintain-a-stable-ordering-without-losing-occurrences.lingua"
+Import "core/Specify-all-matches-and-verify-a-linear-scan.lingua"
+Import "core/Derive-duplicate-aware-search-from-two-interval-boundaries.lingua"
+Import "core/Account-for-construction-queries-and-returned-data-together.lingua"
+Import "core/Investigate-a-stable-catalog-with-independent-search-evidence.lingua"
+Import "core/Review-collection-contracts-invariants-and-resource-tradeoffs.lingua"
+Import "sources/Introduction-to-Algorithms-MIT-6006.lingua"
+Import "core/Distinguish-a-value-from-its-digital-representation.lingua"
+Import "core/Specify-inputs-results-and-failure-before-implementing.lingua"
+Import "core/Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua"
+Import "core/Count-work-and-storage-under-an-explicit-cost-model.lingua"
+Import "core/Connect-a-program-trace-to-an-execution-environment.lingua"
+Import "core/Investigate-a-stock-trace-with-independent-computational-evidence.lingua"
+Import "core/Review-representations-algorithms-and-execution-evidence.lingua"
+Import "../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Representations-procedures-and-computational-evidence.lingua"
+
+Computing — representation, algorithms and working systems (@computing-map: 0, is #chapter, #hephaestus-core "core/Representations-procedures-and-computational-evidence.lingua#r_0D60F81B61A757D44B6977320D", #contains "foundations-of-computer-science/Foundations-of-computer-science.lingua#r_611M1VR3BXR6Y7XBC4J4HZ71SE", #contains "algorithms-and-data-structures/Algorithms-and-data-structures.lingua#r_28TSMEZQJCBACYC5VRD4G8T2Q5", #contains "programming-languages-and-implementation/Programming-languages-and-implementation.lingua#r_6KBB90GBE4TN7WZ6KA1QRC63DT", #contains "software-engineering-architecture-and-lifecycle/Software-engineering-architecture-and-lifecycle.lingua#r_516ZNCKQAQ6HCTPD77HDPJB1F0", #contains "operating-systems-and-systems-programming/Operating-systems-and-systems-programming.lingua#r_3P147C4AXPCMBSYEXYR6NWPE65", #contains "distributed-systems-and-cloud-computing/Distributed-systems-and-cloud-computing.lingua#r_6KXN2YDFKMTV3CW8F54913HBBX", #contains "databases-and-data-engineering/Databases-and-data-engineering.lingua#r_428TBJA2PFXPKDN9XK3XWVYQKY", #contains "computer-networks-and-internet-systems/Computer-networks-and-Internet-systems.lingua#r_2K6ZF7JJMGP7WY3X5M0D2CGW3C", #contains "cybersecurity-and-privacy-engineering/Cybersecurity-and-privacy-engineering.lingua#r_0G3AP7Y3TXS1JVAS5TVMB5PBZS", #contains "artificial-intelligence/Artificial-intelligence.lingua#r_035ZN8G6THPK3Y7DSGDKX5D9MB", #contains "machine-learning-and-predictive-modelling/Machine-learning-and-predictive-modelling.lingua#r_6CRA0TSQ7ADSRC37M7MW5RFGPQ", #contains "language-and-speech-technology/Language-and-speech-technology.lingua#r_6YNQ5TN631XA39WZZJXHT7Y9DZ", #contains "computer-vision-and-image-analysis/Computer-vision-and-image-analysis.lingua#r_44M89FHXSVFM13CRPP8A5WV5D6", #contains "computer-graphics-and-interactive-simulation/Computer-graphics-and-interactive-simulation.lingua#r_2Y8AVZN5JWXF5Z35T4T8GE95RS", #contains "humancomputer-interaction-and-accessibility/Humancomputer-interaction-and-accessibility.lingua#r_2R0W9QE27GX3A4YV9KMETSAE7S", #contains "scientific-computing-and-high-performance-computing/Scientific-computing-and-high-performance-computing.lingua#r_78QX0AN6QCZWYCSY0TTM8KW9JR", #contains "embedded-and-real-time-systems/Embedded-and-real-time-systems.lingua#r_686WH7Q179XZ0P3NBEJ40YZX6N", #contains "semiconductor-devices-and-fabrication/Semiconductor-devices-and-fabrication.lingua#r_5Z0MECR6DMSTA757AAH0V2WQSE", #contains "integrated-circuit-design-and-microelectronics/Integrated-circuit-design-and-microelectronics.lingua#r_6ZNC59Y0KP5NAK9PNFHF6WQPW6", #contains "signals-sensing-and-instrumentation-technology/Signals-sensing-and-instrumentation-technology.lingua#r_19JV4PDAHEP4S7V7HT6393KJQ0", #contains "data-storage-and-archival-technology/Data-storage-and-archival-technology.lingua#r_0PNYTKZKVPHJJ2SGK7D1C3PD39", #contains "quantum-and-emerging-computing-technologies/Quantum-and-emerging-computing-technologies.lingua#r_5Y4E9K079P2KGYT8D1731EZ10B") { r_02FE84C805C79A9D396F478641
+Computing studies representations and effective procedures, their mathematical limits, and the systems that execute, connect and maintain them. Start with an understandable procedure on explicit data; connect its correctness to the machines, software and institutions that make it useful.
+
+The major branches include foundations and algorithms; programming and software construction; architecture and operating systems; data and networks; interaction and intelligent systems; and scientific, embedded and emerging computation. Electronic devices and fabrication connect to physics, materials and engineering without making those full disciplines prerequisites for a first program.
+
+[Reproducible computational work](../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) already provides shared introductory programming and advanced investigation. [Basic electronics](Basic Eletronics.lingua) supplies an existing hardware entrance. This new area entrance and first lesson do not complete the twenty-two pending computing subjects.
+
+**Begin the shared area core:** [Begin with representations, procedures and computational evidence](core/Representations-procedures-and-computational-evidence.lingua#r_0D60F81B61A757D44B6977320D).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
+**Developed first foundation block:** digital representations, shared file/value/control/error/schema preparation, explicit contracts, loop invariants and termination, operation/storage counts, execution and an original stock-tracing investigation. Seven new Records reuse five existing reproducible-computation lessons. The thirteen-Record route ends in a review and then connects to engineering in the current breadth-first pass. This does not complete programming, algorithms, systems or the wider computing core.
+
+**Reading:** [Introduction to Scientific Programming with Python](../inquiry/reproducible-computation/sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB) and [the official Python reference](../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), with the beginner reading and later preparation distinguished in each step.
+
+**Return:** [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001).
+
+**Developed second common foundation:** collection meaning and representations; mutation, aliasing and immutable value boundaries; stable insertion ordering; linear all-match lookup; lower/upper boundary search; construction/query/output costs; and an original catalog investigation with executable independent checks. Eight lessons continue after the first review and reuse the shared programming, schema, contract and invariant explanations contextually. No specialist scope or whole computing core is completed. Continue engineering and inquiry at comparable depth.
+
+
+**Developed third common foundation:** finite binary/hex words, unsigned and signed arithmetic, Boolean logic and carries, stored state and memory, floating representation, encoded instructions and execution evidence. Nine new lessons reuse the existing numerical representation lesson and its unchanged program. One new primary architecture source complements shared Python/Goldberg reading. The original machine and sum-program study includes a loop invariant, termination/count proof and executable independent checks; it does not establish fabricated-device performance. Continue engineering at comparable depth; the whole computing core and all twenty-two pending subjects remain unfinished.
+
+
+**Developed fourth common foundation:** object/address/lifetime distinctions, nested activation state, processes, finite page translation and permissions, complete-range validation, controlled services and fault/blocking behavior, saved execution state and declared memory-hierarchy cost. Ten new lessons and one operating-systems source connect a two-process investigation to earlier representation, aliasing and finite-machine preparation. Independent programs check private/shared storage, rejected operations, state transitions and cache traces. This is a trusted teaching model, not an operating system or host security validation. Continue engineering and inquiry at comparable depth; concurrency, storage, communication and the full computing core remain unfinished.
+
+
+**Developed fifth common foundation:** durable information and failure boundaries, bytes/names/schema, storage acceptance/atomicity/order contracts, crash-state enumeration, copy/publish invariants, request identity/retry, slot reuse, persistence cost and retained-history limits. Nine new lessons connect one preserved workflow Record and contextual representation/memory knowledge. The original two-slot model has independent subset-oracle and interrupted-retry checks, including counterexamples for three defective protocols. No actual filesystem, device durability or performance is validated. Continue engineering at comparable depth; the full computing core and all twenty-two pending subjects remain unfinished.
+
+
+**Developed sixth common foundation:** concurrent actors and atomic steps, interleavings and lost updates, a complete lock invariant and serial specification, defective protocols, safety and conditional progress, predicate waiting and observation/cost boundaries. Nine new lessons reuse one preserved scaling Record. Two original programs independently check schedules, exact invariant states, counterexamples and a bounded published counter trace. This is a sequentially consistent teaching model, not a host concurrency implementation or performance validation. Continue engineering and inquiry at comparable depth; all twenty-two pending computing subjects and the whole core remain unfinished.
+
+
+**Developed seventh common foundation:** communication boundaries, byte-stream framing, failure observations, one-outstanding request identity, durable remote effects, arbitrary old-message lifetimes and conditional progress. Nine new lessons reuse representation, storage, concurrency and discrete reasoning by reference. Two original programs passed 99,305 checks, including an independent abstract graph and bounded published loss traces. Two RFC source Records and an extended OSTEP inspection note preserve source boundaries. Computing now has 70 common learning Records across seven blocks; continue engineering production flow, then inquiry teaching and assessment. Full computing and its twenty-two pending subject scopes remain unfinished.
+
+
+**Developed eighth common foundation:** names and captured environments, procedure contracts/effects, abstract values, representation invariants, client-relative independence, ownership, module boundaries and composed software behavior. Ten new lessons reuse the existing module lesson and earlier programming/mathematical formation. Two original immutable slot representations support a proved batch client, independent finite checks, a bounded MIT source reconstruction and changed-requirement work. Computing now has 81 common learning Records. Continue engineering and inquiry at comparable breadth; full languages, software architecture and the whole computing core remain unfinished.
+
+
+**Developed common human-use and trust foundations:** task and intent, pending/unknown/confirmed evidence, accessible interaction contracts, current object/effect authority, input provenance, data purpose and retention, and evaluation with explicit evidence limits. Nine original lessons reuse the controlled-service, contract, durable-request and inquiry formation. The unchanged communication receiver supports a finite ledger study with independent serial-history comparisons and revocation/lost-reply witnesses. Four source Records delimit actual reading, rights and assignments. Computing now has 90 common learning Records. Continue engineering people/operation, then the remaining field and modern-physics gaps. Full HCI, accessibility, security/privacy engineering and whole computing remain unfinished.
+
+
+**Scope:** Automate a small calculation; understand a program; investigate how a computer or network works; develop a maintained application. Programming, theoretical computation, digital hardware, data analysis, and operations have connected but different entry paths.
+
+**Branches:**
+
+- [Foundations of computer science](foundations-of-computer-science/Foundations-of-computer-science.lingua#r_611M1VR3BXR6Y7XBC4J4HZ71SE)
+- [Algorithms and data structures](algorithms-and-data-structures/Algorithms-and-data-structures.lingua#r_28TSMEZQJCBACYC5VRD4G8T2Q5)
+- [Programming languages and implementation](programming-languages-and-implementation/Programming-languages-and-implementation.lingua#r_6KBB90GBE4TN7WZ6KA1QRC63DT)
+- [Software engineering, architecture, and lifecycle](software-engineering-architecture-and-lifecycle/Software-engineering-architecture-and-lifecycle.lingua#r_516ZNCKQAQ6HCTPD77HDPJB1F0)
+- [Operating systems and systems programming](operating-systems-and-systems-programming/Operating-systems-and-systems-programming.lingua#r_3P147C4AXPCMBSYEXYR6NWPE65)
+- [Distributed systems and cloud computing](distributed-systems-and-cloud-computing/Distributed-systems-and-cloud-computing.lingua#r_6KXN2YDFKMTV3CW8F54913HBBX)
+- [Databases and data engineering](databases-and-data-engineering/Databases-and-data-engineering.lingua#r_428TBJA2PFXPKDN9XK3XWVYQKY)
+- [Computer networks and Internet systems](computer-networks-and-internet-systems/Computer-networks-and-Internet-systems.lingua#r_2K6ZF7JJMGP7WY3X5M0D2CGW3C)
+- [Cybersecurity and privacy engineering](cybersecurity-and-privacy-engineering/Cybersecurity-and-privacy-engineering.lingua#r_0G3AP7Y3TXS1JVAS5TVMB5PBZS)
+- [Artificial intelligence](artificial-intelligence/Artificial-intelligence.lingua#r_035ZN8G6THPK3Y7DSGDKX5D9MB)
+- [Machine learning and predictive modelling](machine-learning-and-predictive-modelling/Machine-learning-and-predictive-modelling.lingua#r_6CRA0TSQ7ADSRC37M7MW5RFGPQ)
+- [Language and speech technology](language-and-speech-technology/Language-and-speech-technology.lingua#r_6YNQ5TN631XA39WZZJXHT7Y9DZ)
+- [Computer vision and image analysis](computer-vision-and-image-analysis/Computer-vision-and-image-analysis.lingua#r_44M89FHXSVFM13CRPP8A5WV5D6)
+- [Computer graphics and interactive simulation](computer-graphics-and-interactive-simulation/Computer-graphics-and-interactive-simulation.lingua#r_2Y8AVZN5JWXF5Z35T4T8GE95RS)
+- [Human–computer interaction and accessibility](humancomputer-interaction-and-accessibility/Humancomputer-interaction-and-accessibility.lingua#r_2R0W9QE27GX3A4YV9KMETSAE7S)
+- [Scientific computing and high-performance computing](scientific-computing-and-high-performance-computing/Scientific-computing-and-high-performance-computing.lingua#r_78QX0AN6QCZWYCSY0TTM8KW9JR)
+- [Embedded and real-time systems](embedded-and-real-time-systems/Embedded-and-real-time-systems.lingua#r_686WH7Q179XZ0P3NBEJ40YZX6N)
+- [Semiconductor devices and fabrication](semiconductor-devices-and-fabrication/Semiconductor-devices-and-fabrication.lingua#r_5Z0MECR6DMSTA757AAH0V2WQSE)
+- [Integrated-circuit design and microelectronics](integrated-circuit-design-and-microelectronics/Integrated-circuit-design-and-microelectronics.lingua#r_6ZNC59Y0KP5NAK9PNFHF6WQPW6)
+- [Signals, sensing, and instrumentation technology](signals-sensing-and-instrumentation-technology/Signals-sensing-and-instrumentation-technology.lingua#r_19JV4PDAHEP4S7V7HT6393KJQ0)
+- [Data storage and archival technology](data-storage-and-archival-technology/Data-storage-and-archival-technology.lingua#r_0PNYTKZKVPHJJ2SGK7D1C3PD39)
+- [Quantum and emerging computing technologies](quantum-and-emerging-computing-technologies/Quantum-and-emerging-computing-technologies.lingua#r_5Y4E9K079P2KGYT8D1731EZ10B)
+} r_02FE84C805C79A9D396F478641

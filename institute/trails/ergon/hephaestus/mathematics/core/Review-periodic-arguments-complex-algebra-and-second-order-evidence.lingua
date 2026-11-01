@@ -1,0 +1,20 @@
+Import "../Mathematics.lingua"
+
+Review periodic arguments complex algebra and second order evidence (@math-periodic-review: 0, is #chapter, #hephaestus-core "Extend vectors and their geometry to finitely many coordinates.lingua#r_00D53162E53742785582936BBE") { r_00F2CBF2ECCEA9D81EC0188631
+Reconstruct sine and cosine from an oriented circle and state which geometry is accepted. Prove the rotation matrix and addition identities, derive the two small-angle limits without using the derivatives, and then prove both derivative formulas. Keep radian arguments, chain-rule factors, second-derivative units and definite-integral signs explicit. Distinguish full-cycle averages from shorter windows.
+
+**Algebra and inverse questions:** construct complex operations from pairs, prove conjugation/norm/inverse identities and explain why a compatible real-style total order is impossible. Connect products to rotations, derive integer powers and all roots of a power equation, and preserve argument ambiguity. Explain why the imaginary part is a real coefficient, why a square-root branch is not a solution set, and why none of this proves the fundamental theorem of algebra or complex analyticity.
+
+**Differential and numerical evidence:** derive the second-order initial solution, prove uniqueness by the nonnegative constant quadratic, classify degenerate frequency and singular endpoint data, and verify the integral. Derive the finite Taylor integral remainder using the product rule/fundamental theorem before treating a polynomial as a numerical reference. Separate truncation, arithmetic and any physical-model error.
+
+**Investigation:** recover the exact rotations, initial state, quadratic and mean-square values, then prove integer-time sampling ambiguity and exhibit a distinguishing observation. Reproduce the programs and state their domains. Defend an unfamiliar variation and preserve one correction after criticism. A finite set of checks supports implementation behavior; it does not establish all input cases or a real oscillator.
+
+The mathematics core remains unfinished. Abstract/discrete structures, fuller analysis and approximation, general sequences/series, integration techniques, multivariable/vector calculus, general differential equations, probability/inference and advanced independent mathematical work still need progressively developed formation. Shared logarithm/exponential, finite probability and uncertainty arguments remain reusable by reference, without duplicating their Records.
+
+**Next common area:** continue after [Review matter temperature and thermal energy without losing model limits](../../physics/core/Review-matter-temperature-and-thermal-energy-without-losing-model-limits.lingua#r_05768CD06AF8B093DFC94E7348) with physical oscillations and wave descriptions. Introduce the force/storage/medium assumptions that make a mathematical equation an explanatory physical model. Continue chemistry, computing, engineering and inquiry at comparable depth before any specialist branch or leaf.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the fifth common pass:** [Extend vectors and their geometry to finitely many coordinates](Extend vectors and their geometry to finitely many coordinates.lingua#r_00D53162E53742785582936BBE). The fifth mathematics block develops finite-dimensional systems, rank and null spaces, orthogonal projection and exact least-squares reasoning. Preserve the earlier number/proof, geometry, calculus and periodic investigations; physics follows at comparable depth before specialized branches.
+
+} r_00F2CBF2ECCEA9D81EC0188631

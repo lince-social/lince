@@ -1,0 +1,25 @@
+Import "../Mathematics.lingua"
+
+Derive least squares from orthogonality and a squared norm (@math-least-squares: 0, is #chapter, #hephaestus-core "Separate the fitted output from ambiguous coefficients.lingua#r_00084EE12BB22B58AB5FC115D4") { r_0014DEEF56C47EADBBE05BB395
+An inconsistent exact system has no solution. To ask for a closest fit, explicitly introduce a new objective: among all real x, minimize f(x)=‖Ax−b‖², using the stated Euclidean coordinates of the output. The residual convention in this block is r=b−Ax. Squaring removes the sign, but its direction matters when interpreting each observation. This optimization alone supplies no probability distribution, unbiasedness or confidence interval.
+
+If a candidate x* satisfies Aᵀ(Ax*−b)=0, expand at x*+h. The cross term is 2h·Aᵀ(Ax*−b)=0, so
+
+f(x*+h)=f(x*)+‖Ah‖².
+
+Thus the candidate is a global minimum. Conversely, if x* is a minimum, set g=Aᵀ(Ax*−b). If g≠0, choose h=−tg. The same expansion becomes f(x*−tg)=f(x*)−2t‖g‖²+t²‖Ag‖². For positive sufficiently small t this is less than f(x*): if ‖Ag‖²=0 any t>0 works, otherwise choose 0<t<2‖g‖²/‖Ag‖². This contradiction forces g=0. The normal equations AᵀAx*=Aᵀb are therefore necessary and sufficient, without a differentiability argument or an assumption of independent columns.
+
+Existence can be constructed geometrically. Let w₁,…,wᵣ be the orthogonal basis of im A built in the previous lesson, and set p=Σᵢ[(wᵢ·b)/(wᵢ·wᵢ)]wᵢ. For the zero image the empty sum is zero. Dot products show b−p is orthogonal to every wᵢ, hence to im A. Since p is in im A, some x* satisfies Ax*=p. It obeys the normal equations. For every y in im A, orthogonality gives ‖b−y‖²=‖b−p‖²+‖p−y‖². Consequently p is the unique closest output, called the orthogonal projection of b onto im A.
+
+Coefficient uniqueness requires an additional premise. From the squared-norm identity, equality f(x*+h)=f(x*) holds exactly when Ah=0. All minimizing coefficients are x*+ker A. They are unique exactly when the columns are independent. In that case hᵀAᵀAh=‖Ah‖²>0 for h≠0, so AᵀA has zero kernel and is invertible; x*=(AᵀA)⁻¹Aᵀb. This formula is a theorem, not a recommendation to form an inverse numerically. Under the same independence premise, A=QR leads to Rx*=Qᵀb and back substitution, because QᵀQ=I.
+
+For A with one column (1,1) and b=(0,2), the normal equation is 2x=2: x*=1, p=(1,1), r=(−1,1), and f=2. For an increment h the error is 2+2h². There is no exact solution, even though the approximate solution is unique and elementary. A zero residual would instead show that the original b is in the image.
+
+**Work:** prove the cross-term cancellation and necessity argument in full, including the Ag=0 case. Check that projection p is linear as a function of b when A is fixed, and that projecting an already projected vector leaves it unchanged. Show by example that Aᵀb alone need not equal x*. Then reconstruct the main four-reading projection using its two orthogonal directions before using elimination.
+
+**Reading:** [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW) sections 12.1–12.3. Selected passages on the direct squared-norm proof, orthogonality and QR solution were inspected; the rank-deficient argument here is developed explicitly. Full examples, exercises and numerical analysis remain progressive study.
+
+**Continue:** [Separate the fitted output from ambiguous coefficients](Separate the fitted output from ambiguous coefficients.lingua#r_00084EE12BB22B58AB5FC115D4).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0014DEEF56C47EADBBE05BB395

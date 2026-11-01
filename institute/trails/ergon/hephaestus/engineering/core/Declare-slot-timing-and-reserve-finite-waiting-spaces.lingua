@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Declare slot timing and reserve finite waiting spaces (@engineering-production-timing: 0, is #chapter, #hephaestus-core "Derive-an-exact-finite-production-schedule-and-its-optimality-boundary.lingua#r_00336206494F38CCB92CFFA910") { r_0002BF35AFDA5D67B939E8E57B
+Define a small exact model before optimizing it. There are at most four distinguishable jobs, each with route AB or ABAB and a stipulated final accepted/scrap label. The calendar has at most eight unit-length slots. In each slot, each machine is either available or unavailable; an available machine may perform one eligible operation or idle. Availability already represents the particular resources required for that operation in this model. It is not a new reliability estimate.
+
+At every slot boundary, a job's phase is the number of operations completed. Phase zero is unreleased raw stock. A phase equal to route length is a departed item. An unfinished positive even phase waits for A after rework routing; an odd phase waits for B. Let Q_A and Q_B be those waiting counts, with capacities K_A and K_B. Raw stock and departed storage lie outside these two buffers. Machines have their own processing positions during a slot.
+
+Choose both machines' actions from the start-of-slot state. A newly completed operation cannot supply another operation in the same slot. Thus no job uses both machines at once. All selected operations complete at the end of the slot. A departure frees the system then; a nonfinal completion enters its destination waiting space then. Require the resulting Q_A≤K_A and Q_B≤K_B before admitting the joint action. This reserves destinations after accounting for simultaneous start-of-slot withdrawals. It is a precise transfer convention; a machine-holds-completed-work rule would require extra states.
+
+For example, if B withdraws one waiting job at the start, A can use that destination space for its end-of-slot completion. Similarly, A can withdraw a rework job while a B completion returns another. A simple rule that refuses A whenever Q_B was initially full would exclude some actions our declared convention permits. Conversely, letting B use A's newly completed work in the same slot would admit impossible actions under the one-slot processing premise. State timing explicitly before comparing two simulators.
+
+With K_B=0, no A output can remain at a boundary, so no job can advance through A in this model. That is a consequence of this representation and timing: it does not prove that real zero-buffer synchronous lines cannot operate. A direct handoff, shared fixture or completed job held on a machine needs another model. With K_A=0, an ABAB job cannot complete its first B operation because that operation must create a waiting rework job. AB jobs may still finish.
+
+Starvation here means an available machine lacks an eligible input; blocking means an otherwise eligible operation cannot be selected because its completion cannot be accommodated under the reservation rule. A machine can also idle by decision. These reasons need different observations in a real line. A full buffer count alone does not distinguish processing failure, poor scheduling, uncertain inspection or an unexpected return flow.
+
+**Work:** draw all phases of one ABAB job and identify its buffer membership. Construct a simultaneous A/B exchange with both waiting capacities one. Explain why the actual WIP during a slot can include processing items even when a boundary buffer is empty. Rewrite the transition rule for completion held on a machine; identify new states and why the present state-count/optimality claims no longer cover it. This comparison is part of model selection, not a compatibility requirement for the teaching program.
+
+**Continue:** [Derive an exact finite production schedule and its optimality boundary](Derive-an-exact-finite-production-schedule-and-its-optimality-boundary.lingua#r_00336206494F38CCB92CFFA910).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0002BF35AFDA5D67B939E8E57B

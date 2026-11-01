@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Compose local maps and derive change along a path (@math-jacobian-chain: 0, is #chapter, #hephaestus-core "Separate-directional-rates-from-the-geometry-of-steepest-change.lingua#r_00C87BAC2FD8CD91FA66A87566") { r_001110BBF317180AC63FAA5412
+For G:Rⁿ→Rᵐ differentiable at a, collect its component derivatives as the m-by-n Jacobian J_G(a). If F:Rᵐ→Rᵖ is differentiable at G(a), then D(F∘G)(a)=J_F(G(a))J_G(a). The matrix dimensions express the order: an input change passes through G before F. Reuse [Read rectangular maps and the transpose through their dimensions](Read rectangular maps and the transpose through their dimensions.lingua#r_00DA69E3E3C8873C7D5F0CCB01) and [Read a matrix as a map and distinguish translation from linearity](Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua#r_03CC45432746F4DD0737B769A4).
+
+Prove this from remainders. Let G(a+h)−G(a)=Bh+r(h), where ‖r(h)‖/‖h‖→0. Boundedness of B and the small remainder give ‖ΔG‖≤C‖h‖ near zero for some finite C. Write F(G(a)+ΔG)−F(G(a))=AΔG+s(ΔG). The composite remainder is Ar(h)+s(ΔG). For small ΔG, ‖s(ΔG)‖≤ε‖ΔG‖, so the second contribution is at most εC‖h‖. If ΔG=0, s is zero directly. The first contribution divided by ‖h‖ also tends to zero. This proves the rule without dividing by a possibly zero inner increment or assuming a signed norm ratio has a two-sided limit.
+
+For a differentiable path γ(t)=(x(t),y(t)) and differentiable scalar F, dF(γ(t))/dt=F_x x′+F_y y′. In the study, γ(t)=(1+t,2−t+t²), so γ′(0)=(1,−1). At (1,2), the rate is 7−9=−2. Independently differentiating the expanded polynomial 13−2t+11t²−3t³+3t⁴ gives the same rate and the entire time-dependent expression. A partial rate of 7 does not describe this simultaneous change.
+
+Under coordinates x=1+u+v, y=2+u−v, the coordinate-map Jacobian is [[1,1],[1,−1]]. At u=v=0, the derivative row [7,9] becomes [16,−2]. This does not change the scalar function evaluated at a physical point; it changes the components used to describe input changes. If Euclidean distance in x,y is retained, its squared length in u,v is 2du²+2dv². Declaring a new unweighted distance instead changes the geometric question.
+
+**Read and defend:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 4.5. Preserve its explicit differentiability hypotheses. The original argument above uses a bounded absolute increment ratio and handles zero inner increments. Calculate a composition with a rectangular Jacobian and state its input/intermediate/output dimensions. Compare a zero-velocity path with a nonzero-velocity path through the same point. A derivative at one instant does not determine their later trajectories.
+
+**Continue:** [Separate directional rates from the geometry of steepest change](Separate-directional-rates-from-the-geometry-of-steepest-change.lingua#r_00C87BAC2FD8CD91FA66A87566).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_001110BBF317180AC63FAA5412

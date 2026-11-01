@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Begin with a question and a result someone can check (@rc-claim: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9", #reproducible-computation "What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R") { r_2G13323XWBD8ZQD7S8FVE13AT0
+Begin with a question and a result someone can check (@rc-claim: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9", #reproducible-computation "What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R", #hephaestus-core "../../core/Specify-which-result-another-investigator-can-reconstruct.lingua#r_0B84B9BB7199B19E8B2B61EF3F") { r_2G13323XWBD8ZQD7S8FVE13AT0
 **Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the whole paper, initially as a map of the practices; [Reproducible Research in Computational Science — Peng](../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9), the complete short article.
 
 A calculation becomes useful evidence when its inputs, operations, and interpretation can be examined. Begin with a small question: what fraction of a specified component was recovered from two hypothetical material lots? That question already requires decisions about wet and dry mass, the meaning of a component fraction, and which lots belong in the total. A program cannot supply those meanings merely by running successfully.
@@ -16,4 +16,7 @@ The first achievement is modest: an explicit, inspectable calculation. The later
 **Continue:** [Specify the kind of agreement being claimed](What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the inquiry core:** [Specify which result another investigator can reconstruct](../../core/Specify-which-result-another-investigator-can-reconstruct.lingua#r_0B84B9BB7199B19E8B2B61EF3F).
+
 } r_2G13323XWBD8ZQD7S8FVE13AT0

@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Prove the small angle limits before differentiating (@math-trig-limits: 0, is #chapter, #hephaestus-core "Differentiate-periodic-functions-and-connect-their-accumulated-values.lingua#r_00D9B07DB0E8262348D597FDAC") { r_00444EC0A754FAF9C77D32125A
+We now connect the geometric functions to the limit definition already developed. The geometric lemma used is that, for a unit circle and 0<h<π/2, the triangle inside the sector, the sector and the tangent triangle have areas sin h/2, h/2 and tan h/2 respectively. This uses the Euclidean sector-area relation: the fraction h/(2π) of a disk of area π has area h/2. Circle area/arc-length compatibility and monotonicity of area are accepted geometric foundations here. Naming these assumptions avoids pretending that a sketch is a complete analytic construction.
+
+Containment gives sin h≤h≤tan h. Since cos h>0, it follows that cos h≤sin h/h≤1. To justify the endpoint limit without derivatives, sin h≤h implies sin h→0; the circle identity and the positive cosine on this quadrant give cos h→1. More explicitly, 1−cos h=sin²h/(1+cos h)≤h². Thus the squeeze theorem yields sin h/h→1 as h decreases to zero. Odd symmetry makes sin h/h even, giving the two-sided limit.
+
+For small nonzero h of either sign,
+
+(cos h−1)/h=−sin²h/[h(1+cos h)].
+
+Its magnitude is at most |h| in this neighborhood, so its limit is zero. These arguments do not differentiate sine, assume its power series, or use an oscillator solution. The circle/addition identities also show continuity at any angle: the differences from sin x and cos x are combinations of sin h and cos h−1, both tending to zero.
+
+Radians matter. If an angle variable u is the numerical value in degrees, the associated function is sin(πu/180). Its small-u ratio tends to π/180, not one. The geometric radian definition fixes the scale in the limit; a calculator mode cannot change the theorem's hypothesis.
+
+**Read:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 section 2.3 for squeeze reasoning and section 3.5 for the two limits used in trigonometric differentiation. The current lesson supplies the explicit geometric premise and both-sided argument rather than assuming the derivative to prove its own prerequisite.
+
+**Practice:** use the bounds to prove |sin h|≤|h| for |h|<π/2, and show (1−cos h)/h→0. State why the quotient at h=0 is initially undefined even though its limit exists. Explain why verifying many decimal values near zero cannot replace the bound for every sufficiently small h.
+
+**Continue:** [Differentiate periodic functions and connect their accumulated values](Differentiate-periodic-functions-and-connect-their-accumulated-values.lingua#r_00D9B07DB0E8262348D597FDAC).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00444EC0A754FAF9C77D32125A

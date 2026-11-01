@@ -1,0 +1,20 @@
+Import "../Chemistry.lingua"
+
+Review chemical potentials equilibrium and the evidence for a direction (@chemistry-free-energy-review: 0, is #chapter, #hephaestus-core "Distinguish-composition-connectivity-spatial-structure-and-a-sample.lingua#r_00B3E851A379503DEFF7CE20DC") { r_0025E329FF02B6F7F00E96FD65
+Reconstruct the constant-temperature/pressure and constant-temperature/volume criteria from the system and environment balances. State the work sign convention, endpoint assumptions and permitted exchanges. Distinguish a reversible work bound, a no-work direction criterion and a driven change. Explain why energy closure or a nonnegative entropy screen alone does not validate a device.
+
+Derive the thermodynamic differentials, define chemical potential with its held variables, and prove the homogeneous bulk scaling and Gibbs–Duhem identities. Derive the ideal-gas mixing model from explicit physical assumptions, then differentiate it. Separate the general definition of relative activity from the ideal constitutive expression and from a concentration shortcut.
+
+Use reaction extent and the chain rule to derive Δ_rG, the quotient relation and the interior equilibrium condition. Track units, standard states, pressure factors, reaction reversal and normalization. Explain the difference between finite ΔG and a reaction derivative, and why stationarity, stability, kinetic accessibility and observation are separate claims.
+
+Prove the original binary model's global minimum including endpoint limits. Recover the finite work bound both from endpoint values and an integral of the varying reaction derivative. Explain the logarithm and midpoint-error enclosures in the programs, inspect the unchanged shared dependencies, and distinguish author-run checks from learner evidence.
+
+Derive the reversible cell relation from charge and work, preserving the electron coefficient and complete-cell orientation. Explain why a measured terminal voltage and a reversible potential need not coincide. Reconstruct the two selected published calculations with their supplied precision and assumptions. Defend a revised independent chemical account with a critic's objection and a discriminating observation.
+
+The sixth chemistry block prepares later phase, nonideal, molecular, transport and electrochemical formation; it does not complete those areas. Continue computing concurrent state, engineering feedback and inquiry reporting at comparable depth before deeper chemical specialization. The chemistry core and its sixteen pending descendant subjects remain unfinished.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the seventh common pass:** [Distinguish composition connectivity spatial structure and a sample](Distinguish-composition-connectivity-spatial-structure-and-a-sample.lingua#r_00B3E851A379503DEFF7CE20DC). Develop composition, connectivity, conformation, spatial identity, configuration and structural evidence through original finite investigations. Continue computing communication at comparable breadth before deeper chemical specialization.
+
+} r_0025E329FF02B6F7F00E96FD65

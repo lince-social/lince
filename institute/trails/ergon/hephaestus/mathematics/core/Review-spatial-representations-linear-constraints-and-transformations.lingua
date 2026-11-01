@@ -1,0 +1,26 @@
+Import "../Mathematics.lingua"
+
+Review spatial representations linear constraints and transformations (@math-linear-review: 0, is #chapter, #hephaestus-core "Specify-a-limit-with-an-output-tolerance-and-an-input-neighborhood.lingua#r_055F93E108268B814620D86FE6") { r_0231F3E26722D7A3632D78A7AD
+This block extends the first mathematical foundation into spatial and linear reasoning. It reuses geometry, trigonometry, vectors and equations already present in the common graph. The new explanations connect their formulas to coordinate choices, independence, solution sets, projections and transformations. Reading a shared lesson again for a new question does not create a new copy of its knowledge.
+
+**Demonstrate:** distinguish a point from a displacement, a vector from its coordinates, an orthonormal frame from an oblique basis, and a coordinate change from an active transformation. Derive an area-scaling result and state its geometric assumptions. Describe what a linear combination can reach under real, nonnegative and integer coefficient restrictions.
+
+**Argue:** prove existence and uniqueness of coordinates in the stated basis. Derive the projection onto a nonzero direction and its closest-point property. Give a nontrivial dependence relation, an unattainable output and an example of information lost by a linear map. Explain why finite numerical checks support a derivation but do not replace an argument for every vector.
+
+**Solve and interpret:** classify systems as inconsistent, uniquely solvable or underdetermined using reversible operations and geometry. Preserve domain restrictions. Derive the response of the nearly dependent example to a changed right-hand side and distinguish uniqueness from sensitivity. A matrix is a representation of a defined relation, not permission to forget row meanings, column meanings or units.
+
+**Read and practise:** complete the selected OpenStax vector, matrix and system exercises and the bounded Boyd–Vandenberghe sections attached to the lessons. Revisit the shared geometry/trigonometry preparation where needed. Keep calculus, abstract vector-space, general rank/determinant, eigenvalue, factorization and least-squares work explicit as later formation. The existing whole-book assignments remain available for that deeper progression; this block does not claim they are all complete.
+
+Defend the affine-coordinate study to another reader. Ask them to change the origin, exchange two operations, make two directions dependent, alter a coefficient's domain or introduce uncertainty in an input. Explain which results survive and which require a different model or additional information. Revise one explanation so that a learner who knows elementary algebra can reconstruct the argument.
+
+The next comparable common block belongs to physics: spatial motion, moments and constrained equilibrium can now use clearer geometric/vector preparation. The whole mathematics core remains unfinished, including fuller proof and abstraction, change and accumulation, discrete structures, probability, analysis and advanced academic/practical work. The twenty pending mathematical subjects retain their full scope.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Next common area:** [review the first physics block](../../physics/core/Review-systems-motion-and-physical-evidence.lingua#r_0B390092C821608D642BF70359) before developing spatial motion, moments and constrained equilibrium. Use [the shared angles and trigonometry preparation](../../inquiry/quantitative-literacy/foundations/Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ) where needed.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the third common pass:** [Specify a limit with an output tolerance and an input neighborhood](Specify-a-limit-with-an-output-tolerance-and-an-input-neighborhood.lingua#r_055F93E108268B814620D86FE6). The second pass is now present across all six areas; the earlier spatial study remains unchanged.
+
+} r_0231F3E26722D7A3632D78A7AD

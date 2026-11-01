@@ -1,4 +1,38 @@
-use std::{hash::{Hash, Hasher}, path::PathBuf};
+use std::{
+    hash::{Hash, Hasher},
+    path::{Path, PathBuf},
+};
+
+fn tool_identity(program: &Path) -> Option<String> {
+    let path = if program.components().count() > 1 {
+        program.to_path_buf()
+    } else {
+        std::env::split_paths(&std::env::var_os("PATH")?)
+            .map(|directory| directory.join(program))
+            .find(|path| {
+                let Ok(metadata) = std::fs::metadata(path) else {
+                    return false;
+                };
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+                }
+                #[cfg(not(unix))]
+                {
+                    metadata.is_file()
+                }
+            })?
+    };
+    println!("cargo:rerun-if-changed={}", path.display());
+    let canonical = std::fs::canonicalize(&path).ok()?;
+    let metadata = std::fs::metadata(&canonical).ok()?;
+    Some(format!(
+        "{canonical:?}\0{:?}\0{}",
+        metadata.modified().ok()?,
+        metadata.len()
+    ))
+}
 
 fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
@@ -6,18 +40,14 @@ fn main() {
     let output = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
     let mut generator = std::collections::hash_map::DefaultHasher::new();
     std::fs::read(std::env::current_exe().expect("parser generator path"))
-        .expect("parser generator identity").hash(&mut generator);
+        .expect("parser generator identity")
+        .hash(&mut generator);
     let generator = generator.finish().to_string();
     for grammar in rust_sitter_tool::generate_grammars(&PathBuf::from("src/grammar.rs")) {
         let name = grammar["name"].as_str().expect("grammar name").to_string();
         let directory = output.join(&name);
         let grammar = grammar.to_string();
-        let inputs = [
-            include_str!("build.rs"),
-            &generator,
-            &grammar,
-        ]
-        .join("\0");
+        let inputs = [include_str!("build.rs"), &generator, &grammar].join("\0");
         let stamp = directory.join("parser.inputs");
         if std::fs::read_to_string(&stamp).ok().as_deref() != Some(&inputs)
             || !directory.join("parser.c").is_file()
@@ -41,12 +71,17 @@ fn main() {
             );
             std::fs::create_dir_all(directory.join("tree_sitter"))
                 .expect("create parser directory");
-            std::fs::write(directory.join("parser.c"), source).expect("write parser");
-            std::fs::write(
-                directory.join("tree_sitter/parser.h"),
-                tree_sitter_generate::PARSER_HEADER,
-            )
-            .expect("write parser header");
+            for (path, bytes) in [
+                (directory.join("parser.c"), source.as_bytes()),
+                (
+                    directory.join("tree_sitter/parser.h"),
+                    tree_sitter_generate::PARSER_HEADER.as_bytes(),
+                ),
+            ] {
+                if std::fs::read(&path).ok().as_deref() != Some(bytes) {
+                    std::fs::write(path, bytes).expect("write generated parser source");
+                }
+            }
             std::fs::write(&stamp, &inputs).expect("write parser inputs");
         }
         let archive = output.join(format!("lib{name}.a"));
@@ -74,10 +109,42 @@ fn main() {
             .include(&directory)
             .file(directory.join("parser.c"));
         let compiler = build.get_compiler();
+        let archiver = build.get_archiver();
+        let tools = [
+            tool_identity(compiler.path()),
+            tool_identity(Path::new(archiver.get_program())),
+        ];
+        let environment: Vec<_> = [
+            "PATH",
+            "CPATH",
+            "C_INCLUDE_PATH",
+            "LIBRARY_PATH",
+            "COMPILER_PATH",
+            "GCC_EXEC_PREFIX",
+            "SDKROOT",
+            "NIX_CFLAGS_COMPILE",
+            "NIX_CFLAGS_LINK",
+            "NIX_LDFLAGS",
+            "NIX_ENFORCE_PURITY",
+        ]
+        .into_iter()
+        .map(|key| {
+            println!("cargo:rerun-if-env-changed={key}");
+            (key, std::env::var_os(key))
+        })
+        .collect();
+        let fallback = if tools.iter().all(Option::is_some) {
+            ""
+        } else {
+            &inputs
+        };
         let compilation = format!(
-            "{inputs}\0{:?}\0{:?}",
+            "{}\0{}\0{:?}\0{:?}\0{tools:?}\0{environment:?}\0{fallback}",
+            std::fs::read_to_string(directory.join("parser.c")).expect("read generated parser"),
+            std::fs::read_to_string(directory.join("tree_sitter/parser.h"))
+                .expect("read generated parser header"),
             compiler.to_command(),
-            build.get_archiver(),
+            archiver,
         );
         let compiled_stamp = directory.join("compiled.inputs");
         if std::fs::read_to_string(&compiled_stamp).ok().as_deref() == Some(&compilation)

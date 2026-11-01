@@ -1,0 +1,273 @@
+Import "../Physics.lingua"
+
+Investigate magnetic deflection induction and energy evidence (@physics-magnetic-study: 0, is #chapter, #hephaestus-core "Review-magnetic-and-inductive-models-before-extending-physical-scope.lingua#r_000E98B82895476DF83343BB5E") { r_005AF08B850568F58BE76E9AF4
+Write one connected report that distinguishes a force observation, an induced circulation, a circuit response and an energy account. Begin with assumptions, frames, units, directions and source/measurement boundaries. The supplied exact program joins the original models developed in the preceding lessons; it does not model an entire apparatus or validate a real magnetic measurement.
+
+First derive the magnetic-only power identity and uniform-field trajectory. At the declared rational phase recover velocity (5,0), position (8/3,4/3), center (8/3,−2) and energy 25 in normalized units. Check the independently integrated position formula and reversal of the phase. State why a rational phase sample is not a time-stepping algorithm. Construct one electric/magnetic-field ambiguity from a single velocity probe and specify a discriminating second preparation.
+
+Second integrate the compatible electric field around the four edges of the fixed rectangle and compare with the negative magnetic-flux derivative. The original example gives −12 in its chosen orientation. Then obtain the sliding-bar emf from the local u×B force, and calculate its current, mechanical force and power. Its 9/4 mechanical input equals 9/4 heating only under the negligible-storage premise. An RL response at decay factor 1/2 instead divides source power 9/8 into heating 9/16 and storage 9/16. The current-history scaling rival preserves every current observation while changing all powers, so an independent measurement is required.
+
+**Bounded published reconstruction:** [University Physics Volume 2 — OpenStax](../electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), section 14.4 Example 14.4 specifies ℰ=2 V,R=4 Ω,L=4 H and initially zero current. Recalculate τ=1 s, i(0)=0,i(∞)=1/2 A, and at t=2τ, i=(1−e^(−2))/2≈0.432332 A and the induced-emf magnitude 2e^(−2)≈0.270671 V. These round to the source's 0.43 A and 0.27 V. The unchanged `decay_bracket(1)` supplies positive rational bounds on e^(−1); squaring brackets e^(−2). A separately evaluated 60-digit Decimal exponential checks the reconstruction numerically; the alternating-series proof supplies the rigorous bracket. This reproduces a mathematical example, not its photographed equipment or data.
+
+Third verify both curl equations for the traveling field pair before calculating energy. Compare slab storage by exact quadrature with a separately integrated polynomial primitive, and check boundary-power cancellation. Explain why a polynomial profile used on a bounded observation slab is not a finite-energy pulse over all space. The field signs and constraints matter even if two isolated scalar wave equations look correct.
+
+Save the two programs below beside unchanged shared `electric_study.py` from [Investigate electric work charge redistribution and observation limits](Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045), `periodic_study.py` from [Investigate periodic states exact rotations and sampling ambiguity](../../mathematics/core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409), and `field_study.py` from [Investigate oriented boundaries coordinates and local conservation](../../mathematics/core/Investigate-oriented-boundaries-coordinates-and-local-conservation.lingua#r_008752CDDEC92582D0542CEC80). The last also requires unchanged `multivariable_study.py` and `linear_space_study.py` from [Investigate local change path accounts and constrained extrema](../../mathematics/core/Investigate-local-change-path-accounts-and-constrained-extrema.lingua#r_00B49342C72C3CFCAF4863EBCF) and [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B). Run `nix shell nixpkgs#python3 -c python3 -B magnetic_checks.py`. The shared exact validator, rotation arithmetic, exponential bracket, oriented-edge/cross-product and proved cubic quadrature routines are actually reused. The current integrands fit that polynomial degree contract; this is not a general electromagnetic numerical solver.
+
+The tests compare independent integrated-orbit formulas, direct edge formulas, energy identities and a separate wave-energy primitive; some low-level arithmetic is shared. Finite cases check implementation, while the preceding derivations establish the stated model families. Invalid types, dimensions, physical coefficient domains and nonunit phases are rejected.
+
+**Independent extension and criticism:** choose a different field/current geometry or source waveform with justified prerequisites. Derive orientation, current response and a complete energy balance; reconstruct another bounded assigned source calculation; include one failed sign or missing-storage rival and one observation ambiguity. Propose a benign supervised measurement or analyze suitable published observations with calibration, loading and uncertainties explicit. Preserve a reviewer's criticism and your revision. Do not report proposed experiments, assigned readings or a reader's future independent work as already completed.
+
+```python file=magnetic_study.py
+from fractions import Fraction as F
+from electric_study import exact, decay_bracket
+from periodic_study import multiply, norm_squared
+from field_study import cross, dot, bounds, rectangle_edges, cubic_rule
+import json
+
+
+def vector(values, size):
+    result = tuple(exact(v) for v in values)
+    if len(result) != size:
+        raise ValueError('wrong coordinate count')
+    return result
+
+
+def force(charge, electric, velocity, magnetic):
+    charge = exact(charge)
+    electric, velocity, magnetic = (vector(v, 3) for v in (electric, velocity, magnetic))
+    magnetic_force = tuple(charge*x for x in cross(velocity, magnetic))
+    total = tuple(charge*x+y for x, y in zip(electric, magnetic_force))
+    return {'force': total, 'magnetic_power': dot(magnetic_force, velocity),
+            'total_power': dot(total, velocity)}
+
+
+def orbit_phase(mass, charge, field, position, velocity, phase):
+    mass, charge, field = (exact(v) for v in (mass, charge, field))
+    position, velocity, phase = (vector(v, 2) for v in (position, velocity, phase))
+    if mass <= 0 or charge*field == 0 or norm_squared(phase) != 1:
+        raise ValueError('positive mass, nonzero frequency and unit phase required')
+    omega = charge*field/mass
+    c, s = phase
+    updated = multiply((c, -s), velocity)
+    x, y = position
+    vx, vy = velocity
+    ux, uy = updated
+    point = (x+(vy-uy)/omega, y+(ux-vx)/omega)
+    return {'position': point, 'velocity': updated, 'omega': omega,
+            'center': (x+vy/omega, y-vx/omega),
+            'energy': mass*norm_squared(updated)/2}
+
+
+def fixed_induction(region, rate):
+    region, rate = bounds(region, 2), exact(rate)
+    edges = []
+    for start, end in rectangle_edges(region):
+        dx, dy = tuple(b-a for a, b in zip(start, end))
+        def integrand(t):
+            x, y = start[0]+t*dx, start[1]+t*dy
+            return rate*(y*dx-x*dy)/2
+        edges.append(cubic_rule(integrand, 0, 1))
+    area = (region[0][1]-region[0][0])*(region[1][1]-region[1][0])
+    return {'edges': tuple(edges), 'emf': sum(edges), 'flux_rate': rate*area}
+
+
+def sliding_bar(field, length, speed, resistance):
+    field, length, speed, resistance = (exact(v) for v in (field, length, speed, resistance))
+    if length <= 0 or resistance <= 0:
+        raise ValueError('positive length and resistance required')
+    emf = field*length*speed
+    current = emf/resistance
+    force_x = -field*length*current
+    return {'emf': emf, 'current_clockwise': current, 'force_x': force_x,
+            'mechanical_input': -force_x*speed, 'joule': resistance*current**2}
+
+
+def rl(emf, resistance, inductance, initial, decay):
+    emf, resistance, inductance, initial, decay = (exact(v) for v in (emf, resistance, inductance, initial, decay))
+    if resistance <= 0 or inductance <= 0 or not 0 <= decay <= 1:
+        raise ValueError('positive components and decay in [0,1] required')
+    final = emf/resistance
+    current = final+(initial-final)*decay
+    derivative = (emf-resistance*current)/inductance
+    source_power = emf*current
+    joule = resistance*current**2
+    storage_rate = inductance*current*derivative
+    return {'current': current, 'derivative': derivative, 'tau': inductance/resistance,
+            'energy': inductance*current**2/2, 'source_power': source_power,
+            'joule': joule, 'storage_rate': storage_rate,
+            'balance': source_power-joule-storage_rate}
+
+
+def planar_wave(permittivity, speed, amplitude, slope, offset, time, interval):
+    permittivity, speed, amplitude, slope, offset, time = (exact(v) for v in (permittivity, speed, amplitude, slope, offset, time))
+    ((left, right),) = bounds((interval,), 1)
+    if permittivity <= 0 or speed <= 0:
+        raise ValueError('positive medium parameters required')
+    def profile(x):
+        return slope*(x-speed*time)+offset
+    def density(x):
+        return permittivity*amplitude**2*profile(x)**2
+    energy = cubic_rule(density, left, right)
+    rate = cubic_rule(lambda x: -2*permittivity*amplitude**2*speed*slope*profile(x), left, right)
+    outward = speed*(density(right)-density(left))
+    return {'energy_per_area': energy, 'storage_rate_per_area': rate,
+            'outward_per_area': outward, 'balance': rate+outward,
+            'permeability': 1/(permittivity*speed**2)}
+
+
+def published_rl():
+    low, high = decay_bracket(1)
+    low, high = low*low, high*high
+    return {'tau': F(1), 'current_initial': F(0), 'current_limit': F(1, 2),
+            'current_two_tau_bounds': ((1-high)/2, (1-low)/2),
+            'induced_emf_magnitude_bounds': (2*low, 2*high)}
+
+
+def investigation():
+    return {'orbit': orbit_phase(2, 1, 3, (0, 0), (3, 4), (F(3, 5), F(4, 5))),
+            'induction': fixed_induction(((0, 2), (-1, 1)), 3),
+            'bar': sliding_bar(2, F(1, 2), 3, 4),
+            'rl_half_decay': rl(3, 4, 2, 0, F(1, 2)),
+            'same_current_rival': rl(6, 8, 4, 0, F(1, 2)),
+            'wave': planar_wave(2, 3, 1, 1, 0, 0, (0, 2)),
+            'published_rl': published_rl()}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=magnetic_checks.py
+from fractions import Fraction as F
+from itertools import product
+from decimal import Decimal as D, localcontext
+import json
+import magnetic_study as s
+
+
+def verify():
+    checks = 0
+    def equal(a, b):
+        nonlocal checks
+        assert a == b, (a, b)
+        checks += 1
+    vectors = list(product((-1, 0, 2), repeat=3))
+    force_cases = 0
+    for velocity, magnetic in product(vectors, repeat=2):
+        result = s.force(-2, (1, 2, -1), velocity, magnetic)
+        equal(result['magnetic_power'], 0)
+        equal(result['total_power'], -2*(velocity[0]+2*velocity[1]-velocity[2]))
+        force_cases += 1
+    phases = ((1, 0), (0, 1), (F(3, 5), F(4, 5)), (F(-5, 13), F(12, 13)))
+    orbit_cases = 0
+    for mass, charge, field, velocity, phase in product((1, 2), (-2, 1), (-1, 3), product((-2, 0, 3), repeat=2), phases):
+        old = (F(1, 3), F(-2, 5))
+        result = s.orbit_phase(mass, charge, field, old, velocity, phase)
+        x, y = result['position'];vx, vy = result['velocity'];w = result['omega']
+        equal((x+vy/w, y-vx/w), result['center'])
+        equal(result['energy'], F(mass)*(velocity[0]**2+velocity[1]**2)/2)
+        c, sn = phase;ux, uy = map(F, velocity)
+        equal((x, y), (old[0]+(ux*sn+uy*(1-c))/w, old[1]+(uy*sn-ux*(1-c))/w))
+        backward = s.orbit_phase(mass, charge, field, (x,y), (vx,vy), (c,-sn))
+        equal(backward['position'], old);equal(backward['velocity'], tuple(map(F, velocity)))
+        orbit_cases += 1
+    induction_cases = 0
+    intervals = ((-2, 1), (0, 2), (F(1, 3), F(4, 3)))
+    for region, rate in product(product(intervals, repeat=2), (-3, 0, 2)):
+        result = s.fixed_induction(region, rate)
+        equal(result['emf'], -result['flux_rate'])
+        (a,b),(c,d)=region
+        expected = (F(rate)*c*(b-a)/2, -F(rate)*b*(d-c)/2,
+                    -F(rate)*d*(b-a)/2, F(rate)*a*(d-c)/2)
+        equal(result['edges'], expected)
+        induction_cases += 1
+    bar_cases = 0
+    for field, length, speed, resistance in product((-2, 0, 3), (F(1,2),2), (-3,0,2), (1,4)):
+        result=s.sliding_bar(field,length,speed,resistance)
+        equal(result['mechanical_input'], result['joule'])
+        equal(result['force_x']*speed <= 0, True)
+        equal(result['emf'], -F(field)*length*(-F(speed)))
+        bar_cases += 1
+    rl_cases = 0
+    for emf, resistance, inductance, initial, decay in product((-2,0,3), (1,4), (1,2), (-1,0,2), (0,F(1,3),F(1,2),1)):
+        result = s.rl(emf,resistance,inductance,initial,decay)
+        equal(result['balance'], 0)
+        expected = F(emf,resistance)*(1-decay)+initial*decay
+        equal(result['current'], expected)
+        equal(result['derivative'], (F(emf,resistance)-initial)*decay*F(resistance,inductance))
+        rival = s.rl(3*emf,3*resistance,3*inductance,initial,decay)
+        equal(rival['current'], result['current']);equal(rival['tau'], result['tau'])
+        equal(rival['energy'], 3*result['energy'])
+        rl_cases += 1
+    wave_cases = 0
+    for epsilon, speed, amplitude, slope, offset, time in product((1,2),(1,3),(-2,1),(-1,0,2),(-1,1),(0,F(1,3))):
+        result=s.planar_wave(epsilon,speed,amplitude,slope,offset,time,(-1,2))
+        equal(result['balance'],0)
+        b=F(offset)-slope*speed*time
+        primitive=lambda x:F(slope*slope,3)*x**3+slope*b*x*x+b*b*x
+        equal(result['energy_per_area'], epsilon*amplitude**2*(primitive(F(2))-primitive(F(-1))))
+        equal(result['energy_per_area'] >= 0, True)
+        wave_cases += 1
+    report=s.investigation()
+    equal(report['orbit']['position'], (F(8,3),F(4,3)))
+    equal(report['orbit']['velocity'], (F(5),F(0)))
+    equal(report['induction']['emf'], -12)
+    equal(report['bar']['mechanical_input'], F(9,4))
+    equal(report['rl_half_decay']['current'], F(3,8))
+    equal(report['rl_half_decay']['source_power'], F(9,8))
+    equal(report['rl_half_decay']['joule'], F(9,16))
+    equal(report['rl_half_decay']['storage_rate'], F(9,16))
+    equal(report['wave']['energy_per_area'], F(16,3))
+    equal(report['wave']['outward_per_area'], 24)
+    published=report['published_rl']
+    with localcontext() as ctx:
+        ctx.prec=60
+        current=(1-(-D(2)).exp())/2
+        voltage=2*(-D(2)).exp()
+        for name,expected in [('current_two_tau_bounds',current),('induced_emf_magnitude_bounds',voltage)]:
+            lo,hi=published[name]
+            decimal=lambda f:D(f.numerator)/D(f.denominator)
+            equal(decimal(lo)<expected<decimal(hi),True)
+            equal(hi-lo<F(1,10**18),True)
+        equal(current.quantize(D('0.01')),D('0.43'))
+        equal(voltage.quantize(D('0.01')),D('0.27'))
+    equal(s.rl(3,4,2,0,F(1,2))['current']==F(3,4),False)
+    equal(report['rl_half_decay']['source_power']==report['rl_half_decay']['joule'],False)
+    rejected=0
+    calls=[lambda:s.force(True,(0,0,0),(1,0,0),(0,0,1)),
+           lambda:s.force(1,(0,0),(1,0,0),(0,0,1)),
+           lambda:s.orbit_phase(0,1,1,(0,0),(1,0),(1,0)),
+           lambda:s.orbit_phase(1,0,1,(0,0),(1,0),(1,0)),
+           lambda:s.orbit_phase(1,1,1,(0,0),(1,0),(1,1)),
+           lambda:s.fixed_induction(((1,0),(0,1)),1),
+           lambda:s.fixed_induction(((0,1),(0,1)),1.0),
+           lambda:s.sliding_bar(1,0,1,1),
+           lambda:s.sliding_bar(1,1,1,0),
+           lambda:s.rl(1,1,0,0,1),
+           lambda:s.rl(1,1,1,0,F(3,2)),
+           lambda:s.rl(1,1,1,0,-1),
+           lambda:s.planar_wave(0,1,1,1,1,0,(0,1)),
+           lambda:s.planar_wave(1,-1,1,1,1,0,(0,1))]
+    for call in calls:
+        try:
+            call()
+        except ValueError:
+            rejected+=1
+        else:
+            raise AssertionError('invalid input accepted')
+    equal(rejected,len(calls))
+    return {'checks':checks,'force_cases':force_cases,'orbit_cases':orbit_cases,
+            'induction_cases':induction_cases,'bar_cases':bar_cases,'rl_cases':rl_cases,
+            'wave_cases':wave_cases,'rejected':rejected,'published_rounding':['0.43 A','0.27 V']}
+
+
+if __name__=='__main__':
+    print(json.dumps(verify(),indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 4,231 assertions: 729 force cases, 288 orbit cases, 27 fixed-loop cases, 36 sliding-bar cases, 144 RL states/rivals, 96 wave slabs, the bounded published calculation and fourteen rejected calls. Exact independent formulas complement shared arithmetic; no apparatus, physical field or learner capability is validated.
+
+**Continue:** [Review magnetic and inductive models before extending physical scope](Review-magnetic-and-inductive-models-before-extending-physical-scope.lingua#r_000E98B82895476DF83343BB5E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005AF08B850568F58BE76E9AF4

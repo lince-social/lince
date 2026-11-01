@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Reconstruct a published algebra example and criticize finite evidence (@math-structures-evidence: 0, is #chapter, #math-structures "Investigate-finite-models-maps-and-quotient-claims.lingua#r_004797A521484FF4E6DDBFF6C4") { r_00AC95836968349257B514FFC7
+Use the specific 10 August 2011 edition of [Abstract Algebra Theory and Applications Judson 2011](../sources/Abstract-Algebra-Theory-and-Applications-Judson-2011.lingua#r_0066E963AE44EE421A173499DF). Its section 3.1, printed pages 38–39, presents multiplication modulo 8 and notes missing inverses for the even nonzero classes. Reconstruct that bounded claim rather than importing a table. Solve ab≡1 mod 8 for each a=0,…,7. The units are 1,3,5,7; each squares to 1 modulo 8. For even a, ab is even and cannot differ from 1 by a multiple of 8, so no inverse exists. The exhaustive table and the parity argument are independent forms of evidence for this example.
+
+The original investigation changes the question to additive maps between residue systems and quotients of those maps. Multiplicative units and additive homomorphisms are different structures; success on one is not a test of the other. For h(a)=2a on Z_6, calculate each fiber, the quotient operation and the induced image map. Then change the codomain to Z_8: the same integer formula does not define a homomorphism Z_6→Z_8 because h([6]) would disagree with h([0]). A canonical-representative program still returns numbers; that alone does not make the map compatible with addition.
+
+In the logic portion, enumerate all binary relations on domains of sizes 1,2,3 and compare ∀x∃y R(x,y) with ∃y∀x R(x,y). Independent row/column counts check the evaluator: the first needs a nonempty entry in each row; the second needs a column containing every row. Renaming domain elements must preserve these sentences. It does not necessarily preserve the meanings of other unrenamed symbols in the model; the code's renaming check intentionally concerns only relation-only sentences.
+
+**Criticism and revision:** distinguish a programming defect, an invalid inference rule, a false mathematical conjecture and a model with unsuitable assumptions. For each failure give the smallest explicit witness you can justify. A finite countermodel refutes a universal semantic claim, but absence of a small countermodel does not prove validity. A published textbook reconstruction is not new mathematical research, nor evidence that a learner completed the work.
+
+**Deliverable:** retain the source edition and page, your independent reconstruction, the changed map, the failed partition, and a corrected claim with proof. Explain which results cover every allowed case and which only report finite implementation checks.
+
+**Continue:** [Investigate finite models maps and quotient claims](Investigate-finite-models-maps-and-quotient-claims.lingua#r_004797A521484FF4E6DDBFF6C4).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00AC95836968349257B514FFC7

@@ -1,0 +1,20 @@
+Import "../Inquiry.lingua"
+
+Review continuous models estimation and the scope of coverage (@inquiry-density-review: 0, is #chapter, #hephaestus-core "Distinguish a fitted function from an observation model.lingua#r_000ABE05441CF937D7970B1070") { r_0092AAD67F9A97EFCB0180340A
+Explain density, cumulative probability, interval probability, support and quantile with units and domains. Distinguish probability-zero outcomes from impossible observations, and density laws from discrete or singular constructions. Derive a transformed density from its event inequality, handle a zero scale separately and state the positive-probability condition for ordinary event conditioning.
+
+Derive continuous moments from bounded integrals, affine moment changes, the variance tail bound and the role of covariance. Build the independent two-uniform mean law from square geometry and recover its moments by integration. Demonstrate two joint laws with identical marginals and different averages. Explain which parts of this reasoning depend on mathematics and which require empirical support for an actual experiment.
+
+Separate parameter, random data, estimator, estimate and sampling distribution. Prove unbiasedness and compute bias/variance/MSE under an offset. Derive the interval procedure's exact coverage and its inversion, explain the rational width certificate, and distinguish parameter coverage, posterior probability, prediction and hard bounds. Show why an unknown or fitted half-width and an adaptive interval rule need fresh analysis.
+
+Reconstruct the original readings, mean, support intersection and clipped interval. Prove the coverage-preserving event equivalence and its limits. Recover the shared-error, opposite-error and calibration-offset rivals and the incompatible-support case. State what further observations could challenge the proposed error law, rather than treating passing arithmetic as calibration evidence.
+
+Produce and defend an unfamiliar bounded investigation with assumptions, independent calculation, source reading, criticism and revision. The full inquiry core remains unfinished: richer estimation and model comparison, experimental/observational and causal reasoning, scholarly synthesis, communication and knowledge stewardship, teaching/learning, and advanced independent work still need connected formation. Full probability theory, asymptotic inference and statistical specialties also remain broader work.
+
+All six areas now have four common blocks. Review actual coverage and prerequisites across the tree, verify the combined fourth-pass publication/export/relocation snapshot, and plan the next common pass before specialized extensions. Preserve each existing investigation and the exact evidence for its scope.
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Continue in the fifth common pass:** [Distinguish a fitted function from an observation model](Distinguish a fitted function from an observation model.lingua#r_000ABE05441CF937D7970B1070). The fifth inquiry block develops fitting, linear estimation, constrained residuals, forward and inverse uncertainty, competing observation models and replication. Preserve earlier design, uncertainty and continuous-model investigations. Review coverage across all six cores after this block before selecting the next common pass.
+
+} r_0092AAD67F9A97EFCB0180340A

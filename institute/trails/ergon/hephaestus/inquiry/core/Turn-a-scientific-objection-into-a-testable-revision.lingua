@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Turn a scientific objection into a testable revision (@inquiry-report-criticism: 0, is #chapter, #hephaestus-core "Propagate-an-input-correction-through-results-and-claims.lingua#r_00C74BD12910BF5B4A3ACDBD21") { r_005916234C27E5260D6E6CC38B
+Criticism is most useful when it identifies a claim, the supporting premise it challenges, a counterexample or missing observation, and the consequence for the conclusion. An author response should address that reasoning, give evidence or revise the claim. A preference about wording, an execution defect, a broken measurement premise and an alternative scientific explanation require different responses.
+
+The following exchange is a constructed teaching example. No external reviewer was contacted and no independent review is claimed.
+
+Author draft: the small residuals validate the calibration. Critic: a shared response offset changes every inferred absolute response while leaving fitted residuals unchanged; which evidence constrains it? Author response: the offset construction preserves residuals exactly. The result supports an algebraic comparison of the supplied datasets, not validated calibration. An independent reference measurement with a separate uncertainty account is needed for the physical claim. The revised report states that limitation next to the result.
+
+A second objection concerns curvature. The input construction adds x²/2 and raises SSE from 24/5 to 123/10, while keeping slope 3 on symmetric inputs. A larger residual sum is consistent with the introduced nonlinearity, but one observed increase could also involve a changed noise process or observations. Replication at known inputs can separate within-level scatter from lack of fit algebraically; interpreting the difference statistically still needs a sampling model. The author should identify a discriminating study rather than declaring a favored explanation proved by the plot.
+
+A third objection is concrete: affine-3 was transcribed as 4 although the declared generation rule yields 3. This is an input discrepancy, not evidence against least squares. Correct the entry against the identified source, retain the earlier version and regenerate all dependent artifacts. If the source itself were an uncertain observation, replacing it with the model's expected value would be a different and generally unjustified operation. The correction here is warranted because the evidence is an explicitly known synthetic construction.
+
+Keep a response record with objection, evidence, action and remaining limit. An accepted criticism may leave the numerical values unchanged while narrowing the claim. A rejected criticism needs a reason: for example, the demand that invariant summaries change after row reordering conflicts with the proved symmetry. Disagreement should be resolved against the question and premises rather than by counting endorsements or successful reruns.
+
+**Work and defense:** write an objection that would survive every computational check in this package. Design an observation capable of addressing it and state what that observation assumes. Explain the difference between correction, robustness investigation and new confirmation. Ask a future independent reviewer to identify one unsupported inference; record actual assistance and responses only when that review happens. This assignment is not already completed by the constructed dialogue.
+
+**Continue:** [Propagate an input correction through results and claims](Propagate-an-input-correction-through-results-and-claims.lingua#r_00C74BD12910BF5B4A3ACDBD21).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_005916234C27E5260D6E6CC38B

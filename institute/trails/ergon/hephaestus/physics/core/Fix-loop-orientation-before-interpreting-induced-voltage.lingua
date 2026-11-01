@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Fix loop orientation before interpreting induced voltage (@physics-magnetic-flux: 0, is #chapter, #hephaestus-core "../electromagnetism/induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR") { r_0067D0F203242EDDB5A0DF39FC
+Magnetic flux through an oriented surface S is Φ_B=∫_S B·n dA, with webers (tesla·m²) as units. Its sign follows the chosen normal, and the positive boundary direction follows that same orientation. [Integrate normal flux through an oriented surface](../../mathematics/core/Integrate-normal-flux-through-an-oriented-surface.lingua#r_00E051A00D25D4243A519862A1) and [Derive the surface circulation identity from a parameter patch](../../mathematics/core/Derive-the-surface-circulation-identity-from-a-parameter-patch.lingua#r_00FB68AFB25B0AA0ABA7407DAB) supply the definitions and hypotheses. A closed-surface zero flux does not make flux through every open surface zero. When divB=0 on a volume between two spanning surfaces, the divergence theorem gives equal fluxes through them with the same boundary orientation; singularities or missing domain pieces invalidate that inference.
+
+For a fixed loop and spanning surface, Faraday's empirical law is ∮E·dl=−dΦ_B/dt. Under smoothness allowing time differentiation through the surface integral, Stokes converts this into curlE=−∂tB locally. The local implication also needs arbitrary sufficiently small patches, just as the local-balance proof needed all small volumes. Mathematics relates two forms of the law; it does not establish their physical truth.
+
+Take B_z(t)=B₀+βt uniform over a fixed rectangle [a,b]×[c,d], with +z orientation. One compatible electric field is E=(βy/2,−βx/2,0), whose curl is −βe_z. Counterclockwise boundary integration gives emf −β(b−a)(d−c). The line calculation and the negative flux derivative are independent ways to obtain it. Adding the gradient of any smooth single-valued potential does not change the closed circulation; Faraday's law alone therefore does not uniquely determine E. Source and boundary data matter.
+
+For [0,2]×[−1,1] and β=3 in consistent units, the emf is −12. Reversing the loop orientation and its normal changes the result to +12 without changing the physical field. No wire is necessary for the nonzero electric circulation. A wire and its impedance determine the current produced by that field, which is a separate question. Voltage readings in changing fields require the measurement-lead paths and their enclosed flux; a single endpoint scalar potential difference need not describe every path.
+
+**Read and work:** continue through [Faraday law, Lenz law and changing flux](../electromagnetism/induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR) with these meanings established. In an ideal axisymmetric long-solenoid model with uniform interior B(t) and negligible exterior B, show E_θ=−r Ḃ/2 inside radius a and E_θ=−a²Ḃ/(2r) outside. State the quasistatic/source limitations of this idealization. A verbal Lenz rule summarizes the passive opposing response; it is not a second sign to append after choosing an oriented equation, and arbitrary initial currents or active circuits require their full dynamics.
+
+**Continue:** [Faraday law, Lenz law and changing flux](../electromagnetism/induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0067D0F203242EDDB5A0DF39FC

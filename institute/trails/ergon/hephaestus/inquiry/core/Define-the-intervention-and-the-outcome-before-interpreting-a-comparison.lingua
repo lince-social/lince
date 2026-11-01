@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Define the intervention and the outcome before interpreting a comparison (@inquiry-causal-question: 0, is #chapter, #hephaestus-core "State-the-assumptions-that-turn-observed-means-into-intervention-means.lingua#r_0035AEB6229B495C55A10B6651") { r_00FA563341E5F9066E5628AADE
+A comparison of observations and a question about changing a system are related but different. Reuse [Design comparisons that can distinguish competing explanations](Design-comparisons-that-can-distinguish-competing-explanations.lingua#r_0A7E63167B1C0C05400C73A84E), [Condition on information without assuming independence](Condition-on-information-without-assuming-independence.lingua#r_07DA2E41CFC98507FD5297EA72) and [Derive what randomized comparisons average over](Derive-what-randomized-comparisons-average-over.lingua#r_0BA266DD53DF13150425227195). The existing randomized study derives an average over allocations. Here ask when an observational distribution identifies an intervention's effect, and what remains unknown even if that distribution is known exactly.
+
+Consider an invented document-processing service. A is the choice between two specified software procedures, 0 and 1. Y is correct output during a fixed test interval, measured in work units; L is a workload class recorded before choosing the procedure. Name the eligible jobs, configuration, input distribution, timing, outcome test and target population. A version name alone may hide different settings and supporting services. If changing A also changes staffing or the workload, define whether those changes are part of the intervention or separate influences.
+
+Write Y(0) and Y(1) for the outcome the same unit would have under each intervention in the specified setting. The target mean contrast is τ=E[Y(1)]−E[Y(0)] in the declared population. These potential outcomes are not ordinarily both observed. A synthetic model may stipulate both to inspect an argument, but a real dataset does not acquire its missing counterfactual simply because a program predicts a number. An average contrast also does not identify which individual units benefit.
+
+Consistency means the observed outcome equals Y(A) for the intervention actually received. It requires a meaningful correspondence between the stated intervention and what occurred. The simple unit notation also assumes another unit's assignment does not alter this unit's outcome. A shared processor or repair crew can violate that assumption through interference: one unit's procedure changes another's available service. Repeated runs can carry state forward through caches, learned settings, fatigue or accumulated work. Declare independent reset, include history in the intervention, or use a design/model that represents it. Randomizing labels does not remove an unspecified version or shared resource.
+
+**Read:** [Causal Inference What If by Hernan and Robins](../sources/Causal-Inference-What-If-by-Hernan-and-Robins.lingua#r_00C7EB9DE7F8A7314754A058EE), chapters 1–3 progressively, using the source note to distinguish inspected passages from the complete assignment. Its mathematical definitions apply more broadly than its illustrative domain; our service examples are original and supply no empirical effect claim.
+
+**Work:** turn “does the new procedure work better?” into one precise contrast. Give two plausible meanings of “better” with different outcomes. Specify assignment, actual receipt, observation and possible interference separately. Explain which claims would change if the target were all incoming jobs rather than only jobs accepted by an operator.
+
+**Continue:** [State the assumptions that turn observed means into intervention means](State-the-assumptions-that-turn-observed-means-into-intervention-means.lingua#r_0035AEB6229B495C55A10B6651).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00FA563341E5F9066E5628AADE

@@ -1,0 +1,22 @@
+Import "../Computing.lingua"
+
+Review abstraction representation independence and software construction (@computing-abstraction-review: 0, is #chapter, #hephaestus-core "Begin-an-interaction-with-the-person-and-the-task-being-attempted.lingua#r_00DB108C84234052A2E708BF49") { r_00471F0107816D8D52C639694B
+Explain names, bindings, objects, procedure invocations and captured environments using the original scope traces. Distinguish rebinding from mutation and retained environment access from a raw address lifetime. Identify a procedure's explicit inputs, hidden state, effects and termination assumptions before treating it as a mathematical function.
+
+State the slot interface without referring to a tuple or mask. Include the universe width, exact input types, ordering of observations, invalid-input behavior, persistent old values and excluded observations. Define abstract equality and explain why concrete identity, default rendering or matching method names cannot replace it.
+
+Define both representation invariants and abstraction functions, prove all abstract values are representable, and prove every operation's preservation and abstraction law. Establish representation independence for finite cooperative clients by induction over calls, including branches chosen from prior observations and aliases to old values. State why a finite test suite, even an exhaustive small-state one, is different evidence from that general argument.
+
+Reconstruct the inspected source range interpretation and its validity conditions. Exhibit constructor-side and observer-side representation exposure, and explain why an immutable outer container alone may fail. Explain the limited protection supplied by Python frozen dataclasses and why our exact immutable element types matter.
+
+Prove the complete reservation client's validation, conflict and successful paths from interface contracts. Supply a rival with a correct status and wrong resulting state, and another that violates validation priority. Explain why local immutable proposals do not establish unique external commitment. Use the shared module formation to separate interpretation, calculation, reporting and external effects.
+
+Analyze both representation costs with the stated bounded-integer and generalized digit models. Distinguish the cost of returning a reference from consuming its contents. Identify a requirement that needs a richer abstract state, and complete the independent changed-representation or changed-model investigation with criticism and revision.
+
+This eighth computing block supplies common programming abstraction and software-construction preparation. It does not complete programming-language theory, compiler construction, full software architecture, human-computer interaction, security or the twenty-two pending computing scopes. Continue engineering realization/reliability/service and inquiry causal/observational formation at comparable breadth, then review the transition from common foundations to major branches.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue through human use and trust:** [Begin an interaction with the person and the task being attempted](Begin-an-interaction-with-the-person-and-the-task-being-attempted.lingua#r_00DB108C84234052A2E708BF49). Connect system contracts to people, observable evidence, accessible action, authority, privacy and recovery before deeper computing specializations.
+
+} r_00471F0107816D8D52C639694B

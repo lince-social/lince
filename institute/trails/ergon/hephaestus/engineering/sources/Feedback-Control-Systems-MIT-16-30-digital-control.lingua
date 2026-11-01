@@ -1,0 +1,13 @@
+Import "../Engineering.lingua"
+
+Feedback Control Systems MIT 16 30 digital control (@engineering-source-digital-control: 0, is #reference) { r_002CEE25F9B16E0755767D7EFD
+Jonathan P. How and Emilio Frazzoli. Feedback Control Systems, MIT 16.30, Fall 2010, undergraduate Aeronautics and Astronautics. [Official lecture collection](https://ocw.mit.edu/courses/16-30-feedback-control-systems-fall-2010/pages/lecture-notes/) and [Topic 20 resource](https://ocw.mit.edu/courses/16-30-feedback-control-systems-fall-2010/resources/mit16_30f10_lec20/).
+
+Read [Digital Control Basics](https://ocw.mit.edu/courses/16-30-feedback-control-systems-fall-2010/25129dabd19249e15c1df8034335aafa_MIT16_30F10_lec20.pdf), especially printed 20–1 through 20–5, for the change from continuous signals to sampling, held commands and computation timing. The PDF is dated 5 November 2010. Its later emulation/transfer-function material needs further preparation; the common trail derives a scalar recurrence directly from the already developed initial-value solution.
+
+On 1 November 2026, the official course attribution/date and selected actual Topic 20 pages were inspected for sampling, analog/digital boundaries, zero-order hold, timing and the distinction between a hold and a forward approximation. The historical converter-resolution examples and bandwidth heuristic are not adopted as universal specifications. Full lecture collection, laboratories, emulation designs and actual digital hardware were not audited or executed. The original exact scalar sample-and-hold and clipped-cycle investigation is not a reproduction of a complete MIT laboratory.
+
+The current [OCW terms](https://ocw.mit.edu/pages/privacy-and-terms-of-use/) identify CC BY-NC-SA 4.0 with component qualifications; source media stay external. Preserve authorship and edition/date when following later readings. No diagram, PDF, code or laboratory data from the course is stored in this trail.
+
+**Return:** [Engineering — systems, design, construction, and operation](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_002CEE25F9B16E0755767D7EFD

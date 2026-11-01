@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Distinguish concentration correlations and uncertainty in an observation (@physics-statistical-fluctuations: 0, is #chapter, #hephaestus-core "Use-controlled-infinite-sums-in-a-stipulated-energy-ladder.lingua#r_0020301215067F6BEA7F416700") { r_00BB3DEB755830AE5E94CAF4BA
+In the independent canonical binary model J is a sum of a indicators, each with mean p and variance p(1−p). Independence removes cross covariances, giving Var(J)=ap(1−p). For the fraction J/a with a>0, variance is p(1−p)/a. Its standard deviation decreases as 1/√a at fixed p. The absolute count's standard deviation grows as √a; these statements are compatible. Relative standard deviation of J is √[(1−p)/(ap)] when p>0, so a large a alone is insufficient near a very rare excitation.
+
+A direct concentration bound needs no Gaussian approximation. On the event |X−E[X]|≥d>0 the nonnegative squared deviation is at least d², so Var(X)≥d²P(|X−E[X]|≥d). Applied to J/a this gives a tail bound p(1−p)/(a d²), capped at one. It is a bound for the stipulated ensemble, not a confidence interval for an unknown parameter inferred from observed data. Reuse [Describe a chance quantity by its weighted mean and spread](../../inquiry/core/Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA) for the distinction between model variance and estimated variation.
+
+Correlations can change the scaling completely. If every site equals the same random binary variable Y, then J=aY and Var(J)=a²p(1−p); the fraction does not concentrate. In the fixed-total model, negative correlations instead give Var(J)=ap(1−p)(N−a)/(N−1). For a=3 and p=3/8, the ratio of fixed-total to independent variance is (N−3)/(N−1), tending to one at fixed a as N grows. For a=N, the fixed-total variance stays zero. A statement about small local subsystems cannot be promoted to a statement about every extensive observable.
+
+An observation also has a measurement procedure: which quantity, sampling times, resolution, calibration and perturbation of the system. A physical fluctuation in energy differs from sensor noise, uncertain calibration or uncertainty in a fitted temperature. Two distributions with the same mean energy may be separated by a variance or a joint observation, but a finite empirical variance also has sampling uncertainty. No set of exact model checks supplies an apparatus validation or an actual dataset.
+
+For an energy spectrum with finitely many fixed levels and fixed finite a, Z is a finite sum of smooth positive exponentials for finite T>0. Thermodynamic functions derived from ln Z are smooth there. A sharp macroscopic phase-transition singularity requires a suitable limiting argument or a changed model; a rounded maximum in a small system's response is not that argument. Interactions, collective order and phase coexistence remain subsequent formation.
+
+**Work:** prove the variance scaling and tail bound. Compare independent, perfectly correlated and fixed-total preparations with the same one-site mean. Choose a discriminating observable and describe how measurement noise and correlated sampling could obscure it. Derive a finite-size bound before using an informal thermodynamic-limit statement.
+
+**Continue:** [Use controlled infinite sums in a stipulated energy ladder](Use-controlled-infinite-sums-in-a-stipulated-energy-ladder.lingua#r_0020301215067F6BEA7F416700).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00BB3DEB755830AE5E94CAF4BA

@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Choose chemical constraints before using a free energy sign (@chemistry-thermo-constraints: 0, is #chapter, #hephaestus-core "../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM") { r_0024B2FCA41783BA78949E37E5
+A chemical change can conserve energy and still require an external driving effect. Begin with [Define entropy changes through reversible comparisons](../../physics/core/Define-entropy-changes-through-reversible-comparisons.lingua#r_004E2CAE37300D29985DB2F68F) and [Review process direction without losing boundaries or assumptions](../../physics/core/Review-process-direction-without-losing-boundaries-or-assumptions.lingua#r_007B8D111B5FBE32367C81B1ED), and use [Use entropy changes with a defined system and a valid thermodynamic argument](../general-chemistry/energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB) as the chemical reading bridge. The present question is how a declared environment turns the total entropy restriction into a criterion involving the chemical system's state quantities. The word free does not mean that energy appears without an account.
+
+Take a closed system with equilibrium endpoints at the same temperature T₀>0 and pressure p₀. Its surroundings supply heat only from a reservoir at T₀, receive pressure-volume work p₀ΔV, and receive signed non-pressure-volume work W′. No other net energy or entropy storage is omitted. Heat Q is positive into the system; work is positive out, as in physics. With no bulk kinetic/potential energy change, ΔU=Q−p₀ΔV−W′. The entropy change of system plus reservoir is S_gen=ΔS−Q/T₀≥0. Eliminating Q gives
+
+ΔU+p₀ΔV−T₀ΔS+W′=−T₀S_gen≤0.
+
+At these matching endpoints, define H=U+pV and G=H−TS. Then ΔG+W′=−T₀S_gen, so W′≤−ΔG. With W′=0, an allowed spontaneous change cannot increase G. The reversible comparison gives equality, if a reversible path with the stipulated boundaries is available. With external work input, W′ is negative and G can increase. An arbitrary driven process need not lower G.
+
+For example, stipulate ΔU=−100 J,ΔV=0.001 m³,p₀=100 kPa,ΔS=0.5 J/K,T₀=300 K. Then ΔG=−150 J. With no non-pressure-volume work, Q=0 and S_gen=0.5 J/K. With reversible W′=150 J, Q=150 J and S_gen=0. A proposal W′=200 J closes energy with Q=200 J but gives S_gen=−1/6 J/K, failing this screen. These ledgers are hypothetical; a nonnegative screen does not establish an apparatus.
+
+At fixed volume and endpoint temperature T₀, with the same single heat reservoir, ΔU=Q−W and ΔS−Q/T₀≥0 instead give W≤−ΔA for A=U−TS. Here A denotes Helmholtz energy, not chemical species A below, reaction affinity, or the earlier gas quantity nR. State the meaning whenever the symbol changes. If no work is extracted, A cannot increase under those constraints. Changing reservoirs, matter exchange or retained mechanical/electrical storage requires a different account.
+
+**Read and derive:** [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected sections 5.3 and 5.8; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), the beginning of section 16.4. Compare the sources' work-positive-into-system convention with W positive out here. Reconstruct both criteria from balances, and identify the pressure-volume-only premise needed for Q=ΔH. A sign table without those conditions is not a complete argument.
+
+**Continue:** [Thermodynamic potentials, natural variables and constraints](../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0024B2FCA41783BA78949E37E5

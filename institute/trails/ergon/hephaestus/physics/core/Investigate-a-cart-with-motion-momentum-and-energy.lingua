@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Investigate a cart with motion, momentum and energy (@physics-foundation-study: 0, is #chapter, #hephaestus-core "Review-systems-motion-and-physical-evidence.lingua#r_0B390092C821608D642BF70359") { r_005C89AACDDC8AD7217B4BF754
+Bring the foundation together with a hypothetical 3 kg cart on a horizontal track. Use an inertial-frame approximation, a fixed positive direction, initial rest, an 8 N constant pull and a 2 N constant opposing resistance while it moves forward. Neglect rotation and deformation for the first translational model. These supplied values are teaching assumptions, not measurements of an installed system.
+
+Before calculating, draw the cart boundary and identify the quantities required to test the model. State which vertical forces balance and which horizontal forces determine acceleration. Explain why the hand/cart action-reaction pair does not cancel the pull in the isolated cart's horizontal balance. Specify the origin, time zero and point used for position observations.
+
+Predict position, velocity, momentum and kinetic energy at 0, 0.5, 1, 1.5 and 2 s. Derive the numerical formulas x = t² metres, v = 2t m/s, p = 6t kg m/s and K = 6t² joules, with t expressed in seconds. Check the final 4 m, 4 m/s, 12 kg m/s and 24 J independently using graph areas, impulse and work. Track pulling work, resistance work and net work separately.
+
+At 2 s, remove the pull and assume the 2 N resistance remains opposite the forward motion until rest. The acceleration during this stopping interval is −2/3 m/s². The cart takes a further 6 s to stop and travels a further 12 m, reaching x = 16 m at total elapsed time 8 s. Its 24 J of translational kinetic energy is removed by −24 J of resistance work. Once velocity reaches zero, do not extend that same signed resistance formula into spontaneous backward motion: the assumed resistance direction and the model's interval of validity must be reconsidered.
+
+Now add observational questions. How often must position be sampled to distinguish the pulling and stopping intervals? What uncertainty in position or time would matter to the inferred acceleration? Could a change in resistance or a timing offset produce a similar residual? Design a benign observation or use a supplied numerical simulation; do not claim an experiment was performed when the work is analytical.
+
+**Evidence:** present the boundary diagram, source of each input, piecewise model, checked table, momentum and energy accounts, a changed-assumption comparison and a criticism of what the particle approximation omits. Explain how a broader boundary changes the energy inventory without changing the requirement for a consistent physical account.
+
+**Continue:** [Review systems, motion and physical evidence](Review-systems-motion-and-physical-evidence.lingua#r_0B390092C821608D642BF70359).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005C89AACDDC8AD7217B4BF754

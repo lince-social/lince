@@ -1,0 +1,24 @@
+Import "../Engineering.lingua"
+
+Begin with functions, constraints and engineering evidence (@engineering-core: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/foundations/A-machine-begins-with-a-useful-function.lingua#r_6JY8HRXMA2FQZ1EGBG7KE458SG") { r_0DDBF6CF5E8ADA7D17C17404EA
+Engineering develops useful systems under explicit conditions and constraints. Begin with a function rather than a preferred device. “Support a load at this location for this service life” states a different problem from “make this beam thicker.” A design question needs intended users, environment, interfaces, resources and a way to judge the result.
+
+Separate a requirement from an implementation. A maximum permitted deflection is a requirement; choosing a material and cross-section is one way to meet it. Models predict behavior under assumptions. Measurements supply evidence about specimens or actual systems. Verification asks whether specified requirements are met; validation asks whether the result serves the intended use. Passing one numerical calculation establishes neither claim for the whole system.
+
+For a benign planning model, a line must deliver 80 acceptable pieces per hour. Suppose availability is 0.8 of scheduled time and the acceptable fraction is 0.9 of pieces produced during operation. A nominal operating rate r then gives an expected scheduled output of r × 0.8 × 0.9. Meeting the mean target requires r at least 80/0.72 = 111.111… pieces per operating hour. A nominal 120 gives 86.4 acceptable pieces per scheduled hour under these assumptions.
+
+The average is not a delivery guarantee. Variation, queues, downtime clusters, inspection error and upstream shortages may invalidate the simple model or require capacity reserves. Increasing nominal speed can change yield and availability. Treat the factors as an explicitly assumed operating scenario, not independent constants established for every factory.
+
+This connects engineering branches: mechanics describes loads and motion; electrical engineering supplies conversion, sensing and power; materials engineering relates processing and structure to behavior; chemical engineering manages transformations and transport; civil engineering develops structures and infrastructure; production engineering joins process capability, flows, equipment and quality. Utilities, logistics, maintenance and recovery keep the system useful over time. Cleanliness is one process requirement within this larger account.
+
+**Read and practise:** [A machine begins with a useful function](../mechanical-engineering-and-machine-design/foundations/A-machine-begins-with-a-useful-function.lingua#r_6JY8HRXMA2FQZ1EGBG7KE458SG) and [Choose the model and keep its boundary visible](../mechanical-engineering-and-machine-design/foundations/Choose-the-model-and-keep-its-boundary-visible.lingua#r_50DYM9BTTETPVTR2Z7DE3VHK91) supply shared design preparation. [Specify the measurand](../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) helps turn a requirement into a meaningful observation.
+
+**Work:** define one useful household or workshop function, three measurable requirements and two alternative designs. Draw material, energy and information interfaces. Recalculate the line example with availability 0.7 and explain why inspecting more pieces alone does not restore the missing production time. Identify the evidence needed before choosing an actual system.
+
+**Review:** keep assumptions, tradeoffs, failure modes and continuing work visible. Design, construction, commissioning, operation, repair and recovery are parts of one lifecycle. Detailed branch formation remains to be developed after the common core.
+
+**Return:** [Engineering — useful systems from design through continuing service](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the engineering core:** [A machine begins with a useful function](../mechanical-engineering-and-machine-design/foundations/A-machine-begins-with-a-useful-function.lingua#r_6JY8HRXMA2FQZ1EGBG7KE458SG). For this first pass, read the shared machine lesson for functions and context. Use the opening design discussion in Slocum topic 1, then explore idea generation in topic 2; topic 3's simple-model opening follows after the requirements and interfaces lessons. Detailed force, deformation and component exercises remain later preparation. The original mechanical route and its larger reading assignments stay available separately.
+
+} r_0DDBF6CF5E8ADA7D17C17404EA

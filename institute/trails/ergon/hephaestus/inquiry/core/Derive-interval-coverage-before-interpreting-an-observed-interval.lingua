@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Derive interval coverage before interpreting an observed interval (@inquiry-interval-coverage: 0, is #chapter, #hephaestus-core "Use-support-and-rival-models-without-overstating-interval-evidence.lingua#r_006D26B1B561C67863DF2AB840") { r_0056910F906DD78644AFAD2A11
+For the independent two-uniform model, choose a fixed half-width c∈[0,a] before observing the pair and report I(Y)=[M−c,M+c]. The event θ∈I(Y) is |Z|≤c. Integrating the triangular density or subtracting the two square-corner triangles gives P_θ(θ∈I)=1−(1−c/a)²=2c/a−(c/a)². This coverage is the same for every θ because the error law is a location shift. At c=0 it is zero; at c=a it is one. Wider intervals also have coverage one in this bounded model.
+
+To obtain a chosen coverage p∈[0,1], solve c=a(1−√(1−p)), taking the root in [0,a]. In particular c=a/2 gives exactly 3/4 coverage. This deliberately transparent example is not a recommendation that 75% is a suitable level for a real decision. For p=19/20 and a=2, c=2(1−1/√20). The original program brackets the required width using the monotone coverage function and exact rational bisection, avoiding a hidden rounding claim about an irrational square root.
+
+After data are observed, the resulting numerical interval either contains the fixed θ or it does not. The coverage belongs to the procedure under repeated data from the declared model. It does not by itself assign probability p to θ lying in that particular observed interval. A probability statement about an unknown parameter requires a different specified inferential model, such as a prior and likelihood; it cannot be supplied by changing the wording. Read the interpretation passage in [Measurement Process Characterization — NIST/SEMATECH](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 1.3.5.2. Its Student-t formula requires its own assumptions and is not imported into this uniform example.
+
+Coverage of θ is also different from probability for a new observation. Even if θ were known, one future uniform error lies within θ±a/2 with probability 1/2, while the interval procedure based on the two-reading mean has parameter coverage 3/4. Prediction centered on an estimated mean needs the distribution of the difference between a future observation and that estimate, including their dependence. A confidence interval is not automatically a prediction interval.
+
+The fixed-width derivation does not justify choosing a favorable width or a model after seeing the same data. A data-dependent rule can have coverage, but it needs a proof for that rule. Nor does the exact calculation validate the underlying error distribution. Report the model, known parameters, procedure, coverage level and any deviations. Reuse [Report uncertainty with its interpretation and decision boundary](Report-uncertainty-with-its-interpretation-and-decision-boundary.lingua#r_00C8CF675ED315159661399E79) to distinguish this claim from hard bounds and propagated measurement uncertainty.
+
+**Continue:** [Use support and rival models without overstating interval evidence](Use-support-and-rival-models-without-overstating-interval-evidence.lingua#r_006D26B1B561C67863DF2AB840).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0056910F906DD78644AFAD2A11

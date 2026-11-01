@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Use cumulative probabilities transformations and quantiles with explicit domains (@inquiry-cumulative-quantiles: 0, is #chapter, #hephaestus-core "Derive-continuous-moments-and-distinguish-spread-from-a-guarantee.lingua#r_003300B25CBBCE011AA44DDFAC") { r_00335F433A9AF6C45114F39ACD
+For any real-valued quantity X, its cumulative distribution function is F(x)=P(X≤x). It is nondecreasing, right-continuous, and approaches zero and one at the two infinite ends. These properties belong to probability laws generally; the bounded density model here gives F(x)=∫₋∞ˣ f(t)dt, an integral with a finite nonzero region. At points where f is continuous, the fundamental theorem gives F'(x)=f(x). Do not assert this derivative at a jump of a piecewise density or recover a point mass by an ordinary density derivative. Reuse [Connect accumulated change and local rate under stated conditions](../../mathematics/core/Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0).
+
+For E uniform on [−a,a], F_E(x)=0 for x≤−a, (x+a)/(2a) for −a<x<a, and 1 for x≥a. Its interval probability is F_E(d)−F_E(c); endpoints have zero mass. For 0<p<1, define a quantile q(p)=inf{x:F(x)≥p}. Here q(p)=a(2p−1). The generalized definition also handles flat pieces and jumps; a CDF need not have an ordinary inverse. Endpoint quantiles require a separate convention and are not needed for the interior definition.
+
+If Y=b+sX with s>0, the event Y≤y is X≤(y−b)/s, so F_Y(y)=F_X((y−b)/s). Differentiating where justified gives f_Y(y)=f_X((y−b)/s)/s. For s<0, the inequality reverses; for a density law the corresponding density uses 1/|s|. The s=0 result is a point mass at b and must be treated separately. A shift changes location and a nonzero scaling changes spread and density height; neither creates extra probability.
+
+Conditioning on an event A of positive probability uses the same ratio as [Condition on information without assuming independence](Condition-on-information-without-assuming-independence.lingua#r_07DA2E41CFC98507FD5297EA72): P(B|A)=P(B∩A)/P(A). For an interval restriction, the density inside that interval is divided by its probability and is zero outside. The formula cannot be applied by dividing by P(X=x)=0. Conditional laws given an exact continuous value require further construction; a density ratio under stated regularity is different from that undefined event ratio.
+
+**Work:** derive the transformed uniform CDF rather than memorizing its height. For E uniform on [−2,2], condition on E>0 and compute P(E≤1|E>0). Give a distribution with a point mass whose CDF jumps. Read selected section 4.2 of [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71) progressively; general conditioning and transformations remain later mathematical formation.
+
+**Continue:** [Derive continuous moments and distinguish spread from a guarantee](Derive-continuous-moments-and-distinguish-spread-from-a-guarantee.lingua#r_003300B25CBBCE011AA44DDFAC).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00335F433A9AF6C45114F39ACD

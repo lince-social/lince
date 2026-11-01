@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Solve simultaneous constraints without losing their solution set (@math-linear-systems: 0, is #chapter, #hephaestus-core "Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua#r_03CC45432746F4DD0737B769A4") { r_03FC1F97250326F9B36A1B2F6B
+A system of equations requires all its constraints to hold together. State the unknowns and their domain before transforming it. A matrix collects coefficients in rows and columns; it does not supply the meaning of those coefficients or guarantee a solution. A repeated equation can add no information, and a new equation can contradict the earlier ones.
+
+**Read and reuse:** the [shared equations lesson](../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ) and OpenStax sections 11.1, 11.5 and 11.6. Boyd and Vandenberghe sections 6.1, 6.4 and 8.3 connect coefficient arrays, matrix-vector multiplication and systems. Read the equations beside the arrays until each row and column has a clear interpretation. Larger algorithms and numerical factorization follow later.
+
+For x + 2y = 7 and 3x − y = 7, subtract three times the first equation from the second to obtain −7y = −14. Therefore y = 2 and x = 3. Substitution checks both original equations. The coefficient matrix has rows (1,2) and (3,−1), the unknown column is (x,y), and the right-hand column is (7,7). Their product notation is a compact description of those same equations.
+
+Three row operations preserve the real solution set: exchanging two equations, multiplying one by a nonzero scalar, and adding a scalar multiple of one equation to another. Each is reversible. Multiplication by zero is excluded because it erases a constraint. Apply the operation to the entire equation, including its right-hand side. An augmented matrix makes this obligation visible. Echelon form places all-zero rows last and successive leading nonzero entries farther right with zeros below; reduced echelon form additionally normalizes the leading entries to one and clears their columns above. Do not confuse either definition with an assumption that every variable must have a pivot.
+
+Compare x + 2y = 7 with 2x + 4y = 14: the second adds no independent constraint, and solutions are (7−2s,s) for arbitrary real s. Changing 14 to 15 gives the contradiction 0 = 1 and no solution. With nonnegative real x,y in the dependent case, only 0 ≤ s ≤ 3.5 is allowed. If both must be integer counts, s can only be 0, 1, 2 or 3. A numerical answer must respect its original domain.
+
+Uniqueness also differs from sensitivity. For nonzero ε, the system x+y=2 and x+(1+ε)y=2+ε has the unique solution (1,1). Changing only the second right-hand side by δ gives y=1+δ/ε and x=1−δ/ε. With ε=0.001 and δ=0.001, the new solution is (0,2). Both systems can be solved exactly, yet a small change in input changes the answer substantially. A zero computational residual does not remove uncertainty in the supplied equations.
+
+**Work:** solve by elimination and by a geometric intersection argument. Construct one consistent dependent system and one inconsistent system. Prove why each allowed row operation is reversible. Derive the ε,δ result before substituting numbers, and examine ε=0 separately. Do not silently replace an inconsistent exact problem with an approximate fit; that requires a stated new objective and evidence model.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Read a matrix as a map and distinguish translation from linearity](Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua#r_03CC45432746F4DD0737B769A4).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_03FC1F97250326F9B36A1B2F6B

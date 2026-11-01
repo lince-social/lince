@@ -1,0 +1,45 @@
+Import "../Computing.lingua"
+
+Investigate a stock trace with independent computational evidence (@computing-foundation-study: 0, is #chapter, #hephaestus-core "Review-representations-algorithms-and-execution-evidence.lingua#r_0B2570961958EAF1D0D1911243") { r_06AE2B0429294B062E80CC37F6
+Implement the contract and invariant developed above. Save the original teaching function below as stock_trace.py in a personal exercise directory. It uses ordinary Python built-ins and no external input files. Complete the shared values, control-flow and error lessons before treating the program as an explanation.
+
+```python file=stock_trace.py
+def trace_stock(initial, capacity, changes):
+    if type(initial) is not int or type(capacity) is not int:
+        raise TypeError("initial and capacity must be integers")
+    if capacity < 0 or not 0 <= initial <= capacity:
+        raise ValueError("initial stock must fit the nonnegative capacity")
+    if type(changes) is not tuple:
+        raise TypeError("changes must be an immutable tuple")
+    if any(type(change) is not int for change in changes):
+        raise TypeError("every change must be an integer")
+    states = [initial]
+    for index, change in enumerate(changes):
+        candidate = states[-1] + change
+        if candidate < 0 or candidate > capacity:
+            return tuple(states), (index, candidate)
+        states.append(candidate)
+    return tuple(states), None
+
+```
+
+The exact type checks reject Booleans as counts. The first validation pass checks the whole immutable event tuple. The loop then forms candidate states in order. The returned first tuple contains accepted states, including the initial count; the second value is either None or a pair containing the rejected event's zero-based index and candidate. The input tuple is unchanged. No external stock or file is modified.
+
+Start with trace_stock(3, 5, (2, -4, 5)). Expect accepted states (3, 5, 1) and failure (2, 6). Check trace_stock(0, 0, ()) as a separate boundary case: it returns ((0,), None). Predict the result of a zero-valued change before running it. An inappropriate input type raises TypeError; an integer initial state or capacity outside the permitted range raises ValueError. Neither is reported as a successful empty trace.
+
+Connect to the earlier mathematical study: initial stock 18, capacity 40 and receipt/issue changes (7, -5) repeated for nine days. The first sixteen events are accepted and end at stock 34. Event index 16 proposes stock 41 and is rejected. Checking only the hypothetical day-nine final total of 36 would miss that violation. Reversing each day's order to (-5, 7) permits eleven complete days; in a twelve-day input, event index 23 proposes 42 after an accepted issue leaves 35. Explain why the accepted prefix can end partway through a day under this event-level contract.
+
+Construct an independent oracle by calculating every prefix sum directly from the original tuple, then finding the first value outside the interval. Compare its result with the running procedure across a finite grid of small capacities, initial states and signed changes. Include empty input, zeros, exact bounds, both violation directions, malformed values and a large exact integer. The oracle has a different repeated-summation cost; its role is independent evidence, not the preferred implementation for large inputs.
+
+**Evidence:** provide the contract, invariant and termination argument, predicted examples, actual commands/runtime version, comparison results and a failed candidate implementation that your tests detect. Check input preservation and repeatability. Explain why finite exhaustive tests over a declared grid do not prove all possible integer inputs. Finally distinguish correctness of this program from the truth of the physical stock assumptions; a correct trace cannot repair missing events or a wrong item basis.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Shared model:** [Investigate a stock model and its alternatives](../../mathematics/core/Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838). The computation implements one explicitly stated event-level contract.
+
+**Author verification:** the extracted program was run with Python 3.14.8. It agreed with independently recomputed prefix sums over 58,590 finite-grid cases; fourteen malformed-input cases, exact large integers, boundary examples, input preservation and fresh-process/working-directory repeatability also passed. These checks support this program and its stated examples; they do not prove every input or establish the truth of a real stock model.
+
+**Continue:** [Review representations, algorithms and execution evidence](Review-representations-algorithms-and-execution-evidence.lingua#r_0B2570961958EAF1D0D1911243).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_06AE2B0429294B062E80CC37F6

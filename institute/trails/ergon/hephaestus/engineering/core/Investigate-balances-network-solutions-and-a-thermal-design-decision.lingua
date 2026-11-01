@@ -1,0 +1,188 @@
+Import "../Engineering.lingua"
+
+Investigate balances network solutions and a thermal design decision (@engineering-network-study: 0, is #chapter, #hephaestus-core "Review-conservation-component-behavior-and-engineering-evidence.lingua#r_00CEE9876C1F6E9B9A6C941F00") { r_00FC8512FE7F1A6C8D72CABF3B
+Develop a reproducible analytical investigation with the two-node steady network and the single-node transient. These are separate hypothetical models; the one-node example is not a derived replacement for the two-node network. Use the coefficients already introduced, record every unit and sign, and retain a drawing with node boundaries and edge directions.
+
+1. Derive both node equations before solving. Recover (4,2) K, the three edge powers and the global 10 W account. Reverse the internal arrow and recover the same state. Exchange the input location and explain the changed sign. Derive uniqueness and an incompatible unanchored example without consulting the program.
+2. Derive the one-node initial-value response, stored energy and integrated outward energy. Reconstruct the t=4 s account exactly in terms of exp(−1). Treat G=0 separately. Explain why a computed long-time result is conditional on unchanged properties and boundary conditions.
+3. Compare A, B and C against the nominal requirements, then redo the decision using the stated hard bounds. Preserve the unresolved resource/realization question rather than inventing a fourth manufactured design. Design additional observations that distinguish C/G from C and G and could reveal inadequate spatial lumping.
+4. Read the assigned source passages and criticize the transition from a continuum material to a node or edge. Distinguish the freshly inspected definitions from complete textbook/course assignments. Record which evidence is algebraic, numerical, hypothetical, published or actually observed. This investigation includes no performed physical experiment.
+
+The original program uses exact rational arithmetic for steady equations and 70-digit Decimal evaluation for the exponential response. Inputs use consistent numerical units: W/K, J/K, W, K and s. Its steady solver deliberately rejects every singular system; the preceding lesson distinguishes compatible nonuniqueness from incompatibility. The transient rejects nonpositive capacity, negative conductance and negative elapsed time. It accepts signed input and temperature difference, because neither represents a negative absolute temperature. Use integers, Fraction values or decimal strings when exact input intent matters; converting a binary float to Fraction preserves that float's value.
+
+```python file=network_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+
+
+def steady(a, b, c, p, q):
+    a, b, c, p, q = map(F, (a, b, c, p, q))
+    if min(a, b, c) < 0:
+        raise ValueError('negative conductance')
+    determinant = a*b + a*c + b*c
+    if determinant == 0:
+        raise ValueError('unanchored component; classify before solving')
+    x = ((b+c)*p+c*q)/determinant
+    y = (c*p+(a+c)*q)/determinant
+    return x, y, (a*x, b*y, c*(x-y))
+
+
+def number(value):
+    value = F(value)
+    return D(value.numerator)/D(value.denominator)
+
+
+def response(capacity, conductance, power, initial, time):
+    capacity, conductance, power, initial, time = map(F, (capacity, conductance, power, initial, time))
+    if capacity <= 0 or conductance < 0 or time < 0:
+        raise ValueError('invalid capacity, conductance or time')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        C, G, P, start, t = map(number, (capacity, conductance, power, initial, time))
+        if G == 0:
+            temperature = start + P*t/C
+            outflow = D(0)
+        else:
+            equilibrium = P/G
+            decay = (-G*t/C).exp()
+            temperature = equilibrium + (start-equilibrium)*decay
+            outflow = P*t + C*(start-equilibrium)*(1-decay)
+        storage = C*(temperature-start)
+        return temperature, storage, outflow
+
+
+if __name__ == '__main__':
+    print('steady K; ambient and internal W:', steady(2, 1, 1, 10, 0))
+    print('transient K; stored and released J:', response(12, 3, 6, 0, 4))
+    for name, capacity, conductance, cost in [('A',12,3,5),('B',12,4,7),('C',8,3,6)]:
+        equilibrium = F(6,conductance)
+        tau = F(capacity,conductance)
+        eligible = equilibrium <= F(8,5) and tau <= 3 and cost <= 7
+        print(name, equilibrium, tau, cost, eligible)
+```
+
+Save the companion beside it and run both with Python 3 through the repository's Nix environment. The companion manufactures steady right-hand sides from known exact states, independently checks each node and the combined account, reverses arrows, swaps nodes and checks the positive quadratic. It tests singular and invalid inputs. For transients, rational polynomial brackets for exp(−x) provide a reference independent of Decimal.exp; their foundation is the alternating remainder argument developed in [Investigate reversible change and the evidence carried by a chemical signal](../../chemistry/core/Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A). For x>1 subdivide to y=x/ceil(x)≤1 and raise positive bounds to that integer power using the exponential product identity. Degree 36 supplies an upper bound and degree 37 a lower bound. The explicit 10⁻⁶⁰ slack accounts for the tested Decimal roundoff comparisons; it is not a universal numerical error certificate for arbitrary inputs.
+
+```python file=network_checks.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from itertools import product
+import json
+import network_study as m
+
+checks = 0
+
+
+def check(value):
+    global checks
+    assert value
+    checks += 1
+
+
+def rejected(call):
+    try:
+        call()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def decay_bounds(x):
+    x = F(x)
+    if x == 0:
+        return F(1), F(1)
+    pieces = (x.numerator+x.denominator-1)//x.denominator
+    y = x/pieces
+    term = value = F(1)
+    for j in range(1,37):
+        term *= -y/j
+        value += term
+    return (value-term*y/37)**pieces, value**pieces
+
+
+families = singular = 0
+for a,b,c in product((F(0),F(1,2),F(1),F(3)), repeat=3):
+    determinant = a*b+a*c+b*c
+    for x,y in product((F(-2),F(0),F(1,3),F(4)), repeat=2):
+        p,q = a*x+c*(x-y), b*y-c*(x-y)
+        quadratic = a*x*x+b*y*y+c*(x-y)**2
+        check(x*p+y*q == quadratic)
+        check(quadratic >= 0)
+        if determinant == 0:
+            rejected(lambda: m.steady(a,b,c,p,q))
+            singular += 1
+            continue
+        tx,ty,(f1,f2,f12) = m.steady(a,b,c,p,q)
+        check((tx,ty) == (x,y))
+        check(f1+f12 == p and f2-f12 == q)
+        check(f1+f2 == p+q)
+        reverse = c*(ty-tx)
+        check(f1-reverse == p and f2+reverse == q)
+        sx,sy,_ = m.steady(b,a,c,q,p)
+        check((sx,sy) == (y,x))
+        check(quadratic > 0 or (x == 0 and y == 0))
+        families += 1
+    if determinant:
+        tx,ty,_ = m.steady(a,b,c,1,2)
+        check(tx >= 0 and ty >= 0)
+check(m.steady(2,1,1,10,0) == (F(4),F(2),(F(8),F(2),F(2))))
+check(m.steady(2,1,1,0,10)[:2] == (F(2),F(6)))
+for x in (F(-4),F(0),F(7)):
+    y = x-5
+    check((x-y,y-x) == (5,-5))
+check(5+(-4) != 0)
+rejected(lambda: m.steady(-1,1,1,0,0))
+transients = 0
+with localcontext() as ctx:
+    ctx.prec = 70
+    tolerance = F(1,10**60)
+    for C,G,P,start,t in product((F(1),F(4),F(12)),(F(0),F(1),F(3)),(F(0),F(2),F(6)),(F(-1),F(0),F(3)),(F(0),F(1,2),F(2),F(4))):
+        temperature,storage,outflow = map(F,m.response(C,G,P,start,t))
+        check(abs(storage+outflow-P*t) < tolerance)
+        if G == 0:
+            expected = start+P*t/C
+            check(abs(temperature-expected) < tolerance)
+            check(outflow == 0)
+        else:
+            low,high = decay_bounds(G*t/C)
+            equilibrium = P/G
+            bounds = sorted((equilibrium+(start-equilibrium)*low,equilibrium+(start-equilibrium)*high))
+            check(bounds[0]-tolerance <= temperature <= bounds[1]+tolerance)
+            check(min(start,equilibrium)-tolerance <= temperature <= max(start,equilibrium)+tolerance)
+            check(abs(storage-C*(temperature-start)) < tolerance)
+        if t == 0:
+            check(temperature == start and storage == outflow == 0)
+        transients += 1
+    check(abs(F(m.response(12,3,6,0,400)[0])-2) < F(1,10**40))
+    check(m.response(12,3,6,2,4) == (D(2),D(0),D(24)))
+    for scale in (F(1,2),F(2),F(5)):
+        check(m.response(12*scale,3*scale,0,2,4)[0] == m.response(12,3,0,2,4)[0])
+    for small in (F(1,100),F(1,10000),F(1,1000000)):
+        temperature = F(m.response(12,small,6,0,4)[0])
+        check(0 <= 2-temperature <= F(6)*small*16/(2*144))
+for arguments in [(0,1,1,0,1),(1,-1,1,0,1),(1,1,1,0,-1)]:
+    rejected(lambda: m.response(*arguments))
+check(F(6,3) > F(8,5))
+check(F(6,4) <= F(8,5) and F(12,4) <= 3)
+check(F(6,3) > F(8,5) and F(8,3) <= 3)
+check(F(63,10)/F(19,5) == F(63,38) > F(8,5))
+check(F(12)/F(19,5) == F(60,19) > 3)
+check(F(63,10)/F(8,5) == F(63,16))
+check(F(12)/3 == 4)
+check(F(63,10)/4 <= F(8,5))
+check(F(4)*F(19,20) < 4 <= F(80,19)*F(19,20))
+result = {'checks':checks,'steady_manufactured_cases':families,'singular_cases':singular,'transient_cases':transients}
+print(json.dumps(result))
+```
+
+**Interpret the evidence:** manufactured cases can detect algebraic and sign errors but do not establish real conductances, spatial uniformity, sensor adequacy or feasibility. The general proofs establish identities under assumptions; finite checks exercise the implementation. Bounds on a mathematical exponential do not bound model error. One nominal pass with an uncertain margin is still an unresolved design claim.
+
+**Independent extension:** choose a benign model of your own, such as two objects exchanging heat in a room. Change both the boundary and one requirement. Derive its equations, include an alternative and a counterexample, state what data would be needed, and ask another reader to audit the signs and assumptions. Keep the first rejected version and the correction. A numerical fit alone is not evidence that the resulting design can be fabricated or sustained.
+
+**Author verification:** the companion passed 8,742 checks through Nix: 864 manufactured anchored-network cases, 160 singular cases and 324 transient cases, plus original examples, limits, identifiability and design bounds. The mathematical and program checks are not evidence of a performed physical experiment.
+
+**Continue:** [Review conservation component behavior and engineering evidence](Review-conservation-component-behavior-and-engineering-evidence.lingua#r_00CEE9876C1F6E9B9A6C941F00).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00FC8512FE7F1A6C8D72CABF3B

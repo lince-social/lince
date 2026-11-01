@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Define a derivative as a justified local rate (@math-derivative-definition: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_02335A93A6AF69D38C38651917
+For a function defined near a, the finite change over a nonzero increment h is f(a+h)−f(a), and its average rate is that change divided by h. Define f′(a) as the limit of this quotient as h→0, provided a finite two-sided limit exists. The notation df/dx names this derivative with respect to the input x; it is not permission to divide by an actual zero increment. A derivative function assigns f′(a) to those points where the defining limit exists.
+
+For a constant, the numerator is zero. For f(x)=mx+b, the quotient is m. For f(x)=x³, expansion gives ((a+h)³−a³)/h=3a²+3ah+h². The last two terms tend to zero, so f′(a)=3a². To make that limit quantitative, when |h|≤1 the quotient error is at most (3|a|+1)|h|. Choose a correspondingly small |h| for any desired slope tolerance. This checks every small increment, not merely a few numerical quotients.
+
+If f is differentiable at a, write f(a+h)−f(a)=h[f′(a)+e(h)], with e(h)→0 for nonzero h. The bracket stays bounded nearby, so the difference tends to zero: differentiability implies continuity. The converse fails. At zero, |h|/h equals 1 for h>0 and −1 for h<0; |x| is continuous but has no two-sided derivative there. A tangent line with a single finite slope is therefore not available at that corner.
+
+If x is measured in seconds and f(x) in metres, f′ has units metres per second. Changing the input coordinate changes the numerical derivative. If a duration in minutes is u and in seconds is x=60u, the same position written as F(u)=f(60u) has derivative 60f′(60u) metres per minute. This is a change of coordinate and unit, not a physical acceleration. Reuse [Units, dimensions, and equations that can make sense](../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1) and the earlier [Read a matrix as a map and distinguish translation from linearity](Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua#r_03CC45432746F4DD0737B769A4) distinction between representation and the represented relation.
+
+**Read:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 sections 3.1–3.2, taking polynomial and absolute-value examples before unfamiliar transcendental derivatives. The next shared [Small changes, derivatives, and first-order approximations](../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52) lesson supplies its already developed square-function finite remainder and practical first-order interpretation. Keep its partial-derivative and full uncertainty assignments attached to later preparation.
+
+**Derive and interpret:** obtain the derivative of x² directly and then compare its proof with the shared lesson. Explain an endpoint's one-sided rate, a corner and a discontinuity separately. A finite difference from observations estimates an interval change; identifying it with a limiting physical rate requires a model and attention to resolution/noise. Making h extremely small in floating-point arithmetic can also amplify subtraction error. The mathematical limit does not instruct an instrument or computer to resolve an infinitely small interval.
+
+**Continue:** [Small changes, derivatives, and first-order approximations](../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_02335A93A6AF69D38C38651917

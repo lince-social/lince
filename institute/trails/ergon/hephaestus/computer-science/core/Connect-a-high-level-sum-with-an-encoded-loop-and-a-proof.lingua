@@ -1,0 +1,33 @@
+Import "../Computing.lingua"
+
+Connect a high-level sum with an encoded loop and a proof (@computing-machine-invariant: 0, is #chapter, #hephaestus-core "Investigate-finite-arithmetic-and-an-independently-checked-execution-trace.lingua#r_067F495969F16395BCE0789A85") { r_0778162F79E4E9910D1B03EE10
+The task is to take a four-bit input n, terminate and leave n(n+1)/2 modulo 16 in data location 1. Data location 0 initially contains n, location 1 contains zero, location 2 contains one, and the other locations contain zero. This modular output contract differs from an unrestricted natural-number sum. Reuse [Specify inputs, results and failure before implementing](Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D), [Derive a loop from an invariant and a stopping rule](Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9) and the preceding machine specification.
+
+The code bytes in hexadecimal are 70 21 10 6A 31 21 10 42 20 52 00. They encode:
+
+| pc | Instruction | Meaning in this program |
+| --- | --- | --- |
+| 0 | LDI 0 | Clear accumulator |
+| 1 | ST 1 | Clear accumulated sum |
+| 2 | LD 0 | Load remaining counter |
+| 3 | JZ 10 | Exit when counter is zero |
+| 4 | ADD 1 | Add previous sum to counter |
+| 5 | ST 1 | Store new modular sum |
+| 6 | LD 0 | Reload remaining counter |
+| 7 | SUB 2 | Subtract the stored constant one |
+| 8 | ST 0 | Store decreased counter |
+| 9 | JMP 2 | Return to loop head |
+| 10 | HALT | Finish |
+
+At the loop head pc=2 after j completed iterations, data[0]=n−j and data[1] equals j(2n−j+1)/2 modulo 16, the sum of the j already processed values n,n−1,…,n−j+1. Data[2] stays one and every other unused location stays unchanged. The setup establishes j=0. For a nonzero counter, adding it extends that sum by n−j. Subtracting one cannot underflow because the branch admitted only counters at least one. The writes preserve the other locations, establishing the invariant for j+1.
+
+The natural-number variant n−j strictly decreases on each non-exiting iteration and is bounded below by zero. Thus exactly n such iterations occur. At the final head the counter is zero; the branch reaches HALT and the accumulated sum is n(n+1)/2 modulo 16. There are two setup instructions, eight instructions per nonzero iteration and three exit instructions, for 8n+5 successful transitions. This is a proof about this code and precondition, not a timing prediction for hardware.
+
+For n=4 the result is 10 after 37 transitions; for n=6 the mathematical sum is 21 but the stored residue is 5 after 53; for n=15 the sum is 120 and the result is 8 after 125. Under the declared unsigned interpretation only n≤5 has a sum that fits without modular loss. A signed four-bit interpretation would impose a different range and is not this program’s output contract.
+
+**Investigate:** trace n=0 and n=4 by hand, separating the accumulator from stored memory. Change ST 1 at pc=5 to ST 2 and explain how corrupting the constant destroys the invariant. Compare a budget of 8n+4 with 8n+5. Show why the first reports exhaustion even though the unchanged program has a termination proof. Derive the triangular formula independently by pairing the ascending and descending sums.
+
+**Continue:** [Investigate finite arithmetic and an independently checked execution trace](Investigate-finite-arithmetic-and-an-independently-checked-execution-trace.lingua#r_067F495969F16395BCE0789A85).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0778162F79E4E9910D1B03EE10

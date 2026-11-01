@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Read formulas and names without losing chemical identity (@gc-names: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #general-chemistry "../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4") { r_1CP96XH8H24BQWR2PEA3CT4H61
+Read formulas and names without losing chemical identity (@gc-names: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #general-chemistry "../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4", #hephaestus-core "../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4") { r_1CP96XH8H24BQWR2PEA3CT4H61
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 2’s formulas and nomenclature material; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), the nomenclature and acid/base sections; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), the complete brief inorganic-nomenclature guide and relevant formula/ion sections.
 
 An element symbol, subscript, coefficient, superscript charge, isotope label, and phase label encode different information. In 2 CaCl₂(aq), the coefficient counts a stoichiometric amount of formula units, the subscripts state composition, and aq indicates the chosen aqueous description. Changing a subscript changes identity; changing a coefficient changes the amount represented.
@@ -16,4 +16,7 @@ Read the short IUPAC naming guide, using the full Red Book for the particular na
 **Continue:** [Atomic models are explanations constrained by evidence](../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in the chemistry core:** [Atomic models are explanations constrained by evidence](../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4).
+
 } r_1CP96XH8H24BQWR2PEA3CT4H61

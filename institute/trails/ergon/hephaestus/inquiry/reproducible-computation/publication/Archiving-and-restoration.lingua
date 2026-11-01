@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Preserve a reconstructible study and test restoration (@rc-archive: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN") { r_1MKF7WR9CNMVP8WG4EJ5HZ05W7
+Preserve a reconstructible study and test restoration (@rc-archive: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN", #hephaestus-core "../../core/Investigate-a-traceable-report-correction-and-fresh-restoration.lingua#r_00E2E70343DD382577BCA102F6") { r_1MKF7WR9CNMVP8WG4EJ5HZ05W7
 **Read:** [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Research Compendia, Research Data Management, and environments; [Deterministic artifacts and environmental variation — Reproducible Builds](../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A), verification and unavailable/environmental inputs; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), preservation and availability recommendations.
 
 Preservation begins by identifying what would be needed after the original working environment disappears. Separate original observations, scientific source, configuration, dependency declarations/resolved inputs, tests, documentation, and generated results. State where each is retained under appropriate access rights and what identities connect them. A link to an online service is weaker than an independently tested restoration path when the service is the only place the work exists.
@@ -16,4 +16,9 @@ Repeat restoration after a meaningful environment change or preservation event, 
 **Continue:** [Let an unfamiliar reader test the reconstruction and the claim](Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Sixth inquiry-block reading:** Apply the preservation/restoration questions to the identified input, unchanged numerical methods, renderer, recorded environment and generated artifacts. The actual author restoration uses a fresh directory and process on the same installed interpreter; it does not establish independent review, portability to every platform or indefinite availability. Preserve the original archive assignment and route.
+
+**Continue in the sixth inquiry block:** [Investigate a traceable report correction and fresh restoration](../../core/Investigate-a-traceable-report-correction-and-fresh-restoration.lingua#r_00E2E70343DD382577BCA102F6).
+
 } r_1MKF7WR9CNMVP8WG4EJ5HZ05W7

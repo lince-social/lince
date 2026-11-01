@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Separate disturbance rejection from sensor bias and identifiable quantities (@engineering-feedback-observation: 0, is #chapter, #hephaestus-core "Find-attainable-equilibria-when-the-actuator-saturates.lingua#r_007033EFE8056B437FB9B91733") { r_0089FCA742A41805791FE10944
+The equilibrium true error is e*=r−θ*=(Gr−u₀−d+Kb)/(G+K). With r fixed, sensitivities are ∂θ*/∂d=1/(G+K) and ∂θ*/∂b=−K/(G+K). Larger K attenuates the effect of a constant plant disturbance but transfers more of the sensor offset into the true state. If u₀=Gr, d=0 and b≠0, increasing gain drives θ* toward r−b, not toward r. The observation y*=θ*+b can approach r while the useful state retains error.
+
+Distinguish a deterministic constant bias from random noise. The present derivation does not supply a noise distribution, a frequency response or a stochastic stability claim. Time-varying measurement error and finite sensor dynamics need explicit models. Use [Review fitting evidence before extending scientific claims](../../inquiry/core/Review fitting evidence before extending scientific claims.lingua#r_008E6FD7D2B90DB8ED1CE9927E) and the existing uncertainty preparation to keep parameter uncertainty, repeatability and model discrepancy separate. A fitted curve does not establish the correct measurement boundary.
+
+Even noiseless measurement histories can fail to separate parameters. Substitute θ=y−b into the differential equation, assuming constant b. Then Cy′=u₀+Kr+d+Gb−(G+K)y. With known C,G,K,u₀,r, only the combination d+Gb enters this observation equation. For any δ, changing b to b+δ and d to d−Gδ while changing the initial true state to θ_i−δ leaves the entire y(t) history unchanged. The true temperatures differ. This is a structural ambiguity proved by substitution, not a consequence of too few digits or an unlucky sample.
+
+Changing r or the nominal gain alone does not remove this particular ambiguity if the same constant d,b and observation boundary remain: the same combination d+Gb survives. An independently referenced temperature measurement can constrain b; a separately characterized disturbance can constrain d. Changing a known physical G while keeping the offset and disturbance unchanged could also separate their contributions, but those invariance premises need evidence. Recording more points on the same ambiguous trajectory is insufficient.
+
+Parameter scale creates other ambiguities. When C,G,K and all powers are scaled together, the state equation is unchanged; known controller calibration or independent power/capacity measurements may break that ambiguity. Reuse [Choose observations that separate source and connection explanations](Electrical-observation-loading-and-identifiability.lingua#r_00EEBD1BA46C0A10C2842CDFF9) and [Compare thermal alternatives and the evidence needed to choose](Compare-thermal-alternatives-and-the-evidence-needed-to-choose.lingua#r_00B7A969633B37AA7737D882CB) for the general distinction between a fitted response and separately identifiable physical components.
+
+**Work:** choose two distinct (d,b,θ_i) triples with the same observed trajectory, derive their true tracking errors and identify an added measurement that distinguishes them. Have a critic identify a hidden assumption in that added measurement. State which quantities a proposed acceptance record actually establishes and which remain conditional.
+
+**Continue:** [Find attainable equilibria when the actuator saturates](Find-attainable-equilibria-when-the-actuator-saturates.lingua#r_007033EFE8056B437FB9B91733).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0089FCA742A41805791FE10944

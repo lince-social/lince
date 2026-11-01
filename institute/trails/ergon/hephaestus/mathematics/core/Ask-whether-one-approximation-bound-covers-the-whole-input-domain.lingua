@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Ask whether one approximation bound covers the whole input domain (@math-series-uniform: 0, is #chapter, #hephaestus-core "Justify-exchanging-a-limit-with-an-integral-or-derivative.lingua#r_001E30FA67E83674F48C0427F2") { r_000ADDED5D8664575C3F4E2B6B
+A sequence of functions f_N(x) can converge at every fixed x while requiring different cutoffs at different points. Pointwise convergence means: for each x and each ε>0, some N(x,ε) controls all later errors at that x. Uniform convergence on D means: for every ε>0, one N(ε) controls |f_n(x)−f(x)|<ε for every n≥N and every x∈D. The order of these quantifiers is the difference.
+
+For geometric partial sums G_N(x)=Σ_(n=0 to N)x^n and |x|≤q<1, the exact remainder gives |G_N(x)−1/(1−x)|≤q^(N+1)/(1−q). One cutoff therefore works across [−q,q]. On (−1,1), no such uniform convergence holds: for any fixed N, x^(N+1)/(1−x) becomes arbitrarily large as x approaches 1 from below. Every fixed interior point still has convergence. A parameter domain bounded away from a singular endpoint is a substantive restriction.
+
+Uniform limits of continuous functions are continuous. At a chosen x_0 and requested ε, first choose one f_N uniformly within ε/3 of f. Its continuity gives a neighborhood where |f_N(x)−f_N(x_0)|<ε/3. Add the two approximation errors to obtain |f(x)−f(x_0)|<ε. This proof identifies the common approximant needed for both points.
+
+Pointwise convergence alone does not suffice. On [0,1], x^N tends to zero for x<1 but remains one at x=1. The limit is discontinuous although every power is continuous. For each N choose x sufficiently close to 1 to keep x^N>1/2; no uniform error below 1/2 exists. The moving difficult input is exactly what a fixed set of sample points may miss.
+
+When a series of functions satisfies |a_n(x)|≤M_n for every x∈D and ΣM_n converges, its finite tails are uniformly small. For each x the partial sums are Cauchy and hence converge; taking the limit in a uniform finite-tail bound proves uniform convergence. This comparison argument is often called the Weierstrass M-test. It is a sufficient condition, not a necessary one, and requires bounds valid on the stated whole domain.
+
+**Read:** [Basic Analysis I by Jiri Lebl](../sources/Basic-Analysis-I-by-Jiri-Lebl.lingua#r_00D018D5107F06EE77E9066592) section 6.1. **Work:** write both convergence definitions with their quantifiers and identify which variable each cutoff may depend on. Give a shared bound for Σx^n on [−1/2,1/2], then explain why the same claim fails on (−1,1). Construct two iterated limits that disagree using n/(n+k). A finite plot or finite parameter grid is evidence about sampled calculations, not proof of uniform control.
+
+**Continue:** [Justify exchanging a limit with an integral or derivative](Justify-exchanging-a-limit-with-an-integral-or-derivative.lingua#r_001E30FA67E83674F48C0427F2).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_000ADDED5D8664575C3F4E2B6B

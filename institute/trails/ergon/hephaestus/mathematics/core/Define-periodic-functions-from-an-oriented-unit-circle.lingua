@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Define periodic functions from an oriented unit circle (@math-circle-functions: 0, is #chapter, #hephaestus-core "Derive-trigonometric-addition-from-composed-rotations.lingua#r_00CF00FCDE36C6BE809208BACF") { r_00ACDC81906359539979A61820
+Reuse [Angles, grade, triangles, and periodic relationships](../../inquiry/quantitative-literacy/foundations/Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ) for right triangles, radians and the need to specify a coordinate system. This continuation develops the functions and their arguments rather than replacing that shared lesson or altering its physics route. Work in an oriented Euclidean plane with orthonormal axes and the unit circle x²+y²=1.
+
+An angle θ in radians measures signed arc length divided by radius. Positive angles turn counterclockwise; a full turn is 2π. For any real θ, define cos θ and sin θ as the first and second coordinates of the unit-circle point reached from (1,0). This uses the usual Euclidean facts about circles, oriented rotations and arc length, including circumference 2πr. We do not claim to have reconstructed Euclidean geometry or arc length from the real-number axioms here. Distinguish those accepted geometric foundations from the identities proved below.
+
+Both functions have domain all real numbers and range [−1,1]. The circle equation gives cos²θ+sin²θ=1. Reflection across the first axis gives cos(−θ)=cos θ and sin(−θ)=−sin θ. Full turns give sin(θ+2πn)=sin θ and cos(θ+2πn)=cos θ for integers n. A half turn changes both signs; a quarter turn takes (x,y) to (−y,x). In particular, the successive quarter-turn points are (1,0),(0,1),(−1,0),(0,−1).
+
+Exact special angles come from geometry. An isosceles right triangle with unit hypotenuse has equal positive legs, so each is 1/√2. Halving an equilateral triangle of side 2 gives a right triangle with hypotenuse 2, short leg 1 and long leg √3. Thus at π/6 the sine is 1/2 and cosine √3/2; at π/3 they exchange roles. Use reflections and quarter turns to recover other quadrants. A decimal approximation is unnecessary for these exact claims.
+
+A function is periodic with period T>0 when f(x+T)=f(x) for every x in its domain. This is a universal statement, not a resemblance among a few measured peaks. Every positive integer multiple of a period is another period. A constant function has every positive period and no least positive one. Later we identify the least period of a nonconstant sinusoid; do not silently give a zero-amplitude function the same identification property.
+
+**Read and practice:** [Algebra and Trigonometry 2e — Abramson and contributors](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), section 7.3 and the angle preparation of chapter 7. Draw the unit-circle definitions, determine signs before calculating, prove the reflection identities and recover values at 5π/6 and −π/4. Explain what a coordinate graph represents and which hypotheses allow a real observation to be modeled by it.
+
+**Continue:** [Derive trigonometric addition from composed rotations](Derive-trigonometric-addition-from-composed-rotations.lingua#r_00CF00FCDE36C6BE809208BACF).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00ACDC81906359539979A61820

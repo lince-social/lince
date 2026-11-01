@@ -1,0 +1,224 @@
+Import "../Inquiry.lingua"
+
+Investigate a conductance estimate from shared temperature evidence (@inquiry-uncertainty-study: 0, is #chapter, #hephaestus-core "Review-sensitivity-dependence-and-the-scope-of-an-uncertain-claim.lingua#r_000B35720D754EE82413312EED") { r_00C193D005D33F686AE905C292
+The measurand is conductance inferred from a steady known power and the temperature rise of an explicitly assumed single thermal node relative to its ambient. Use P=6 W as exact in this teaching model. Let corrected temperature quantities X and Y have the finite joint models developed above. Their values are stipulated knowledge assignments, not a sample collected from a sensor. Uniform node temperature, fixed ambient, steady energy transfer, linear conductance and the observation equations are separate physical assumptions.
+
+1. Enumerate the shared-offset model's eight primitive outcomes and the independent-offset model's sixteen. Recover their identical marginals, means, covariance matrices, rise distributions and cancellation behavior. Explain the physical evidence needed to choose a joint relation.
+2. Derive exact affine propagation, the local reciprocal sensitivities and the exact remainder identity. Compute both nonlinear output laws, means and variances. Compare with the plug-in estimate and first-order variance. Keep units throughout and inspect denominator support before inversion.
+3. Apply the invented probability screening rule and compare it with a hard-bound requirement. Report the entire discrete law, a suitable estimate, standard uncertainty and the model-dependent tail probability. Explain why one nominal number and a ± term lose information.
+4. Construct a separate calibration rival using A and B, check their shared fitted endpoints and different interior/exterior predictions, and propose evidence that could distinguish them. Include sensor response, location and ambient conditions in the inquiry rather than treating all disagreement as numerical noise.
+
+The original program uses Fraction throughout; it rounds neither the finite weights nor the rational results. `distribution` requires positive weights totaling exactly one and consistent nonempty input dimensions; omit zero-weight rows explicitly. `conductance` requires positive power and a positive rise. `analyze` accepts two temperature inputs and propagates their stated joint model. Inputs are numbers in °C, K differences and W; outputs use W/K and its squared unit. Exact arithmetic is not a certificate of the physical model. Use integers, decimal strings or Fraction values when exact intended inputs matter; a supplied binary float retains its binary value on conversion.
+
+```python file=uncertainty_study.py
+from fractions import Fraction as F
+from itertools import product
+
+
+def distribution(rows):
+    values = tuple((F(weight), tuple(map(F, point))) for weight, point in rows)
+    if not values or any(w <= 0 for w, _ in values) or sum(w for w, _ in values) != 1:
+        raise ValueError('positive normalized weights required')
+    width = len(values[0][1])
+    if width == 0 or any(len(point) != width for _, point in values):
+        raise ValueError('consistent nonempty dimensions required')
+    return values
+
+
+def moments(rows):
+    rows = distribution(rows)
+    width = len(rows[0][1])
+    means = tuple(sum(w*point[i] for w, point in rows) for i in range(width))
+    cov = tuple(tuple(sum(w*(point[i]-means[i])*(point[j]-means[j]) for w, point in rows) for j in range(width)) for i in range(width))
+    return means, cov
+
+
+def transform(rows, function):
+    rows = distribution(rows)
+    outputs = {}
+    for weight, point in rows:
+        value = F(function(*point))
+        outputs[value] = outputs.get(value,F(0))+weight
+    return tuple(sorted(outputs.items()))
+
+
+def thermal_inputs(shared=True):
+    if type(shared) is not bool:
+        raise ValueError('shared must be Boolean')
+    offsets = (F(-1,2),F(1,2))
+    residuals = (F(-1,4),F(1,4))
+    if shared:
+        return distribution((F(1,8),(22+s+e1,20+s+e2)) for s,e1,e2 in product(offsets,residuals,residuals))
+    return distribution((F(1,16),(22+s1+e1,20+s2+e2)) for s1,s2,e1,e2 in product(offsets,offsets,residuals,residuals))
+
+
+def conductance(hot,cold,power=6):
+    hot,cold,power = map(F,(hot,cold,power))
+    if hot <= cold or power <= 0:
+        raise ValueError('positive rise and power required')
+    return power/(hot-cold)
+
+
+def analyze(rows,power=6,threshold=F(5,2)):
+    rows = distribution(rows)
+    means,cov = moments(rows)
+    if len(means) != 2:
+        raise ValueError('two temperatures required')
+    nominal = conductance(*means,power)
+    slope = -F(power)/(means[0]-means[1])**2
+    coefficients = (slope,-slope)
+    linear_variance = sum(coefficients[i]*coefficients[j]*cov[i][j] for i in range(2) for j in range(2))
+    law = transform(rows,lambda x,y:conductance(x,y,power))
+    mean = sum(value*weight for value,weight in law)
+    variance = sum(weight*(value-mean)**2 for value,weight in law)
+    tail = sum(weight for value,weight in law if value >= threshold)
+    return {'nominal':nominal,'mean':mean,'variance':variance,'linear_variance':linear_variance,'tail':tail,'law':law}
+
+
+if __name__ == '__main__':
+    for shared in (True,False):
+        rows = thermal_inputs(shared)
+        print('shared offset:',shared)
+        print('input moments:',moments(rows))
+        print('conductance W/K:',analyze(rows))
+```
+
+The companion checks moments independently using the pair-difference identity
+
+cov(X,Y)=1/2 Σ_iΣ_j p_i p_j(X_i−X_j)(Y_i−Y_j).
+
+Expand it to prove equality with the centered definition. This also verifies affine variances by comparing two independent copies of the output. Small weighted joint distributions, singular covariances, positive quadratics, exact thermal tables, common shifts, power scaling, nonlinear remainder bounds, repeated-reading designs and invalid inputs exercise different parts of the calculation. Save both files together and run them with Python 3 through the repository's Nix environment.
+
+```python file=uncertainty_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import uncertainty_study as m
+
+checks=0
+
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejected(call):
+    try:
+        call()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def pair_cov(rows,i,j):
+    return sum(w*v*(x[i]-y[i])*(x[j]-y[j]) for w,x in rows for v,y in rows)/2
+
+
+families=0
+for points in product(((F(-1),F(2)),(F(0),F(0)),(F(1),F(-2)),(F(3),F(1))),repeat=3):
+    for weights in ((F(1,3),)*3,(F(1,2),F(1,3),F(1,6))):
+        rows=tuple(zip(weights,points))
+        means,cov=m.moments(rows)
+        for i,j in product(range(2),repeat=2):
+            check(cov[i][j]==pair_cov(rows,i,j))
+            check(cov[i][j]==cov[j][i])
+        check(cov[0][0]*cov[1][1]>=cov[0][1]**2)
+        for a,b in product((F(-2),F(0),F(1,2),F(3)),repeat=2):
+            transformed=tuple((w,(a*x+b*y+7,)) for w,(x,y) in rows)
+            variance=pair_cov(transformed,0,0)
+            quadratic=a*a*cov[0][0]+2*a*b*cov[0][1]+b*b*cov[1][1]
+            check(variance==quadratic and variance>=0)
+            law=m.transform(rows,lambda x,y:a*x+b*y+7)
+            check(sum(w for _,w in law)==1)
+            check(sum(z*w for z,w in law)==a*means[0]+b*means[1]+7)
+        families+=1
+for shared in (True,False):
+    rows=m.thermal_inputs(shared)
+    means,cov=m.moments(rows)
+    check(means==(22,20))
+    check(cov[0][0]==cov[1][1]==F(5,16))
+    check(cov[0][1]==(F(1,4) if shared else 0))
+    check(m.transform(rows,lambda x,y:x)==m.transform(m.thermal_inputs(not shared),lambda x,y:x))
+    check(m.transform(rows,lambda x,y:y)==m.transform(m.thermal_inputs(not shared),lambda x,y:y))
+    answer=m.analyze(rows)
+    if shared:
+        reference=((F(12,5),F(1,4)),(F(3),F(1,2)),(F(4),F(1,4)))
+        check(answer['mean']==F(31,10))
+        check(answer['variance']==F(33,100))
+        check(answer['linear_variance']==F(9,32))
+        check(answer['tail']==F(3,4))
+    else:
+        rises=[F(j,2) for j in range(1,8)]
+        counts=[1,2,3,4,3,2,1]
+        reference=tuple(sorted((6/rise,F(count,16)) for rise,count in zip(rises,counts)))
+        check(answer['mean']==F(533,140))
+        check(answer['variance']==F(117979,19600))
+        check(answer['linear_variance']==F(45,32))
+        check(answer['tail']==F(5,8))
+    check(answer['law']==reference)
+    check(answer['variance']==sum(w*z*z for z,w in reference)-answer['mean']**2)
+    check(answer['nominal']==3)
+    for power in (F(1),F(3),F(6),F(9,2)):
+        scaled=m.analyze(rows,power)
+        factor=power/6
+        check(scaled['mean']==factor*answer['mean'])
+        check(scaled['variance']==factor*factor*answer['variance'])
+        check(scaled['linear_variance']==factor*factor*answer['linear_variance'])
+    for shift in (F(-100),F(0),F(17,3)):
+        shifted=tuple((w,(x+shift,y+shift)) for w,(x,y) in rows)
+        check(m.analyze(shifted)==answer)
+    for k in (F(1),F(2),F(3)):
+        outside=sum(w for z,w in reference if (z-answer['mean'])**2>=k*k*answer['variance'])
+        check(outside<=1/(k*k))
+check(m.analyze(m.thermal_inputs(True))['tail']>=F(7,10))
+check(m.analyze(m.thermal_inputs(False))['tail']<F(7,10))
+for d0,a,p in product((F(1),F(2),F(5)),(F(1,4),F(1,2),F(3,4)),(F(1),F(6))):
+    for h in (-a,F(0),a):
+        exact=p/(d0+h)
+        linear=p/d0-p*h/d0**2
+        remainder=p*h*h/(d0*d0*(d0+h))
+        check(exact-linear==remainder)
+        check(0<=remainder<=p*a*a/(d0*d0*(d0-a)))
+for n in range(1,7):
+    rows=[]
+    for signs in product((-1,1),repeat=n+1):
+        common=F(signs[0],2)
+        average=common+sum(F(s,4) for s in signs[1:])/n
+        rows.append((F(1,2**(n+1)),(average,)))
+    mean,cov=m.moments(rows)
+    check(mean==(F(0),))
+    check(cov[0][0]==F(1,4)+F(1,16*n))
+rows=((F(1,3),(F(-1),F(1))),(F(1,3),(F(0),F(0))),(F(1,3),(F(1),F(1))))
+means,cov=m.moments(rows)
+check(cov[0][1]==0)
+check(sum(w for w,(x,y) in rows if x==0 and y==0)==F(1,3))
+check(F(1,3)!=F(1,3)*F(1,3))
+rare=((F(1,18),(F(-3),)),(F(8,9),(F(0),)),(F(1,18),(F(3),)))
+check(m.moments(rare)==((F(0),),((F(1),),)))
+check(sum(w for w,(z,) in rare if -2<=z<=2)==F(8,9)<F(19,20))
+for t in (F(20),F(22)):
+    check(t+F(1,10)*(t-20)*(t-22)==t)
+check(F(23)+F(1,10)*(23-20)*(23-22)==F(233,10))
+for bad in [[],[(0,(1,))],[(F(1,2),(1,))],[(F(1,2),(1,)),(F(1,2),(1,2))],[(1,())],[(-1,(1,)),(2,(2,))]]:
+    rejected(lambda:m.distribution(bad))
+for args in [(20,20,6),(19,20,6),(22,20,0)]:
+    rejected(lambda:m.conductance(*args))
+rejected(lambda:m.thermal_inputs(1))
+rejected(lambda:m.analyze([(1,(1,2,3))]))
+result={'checks':checks,'joint_moment_families':families,'affine_cases':families*16,'thermal_joint_models':2,'ratio_perturbations':54,'repeated_reading_designs':6}
+print(json.dumps(result))
+```
+
+**Interpret:** the polynomial/finite-moment proofs establish general identities under their assumptions. The finite suite checks the supplied implementation and examples; it cannot establish a probability assignment, sensor law, field performance or suitability of a real device. No physical experiment, current conformity assessment or completed advanced uncertainty formation is claimed.
+
+**Independent investigation:** choose another benign measured ratio or difference. Supply a justified hypothetical joint input model and a competing dependence assumption, derive sensitivities and at least one exact result, and write a decision that preserves its interpretation. Include a check that could falsify the observation model. Have another reader reproduce the result and retain one corrected assumption, not only a changed number. Full scholarly work later requires actual traceable evidence, source comparison and a defended independent contribution.
+
+**Author verification:** the companion passed 7,497 checks through Nix: 128 weighted joint-moment families, 2,048 affine combinations, both thermal dependence models, 54 reciprocal perturbations, six repeated-reading designs and counterexamples/invalid inputs. The mathematical and program checks do not validate a physical measurement or the stipulated probability assignments.
+
+**Continue:** [Review sensitivity dependence and the scope of an uncertain claim](Review-sensitivity-dependence-and-the-scope-of-an-uncertain-claim.lingua#r_000B35720D754EE82413312EED).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00C193D005D33F686AE905C292

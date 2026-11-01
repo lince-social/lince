@@ -1,0 +1,25 @@
+Import "../Physics.lingua"
+
+Describe planar motion with components and a declared frame (@physics-planar-motion: 0, is #chapter, #hephaestus-core "../../engineering/mechanical-engineering-and-machine-design/statics/Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM") { r_0F215E6253BB0BF99F4B22E201
+A position record gives a location and time in a stated frame. A path also contains the intervening locations; its total length need not equal the magnitude of its endpoint displacement. Reuse the [mathematical coordinate lesson](../../mathematics/core/Distinguish-a-point-a-displacement-and-its-coordinates.lingua#r_062423188E960EBAB9A92CE3E4) to distinguish a physical displacement from the numbers that represent it. A fixed choice of perpendicular axes lets us describe planar motion with two scalar component histories.
+
+**Read:** University Physics Volume 1 section 4.1's displacement and average-velocity passages, followed by section 4.2's constant-acceleration component account. The derivative notation expresses a local rate; first use the earlier average/local-rate and constant-acceleration lessons to reconstruct the algebraic cases. The full differentiable-trajectory treatment remains later reading after calculus preparation.
+
+Let a hypothetical tracked point start at (2,1) m and move at constant velocity (3,4) m/s for two seconds. Its position becomes (8,9) m, displacement (6,8) m and speed 5 m/s. Average velocity is displacement divided by elapsed time, component by component. Adding the two component speeds would give 7 m/s, which is not the geometric speed. If the point then retraces the same straight segment in two seconds, its four-second average velocity is zero but its distance traveled is 20 m and average speed is 5 m/s. The abrupt reversal is an idealization; this piecewise position account supplies no finite acceleration at the instant of reversal.
+
+Changing the direction of velocity is a change of velocity even if its magnitude is unchanged. Average acceleration is Δv/Δt, a vector. For example, changing from (3,4) to (4,3) m/s over one second gives average acceleration (1,−1) m/s² while both endpoint speeds are 5 m/s. These endpoints do not determine the intervening acceleration history.
+
+For a separately stipulated constant acceleration (0,−1) m/s², with the original position and velocity, apply the earlier one-dimensional derivation to each component. Write x(t)=2 m+(3 m/s)t and y(t)=1 m+(4 m/s)t−(1 m/s²)t²/2. At two seconds the position is (8,7) m and velocity (3,2) m/s. The acceleration is constant although the path is curved and speed changes. A coordinate component's formula does not prove the physical acceleration assumption; that needs force and observation evidence.
+
+A fixed shift of origin cancels from displacement. A fixed rotation of orthonormal axes changes components while preserving lengths and dot products. By contrast, changing to an accelerating or rotating observer changes the dynamical account and needs further preparation. Do not treat every time-varying coordinate change as the harmless relabeling used in the mathematical example.
+
+**Work:** draw all three motion examples and annotate units, elapsed times and discontinuities. Rotate the fixed axes through 90 degrees and check the new displacement and velocity components. Explain why a point-particle trajectory does not describe an extended object's orientation or deformation. Before asking whether an object can remain still under forces, choose the body and use the [shared free-body lesson](../../engineering/mechanical-engineering-and-machine-design/statics/Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM) next.
+
+**Reading companions:** [Engineering Statics — Baker and Haynes](../../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80); [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6). Use the selected passages named above; their broader assignments retain later preparation.
+
+**Shared preparation:** [average and local motion](Compare-average-rates-with-local-motion.lingua#r_0598CA386CF1E13D8E22743F74); [constant acceleration](Derive-and-test-a-constant-acceleration-model.lingua#r_0943E6F21D49F8A1308767CC41); [coordinates and frames](../../mathematics/core/Distinguish-a-point-a-displacement-and-its-coordinates.lingua#r_062423188E960EBAB9A92CE3E4).
+
+**Continue:** [Free-body diagrams connect the machine to equations](../../engineering/mechanical-engineering-and-machine-design/statics/Free-body-diagrams-connect-the-machine-to-equations.lingua#r_13TYQPAC65GANNDNX582ZKP6DM).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0F215E6253BB0BF99F4B22E201

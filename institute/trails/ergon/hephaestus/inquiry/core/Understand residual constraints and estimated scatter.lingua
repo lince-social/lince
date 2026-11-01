@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Understand residual constraints and estimated scatter (@inquiry-fit-residuals: 0, is #chapter, #hephaestus-core "Separate a fitted mean from a future reading and an inverse.lingua#r_0028FEE8ABD73A3BBD7DA47A04") { r_007A3A0DF16E49979BF8C6FD9E
+Residuals r_i=Y_i−α̂−β̂x_i are functions of all the fitted data. They are not the unobserved ε_i. For the affine model, fitted Y has weights H_ij=1/n+d_id_j/Sxx. Thus r=(I−H)Y. The matrix H is symmetric and H²=H: expand the products using Σd_i=0 and Σd_i²=Sxx, or reuse [Derive least squares from orthogonality and a squared norm](../../mathematics/core/Derive least squares from orthogonality and a squared norm.lingua#r_0014DEEF56C47EADBBE05BB395). Consequently, under the correct affine mean and Cov(ε)=σ²I, E(r)=0 and Cov(r)=σ²(I−H).
+
+The diagonal h_i=1/n+d_i²/Sxx describes how strongly observation i contributes to its own fitted value. Var(r_i)=σ²(1−h_i), while Cov(r_i,r_j)=−σ²H_ij for distinct observations. Residual constraints Σr_i=Σx_ir_i=0 prevent treating them as n independent errors. A small residual at a high-leverage input is not automatically strong evidence of accuracy there.
+
+Define SSE=Σr_i². Since Σh_i=1+1=2, E(SSE)=(n−2)σ² when the mean and covariance assumptions hold. For n>2, s²=SSE/(n−2) is therefore unbiased for σ². The denominator counts the two independent fitted directions removed from n observation coordinates. This expectation argument uses neither normality nor independence beyond the declared covariance. It does not establish an exact Student-t interval, a chi-square law or a probability for an observed parameter interval.
+
+If the mean includes discrepancy vector d, then E(r)=(I−H)d. Expanding the squared norm gives E(SSE)=(n−2)σ²+‖(I−H)d‖². A discrepancy in the fitted column space, such as a common offset, is invisible to residuals. A component outside it raises expected SSE. Neither conclusion says that one small sample will reveal the discrepancy reliably.
+
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), selected section 4.4.4. Inspect residuals against input, fitted response, acquisition order and relevant conditions. Its pressure/temperature example assigns a concrete check: use the published rounded coefficients and first observation to recover the rounded residual, then distinguish this arithmetic check from refitting all source observations or validating the experiment. Larger source reconstruction remains work for the learner.
+
+**Work:** for x=(−2,−1,0,1,2), calculate h=(3/5,3/10,1/5,3/10,3/5). The first and last residuals have covariance +σ²/5, despite independent original errors in the later finite example. Explain why simply reading residual independence from the error assumption is wrong.
+
+**Continue:** [Separate a fitted mean from a future reading and an inverse](Separate a fitted mean from a future reading and an inverse.lingua#r_0028FEE8ABD73A3BBD7DA47A04).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_007A3A0DF16E49979BF8C6FD9E

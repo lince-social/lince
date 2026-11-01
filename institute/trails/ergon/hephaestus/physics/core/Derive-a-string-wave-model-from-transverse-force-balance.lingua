@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Derive a string wave model from transverse force balance (@physics-string-balance: 0, is #chapter, #hephaestus-core "Connect-fixed-boundaries-and-initial-data-to-standing-modes.lingua#r_00712E8AD9B447D3F2FF03D38A") { r_00FE4E21627306701470DD439E
+Model a flexible, taut string with constant mass per equilibrium length μ>0 and positive equilibrium tension τ. The symbol τ denotes a force in newtons, not temperature or time period. Ignore bending stiffness, body forces in the transverse direction, damping and imposed transverse loads in this first model. Neglect longitudinal displacement and changes of tension. Require slopes |y_x| much less than one so these approximations can hold together. A physically taut string also requires an actual preloaded state; the equation does not design the supports.
+
+The right-hand tension on an interval points along its tangent and the left-hand force points oppositely. At small slopes, the transverse component is approximately τy_x, and differences in horizontal components are higher order in slope. On an interval [a,b], transverse Newton balance is
+
+μ ∫ₐᵇ y_tt dx = τ[y_x(b,t)−y_x(a,t)].
+
+If the fields are continuous and this account holds for every sufficiently small interval, divide by its length and take the limit. The result is μy_tt=τy_xx, or y_tt=c²y_xx with c²=τ/μ. The units are consistent: τ/μ has units m²/s². Conservation supplies the balance; geometry, tension and density assumptions close this particular model. A different constitutive relation, density distribution or bending response changes its equation.
+
+For the traveling sinusoid, substitution gives ω²=c²k² unless A=0. Thus the speed √(τ/μ) follows from physical parameters. Small slope requires Ak much less than one; small displacement alone is insufficient at large k. For several modes, bound the sum of their slope amplitudes. Constant tension is itself a further approximation: a string with high axial stiffness can respond strongly even to a small change in length, so its prestress and tension variation need separate evidence.
+
+Linearity means that if y₁ and y₂ solve the same equation with the same μ and τ, then ay₁+by₂ solves it for constants a,b. Initial and boundary data must also combine consistently. A sum of two solutions satisfying fixed-zero end data still satisfies those ends; adding two solutions with the same nonzero prescribed end displacement doubles that displacement. Quadratic energy is not linear, so adding displacement fields does not generally add their local energies.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 16.3. Derive the interval balance with both end-force signs, then the local equation. Compare μ=3 kg/m, τ=12 N with μ=6 kg/m, τ=24 N: both give c=2 m/s, despite different force and mass scales. Explain why wave speed alone identifies their ratio, not both quantities. State an independent mass-per-length or force observation needed to separate them. The deliberately simple parameters are hypothetical, not a claim about a manufactured string.
+
+**Continue:** [Connect fixed boundaries and initial data to standing modes](Connect-fixed-boundaries-and-initial-data-to-standing-modes.lingua#r_00712E8AD9B447D3F2FF03D38A).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00FE4E21627306701470DD439E

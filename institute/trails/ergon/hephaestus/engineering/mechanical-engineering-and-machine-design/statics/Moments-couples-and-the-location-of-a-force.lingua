@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Moments, couples and the location of a force (@mech-moments: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ") { r_77XC5BZ6V561GD2THKBYWK6F3F
+Moments, couples and the location of a force (@mech-moments: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ", #hephaestus-core "../../../physics/core/Replace-a-simple-distributed-load-while-preserving-its-external-account.lingua#r_0B7F36BD7C53F816B2BD1B63A0") { r_77XC5BZ6V561GD2THKBYWK6F3F
 **Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 4 in full, including three-dimensional moments and couples. Revisit vector cross products where needed.
 
 The moment about a point is r × F, with r from that point to the force's line of action. In a plane its signed scalar component is x Fy − y Fx. A perpendicular distance gives the familiar force-times-arm expression; a slanted geometric length is not automatically that arm.
@@ -11,5 +11,10 @@ For an original example, r = (0.3, 0.2) m and F = (40, −10) N produce a moment
 
 **Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
 **Continue:** [Replace distributed loading with a declared equivalent](Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ).
+
+
+**Second physics-block reading:** Use sections 4.1–4.3 and 4.5 and this planar example now, following the preceding component/cross-product explanation. The original complete chapter-4 assignment, including full three-dimensional moments, remains later formation.
+
+**Continue in the second physics block:** [Replace a simple distributed load while preserving its external account](../../../physics/core/Replace-a-simple-distributed-load-while-preserving-its-external-account.lingua#r_0B7F36BD7C53F816B2BD1B63A0).
 
 } r_77XC5BZ6V561GD2THKBYWK6F3F

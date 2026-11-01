@@ -1,0 +1,22 @@
+Import "../Chemistry.lingua"
+
+Review chemical identity, amounts and conservation (@chemistry-foundation-review: 0, is #chapter, #hephaestus-core "Connect-periodic-signals-and-energy-differences-before-interpreting-spectra.lingua#r_0FF2481386174C81A212B4DB67") { r_0B848D430993C26623D91AFBAE
+This first chemistry foundation connects an ordinary material question with substances, mixtures, phases, particle models, formulas, atomic evidence, isotopes, amounts and conservation. It uses the existing general-chemistry formation for the substantive reading and explanations. The added bridge and investigation connect that shared knowledge to the broad area without duplicating an entire textbook.
+
+**Demonstrate:** describe a specimen without inferring composition from appearance alone. Separate an observation from a particle model and a formula. Identify what a coefficient, subscript, ionic charge and isotope label each changes. Define the entity in an amount-of-substance calculation and the denominator in a composition fraction. Distinguish a change of units from a change of chemical basis.
+
+**Account:** draw a boundary and state whether matter crosses it. Derive and check a component balance, then a reaction account that permits species amounts to change while elements remain conserved. Explain why a molecular total can change without violating those element constraints. Compare a maximum allowed extent with an inferred extent and an actually observed outcome. Check the integrated study by a second calculation order and retain uncertainty in supplied physical inputs.
+
+**Criticize:** identify a conclusion that does not follow from a clear appearance, a closed mass balance, a balanced equation or a fitted composition. Explain what observation could distinguish two candidate accounts. State whether a percentage means mass fraction, amount fraction, concentration or another specified quantity; no denominator should be left for the reader to guess.
+
+**Reading and work:** complete the introductory chemistry readings attached to the reused Records and their elementary problems. The core's preparation notes distinguish work ready now from later linear-algebra, uncertainty and multiple-reaction tasks. A reading link, a hypothetical calculation and an actual experiment are different accomplishments. Preserve unsolved questions and show how criticism changed the account.
+
+**Scope and continuation:** bonding and electronic structure, thermal and phase behavior, kinetics, equilibrium, analytical methods and advanced chemical formation remain in later common passes and branches. General chemistry's deeper trail remains available for a particular question. This block does not complete the broad chemistry core or retire a pending specialist subject. The first common pass is present across all six areas. Continue below into chemical structure, interactions and energy in the second pass, then return to comparable computing formation before specializing further in chemistry.
+
+**Next broad area:** [Computing: representations, procedures and evidence](../../computer-science/core/Representations-procedures-and-computational-evidence.lingua#r_0D60F81B61A757D44B6977320D). For later chemical depth, return to [General chemistry](../general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V) and its explicit preparation.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the second common pass:** [Connect periodic signals and energy differences before interpreting spectra](Connect-periodic-signals-and-energy-differences-before-interpreting-spectra.lingua#r_0FF2481386174C81A212B4DB67).
+
+} r_0B848D430993C26623D91AFBAE

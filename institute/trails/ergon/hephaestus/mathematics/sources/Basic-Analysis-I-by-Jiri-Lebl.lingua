@@ -1,0 +1,11 @@
+Import "../Mathematics.lingua"
+
+Basic Analysis I by Jiri Lebl (@math-source-analysis: 0, is #reference) { r_00D018D5107F06EE77E9066592
+Jiří Lebl, *Basic Analysis I: Introduction to Real Analysis, Volume I*, version 6.3, 15 May 2026. English. [Author's site](https://www.jirka.org/ra/), [official PDF](https://www.jirka.org/ra/realanal.pdf), [web edition](https://www.jirka.org/ra/html/). The author describes an undergraduate analysis text requiring prior proof preparation; it also supports further study.
+
+**Reading progression:** [1.2 real numbers](https://www.jirka.org/ra/html/sec_setofreals.html), [2.1 sequences](https://www.jirka.org/ra/html/sec_seqsandlims.html), [2.4 Cauchy sequences](https://www.jirka.org/ra/html/sec_cauchy.html), then sections 2.5–2.6 on series and [6.1 uniform convergence](https://www.jirka.org/ra/html/sec_puconv.html) / [6.2 interchange of limits](https://www.jirka.org/ra/html/sec_liminter.html). Complete arguments and selected exercises, comparing their assumptions with the common lessons.
+
+**Inspection, 1 November 2026:** PDF title/version/copyright; actual real-number completeness premise; sequence/monotone and Cauchy definitions and selected arguments; pointwise/uniform definitions and selected counterexamples; opening interchange discussion. Whole chapters, later derivative proofs and exercises are not claimed fully audited. The broader assignments remain learner work.
+
+Copyright 2009–2026 Jiří Lebl. The author offers both CC BY-NC-SA 4.0 and CC BY-SA 4.0; derivatives must retain at least one applicable licence and be marked. Keep source media external. These trail investigations are original; source figures and text are not bundled.
+} r_00D018D5107F06EE77E9066592

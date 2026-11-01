@@ -1,0 +1,28 @@
+Import "../Inquiry.lingua"
+
+Construct different causal models with the same observed distribution (@inquiry-causal-ambiguity: 0, is #chapter, #hephaestus-core "Choose-adjustment-from-the-causal-question-rather-than-every-available-column.lingua#r_00B69ED82548105DFBA06268EC") { r_00439239A656E00CF2A399CE63
+A nonidentification argument is strongest when two explicit models agree on everything observed yet disagree on the intervention target. The following original binary models have no observed baseline distinction: L=0 for everyone. They use independent assignment randomness wherever an assignment probability is specified.
+
+In model N, a hidden type U is equally likely zero or one, and Y(0)=Y(1)=U. The effect is zero for every unit. Choose A=1 with probability 1/4 when U=0 and 3/4 when U=1. Thus selection depends on a prognostic hidden type.
+
+In model E, the potential response pairs (0,0), (0,1) and (1,1) have masses 1/4, 1/2 and 1/4. Assign A independently with probability 1/2. Intervention means are 1/4 and 3/4, giving effect 1/2.
+
+Both models produce exactly this observed distribution:
+
+| A | Y | Probability |
+| --- | --- | --- |
+| 0 | 0 | 3/8 |
+| 0 | 1 | 1/8 |
+| 1 | 0 | 1/8 |
+| 1 | 1 | 3/8 |
+
+Check each cell by multiplying the type mass by its assignment probability. In both models E[Y|A=0]=1/4 and E[Y|A=1]=3/4. All observed cells are positive. With only L=0, standardization returns the crude difference 1/2 for both. It recovers the stipulated effect in model E but not in model N. More observations of this same law can refine its cell probabilities without distinguishing these two causal accounts.
+
+The difference is conditional exchangeability with respect to the recorded information. Model N does not supply it given L=0. If its hidden U were measured before assignment, conditioning on U would supply the needed comparison in that model, because both assignments have positive probability within U. This is an additional model and measurement claim, not a method for recovering hidden types from the four-cell table alone. A correctly implemented intervention that randomizes A independently of U would also change model N's observed law and test a different design.
+
+**Sensitivity rather than certainty:** write μₐ(l)=mₐ(l)+δₐ(l), where μₐ(l)=E[Y(a)|L=l] and δₐ is an unknown discrepancy from the observed conditional mean. Then τ=Σp(l)[m₁(l)−m₀(l)]+Σp(l)[δ₁(l)−δ₀(l)]. If substantive arguments bound |δₐ(l)|≤bₐ(l), the effect lies within Σp(l)[b₁(l)+b₀(l)] of the adjusted contrast. This follows from the triangle inequality. The bounds are assumptions to defend, not estimated confidence limits. **Work:** calculate δ₀ and δ₁ for model N, state a bound that includes it, and explain which added evidence could make a narrower bound credible.
+
+**Continue:** [Choose adjustment from the causal question rather than every available column](Choose-adjustment-from-the-causal-question-rather-than-every-available-column.lingua#r_00B69ED82548105DFBA06268EC).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00439239A656E00CF2A399CE63

@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Separate directional rates from the geometry of steepest change (@math-gradient-metric: 0, is #chapter, #hephaestus-core "Distinguish-a-state-differential-from-a-path-dependent-account.lingua#r_00204337E177A0330276621E37") { r_00C87BAC2FD8CD91FA66A87566
+For a differentiable scalar f and fixed vector v, the directional rate along a+tv is D_v f(a)=Df(a)v. If coordinates carry a declared Euclidean inner product, identify the derivative row with the gradient column ∇f: D_v f=∇f·v. For unit v, Cauchy–Schwarz bounds the rate by ‖∇f‖, attained by v=∇f/‖∇f‖ when ∇f≠0. If the gradient vanishes, every first-order directional rate is zero; higher-order variation may remain.
+
+Directional derivatives alone need not form a linear map. Set w(x,y)=x³/(x²+y²) away from zero and w(0,0)=0. Since |w(x,y)|≤|x|, it is continuous at zero. For every nonzero v, w(tv)/t=v_x³/(v_x²+v_y²), so every directional derivative exists. The rates on (1,0),(0,1),(1,1) are 1,0,1/2. They violate additivity, which a total derivative must satisfy. Its existing coordinate partials therefore do not prove differentiability. Use this example when reading section 4.6 of [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3): its gradient theorem assumes differentiability; an intermediate proof sentence must not be read as establishing it from partial existence alone.
+
+The derivative as a linear functional is separate from the vector representing it in a metric. In two normalized coordinates choose squared input length m v_x²+n v_y², with m,n>0. If the derivative coefficients are g_x,g_y, the metric gradient is (g_x/m,g_y/n), because its metric inner product with v equals g_xv_x+g_yv_y. Cauchy–Schwarz in these scaled coordinates gives maximum unit-length rate sqrt(g_x²/m+g_y²/n). Derive it by applying the Euclidean inequality to (g_x/sqrt(m),g_y/sqrt(n)) and (sqrt(m)v_x,sqrt(n)v_y).
+
+For F at (1,2), g=(7,9). Under the unweighted metric the squared maximum rate is 130; under diag(4,1) it is 373/4, with unnormalized maximizing direction (7/4,9). The two results answer different constraints on allowed input changes. A change of measurement units should transform the metric as well if the same physical perturbations are intended. Reuse [Keep coordinate choices error metrics and sensitivity distinct](Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7) and [Resolve a vector into a projection and an orthogonal remainder](Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B).
+
+For a path on a level set f(γ(t))=c, the chain rule gives Df(γ(t))γ′(t)=0. In Euclidean coordinates the gradient is orthogonal to every such tangent. At a regular point a nonzero gradient defines a candidate tangent subspace. Existence of a smooth local level curve needs its own regularity theorem; the next constraint lesson states that dependency rather than inferring a curve from a plot.
+
+**Work:** compute the three directional rates in the counterexample, then change a metric and derive its unit-rate bound. Explain why numerical components of a gradient cannot be compared across incompatible units without a declared metric.
+
+**Continue:** [Distinguish a state differential from a path dependent account](Distinguish-a-state-differential-from-a-path-dependent-account.lingua#r_00204337E177A0330276621E37).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00C87BAC2FD8CD91FA66A87566

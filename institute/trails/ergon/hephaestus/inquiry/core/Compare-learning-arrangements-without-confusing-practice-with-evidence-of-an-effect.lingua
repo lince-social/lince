@@ -1,0 +1,27 @@
+Import "../Inquiry.lingua"
+
+Compare learning arrangements without confusing practice with evidence of an effect (@inquiry-learning-comparison: 0, is #chapter, #hephaestus-core "Investigate-a-lesson-through-contrasting-responses-and-independent-transfer.lingua#r_0027293C2A3873361E52F78551") { r_0045A77E6ECD510BD893851188
+To compare two ways of learning, first specify the outcome and the unit to which the arrangement is assigned. A later independent explanation of a changed scheduling problem is different from a confidence rating or a repeated familiar item. Twelve answers from one learner are not twelve independently assigned learners. Reuse [Design comparisons that can distinguish competing explanations](Design-comparisons-that-can-distinguish-competing-explanations.lingua#r_0A7E63167B1C0C05400C73A84E) for confounding, allocation, blocking and carryover; use the earlier uncertainty and reporting work before making statistical claims.
+
+The following bounded reconstruction uses [Test-Enhanced Learning by Roediger and Karpicke](../sources/Test-Enhanced-Learning-by-Roediger-and-Karpicke.lingua#r_00A73DBE05BBE5BFB77546E401), Experiment 1, pp. 250–251. It involved 120 undergraduates, two prose passages with 30 scored idea units each, within-person restudy versus recall without feedback, and between-person retention delays. Passage and condition order were counterbalanced; study/practice periods lasted seven minutes. Reported mean recall percentages were:
+
+| Delay | Restudy | Recall practice | Recall minus restudy |
+| --- | --- | --- | --- |
+| 5 minutes | 81 | 75 | −6 percentage points |
+| 2 days | 54 | 68 | +14 percentage points |
+| 1 week | 42 | 56 | +14 percentage points |
+
+Subtracting the reported rounded means reconstructs the directional reversal, not the participant-level analysis. Delay groups differ; these rows are not one cohort's trajectory. Aggregate means do not recover paired differences, uncertainties or individual data. The outcome was passage recall, not our schedule-transfer task or practical competence. No replication is claimed.
+
+For an original proposed comparison of our lessons, consider explanation plus restudy versus explanation plus prediction-and-reconstruction practice. Declare equal or unequal time budgets explicitly; changing both activity and time compares those packages. Specify prerequisite support available to both groups, the assignment mechanism, practice tasks, feedback, teacher contact, independent outcome tasks and delay. Determine the main comparison before observing responses. Convenience groups taught on different days by different teachers would leave several explanations entangled.
+
+A pre/post increase within one group cannot by itself isolate the teaching effect: earlier testing, outside study, passage of time and selection may change performance. A within-person comparison can remove some between-person differences, but learning the first method may affect the second. Counterbalancing distributes order conditions; it does not prove that carryover vanished. Random assignment supports a particular comparison under its assumptions; it is not random sampling of all future learners.
+
+Keep missing outcomes distinct from scored failures. As an original arithmetic example, suppose a group assigned ten learners has eight observed scores totaling six on a 0-to-1 scale. The observed mean is 6/8. Without additional assumptions, the full assigned-group mean lies between 6/10 and 8/10. The interval comes from assigning the two missing scores their permitted extremes; it is not a confidence interval. A ranking based only on completers can change when plausible missing values are considered.
+
+**Work:** reconstruct the three percentage-point contrasts, retaining their rounding limits. Explain why the experiment cannot establish your proposed teaching effect. Write a comparison protocol with outcome, allocation unit, missing-outcome handling and a discriminating transfer task. Critique it for task leakage and unequal assistance. These are design exercises; no learners have been recruited or measured by this trail.
+
+**Continue:** [Investigate a lesson through contrasting responses and independent transfer](Investigate-a-lesson-through-contrasting-responses-and-independent-transfer.lingua#r_0027293C2A3873361E52F78551).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0045A77E6ECD510BD893851188

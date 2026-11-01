@@ -1,0 +1,24 @@
+Import "../Computing.lingua"
+
+Begin with representations, procedures and computational evidence (@computing-core: 0, is #chapter, #hephaestus-core "Distinguish-a-value-from-its-digital-representation.lingua#r_0849AE8813413F872ABE90EDB2") { r_0D60F81B61A757D44B6977320D
+Computing begins with a representation of a question and a procedure for answering it. A representation associates symbols with meanings. The written string “12” might mean an integer, a label or two characters. A computer cannot choose the intended meaning without rules supplied by its program and data conventions.
+
+Consider a finite list of whole-number counts: [4, 0, 7]. To total it, start with a running total of zero, visit each item once and add that item. The successive totals are 4, 4 and 11. After processing the first k items, the running total equals their sum. This statement is a loop invariant: it is true before any item is processed, preserved by each addition, and gives the desired result when all items have been visited.
+
+The finite list and advancing position explain termination. The invariant explains correctness for the stated arithmetic and input assumptions. Testing the example alone proves neither claim for every input. Empty input returns zero under this sum definition. A missing count, a negative count or a text label needs an explicit policy; silently treating an unknown value as zero changes the question.
+
+An algorithm describes the procedure independently of a particular programming language. A program expresses it for an execution environment. Hardware represents states physically; operating systems manage processes and resources; networks exchange representations; databases retain and organize them. Those layers can fail in different ways even when the arithmetic procedure is correct.
+
+Visiting n items requires n additions in this procedure, so its arithmetic work grows linearly with list length. A running total and position need a fixed number of variables, but the bits required to represent an unbounded exact sum can grow. Fixed-width arithmetic can overflow, and floating-point arithmetic can round. State the representation before making a claim about correctness, memory or speed.
+
+**Read and practise:** [Begin reproducible computational work from zero](../../inquiry/reproducible-computation/Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY) introduces files, programming and full-book readings without assuming prior programming. [Data meaning and schema](../../inquiry/reproducible-computation/data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH) develops the input contract. Use the existing computation and quantitative Records as shared preparation; the broader discipline still includes theoretical computation, systems, information and hardware.
+
+**Work:** trace the procedure on [], [5] and [2, 3, 4]. Write its input contract before implementing it in the introductory language. Explain what happens if the input changes during processing or if “7” is supplied as text. Compare the invariant with test evidence, and propose a separate test for the chosen invalid-input policy.
+
+**Review:** distinguish representation, specification, algorithm, program, execution and evidence. The area core will connect these ideas to abstraction, data structures, machines, operating systems, networks and maintained software before advanced specializations are developed.
+
+**Return:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the computing core:** [Distinguish a value from its digital representation](Distinguish-a-value-from-its-digital-representation.lingua#r_0849AE8813413F872ABE90EDB2).
+
+} r_0D60F81B61A757D44B6977320D

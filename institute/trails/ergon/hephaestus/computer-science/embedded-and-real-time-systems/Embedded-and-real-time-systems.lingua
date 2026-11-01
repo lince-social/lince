@@ -1,0 +1,5 @@
+Embedded and real-time systems (@embedded-and-real-time-systems: 0, is #chapter, #outline) { r_686WH7Q179XZ0P3NBEJ40YZX6N
+Embedded systems place computation inside equipment whose physical task and timing matter. This material connects microcontrollers, firmware, sensors, actuators, scheduling, communication, power, and real-time constraints with testing, fault handling, interfaces, and the maintenance of installed devices.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_686WH7Q179XZ0P3NBEJ40YZX6N

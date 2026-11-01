@@ -180,7 +180,7 @@ async fn refreshing_forecast_preserves_future_work_and_applies_live_changes() {
         .unwrap();
     assert!(
         store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &context,
             source,
             now,
@@ -239,7 +239,7 @@ async fn refreshing_forecast_preserves_future_work_and_applies_live_changes() {
         .unwrap();
     assert!(
         store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &context,
             current,
             now,
@@ -387,7 +387,7 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
         .unwrap();
     assert!(
         store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &context,
             source,
             now,
@@ -428,7 +428,7 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
         .unwrap();
     assert!(
         store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &context,
             current,
             now,
@@ -464,14 +464,14 @@ async fn schedule_cache_obeys_half_open_windows_and_source_invalidation() {
         .await
         .unwrap();
     assert!(
-        store::projection::read(&engine.store.pool, &context, now)
+        store::projection::read(&engine.store, &context, now)
             .await
             .unwrap()
             .is_none()
     );
     assert!(
         !store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &context,
             source,
             now,

@@ -1,0 +1,17 @@
+Import "literary-reading-forms-and-interpretation/Literary-reading-forms-and-interpretation.lingua"
+Import "literary-theory-and-criticism/Literary-theory-and-criticism.lingua"
+Import "literary-history-and-comparative-literature/Literary-history-and-comparative-literature.lingua"
+Import "brazilian-and-portuguese-language-literature/Brazilian-and-Portuguese-language-literature.lingua"
+
+Literature (@literature: 0, is #chapter, #outline, #contains "literary-reading-forms-and-interpretation/Literary-reading-forms-and-interpretation.lingua#r_4CTQ8C4X2Q4CYPKQXDKQY4AJ6T", #contains "literary-theory-and-criticism/Literary-theory-and-criticism.lingua#r_4S7B496C6HPN4AK709BK28CDV1", #contains "literary-history-and-comparative-literature/Literary-history-and-comparative-literature.lingua#r_7A1T9C0DR6JW8W18KTVT3DW7Q0", #contains "brazilian-and-portuguese-language-literature/Brazilian-and-Portuguese-language-literature.lingua#r_5EXKCKEGD1S9S43160RR8NT1G0") { r_68XTEFTFVR5ZPB68D6E1XK0SR3
+Read a substantial work or coherent selection, develop an interpretation from passages, and compare other readings. Introduce narrative, poetic or dramatic form, terminology, and historical context alongside the text. Deepen into criticism, comparative reading, and literary history through shared material.
+
+**Parent:** [Scholazein — pursuits of a well-spent life](../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6).
+
+**Branches:**
+
+- [Literary reading, forms, and interpretation](literary-reading-forms-and-interpretation/Literary-reading-forms-and-interpretation.lingua#r_4CTQ8C4X2Q4CYPKQXDKQY4AJ6T)
+- [Literary theory and criticism](literary-theory-and-criticism/Literary-theory-and-criticism.lingua#r_4S7B496C6HPN4AK709BK28CDV1)
+- [Literary history and comparative literature](literary-history-and-comparative-literature/Literary-history-and-comparative-literature.lingua#r_7A1T9C0DR6JW8W18KTVT3DW7Q0)
+- [Brazilian and Portuguese-language literature](brazilian-and-portuguese-language-literature/Brazilian-and-Portuguese-language-literature.lingua#r_5EXKCKEGD1S9S43160RR8NT1G0)
+} r_68XTEFTFVR5ZPB68D6E1XK0SR3

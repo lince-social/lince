@@ -1,0 +1,9 @@
+Earlier foundation checkpoint — mathematics (@hephaestus-history-6: 0, is #chapter) { r_00395CA257121262107CF2DA88
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult the current development Record before acting.
+
+The first mathematics block is authored: number domains and permitted operations, proportional/offset models, equivalent equations, function domains/composition/inverses, quantified claims, elementary proof, a stock-model investigation and review. Eight new lessons and six reused quantitative Records follow `@math-core`, making fifteen learning Records through `@math-foundation-review`. Reused identities, original prose, imports and routes are preserved. The separate quantitative formation still discovers 53 documents.
+
+Selected OpenStax Algebra and Trigonometry 2e passages and Hammack's Book of Proof author/edition/license information and selected openings were inspected. Source Records distinguish those inspections from larger reading assignments; unfamiliar trigonometry/calculus exercises are deferred to their mathematical preparation. No reader experiment or research result is claimed. The stock study distinguishes day-end counts, within-day capacity, proof from assumptions and finite-data ambiguity.
+
+That checkpoint passed the warnings-as-errors Cargo check, corpus/register parsing, exact 27-Record core selection/reachability, 28,938 references, shared-content preservation and 914 exact calculation comparisons. The Hephaestus runtime test passed for 78-document discovery, original quantitative selection, contextual links and export/relocation/reopening. The full nineteen-test regression launched then is still live; its remaining results are described below. This block does not complete mathematics or retire any of its twenty pending subjects.
+} r_00395CA257121262107CF2DA88

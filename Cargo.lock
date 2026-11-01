@@ -1382,6 +1382,7 @@ version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bfadbebfc6599aa59289b754ac30023959854304f3d393da2cf62bb3cd5df8f"
 dependencies = [
+ "bevy_dylib",
  "bevy_internal",
 ]
 
@@ -1660,6 +1661,15 @@ dependencies = [
  "const-fnv1a-hash",
  "log",
  "serde",
+]
+
+[[package]]
+name = "bevy_dylib"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c03a128bac8b59a8699b81038b574e3cfa33dfae18e375d46be028d3d13c0e"
+dependencies = [
+ "bevy_internal",
 ]
 
 [[package]]
@@ -1954,18 +1964,11 @@ dependencies = [
 [[package]]
 name = "bevy_interleave_macros"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "145e6c882a932330e568f810af32e790ba5f9469f28ab7e1481ed9ed1c9d3c92"
 dependencies = [
- "bevy",
- "bevy_interleave_interface",
- "bytemuck",
  "convert_case",
  "proc-macro2",
  "quote",
- "sha1 0.10.7",
  "syn 2.0.119",
- "wgpu",
 ]
 
 [[package]]
@@ -6474,8 +6477,6 @@ dependencies = [
 [[package]]
 name = "gemm-common"
 version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88027625910cc9b1085aaaa1c4bc46bb3a36aad323452b33c25b5e4e7c8e2a3e"
 dependencies = [
  "bytemuck",
  "dyn-stack",
@@ -14191,7 +14192,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d084c50c5cfa397a081850da329566c8667b0b6c4e81da16abff1fef27de93b"
 dependencies = [
  "g2p",
- "image 0.24.9",
  "lru",
 ]
 

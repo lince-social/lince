@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Review phase equilibrium with conservation stability and material evidence (@chemistry-phase-review: 0, is #chapter) { r_00AC7BC9CDA367232B59350893
+Distinguish phase, component, species, overall composition, phase composition and phase amount. State the allowed exchanges and work coordinates before selecting a thermodynamic potential. Derive the nonreacting phase-rule count and explain why intensive variance does not count phase amounts or prove that a proposed assemblage exists.
+
+Derive the pure-substance coexistence slope from chemical-potential equality, retaining the nonzero volume-difference condition. Separate the exact equilibrium relation from the ideal-vapor, negligible-condensed-volume and constant-enthalpy approximations. Recover the bounded-integral account and identify where a critical endpoint or a different transition invalidates the shortcut.
+
+Reconstruct the selected water correlation with correct units, temperature interval and source attribution. Derive its apparent enthalpy and compare the locally anchored approximation without claiming independent validation. Explain why computational digits, fit uncertainty, model discrepancy and phase stability are different questions.
+
+Derive the lever rule and its domain, recover the published and original examples, and convert between mole, mass and volume proportions using actual supplied properties. Explain the coincident-endpoint and three-phase ambiguities. Derive chemical potentials from n g(x), prove the common-tangent interpretation and the global supporting-line lower bound, and supply a third-phase counterexample.
+
+Reuse the regular-solution and common-tangent Records and their unchanged solver. Prove the full symmetric-model stability classification, distinguish a stationary point, binodal, spinodal and metastable homogeneous state, and derive the activity coefficients. Identify the assumptions behind ideal mixing entropy and the composition-independent interaction parameter. A pure-reference line may be removed consistently; a missing physical phase may not.
+
+Certify the original phase split using independent logarithm enclosures, curvature and sign tests. Derive the error intervals for free energy and phase amounts. Explain why a floating residual, a finite grid or a long iteration count cannot replace those arguments. Restore units and distinguish numerical accuracy from uncertainty in material parameters.
+
+Complete the connected dossier and a changed-model or authorized-data extension, including a rival account, source criticism, independent verification, defense and revision. Observed learner performance, physical experiments and new material validation remain unperformed unless subsequently documented. The program checks verify the authored calculations and preservation, not full source assignments or research competence.
+
+This eighth chemistry block connects phases, nonideal mixing, stability and evidence within the common core. It does not complete physical chemistry, materials chemistry, interfaces, kinetics, synthesis or the entire chemistry formation. Quantum/electronic structure, broader molecular/material families, analytical and practical research formation remain. Continue computing programming abstractions and software construction at comparable breadth before returning to a chemical specialization.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00AC7BC9CDA367232B59350893

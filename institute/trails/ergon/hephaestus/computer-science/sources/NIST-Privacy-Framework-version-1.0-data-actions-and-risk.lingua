@@ -1,0 +1,11 @@
+Import "../Computing.lingua"
+
+NIST Privacy Framework version 1.0 data actions and risk (@computing-source-privacy: 0, is #reference) { r_00F81336B2F197F93A060F1A81
+National Institute of Standards and Technology, *NIST Privacy Framework: A Tool for Improving Privacy through Enterprise Risk Management*, version 1.0, 16 January 2020, English. The NIST publication page credits Katie Boeckl and Naomi Lefkovitz. [Publication identity](https://www.nist.gov/publications/nist-privacy-framework-tool-improving-privacy-through-enterprise-risk-management) · [43-page PDF](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.01162020.pdf) · [Version 1.0 landing page](https://www.nist.gov/privacy-framework/privacy-framework).
+
+**Actual inspection — 1 November 2026:** version and voluntary/nonbinding status; selected section 1.2.1 prose on printed pages 3–4, and Appendix A CT.DM-P/CT.DP-P rows on printed page 24. These distinguish privacy concerns from security incidents and identify data-management/disassociation outcomes. The original ledger lesson applies those distinctions to collection, exposure and retained retry evidence. No organization assessment or legal compliance is claimed. This deliberately names version 1.0 without asserting it is the latest framework.
+
+[NIST reuse guidance](https://www.nist.gov/copyrights-disclaimers) treats unmarked site information as public information and requests appropriate credits; component-specific notices govern exceptions. Keep the PDF and third-party material external. Source credit does not imply endorsement of the common investigation. Broader framework assessment and implementation remain later study.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00F81336B2F197F93A060F1A81

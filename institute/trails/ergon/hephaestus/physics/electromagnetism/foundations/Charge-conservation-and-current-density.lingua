@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Charge conservation and current density (@em-continuity: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "../electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD") { r_16QY5HH6CZN53EJ3J1AERMB3TA
+Charge conservation and current density (@em-continuity: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "../electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD", #hephaestus-core "../../core/Derive-storage-from-a-charge-voltage-relation.lingua#r_0044E82DC1FD162C1B4C9F03EA") { r_16QY5HH6CZN53EJ3J1AERMB3TA
 **Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), current and current density; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), charge conservation and the continuity equation.
 
 Define I as the integral of J·n over an oriented surface. A uniform current density normal to area A gives I = JA; otherwise this shorthand is wrong. Charge conservation on a fixed volume is dQ/dt = −∮J·n dA and locally ∂ρ/∂t + ∇·J = 0. A positive outward current decreases the enclosed charge.
@@ -12,4 +12,9 @@ Draw a junction and retain any changing stored charge before setting the sum of 
 **Continue:** [Coulomb force, superposition and a test charge](../electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Fifth physics-block reading:** Use the finite region charge balance, plate accumulation and distinction between conservation and material response. The preceding common lesson defines signed cut current and integrates it. General surface/density/divergence notation and displacement-current field theory are contextual introductions here, with their original fuller reading preserved.
+
+**Continue in the fifth physics block:** [Derive storage from a charge voltage relation](../../core/Derive-storage-from-a-charge-voltage-relation.lingua#r_0044E82DC1FD162C1B4C9F03EA).
+
 } r_16QY5HH6CZN53EJ3J1AERMB3TA

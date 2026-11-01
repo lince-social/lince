@@ -1,0 +1,214 @@
+Import "../Computing.lingua"
+
+Investigate a stable catalog with independent search evidence (@computing-collection-study: 0, is #chapter, #hephaestus-core "Review-collection-contracts-invariants-and-resource-tradeoffs.lingua#r_03A1376B1D968DE95999D85CC5") { r_0E2277D89596295190BB7B99BC
+Build a small computational investigation whose contract is independent of its two lookup implementations. All rows are synthetic. A key is a nonempty exact string and a payload is an exact integer, including negative and arbitrarily large integers; Boolean, floating-point and mutable payloads are rejected. The input and each row must be an exact list or tuple of the prescribed shape. Empty input is valid. The result includes every matching occurrence in input order, including identical repeated rows. No case folding, numeric conversion or Unicode normalization is implicit.
+
+`normalize_rows` validates and freezes values. `prepare_catalog` performs stable insertion sorting on private storage and returns `(ordered, comparisons, shifts)`. `scan_rows` expects normalized rows in input order. `lookup_prepared` expects the unchanged ordered tuple returned as the builder's first result; it deliberately does not validate the whole collection on every call. Both lookup functions validate the query and return `(matches, comparisons)`. Malformed construction or query types raise TypeError; empty keys and wrong row lengths raise ValueError. Passing a hand-made or reordered tuple to prepared lookup violates its precondition; no result is promised for that misuse.
+
+The loops below implement the invariants established in the preceding lessons. `_boundary` is an internal helper, and its Boolean `upper` chooses the two different partition predicates. The conditional expression evaluates only its selected comparison. Slicing creates the requested output tuple without changing the stored catalog. The reported counts are key comparisons and shifts, not total machine instructions or elapsed time.
+
+```python file=catalog_lookup.py
+def check_key(key):
+    if type(key) is not str:
+        raise TypeError('key must be an exact string')
+    if not key:
+        raise ValueError('key must be nonempty')
+    return key
+
+
+def normalize_rows(rows):
+    if type(rows) not in (list, tuple):
+        raise TypeError('rows must be a list or tuple')
+    normalized = []
+    for row in rows:
+        if type(row) not in (list, tuple):
+            raise TypeError('each row must be a list or tuple')
+        if len(row) != 2:
+            raise ValueError('each row must contain key and payload')
+        key, payload = row
+        check_key(key)
+        if type(payload) is not int:
+            raise TypeError('payload must be an exact integer')
+        normalized.append((key, payload))
+    return tuple(normalized)
+
+
+def prepare_catalog(rows):
+    ordered = list(normalize_rows(rows))
+    comparisons = 0
+    shifts = 0
+    for i in range(1, len(ordered)):
+        item = ordered[i]
+        j = i
+        while j > 0:
+            comparisons += 1
+            if ordered[j - 1][0] <= item[0]:
+                break
+            ordered[j] = ordered[j - 1]
+            shifts += 1
+            j -= 1
+        ordered[j] = item
+    return tuple(ordered), comparisons, shifts
+
+
+def scan_rows(rows, key):
+    check_key(key)
+    matches = []
+    comparisons = 0
+    for row in rows:
+        comparisons += 1
+        if row[0] == key:
+            matches.append(row)
+    return tuple(matches), comparisons
+
+
+def _boundary(ordered, key, upper):
+    lo = 0
+    hi = len(ordered)
+    comparisons = 0
+    while lo < hi:
+        mid = (lo + hi) // 2
+        comparisons += 1
+        go_right = key >= ordered[mid][0] if upper else ordered[mid][0] < key
+        if go_right:
+            lo = mid + 1
+        else:
+            hi = mid
+    return lo, comparisons
+
+
+def lookup_prepared(ordered, key):
+    check_key(key)
+    start, left_count = _boundary(ordered, key, False)
+    stop, right_count = _boundary(ordered, key, True)
+    return ordered[start:stop], left_count + right_count
+
+
+if __name__ == '__main__':
+    source = [('b', 20), ('a', 10), ('b', 21), ('c', 30)]
+    prepared, comparisons, shifts = prepare_catalog(source)
+    print(prepared)
+    print('construction', comparisons, shifts)
+    print('scan', scan_rows(normalize_rows(source), 'b'))
+    print('lookup', lookup_prepared(prepared, 'b'))
+    print('missing', lookup_prepared(prepared, 'z'))
+```
+
+The example prints the prepared rows `(("a", 10), ("b", 20), ("b", 21), ("c", 30))`. Construction reports three comparisons and one shift. Both b lookups return the two b rows in arrival order; the scan reports four comparisons and the prepared lookup five. The absent z lookup returns an empty tuple and reports four comparisons. Explain these counts from a paper trace before executing the code.
+
+**Independent investigation:** create all key sequences of lengths zero through seven over a, b and c. Tag payloads with distinct arrival positions to expose unstable sorting. Compare the prepared catalog with a separate stable `sorted(..., key=...)` call, and compare each lookup with a direct filter of the original input. Include keys before, within, between and after present groups. Independently compare the lower and upper boundaries with the library's bisect results. Check multiplicities, input preservation and the sorting shift count against the number of inverted input pairs. The independent oracles can still have errors; agreement among implementations complements the invariant arguments.
+
+Test repeated identical rows separately, long keys, distinct text identifiers such as 0012 and 12, canonically related but unnormalized Unicode strings, very large integer payloads, malformed rows and invalid queries. Change the caller's original inner lists after preparing the catalog and verify the retained values. Verify that empty collections still reject invalid queries. Save the exact program, test generator, interpreter version and observed results; a checksum names an artifact but does not prove its behavior.
+
+**Critique and extension:** intentionally change the specification to keep only the latest value per key. Identify which examples and tests must change and whether a mapping now better fits the contract. Separately change the workload to include frequent insertions or range queries and analyze maintenance costs. Do not quietly change the contract merely to make one representation convenient. The study establishes bounded programming and reasoning evidence; it is not a performance certification or proof of complete computing competence.
+
+**Reproduce the finite checks:** save this companion beside `catalog_lookup.py` as `catalog_checks.py` and run it with the same interpreter. It prints its counts, version and fixture results. The generator and library oracles are distinct from the insertion and boundary loops; finite agreement still does not replace the proofs.
+
+```python file=catalog_checks.py
+from itertools import product
+from collections import Counter
+from bisect import bisect_left, bisect_right
+import copy
+import json
+import platform
+
+import catalog_lookup as m
+
+checks = 0
+cases = 0
+queries = 0
+
+def check(condition):
+    global checks
+    assert condition
+    checks += 1
+
+for n in range(8):
+    for keys in product(('a', 'b', 'c'), repeat=n):
+        cases += 1
+        source = [[key, i - 3] for i, key in enumerate(keys)]
+        before = copy.deepcopy(source)
+        normalized = m.normalize_rows(source)
+        ordered, comparisons, shifts = m.prepare_catalog(source)
+        expected = tuple(sorted(((key, i - 3) for i, key in enumerate(keys)), key=lambda row: row[0]))
+        check(ordered == expected)
+        check(source == before)
+        check(Counter(ordered) == Counter(normalized))
+        inversions = sum(keys[i] > keys[j] for i in range(n) for j in range(i + 1, n))
+        check(shifts == inversions)
+        check(comparisons <= n * (n - 1) // 2)
+        check(normalized == tuple(tuple(row) for row in before))
+        for query in ('0', 'a', 'aa', 'b', 'bb', 'c', 'z'):
+            queries += 1
+            oracle = tuple(tuple(row) for row in before if row[0] == query)
+            found, count = m.lookup_prepared(ordered, query)
+            scan, linear_count = m.scan_rows(normalized, query)
+            check(found == oracle == scan)
+            check(linear_count == n)
+            check(count <= 2 * n.bit_length())
+            left, lc = m._boundary(ordered, query, False)
+            right, rc = m._boundary(ordered, query, True)
+            sorted_keys = tuple(row[0] for row in expected)
+            check(left == bisect_left(sorted_keys, query))
+            check(right == bisect_right(sorted_keys, query))
+            check(lc <= n.bit_length() and rc <= n.bit_length())
+            check(all(k < query for k in sorted_keys[:left]))
+            check(all(k >= query for k in sorted_keys[left:]))
+            check(all(k <= query for k in sorted_keys[:right]))
+            check(all(k > query for k in sorted_keys[right:]))
+            check(m.lookup_prepared(ordered, query) == (found, count))
+        if n:
+            source[0][0] = 'changed'
+            source[0][1] = 999
+            source.append(['new', 111])
+            check(ordered == expected)
+            check(normalized == tuple(tuple(row) for row in before))
+
+malformed = [(None, TypeError), ('ab', TypeError), ({'a': 1}, TypeError), ((x for x in []), TypeError), ([None], TypeError), (['ab'], TypeError), ([()], ValueError), ([('a',)], ValueError), ([('a', 1, 2)], ValueError), ([(1, 2)], TypeError), ([('', 1)], ValueError), ([('a', True)], TypeError), ([('a', 1.0)], TypeError), ([('a', None)], TypeError), ([('a', [])], TypeError)]
+for rows, error in malformed:
+    try:
+        m.prepare_catalog(rows)
+    except error:
+        check(True)
+    else:
+        raise AssertionError((rows, error))
+for query, error in [(None, TypeError), (1, TypeError), ('', ValueError), (True, TypeError)]:
+    for fn in (m.scan_rows, m.lookup_prepared):
+        try:
+            fn((), query)
+        except error:
+            check(True)
+        else:
+            raise AssertionError((fn, query))
+for rows in [(), (('a', 0), ('a', 0)), (('0012', -1), ('12', 10**200), ('é', 7), ('e\u0301', 8)), (('z' * 1000, 5), ('z' * 999, 2))]:
+    ordered, _, _ = m.prepare_catalog(rows)
+    check(ordered == tuple(sorted(rows, key=lambda row: row[0])))
+    for key in {row[0] for row in rows} | {'missing'}:
+        check(m.lookup_prepared(ordered, key)[0] == tuple(row for row in rows if row[0] == key))
+a = [[1], [2]]
+b = a
+c = a.copy()
+a.append([3])
+a[0].append(9)
+check(a is b and c is not a)
+check(a == [[1, 9], [2], [3]] and c == [[1, 9], [2]])
+for n in range(1, 100):
+    descending = [(f'{i:03}', i) for i in reversed(range(n))]
+    ordered, comparisons, shifts = m.prepare_catalog(descending)
+    check(comparisons == shifts == n * (n - 1) // 2)
+    _, asc_count, asc_shifts = m.prepare_catalog(ordered)
+    check(asc_count == n - 1 and asc_shifts == 0)
+fixture = [('b', 20), ('a', 10), ('b', 21), ('c', 30)]
+ordered, comparisons, shifts = m.prepare_catalog(fixture)
+result = {'checks': checks, 'exhaustive_collections': cases, 'exhaustive_queries': queries, 'max_collection_size': 7, 'alphabet_size': 3, 'python_version': platform.python_version(), 'fixture': {'ordered': ordered, 'construction_comparisons': comparisons, 'shifts': shifts, 'scan_b': m.scan_rows(m.normalize_rows(fixture), 'b'), 'lookup_b': m.lookup_prepared(ordered, 'b'), 'lookup_z': m.lookup_prepared(ordered, 'z')}}
+print(json.dumps(result, indent=2))
+```
+
+**Author execution — 31 October 2026:** Python 3.14.8 passed 279,036 checks, including all 3,280 key collections of sizes zero through seven over three keys and 22,960 queries. Separate checks cover malformed input, repeated identical rows, Unicode distinctions, long keys, large integers, mutation isolation and construction bounds through size 99. This verifies the stated finite cases and original examples, not arbitrary untested inputs or elapsed-time performance.
+
+**Reference companions:** [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ); [Introduction to Algorithms — MIT 6.006, Spring 2020](../sources/Introduction-to-Algorithms-MIT-6006.lingua#r_04AEC4B446A81994AEEB84801D).
+
+**Continue:** [Review collection contracts invariants and resource tradeoffs](Review-collection-contracts-invariants-and-resource-tradeoffs.lingua#r_03A1376B1D968DE95999D85CC5).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0E2277D89596295190BB7B99BC

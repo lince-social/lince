@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Find the work limit when both source temperatures change (@physics-finite-bodies: 0, is #chapter, #hephaestus-core "Separate-thermodynamic-feasibility-from-evidence-for-a-process.lingua#r_0017AF3D433C65A9E9AAB740EB") { r_00F7CB6DAD84265523DCA3DC68
+Replace infinite reservoirs with two finite bodies. Each has the same constant total heat capacity C>0, negligible other state-dependent energy contributions and no phase or composition change. They begin at uniform temperatures T_h>T_c>0. The composite is insulated from other heat/matter exchange, and any work device is cyclic. Final states have both bodies at one common temperature T_f, with no retained bulk motion or additional device storage. These restrictions define the comparison.
+
+If the bodies directly exchange heat and deliver no work, energy gives T_d=(T_h+T_c)/2. Their total entropy change is C ln(T_d/T_h)+C ln(T_d/T_c)=C ln[T_d²/(T_h T_c)]. The arithmetic-geometric inequality follows from (T_h−T_c)²≥0, which implies T_d²≥T_h T_c. Monotonicity of ln makes the entropy change nonnegative, strictly positive for unequal initial temperatures.
+
+For any candidate in the stated final-state family, energy gives W=C(T_h+T_c−2T_f). The composite entropy requirement is C ln[T_f²/(T_h T_c)]≥0, hence T_f≥sqrt(T_h T_c). Work decreases as T_f increases. Therefore
+
+W≤C[T_h+T_c−2sqrt(T_h T_c)].
+
+The reversible comparison reaches T_r=sqrt(T_h T_c), with zero total entropy generation. An ideal sequence of infinitesimal reversible engines between the changing bodies is consistent with this limit: C dT_h/T_h+C dT_c/T_c=0 keeps T_h T_c constant. Along the relevant portion, T_h decreases while T_c increases until equality. The integrated work equals the bodies' total energy decrease. This limiting construction and bound say nothing about achievable finite-time power.
+
+With C=1 J/K and initial temperatures 400 K and 100 K, direct equilibration ends at 250 K with no work and generates 2 ln(5/4) J/K. Reversible work extraction ends at 200 K and delivers 100 J. Applying the initial reservoir efficiency 3/4 to all later extracted heat would ignore the changing temperatures. The 100 J bound follows from the complete finite-body account.
+
+For a family with T_h=a²T₀,T_c=b²T₀ and a≥b>0, T_r=abT₀ and W_max=C T₀(a−b)². This exact identity independently checks numerical square roots and work calculations. Unequal heat capacities, temperature-dependent capacities, parasitic storage, heat leakage and unequal final temperatures are different constraints; rederive their account rather than reusing this formula.
+
+**Work:** compare a permitted intermediate reversible state with the final state by keeping T_h T_c constant. Prove the work bound with the entropy constraint, then show how a measured heat leak or unequal capacity changes the required model. The bodies are hypothetical teaching systems, not validated materials over this temperature range.
+
+**Continue:** [Separate thermodynamic feasibility from evidence for a process](Separate-thermodynamic-feasibility-from-evidence-for-a-process.lingua#r_0017AF3D433C65A9E9AAB740EB).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00F7CB6DAD84265523DCA3DC68

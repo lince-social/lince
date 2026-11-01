@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Represent a pure state without confusing amplitudes and probabilities (@physics-quantum-state: 0, is #chapter, #hephaestus-core "Assign-observable-values-to-projectors-and-derive-their-outcome-moments.lingua#r_00261BCD187960564B553A7174") { r_00E559710A7C552718A18212FA
+For an ideal two-state degree of freedom, choose orthonormal basis columns |0⟩=(1,0), |1⟩=(0,1). A normalized pure state has |ψ⟩=α|0⟩+β|1⟩, where α,β are complex and |α|²+|β|²=1. A ket is this column; the bra ⟨ψ| is its conjugate transpose, using the convention already established in [Extend linear maps to complex vectors with a declared inner product](../../mathematics/core/Extend-linear-maps-to-complex-vectors-with-a-declared-inner-product.lingua#r_0098CD5D43423980AB2E2A2134). The two coordinates label a basis in state space. They need not be spatial positions and are not two fractions of a particle.
+
+The Born rule assigns probability |α|² to result 0 and |β|² to result 1 for an ideal measurement in this basis. This is a physical modelling postulate, supported by empirical tests; normalization and complex algebra make it internally consistent but do not derive its empirical truth. For another normalized direction |v⟩, the ideal rank-one outcome probability is |⟨v|ψ⟩|². The shared projection theorem ensures that a complete orthonormal measurement has nonnegative probabilities summing to one.
+
+Multiplying the whole state by exp(iχ) leaves every such probability unchanged. Normalized vectors related by a common phase represent the same pure-state ray in this account. A relative phase between components can change predictions in a different basis. Compare |ψ₊⟩=(|0⟩+|1⟩)/sqrt(2), |ψ₋⟩=(|0⟩−|1⟩)/sqrt(2) and |ψ_y⟩=(|0⟩+i|1⟩)/sqrt(2). All give equal 0/1 probabilities in the original basis. A measurement containing ψ₊ distinguishes ψ₊ from ψ₋ with probabilities one and zero, and gives probability one-half for ψ_y. Equal probabilities in one basis do not specify a state.
+
+More generally |ψφ⟩=(|0⟩+exp(iφ)|1⟩)/sqrt(2) gives probability (1+cos φ)/2 for ψ₊. Expand |1+exp(iφ)|²/4 to derive the interference term. Adding the two path probabilities separately would discard it. The vector (α,β) and a classical lottery that chooses |0⟩ or |1⟩ with weights |α|²,|β|² have the same original-basis probabilities but generally different other-basis predictions.
+
+For exact calculations, any nonzero column v can represent the ray, with probability |v†w|²/[(v†v)(w†w)] for a nonzero outcome direction w. This avoids introducing irrational normalization constants into rational arithmetic. The zero vector represents no state. **Work:** reproduce the three examples and a changed phase; show invariance under nonzero overall scaling. Explain why a basis change must transform both state and measurement coordinates. Reuse [Change complex coordinates without changing the geometry being represented](../../mathematics/core/Change-complex-coordinates-without-changing-the-geometry-being-represented.lingua#r_00F3E28C190908F570F20A405A); an active physical transformation with the measurement held fixed is a different action.
+
+**Continue:** [Assign observable values to projectors and derive their outcome moments](Assign-observable-values-to-projectors-and-derive-their-outcome-moments.lingua#r_00261BCD187960564B553A7174).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00E559710A7C552718A18212FA

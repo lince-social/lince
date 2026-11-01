@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Reconstruct a published optical clock comparison within its evidence limits (@physics-spacetime-evidence: 0, is #chapter, #hephaestus-core "Investigate-clocks-frames-and-an-orbit-with-independent-checks.lingua#r_005B1CB83312C1A9F46556C399") { r_005C21A503CEFC482EF37A51F5
+Use [Optical Clocks and Relativity by Chou and colleagues](../sources/Optical-Clocks-and-Relativity-by-Chou-and-colleagues.lingua#r_00AEF309F5C11169468349E93D) for the primary observation and exact inspected scope. The reported height change is 0.33 m; using g=9.80 m/s² and c=299792458 m/s, independently calculate δ=gΔh/c²=3.598310281277402×10⁻¹⁷. The reported fractional change is (4.1±1.6)×10⁻¹⁷. The difference between the central values is about 0.314 of the stated uncertainty. This numerical agreement is a bounded reconstruction from published summary quantities, not new clock data or reproduction of the authors' full uncertainty analysis.
+
+Preserve the sign and the comparison: the height change is a change of one clock's position between runs, not its final absolute height difference from the other clock. Preserve the paper's uncertainty terminology and comparison method. Do not silently reinterpret a quoted statistical uncertainty as a universal confidence interval, a complete systematic bound or proof that competing models have probability zero. The source file includes neighboring articles; use the actual clock paper and its figure/equation numbers.
+
+Separate three inference directions. Given independent g and Δh, the model predicts a fractional shift. Given a shift and the model, one may infer a height difference. Using the same shift both to fit a height and to validate the model against that fitted height is circular. A test needs an independent height reference, control of motion and signal transfer, and a declared analysis of uncertainty and possible shared influences. Earlier metrology and [Review the chain from question to shared scientific claim](../../inquiry/core/Review-the-chain-from-question-to-shared-scientific-claim.lingua#r_0093C5B9C7363BE10B1DFAD7E5) support that distinction.
+
+An original changed case doubles the specified height change: the leading model doubles δ. Reversing the height change reverses its sign. A moving clock adds a negative v²/(2c²) term; a single net shift cannot identify height and motion independently. Other clock disturbances could also change a reading, so a null result alone would not establish zero gravity. Specify an independent motion bound or an additional comparison that distinguishes the rival explanations.
+
+**Deliverable:** a calculation sheet with units, source identity, inspected passages, the two central values and the uncertainty interpretation; then a diagram of the comparison and a table separating supplied observations, physical assumptions and derived quantities. Critique the difference between agreement with this one weak-effect prediction and a test of every aspect of general relativity. No new apparatus operation or raw-data reanalysis is claimed.
+
+**Continue:** [Investigate clocks frames and an orbit with independent checks](Investigate-clocks-frames-and-an-orbit-with-independent-checks.lingua#r_005B1CB83312C1A9F46556C399).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005C21A503CEFC482EF37A51F5

@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Connect state counts entropy and equilibrium with explicit constraints (@physics-statistical-entropy: 0, is #chapter, #hephaestus-core "Derive-thermal-weights-while-keeping-the-finite-reservoir-visible.lingua#r_007CEFD475C55DF492C764C2CC") { r_001BE2D7B39C11254F9CD156DD
+For a finite equally weighted accessible set of Ω microstates define its statistical entropy S=k_B ln Ω. The logarithm acts on a dimensionless count; k_B supplies entropy units. For a general finite distribution define S[p]=−k_BΣp_i ln p_i, taking 0 ln 0=0 by its limit. The formula is a statistical definition here. Identifying it with a measured thermodynamic entropy requires a suitable physical model, equilibrium account and correspondence with the thermodynamic relations; an arbitrary table of possibilities is not automatically a thermodynamic system.
+
+If two independent distributions have joint weights p_i r_j, substituting ln(p_i r_j)=ln p_i+ln r_j proves S[p r]=S[p]+S[r]. Independence is essential. With a conserved combined energy, subsystem energies can be correlated, as [Derive subsystem fluctuations under a fixed total energy](Derive-subsystem-fluctuations-under-a-fixed-total-energy.lingua#r_0070FE92B084AF3217F03BAC9F) showed. Product counting at a particular split and summing over possible splits are distinct operations.
+
+The eight-site model makes the distinction exact. Its full ensemble entropy is k_B ln 56. Define W_j=C(3,j)C(5,3−j) and P_j=W_j/56. The entropy associated with a given macrostate j is k_B ln W_j. Direct substitution proves
+
+ln 56=−Σ_j P_j ln P_j+Σ_j P_j ln W_j.
+
+The first term accounts for uncertainty about the split, the second for configurations conditional on it. Neither the most probable macrostate's ln 30 nor the entropy of the four-value distribution alone equals ln 56. If an initial constraint fixes j=0, removing it increases the number of admitted configurations from 10 to 56; the equilibrium ensemble entropy difference would be k_B ln(28/5). Counting does not specify the rate or trajectory of relaxation into that ensemble.
+
+For large systems with a justified smooth entropy description, consider energy sharing with fixed total E and other external parameters fixed. A candidate most probable interior split maximizes S_A(E_A)+S_B(E−E_A), giving ∂S_A/∂E_A=∂S_B/∂E_B. Define 1/T=(∂S/∂E) under those constraints. The stationary condition becomes equality of temperatures. It is a maximum only with the required curvature or a separate global comparison. Since S''=−1/(T²C) when C=(∂E/∂T) is finite and nonzero, positive subsystem heat capacities give negative combined curvature at equal positive T. Boundary optima and discrete few-site models require direct comparison, not an automatic derivative assignment.
+
+For a small energy transfer δE_A=−δE_B, the first-order change is δS_total=(1/T_A−1/T_B)δE_A. Under a macroscopic entropy-increase description this favors transfer from a hotter to a colder positive-temperature body. It gives neither a kinetic law nor a waiting time. Reuse [Define entropy changes through reversible comparisons](Define-entropy-changes-through-reversible-comparisons.lingua#r_004E2CAE37300D29985DB2F68F) for entropy through reversible comparison; its empirical second-law premise has not been replaced by a proof that every microscopic trajectory has increasing entropy. Later canonical calculations will check dS=dU/T along a restricted equilibrium family with fixed levels.
+
+**Work:** prove the entropy decomposition directly. Compare the entropy of the entire isolated ensemble, its most likely macrostate and one completely specified configuration. Explain the missing preparation/dynamics evidence in a claim that counting alone proves irreversibility. Read the entropy and temperature passages in chapter 1 of [Statistical Physics — David Tong](../../engineering/materials-engineering/sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2) with these finite-system qualifications.
+
+**Continue:** [Derive thermal weights while keeping the finite reservoir visible](Derive-thermal-weights-while-keeping-the-finite-reservoir-visible.lingua#r_007CEFD475C55DF492C764C2CC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_001BE2D7B39C11254F9CD156DD

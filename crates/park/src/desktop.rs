@@ -1048,7 +1048,8 @@ impl Desktop {
     }
 
     pub(crate) fn commands(&mut self, path: std::path::PathBuf, socket: std::path::PathBuf) {
-        let result = crate::commands::Commands::load(&path).and_then(|commands| {
+        let result = crate::commands::Commands::initialize(&path)
+            .and_then(|()| crate::commands::Commands::load(&path)).and_then(|commands| {
                 if let Err(error) = self.restore_virtual_preferences(&commands.outputs) {
                     let message = format!("Saved virtual monitor settings could not be applied: {error}. The saved preferences are unchanged.");
                     eprintln!("{message}");

@@ -10,4 +10,7 @@ On 30 October 2026 the home page, contents, problem index and selected deformati
 Example codes use MATLAB and related computational assumptions. Their availability is not proof that they were run, verified or ported here. Some equations and figures are images, so use the actual displayed notation when checking a derivation. Text, problems, images and code remain external references.
 
 **Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+
+**Fourth engineering-core inspection — 31 October 2026:** the author home page and selected prose in [section 3.2](https://solidmechanics.org/text/Chapter3_2/Chapter3_2.htm), especially 3.2.1–3.2.2 and the modulus interpretation, were inspected for reversible response, material direction and small-deformation assumptions. The common scalar axial relations are derived explicitly from their own premises; image-rendered tensor equations were not visually audited in this pass. Full tensor elasticity, finite-element work, problem sets and general stability remain later assignments. Navigation/section numbering can differ among pages: use the named topic and current contents. Authorized free reading does not establish a general adaptation licence. Prior source identity, assignments and rights qualifications remain; all media/code remain external.
+
 } r_109WFZBWMEMGHV9TGFD22H2F1W

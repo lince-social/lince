@@ -1,0 +1,27 @@
+Import "../Chemistry.lingua"
+
+Connect reaction extent with integrated electrical charge (@chemistry-electron-amount: 0, is #chapter, #hephaestus-core "Cell-boundaries-transport-and-storage.lingua#r_004C91BC24CBBFB3B68858E025") { r_00195E0FB0DE74B01917A3CE4F
+The electron has charge −e; e is the positive elementary-charge magnitude. In SI, e=1.602176634×10⁻¹⁹ C and N_A=6.02214076×10²³ mol⁻¹ are exact defining values. Their product is the positive Faraday constant
+
+F=N_A e=96485.3321233100184 C mol⁻¹.
+
+An amount n_e of electrons has signed charge −F n_e. A reduction account transferring z electrons per reaction as written has n_e=zξ for extent ξ. Thus the magnitude of its transferred charge is zFξ. Here z is dimensionless, ξ is in mol, and F is in C/mol. Avoid using the same symbol n for both a stoichiometric coefficient and an amount. The exact constant does not make a measured current, duration, reaction amount or efficiency exact.
+
+**Sources:** [The International System of Units — BIPM and Inmetro](../../inquiry/quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED) links the SI definitions; the official [ampere](https://www.bipm.org/en/si-base-units/ampere) and [mole](https://www.bipm.org/en/si-base-units/mole) pages state the defining values and the need to specify entities. [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), section 4.13, distinguishes F, ionic charge number and reaction electron coefficient. These are quantity definitions, not device calibrations.
+
+Choose an external conductor and orient an electron-arrival count toward the cathodic side. Write I_e(t)=F dn_e,ext/dt as a positive reduction-oriented charge magnitude in the unidirectional case. Conventional positive current in that same geometric direction has the opposite sign. The total magnitude passed is Q_e=∫I_e(t)dt; I_e t applies only to constant current. Revisit [Connect signed current to accumulated and stored charge](../../physics/core/Connect-signed-current-to-accumulated-and-stored-charge.lingua#r_00A2CB2AB667C70FE4724DA940) for why a cut, direction and interval must be specified.
+
+Not all of this external electron count must correspond to reaction. For a finite interval with nonnegative cathodic reaction channels and an increase in negative interfacial charge magnitude Δq_s, an explicit account is
+
+Q_e=F Σ z_j Δξ_j + Δq_s.
+
+With an initially charged interface, Δq_s is a change rather than an absolute inventory. In a reversing experiment it can be negative. This equation states the chosen boundary balance; it is not a law saying every current is Faradaic. A model may also need leakage or additional reactions. Such terms must be included or excluded by evidence. [Derive storage from a charge voltage relation](../../physics/core/Derive-storage-from-a-charge-voltage-relation.lingua#r_0044E82DC1FD162C1B4C9F03EA) explains why stored charge alone does not give stored energy without a charge–voltage relation.
+
+For constant one-channel response with no storage change and no competing channels, ξ=Q_e/(zF). Relax either assumption and the inference needs more information. If 4 μmol of external electron-equivalent pass, ½ μmol-equivalent is stored and two cathodic channels require 2x+y μmol-electrons, then 2x+y=7/2. This is one equation in two reaction amounts. Higher precision on Q_e does not make those two amounts separately identifiable.
+
+**Work:** show that writing a half reaction twice as large leaves the inferred species change invariant. Integrate a linear current in time and compare it with its midpoint mean. Give a nonzero-current example with zero reaction over a short interval under a stated storage model. Explain why that possibility is not a demonstration that a particular observed current was entirely capacitive.
+
+**Continue:** [Keep electrode reactions ionic transport and charge storage separate](Cell-boundaries-transport-and-storage.lingua#r_004C91BC24CBBFB3B68858E025).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00195E0FB0DE74B01917A3CE4F

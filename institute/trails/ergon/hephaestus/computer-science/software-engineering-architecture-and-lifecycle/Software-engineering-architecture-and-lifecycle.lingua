@@ -1,0 +1,7 @@
+Software engineering, architecture, and lifecycle (@software-engineering-architecture-and-lifecycle: 0, is #chapter, #outline) { r_516ZNCKQAQ6HCTPD77HDPJB1F0
+Software engineering creates, evaluates, delivers, and maintains organised executable systems. This material connects requirements, decomposition, interfaces, data modelling, state, concurrency, error handling, architecture, and collaboration with testing, formal verification, release processes, observability, incident response, and long-term change, relating local code decisions to the dependable behaviour and continued usefulness of complete applications.
+
+**Common preparation developed:** the eighth computing block reuses the existing module-boundary lesson and develops [composed batch behavior from interface guarantees](../core/Derive-a-batch-operation-from-interface-guarantees.lingua). Original alternative representations, preservation proofs, independent checks and changed-requirement work support entry to larger software construction. Full architecture, delivery, operations and lifecycle formation remain pending.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_516ZNCKQAQ6HCTPD77HDPJB1F0

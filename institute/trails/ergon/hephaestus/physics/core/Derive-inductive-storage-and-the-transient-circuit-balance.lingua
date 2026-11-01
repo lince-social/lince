@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Derive inductive storage and the transient circuit balance (@physics-magnetic-storage: 0, is #chapter, #hephaestus-core "Make-magnetic-circulation-consistent-with-changing-charge.lingua#r_00708966101E4713476674EFFC") { r_006E188F44A894E3AE0A38D123
+For a fixed linear quasistatic magnetic system, define flux linkage λ=Li with constant L>0 and a chosen winding orientation. Under a passive terminal convention, the voltage drop is v_L=dλ/dt=L di/dt. Its absorbed power is i v_L=L i di/dt, so energy relative to i=0 is U=Li²/2. The internally induced circulating emf has the opposing sign; confusing it with the passive voltage drop reverses the storage account. [Self-inductance, mutual inductance and magnetic energy](../electromagnetism/induction/Self-mutual-inductance-and-magnetic-energy.lingua#r_4QR58S6KHFRSBV15QCCX7NA63E) develops coupled and material extensions, with its wider assignments retained.
+
+An externally driven series model satisfies L di/dt+Ri=ℰ with constant R>0,L>0 and source ℰ. Let τ=L/R and i∞=ℰ/R. Subtract i∞ and solve the first-order equation: i(t)=i∞+(i₀−i∞)e^(−t/τ). Its derivative verifies the equation and initial value; the difference of two solutions multiplied by e^(t/τ) is constant, proving uniqueness. Reuse the shared exponential and circuit preparation rather than treating this as a new unexplained formula.
+
+Multiplying the differential equation by i gives ℰi=Ri²+d(Li²/2)/dt. During growth from zero with a positive source, part of the input is stored and part dissipated. At equilibrium the storage rate vanishes. With the source removed and a closed resistive path retained, i=i₀e^(−t/τ), U=Li₀²e^(−2t/τ)/2, and integrating Ri² from zero to infinity gives the initial U. This is an ideal model, not advice about changing a real circuit or handling its stored energy.
+
+For ℰ=3,R=4,L=2,i₀=0 at decay factor d=e^(−t/τ)=1/2, i=3/8, U=9/64, input power=9/8, heating=9/16 and storage rate=9/16. The time is τ ln2, not τ/2. A program accepting d as a parameter checks a state of the analytic family; it does not independently measure time. An inductance dominated by a separate fixed component can approximate the moving-bar circuit when geometric inductance changes are negligible. Otherwise λ=L(x)i gives an extra i(dL/dx)v term and a separate mechanical-energy account is needed.
+
+There is an exact observation ambiguity: replacing (ℰ,R,L) by (kℰ,kR,kL), k>0, preserves i∞,τ and the entire current history for the same i₀, but multiplies stored energy and powers by k. Current-only observations cannot distinguish these models. An independently calibrated source voltage or component measurement can. **Work:** prove this for all times, exhibit k=2 for the preceding example, and state which observation would distinguish a loading error from a different physical coefficient.
+
+**Continue:** [Make magnetic circulation consistent with changing charge](Make-magnetic-circulation-consistent-with-changing-charge.lingua#r_00708966101E4713476674EFFC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_006E188F44A894E3AE0A38D123

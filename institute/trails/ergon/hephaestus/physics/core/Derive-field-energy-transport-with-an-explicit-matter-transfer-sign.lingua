@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Derive field energy transport with an explicit matter transfer sign (@physics-magnetic-energy: 0, is #chapter, #hephaestus-core "Connect-electromagnetic-propagation-to-the-shared-wave-and-energy-accounts.lingua#r_004CCBA82FD7003C221B96293D") { r_002D6E1F67EC1F579536BABE48
+For smooth microscopic vacuum fields and explicit charge current, take E·(curlB/μ₀−J)=ε₀E·∂tE and −B·curlE/μ₀=(B/μ₀)·∂tB. Add them. The component product rule gives div(E×B)=B·curlE−E·curlB. Therefore
+
+∂t u+div S=−J·E, with u=ε₀|E|²/2+|B|²/(2μ₀), S=E×B/μ₀.
+
+The factors one-half follow from differentiating squares with constant coefficients. S has power/area units. J·E>0 is power delivered to charged matter and lost from the field account. Integrating over a fixed volume gives dU/dt+outward field power=−matter power. Reuse [Localize an integral balance with explicit regularity and domain](../../mathematics/core/Localize-an-integral-balance-with-explicit-regularity-and-domain.lingua#r_0083DE48564035390466617B57) for the localization/integration hypotheses. Different material constitutive laws can add storage and dissipation; substituting a frequency-dependent coefficient into this vacuum expression without an energy derivation is unjustified.
+
+This result follows from the stated Maxwell/Lorentz system, identifying a consistent field-energy account. It does not replace measurement of the sources, material state or geometry. Energy can enter a resistor through surrounding fields while the circuit expression is VI. A current arrow alone is not an energy-flow arrow: reversing both E and B leaves E×B unchanged, and a nonzero field can have zero local cross product. Distinguish energy entering a volume from positive energy density already stored inside it.
+
+Read [Poynting theorem, energy flow and dissipation](../electromagnetism/dynamics/Poynting-theorem-energy-flow-and-dissipation.lingua#r_5QQ630P1MWY515P876101QHTAE) with this derivation and [Electromagnetism — David Tong](../electromagnetism/sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1) section 4.4 in the current electrodynamics PDF. Follow the displayed equation to fix the matter/field sign: nearby prose calling the negative transfer a particle-energy loss is inconsistent with the positive J·E particle-gain interpretation. The common account above keeps the boundary and recipient explicit. Only selected passages were inspected; harmonic media, full surface examples and source exercises remain larger reading.
+
+**Work:** derive the vector product identity from its three Cartesian components. Check that a source-free region with decreasing stored energy can have positive outward power. For a growing inductive circuit, reconcile source input, resistor heating and magnetic storage; do not assert source input equals heating during the transient. A field computation that closes a balance may still use incorrect material or boundary premises, so propose an observation that tests one of them.
+
+**Continue:** [Connect electromagnetic propagation to the shared wave and energy accounts](Connect-electromagnetic-propagation-to-the-shared-wave-and-energy-accounts.lingua#r_004CCBA82FD7003C221B96293D).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_002D6E1F67EC1F579536BABE48

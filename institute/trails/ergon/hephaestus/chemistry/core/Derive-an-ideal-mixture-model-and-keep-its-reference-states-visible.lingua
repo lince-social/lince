@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Derive an ideal mixture model and keep its reference states visible (@chemistry-ideal-mixture: 0, is #chapter, #hephaestus-core "Connect-reaction-extent-to-the-derivative-of-Gibbs-energy.lingua#r_00A0C1342E9088D59AB6BDCD5D") { r_0069318FE79B9671D452C213DB
+Consider distinct neutral ideal gases at one temperature T and pressure p. Initially each pure species i occupies V_i=n_iRT/p; the final mixture occupies V=NRT/p, where N=Σn_i and x_i=n_i/N. A reversible comparison using ideal selective constraints lets each species expand from V_i to V. Reusing [Derive state entropy changes without declaring the actual path reversible](../../physics/core/Derive-state-entropy-changes-without-declaring-the-actual-path-reversible.lingua#r_00AD3AE9AA539FA8AA5D2FF51C), its entropy contribution is n_iR ln(V/V_i)=−n_iR ln x_i. The ideal model has no enthalpy of mixing at fixed T. Therefore Δ_mixG=RTΣn_i ln x_i. This is a reference construction, not a claim that ordinary uncontrolled mixing is reversible or that a selective device has been built.
+
+For a pure ideal gas, dμ=V_m dp at fixed T, with V_m=RT/p. Integration from a specified standard pressure p° gives μ_i,pure(T,p)=μ_i°(T)+RT ln(p/p°). Combining the pure-species contributions and mixing change gives
+
+G(T,p,{n_i})=Σn_i μ_i°(T)+RT[Σn_i ln(n_i/N)+N ln(p/p°)].
+
+Every logarithm contains a dimensionless positive ratio. Standard-state functions are supplied material information; the ideal-gas equation does not determine μ_i° differences between species. The formula is a constitutive model for an ideal mixture, not a universal identity for liquids or concentrated solutions.
+
+To differentiate the mixing term, temporarily express all amounts in one common unit and write Σn_i ln(n_i/N)=Σn_i ln n_i−N ln N. The auxiliary dimensioned logarithms cancel; the original quantity equation retains ratios. Since ∂N/∂n_j=1, differentiation gives ln(n_j/N). Therefore μ_i=μ_i°+RT ln(x_i p/p°). Direct summation recovers G=Σn_i μ_i. At fixed T,p, dμ_i=RT(dn_i/n_i−dN/N), so Σn_i dμ_i=RT(dN−dN)=0.
+
+For a general neutral mixture, define activity through μ_i=μ_i°+RT ln a_i. This defines a dimensionless relative activity once the standard state is specified. The ideal-gas model gives a_i=x_i p/p°. Other state models require other relations; a concentration ratio is not automatically the activity. Keep [Review solution species balances approximations and evidence](Review-solution-species-balances-approximations-and-evidence.lingua#r_00B5D28110FDFE68CDF2F84B73) and the existing activity/reference preparation available rather than duplicating their solution accounting.
+
+Changing the reference convention at a fixed temperature can be represented by a_i′=c_i a_i, c_i>0, and μ_i°′=μ_i°−RT ln c_i. Substitution leaves the physical μ_i unchanged. Keeping a_i′ while forgetting the changed μ_i° would alter the predicted physical system. This is a reference transformation, not a material transformation.
+
+**Read and work:** [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected 9.3 and 9.7; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), relative activity and standard-state entries. Derive the partial derivative explicitly, verify homogeneity and the fixed-T,p differential identity, and identify where distinct species and ideal behavior enter. Splitting identical gas into artificial labels does not create the physical mixing entropy of distinguishable species. Statistical foundations remain later preparation.
+
+**Continue:** [Connect reaction extent to the derivative of Gibbs energy](Connect-reaction-extent-to-the-derivative-of-Gibbs-energy.lingua#r_00A0C1342E9088D59AB6BDCD5D).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0069318FE79B9671D452C213DB

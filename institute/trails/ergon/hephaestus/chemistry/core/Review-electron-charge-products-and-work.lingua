@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Review reaction charge chemical evidence and terminal work (@chemistry-electron-review: 0, is #chapter, #hephaestus-core "Choose-chemical-constraints-before-using-a-free-energy-sign.lingua#r_0024B2FCA41783BA78949E37E5") { r_0072FD178E3BC3AAC82E035558
+Reconstruct the investigation without using its numerical output as the argument. Begin with species identities and the reaction basis, derive conserved element/charge rows, distinguish reaction amount from external electron transfer, and explain how the independently supplied observations constrain the amounts. Use [Investigate what electrical and product records can identify](Investigate-electron-charge-products-and-work.lingua#r_00B3E33BAA2CE03EF3C2A5F8BA) only after writing your own account.
+
+**Demonstrate:**
+
+1. Explain the difference between oxidation state, Lewis formal charge, ionic charge and a spatial electronic charge distribution. Balance the acidic iron hydroxide half reaction and verify it independently. Show why its formal basic rewrite does not determine basic-solution speciation.
+2. Derive F=N_Ae with units and distinguish the electron's negative charge from positive F. Change a reaction's normalization and preserve the physical electron amount. Translate the investigation's positive reduction-oriented magnitude into the Green Book's signed cathodic-current convention.
+3. Close chemical and paired surface-charge accounts. Derive the full monotone trajectory and verify nonnegative reactant stocks throughout, not only at the final sample. Identify the missing ionic-transport and interface-response information.
+4. Define conversion, charge allocation, recovery, collected-product equivalent and purity separately. Give both endpoint rivals fitting N,s,c; then use an independent iron observation to identify the amounts. Treat zero-denominator cases explicitly. Explain how opposite signed partial currents defeat a naive universal [0,1] efficiency bound.
+5. Derive electrical work from the specified terminal signs. Integrate the varying voltage/current product, compare with multiplying averages, and explain the conditional heat calculation. State the additional thermodynamic preparation required for reversible potential and Gibbs-energy relations.
+6. Run and inspect both programs and their shared elimination dependency. Change the reaction/observation data, predict the consequences algebraically, and explain any model-domain rejection. Propose a physically meaningful additional measurement and its possible effect on the system, using [Ask which electrical quantities an observation identifies](../../physics/core/Ask-which-electrical-quantities-an-observation-identifies.lingua#r_00248BCB328E2A41569B7E86C8) for the distinction between evidence and observation disturbance.
+
+A satisfactory defense separates exact consequences of premises, numerical implementation checks and claims needing chemical evidence. A balanced reaction is necessary accounting; it is not a mechanism or a proof of feasible operation. A stipulated trace and a consistent energy balance are not a validated electrochemical device.
+
+The chemistry core now connects composition, electronic structure, reaction dynamics, solution constraints and electron/charge evidence. It remains unfinished. Required later common work includes entropy and chemical potential, reversible work and equilibrium/voltage bridges, deeper molecular/solid-state accounts, transport/kinetics connections and broader analytical reasoning with explicit prerequisites. Existing specialist cell, corrosion and industrial chemistry routes remain available, but the breadth-first common pass continues into computing, engineering and inquiry before deeper specializations.
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Continue in the sixth common pass:** [Choose chemical constraints before using a free energy sign](Choose-chemical-constraints-before-using-a-free-energy-sign.lingua#r_0024B2FCA41783BA78949E37E5). The sixth chemistry block develops constrained free-energy criteria, chemical potentials, ideal-mixture and activity models, reaction extent, equilibrium minima, finite work and reversible cell comparisons. Preserve all earlier chemical investigations. Continue computing at comparable depth before specialized branches.
+
+} r_0072FD178E3BC3AAC82E035558

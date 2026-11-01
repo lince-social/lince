@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Equilibrium, state variables and local description (@th-state: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "../../../inquiry/metrology/applications/Temperature-and-thermal-response.lingua#r_480AQX951V9NFA6AB86KJA1QZD") { r_7ZE016Z66H53QB69W5F3HVEN5X
+Equilibrium, state variables and local description (@th-state: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "../../../inquiry/metrology/applications/Temperature-and-thermal-response.lingua#r_480AQX951V9NFA6AB86KJA1QZD", #hephaestus-core "../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863") { r_7ZE016Z66H53QB69W5F3HVEN5X
 **Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), systems, equilibrium and phase chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), state, equilibrium and nonequilibrium foundations.
 
 An equilibrium description needs sufficient independent variables and the material/composition. For a simple single-phase compressible substance, two independent intensive properties often determine the state; at saturation, temperature and pressure are related and do not determine the liquid/vapour fraction. Count independent information before solving.
@@ -12,4 +12,9 @@ Local equilibrium assigns a state relation to small regions within a nonuniform 
 **Continue:** [Temperature of what, when, and under which thermal conditions?](../../../inquiry/metrology/applications/Temperature-and-thermal-response.lingua#r_480AQX951V9NFA6AB86KJA1QZD).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Third physics-block reading:** Use the state/constraint, equilibrium-versus-steady and local-description questions at the introductory level supplied by the preceding lesson. The complete DeVoe/MIT equilibrium, potential, entropy and relaxation assignments remain later formation; no fresh whole-course inspection is claimed. The next shared gas step supplies an explicit simple state equation rather than assuming all materials obey it.
+
+**Continue in the third physics block:** [Use a gas model with defined pressure, temperature, volume, and composition](../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863).
+
 } r_7ZE016Z66H53QB69W5F3HVEN5X

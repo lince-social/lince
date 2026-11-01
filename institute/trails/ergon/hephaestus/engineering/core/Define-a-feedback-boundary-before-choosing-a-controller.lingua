@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Define a feedback boundary before choosing a controller (@engineering-feedback-boundary: 0, is #chapter, #hephaestus-core "Derive-closed-loop-response-and-retain-the-physical-energy-account.lingua#r_0011422B1E2C32896CA06531DB") { r_0059798C63AB0B169306355791
+A controlled service compares an observed condition with an intended condition and changes an input in response. A room controller, a tank-level regulator and a positioning mechanism share this pattern, but their physical states, actuators and measurements differ. Begin with [Turn an intended use into requirements and observable evidence](Turn-an-intended-use-into-requirements-and-observable-evidence.lingua#r_0C3988C75ECA342B8BFC943458) and [Trace material energy and information across interfaces](Trace-material-energy-and-information-across-interfaces.lingua#r_0247145FE15239D16A42C0B328). Specify the useful quantity, the domain of intended operation and the evidence needed to judge it before selecting a gain.
+
+Name the plant, its stored state, manipulated input u, disturbance d, observation y, reference r and control rule. A disturbance enters the plant without being chosen by this controller. A reference states a desired condition; it is not a physical energy or material supply. The actuator makes the chosen input physically available. The sensor provides information about a quantity and can have offset, noise, delay and loading. A diagram connects these roles; the equations and measurement contracts determine what each connection means.
+
+Reuse [Derive a stored energy response and its limiting cases](Derive-a-stored-energy-response-and-its-limiting-cases.lingua#r_009E9E98E6B681AB3B149B7F71) for a hypothetical well-mixed thermal body at fixed ambient temperature T₀. Write θ=T−T₀ and Cθ′=u+d−Gθ, where C>0 is heat capacity in J/K, G≥0 a conductance in W/K, and u,d are signed powers in W. Observation y=θ+b has a constant offset b in K. Assume constant parameters, no omitted stored mode, instantaneous measurement and actuation, and no transport or computation delay. This is a benign model for analysis, not apparatus instructions or a validated body.
+
+The proportional rule is u=u₀+K(r−y), with baseline u₀ in W and K≥0 in W/K. Increasing measured temperature reduces input, giving the intended negative-feedback sign for this plant. The baseline can supply known steady demand without waiting for an error: choosing u₀=G_nominal r uses a nominal feedforward account. That does not establish the actual G or compensate every disturbance. Setting the baseline to zero and setting it to nominal demand are different designs.
+
+The signal error e_m=r−y differs from the true tracking error e=r−θ by e_m=e−b. A controller can make its measured error small while leaving the useful physical quantity wrong. Changing the reference units or observation scale also changes the gain's numerical meaning. Derive all units before comparing gains across systems; an algebraically similar tank model has flow and volume units rather than thermal power and temperature units.
+
+**Read and work:** [Process Dynamics Operations and Control MIT 10 450](../sources/Process-Dynamics-Operations-and-Control-MIT-10-450.lingua#r_003D567CD90DDFE67ADB65399E), lesson 3's balance, control-objective, variable-role and equipment passages, with the constant-coefficient preparation already developed here. Draw the information and power paths separately. Name an observation that could reject the one-state model, and explain why feedback alone does not establish actuator capacity, measurement accuracy or acceptable service.
+
+**Continue:** [Derive closed loop response and retain the physical energy account](Derive-closed-loop-response-and-retain-the-physical-energy-account.lingua#r_0011422B1E2C32896CA06531DB).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0059798C63AB0B169306355791

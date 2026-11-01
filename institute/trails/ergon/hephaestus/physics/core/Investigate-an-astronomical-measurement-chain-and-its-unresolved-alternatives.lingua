@@ -1,0 +1,265 @@
+Import "../Physics.lingua"
+
+Investigate an astronomical measurement chain and its unresolved alternatives (@physics-astronomy-study: 0, is #chapter, #hephaestus-core "Review-astronomical-evidence-before-opening-the-major-branches.lingua#r_002EA39AB9CCC5153EB1AD5D30") { r_0009599DE5F7197F559EAB8037
+Build an original paper observing account linking angular positions, detector counts, received flux, orbital projection and a scale-dependent cosmic inference. Begin by declaring what each quantity represents and which observations would be independent. The examples below are exact teaching fixtures, not a claim that one real source exhibits all their properties.
+
+Fit the four synthetic astrometric readings and recover offset 10, drift 2 and parallax 1/2 in the declared units. Compare the shared least-squares result with the three orthogonal scalar formulas. Add residuals proportional to (−1,3,−3,1), which are orthogonal to all three design columns, and explain why fitted coefficients remain unchanged while residual energy grows. Change time origin and then replace the parallax factors by the epochs to expose nonidentifiability. Use a separate 2±0.2 mas interval to show asymmetric inverse-distance bounds; never assign an invented confidence level.
+
+Reconstruct the two-bin expected-count example. Compare luminosity/distance/transmission models yielding identical flux, and distinguish geometric parallax evidence from photometric assumptions. Apply the diluted-transit rivals and the circular binary projection. Reuse the existing orbit evaluator, check center-of-mass position/momentum and show why a face-on orbit loses the radial-velocity mass information. State what an independent size, inclination, extinction or distance observation would add.
+
+Connect the constant-density pressure sphere to its differential balance, retaining its physical inadequacy as a full stellar model. Compare the prescribed expanding metric's look-back, proper, luminosity and angular distances. Finally reproduce the NGC 278 calculation and the synthetic distance-scale ambiguity. The stellar and cosmic examples are declared model inputs; their executable success supplies no new observational support.
+
+Extract unchanged `electric_study.py` from [Investigate electric work charge redistribution and observation limits](Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045), `periodic_study.py` from [Investigate periodic states exact rotations and sampling ambiguity](../../mathematics/core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409), `spacetime_study.py` from [Investigate clocks frames and an orbit with independent checks](Investigate-clocks-frames-and-an-orbit-with-independent-checks.lingua#r_005B1CB83312C1A9F46556C399), `linear_space_study.py` from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B), and `fitting_study.py` from [Investigate fitting uncertainty and competing observation models](../../inquiry/core/Investigate fitting uncertainty and competing observation models.lingua#r_00FEC32E133E78D019BFE134C2), plus the two blocks below into a temporary directory. Run `python3 -B astronomy_checks.py`. The programs actually reuse exact scalar validation, linear least squares, the two-body orbit evaluator and affine fitting. Imported shared modules retain their own dependencies. No source media or external catalogue is needed for these original fixtures.
+
+`binary` uses exact rational square roots and rejects otherwise physically valid parameter cases outside that evaluator's domain. `distance_interval` handles only strictly positive bounded parallax intervals. `counts` returns an expectation for constant bin densities, not a random observation or a detector simulator. `uniform_star` accepts C=4πGρ/3 as a supplied model coefficient, so changing ρ at fixed C implicitly changes G; comparisons of physical models must keep that relation consistent. `cosmic_quadratic` evaluates only the specified scale-factor family, not an inferred cosmology. `absolute_magnitude` uses 60-digit Decimal logarithms and is independently compared with ln ratios.
+
+**Independent work:** choose a changed observing geometry and two plausible source/propagation alternatives before running the checks. Derive an observable that distinguishes them; document its expected effect, required calibration and remaining ambiguity. Submit units, sources, calculations and a revised claim after criticism from another reader. Explain which conclusions are algebraic, which depend on physical assumptions and which would require data not yet collected. Complete astronomical scholarship, observing practice and independent research belong to the later branches.
+
+```python file=astronomy_study.py
+from fractions import Fraction as F
+from decimal import Decimal as D, localcontext
+from electric_study import exact, rational_root
+from linear_space_study import least_squares
+from fitting_study import fit
+from spacetime_study import orbit
+
+
+def astrometry(times, factors, angles):
+    times, factors, angles = [tuple(exact(x) for x in v) for v in (times, factors, angles)]
+    if len(times) < 3 or not len(times) == len(factors) == len(angles):
+        raise ValueError('three or more paired epochs factors and angles required')
+    result = least_squares(tuple((1, t, p) for t, p in zip(times, factors)), angles)
+    if result['kernel']:
+        raise ValueError('epoch design does not identify offset drift and parallax')
+    return result
+
+
+def distance_interval(parallax_mas, radius_mas):
+    p, r = exact(parallax_mas), exact(radius_mas)
+    if r < 0 or p-r <= 0:
+        raise ValueError('positive bounded parallax interval required for this inverse calculation')
+    return 1000/(p+r), 1000/(p-r)
+
+
+def flux(luminosity_over_four_pi, distance, transmission):
+    power, distance, transmission = map(exact, (luminosity_over_four_pi, distance, transmission))
+    if power < 0 or distance <= 0 or not 0 <= transmission <= 1:
+        raise ValueError('nonnegative power positive distance and transmission in [0,1] required')
+    return power*transmission/distance**2
+
+
+def counts(bins, area, duration, hc, background):
+    area, duration, hc, background = map(exact, (area, duration, hc, background))
+    if min(area, duration, hc) <= 0 or background < 0:
+        raise ValueError('positive area duration hc and nonnegative background required')
+    signal = F(0)
+    for wavelength, width, density, transmission, efficiency in bins:
+        wavelength, width, density, transmission, efficiency = map(exact,
+            (wavelength, width, density, transmission, efficiency))
+        if min(wavelength, width) <= 0 or density < 0 or not 0 <= transmission <= 1 or not 0 <= efficiency <= 1:
+            raise ValueError('invalid spectral bin')
+        signal += wavelength*width*density*transmission*efficiency/hc
+    return area*duration*signal+background
+
+
+def transit(radius_ratio, contaminant_ratio):
+    k, f = exact(radius_ratio), exact(contaminant_ratio)
+    if not 0 <= k <= 1 or f < 0:
+        raise ValueError('radius ratio in [0,1] and nonnegative dilution required')
+    return k*k/(1+f)
+
+
+def binary(m1, m2, gravitational_constant, separation, sin_inclination, phase):
+    m1, m2, g, a, sini = map(exact, (m1, m2, gravitational_constant, separation, sin_inclination))
+    if min(m1, m2, g, a) <= 0 or not 0 <= sini <= 1:
+        raise ValueError('positive masses G separation and projected inclination in [0,1] required')
+    total = m1+m2
+    relative = orbit(g*total, rational_root(g*total*a), 0, phase)
+    r1 = tuple(m2*x/total for x in relative['position'])
+    r2 = tuple(-m1*x/total for x in relative['position'])
+    v1 = tuple(m2*x/total for x in relative['velocity'])
+    v2 = tuple(-m1*x/total for x in relative['velocity'])
+    speed = rational_root(g*total/a)
+    return {'r1': r1, 'r2': r2, 'v1': v1, 'v2': v2,
+            'k1': m2*speed*sini/total, 'k2': m1*speed*sini/total}
+
+
+def uniform_star(density, acceleration_per_radius, radius, r):
+    density, coefficient, radius, r = map(exact, (density, acceleration_per_radius, radius, r))
+    if min(density, coefficient, radius) <= 0 or not 0 <= r <= radius:
+        raise ValueError('positive model parameters and radius inside sphere required')
+    return density*coefficient*(radius**2-r**2)/2, -coefficient*r
+
+
+def cosmic_quadratic(emission, reception, c):
+    te, t0, c = map(exact, (emission, reception, c))
+    if c <= 0 or not 0 < te <= t0:
+        raise ValueError('positive c and ordered positive times required')
+    ae = (te/t0)**2
+    chi = c*t0*t0*(1/te-1/t0)
+    return {'redshift': 1/ae-1, 'lookback': t0-te, 'proper_now': chi,
+            'luminosity_distance': chi/ae, 'angular_distance': ae*chi}
+
+
+def expansion_fit(distances, velocities):
+    distances = tuple(exact(x) for x in distances)
+    if any(x <= 0 for x in distances):
+        raise ValueError('positive distances required')
+    return fit(distances, velocities)
+
+
+def absolute_magnitude(apparent, distance_pc):
+    distance_pc = exact(distance_pc)
+    apparent = exact(apparent)
+    if distance_pc <= 0:
+        raise ValueError('positive distance required')
+    with localcontext() as context:
+        context.prec = 60
+        distance = D(distance_pc.numerator)/D(distance_pc.denominator)
+        return D(apparent.numerator)/D(apparent.denominator)-5*(distance/10).log10()
+```
+
+```python file=astronomy_checks.py
+from fractions import Fraction as F
+from decimal import Decimal as D, localcontext
+from itertools import product
+import json
+from astronomy_study import astrometry, distance_interval, flux, counts, transit
+from astronomy_study import binary, uniform_star, cosmic_quadratic, expansion_fit, absolute_magnitude
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    assert condition
+    checks += 1
+
+
+times = (-3, -1, 1, 3)
+factors = (1, -1, -1, 1)
+residual_direction = (-1, 3, -3, 1)
+astrometric_cases = 0
+for offset, drift, parallax, error in product(range(-1, 2), range(-2, 3),
+                                            [F(i, 2) for i in range(-2, 3)],
+                                            [F(i, 10) for i in range(-2, 3)]):
+    y = tuple(offset+drift*t+parallax*p+error*q
+              for t, p, q in zip(times, factors, residual_direction))
+    result = astrometry(times, factors, y)
+    direct = sum(y)/4, sum(t*v for t, v in zip(times, y))/20, sum(p*v for p, v in zip(factors, y))/4
+    check(result['coefficients'] == direct == (offset, drift, parallax))
+    check(result['squared_error'] == 20*error**2)
+    check(result['residual'] == tuple(error*q for q in residual_direction))
+    changed = astrometry(tuple(t+4 for t in times), factors, y)
+    check(changed['coefficients'] == (offset-4*drift, drift, parallax))
+    astrometric_cases += 1
+check(astrometry(times, factors, (F(9, 2), F(15, 2), F(23, 2), F(33, 2)))['coefficients'] == (10, 2, F(1, 2)))
+check(distance_interval(2, F(1, 5)) == (F(5000, 11), F(5000, 9)))
+for p, relative in product(range(1, 8), [F(0), F(1, 10), F(1, 2)]):
+    low, high = distance_interval(p, p*relative)
+    check(low <= F(1000, p) <= high)
+    check(high-F(1000, p) >= F(1000, p)-low)
+flux_cases = 0
+for luminosity, distance, transmission, scale in product(range(1, 6), range(1, 6),
+                                                        [F(0), F(1, 4), F(1, 2), F(1)], [F(1, 2), F(2), F(3)]):
+    original = flux(luminosity, distance, transmission)
+    check(original == flux(luminosity*scale**2, distance*scale, transmission))
+    check(flux(luminosity, distance*2, transmission) == original/4)
+    check(original*distance**2 == luminosity*transmission)
+    flux_cases += 1
+bins = [(1, 1, 2, 1, F(1, 2)), (2, 1, 1, 1, F(1, 4))]
+check(counts(bins, 3, 2, 1, 3) == 12)
+for scale in range(1, 8):
+    check(counts(bins, 3*scale, 2, 1, 3)-3 == 9*scale)
+    check(counts(bins, 3, 2*scale, 1, 3)-3 == 9*scale)
+    split = [(l, w/2, d, t, q) for l, w, d, t, q in [(F(l), F(w), F(d), F(t), F(q)) for l, w, d, t, q in bins]]
+    check(counts(split+split, 3, 2, 1, 3) == 12)
+check(transit(F(1, 10), 0) == F(1, 100))
+check(transit(F(1, 5), 3) == F(1, 100))
+binary_cases = 0
+for m1, m2, sini, phase in product([1, 2, 3], [1, 2, 3], [F(0), F(3, 5), F(1)],
+                                   [(1, 0), (0, 1), (F(3, 5), F(4, 5))]):
+    total = m1+m2
+    result = binary(m1, m2, total, 1, sini, phase)
+    check(all(m1*x+m2*y == 0 for x, y in zip(result['r1'], result['r2'])))
+    check(all(m1*x+m2*y == 0 for x, y in zip(result['v1'], result['v2'])))
+    check(result['k1'] == m2*sini and result['k2'] == m1*sini)
+    if sini:
+        check(result['k1']/result['k2'] == F(m2, m1))
+    binary_cases += 1
+star_cases = 0
+for density, coefficient, radius in product(range(1, 5), range(1, 5), range(1, 5)):
+    check(uniform_star(density, coefficient, radius, radius)[0] == 0)
+    for fraction in [F(0), F(1, 4), F(1, 2), F(3, 4)]:
+        r = radius*fraction
+        pressure, acceleration = uniform_star(density, coefficient, radius, r)
+        dr = F(radius, 16)
+        next_pressure = uniform_star(density, coefficient, radius, r+dr)[0]
+        check(pressure > 0 and acceleration <= 0)
+        check((next_pressure-pressure)/dr == -density*coefficient*(r+dr/2))
+        star_cases += 1
+check(uniform_star(3, 2, 2, 0) == (12, 0))
+cosmic_cases = 0
+for t0, fraction, c in product(range(1, 7), [F(i, 8) for i in range(1, 9)], [1, 2, 3]):
+    te = t0*fraction
+    result = cosmic_quadratic(te, t0, c)
+    z = result['redshift']
+    check(result['luminosity_distance'] == (1+z)**2*result['angular_distance'])
+    check(result['proper_now'] == c*t0*(t0-te)/te)
+    check(result['lookback'] == t0-te)
+    check(result['proper_now'] >= c*result['lookback'])
+    cosmic_cases += 1
+check(cosmic_quadratic(F(1, 2), 1, 1) == {'redshift': 3, 'lookback': F(1, 2), 'proper_now': 1,
+                                       'luminosity_distance': 4, 'angular_distance': F(1, 4)})
+fit_cases = 0
+for offset, slope, scale in product(range(-2, 3), range(1, 6), [F(1, 2), F(2), F(3)]):
+    distances = (1, 2, 3, 4)
+    residuals = (1, -1, -1, 1)
+    velocities = tuple(offset+slope*d+e for d, e in zip(distances, residuals))
+    result = expansion_fit(distances, velocities)
+    check((result['alpha'], result['beta'], result['sse']) == (offset, slope, 4))
+    changed = expansion_fit(tuple(d*scale for d in distances), velocities)
+    check((changed['alpha'], changed['beta'], changed['residual']) == (offset, slope/scale, result['residual']))
+    fit_cases += 1
+historical_distance = F(650-(-110), 500)
+check(historical_distance == F(38, 25))
+historical_magnitude = absolute_magnitude(12, historical_distance*10**6)
+with localcontext() as context:
+    context.prec = 60
+    independent = D(12)-5*(D(152000).ln()/D(10).ln())
+    check(abs(historical_magnitude-independent) < D('1e-57'))
+    check(D('-13.910') < historical_magnitude < D('-13.909'))
+    check(historical_magnitude.quantize(D('0.1')) == D('-13.9'))
+    check(absolute_magnitude(12, 10) == 12)
+    check(absolute_magnitude(12, 100) == 7)
+rejects = [lambda: astrometry(times, times, (1, 2, 3, 4)),
+           lambda: astrometry((0, 1), (1, -1), (0, 1)),
+           lambda: distance_interval(0, 1), lambda: distance_interval(2, -1),
+           lambda: flux(1, 0, 1), lambda: flux(1, 1, 2), lambda: flux(True, 1, 1),
+           lambda: counts([(0, 1, 1, 1, 1)], 1, 1, 1, 0),
+           lambda: counts(bins, 0, 1, 1, 0), lambda: transit(2, 0),
+           lambda: transit(1, -1), lambda: binary(0, 1, 1, 1, 1, (1, 0)),
+           lambda: binary(1, 1, 1, 1, 2, (1, 0)),
+           lambda: uniform_star(1, 1, 1, 2), lambda: cosmic_quadratic(0, 1, 1),
+           lambda: cosmic_quadratic(2, 1, 1), lambda: expansion_fit((0, 1, 2), (1, 2, 3)),
+           lambda: absolute_magnitude(12, 0)]
+for operation in rejects:
+    try:
+        operation()
+    except ValueError:
+        check(True)
+    else:
+        raise AssertionError('invalid input accepted')
+print(json.dumps({'checks': checks, 'astrometry_cases': astrometric_cases, 'flux_cases': flux_cases,
+                  'binary_cases': binary_cases, 'star_cases': star_cases, 'cosmic_cases': cosmic_cases,
+                  'fit_cases': fit_cases, 'rejected': len(rejects),
+                  'historical_distance_mpc': str(historical_distance),
+                  'historical_absolute_magnitude': str(historical_magnitude)}, indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 4,093 assertions, including 375 astrometric cases, 300 flux cases, 81 binaries, 256 stellar-model points, 144 prescribed cosmic cases, 75 scale/fit cases, the bounded historical calculation and eighteen rejected calls. Independent projection formulas, balance identities and logarithm methods complement the shared programs. These are teaching-model checks, not observed astronomical data or completed learner work.
+
+**Continue:** [Review astronomical evidence before opening the major branches](Review-astronomical-evidence-before-opening-the-major-branches.lingua#r_002EA39AB9CCC5153EB1AD5D30).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0009599DE5F7197F559EAB8037

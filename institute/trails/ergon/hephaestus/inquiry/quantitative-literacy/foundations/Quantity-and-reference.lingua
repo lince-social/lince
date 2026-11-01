@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-A number needs a quantity and a reference (@ql-quantity: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-si, #quantitative-literacy "Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7", #metrology "../../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_65GAJ89AZRG6VYVXDC43NBT0DK
+A number needs a quantity and a reference (@ql-quantity: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-si, #quantitative-literacy "Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7", #metrology "../../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6", #hephaestus-core "Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7") { r_65GAJ89AZRG6VYVXDC43NBT0DK
 **Read:** the introduction and first numerical examples in Math for Trades, Volume 1; SI Brochure chapter 2's introduction to quantities and units. Begin with examples, then revisit the SI definitions after the units reading.
 
 “Twenty” can mean twenty pieces, twenty kilograms, a twentieth percentile, or a ratio multiplied by one hundred. Write the quantity as well as its value: a shipment's mass, a specimen's length, the fraction of a particular substance, or elapsed time between named events. A measurement value combines a numerical value and a reference unit. A count also needs a definition of what counts as one item: a wafer, a packaged chip, and a tested working chip are different inventory units.
@@ -16,4 +16,7 @@ Use a small table with quantity, symbol, value, unit, basis, and origin. For exa
 **Continue:** [Counting, arithmetic, signs, and exact values](Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in the mathematics core:** [Counting, arithmetic, signs, and exact values](Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7).
+
 } r_65GAJ89AZRG6VYVXDC43NBT0DK

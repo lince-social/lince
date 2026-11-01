@@ -1,0 +1,20 @@
+Import "../Physics.lingua"
+
+Review matter temperature and thermal energy without losing model limits (@physics-thermal-review: 0, is #chapter, #hephaestus-core "Connect-a-restoring-interaction-to-an-oscillating-physical-state.lingua#r_008CD8E3B5B6619C71A1297FF2") { r_05768CD06AF8B093DFC94E7348
+Explain why a material’s macroscopic motion does not specify its thermal state. Identify matter, boundary, composition, density, pressure, temperature and energy terms, and distinguish closed, isolated and control-volume descriptions. Compare equilibrium with a steady driven state. Name the physical assumptions behind a spatially uniform or local-equilibrium description rather than inferring them from a single stable indication.
+
+**Derive:** reproduce the collision-impulse pressure calculation, including a zero velocity component; separate time and particle averages; prove the mean-motion energy decomposition; and connect equal directional second moments with the classical equilibrium ideal-gas pressure relation. Explain which further assumptions support U=(3/2)nRT. Distinguish those arguments from an unsupported claim about all materials or a full equilibrium distribution.
+
+**Interpret temperature and evidence:** convert the two teaching temperatures correctly, distinguish differences from ratios, and explain why an exact SI defining constant does not yield an exact thermometer realization. State the chosen measurand, equilibration assumptions, possible gradients and a proposed independent check. Connect the existing measurement Record’s deeper response/uncertainty work without claiming that it was completed here.
+
+**Account for paths:** draw the three p-V paths, calculate their work by independent methods, derive the common ΔU and distinct heat transfers, and reconcile work-on/work-by signs. Show why changing the caloric model changes inferred heat while leaving the mechanical state equation unchanged. Distinguish the zero-volume-work condition from no work of any kind, and the free-expansion final state from the chosen B state. Explain why energy conservation alone supplies neither process direction nor a heat-transfer rate.
+
+**Independent work:** choose a new benign theoretical state/path or particle-table comparison, state its assumptions and perform independent calculations. Use the assigned source passages to criticize one assumption, then explain the revised result to someone with the earlier mechanics and chemistry preparation. Preserve units, provenance, executable evidence and unanswered empirical questions. Synthetic numerical agreement is evidence about the calculation, not a performed physical experiment.
+
+The physics core remains unfinished. Full continuum and rotational dynamics, statistical ensembles and distributions, entropy/irreversibility, transport, fields and waves, quantum/relativistic transitions, astronomy, experimental reconstruction and advanced independent formation remain. The third common pass proceeds next to chemistry’s rates, equilibrium and analytical evidence, before computing, engineering and inquiry. Complete those common bridges before extending a specialized thermal or manufacturing leaf.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the fourth common pass:** [Connect a restoring interaction to an oscillating physical state](Connect-a-restoring-interaction-to-an-oscillating-physical-state.lingua#r_008CD8E3B5B6619C71A1297FF2). All six areas now have three common blocks. The fourth physics block develops restoring forces, loss accounts, fields, wave balance, boundaries and energy transport using the new periodic mathematics. Earlier mechanical and thermal studies remain unchanged.
+
+} r_05768CD06AF8B093DFC94E7348

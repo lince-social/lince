@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Read rectangular maps and the transpose through their dimensions (@math-linear-transpose: 0, is #chapter, #hephaestus-core "Reduce rectangular constraints with reversible row operations.lingua#r_0040C3CC99E7DD621AA0C570AA") { r_00DA69E3E3C8873C7D5F0CCB01
+Reuse [Read a matrix as a map and distinguish translation from linearity](Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua#r_03CC45432746F4DD0737B769A4). An m×n matrix A defines a map from Rⁿ to Rᵐ by (Ax)ᵢ=Σⱼaᵢⱼxⱼ. Its jth column is Aeⱼ, the output produced by one standard input direction. Therefore Ax is the linear combination of those columns with coefficients xⱼ. Distributing each finite sum proves A(cx+dy)=cAx+dAy. Conversely, any linear map from Rⁿ to Rᵐ is determined by its values on the eⱼ and has this matrix form. A constant offset makes a map affine unless the offset is zero.
+
+The image im A is the set of all achievable outputs Ax: it is the column span. The kernel ker A is the set of inputs sent to zero. Both contain zero and are closed under real linear combinations, as follows from linearity. Such a set is a subspace. If Ax=Ay, then x−y belongs to the kernel. Thus the map is one-to-one exactly when its kernel contains only zero. Whether a particular b is achievable is instead the question b∈im A. Input uniqueness and output reach are different properties.
+
+Take A with rows (1,0,1), (0,1,1), (1,1,2), (2,−1,1). Its first two columns are c₁=(1,0,1,2) and c₂=(0,1,1,−1); its third is c₁+c₂. Consequently Ax=(x₁+x₃)c₁+(x₂+x₃)c₂. The three unknowns influence the readings only through u=x₁+x₃ and v=x₂+x₃. Every multiple of (−1,−1,1) is lost. The first two output coordinates show c₁,c₂ are independent. These facts already give an image basis and a one-parameter kernel; elimination will recover them systematically.
+
+The transpose Aᵀ has entry (Aᵀ)ⱼᵢ=aᵢⱼ and size n×m. For x∈Rⁿ and y∈Rᵐ, expansion gives y·Ax=ΣᵢΣⱼyᵢaᵢⱼxⱼ=x·Aᵀy. This identity explains the transpose in orthogonality and fitting; it is not generally an inverse. The expression AᵀA is n×n, whereas AAᵀ is m×m. Each has a different input domain.
+
+If B maps Rᵏ to Rⁿ, AB maps Rᵏ to Rᵐ; its jth column is A applied to B's jth column. Finite sum rearrangement proves (AB)x=A(Bx) and (AB)ᵀ=BᵀAᵀ. The reversed order matters. The identity Iₙ preserves each coordinate. If a square matrix S has a two-sided inverse, x=Sy is an invertible change of coordinates, and the same output is represented by ASy. This changes the coefficient description while retaining the achievable outputs. An invertible coordinate change does not automatically preserve dot products.
+
+**Work:** compute Ax for (1,0,1) and (0,−1,2), explain why the results agree, and verify the transpose identity for x=(1,2,3), y=(2,−1,0,1). Identify the sizes of all products before computing them. Find a b outside the displayed column span by violating its output relation b₃=b₁+b₂. Show why adding a fourth or fifth copy of an existing reading does not remove the kernel. Then propose a new reading that does remove it and justify the claim.
+
+**Reading:** [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW) sections 6.1, 6.3–6.4, 8.1–8.3 and 10.1–10.2 are progressive assignments. Preserve the input/output meaning beside every array. The new four-reading model is an original mathematical construction, not a reproduced instrument.
+
+**Continue:** [Reduce rectangular constraints with reversible row operations](Reduce rectangular constraints with reversible row operations.lingua#r_0040C3CC99E7DD621AA0C570AA).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00DA69E3E3C8873C7D5F0CCB01

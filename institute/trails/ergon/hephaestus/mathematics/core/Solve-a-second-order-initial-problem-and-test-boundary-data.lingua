@@ -1,0 +1,24 @@
+Import "../Mathematics.lingua"
+
+Solve a second order initial problem and test boundary data (@math-second-order: 0, is #chapter, #hephaestus-core "Bound-a-finite-trigonometric-calculation-before-trusting-decimals.lingua#r_009546FA47C08EFAEFC38F8134") { r_0072284625C39BA0E04DDA3D2E
+A second-order equation constrains the second derivative of an unknown function. Consider x''+ω²x=0 on an interval containing zero, with constant ω>0 and initial data x(0)=x₀, x'(0)=v₀. The proven derivative identities verify
+
+x(t)=x₀ cos(ωt)+(v₀/ω)sin(ωt),
+x'(t)=−ωx₀ sin(ωt)+v₀ cos(ωt).
+
+Evaluation at zero gives both initial values. Thus a solution exists for every pair of real initial data. If x is a length and t is time, v₀/ω has length units. No physical force or material law has yet been assumed; the next physics block interprets particular models that produce this equation.
+
+For uniqueness, subtract any two twice-differentiable solutions with the same initial data. Their difference z obeys z''+ω²z=0 with z(0)=z'(0)=0. Differentiate Q=(z')²+ω²z²: Q'=2z'(z''+ω²z)=0. A differentiable function with zero derivative on an interval is constant by the prepared mean-value theorem. Q(0)=0, so Q remains zero. Its nonnegative terms force z=z'=0 everywhere. This proves uniqueness for this equation, not a general theorem for arbitrary differential equations.
+
+For any solution, the same calculation gives the constant (x')²+ω²x²=v₀²+ω²x₀². This quantity has squared-rate units; calling it mechanical energy would require a physical coefficient and interpretation. For x₀=3,v₀=8,ω=2 in consistent numerical units, x=3cos 2t+4sin 2t, amplitude 5 and the constant is 100. The integral from zero to t is x₀ sin(ωt)/ω+v₀(1−cos(ωt))/ω²; verify both its derivative and zero initial value.
+
+At ω=0 the separate equation is x''=0 and the solution is x=x₀+v₀t. The ω→0 limit at fixed t agrees: cos(ωt)→1 and sin(ωt)/ω→t. It does not have a finite oscillation period. Treating the zero case separately avoids dividing by zero and clarifies the change in behavior.
+
+Initial data are not interchangeable with endpoint values. If x(0)=a and x(L)=b with L>0, write x=a cos(ωt)+B sin(ωt). If sin(ωL)≠0, B is uniquely determined. If sin(ωL)=0, either b=a cos(ωL), leaving every B possible, or the endpoint conditions are inconsistent. For ωL=π and a=0, b=0 admits infinitely many sine multiples while b=1 admits none. This does not contradict initial-value uniqueness because x'(0) was never specified.
+
+**Read:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), the added Volume 3 section 7.1 assignment on second-order equations and initial/boundary data. Its general characteristic-equation and complex-exponential development exceeds the bounded proof given here and retains later preparation. Derive the constant and endpoint classification yourself before using a solver.
+
+**Continue:** [Bound a finite trigonometric calculation before trusting decimals](Bound-a-finite-trigonometric-calculation-before-trusting-decimals.lingua#r_009546FA47C08EFAEFC38F8134).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0072284625C39BA0E04DDA3D2E

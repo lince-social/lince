@@ -1,0 +1,361 @@
+Import "../Physics.lingua"
+
+Investigate quantum preparation measurement order coherence and observed counts (@physics-quantum-study: 0, is #chapter, #hephaestus-core "Review-quantum-descriptions-with-their-physical-premises-and-evidence-limits.lingua#r_00CFA9ABD5C9D7D59E8532DC9F") { r_00385A80F5644BEA5DBB42BCBC
+Complete an original finite study that distinguishes physical premises, mathematical consequences, exact program behavior and possible observations. Extract `operator_study.py` and its unchanged dependency `periodic_study.py` from [Investigate complex operators coordinate changes and certified evolution](../../mathematics/core/Investigate-complex-operators-coordinate-changes-and-certified-evolution.lingua#r_00DB3E45916EBAD5985DC5A91D) and [Investigate periodic states exact rotations and sampling ambiguity](../../mathematics/core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409), and `statistical_study.py` from [Investigate finite reservoirs fluctuations and distinct relaxation laws](Investigate-finite-reservoirs-fluctuations-and-distinct-relaxation-laws.lingua#r_0072F92BB90961036B562C796E). Extract the two programs below beside them and run `python3 quantum_checks.py`. Use ordinary Python with assertions enabled. Only the standard library and these reused original teaching programs are needed.
+
+**Derive:** state the Born and ideal-instrument premises, the meaning of the two-state subsystem and units of an observable/Hamiltonian. Reproduce projection probabilities, conditional states, forgotten outcomes, mixtures and unitary changes. Prove the finite uncertainty bound with its state dependence. Derive the well boundary/normalization and two-mode interference expressions analytically. The programs are finite matrix and count models; they do not discretize or solve the continuous well equation.
+
+**Reconstruct the source:** reproduce MIT note 2's z-plus → retained x-minus → z sequence. Report the retained fraction and both final conditional and original-input probabilities. Reconstruct note 8's Φ₀ state and compare it with the classical |00⟩/|11⟩ mixture under both z and x settings. These are bounded mathematical reconstructions of teaching models, not reenactments of historical experiments or analyses of source measurement datasets.
+
+**Change the model:** choose new rational analyzer axes and a mixed Bloch state; compute the outcome law before and after an ideal instrument. Apply a fixed Hermitian unitary with a declared physical phase/time interpretation. Change to another orthonormal coordinate basis and transform all state/measurement matrices consistently. Compare coherent and dephased preparations with identical original-basis probabilities. Include detector loss and an alternative preparation/efficiency pair with the same recorded distribution.
+
+**Independent checking:** the matrix Born/dephasing calculations are compared with independently derived real three-coordinate Bloch formulas. Conditional sequence probabilities are checked against their factored real expression, and unitary action against the three-dimensional rotation identity r′=(c²−s²)r+2s²n(n·r)+2cs(n×r). Tensor-projector probabilities are checked against both the Bell-state correlation formula and product-state factorization. Count laws are checked by an independent convolution using the unchanged statistical moments routine. The noncommuting common-eigenvector example tests an overly broad uncertainty claim directly.
+
+**Criticize and revise:** exhibit a failed “add probabilities rather than amplitudes” model, an omitted-selection denominator, a lost-coherence account and a detector-only explanation that cannot be resolved by the chosen observations. Identify which new measurement setting, calibration or assumption would discriminate the accounts. Preserve what remains unidentified. Do not label all disagreement “quantum noise” or use the model to certify a real device without evidence.
+
+**Deliver:** a connected derivation, exact source reconstruction, changed preparation/setting/dynamics, independent checks, a feasible observation and calibration plan, uncertainty/selection analysis, and criticism followed by a revision. Have another reader reproduce the stated outputs from the declared inputs. General operator theory, full experimental apparatus construction, graduate quantum mechanics and specialized quantum technologies remain later work across the tree.
+
+The interface validates exact rational two-state density matrices, projectors, normalized analyzer axes, unitary transformations and probabilities. Pure four-coordinate states supply the bounded composite example; conditional zero-probability outcomes are rejected. Mixtures have at most sixteen entries and count models at most 64 repetitions. Shared arithmetic retains its six-coordinate matrix bound. These limits describe a teaching implementation, not a validated laboratory-control package or general quantum simulator. Source code below is original; external books, figures, datasets and course software remain external.
+
+```python file=quantum_study.py
+from fractions import Fraction as F
+import operator_study as o
+from statistical_study import probability, integer, canonical
+
+X = o.matrix([[0, 1], [1, 0]])
+Y = o.matrix([[0, (0, -1)], [(0, 1), 0]])
+Z = o.matrix([[1, 0], [0, -1]])
+PAULI = (X, Y, Z)
+
+
+def trace(a):
+    a = o.matrix(a)
+    if len(a) != len(a[0]):
+        raise ValueError('square matrix required')
+    return tuple(sum((a[j][j][k] for j in range(len(a))), F(0)) for k in (0, 1))
+
+
+def density(a):
+    a = o.matrix(a)
+    if len(a) != 2 or len(a[0]) != 2 or o.adjoint(a) != a or trace(a) != (1, 0):
+        raise ValueError('two by two Hermitian trace-one matrix required')
+    d, e = a[0][0][0], a[1][1][0]
+    if min(d, e) < 0 or d*e < o.norm_squared(a[0][1]):
+        raise ValueError('positive semidefinite density required')
+    return a
+
+
+def pure(v):
+    c = o.column(v)
+    if len(c) != 2:
+        raise ValueError('two-state vector required')
+    norm = o.squared_length(v)
+    if norm == 0:
+        raise ValueError('zero vector does not represent a state')
+    return density(o.scale(1/norm, o.multiply(c, o.adjoint(c))))
+
+
+def mixture(rows):
+    if type(rows) not in (list, tuple) or not 1 <= len(rows) <= 16:
+        raise ValueError('one to sixteen weighted states required')
+    total = o.matrix([[0, 0], [0, 0]])
+    weight = F(0)
+    for p, rho in rows:
+        p = probability(p)
+        total = o.add(total, o.scale(p, density(rho)))
+        weight += p
+    if weight != 1:
+        raise ValueError('mixture weights must sum to one')
+    return density(total)
+
+
+def bloch(r):
+    if type(r) not in (list, tuple) or len(r) != 3:
+        raise ValueError('three exact real coordinates required')
+    r = tuple(o.rational(x) for x in r)
+    if sum(x*x for x in r) > 1:
+        raise ValueError('Bloch coordinates must be in the unit ball')
+    a = o.identity(2)
+    for x, s in zip(r, PAULI):
+        a = o.add(a, o.scale(x, s))
+    return density(o.scale(F(1, 2), a))
+
+
+def spin(n):
+    bloch(n)
+    if sum(o.rational(x)**2 for x in n) != 1:
+        raise ValueError('unit analyzer axis required')
+    return o.add(o.scale(2, bloch(n)), o.scale(-1, o.identity(2)))
+
+
+def projectors(n):
+    return o.projectors(spin(n))
+
+
+def projector(p):
+    p = o.matrix(p)
+    if len(p) != 2 or len(p[0]) != 2 or o.adjoint(p) != p or o.multiply(p, p) != p:
+        raise ValueError('two-state orthogonal projector required')
+    return p
+
+
+def born(rho, p):
+    rho, p = density(rho), projector(p)
+    result = trace(o.multiply(rho, p))
+    if result[1] != 0:
+        raise ValueError('probability must be real')
+    return probability(result[0])
+
+
+def select(rho, p):
+    rho, p = density(rho), projector(p)
+    chance = born(rho, p)
+    if chance == 0:
+        raise ValueError('cannot condition on a zero-probability result')
+    return chance, density(o.scale(1/chance, o.multiply(o.multiply(p, rho), p)))
+
+
+def dephase(rho, n):
+    rho = density(rho)
+    parts = [o.multiply(o.multiply(p, rho), p) for p in projectors(n)]
+    return density(o.add(*parts))
+
+
+def transform(rho, u):
+    rho, u = density(rho), o.matrix(u)
+    if len(u) != 2 or len(u[0]) != 2 or o.multiply(o.adjoint(u), u) != o.identity(2):
+        raise ValueError('two-state unitary required')
+    return density(o.multiply(o.multiply(u, rho), o.adjoint(u)))
+
+
+def expectation(rho, a):
+    rho, a = density(rho), o.matrix(a)
+    if len(a) != 2 or len(a[0]) != 2 or o.adjoint(a) != a:
+        raise ValueError('two-state Hermitian observable required')
+    return trace(o.multiply(rho, a))[0]
+
+
+def variance(rho, a):
+    mean = expectation(rho, a)
+    return expectation(rho, o.multiply(a, a))-mean*mean
+
+
+def efficiencies(p, plus, minus):
+    p, plus, minus = map(probability, (p, plus, minus))
+    a, b = p*plus, (1-p)*minus
+    return a, b, 1-a-b, a/(a+b) if a+b else None
+
+
+def count_law(n, p):
+    n, p = integer(n, 0, 64), probability(p)
+    if p == 1:
+        return {j: F(int(j == n)) for j in range(n+1)}
+    return canonical(n, p/(1-p))
+
+
+def tensor(a, b):
+    a, b = o.matrix(a), o.matrix(b)
+    if len(a) != 2 or len(a[0]) != 2 or len(b) != 2 or len(b[0]) != 2:
+        raise ValueError('two two-state operators required')
+    return o.matrix([[o.cmul(a[i][j], b[k][l]) for j in range(2) for l in range(2)] for i in range(2) for k in range(2)])
+
+
+def joint(v, a, b):
+    c = o.column(v)
+    if len(c) != 4 or o.squared_length(v) == 0:
+        raise ValueError('nonzero four-coordinate pure state required')
+    result = {}
+    for s, p in zip((1, -1), projectors(a)):
+        for t, q in zip((1, -1), projectors(b)):
+            z = o.inner(v, o.action(tensor(p, q), v))
+            if z[1] != 0:
+                raise ValueError('joint probability must be real')
+            result[s, t] = probability(z[0]/o.squared_length(v))
+    return result
+
+
+def uncertainty(v, a, b):
+    norm = o.squared_length(v)
+    a, b = o.matrix(a), o.matrix(b)
+    if norm == 0 or o.adjoint(a) != a or o.adjoint(b) != b or len(a) != len(v) or len(b) != len(v):
+        raise ValueError('nonzero state and matching Hermitian maps required')
+    def average(c):
+        z = o.inner(v, o.action(c, v))
+        return z[0]/norm, z[1]/norm
+    mean_a, mean_b = average(a)[0], average(b)[0]
+    var_a = average(o.multiply(a, a))[0]-mean_a**2
+    var_b = average(o.multiply(b, b))[0]-mean_b**2
+    commutator = o.add(o.multiply(a, b), o.scale(-1, o.multiply(b, a)))
+    return var_a*var_b, o.norm_squared(average(commutator))/4
+```
+
+```python file=quantum_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import operator_study as o
+import quantum_study as q
+from statistical_study import moments
+
+checks = 0
+
+
+def check(x):
+    global checks
+    assert x
+    checks += 1
+
+
+def dot(a, b):
+    return sum((x*y for x, y in zip(a, b)), F(0))
+
+
+def cross(a, b):
+    return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+
+
+def axis(u, v):
+    d = 1+u*u+v*v
+    return 2*u/d, 2*v/d, (1-u*u-v*v)/d
+
+
+axes = [axis(F(u, 2), F(v, 3)) for u in range(-2, 3) for v in range(-2, 3)]
+states = [(F(a, 3), F(b, 3), F(c, 3)) for a, b, c in product(range(-2, 3), repeat=3) if a*a+b*b+c*c <= 9]
+probabilities = sequential = rotations = 0
+for r in states:
+    rho = q.bloch(r)
+    check(q.trace(o.multiply(rho, rho)) == ((1+dot(r, r))/2, 0))
+    for n in axes:
+        p, pm = q.projectors(n)
+        chance = q.born(rho, p)
+        check(chance == (1+dot(r, n))/2)
+        check(q.born(rho, pm) == 1-chance)
+        check(q.dephase(rho, n) == q.bloch(tuple(dot(r, n)*x for x in n)))
+        probabilities += 1
+        if chance:
+            weight, selected = q.select(rho, p)
+            check(weight == chance and selected == q.bloch(n))
+            m = axes[(probabilities*7) % len(axes)]
+            check(weight*q.born(selected, q.projectors(m)[0]) == (1+dot(r, n))*(1+dot(n, m))/4)
+            sequential += 1
+    n = axes[probabilities % len(axes)]
+    c, s = o.circle(F(2, 5))
+    u = o.evolution(q.spin(n), c, s)
+    moved = q.transform(rho, u)
+    nr, cr = dot(n, r), cross(n, r)
+    target = tuple((c*c-s*s)*r[j]+2*s*s*n[j]*nr+2*c*s*cr[j] for j in range(3))
+    check(moved == q.bloch(target))
+    check(q.transform(moved, o.adjoint(u)) == rho)
+    rotations += 1
+
+z, x, y = (0, 0, 1), (1, 0, 0), (0, 1, 0)
+zplus = q.pure([1, 0])
+xplus = q.pure([1, 1])
+xminus = q.pure([1, -1])
+pz, mz = q.projectors(z)
+px, mx = q.projectors(x)
+check(q.born(zplus, pz) == 1)
+weight, after = q.select(zplus, mx)
+check(weight == F(1, 2) and after == xminus)
+check(q.born(after, pz) == F(1, 2))
+check(weight*q.born(after, pz) == weight*q.born(after, mz) == F(1, 4))
+check(q.born(q.dephase(zplus, x), pz) == F(1, 2))
+coherent = o.add(px, mx)
+check(q.born(q.transform(zplus, coherent), pz) == 1)
+mixed = q.mixture([(F(1, 2), q.pure([1, 0])), (F(1, 2), q.pure([0, 1]))])
+check(mixed == q.bloch((0, 0, 0)))
+check(mixed == q.mixture([(F(1, 2), xplus), (F(1, 2), xminus)]))
+check(q.born(mixed, px) == F(1, 2) and q.born(xplus, px) == 1)
+for t in [F(j, 4) for j in range(-8, 9)]:
+    c, s = o.circle(t)
+    state = q.pure([1, (c, s)])
+    check(q.born(state, px) == (1+c)/2)
+    check(q.born(q.dephase(state, z), px) == F(1, 2))
+    phase = (c, s)
+    check(q.pure([o.cmul(phase, (1, 0)), o.cmul(phase, (c, s))]) == state)
+
+original_h = o.involution(0, F(1, 2))
+check(q.born(zplus, o.projectors(original_h)[0]) == F(4, 5))
+check(q.expectation(zplus, original_h) == F(3, 5))
+check(q.variance(zplus, original_h) == F(16, 25))
+for parameter in [F(-1), F(0), F(1, 3), F(2)]:
+    c, s = o.circle(parameter)
+    u = o.evolution(original_h, c, s)
+    check(q.born(q.transform(zplus, u), mz) == F(16, 25)*s*s)
+    basis = o.evolution(q.X, *o.circle(F(3, 7)))
+    changed_state = q.transform(xplus, o.adjoint(basis))
+    changed_projector = o.multiply(o.multiply(o.adjoint(basis), pz), basis)
+    check(q.born(changed_state, changed_projector) == q.born(xplus, pz))
+    changed_u = o.multiply(o.multiply(o.adjoint(basis), u), basis)
+    check(q.born(q.transform(changed_state, changed_u), changed_projector) == q.born(q.transform(xplus, u), pz))
+check(q.efficiencies(F(3, 4), F(2, 3), F(2, 3)) == q.efficiencies(F(1, 2), 1, F(1, 3)))
+mutable = [[F(1, 2), (F(1, 4), 0)], [(F(1, 4), 0), F(1, 2)]]
+saved = [row[:] for row in mutable]
+q.dephase(mutable, z)
+check(mutable == saved)
+
+uncertainties = 0
+for a, b in product(q.PAULI, repeat=2):
+    for v in [[1, 0], [1, 1], [1, (0, 1)], [2, (1, 3)]]:
+        left, right = q.uncertainty(v, a, b)
+        check(left >= right)
+        uncertainties += 1
+noncommuting_a = o.matrix([[0, 0, 0], [0, 1, 0], [0, 0, -1]])
+noncommuting_b = o.matrix([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+check(o.multiply(noncommuting_a, noncommuting_b) != o.multiply(noncommuting_b, noncommuting_a))
+check(q.uncertainty([1, 0, 0], noncommuting_a, noncommuting_b) == (0, 0))
+check(q.uncertainty([1, (0, 1)], q.X, q.Z) == (1, 1))
+
+joint_cases = 0
+for a in axes:
+    for b in axes[::3]:
+        law = q.joint([1, 0, 0, 1], a, b)
+        correlation = a[0]*b[0]-a[1]*b[1]+a[2]*b[2]
+        for s, t in product((1, -1), repeat=2):
+            check(law[s, t] == (1+s*t*correlation)/4)
+        check(sum(law[1, t] for t in (1, -1)) == F(1, 2))
+        product_law = q.joint([1, (0, 1), 1, (0, 1)], a, b)
+        for s, t in product((1, -1), repeat=2):
+            check(product_law[s, t] == (1+s*a[0])*(1+t*b[1])/4)
+        joint_cases += 1
+zz = q.joint([1, 0, 0, 1], z, z)
+xx = q.joint([1, 0, 0, 1], x, x)
+check(zz[1, 1] == zz[-1, -1] == xx[1, 1] == xx[-1, -1] == F(1, 2))
+classical_x = {key: (q.joint([1, 0, 0, 0], x, x)[key]+q.joint([0, 0, 0, 1], x, x)[key])/2 for key in zz}
+check(set(classical_x.values()) == {F(1, 4)})
+
+sampling = 0
+for n in range(17):
+    for p in [F(j, 8) for j in range(9)]:
+        direct = {0: F(1)}
+        for _ in range(n):
+            changed = {k: F(0) for k in range(len(direct)+1)}
+            for k, mass in direct.items():
+                changed[k] += (1-p)*mass
+                changed[k+1] += p*mass
+            direct = changed
+        law = q.count_law(n, p)
+        check(law == direct)
+        check(moments(law) == (n*p, n*p*(1-p)))
+        sampling += 1
+check(q.efficiencies(F(1, 2), 1, F(1, 3)) == (F(1, 2), F(1, 6), F(1, 3), F(3, 4)))
+check(q.efficiencies(F(1, 2), 0, 0) == (0, 0, 1, None))
+
+bad = [lambda: q.pure([0, 0]), lambda: q.pure([1, 2, 3]), lambda: q.pure([True, 1]), lambda: q.pure([1.0, 1]), lambda: q.density([[1, 1], [1, 0]]), lambda: q.density([[1, 0], [0, 1]]), lambda: q.density([[1, 1], [0, 0]]), lambda: q.bloch([1, 1, 0]), lambda: q.bloch([1, 0]), lambda: q.spin([0, 0, 0]), lambda: q.projector([[1, 1], [0, 0]]), lambda: q.projector([[F(1, 2), 0], [0, F(1, 2)]]), lambda: q.select(zplus, mz), lambda: q.transform(zplus, [[1, 1], [0, 1]]), lambda: q.mixture([]), lambda: q.mixture([(F(1, 2), zplus)]), lambda: q.mixture([(-1, zplus), (2, zplus)]), lambda: q.efficiencies(F(1, 2), 2, 1), lambda: q.count_law(65, F(1, 2)), lambda: q.count_law(True, 1), lambda: q.joint([0, 0, 0, 0], x, z), lambda: q.joint([1, 0], x, z), lambda: q.uncertainty([0, 0], q.X, q.Y)]
+for fn in bad:
+    try:
+        fn()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+print(json.dumps({'checks': checks, 'bloch_states': len(states), 'born_dephasing_cases': probabilities, 'conditional_sequences': sequential, 'unitary_rotations': rotations, 'uncertainty_cases': uncertainties, 'two_system_cases': joint_cases, 'count_distributions': sampling, 'rejected_inputs': len(bad)}))
+```
+
+**Author verification:** Python 3.14.8 passed 17,450 assertions: 117 valid mixed/pure Bloch inputs, 2,925 Born/dephasing and conditional-sequence comparisons, 117 independently checked rotations, 36 uncertainty comparisons plus a common-eigenvector counterexample, 225 composite-system cases, 153 complete count laws and 23 rejected requests, alongside source reconstructions, changed-basis predictions and detector ambiguity. General derivations and the continuous-well calculation remain separate from finite matrix checking. No learner competence, empirical quantum validation or new laboratory result is claimed.
+
+**Continue:** [Review quantum descriptions with their physical premises and evidence limits](Review-quantum-descriptions-with-their-physical-premises-and-evidence-limits.lingua#r_00CFA9ABD5C9D7D59E8532DC9F).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00385A80F5644BEA5DBB42BCBC

@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Distinguish a value from its digital representation (@computing-representation: 0, is #chapter, #hephaestus-core "../../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K") { r_0849AE8813413F872ABE90EDB2
+A representation pairs distinguishable symbols with rules for interpreting them. A bit has two possible values, conventionally written 0 and 1. A sequence of bits can represent a number, text, an instruction or something else; the interpretation does not follow from its appearance alone. Physical hardware must realize those distinguishable states, but a bit is not a claim that every device stores information in the same physical way.
+
+In ordinary positional binary notation, the rightmost position has weight 1, followed to the left by 2, 4, 8 and successive powers of two. The four-bit sequence 1101 represents 8 + 4 + 1 = 13 under an unsigned-integer interpretation. Four bits distinguish sixteen patterns, so this interpretation represents integers from 0 through 15. The mathematical sum 13 + 4 = 17 lies outside that range. A model that deliberately keeps the remainder after division by 16 would return 1; a different implementation may reject the operation. State the arithmetic rule instead of assuming that every fixed-width system behaves identically.
+
+Text has another convention. The text “13” contains two characters. Under UTF-8, these particular characters occupy the bytes with hexadecimal values 31 and 33. If those two bytes are instead interpreted as one unsigned big-endian integer, their numerical value is 49 × 256 + 51 = 12595, not thirteen. Hexadecimal is positional base sixteen; the byte values here are 49 and 51 in decimal. A byte sequence is evidence for a value only together with its encoding and interpretation.
+
+Python distinguishes the integer 13, the string "13" and the Boolean True. Its integers can grow beyond a fixed word width within available resources. A value's language type still does not establish whether it means a count, a length in millimetres or a product identifier. The identifier "0013" may need its leading zeros even when a count does not.
+
+**Work:** represent 0, 7, 13 and 15 in four unsigned bits; explain why 16 requires another bit in that convention. Compare adding the integers 1 and 3 with joining the strings "1" and "3". Give two interpretations of the same bytes and state what metadata distinguishes them. Use the shared file and value lessons next to connect these ideas to a running program.
+
+**Read:** [Sundnes](../../inquiry/reproducible-computation/sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB) chapters 1–2 for the beginner programming account. Consult the exact-version Python references for integer, Boolean, text and byte behavior after their meanings are clear. Later number representation, coding and information theory develop these distinctions more fully.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Continue:** [Files, paths, processes, and the working directory](../../inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0849AE8813413F872ABE90EDB2

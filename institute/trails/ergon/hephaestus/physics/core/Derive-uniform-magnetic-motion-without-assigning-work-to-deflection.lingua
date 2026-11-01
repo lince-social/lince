@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Derive uniform magnetic motion without assigning work to deflection (@physics-magnetic-orbit: 0, is #chapter, #hephaestus-core "Connect-steady-currents-to-magnetic-geometry-and-its-limits.lingua#r_005AC3749D945400D7238C408B") { r_00790A783DA8CDBA03CB1FFFF4
+Take a constant nonzero B=B e_z, E=0, constant mass m>0 and signed charge q≠0. Assume nonrelativistic motion, no other forces and negligible radiation reaction; this is a prescribed external-field model. Let ω=qB/m retain its sign. Then v̇_x=ωv_y, v̇_y=−ωv_x and v̇_z=0. With c=cos(ωt),s=sin(ωt), the solution is v_x=v_x0 c+v_y0 s, v_y=v_y0 c−v_x0 s. The existing trigonometric derivatives verify the equation and initial values.
+
+For uniqueness, subtract two solutions with the same initial state. The derivative of the squared velocity difference is 2ω(δv_xδv_y−δv_yδv_x)=0, so it remains zero. Positions then agree by integrating velocity. Integrating the solution gives x=x₀+[v_x0 s+v_y0(1−c)]/ω, y=y₀+[v_y0 s−v_x0(1−c)]/ω, z=z₀+v_z0 t. The center (x+v_y/ω,y−v_x/ω) stays fixed. The perpendicular radius is v_perp/|ω|; parallel motion gives a helix. If qB=0, use straight motion rather than divide by zero.
+
+The power identity is v·q(v×B)=0. Thus kinetic energy is constant in this model, even though the force is nonzero. With E included, d(mv²/2)/dt=qE·v. A classical gyrating charge is not a stable atomic state; compare the premises with [Review quantum descriptions with their physical premises and evidence limits](Review-quantum-descriptions-with-their-physical-premises-and-evidence-limits.lingua#r_00CFA9ABD5C9D7D59E8532DC9F). A field that changes appreciably over an orbit, a relativistic speed or appreciable radiation requires another model.
+
+Use [Investigate periodic states exact rotations and sampling ambiguity](../../mathematics/core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409) for the unchanged exact complex multiplication that represents a planar rotation. In normalized units, m=2,q=1,B=3, position (0,0) and velocity (3,4), evaluate the phase with cos=3/5,sin=4/5. The velocity becomes (5,0), position (8/3,4/3), center (8/3,−2), and kinetic energy remains 25. The supplied rational phase identifies points on the analytic trajectory; it does not assert a rational elapsed time or approximate time stepping.
+
+**Work:** verify the trajectory by differentiation, not just by constant speed. For positive B and charge, a particle initially moving along +x bends toward −y. Reverse q and compare the orbit orientation at the same positive time; the signed sine changes too. Show why taking |q| in the differential equations erases physical information. For crossed uniform fields, derive E=−v×B for an undeflected velocity and identify the velocity component that this equation leaves unconstrained.
+
+**Continue:** [Connect steady currents to magnetic geometry and its limits](Connect-steady-currents-to-magnetic-geometry-and-its-limits.lingua#r_005AC3749D945400D7238C408B).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00790A783DA8CDBA03CB1FFFF4

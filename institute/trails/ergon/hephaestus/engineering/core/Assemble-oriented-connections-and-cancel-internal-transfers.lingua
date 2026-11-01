@@ -1,0 +1,24 @@
+Import "../Engineering.lingua"
+
+Assemble oriented connections and cancel internal transfers (@engineering-network-orientation: 0, is #chapter, #hephaestus-core "Solve-an-anchored-network-and-interpret-singular-cases.lingua#r_008ED1E88ECE57E655276C68F3") { r_006FBF448D285055A0BF54E490
+A network approximates several regions as nodes and their interactions as edges. The choice of nodes is a modeling decision: treating a body as one node assumes that one state can represent what matters. Name the regions, ports and external reservoirs before drawing arrows. Reuse [Solve simultaneous constraints without losing their solution set](../../mathematics/core/Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B) for simultaneous constraints; an edge is a connection, not an extra body whose energy can disappear.
+
+Use two thermal nodes with temperatures T₁ and T₂ and a maintained ambient T₀. Set θ₁=T₁−T₀ and θ₂=T₂−T₀, so differences have units K. Let a and b be their conductances to ambient and c the conductance between nodes, all in W/K and nonnegative. Positive external input powers P₁ and P₂ enter the nodes. Orient H₁₀=aθ₁ and H₂₀=bθ₂ toward ambient, and H₁₂=c(θ₁−θ₂) from node 1 to node 2. A negative H means the physical transfer opposes the declared arrow.
+
+With positive constant capacities C₁,C₂ the balances are
+
+C₁θ₁′ = P₁−H₁₀−H₁₂,
+C₂θ₂′ = P₂−H₂₀+H₁₂.
+
+The inter-node transfer leaves one account and enters the other. Adding gives C₁θ₁′+C₂θ₂′=P₁+P₂−aθ₁−bθ₂. Reversing the internal arrow defines H₂₁=−H₁₂, producing +H₂₁ in the first equation and −H₂₁ in the second. Neither the state nor the total balance changes. A larger network has the same cancellation because each internal edge has one departure and one arrival. If a connecting element stores appreciable energy, add that storage or a node; do not cancel away an unmodeled part.
+
+A zero derivative is a steady condition, not a consequence of drawing a network. A fixed ambient is an imposed reservoir model: its own energy account lies outside the two-node boundary. Enlarging the boundary includes the reservoir's storage and whatever maintains it. If T₀ varies, θ′=T′−T₀′ and the equations acquire the corresponding capacity terms; silently using the fixed-ambient formula loses energy accounting.
+
+**Worked assembly:** at steady state substitute the edge laws to obtain (a+c)θ₁−cθ₂=P₁ and −cθ₁+(b+c)θ₂=P₂. Each row sums the outward heat rates at one node. Derive the second row independently rather than copying the first row's internal sign. Write the matrix form only after explaining every coefficient.
+
+**Practice:** add a third node, write its three balances and prove all internal edges cancel. Then insert a deliberately wrong edge sign and locate the uncancelled term. Explain why a global balance alone can miss equal-and-opposite errors in two node equations. Distinguish local checks, whole-boundary checks and evidence that the chosen nodes are physically adequate.
+
+**Continue:** [Solve an anchored network and interpret singular cases](Solve-an-anchored-network-and-interpret-singular-cases.lingua#r_008ED1E88ECE57E655276C68F3).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_006FBF448D285055A0BF54E490

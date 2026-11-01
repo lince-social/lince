@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Integrate terminal work without assuming a reversible cell (@chemistry-electrical-work: 0, is #chapter, #hephaestus-core "Investigate-electron-charge-products-and-work.lingua#r_00B3E33BAA2CE03EF3C2A5F8BA") { r_00209B14724D4B97F9739006A6
+Let V(t)=V_cathode−V_anode. Let I_e(t) be the positive electron-arrival magnitude used in this block. The corresponding conventional current leaves the cathodic terminal, so positive V I_e is electrical power delivered by the assembly to its external connection. Define W_out=∫V I_e dt. Under the passive convention of [State the physical assumptions behind a lumped circuit](../../physics/core/State-the-physical-assumptions-behind-a-lumped-circuit.lingua#r_001A7088BC509FE999669C908D), work absorbed by the assembly through this electrical port is −W_out. V can have either sign; a negative W_out means net electrical work into the assembly under these definitions.
+
+Introduce τ=t/T with T=100 s and 0≤τ≤2. Let n*=1 μmol and V*=1 V. The invented record is I_e=(F n*/T)(1+τ), V=V*(1−τ/4). Define j=I_e T/(F n*); this j is a dimensionless normalized rate, not the current-density symbol used in the Green Book. Then
+
+N=∫₀²(1+τ)dτ=4,
+
+W_out/(F n*V*)=∫₀²(1−τ/4)(1+τ)dτ=∫₀²(1+3τ/4−τ²/4)dτ=17/6.
+
+The charge-weighted voltage is W_out/Q_e=(17/24)V*. The time-average voltage is (3/4)V*, and the time-average normalized current is 2. Multiplying those separate averages by the dimensionless duration gives 3 energy units rather than 17/6. The difference is 1/6. Here the increasing current gives greater weight to later, lower voltages. The accumulation argument from [Investigate a changing rate with accumulation and approximation bounds](../../mathematics/core/Investigate-a-changing-rate-with-accumulation-and-approximation-bounds.lingua#r_0580A36881B6386A628584D117) distinguishes an integral of a product from a product of means; no uncertainty or randomness is needed to see the difference.
+
+The energy unit E*=F n*V* is exactly 0.0964853321233100184 J under the chosen reference values. The record's delivered work is (17/6)E*. It establishes an electrical port account within the stipulated trace, not chemical free energy, a reversible potential, heat transfer or conversion efficiency.
+
+For a separate conditional first-law example, suppose the whole closed rigid assembly has independently supplied internal-energy change ΔU=−4E*, no other work and negligible changes of bulk kinetic/potential energy. Include chemical and interfacial contributions in U. With heat positive inward, ΔU=Q_in−W_out, so Q_in=−7E*/6. The assembly rejects heat in this hypothetical account. Without the independently supplied ΔU, infinitely many heat/internal-energy pairs give the same terminal work. Charge storage s alone does not supply the missing energy relation.
+
+The reversible relation Δ_rG=−zFE and a Nernst equation require entropy, chemical potential, reference states, reversible work and specified reaction/electrode conditions. They are retained in [Connect an electrochemical cell with a balanced reaction and energy account](../general-chemistry/electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX) and the larger chemistry formation; they have not been derived by the calculations above. A later common thermodynamic block must supply that bridge before it is used to predict voltage. This block's model intentionally supplies a terminal record instead.
+
+**Work:** integrate the polynomial independently; compare with Simpson's rule, which is exact for this quadratic integrand. Change V to a constant and show when the product-of-means result agrees. Give two different ΔU,Q_in pairs with the same W_out, then explain the additional observation needed to distinguish them. Preserve the terminal sign convention in each answer.
+
+**Continue:** [Investigate what electrical and product records can identify](Investigate-electron-charge-products-and-work.lingua#r_00B3E33BAA2CE03EF3C2A5F8BA).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00209B14724D4B97F9739006A6

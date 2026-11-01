@@ -1,6 +1,6 @@
 Import "../Water-sanitation-and-industrial-utilities.lingua"
 
-A tank balance explains control offset, delay and saturation (@wu-water-control: 0, is #chapter, #part-of @water-and-sanitation, #source "../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW", #water-and-sanitation "Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A") { r_2R6H6TT78N3TG1PYZMNFJ14RYB
+A tank balance explains control offset, delay and saturation (@wu-water-control: 0, is #chapter, #part-of @water-and-sanitation, #source "../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW", #water-and-sanitation "Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A", #hephaestus-core "../../../engineering/core/Screen-response-requirements-over-a-declared-uncertainty-box.lingua#r_00567D18E2141A826D03C97F71") { r_2R6H6TT78N3TG1PYZMNFJ14RYB
 **Read:** [Feedback Systems — Åström and Murray](../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), feedback, integral action and robustness; compare the resulting controller with the explicitly modelled rules in [EPANET 2.2 — network models and reproducible analysis](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW).
 
 For an original ideal tank, dV/dt = qin − d, where V is volume and d is withdrawal. An unsaturated proportional law is qin = qbase + Kp(Vset − V), with Kp measured in inverse time. At constant demand, Vss = Vset + (qbase − d)/Kp and V(t) = Vss + [V(0) − Vss] exp(−Kp t). An offset is necessary when the baseline flow differs from demand. Integral action can remove this steady offset in the ideal model, but adds state and changes stability and recovery after saturation.
@@ -11,5 +11,10 @@ With Vset = 100 m³, qbase = 10 m³/hour, demand = 12 m³/hour and Kp = 0.5/hour
 
 **Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
 **Continue:** [Operating states, alarms, interlocks and recovery](Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A).
+
+
+**Sixth engineering-block reading:** Reconstruct the existing proportional tank balance and offset with the already derived exponential solution. Distinguish its stated explicit numerical time-step multiplier from the newly derived exact held-command plant update; coincidence in a scalar integrator does not identify the two interpretations generally. Integral action, transport delay, plant limits and EPANET implementations remain later investigations; those complete sources were not freshly audited. Preserve the original water-utilities route and prose.
+
+**Continue in the sixth engineering block:** [Screen response requirements over a declared uncertainty box](../../../engineering/core/Screen-response-requirements-over-a-declared-uncertainty-box.lingua#r_00567D18E2141A826D03C97F71).
 
 } r_2R6H6TT78N3TG1PYZMNFJ14RYB

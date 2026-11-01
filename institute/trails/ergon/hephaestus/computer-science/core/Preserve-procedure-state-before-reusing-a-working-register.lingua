@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Preserve procedure state before reusing a working register (@computing-activation-state: 0, is #chapter, #hephaestus-core "Separate-a-program-from-the-state-of-its-execution.lingua#r_00215351C844E50F14E1E11C36") { r_00D464ECA2CC2CD60D0B5B26C1
+A procedure call needs somewhere to resume, argument values and any caller state that must survive. In a simple convention, a call stores the return program counter, passes arguments in agreed locations and transfers control to the procedure. The procedure returns its result in an agreed location and restores the required state before resuming. The convention is part of the contract between caller and callee, not a property of a function's mathematical notation.
+
+A single saved return register fails for nested calls unless its earlier value is preserved. If caller A must resume at 5 and calls B, then B calls C and overwrites the same register with 12, returning from C leaves 12 where A's continuation 5 was needed. A stack of activation records handles nested last-in-first-out lifetimes: push B's record with its saved continuation, push C's record, then remove C before B. By induction on properly nested calls, the top record belongs to the call that must return next. This proves the discipline for that nesting model, not unlimited stack capacity or arbitrary control transfers.
+
+Local storage associated with an activation can be reclaimed on return when no language rule extends its lifetime. Dynamically managed storage can outlive the allocating call, so its reclamation needs another rule: explicit ownership/freeing, reachability-based collection or a different mechanism. A heap is not inherently infinite and a stack is not inherently safe. Neither term alone establishes a programming language's actual allocation behavior. Recursion can require storage proportional to the number of simultaneous active calls even when each record is small.
+
+A process switch has a different purpose: it suspends one execution context and later resumes it. A process can contain many nested procedure calls. Saving only the current return address would omit its working registers, address-space context, stack and service state. Already-stored memory need not be copied on every switch, but the selection and bookkeeping that make it the right memory must be preserved.
+
+**Read and practice:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), selected topic 12 procedure/activation discussion. Invent three nested calls with distinct continuations and trace push/pop order and preserved values. Then describe what must survive a switch between two such executions. Full calling conventions, closures, exceptions, garbage collection and compilers retain later preparation; the next process model specifies only the state it actually implements.
+
+**Continue:** [Separate a program from the state of its execution](Separate-a-program-from-the-state-of-its-execution.lingua#r_00215351C844E50F14E1E11C36).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00D464ECA2CC2CD60D0B5B26C1

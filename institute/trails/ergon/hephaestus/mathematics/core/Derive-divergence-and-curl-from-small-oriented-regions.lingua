@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Derive divergence and curl from small oriented regions (@math-fields-local: 0, is #chapter, #hephaestus-core "Prove-the-rectangle-boundary-identity-before-using-Green-theorem.lingua#r_00FB6CB9DAC1D8370E23D0CC0A") { r_00EF5AFE90AD97472C601E6023
+Let F=(P,Q,R) have continuous first partial derivatives on an open set. Define divF=P_x+Q_y+R_z and curlF=(R_y−Q_z,P_z−R_x,Q_x−P_y) in the chosen right-handed Cartesian frame. These formulas differentiate field components per coordinate length; physical dimensions acquire one inverse length. Different coordinates require transforming derivatives and metric factors, not simply relabeling x,y,z in Cartesian formulas.
+
+For a box, the two x-face contributions are ∬[P(x₁,y,z)−P(x₀,y,z)]dy dz. The fundamental theorem replaces the bracket by ∫P_x dx. Repeating the other two components shows that total flux divided by volume is the average of divF. On boxes containing p whose diameter tends to zero, continuity makes that average converge to divF(p): its difference is at most sup_box|divF−divF(p)|. This proves the local flux interpretation for these shrinking boxes; no symmetric-shape guess or numerical approximation is needed.
+
+For a rectangle in the xy-plane, counterclockwise circulation is ∫[P(x,y₀)−P(x,y₁)]dx+∫[Q(x₁,y)−Q(x₀,y)]dy. The fundamental theorem makes this ∬(Q_x−P_y)dxdy. Divide by area and shrink to p: the result tends to curlF·e₃. The cyclic yz and zx planes recover the other components. Any other plane follows by a fixed right-handed orthonormal change of frame, whose chain-rule transformation preserves the cross/dot construction. A reflected frame needs its orientation accounted for.
+
+F=(x,y,z) has divF=3 and curlF=0. F=(−y,x,0) has divF=0 and curlF=(0,0,2). Thus local circulation and net outward flux are separate questions. The second field is rigid planar rotation with unit angular rate, while its curl has magnitude 2; curl is not automatically the angular velocity itself. A uniform translation has both derivatives zero despite nonzero field values.
+
+With C² scalar f, mixed-partial equality gives curl(∇f)=0. With C² vector A it gives div(curlA)=0 by pairwise cancellation. These are mathematical identities under stated differentiability. Their converses need domain hypotheses and are not asserted on regions with holes. **Work:** compute both operators for F=(−a y²,b x²,cxy), yielding divF=0 and curlF=(cx,−cy,2bx+2ay). Explain why zero divergence does not make every surface flux zero, and why zero curl on a punctured domain need not give a global potential.
+
+**Continue:** [Prove the rectangle boundary identity before using Green theorem](Prove-the-rectangle-boundary-identity-before-using-Green-theorem.lingua#r_00FB6CB9DAC1D8370E23D0CC0A).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00EF5AFE90AD97472C601E6023

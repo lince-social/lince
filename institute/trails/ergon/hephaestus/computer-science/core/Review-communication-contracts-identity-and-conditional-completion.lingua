@@ -1,0 +1,24 @@
+Import "../Computing.lingua"
+
+Review communication contracts identity and conditional completion (@computing-communication-review: 0, is #chapter, #hephaestus-core "Follow-names-procedure-calls-and-captured-environments.lingua#r_004A0461099DF477FC714CAC35") { r_00AEE3B68FE4F0253687A55642
+Explain a remote operation from ordinary symbols and separate participants before using protocol terminology. Distinguish routing address, operation identity and evidence of an authorized sender. Separate handing data to a local transport, delivery, application interpretation, durable commit and confirmation. State the exact role of each acknowledgment and show a later failure that it does not exclude.
+
+Define the original request/result schema, including byte order, widths, units, permitted ranges and identity exhaustion. Decode a result above 255. Derive the valid-stream chunk-independence invariant and the partial-buffer bound; distinguish that bound from total input/output allocation. Explain incomplete versus malformed input, failure closure and the consequence of a valid frame followed by a malformed frame in one feed call. Contrast the teaching format with the selected real record-marking source without claiming interoperability.
+
+Write the channel assumptions, including duplicate lifetime, endpoint crashes, durable state, corruption and forgery exclusions. Construct lost-request, delayed-request and lost-reply histories that give the client the same observation. Explain why a timeout can justify a local policy change without proving remote nonexecution. State why a fresh identity on retry changes the requested operation.
+
+Specify server and client transitions. Prove the prefix, result and message-provenance invariants event by event. Derive why a valid new commit forces r=c and why an accepted reply forces r=c+1. Explain why the retained result can be forgotten after the next operation only under the one-outstanding and durable-client premises. Identify the atomic storage obligation left below the abstract server transition and relate it to earlier local recovery work.
+
+Derive 3·4^M−2 reachable states, including attainability of all counted channel subsets. Describe the independent abstract graph and how its projection checks the implementation's numeric states and transitions. Distinguish exhaustive finite state exploration, proof for the general bounded representation, possible completion from every state, and conditional completion of all fair executions. Explain why retaining self-loops matters.
+
+Reconstruct both selected published loss traces and the original old-message/crash extensions. Exhibit first failures for duplicate application, forgotten identity, uncorrelated reply acceptance, premature acknowledgment and alternating-bit reuse. Show why preserving only the final total could miss a false result or repeated effect. Explain why local logical exactly-once effects do not establish exactly-once physical action in another system.
+
+Prove progress under explicit retry, recovery and repeated-delivery premises; give an allowed infinite run when a premise is removed. Derive the ideal timing equation and the separate independent-round expectation, specifying their different assumptions. Explain why none of the author's state counts estimates a deployed service's throughput, loss probability or latency distribution.
+
+Defend an independent extension, a failing rival and a revised report with reproducible evidence. Full networks, distributed systems, security, operating systems and all twenty-two pending computing scopes remain unfinished. Computing now has a seventh common block. Continue engineering production flow and inquiry teaching/assessment at comparable breadth, then review coverage across all six areas before deeper specialization.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the eighth common pass:** [Follow names procedure calls and captured environments](Follow-names-procedure-calls-and-captured-environments.lingua#r_004A0461099DF477FC714CAC35). Connect procedure environments, abstract values, representation independence and composed software behavior before continuing engineering at comparable breadth.
+
+} r_00AEE3B68FE4F0253687A55642

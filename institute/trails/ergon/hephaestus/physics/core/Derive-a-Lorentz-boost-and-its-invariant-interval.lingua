@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Derive a Lorentz boost and its invariant interval (@physics-spacetime-boost: 0, is #chapter, #hephaestus-core "Compare-proper-time-simultaneity-and-measured-lengths.lingua#r_006928CA31D62CBBBA7969C5C8") { r_005CCCB2ECA7D73A8802650C53
+Take two inertial frames with aligned axes, coincident origins at t=t′=0 and S′ moving at velocity +v along x in S. Assume homogeneous spacetime and a continuous linear transformation between these coordinates; offsets are already fixed by the origin choice. The moving origin requires x′=a(x−vt). Write t′=bt+dx. Requiring both null lines x=ct and x=−ct to remain null gives b=a and d=−av/c². This uses the light postulate, not a definition of time inferred from a single experiment.
+
+Reciprocity gives the inverse by v→−v. Spatial isotropy gives the same a for ±v. Composing the two maps requires a²(1−v²/c²)=1. Choose the branch continuous with the identity at v=0: γ=1/√(1−β²), β=v/c, |β|<1. Thus T′=γ(T−βx), x′=γ(x−βT), y′=y, z′=z for this standard boost. The unchanged transverse coordinates use aligned axes and isotropy; rotations are distinct transformations. An arbitrary motion cannot be represented by one constant boost.
+
+Expand T′²−x′². The cross terms cancel and γ²(1−β²)=1 leaves T²−x². Therefore s²=ΔT²−Δx²−Δy²−Δz² is invariant for a pair of events. This is an indefinite quadratic form, unlike the positive squared Euclidean length in the shared vector lessons. Nonzero null separations have s²=0; that does not identify the two events. Timelike, null and spacelike mean positive, zero and negative s² in our sign convention.
+
+With β=3/5 and γ=5/4, the displacement (T,x)=(5,3) becomes (4,0), preserving s²=16. The inverse recovers (5,3). Keeping T′=T and using x′=x−βT instead would turn the null displacement (1,1) into (1,2/5), whose s² is 21/25. This Galilean rival fails the invariant-light requirement; the algebra alone does not establish which physical regime a real experiment occupies.
+
+For small β, γ=1+β²/2+O(β⁴). Recovering Newtonian timing also requires the simultaneity correction |vx/c²| to be negligible at the scales and accuracy of interest. Small relative speed alone does not justify discarding a large-baseline timing correction. Use [Compose local maps and derive change along a path](../../mathematics/core/Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412) and the developed series work to distinguish a limit from setting a physical constant to infinity.
+
+**Work:** derive every coefficient above, compose forward and inverse matrices, and classify separations (5,3), (1,1), (1,2). Explain why γ becoming singular at |β|=1 excludes a rest frame for a light ray, not light propagation itself. Read [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426) 7.1 and 7.3.1 with these sign and coordinate conventions.
+
+**Continue:** [Compare proper time simultaneity and measured lengths](Compare-proper-time-simultaneity-and-measured-lengths.lingua#r_006928CA31D62CBBBA7969C5C8).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005CCCB2ECA7D73A8802650C53

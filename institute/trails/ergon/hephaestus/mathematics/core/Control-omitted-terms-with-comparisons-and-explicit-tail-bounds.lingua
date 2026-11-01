@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Control omitted terms with comparisons and explicit tail bounds (@math-series-tails: 0, is #chapter, #hephaestus-core "Keep-the-order-of-a-conditionally-convergent-account-explicit.lingua#r_002B005B310DF8E3F22C2466D7") { r_00C302EEF8B1668584FF8D01D2
+A convergence argument and an accuracy certificate answer related but different questions. To approximate a sum by S_N, a bound on the remaining tail tells us how much is omitted. For nonnegative terms, partial sums increase; a finite upper bound therefore proves convergence by completeness. If 0≤a_n≤b_n beyond a fixed index and Σb_n converges, the partial sums of Σa_n are bounded and its tail is no larger than the corresponding b tail. A finite exceptional prefix does not alter convergence.
+
+Suppose a_n≥0 and, after index M, a_(n+1)≤q a_n with 0≤q<1. Induction bounds the tail after N≥M by a_(N+1)(1+q+q²+…)=a_(N+1)/(1−q). This gives a usable error bound without an exact sum. For signed terms apply the bound to |a_n|. A ratio limit below one supplies such a q eventually; equality of that limit to one gives no decision. The series 1/n and 1/n² both have ratio limits one and different convergence behavior.
+
+For the latter comparison, 1/n²≤1/[n(n−1)] when n≥2. The right side telescopes, proving convergence. A sharper integral tail bound uses a positive decreasing function f: each rectangle lies between neighboring integral strips. For N≥1, ∫_(N+1)^∞f(x)dx≤Σ_(n=N+1 to ∞)f(n)≤∫_N^∞f(x)dx, when the improper integral exists. Define that integral as a limit of finite integrals before using it. For f(x)=1/x², direct antiderivatives give 1/(N+1)≤tail≤1/N. This demonstrates an error interval without requiring the closed value of the entire series.
+
+Polynomial factors do not defeat geometric decay for a fixed q<1. For a_n=n^p q^n with fixed nonnegative integer p and n≥1, the successive ratio is q(1+1/n)^p→q. Choose c between q and 1; after some M the ratio is at most c, giving a geometrically bounded tail. The case q=0 is immediate. The threshold depends on p and q; it is not a bound uniform as q approaches one. We will use this fact for normalization, moments and differentiation.
+
+An absolute numerical tolerance has units when the sum represents a quantity. A relative tolerance also needs a nonzero reference scale; cancellation can make the sum small even when individual terms are large. State whether the certificate controls an exact mathematical remainder, input uncertainty, arithmetic roundoff or discrepancy of a model with observations. A tail bound alone addresses the first.
+
+**Work:** prove the eventual-ratio bound using finite induction before invoking the geometric limit. Give two ratio-one examples with explicit convergence/divergence arguments. Obtain a cutoff for the reciprocal-square tail below 1/100 and compare it with a sharper bound if available. Explain why knowing only the last computed term is insufficient without a relation controlling later terms. Reuse [Define the integral and distinguish net change from total magnitude](Define-the-integral-and-distinguish-net-change-from-total-magnitude.lingua#r_0AEC763D73DF3124CDBB2E86D1) for the finite integral and [Use derivative information with explicit interval and error bounds](Use-derivative-information-with-explicit-interval-and-error-bounds.lingua#r_05FA61B1A67F2964C959D41629) for the distinction between a proved bound and observed decimals.
+
+**Continue:** [Keep the order of a conditionally convergent account explicit](Keep-the-order-of-a-conditionally-convergent-account-explicit.lingua#r_002B005B310DF8E3F22C2466D7).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00C302EEF8B1668584FF8D01D2

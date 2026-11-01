@@ -1,0 +1,31 @@
+Import "../Inquiry.lingua"
+
+Propagate a finite distribution through a nonlinear measurement (@inquiry-nonlinear-propagation: 0, is #chapter, #hephaestus-core "Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418") { r_000B95CB68E29E07590E71513A
+Exact finite propagation means evaluating the model at every positive-weight input outcome, then adding weights whenever outputs coincide. For an output value z, its weight is the sum of input weights whose images equal z. This preserves normalization because every input outcome has exactly one output. A map may merge outcomes; it cannot justify inventing independent inputs.
+
+Use G=P/D with fixed P=6 W and the shared-offset temperature model. Its rise D takes 3/2,2,5/2 K with weights 1/4,1/2,1/4. Consequently:
+
+| D (K) | G (W/K) | Weight |
+| --- | --- | --- |
+| 3/2 | 4 | 1/4 |
+| 2 | 3 | 1/2 |
+| 5/2 | 12/5 | 1/4 |
+
+The nominal plug-in estimate is 6/E(D)=3 W/K, but the output mean is 31/10 W/K. Its second moment is 497/50 (W/K)² and variance is 33/100 (W/K)². Derive these rational results directly. The first-order variance 9/32 is smaller, and its mean misses the 1/10 W/K shift. Calling this a nonlinear mean shift does not establish the unknown error of an actual reported result.
+
+The source of the shift is visible without a general second-order theorem. At d₀>0 and d₀+h>0,
+
+P/(d₀+h)=P/d₀−Ph/d₀²+Ph²/[d₀²(d₀+h)].
+
+Multiply both sides by d₀²(d₀+h) to prove the identity. For P>0 its remainder is nonnegative, and for |h|≤a<d₀ it is at most Pa²/[d₀²(d₀−a)]. If E(h)=0, the expected remainder is exactly the difference between the output mean and the plug-in value. The first-order model cannot recover that positive term. This finite argument needs neither a Gaussian assumption nor an infinite Taylor expansion.
+
+Under independent offsets the rise takes j/2 K for j=1,...,7 with weights (1,2,3,4,3,2,1)/16. The conductance mean becomes 533/140 W/K and variance 117979/19600 (W/K)²; the first-order variance is only 45/32. The small 1/2 K rise carries a large reciprocal output. Both models have identical single-reading marginals, so the difference cannot be repaired by adding more decimal places to those marginals.
+
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../metrology/sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), including the verified 2026 amendment's changes to 4.1.4 and H.1.7. It addresses significant nonlinear effects on the estimate as well as uncertainty. Its normal-input higher-order expressions and Monte Carlo references belong to later preparation; the present distribution is finite and fully enumerated. No general standard-conformance claim follows from this exercise.
+
+**Practice:** scale all stipulated temperature deviations by a factor between zero and one and compare exact and first-order results. Inspect the denominator before every calculation. If the proposed input model admits D=0 with positive weight, this reciprocal model is undefined there; discarding that outcome and renormalizing changes the model and needs evidence.
+
+**Continue:** [Challenge a fitted model with evidence it did not fit](Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_000B95CB68E29E07590E71513A

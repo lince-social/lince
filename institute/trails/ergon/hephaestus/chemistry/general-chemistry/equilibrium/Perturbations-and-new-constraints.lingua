@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Predict a changed equilibrium by changing Q and the constraints (@gc-perturb-equilibrium: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB") { r_4MX92N6C2F162E3V3YFYB1B30N
+Predict a changed equilibrium by changing Q and the constraints (@gc-perturb-equilibrium: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB", #hephaestus-core "../kinetics/Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME") { r_4MX92N6C2F162E3V3YFYB1B30N
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 13’s equilibrium perturbations and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Q versus K, perturbations, and systematic equilibrium.
 
 An equilibrium perturbation changes the system's conditions or constraints. Identify what was changed, compute its immediate effect on the reaction quotient, and determine the new equilibrium under the applicable K. This is more informative than a vague instruction to “oppose the change.” Temperature changes can change K itself; an added species, volume change, or phase change asks a different question.
@@ -16,4 +16,9 @@ Return to the reaction-extent and gas Records when a prediction involves changin
 **Continue:** [Use entropy changes with a defined system and a valid thermodynamic argument](../energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Third chemistry-block reading:** Use changed composition and constraints qualitatively and check the simple fixed-temperature model directly. Chemistry 2e 13.3 was inspected, but its worked mass-action rate expressions are not evidence that arbitrary overall stoichiometry fixes kinetic orders. Changing temperature needs additional thermodynamic/kinetic information; the common study keeps it fixed. Broader coupled-phase and quantitative thermodynamic assignments remain.
+
+**Continue in the third chemistry block:** [Relate catalysis to pathways, selectivity, and equilibrium constraints](../kinetics/Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME).
+
 } r_4MX92N6C2F162E3V3YFYB1B30N

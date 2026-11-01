@@ -1,0 +1,27 @@
+Import "../Mathematics.lingua"
+
+Investigate an affine coordinate model and the information it preserves (@math-linear-study: 0, is #chapter, #hephaestus-core "Review-spatial-representations-linear-constraints-and-transformations.lingua#r_0231F3E26722D7A3632D78A7AD") { r_07365437E80781900AA1FAF83B
+Develop an original mathematical investigation of the map F(x,y)=(2x+y+5,y−2). Both coordinate systems use millimetres, so the matrix coefficients are dimensionless and the offset components are in millimetres. Treat the map as a stipulated mathematical model, not a measured calibration. Reuse the earlier coordinate, combination, system and projection arguments and show how they fit together.
+
+**Read:** revisit the selected OpenStax vector/system passages and Boyd–Vandenberghe matrix, composition and inverse sections. Use the shared geometry, vector and equation lessons for preparation. The study's numerical values and arguments are original; no textbook experiment or physical reconstruction is claimed.
+
+Begin with p=(3,4) mm. Its image is q=(15,2) mm. Derive the inverse equations and recover p. For a displacement Δp=(1,2) mm, calculate F(p+Δp)−F(p)=(4,2) mm independently of the offset. Repeat with a different starting point. The equality follows for all points by cancellation, rather than being established only by these checks.
+
+Map the unit square with ordered vertices (0,0), (1,0), (1,1), (0,1). The output vertices are (5,−2), (7,−2), (8,−1), (6,−1). The resulting parallelogram has horizontal base 2 mm and perpendicular height 1 mm, hence area 2 mm² instead of 1 mm². Its two edge vectors are (2,0) and (1,1), whose squared lengths are 4 and 2. They are not perpendicular. The map is not a rigid motion or a uniform scaling, even though it is invertible. Establish the result by geometry, not by interpreting a translated point's distance from the old origin as an edge length.
+
+Next represent the displacement (5,3) mm in the oblique basis (1,0),(1,1), giving coefficients (2,3). Reconstruct it and explain why its squared geometric length is 34 mm² rather than 13 mm². Project it onto the direction (1,1): projection (4,4) mm, remainder (1,−1) mm. Verify orthogonality and the squared-length decomposition. Construct infinitely many distinct vectors with that same projection, then explain the difference between invertible coordinate representation and irreversible projection.
+
+Finally investigate the nearly dependent systems x+y=2 and x+(1+ε)y=2+ε+δ, where x,y and the equation values in this subproblem are dimensionless. Compare several nonzero ε and small δ using exact fractions. Derive the response δ/ε, test ε=0 separately and show why a small residual is insufficient evidence of a stable physical inference. Keep this dimensionless subproblem separate from the millimetre coordinate example.
+
+**Independent checks:** compute matrix products both by row/column arithmetic and by composing the explicit maps. Check inverse identities on a finite grid, then prove them symbolically. Compare elimination against direct substitution and classify singular cases explicitly. For the square, compare a base/height area calculation with an independent polygon-area calculation derived from signed triangles. Preserve unrounded values and state any conversion used for display.
+
+**Deliver:** labeled diagrams and units; derivations of the map and inverse; both composition orders; the polygon and projection accounts; the sensitivity comparison; and a criticism/revision after another reader changes one assumption. Explain which statements are universal mathematical results, finite checks, or hypothetical physical interpretations. The study prepares later physics, chemical balances, computing and engineering without claiming to complete those subjects or linear algebra.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Author verification:** exact rational arithmetic passed 3,642 comparisons, including 81 coordinate-grid cases, 992 independently solved nonsingular two-equation cases, three projection directions, both composition orders, polygon area and sensitivity examples. Independent elimination and closed-form solutions agree. These finite checks accompany the symbolic arguments; they do not prove every case or establish a physical calibration.
+
+**Continue:** [Review spatial representations linear constraints and transformations](Review-spatial-representations-linear-constraints-and-transformations.lingua#r_0231F3E26722D7A3632D78A7AD).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_07365437E80781900AA1FAF83B

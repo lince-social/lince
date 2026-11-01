@@ -1,0 +1,25 @@
+Import "../Chemistry.lingua"
+
+Read electronic states and orbital pictures as models of evidence (@chemistry-state-models: 0, is #chapter, #hephaestus-core "../general-chemistry/atomic/Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P") { r_05EBFD205C1399B2027FBE417B
+The classical motion account locates a body along a trajectory. An atomic orbital is not an electron traveling on a drawn track. It is a one-electron quantum state or function within a specified model. Its use in a many-electron description involves approximations and electron interactions. Begin with the meaning of the representation before attempting a differential equation.
+
+**Read:** Chemistry 2e sections 6.3–6.4, beginning with the reasons for changing the atomic model, the meaning of orbitals, quantum-number labels and electron configurations. The [shared quantum lesson](../general-chemistry/atomic/Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P) retains the advanced MIT and other readings; wavefunction solutions, integration and general quantum mechanics follow after their mathematical preparation.
+
+A probability predicts relative frequencies for a stated measurement under a model; it is not a fraction of an electron assigned permanently to a compartment. In an elementary hypothetical partition of all possible measured positions into three disjoint regions, probabilities 1/4, 1/2 and 1/4 sum to one. They predict probabilities for each region, not a trajectory through them. Changing the region boundaries changes the probability assigned to each region even when the underlying state stays the same.
+
+For a continuous description, probability density must be combined with region size to obtain a probability. A density value at a point is not itself the probability of that point. In the usual one-electron spatial description the squared wavefunction magnitude provides the density after normalization. Later integration makes this statement precise. An orbital surface enclosing a chosen probability fraction is a visualization convention, not a hard wall containing a little moving ball.
+
+In the hydrogenic labeling used by the reading, n=1,2,… specifies a shell; l runs from 0 to n−1; m_l runs from −l to l in integer steps; and the spin projection has two allowed labels. The s, p and d subshell names correspond to l=0,1,2. For n=2, the l=0 subshell has one spatial orbital and l=1 has three, giving four spatial orbitals and eight one-electron spin states. The Pauli restriction permits at most one electron in each complete one-electron state, hence at most two per spatial orbital with opposite spin labels in this orbital description.
+
+The counting argument is different from an energy-ordering rule. The capacity 2n² does not say that a many-electron atom fills one shell completely before occupying any state of the next. Configurations and their exceptions must be tied to the actual atom or ion, its state and the approximations used. A configuration label summarizes an electronic account; it is not a proof of a measured ionization energy or a complete many-body wavefunction.
+
+**Work:** enumerate n=1 and n=2 labels and explain why an invalid quantum-number combination is excluded. Distinguish number of spatial orbitals, number of spin states and actual occupied electrons. Explain what an orbital drawing, electron configuration and line spectrum each represents. Identify the later mathematics needed to turn the qualitative density discussion into a normalized calculation without claiming that this introductory model completes quantum chemistry.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Shared numerical preparation:** [fractions](../../inquiry/quantitative-literacy/foundations/Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD) and [claims and their domains](../../mathematics/core/Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA). The finite probabilities here are stipulated; deeper probability and quantum theory remain later formation.
+
+**Continue:** [Read orbitals and electron configurations as quantum models](../general-chemistry/atomic/Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_05EBFD205C1399B2027FBE417B

@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Connect realization to verification and intended use (@engineering-evidence: 0, is #chapter, #hephaestus-core "Keep-service-evidence-meaningful-through-change-and-recovery.lingua#r_0593D3DFF3699AB8D9E3ACE10B") { r_0C593F4A7A204FABB3B5876653
+Building a system introduces new questions: do the actual parts match their descriptions, do connected parts interact correctly, and does the assembled result work in its intended setting? A calculation about a proposed arrangement is one part of the evidence. Preserve the connection from requirements through drawings, parts, code and observations so the evidence describes the system actually being evaluated.
+
+**Read:** [NASA Systems Engineering Handbook](../mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) sections 5.1–5.4 progressively, beginning with implementation and integration before verification and validation. Use its distinction between specified requirements and intended use; do not transfer flight-unit terminology or institutional procedures unchanged to an ordinary workshop. Compare its argument with the requirements you wrote for the card service.
+
+Suppose A's exit counter reports 1,026 accepted intermediates and B's entry counter reports 950 processed intermediates. Their difference is consistent with 76 items left in the buffer. This consistency is useful, but two counters with the same configuration error might agree for the wrong reason. Independent physical counts, object identifiers or an independently constructed event record can challenge the explanation. State which observations were made; do not silently replace a missing observation with the model's prediction.
+
+Plan evidence for each requirement. Geometry may need measured dimensions and an interpretation of uncertainty. A labeling function needs cases with correct, absent and mismatched labels. An interface needs observations of both sides, including interruption and restart. The delivery requirement needs counts over its actual time boundary, with reject and inventory accounting. A calculation of 931 from assumed rates tests the arithmetic and its model; it does not count actual accepted cards.
+
+Verification asks whether the specified condition is met. Validation asks whether the result is useful for the intended people and circumstances. Cards can meet a chosen width tolerance while their lettering remains unreadable at the distance used in class. Even a readable label may present the wrong subject matter. These failures can reveal missing requirements. Revise the requirement and the design together, recording which earlier evidence still applies and which needs to be repeated.
+
+When a result disagrees with a prediction, preserve it before changing the model or apparatus. Check object identity, units, configuration, time basis and measurement limits. Then compare explanations: an omitted stream, a counter error, a changing process or an invalid model assumption. A failed trial can support understanding without meeting the delivery requirement. Repeated success in one condition is still bounded evidence for other conditions.
+
+**Work:** make an evidence table with five requirements, the corresponding model or observation, its acceptance interpretation and its limits. Include one case where arithmetic passes but physical verification is absent, one where specified requirements pass but intended use fails, and one where the result is inconclusive. Design a benign paper or software mock-up that could distinguish two interface-failure explanations. Record predicted results separately from any execution you actually perform. No factory, prototype trial or certification is claimed by this teaching example.
+
+**Continue:** [Keep service evidence meaningful through change and recovery](Keep-service-evidence-meaningful-through-change-and-recovery.lingua#r_0593D3DFF3699AB8D9E3ACE10B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0C593F4A7A204FABB3B5876653

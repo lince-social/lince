@@ -1,0 +1,26 @@
+Import "../Physics.lingua"
+
+Review statistical descriptions with their constraints dynamics and evidence (@physics-statistical-review: 0, is #chapter, #hephaestus-core "Begin-quantum-descriptions-with-preparation-transformations-and-observed-outcomes.lingua#r_00B05CC7CF19E5F22AADA0F422") { r_0048D075F0EB33EFBEDD46775E
+Distinguish microstate, macrostate, degeneracy, preparation and accessible set. Define the probability measure before computing an expectation. Explain the difference between particle, ensemble, sample and time averages and give a case where the same total energy permits different predictions for a local observable.
+
+Derive the fixed-total subsystem distribution and its exact mean, variance and pair covariance. Explain how additive energies can coexist with statistically dependent subsystems. Recover the finite fixture and contrast it with canonical weights having the same mean. State precisely what converges when the reservoir grows with the observed subsystem held fixed.
+
+Define statistical entropy, prove its independent-product additivity and the grouped entropy decomposition, and distinguish the ensemble entropy from the entropy of a particular macrostate. Connect equilibrium energy sharing to entropy slopes and stable maxima without inventing a temperature derivative for an arbitrary small discrete system. Retain the thermodynamic entropy and second-law premises from the earlier physics block.
+
+Derive the finite-reservoir weights and the canonical approximation, including degeneracy, accessible support and the finite Taylor error. Derive normalized probability-ratio bounds under a common uniform remainder bound. Explain what additional work is required for an infinite tail or an inaccessible state.
+
+Derive the canonical energy, variance, heat capacity, entropy and Helmholtz identities with their fixed-parameter conditions. Prove the finite relative-entropy inequality and distinguish a free-energy minimum from a dynamic relaxation law. Recover the bounded published two-state example, the independent finite checks and the physical assumptions still untested.
+
+Use the shared convergence and truncation work for the countable energy ladder. Restore units, distinguish limiting temperatures from invalid endpoint normalization, and certify the error of the requested observable. Compare independent, constrained and perfectly correlated fluctuation scaling before invoking a macroscopic approximation or a phase-transition claim.
+
+Solve the binary transition model, identify stationary and periodic boundaries, derive the stationary sampling covariance and explain how equal equilibrium weights can accompany unequal relaxation rates. Give a stationary-current counterexample to the claim that stationarity always means detailed balance. Do not infer irreversibility, a heat/work balance or physical time scales from counting alone.
+
+Complete the investigation and a changed-model extension with an independent derivation, evidence plan, criticism and revision. No observed learner performance, physical experiment, research replication or apparatus validation is claimed by the authored checks. Source reading assignments remain broader than inspected passages.
+
+This eighth common physics block supplies statistical connections among state counts, thermodynamic variables, fluctuations and observation. It does not complete statistical mechanics, kinetic theory, phase transitions or the whole physics core. Quantum foundations, relativity, induction, gravitation, astronomy and broader continuum and experimental formation remain in scope. Continue chemistry phase/material behavior at comparable breadth before a specialist detour.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue through the common quantum foundations:** [Begin quantum descriptions with preparation transformations and observed outcomes](Begin-quantum-descriptions-with-preparation-transformations-and-observed-outcomes.lingua#r_00B05CC7CF19E5F22AADA0F422). Use the newly developed finite complex-operator bridge to distinguish physical preparation, measurement, coherent evolution and observed evidence before entering quantum specializations.
+
+} r_0048D075F0EB33EFBEDD46775E

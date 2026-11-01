@@ -1,0 +1,19 @@
+Import "observational-astronomy/Observational-astronomy.lingua"
+Import "astrophysics/Astrophysics.lingua"
+Import "cosmology/Cosmology.lingua"
+Import "planetary-science/Planetary-science.lingua"
+Import "solar-and-space-environment-science/Solar-and-space-environment-science.lingua"
+
+Universe and space (@universe-and-space: 0, is #chapter, #outline, #contains "observational-astronomy/Observational-astronomy.lingua#r_2KGHM1GMWSY7YXY9RH3JG4KMDW", #contains "astrophysics/Astrophysics.lingua#r_1JY0RVDDS0SYCX3BXSQNX5EXE7", #contains "cosmology/Cosmology.lingua#r_5SVG26YNNHQQ10GHQB7V0YRN48", #contains "planetary-science/Planetary-science.lingua#r_7DYV5MK9CE54XHM9EHBY2S90TV", #contains "solar-and-space-environment-science/Solar-and-space-environment-science.lingua#r_0CMC1K21QVZ8EHEKQJJ8RDP7J7") { r_38KB376VFZ30BXTGB9K0HG55ZP
+Understand an astronomical observation; connect light and motion to a celestial explanation; study the history or environment of a chosen world. Basic sky observation, instrument operation, and mathematical astrophysics have different preparation and resource needs.
+
+**Parent:** [Physics — fields, matter, motion and physical evidence](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Branches:**
+
+- [Observational astronomy](observational-astronomy/Observational-astronomy.lingua#r_2KGHM1GMWSY7YXY9RH3JG4KMDW)
+- [Astrophysics](astrophysics/Astrophysics.lingua#r_1JY0RVDDS0SYCX3BXSQNX5EXE7)
+- [Cosmology](cosmology/Cosmology.lingua#r_5SVG26YNNHQQ10GHQB7V0YRN48)
+- [Planetary science](planetary-science/Planetary-science.lingua#r_7DYV5MK9CE54XHM9EHBY2S90TV)
+- [Solar and space-environment science](solar-and-space-environment-science/Solar-and-space-environment-science.lingua#r_0CMC1K21QVZ8EHEKQJJ8RDP7J7)
+} r_38KB376VFZ30BXTGB9K0HG55ZP

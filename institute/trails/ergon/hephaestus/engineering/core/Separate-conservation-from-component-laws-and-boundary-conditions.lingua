@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Separate conservation from component laws and boundary conditions (@engineering-component-laws: 0, is #chapter, #hephaestus-core "../../physics/thermodynamics-and-heat-transfer/conduction/Fourier-law-conductivity-and-a-local-heat-flux.lingua#r_05EQENX75RXRDXHYBA5PXC2A28") { r_00FBD936549250285648668BF1
+Suppose a body receives power P and releases a heat rate H. Conservation gives dE/dt=P−H. It does not tell us E(T), H(T,T₀), the ambient temperature T₀ or the starting state. These are different inputs to the model: a storage relation, a transfer relation, a boundary condition and an initial condition. An algebraic solution can be perfectly consistent with an unsuitable component relation.
+
+In a deliberately restricted thermal model, E−E_ref=C(T−T_ref) with constant positive capacity C measured in J/K. Write H=G(T−T₀), where conductance G has units W/K and is constant over the stated range. Then both C dT/dt and G(T−T₀) have units W. Capacity describes how much energy changes the state; conductance describes a transfer at a difference. A large capacity does not automatically mean a good steady heat path.
+
+For a plane slab with constant conductivity k, area A and thickness L, assume one-dimensional steady conduction, no internal generation, maintained face temperatures and negligible contacts/side exchange. Fourier's relation H=−kA dT/dx and constant H give T_hot−T_cold=HL/(kA). Hence G=kA/L. With k=0.4 W/(m·K), A=0.03 m² and L=0.006 m, G=2 W/K; a 4 K difference gives 8 W. The coefficients are hypothetical. A real porous, anisotropic, changing or imperfectly contacting body requires evidence before this law is used. The shared Fourier Record follows with its own example and fuller reading.
+
+Some other networks have similar equations while tracking different quantities. Electric charge q is a signed conserved property measured in coulombs. Current I is signed charge crossing a chosen surface per time, measured in A=C/s. In an electrostatic description, potential difference V is potential-energy change per charge, measured in volts, J/C. A stationary ohmic element can obey I=g(V₁−V₂), with g in A/V; its dissipated power is I(V₁−V₂), not I alone. Hydraulic volume flow Q_v can be modeled as h(p₁−p₂) in a specified linear viscous regime, with h in m³/(s·Pa); pressure-work rate is Q_v(p₁−p₂). Compressibility, elevation, inertia and nonlinear losses can invalidate that simple reduction. Incompressible volume balance derives from mass conservation and constant density.
+
+A thermal edge H already has power units. H(T₁−T₂) has units W·K, so it is not the electrical power formula with renamed symbols. Mathematical analogy helps assemble equations; it does not identify physical quantities, validate a regime or transfer a material coefficient between domains.
+
+**Read:** [University Physics Volume 2 — OpenStax](../../physics/electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), sections 1.6, 7.2, 9.1 and 9.4 for conduction, potential, current and the empirical scope of Ohm's relation. [Charge, field, potential, current and energy are different quantities](../../physics/electromagnetism/foundations/Charge-field-potential-current-and-energy.lingua#r_73F672N5XQ9B4B1MPJAKCK2EGS) remains available for later field formation; the common route selects no whole electromagnetic course. State definitions before using the analogy, and keep the readings' more advanced exercises for their physical preparation.
+
+**Practice:** classify each of M′=f_in−f_out, E=Cθ+E_ref, H=Gθ, T₀=constant and θ(0)=θ_i. Derive how doubling A or L changes the slab prediction under its assumptions. Give an observation that would reject constant G without violating conservation. Explain why fitting G and then checking the same fitted datum supplies little independent evidence.
+
+**Continue:** [Fourier's law, conductivity and local heat flux](../../physics/thermodynamics-and-heat-transfer/conduction/Fourier-law-conductivity-and-a-local-heat-flux.lingua#r_05EQENX75RXRDXHYBA5PXC2A28).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00FBD936549250285648668BF1

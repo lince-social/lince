@@ -1,0 +1,25 @@
+Import "../Engineering.lingua"
+
+Derive a stored energy response and its limiting cases (@engineering-storage-response: 0, is #chapter, #hephaestus-core "../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3") { r_009E9E98E6B681AB3B149B7F71
+Return to one thermal node with fixed ambient T₀, θ=T−T₀, constant C>0 J/K, G≥0 W/K and input P W. The model is Cθ′=P−Gθ with θ(0)=θ_i. These are assumptions about a whole body and its environment. They need evidence separate from the equation's solution. Reuse [Define exponential change by an inverse and prove its rate law](../../chemistry/core/Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua#r_00708D2CC09F8E0AA4DEC25359) and [Connect a rate model with an initial value and an admissible trajectory](../../chemistry/core/Connect-a-rate-model-with-an-initial-value-and-an-admissible-trajectory.lingua#r_01743BDDD7178F3F01AE693646) for the exponential derivative and integrating-factor argument, and [Connect accumulated change and local rate under stated conditions](../../mathematics/core/Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0) for accumulated rates.
+
+For G>0 define θ_eq=P/G and τ=C/G. The equilibrium is in K; τ is in seconds. Subtract equilibrium: z=θ−θ_eq satisfies z′=−z/τ. Differentiating exp(t/τ)z makes its derivative zero, so every differentiable solution with the initial state obeys
+
+θ(t)=θ_eq+(θ_i−θ_eq)exp(−t/τ).
+
+Conversely, differentiating this expression verifies the equation and t=0 verifies the initial value. This proves existence and uniqueness within this constant-coefficient model. Since the exponential lies between zero and one for t≥0, θ remains between its initial and equilibrium values and approaches equilibrium monotonically. τ means the remaining difference has fallen by a factor exp(−1); it is not the time at which equilibrium is attained. The half-response time is τ ln 2.
+
+The stored change is ΔE=C(θ(t)−θ_i). Independently integrate the outward rate Gθ(s) to get
+
+Q_out(t)=Pt+C(θ_i−θ_eq)(1−exp(−t/τ)).
+
+Thus Pt=ΔE+Q_out. Outward transfer can be negative when the body is colder than ambient; the sign is part of the physical account. For C=12 J/K,G=3 W/K,P=6 W,θ_i=0, equilibrium is 2 K, τ=4 s, and θ(t)=2(1−exp(−t/4)) K. At t=4 s, stored change is 24(1−exp(−1)) J and released energy is 24 exp(−1) J. Their sum is exactly the 24 J supplied.
+
+For G=0 solve the separate equation: θ=θ_i+Pt/C, ΔE=Pt and Q_out=0. Do not divide by G. This agrees with the G→0 limit at each fixed finite time: (1−exp(−Gt/C))/G tends to t/C by the derivative at zero. It does not imply a common finite long-time equilibrium. For P>0, every G>0 gives a finite equilibrium P/G, whereas G=0 heats indefinitely within the formal model; material validity can fail much earlier. C=0 is a different algebraic idealization and is outside this initial-value problem.
+
+**Read and practice:** [Differential Equations — MIT 18.03SC](../../physics/thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE) introduces growth/decay and first-order modeling. [Lumped capacity, Biot number and response time](../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3) follows with the physical uniform-temperature approximation; its spatial comparisons remain later formation. Derive the response after a changed input by carrying the first interval's final state into the second. Explain why simply restarting at θ=0 discards stored energy. Derive the cooling case P=0, the already-at-equilibrium case and the direction of change when θ_i exceeds equilibrium.
+
+**Continue:** [Lumped capacity, Biot number and response time](../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_009E9E98E6B681AB3B149B7F71

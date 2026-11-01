@@ -1,0 +1,236 @@
+Import "../Engineering.lingua"
+
+Investigate electrical alternatives with bounds and independent evidence (@engineering-electric-study: 0, is #chapter, #hephaestus-core "Review-electrical-realization-and-evidence.lingua#r_00214755551BAD6328E985555B") { r_00A42EEA72C24821EBF4557EB7
+**Question:** which realization meets a common electrical function over its stated parameter ranges, and what evidence could distinguish competing explanations? This original investigation connects requirements, circuit equations, port equivalence, parameter bounds, design choice and observation. All component values and limits are hypothetical. No source, device, physical circuit, installation or meter is built or validated here.
+
+Reconstruct the topology and the three parameter tuples from [Translate an electrical function into source connection and load requirements](Electrical-function-ports-and-requirements.lingua#r_000F14ED9998133B2218854532) and [Compare realizations under explicit electrical and component limits](Electrical-alternatives-and-component-limits.lingua#r_005E639D5F937C2C1C6CEA0834). Derive the coupled nodal matrix and prove uniqueness. Solve again by the independent series/parallel reduction, then close the individual component power account. Derive the selected-load port relation and verify it against the full network for several loads. Explain why the equivalent preserves terminal behavior without determining original internal dissipation.
+
+**Compare A, B and C.** A fails the nominal voltage band. B passes nominal conditions but fails at permitted voltage corners. C passes the universal voltage/current bounds and conservative component-loss bounds. This establishes a decision within the stipulated model, not unrestricted preference for C: material cost, physical connection geometry, thermal environment, service life, fault and dynamic performance remain outside this comparison.
+
+**Justify the whole parameter box.** E varies ±5%; six resistances vary ±10%. There are 128 corners, and the companion additionally evaluates a three-level grid containing 3⁷=2187 points for each of B and C. Fixed monotonic signs establish voltage/current extrema; conservative products establish loss upper bounds. The interior grid checks implementation but is not the reason continuous acceptance holds. A negative certificate can mean an actual violating corner or merely an insufficient conservative power bound; distinguish them explicitly.
+
+**Criticize the observations.** Reproduce the source/connection-resistance rival and the identifying terminal equation. Then add the hypothetical finite meter. Account separately for useful load power, parasitic resistance dissipation and instrument power. These activities specify what evidence could be informative; they do not report an experiment or calibrated measurement.
+
+**Executable reconstruction:** save `realization_study.py` and `realization_checks.py` below together with the unchanged `linear_space_study.py` from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B). Run both new programs through the established Nix/Python environment. The main calculation uses the shared exact elimination; the independent companion uses a separate series/parallel reduction, substitution, terminal equations and power conservation. Inputs must be positive integers or exact fractions. The code's positive-resistance steady-state domain is deliberate; an open branch, ideal zero resistance, nonlinear load or transient needs a revised model rather than a fabricated tiny substitute.
+
+
+```python file=realization_study.py
+from fractions import Fraction as F
+from itertools import product
+from linear_space_study import eliminate
+
+
+def positive(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)) or value <= 0:
+        raise ValueError('Require a positive exact integer or fraction')
+    return F(value)
+
+
+def network(E, Rs, Rc, r1, r2, L1, L2, meter=None):
+    E, Rs, Rc, r1, r2, L1, L2 = map(positive, (E, Rs, Rc, r1, r2, L1, L2))
+    gm = F(0) if meter is None else 1/positive(meter)
+    r = Rs+Rc
+    matrix = ((1/r+1/r1+1/r2, -1/r1, -1/r2),
+              (-1/r1, 1/r1+1/L1+gm, 0),
+              (-1/r2, 0, 1/r2+1/L2))
+    v0, v1, v2 = eliminate(matrix, (E/r, 0, 0))['particular']
+    I = (E-v0)/r
+    i1, i2 = (v0-v1)/r1, (v0-v2)/r2
+    useful = (v1*v1/L1, v2*v2/L2)
+    loss = (I*I*Rs, I*I*Rc, i1*i1*r1, i2*i2*r2)
+    return {'voltages': (v0, v1, v2), 'currents': (I, i1, i2),
+            'source_terminal': E-Rs*I, 'source_power': E*I,
+            'useful_power': useful, 'losses': loss, 'meter_power': v1*v1*gm,
+            'efficiency': sum(useful)/(E*I)}
+
+
+def port(E, Rs, Rc, r1, r2, L2):
+    E, Rs, Rc, r1, r2, L2 = map(positive, (E, Rs, Rc, r1, r2, L2))
+    r, B = Rs+Rc, r2+L2
+    return E*B/(r+B), r1+r*B/(r+B)
+
+
+def box(nominal):
+    nominal = tuple(map(positive, nominal))
+    if len(nominal) != 7:
+        raise ValueError('Require E, Rs, Rc, r1, r2, L1, L2')
+    tolerances = (F(1, 20),)+(F(1, 10),)*6
+    return tuple((x*(1-t), x*(1+t)) for x, t in zip(nominal, tolerances))
+
+
+def bounds(intervals):
+    if len(intervals) != 7 or any(len(pair) != 2 for pair in intervals):
+        raise ValueError('Require seven endpoint pairs')
+    intervals = tuple(tuple(map(positive, pair)) for pair in intervals)
+    if any(lo > hi for lo, hi in intervals):
+        raise ValueError('Reversed interval')
+    cases = [network(*values) for values in product(*intervals)]
+    voltage = tuple((min(c['voltages'][i] for c in cases), max(c['voltages'][i] for c in cases)) for i in (1, 2))
+    maximum_current = tuple(max(c['currents'][i] for c in cases) for i in range(3))
+    I, i1, i2 = maximum_current
+    loss_upper = (intervals[1][1]*I*I, intervals[2][1]*I*I,
+                  intervals[3][1]*i1*i1, intervals[4][1]*i2*i2)
+    screen = all(8 <= lo <= hi <= F(21, 2) for lo, hi in voltage)
+    screen = screen and I <= F(17, 5)
+    screen = screen and all(value <= limit for value, limit in zip(loss_upper, (6, 4, 2, 3)))
+    return {'voltage_bounds': voltage, 'current_upper': maximum_current,
+            'loss_upper': loss_upper, 'sufficient_screen': screen}
+
+
+DESIGNS = {'A': (12, 1, 1, 2, 1, 10, 5),
+           'B': (12, F(1, 2), F(1, 2), 1, F(1, 2), 10, 5),
+           'C': (12, F(1, 2), F(1, 4), F(1, 2), F(1, 4), 10, 5)}
+
+
+if __name__ == '__main__':
+    for name, values in DESIGNS.items():
+        print(name, network(*values))
+        if name != 'A':
+            print(name, bounds(box(values)))
+```
+
+```python file=realization_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+from realization_study import DESIGNS, network, port, box, bounds
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    if not condition:
+        raise AssertionError(checks)
+
+
+def rejects(function, *args):
+    try:
+        function(*args)
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def reduced(values, meter=None):
+    E, Rs, Rc, r1, r2, L1, L2 = map(F, values)
+    effective = L1 if meter is None else 1/(1/L1+1/F(meter))
+    A, B = r1+effective, r2+L2
+    parallel = A*B/(A+B)
+    I = E/(Rs+Rc+parallel)
+    feed = I*parallel
+    return (feed, feed*effective/A, feed*L2/B), (I, feed/A, feed/B)
+
+
+def inspect(values, meter=None):
+    c = network(*values, meter=meter)
+    voltage, current = reduced(values, meter)
+    check(c['voltages'] == voltage)
+    check(c['currents'] == current)
+    E, Rs, Rc, r1, r2, L1, L2 = map(F, values)
+    v0, v1, v2 = voltage
+    I, i1, i2 = current
+    check(I == i1+i2)
+    check(E == I*(Rs+Rc)+i1*r1+v1)
+    check(E == I*(Rs+Rc)+i2*r2+v2)
+    check(i1 == v1/L1+(0 if meter is None else v1/F(meter)))
+    check(i2 == v2/L2)
+    check(c['source_power'] == sum(c['useful_power'])+sum(c['losses'])+c['meter_power'])
+    check(0 < c['efficiency'] < 1)
+    check(E-c['source_terminal'] == I*Rs)
+    check(c['source_terminal']-v0 == I*Rc)
+    if meter is None:
+        eth, rth = port(E, Rs, Rc, r1, r2, L2)
+        check(v1 == eth*L1/(rth+L1))
+        check(c['useful_power'][0] <= eth*eth/(4*rth))
+    return c
+
+
+a, b, c = (inspect(DESIGNS[name]) for name in ('A','B','C'))
+check(a['voltages'] == (8, F(20, 3), F(20, 3)))
+check(a['source_power'] == 24 and sum(a['useful_power']) == F(40, 3))
+check(a['efficiency'] == F(5, 9))
+check(b['voltages'] == (F(66, 7), F(60, 7), F(60, 7)))
+check(b['currents'] == (F(18, 7), F(6, 7), F(12, 7)))
+check(b['efficiency'] == F(5, 7))
+check(c['voltages'] == (F(168, 17), F(160, 17), F(160, 17)))
+check(c['efficiency'] == F(40, 51))
+grid_cases = 0
+for values in product((6,12), (F(1,4),F(1,2)), (F(1,4),1),
+                      (F(1,2),2), (F(1,4),1), (5,10), (3,5)):
+    inspect(values)
+    grid_cases += 1
+range_cases = 0
+screens = {}
+for name in ('B','C'):
+    intervals = box(DESIGNS[name])
+    certificate = bounds(intervals)
+    screens[name] = certificate['sufficient_screen']
+    lo = [pair[0] for pair in intervals]
+    hi = [pair[1] for pair in intervals]
+    v1min = reduced((lo[0],hi[1],hi[2],hi[3],lo[4],lo[5],lo[6]))[0][1]
+    v1max = reduced((hi[0],lo[1],lo[2],lo[3],hi[4],hi[5],hi[6]))[0][1]
+    v2min = reduced((lo[0],hi[1],hi[2],lo[3],hi[4],lo[5],lo[6]))[0][2]
+    v2max = reduced((hi[0],lo[1],lo[2],hi[3],lo[4],hi[5],hi[6]))[0][2]
+    check(certificate['voltage_bounds'] == ((v1min,v1max),(v2min,v2max)))
+    check(certificate['current_upper'][0] == reduced((hi[0],*lo[1:]))[1][0])
+    for values in product(*(tuple((lo,(lo+hi)/2,hi)) for lo,hi in intervals)):
+        voltages, currents = reduced(values)
+        for index,(lower,upper) in enumerate(certificate['voltage_bounds'],1):
+            check(lower <= voltages[index] <= upper)
+        for current,upper in zip(currents,certificate['current_upper']):
+            check(current <= upper)
+        losses = (currents[0]**2*values[1],currents[0]**2*values[2],
+                  currents[1]**2*values[3],currents[2]**2*values[4])
+        for loss,upper in zip(losses,certificate['loss_upper']):
+            check(loss <= upper)
+        range_cases += 1
+check(screens == {'B':False,'C':True})
+rival = (12,F(1,4),F(3,4),1,F(1,2),10,5)
+r = inspect(rival)
+check(r['voltages'] == b['voltages'] and r['currents'] == b['currents'])
+check(r['source_terminal'] != b['source_terminal'])
+check((12-b['source_terminal'])/b['currents'][0] == F(1,2))
+check((b['source_terminal']-b['voltages'][0])/b['currents'][0] == F(1,2))
+meter_cases = 0
+for name,meter in product(('A','B','C'), (10,100,1000)):
+    loaded = inspect(DESIGNS[name],meter)
+    bare = network(*DESIGNS[name])
+    check(loaded['voltages'][1] < bare['voltages'][1])
+    check(loaded['voltages'][2] < bare['voltages'][2])
+    check(loaded['source_power'] > bare['source_power'])
+    meter_cases += 1
+for name in ('A','B','C'):
+    E,Rs,Rc,r1,r2,L1,L2 = DESIGNS[name]
+    eth,rth = port(E,Rs,Rc,r1,r2,L2)
+    matched = inspect((E,Rs,Rc,r1,r2,rth,L2))
+    check(matched['useful_power'][0] == eth**2/(4*rth))
+for index in range(7):
+    for invalid in (0,-1,True,0.5):
+        values = list(DESIGNS['B'])
+        values[index] = invalid
+        rejects(network,*values)
+rejects(network,*DESIGNS['B'],0)
+rejects(box,(1,2))
+rejects(bounds,((1,2),)*6)
+rejects(bounds,((2,1),)*7)
+cert = bounds(box(DESIGNS['C']))
+print(json.dumps({'checks':checks,'grid_cases':grid_cases,'range_cases':range_cases,
+                  'meter_cases':meter_cases,'screens':screens,
+                  'C_voltage_bounds':[[str(x) for x in pair] for pair in cert['voltage_bounds']],
+                  'C_current_upper':[str(x) for x in cert['current_upper']],
+                  'C_loss_upper':[str(x) for x in cert['loss_upper']]}))
+```
+
+**Independent extension:** choose a revised parameter box or a different load-voltage requirement, predict the active constraints algebraically, and compare alternatives without changing the useful-output definition. Tighten one conservative power bound by analyzing its actual parameter dependence. If using real component data, record the exact component, source revision, environmental/duty conditions and the difference between a published rating and your measured realization.
+
+**Submission:** provide a node/return-path drawing, requirement table, matrix derivation, positive-quadratic uniqueness proof, independently solved states, full power balances, port relation, monotonicity/bounds proof, feasible and infeasible examples, observation ambiguity and a proposed evidence plan. Keep actual source inspection and performed computations separate from assigned practical work and physical claims needing future verification.
+
+**Author verification:** the companion passed 41,299 exact checks through Nix/Python 3.14.8: 128 independently reduced network cases, 4,374 parameter-box grid cases and nine loaded-meter cases, plus nominal alternatives, port/matched-power relations, source/connection ambiguity and invalid domains. The installed shared linear solver is reused unchanged. Monotonicity and conservative-product proofs justify continuous voltage/current/loss bounds; finite samples support implementation rather than validating hardware or measured parameter ranges.
+
+**Continue:** [Review electrical realization model limits and observation evidence](Review-electrical-realization-and-evidence.lingua#r_00214755551BAD6328E985555B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00A42EEA72C24821EBF4557EB7

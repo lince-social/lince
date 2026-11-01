@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Derive modular arithmetic and separate carry from signed overflow (@computing-word-arithmetic: 0, is #chapter, #hephaestus-core "Build-a-word-operation-from-Boolean-specifications.lingua#r_02F42AB6FDA5DC0617C57FAEA5") { r_0799AD8A6C4DEFE0A73A667C19
+A w-bit unsigned result can keep only the low w bits. Let M=2ʷ. For unsigned operands a,b in [0,M−1], write a+b=qM+r with 0≤r<M and q either 0 or 1. A word adder returns r, and q is the outgoing carry. This is exact arithmetic modulo M, not an approximation to a real number. To claim the unbounded sum is represented exactly, additionally establish q=0.
+
+For the same bit pattern define the two’s-complement interpretation S(u)=u when u<M/2 and S(u)=u−M otherwise. Its range is −M/2 through M/2−1. Equivalently the top bit has weight −2^(w−1), with the lower weights positive. Subtracting M changes no residue modulo M, so low-bit addition works for either interpretation. The signed result equals the mathematical signed sum only when that sum lies in the signed range.
+
+At four bits, 7+1 gives pattern 1000 with no outgoing carry, but interpreting it as signed gives −8 instead of +8: signed overflow. Pattern 1111 plus 0001 gives 0000 with carry one; signed values −1+1 give zero without signed overflow. Signed addition overflows exactly when operands have the same sign and the result has the other sign. Opposite-sign sums stay between the operands and therefore within range. For two nonnegative operands, crossing the upper signed limit changes the top bit; for two negative operands, a sum below the lower limit wraps into the nonnegative half. These cases prove the sign test.
+
+Bitwise complement within w bits changes u to M−1−u. Adding one gives M−u modulo M, the additive inverse. The most negative signed value is its own modular negative, because its positive opposite is outside the signed range. Subtraction can use addition of this modular inverse. A language may instead check overflow, widen values or impose other semantics: specify the actual operation, not just the physical word size.
+
+**Read and prove:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 1’s two’s-complement discussion, and [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ) for Python’s unbounded integer/bitwise contracts. Reproduce both four-bit examples, derive the complement identity and classify overflow independently by the mathematical signed range. Keep width explicit when using Python’s complement or shifts. The later interpreter deliberately masks arithmetic results; it makes no claim about every programming language’s overflow behavior.
+
+**Continue:** [Build a word operation from Boolean specifications](Build-a-word-operation-from-Boolean-specifications.lingua#r_02F42AB6FDA5DC0617C57FAEA5).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0799AD8A6C4DEFE0A73A667C19

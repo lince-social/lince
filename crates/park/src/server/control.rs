@@ -261,6 +261,16 @@ impl Server {
         self.state.control.bindings.iter().flat_map(|binding| binding.pending.values())
             .map(|pending| (pending.started + Duration::from_secs(10)).saturating_duration_since(Instant::now())).min()
     }
+
+    #[cfg(all(test, feature = "server-tests"))]
+    pub(super) fn age_control_requests(&mut self, age: Duration) {
+        let started = Instant::now().checked_sub(age).unwrap();
+        for binding in &mut self.state.control.bindings {
+            for pending in binding.pending.values_mut() {
+                pending.started = started;
+            }
+        }
+    }
 }
 
 impl State {

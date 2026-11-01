@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Resolve a vector into a projection and an orthogonal remainder (@math-projections: 0, is #chapter, #hephaestus-core "Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B") { r_0E1019900E901787E7D6D8001B
+The dot product connects coordinates with geometric projection when the coordinate convention is appropriate. In an orthonormal plane, define u·v = u₁v₁ + u₂v₂. The squared length is v·v. For nonzero vectors, u·v = |u||v| cos θ relates the product to their angle. A zero dot product characterizes perpendicular nonzero vectors; the zero vector also has zero dot product with every vector, although its direction is undefined.
+
+**Read:** the [shared vector lesson](../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J) and OpenStax section 10.8's dot-product discussion. Boyd and Vandenberghe sections 1.4, 3.1–3.2, 3.4 and 5.3 extend the inner-product, norm and orthonormal language. Introduce these meanings before the later Gram–Schmidt, least-squares and statistical applications.
+
+Let w be a nonzero direction vector. Seek the point tw on its line closest to a given vector v, using Euclidean distance. Requiring the remainder r = v − tw to be perpendicular to w gives w·v − t(w·w) = 0. Since w·w is positive, t = (w·v)/(w·w). The projection is p = tw. The scalar coefficient t, the scalar component along a unit direction and the vector p are different quantities.
+
+For v = (5,3) and w = (1,1), t = 8/2 = 4. Thus p = (4,4), r = (1,−1), and w·r = 0. The squared lengths satisfy 34 = 32 + 2. More generally, any other point on the line can be written p + sw. Its squared distance from v is |r−sw|² = |r|² + s²|w|² because r·w = 0. This is minimized uniquely at s = 0. The argument proves the closest-point claim without calculus or a finite search.
+
+The projection cannot generally recover the original vector. Every vector of the form (4+h,4−h) has the same projection (4,4) onto the direction (1,1), for any real h. The orthogonal remainder carries information discarded by the projection. An inverse claim therefore requires additional information, not simply a more accurate numerical calculation of p.
+
+In an oblique basis, do not apply the coordinate dot-product formula as though the axes were orthonormal. First express the vectors in a suitable orthonormal frame or derive the corresponding metric. Likewise, a physical work calculation using a force and displacement has units and a model interpretation beyond the algebra; a geometric projection alone is not evidence about the forces in a machine.
+
+**Work:** verify the example and the general closest-point argument. Replace w by 2w and show that the projection is unchanged although its coefficient changes. Find a vector whose projection is zero and explain its direction. Show explicitly why the formula excludes w = 0. Distinguish an exact orthogonality identity from the evidence needed to estimate a projection from uncertain measured components.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Solve simultaneous constraints without losing their solution set](Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0E1019900E901787E7D6D8001B

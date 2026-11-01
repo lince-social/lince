@@ -1,0 +1,319 @@
+Import "../Physics.lingua"
+
+Investigate entropy work bounds and changing source temperatures (@physics-entropy-study: 0, is #chapter, #hephaestus-core "Review-process-direction-without-losing-boundaries-or-assumptions.lingua#r_007B8D111B5FBE32367C81B1ED") { r_0099FE8B08ED994548C5F84AD2
+Reconstruct the original reservoir, gas and finite-body comparisons with explicit boundaries and a common sign convention. Use heat into a system and work out as positive, so ΔU=Q−W. Distinguish actual exchanges from reversible reference-path integrals. The supplied ideal-gas constants and body capacities are teaching assumptions, not experimental estimates.
+
+The reservoir screen compares 150 J and 175 J work proposals for 200 J supplied at 400 K with rejection at 100 K. Both close energy; only the former meets the reversible second-law bound. The finite bodies at 400 K and 100 K with C=1 J/K give direct T=250 K, reversible T=200 K, maximum work 100 J and direct generation 2 ln(5/4) J/K. The two gas reference paths have identical entropy changes and different heat/work. Isothermal expansion compares reversible, constant-external-pressure and free-expansion accounts.
+
+The main program uses 70-digit Decimal arithmetic and reuses the existing conversion helper in `reaction_study.py` from [Investigate reversible change and the evidence carried by a chemical signal](../../chemistry/core/Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A). Save that unchanged program beside `entropy_study.py` and `entropy_checks.py`. It has no import-time execution. Inputs here must be exact integers or Fractions; the new interface rejects floats, booleans and invalid physical/model domains. Decimal results are numerical approximations, even when printed with many digits.
+
+Independent checks use exact rational enclosures. For a positive rational x, repeated multiplication/division by 2 writes x=2^k y with 1≤y<2. Set z=(y−1)/(y+1), so 0≤z<1/3. From the prepared logarithm derivative, ln y=2∫₀ᶻdu/(1−u²). The finite geometric identity gives lower sum L_N=2Σ_{j=0}^{N−1}z^(2j+1)/(2j+1) and upper bound L_N+2z^(2N+1)/[(2N+1)(1−z²)]. Use the same formula for ln2 and combine bounds with attention to the sign of k. This extends the finite-geometric bound already developed in the reaction study to arbitrary positive ratios; it does not assume an infinite series without a remainder.
+
+Square roots are independently bracketed by rational bisection: start with 0≤sqrt(x)≤max(1,x), compare each midpoint's square with x, and preserve the enclosing interval. The checks use 32 logarithm terms and 144 root bisections. They compare the 70-digit outputs with these proved enclosures and a declared absolute numerical tolerance 10⁻⁶⁰ for the bounded cases. They also check exact square-temperature families, energy identities, temperature scaling, state-path reversal, the pressure-versus-volume entropy formula and first-law-only counterexamples. The finite grid supports implementation; continuous inequalities are proved in the lessons.
+
+Run `nix shell nixpkgs#python3 -c python3 entropy_checks.py`. The companion reconstructs Yan's published ideal-gas entropy example independently with rational logarithm bounds. Its −0.3885 rounded result is a source calculation check, not evidence that the actual process was performed. Very small numerical residuals of a reversible entropy sum must be interpreted relative to the verified rounding tolerance, not as observed entropy destruction.
+
+**Independent report:** reproduce every chosen account, explain each state and path premise, and defend one additional benign comparison. Change a capacity or add an exchange; derive what must be recalculated. Propose observations that distinguish two path models sharing the same endpoints. Present a critic's objection and a revision, including the source-inspection and experimental limits. These learning demands are not claimed completed by the author-run program.
+
+
+```python file=entropy_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from reaction_study import decimal
+import json
+
+
+def exact(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)):
+        raise ValueError('exact integer or Fraction inputs are required')
+    return F(value)
+
+
+def positive(*values):
+    values = tuple(exact(v) for v in values)
+    if any(v <= 0 for v in values):
+        raise ValueError('positive absolute temperatures and model parameters are required')
+    return values
+
+
+def engine(hot, cold, heat_in, work_out):
+    hot, cold, heat_in = positive(hot, cold, heat_in)
+    work_out = exact(work_out)
+    if hot < cold or not 0 <= work_out <= heat_in:
+        raise ValueError('ordered reservoirs and nonnegative rejected heat required')
+    heat_out = heat_in-work_out
+    generated = heat_out/cold-heat_in/hot
+    return {'heat_out': heat_out, 'work_out': work_out, 'efficiency': work_out/heat_in,
+            'entropy_generated': generated, 'work_bound': heat_in*(1-cold/hot),
+            'passes_second_law_screen': generated >= 0}
+
+
+def finite_bodies(hot, cold, capacity):
+    hot, cold, capacity = positive(hot, cold, capacity)
+    if hot < cold:
+        raise ValueError('hot temperature must be at least cold temperature')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        h, c, cap = map(decimal, (hot, cold, capacity))
+        direct = (h+c)/2
+        reversible = (h*c).sqrt()
+        return {'direct_temperature': direct, 'reversible_temperature': reversible,
+                'maximum_work': cap*(h+c-2*reversible),
+                'direct_entropy': cap*((direct/h).ln()+(direct/c).ln()),
+                'reversible_entropy': cap*((reversible/h).ln()+(reversible/c).ln())}
+
+
+def gas_paths(gas_content, heat_capacity, t1, v1, t2, v2):
+    values = positive(gas_content, heat_capacity, t1, v1, t2, v2)
+    with localcontext() as ctx:
+        ctx.prec = 70
+        nr, cv, t1, v1, t2, v2 = map(decimal, values)
+        temperature_part = cv*(t2/t1).ln()
+        volume_part = nr*(v2/v1).ln()
+        change = cv*(t2-t1)
+        work_hot = nr*t2*(v2/v1).ln()
+        work_cold = nr*t1*(v2/v1).ln()
+        return {'entropy_change': temperature_part+volume_part,
+                'internal_energy_change': change,
+                'heat_then_expand': {'work': work_hot, 'heat': change+work_hot},
+                'expand_then_heat': {'work': work_cold, 'heat': change+work_cold},
+                'entropy_parts': (temperature_part, volume_part)}
+
+
+def isothermal_expansion(gas_content, temperature, initial_volume, final_volume):
+    values = positive(gas_content, temperature, initial_volume, final_volume)
+    if values[3] < values[2]:
+        raise ValueError('this comparison is for expansion')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        nr, temperature, v1, v2 = map(decimal, values)
+        ratio = v2/v1
+        change = nr*ratio.ln()
+        reversible = temperature*change
+        constant = nr*temperature*(1-1/ratio)
+        return {'entropy_change': change, 'reversible_work': reversible,
+                'constant_pressure_work': constant,
+                'constant_pressure_generation': change-constant/temperature,
+                'free_expansion_generation': change}
+
+
+def published_example():
+    with localcontext() as ctx:
+        ctx.prec = 70
+        cp, gas = D('1.005'), D('0.287')
+        return cp*(D('340.15')/D('300.15')).ln()-gas*D(6).ln()
+
+
+def investigation():
+    return {'engine_limit': engine(400, 100, 200, 150),
+            'engine_rival': engine(400, 100, 200, 175),
+            'finite_bodies': finite_bodies(400, 100, 1),
+            'gas_paths': gas_paths(2, 3, 200, 1, 400, 2),
+            'isothermal': isothermal_expansion(2, 300, 1, 2),
+            'published_specific_entropy_kj_per_kg_k': published_example()}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=entropy_checks.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from functools import lru_cache
+from itertools import product
+import entropy_study as m
+import json
+
+
+checks = 0
+tolerance = F(1, 10**60)
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def series_bounds(y, terms=32):
+    z = (y-1)/(y+1)
+    lower = 2*sum((z**(2*j+1)/F(2*j+1) for j in range(terms)), F(0))
+    upper = lower+2*z**(2*terms+1)/(F(2*terms+1)*(1-z*z))
+    return lower, upper
+
+
+@lru_cache(maxsize=None)
+def logarithm_bounds(x):
+    x = F(x)
+    assert x > 0
+    power = 0
+    while x < 1:
+        x *= 2
+        power -= 1
+    while x >= 2:
+        x /= 2
+        power += 1
+    lo, hi = series_bounds(x)
+    lo2, hi2 = series_bounds(F(2))
+    return (lo+power*lo2, hi+power*hi2) if power >= 0 else (lo+power*hi2, hi+power*lo2)
+
+
+def scaled(interval, coefficient):
+    ends = tuple(coefficient*v for v in interval)
+    return min(ends), max(ends)
+
+
+def combined(*intervals):
+    return sum(v[0] for v in intervals), sum(v[1] for v in intervals)
+
+
+def encloses(interval, actual):
+    check(interval[0]-tolerance <= F(actual) <= interval[1]+tolerance)
+
+
+@lru_cache(maxsize=None)
+def root_bounds(x):
+    x = F(x)
+    lo, hi = F(0), max(F(1), x)
+    for _ in range(144):
+        midpoint = (lo+hi)/2
+        if midpoint*midpoint <= x:
+            lo = midpoint
+        else:
+            hi = midpoint
+    return lo, hi
+
+
+def run():
+    body_cases = 0
+    for cold, ratio, capacity in product((F(100), F(200), F(300)),
+                                          (F(1), F(5, 4), F(3, 2), F(2), F(4)),
+                                          (F(1, 2), F(1), F(3))):
+        hot = cold*ratio
+        result = m.finite_bodies(hot, cold, capacity)
+        mean = (hot+cold)/2
+        root = root_bounds(hot*cold)
+        encloses(root, result['reversible_temperature'])
+        check(F(result['direct_temperature']) == mean)
+        work = (capacity*(hot+cold-2*root[1]), capacity*(hot+cold-2*root[0]))
+        encloses(work, result['maximum_work'])
+        entropy = scaled(logarithm_bounds(mean*mean/(hot*cold)), capacity)
+        encloses(entropy, result['direct_entropy'])
+        check(abs(F(result['reversible_entropy'])) < tolerance)
+        check(F(result['maximum_work']) >= -tolerance)
+        check(F(result['direct_entropy']) >= -tolerance)
+        check(F(result['reversible_temperature']) <= mean+tolerance)
+        doubled = m.finite_bodies(hot*2, cold*2, capacity)
+        check(abs(F(doubled['maximum_work'])-2*F(result['maximum_work'])) < tolerance)
+        check(abs(F(doubled['direct_entropy'])-F(result['direct_entropy'])) < tolerance)
+        if hot == cold:
+            check(result['maximum_work'] == result['direct_entropy'] == 0)
+        body_cases += 1
+    square_cases = 0
+    for a, b, base, capacity in product(range(1, 6), range(1, 6), (25, 100), (F(1, 2), F(2))):
+        if a < b:
+            continue
+        hot, cold = a*a*base, b*b*base
+        result = m.finite_bodies(hot, cold, capacity)
+        check(F(result['reversible_temperature']) == a*b*base)
+        check(F(result['maximum_work']) == capacity*base*(a-b)**2)
+        for step in range(11):
+            th = F(a*b*base)+F(step, 10)*(hot-a*b*base)
+            tc = F(hot*cold)/th
+            check(th*tc == hot*cold)
+            check(th >= tc)
+            check(capacity*(hot+cold-th-tc) <= capacity*base*(a-b)**2)
+        square_cases += 1
+    gas_cases = 0
+    for nr, cv, t1, tr, v1, vr in product((F(1), F(2)), (F(3, 2), F(3)),
+                                           (F(200), F(300)), (F(1, 2), F(1), F(2)),
+                                           (F(1), F(3)), (F(1, 2), F(1), F(2))):
+        t2, v2 = t1*tr, v1*vr
+        result = m.gas_paths(nr, cv, t1, v1, t2, v2)
+        bounds = combined(scaled(logarithm_bounds(tr), cv), scaled(logarithm_bounds(vr), nr))
+        encloses(bounds, result['entropy_change'])
+        pressure_ratio = tr/vr
+        pressure_bounds = combined(scaled(logarithm_bounds(tr), cv+nr),
+                                   scaled(logarithm_bounds(pressure_ratio), -nr))
+        encloses(pressure_bounds, result['entropy_change'])
+        check(F(result['internal_energy_change']) == cv*(t2-t1))
+        for key, temperature in [('heat_then_expand', t2), ('expand_then_heat', t1)]:
+            path = result[key]
+            encloses(scaled(logarithm_bounds(vr), nr*temperature), path['work'])
+            check(abs(F(path['heat'])-F(path['work'])-cv*(t2-t1)) < tolerance)
+        reverse = m.gas_paths(nr, cv, t2, v2, t1, v1)
+        check(abs(F(result['entropy_change'])+F(reverse['entropy_change'])) < tolerance)
+        gas_cases += 1
+    expansion_cases = 0
+    for nr, temperature, volume, ratio in product((F(1, 2), F(2)), (F(100), F(300)),
+                                                   (F(1), F(3)), (F(1), F(5, 4), F(3, 2), F(2), F(4))):
+        result = m.isothermal_expansion(nr, temperature, volume, volume*ratio)
+        log = logarithm_bounds(ratio)
+        encloses(scaled(log, nr), result['entropy_change'])
+        encloses(scaled(log, nr*temperature), result['reversible_work'])
+        constant = nr*temperature*(1-1/ratio)
+        check(abs(F(result['constant_pressure_work'])-constant) < tolerance)
+        generated = (nr*(log[0]-1+1/ratio), nr*(log[1]-1+1/ratio))
+        encloses(generated, result['constant_pressure_generation'])
+        check(F(result['constant_pressure_generation']) >= -tolerance)
+        check(F(result['reversible_work'])+tolerance >= constant)
+        check(abs(F(result['free_expansion_generation'])-F(result['entropy_change'])) < tolerance)
+        expansion_cases += 1
+    engine_cases = 0
+    for hot, cold, q, part in product((200, 400, 600), (100, 200), (50, 200),
+                                      (F(0), F(1, 4), F(1, 2), F(3, 4), F(1))):
+        result = m.engine(hot, cold, q, q*part)
+        check(result['heat_out']+result['work_out'] == q)
+        check(result['passes_second_law_screen'] == (part <= 1-F(cold, hot)))
+        check(result['entropy_generated']*cold == result['work_bound']-result['work_out'])
+        engine_cases += 1
+    cycle = ((400, 1), (400, 2), (100, 8), (100, 4), (400, 1))
+    cycle_entropy, cycle_energy = F(0), F(0)
+    for start, end, coefficient, energy in zip(cycle, cycle[1:], (1, 0, -1, 0), (0, -300, 0, 300)):
+        result = m.gas_paths(1, 1, *start, *end)
+        encloses(scaled(logarithm_bounds(F(2)), coefficient), result['entropy_change'])
+        check(result['internal_energy_change'] == energy)
+        cycle_entropy += F(result['entropy_change'])
+        cycle_energy += F(result['internal_energy_change'])
+    check(abs(cycle_entropy) < tolerance)
+    check(cycle_energy == 0)
+    check(cycle[1][0]*cycle[1][1] == cycle[2][0]*cycle[2][1])
+    check(cycle[3][0]*cycle[3][1] == cycle[4][0]*cycle[4][1])
+    published = combined(scaled(logarithm_bounds(F(6803, 6003)), F(201, 200)),
+                         scaled(logarithm_bounds(F(6)), F(-287, 1000)))
+    encloses(published, m.published_example())
+    check(m.published_example().quantize(D('0.0001')) == D('-0.3885'))
+    example = m.investigation()
+    check(example['engine_limit']['entropy_generated'] == 0)
+    check(example['engine_rival']['entropy_generated'] == F(-1, 4))
+    check(example['finite_bodies']['reversible_temperature'] == 200)
+    check(example['finite_bodies']['direct_temperature'] == 250)
+    check(example['finite_bodies']['maximum_work'] == 100)
+    encloses(scaled(logarithm_bounds(F(5, 4)), 2), example['finite_bodies']['direct_entropy'])
+    for call in (lambda: m.finite_bodies(0, 100, 1), lambda: m.finite_bodies(100, 200, 1),
+                 lambda: m.finite_bodies(200, 100, -1), lambda: m.finite_bodies(200.0, 100, 1),
+                 lambda: m.finite_bodies(True, 1, 1), lambda: m.gas_paths(1, 1, 100, 0, 200, 2),
+                 lambda: m.isothermal_expansion(1, 300, 2, 1), lambda: m.engine(400, 100, 200, 201),
+                 lambda: m.engine(100, 200, 200, 0), lambda: m.engine(400, 100, 0, 0)):
+        try:
+            call()
+        except ValueError:
+            check(True)
+        else:
+            raise AssertionError('invalid input accepted')
+    print(json.dumps({'checks': checks, 'body_cases': body_cases, 'square_body_cases': square_cases,
+                      'gas_path_cases': gas_cases, 'expansion_cases': expansion_cases,
+                      'engine_cases': engine_cases, 'published_example': str(m.published_example())}))
+
+
+if __name__ == '__main__':
+    run()
+```
+
+**Author verification:** 4,201 exact and rational-enclosure comparisons passed through Nix/Python 3.14.8: 45 finite-body cases, 60 square-temperature families, 144 gas reference-path cases, 40 expansion cases and 60 reservoir-cycle screens, plus a Carnot state cycle, the published example and invalid inputs. The 70-digit Decimal calculations are checked against independent rational logarithm/root bounds with the stated tolerance. The unchanged reaction-study conversion helper is reused. No experiment or apparatus validation is claimed.
+
+**Continue:** [Review process direction without losing boundaries or assumptions](Review-process-direction-without-losing-boundaries-or-assumptions.lingua#r_007B8D111B5FBE32367C81B1ED).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0099FE8B08ED994548C5F84AD2

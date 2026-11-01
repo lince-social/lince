@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Handle interrupted work without confusing partial and completed results (@rc-atomic: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW") { r_67AHSE6SV62WC5H49ECP23VRTX
+Handle interrupted work without confusing partial and completed results (@rc-atomic: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW", #hephaestus-core "../../../computer-science/core/Persistence-cost-retention-and-provenance.lingua#r_00681EF1E53770749F60612B4C") { r_67AHSE6SV62WC5H49ECP23VRTX
 **Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), tempfile, os.replace, pathlib, and the relevant platform contracts; [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), the chosen version’s failure, persistence, and incomplete-output behavior.
 
 An interrupted process can leave an incomplete artifact. If a later stage recognizes only its filename, it may mistake the partial file for a completed result. Define completion and recovery for the workflow's actual storage and execution conditions. For a small local report, write a complete temporary file, validate it, and then publish it with an appropriate replacement operation.
@@ -16,4 +16,9 @@ For a multi-output study, stage and validate a coherent result set before announ
 **Continue:** [Reuse computed results only under an explicit equivalence rule](Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Fifth computing-block reading:** Use the distinction between partial output, publication and completed result sets. The preceding common lessons derive a separate nine-word copy/publish model and its crash/retry proof. The original file script and source assignments retain their private-workspace scope; atomic path replacement is not promoted to a complete power-loss transaction. The common programs do not write physical files or validate an actual filesystem. Follow the existing reproducible-computation route for its complete workflow formation.
+
+**Continue in the fifth computing block:** [Account for persistence cost and the limits of retained copies](../../../computer-science/core/Persistence-cost-retention-and-provenance.lingua#r_00681EF1E53770749F60612B4C).
+
 } r_67AHSE6SV62WC5H49ECP23VRTX

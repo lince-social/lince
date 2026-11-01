@@ -1,0 +1,18 @@
+Import "../Inquiry.lingua"
+
+Review fitting evidence before extending scientific claims (@inquiry-fitting-review: 0, is #chapter, #hephaestus-core "Define-the-question-and-audience-of-a-scientific-report.lingua#r_00B75D987D4D8ED671FEFD6861") { r_008E6FD7D2B90DB8ED1CE9927E
+Defend an affine analysis from question to conclusion. Declare units, domain, target, fixed inputs, coefficient meaning, observation units, covariance and any stronger distributional assumptions. Derive the fit from projection, its coefficient uncertainty from observation weights, and residual scatter from the fitted constraints. Explain which statements survive nonnormal errors and which fail under a changed mean or covariance.
+
+Use the original investigation to distinguish four numerical objects: coefficient sampling variance, the observed estimate s², uncertainty of a fitted mean, and error of a future observation. Recover the exact finite coverages and explain why they cannot be transferred to an estimated-scale or correlated-future procedure without analysis. An inverse estimate is a random ratio, not simply another forward prediction.
+
+Reproduce the shared-offset counterexample, the common-random-error covariance and the curvature residual. Partition the six replicated observations and identify both contrast dimensions. Propose observations that could discriminate rival explanations, documenting reference sharing, replication units and model choices. Present a readable residual display and a table of assumptions alongside the numerical report. A plot or statistical test alone does not validate a causal or physical explanation.
+
+**Independent work:** select a benign published response example with accessible provenance, rebuild a bounded result, and compare at least two plausible observation models. Reserve evidence for evaluating the choice. State which source passages and data you inspected, preserve licences and attribution, and distinguish numerical reproduction from experimental replication. Exchange the analysis for criticism, revise it, and retain enough records for another learner to rerun the bounded calculation. The original synthetic study is preparation, not completion of this research assignment.
+
+This fifth inquiry block completes another pass across the six broad areas. Review their actual coverage before selecting the next common pass. Normal/Student-t inference, general observation models, broader scientific communication, learning and knowledge preservation still require development. The whole inquiry core and its pending descendant subjects remain unfinished; specialist branches are later work.
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Continue in the sixth common pass:** [Define the question and audience of a scientific report](Define-the-question-and-audience-of-a-scientific-report.lingua#r_00B75D987D4D8ED671FEFD6861). Develop question-to-claim traceability, comparison criteria, meaningful presentation, criticism, correction and fresh restoration using the unchanged fitting investigation. Then review breadth across all six cores before deeper branches.
+
+} r_008E6FD7D2B90DB8ED1CE9927E

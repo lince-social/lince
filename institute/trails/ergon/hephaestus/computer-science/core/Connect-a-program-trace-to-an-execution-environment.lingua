@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Connect a program trace to an execution environment (@computing-execution: 0, is #chapter, #hephaestus-core "Investigate-a-stock-trace-with-independent-computational-evidence.lingua#r_06AE2B0429294B062E80CC37F6") { r_0CB0BF6E07DE35C7D4B9094477
+An algorithm specifies transitions between abstract states. A program expresses transitions in a language. An execution realizes them using an interpreter or compiled implementation, an operating system and physical hardware. Keeping these levels distinct helps locate an error: a correct mathematical rule can be supplied the wrong input, expressed incorrectly or interrupted during execution.
+
+For the stock procedure, a useful abstract state contains the next event index, the accepted trace and the supplied immutable inputs. One step either appends an allowed candidate, reports the first rejected event or reports successful completion. The language implementation creates concrete objects for those values and executes operations with defined behavior. The abstract description does not specify a processor instruction count or the time needed to allocate an object.
+
+The operating environment matters when inputs and outputs cross the calculation's boundary. A file path depends on a filesystem and a base location; a text file needs an encoding; a printed result needs a destination. The shared file lesson develops these issues. The pure stock function avoids filesystem and clock inputs so its returned value depends only on its explicit arguments under its execution assumptions. Adding file reading later creates new contracts to test.
+
+Python's Boolean values are related to its integer type, but the stock contract deliberately excludes them as counts. Its exact type checks express that choice. In a fixed-width implementation, the candidate addition would need a separate overflow policy before checking physical bounds. Translating the same-looking expression into another language therefore needs a review of representations and failure behavior.
+
+**Work:** trace an execution on paper and then in a saved script. Record the interpreter version, command and outputs. Run a copy from another working directory and explain why this function's values should remain unchanged. Introduce a file input only as a separate extension, specifying its encoding, input schema and error policy. Distinguish a returned capacity rejection from a process interrupted before any result was produced.
+
+**Later formation:** instruction sets, memory, operating systems, storage, concurrency and networks need their own models and experiments. This elementary execution account supplies the questions to carry into those branches; it does not explain every supporting system by analogy with one loop.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Continue:** [Investigate a stock trace with independent computational evidence](Investigate-a-stock-trace-with-independent-computational-evidence.lingua#r_06AE2B0429294B062E80CC37F6).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0CB0BF6E07DE35C7D4B9094477

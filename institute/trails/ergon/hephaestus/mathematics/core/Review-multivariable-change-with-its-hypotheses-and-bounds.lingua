@@ -1,0 +1,20 @@
+Import "../Mathematics.lingua"
+
+Review multivariable change with its hypotheses and bounds (@math-multivariable-review: 0, is #chapter, #hephaestus-core "Distinguish-finite-sets-sequences-and-counted-configurations.lingua#r_0057E5B3AF058E48063BE0EE3C") { r_00C5489B3B33A8B3C3CBC6D260
+Rebuild the progression from admissible input tuples to a uniform neighborhood limit, slice derivatives, one linear approximation, composition and constrained change. Explain why axes or even all straight paths do not establish a general limit. Exhibit existing partials without continuity, and all directional derivatives without a linear total derivative. State the stronger hypotheses actually used in each theorem.
+
+Prove the derivative's uniqueness and continuity consequence, the continuous-partial sufficient condition, the matrix chain rule and the mixed-partial equality under their stated regularity. In the chain proof handle a zero inner increment and use a bounded absolute ratio. These arguments should be intelligible without software. Reuse the earlier finite-map, norm, mean-value and fundamental-theorem preparation where it enters.
+
+For the original investigation, recover the exact polynomial remainder and continuous-box bound, the curved-path rate, the coordinate transformation and both metric gradients. Distinguish a derivative functional from its metric-dependent vector representation. Integrate an exact differential along different paths and supply an explicit nonexact path account. The later physics block will determine which physical quantities can be represented by state functions.
+
+Recover the constrained quadratic minimum by independent elimination and square completion. Include the cap and endpoint maximum, and explain the singular-constraint counterexample. Identify exactly where the general regular-level-set theorem is accepted rather than proved; the affine example must be parameterized explicitly. Stationarity alone is not a global optimization certificate.
+
+Complete the selected calculus readings and the bounded published-checkpoint reconstruction, keeping source licence/version and actual inspection separate from the larger reading assignment. The source's gradient theorem requires differentiability even if an intermediate explanation speaks too loosely of partial existence. Defend the corrected reasoning with the prepared counterexample. Present an independent extension, a critic's objection and a revised argument; an author-checked program does not itself demonstrate learner mastery.
+
+This sixth mathematics block prepares physical entropy and chemical thermodynamics, as well as later engineering sensitivity and inquiry modeling. The whole mathematics core remains unfinished: discrete structures, deeper analysis and sequences/series, full vector calculus and topology, broader differential equations, numerical methods, probability and independent advanced proof remain in scope. Continue the sixth physics block at comparable depth before specialized mathematical applications.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the seventh common pass:** [Distinguish finite sets sequences and counted configurations](Distinguish-finite-sets-sequences-and-counted-configurations.lingua#r_0057E5B3AF058E48063BE0EE3C). Develop finite objects, functions/fibers, counting, induction, relations, graphs, reachability and quotient limits through proved arguments and an original exact investigation. Continue the other five cores at comparable breadth before deeper branches.
+
+} r_00C5489B3B33A8B3C3CBC6D260

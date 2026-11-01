@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Design a calibration that can reveal its own weaknesses (@met-calibration-design: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #metrology "Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Calibration-chooses-a-population-and-a-range-of-conditions.lingua#r_2TDQQJ4Y8ZJ2WTQBZPZKG826R3") { r_1DM0C485A4H25DSVDR611QZPXC
+Design a calibration that can reveal its own weaknesses (@met-calibration-design: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #metrology "Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Calibration-chooses-a-population-and-a-range-of-conditions.lingua#r_2TDQQJ4Y8ZJ2WTQBZPZKG826R3", #hephaestus-core "../../core/Build-a-finite-chance-model-from-outcomes-and-weights.lingua#r_0ECC7C2601996048D46E15C104") { r_1DM0C485A4H25DSVDR611QZPXC
 **Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.3’s designs and instrument-calibration sections; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 7–8 and 11.4; [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), the complete calibration sequence.
 
 Choose reference levels, replication, order, reversals, settling observations, and independent checks to address the intended range and likely influences. More readings at one convenient point cannot establish a slope, distinguish curvature, or test a new range. A design should allow plausible competing explanations to produce different observable patterns.
@@ -18,5 +18,10 @@ Define invalid-reading criteria before examining the fit, and retain observation
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
 
 **Continue in clean manufacturing:** [Calibration chooses a population and a range of conditions](../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Calibration-chooses-a-population-and-a-range-of-conditions.lingua#r_2TDQQJ4Y8ZJ2WTQBZPZKG826R3).
+
+
+**Second inquiry-block reading:** use the design questions about reference levels, repeated observations, order, drift and independent checks. Connect them to the preceding unit/allocation lesson and the freshly inspected NIST chapter-5 design sections. The original complete calibration, instrument-specific and regression assignments remain available with their later preparation; this common step does not claim to complete them or freshly inspect all their sources.
+
+**Continue in the second inquiry block:** [Build a finite chance model from outcomes and weights](../../core/Build-a-finite-chance-model-from-outcomes-and-weights.lingua#r_0ECC7C2601996048D46E15C104).
 
 } r_1DM0C485A4H25DSVDR611QZPXC

@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Magnetic force, orbits and energy transfer (@em-magnetic-force: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA") { r_34G06XMD2AYC7EC9ADQQNQFA0R
+Magnetic force, orbits and energy transfer (@em-magnetic-force: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA", #hephaestus-core "../../core/Derive-uniform-magnetic-motion-without-assigning-work-to-deflection.lingua#r_00790A783DA8CDBA03CB1FFFF4") { r_34G06XMD2AYC7EC9ADQQNQFA0R
 **Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 11 in full; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), Lorentz force and charged motion.
 
 The Lorentz force is q(E + v×B). The magnetic contribution is perpendicular to velocity, so it does no instantaneous work on an isolated point charge: v·(qv×B) = 0. It can change trajectory while electric fields or collisions exchange kinetic energy. A magnetic device can transfer mechanical energy without contradicting this particle-level result.
@@ -12,4 +12,9 @@ Derive the force on a current-carrying straight segment only from an appropriate
 **Continue:** [Biot–Savart fields of steady currents](Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Common magnetic-block reading:** Read the Lorentz force, magnetic-only power and uniform-field orbit account with the preceding observation lesson and following derivation. Nonrelativistic, prescribed-field and negligible-radiation premises are explicit there. Full chapter 11, material magnets, three-dimensional device forces and relativistic frame comparisons retain their broader assignments; no fresh whole-chapter audit is claimed.
+
+**Continue in the common magnetic block:** [Derive uniform magnetic motion without assigning work to deflection](../../core/Derive-uniform-magnetic-motion-without-assigning-work-to-deflection.lingua#r_00790A783DA8CDBA03CB1FFFF4).
+
 } r_34G06XMD2AYC7EC9ADQQNQFA0R

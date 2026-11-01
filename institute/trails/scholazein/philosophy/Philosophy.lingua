@@ -1,8 +1,21 @@
+Import "philosophical-inquiry-argument-and-dialectic/Philosophical-inquiry-argument-and-dialectic.lingua"
+Import "logic-and-philosophy-of-logic/Logic-and-philosophy-of-logic.lingua"
+Import "epistemology-and-the-life-of-knowledge/Epistemology-and-the-life-of-knowledge.lingua"
+Import "metaphysics-and-ontology/Metaphysics-and-ontology.lingua"
+Import "ethics-value-and-moral-reasoning/Ethics-value-and-moral-reasoning.lingua"
+Import "action-freedom-and-practical-reason/Action-freedom-and-practical-reason.lingua"
+Import "mind-experience-and-subjectivity/Mind-experience-and-subjectivity.lingua"
+Import "language-meaning-and-interpretation/Language-meaning-and-interpretation.lingua"
+Import "social-philosophy-and-political-judgment/Social-philosophy-and-political-judgment.lingua"
+Import "aesthetics-and-philosophy-of-art/Aesthetics-and-philosophy-of-art.lingua"
+Import "religion-existence-and-the-meaning-of-life/Religion-existence-and-the-meaning-of-life.lingua"
+Import "history-and-traditions-of-philosophy/History-and-traditions-of-philosophy.lingua"
+
 Import "karmic-philosophy/Karmic-philosophy.lingua"
 Import "ancient-greek-philosophy/Philosophers.lingua"
 Import "ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua"
 
-Philosophy (@philosophy: 0, is #chapter, #contains @karmic-philosophy, #philosophy @karmic-philosophy, #contains @philosophers, #contains @ancient-greek-philosophy, #reading-scheme "../../lince/shared/Development-example.lingua#r_00000000000000000000004001", #reading-scheme "../../lince/shared/Checklist-example.lingua#r_00000000000000000000005001", #reading-scheme "../../lince/shared/Assessment-example.lingua#r_00000000000000000000006001", #philosophy @ancient-greek-philosophy, #ancient-greek-philosophy @ancient-greek-philosophy, #philosophy @philosophers, #ancient-greek-philosophy @philosophers, #philosophy "../../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #philosophy "../../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #philosophy "../../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #part-of "../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6") { r_00000000000000000000001001
+Philosophy (@philosophy: 0, is #chapter, #contains @karmic-philosophy, #philosophy @karmic-philosophy, #contains @philosophers, #contains @ancient-greek-philosophy, #reading-scheme "../../lince/shared/Development-example.lingua#r_00000000000000000000004001", #reading-scheme "../../lince/shared/Checklist-example.lingua#r_00000000000000000000005001", #reading-scheme "../../lince/shared/Assessment-example.lingua#r_00000000000000000000006001", #philosophy @ancient-greek-philosophy, #ancient-greek-philosophy @ancient-greek-philosophy, #philosophy @philosophers, #ancient-greek-philosophy @philosophers, #philosophy "../../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #philosophy "../../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #philosophy "../../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #part-of "../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6", #contains "philosophical-inquiry-argument-and-dialectic/Philosophical-inquiry-argument-and-dialectic.lingua#r_78KZ3J6EYBMW8FYF80GHJ2Q2AM", #contains "logic-and-philosophy-of-logic/Logic-and-philosophy-of-logic.lingua#r_1J0J8EJ093GRB91Y0Z9353TJMR", #contains "epistemology-and-the-life-of-knowledge/Epistemology-and-the-life-of-knowledge.lingua#r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D", #contains "metaphysics-and-ontology/Metaphysics-and-ontology.lingua#r_3SNF8V7B02S3QVBRC2WVSCCZW8", #contains "ethics-value-and-moral-reasoning/Ethics-value-and-moral-reasoning.lingua#r_5M0CC0HK1Q4GDME0G52DEEBR7X", #contains "action-freedom-and-practical-reason/Action-freedom-and-practical-reason.lingua#r_36FFA1JH7A8DEDJPJEKCBS1Q4F", #contains "mind-experience-and-subjectivity/Mind-experience-and-subjectivity.lingua#r_47VCQR824JH7PZ2VNNSKCH6B7K", #contains "language-meaning-and-interpretation/Language-meaning-and-interpretation.lingua#r_4HNGAHCTCDZCFRQ8GTM0DCG4M7", #contains "social-philosophy-and-political-judgment/Social-philosophy-and-political-judgment.lingua#r_2FWM2H1GDRH93WW2QV15MNHMEA", #contains "aesthetics-and-philosophy-of-art/Aesthetics-and-philosophy-of-art.lingua#r_28Z7XY50BG67Y8WWMVFRVWK0QW", #contains "religion-existence-and-the-meaning-of-life/Religion-existence-and-the-meaning-of-life.lingua#r_6HFHAD3C09XQ0Y1N0HMQ15414J", #contains "history-and-traditions-of-philosophy/History-and-traditions-of-philosophy.lingua#r_17Q7Z11WNMH2ZWVXCZT2ASB2RK") { r_00000000000000000000001001
 Philosophy examines questions whose answers depend on making concepts, assumptions, and reasons explicit. What can we know? What is real? How should we act? What makes an explanation, interpretation, or social arrangement defensible?
 
 Begin with a concrete question or passage, reconstruct the proposed answer, and examine an objection. Disagreement can expose an unstated assumption or improve the question. Identifying a difficulty is progress when you can explain what creates it and what a satisfactory response would need to do.
@@ -25,6 +38,23 @@ The optional development, checklist, and assessment examples are personal readin
 Follow the reading links or configure a Protein to select both endpoints of `#philosophy` or `#ancient-greek-philosophy` connections. Save a query in your workspace when useful. Source references and other connections remain available.
 
 [Gaia — Earth, living systems, and their relationships](../../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21) connects questions about evidence, historical explanation, and practical consequences with Earth, living systems, health, and land. Begin through [Earth — materials, processes, and geological history](../../ergon/gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) and [Geology — Earth materials, processes, history, and investigation](../../ergon/gaia/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06) for geological inquiry.
+
+**Scope:** Begin with a philosophical question or primary text, reconstruct its argument, and compare objections and alternative accounts. Follow a problem through logic, knowledge, reality, action, value, experience, or historical traditions as relevant. Share formal foundations with Mathematics and interpretive methods with History and Literature, introducing the preparation actually used by each step.
+
+**Branches:**
+
+- [Philosophical inquiry, argument, and dialectic](philosophical-inquiry-argument-and-dialectic/Philosophical-inquiry-argument-and-dialectic.lingua#r_78KZ3J6EYBMW8FYF80GHJ2Q2AM)
+- [Logic and philosophy of logic](logic-and-philosophy-of-logic/Logic-and-philosophy-of-logic.lingua#r_1J0J8EJ093GRB91Y0Z9353TJMR)
+- [Epistemology and the life of knowledge](epistemology-and-the-life-of-knowledge/Epistemology-and-the-life-of-knowledge.lingua#r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D)
+- [Metaphysics and ontology](metaphysics-and-ontology/Metaphysics-and-ontology.lingua#r_3SNF8V7B02S3QVBRC2WVSCCZW8)
+- [Ethics, value, and moral reasoning](ethics-value-and-moral-reasoning/Ethics-value-and-moral-reasoning.lingua#r_5M0CC0HK1Q4GDME0G52DEEBR7X)
+- [Action, freedom, and practical reason](action-freedom-and-practical-reason/Action-freedom-and-practical-reason.lingua#r_36FFA1JH7A8DEDJPJEKCBS1Q4F)
+- [Mind, experience, and subjectivity](mind-experience-and-subjectivity/Mind-experience-and-subjectivity.lingua#r_47VCQR824JH7PZ2VNNSKCH6B7K)
+- [Language, meaning, and interpretation](language-meaning-and-interpretation/Language-meaning-and-interpretation.lingua#r_4HNGAHCTCDZCFRQ8GTM0DCG4M7)
+- [Social philosophy and political judgment](social-philosophy-and-political-judgment/Social-philosophy-and-political-judgment.lingua#r_2FWM2H1GDRH93WW2QV15MNHMEA)
+- [Aesthetics and philosophy of art](aesthetics-and-philosophy-of-art/Aesthetics-and-philosophy-of-art.lingua#r_28Z7XY50BG67Y8WWMVFRVWK0QW)
+- [Religion, existence, and the meaning of life](religion-existence-and-the-meaning-of-life/Religion-existence-and-the-meaning-of-life.lingua#r_6HFHAD3C09XQ0Y1N0HMQ15414J)
+- [History and traditions of philosophy](history-and-traditions-of-philosophy/History-and-traditions-of-philosophy.lingua#r_17Q7Z11WNMH2ZWVXCZT2ASB2RK)
 } r_00000000000000000000001001
 
 Extension @philosophy "lince.vocabulary" {

@@ -150,7 +150,7 @@ async fn cache(engine: &Engine, window: Window, uid: &str, incomplete: bool) {
         .unwrap();
     assert!(
         store::projection::publish_schedule(
-            &engine.store.pool,
+            &engine.store,
             &Context {
                 window,
                 actor: None

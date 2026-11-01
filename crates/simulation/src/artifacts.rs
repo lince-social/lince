@@ -1700,7 +1700,7 @@ async fn database_difference(
             .max_connections(1)
             .connect_with(options)
             .await?;
-        let store = store::Store { pool };
+        let store = store::Store::from_pool(pool);
         let result = store.logical_snapshot().await;
         store.pool.close().await;
         let tables: BTreeMap<_, _> = result?
@@ -1730,7 +1730,7 @@ async fn snapshot_state(path: &Path) -> Result<CanonicalHash> {
         .max_connections(1)
         .connect_with(options)
         .await?;
-    let store = store::Store { pool };
+    let store = store::Store::from_pool(pool);
     let hash = store.state_hash().await?;
     store.pool.close().await;
     Ok(hash)

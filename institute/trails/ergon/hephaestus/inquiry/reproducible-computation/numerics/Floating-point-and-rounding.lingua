@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Understand representation, rounding, and the order of operations (@rc-floating: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #reproducible-computation "../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T") { r_0001BNCJBQDFTK1SAVASYCRZAR
+Understand representation, rounding, and the order of operations (@rc-floating: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #reproducible-computation "../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T", #hephaestus-core "../../../computer-science/core/Specify-an-encoded-machine-before-executing-its-instructions.lingua#r_02135B96E55F97B0360B787685") { r_0001BNCJBQDFTK1SAVASYCRZAR
 **Read:** [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), the full paper, beginning with representation and rounding; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), Floating-Point Arithmetic: Issues and Limitations and math.fsum; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), data types, reductions, and floating-point error behavior.
 
 Most scientific floating-point calculations represent a finite set of binary numbers. Many decimal fractions cannot be represented exactly, and each operation can round. Evaluate the contract of the actual language and numerical library rather than interpreting every printed digit as a mathematical theorem. Read Goldberg's full paper during the advanced progression and compare its historical treatment with the current runtime.
@@ -30,4 +30,9 @@ Choose absolute and relative comparisons according to quantity scale, units, and
 **Continue:** [Sensitivity, cancellation, dependencies, and conditioning](../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Third computing-block reading:** Use the representation/rounding discussion and original floating.py after the new finite-number preparation. Selected Python 3.14 numerical/type documentation and Goldberg’s opening representation discussion were freshly inspected. The full paper, NumPy contracts, exceptional values, conditioning and uncertainty assignments remain later formation; no complete current IEEE conformance or whole-source audit is claimed. Preserve the explicit ordered-loop example and its built-in-sum version qualification.
+
+**Continue in the third computing block:** [Specify an encoded machine before executing its instructions](../../../computer-science/core/Specify-an-encoded-machine-before-executing-its-instructions.lingua#r_02135B96E55F97B0360B787685).
+
 } r_0001BNCJBQDFTK1SAVASYCRZAR

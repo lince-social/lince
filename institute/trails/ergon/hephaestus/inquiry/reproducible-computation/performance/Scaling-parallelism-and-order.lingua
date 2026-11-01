@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Understand scaling limits and the consequences of parallel execution (@rc-scaling: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C") { r_5VWTDE6CWEGWHPNQPKYKAC6PMR
+Understand scaling limits and the consequences of parallel execution (@rc-scaling: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C", #hephaestus-core "../../../computer-science/core/Build-evidence-for-a-concurrent-claim-under-an-explicit-execution-model.lingua#r_008F6A999F86951A29E8A084CF") { r_5VWTDE6CWEGWHPNQPKYKAC6PMR
 **Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), multiprocessing/concurrent execution references for the selected implementation; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), parallel random streams, reductions, and thread-safety contracts; [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), resources and parallel execution configuration.
 
 Algorithmic work and storage growth matter before adding processors. Compare an implementation's observed scaling with its data operations: sorting, nested comparisons, indexing, streaming, and serialization. A small fast benchmark can hide quadratic growth or a memory requirement that fails at the intended study size. Define the workload family rather than extrapolating from one point.
@@ -16,4 +16,9 @@ Read enough official multiprocessing/concurrency and numerical-library material 
 **Continue:** [Characterize the resources needed to reconstruct a result](Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Sixth computing-block reading:** Use the fixed-work speedup derivation and the distinctions among logical task identity, aggregation order, shared state and resource costs. The next common lesson relates these to the declared concurrent model. Full multiprocessing, NumPy and workflow-engine exercises retain their own implementation preparation and current official API checks; their complete sources were not freshly inspected for this block. Preserve the original scientific-computation route and prose.
+
+**Continue in the sixth computing block:** [Build evidence for a concurrent claim under an explicit execution model](../../../computer-science/core/Build-evidence-for-a-concurrent-claim-under-an-explicit-execution-model.lingua#r_008F6A999F86951A29E8A084CF).
+
 } r_5VWTDE6CWEGWHPNQPKYKAC6PMR

@@ -1,0 +1,282 @@
+Import "../Engineering.lingua"
+
+Investigate operating histories repair resources and service evidence (@engineering-service-study: 0, is #chapter, #hephaestus-core "Review-continuing-service-with-its-observations-resources-and-limits.lingua#r_0030B9D7AC42BBFEFA5EBE5F15") { r_00D184950B7394E9C0B38294BB
+Join the preceding arguments into a complete, bounded investigation. Start with the invented document-service function, observation window, required demand and configuration. Keep three accounts separate: the actual synthetic log, the stipulated stochastic model, and the published NIST numerical reconstruction. None supplies measured reliability for a real machine.
+
+1. Reconstruct the twelve-hour log's calendar capability, positive-demand time and delivered work. Recalculate on a clipped window. Explain the no-backlog assumption and give a case in which it fails.
+2. Derive the common-support probability and the covariance error from treating overlapping paths as independent. Then derive the finite transition row, probability conservation, cumulative-output recurrence and mission mass. Identify how the repair policy couples component states.
+3. Run the programs below with the unchanged `production_study.py` from [Investigate production schedules rework and inventory time](Investigate-production-schedules-rework-and-inventory-time.lingua#r_00A308F2C75A43925C580DC3C9) and `statistical_study.py` from [Investigate finite reservoirs fluctuations and distinct relaxation laws](../../physics/core/Investigate-finite-reservoirs-fluctuations-and-distinct-relaxation-laws.lingua#r_0072F92BB90961036B562C796E) in the same directory. The former supplies interval clipping; the latter exact input validation and an independent two-state relaxation formula. No external packages are needed. Importing the study defines calculations without running an investigation or creating files.
+4. Independently enumerate histories for the stated finite horizon; compare the complete endpoint distribution, expected delivered output and uninterrupted mission, not only one rounded statistic. The checker uses primitive failure/repair events and explicit histories, while the study propagates a transition kernel. It also tests boundary probabilities and reduction to the existing two-state law. General derivations are separate from finite test coverage.
+5. Reconstruct only the NIST zero-failure 800-hour calculation described in [Retain incomplete lifetimes and interpret zero observed failures](Retain-incomplete-lifetimes-and-interpret-zero-observed-failures.lingua#r_002B196D374AE4936178F09F3B). Record the sign correction, constant-rate and observation assumptions, units, source passage and the difference between numerical reproduction and access to raw observations. Explain why the hypothetical no-failure alternative is not evidence of perfect reliability.
+6. Compare support-first and unit-first repair from state (0,0,1), p=(1/4,1/2,1/8), q=1/2 and demand one for four slots. Report output and endpoint probability; the uninterrupted mission must be zero because the initial service is down. Repeat for another initial state, demand and horizon. A comparison between two policies is not a proof of optimality over all possible policies.
+7. Change one substantive assumption: insert a delayed spare, imperfect diagnostic signal, repair verification stage, common failure event or queueable demand. Define the extra state and event order before changing code. Derive a property that must still hold and a case whose answer must change. Criticize the model with an alternative explanation, defend the supported conclusions and revise the account.
+
+The interface deliberately accepts exact integers and Fractions for probabilities and times, three component bits and a priority permutation. `evaluate` limits its executable horizon to 256 slots and demand to one or two; proofs of the recurrence concern arbitrary finite horizons. These limits bound this educational implementation, not physical system sizes. `log_account` requires a complete ordered interval partition spanning the observation window, with nonnegative capacity and demand. It rejects overlap and gaps rather than silently interpreting missing observations. Undefined demand ratios are returned as `None`.
+
+```python file=service_study.py
+from fractions import Fraction as F
+from itertools import product
+from math import prod
+from production_study import window_area
+from statistical_study import integer, probability, rational
+
+
+STATES = tuple(product((0, 1), repeat=3))
+
+
+def state(value):
+    value = tuple(value)
+    if len(value) != 3 or any(type(v) is not int or v not in (0, 1) for v in value):
+        raise ValueError('support and two unit states must be integer bits')
+    return value
+
+
+def parameters(failures, repair, priority):
+    failures = tuple(probability(p) for p in failures)
+    priority = tuple(priority)
+    if len(failures) != 3 or len(priority) != 3:
+        raise ValueError('three components required')
+    if any(type(i) is not int for i in priority) or set(priority) != {0, 1, 2}:
+        raise ValueError('priority must be a permutation of component indices')
+    return failures, probability(repair), priority
+
+
+def kernel(current, failures, repair, priority):
+    current = state(current)
+    failures, repair, priority = parameters(failures, repair, priority)
+    chosen = next((i for i in priority if current[i] == 0), None)
+    up = tuple(1 - failures[i] if current[i] else repair if i == chosen else F(0) for i in range(3))
+    return {target: prod(up[i] if target[i] else 1 - up[i] for i in range(3)) for target in STATES}
+
+
+def capacity(current):
+    support, first, second = state(current)
+    return support * (first + second)
+
+
+def evaluate(initial, failures, repair, priority, horizon, demand=1):
+    initial = state(initial)
+    failures, repair, priority = parameters(failures, repair, priority)
+    integer(horizon, 0, 256)
+    integer(demand, 1, 2)
+    transitions = {s: kernel(s, failures, repair, priority) for s in STATES}
+    distribution = {initial: F(1)}
+    surviving = {initial: F(1)}
+    delivered = F(0)
+    for _ in range(horizon):
+        delivered += sum(weight * min(capacity(s), demand) for s, weight in distribution.items())
+        next_distribution = {s: F(0) for s in STATES}
+        next_surviving = {s: F(0) for s in STATES}
+        for origin, weight in distribution.items():
+            for target, chance in transitions[origin].items():
+                next_distribution[target] += weight * chance
+                if capacity(origin) >= demand:
+                    next_surviving[target] += surviving.get(origin, F(0)) * chance
+        distribution, surviving = next_distribution, next_surviving
+    endpoint = sum(weight for s, weight in distribution.items() if capacity(s) >= demand)
+    return {'distribution': distribution, 'delivered': delivered, 'mission': sum(surviving.values()), 'endpoint': endpoint}
+
+
+def log_account(rows, start, end):
+    start, end = rational(start), rational(end)
+    if end <= start:
+        raise ValueError('positive observation window required')
+    rows = tuple(tuple(row) for row in rows)
+    if not rows or any(len(row) != 4 for row in rows):
+        raise ValueError('a complete partition is required')
+    checked = []
+    for a, b, cap, demand in rows:
+        a, b, cap, demand = map(rational, (a, b, cap, demand))
+        if b <= a or cap < 0 or demand < 0:
+            raise ValueError('positive intervals and nonnegative rates required')
+        if checked and checked[-1][1] != a:
+            raise ValueError('intervals must be ordered without overlaps or gaps')
+        checked.append((a, b, cap, demand))
+    if checked[0][0] > start or checked[-1][1] < end:
+        raise ValueError('observation window is not covered')
+    area, durations = window_area(((a, b) for a, b, _, _ in checked), start, end)
+    capable = sum(dt for dt, (_, _, cap, _) in zip(durations, checked) if cap >= 1)
+    demanded = sum(dt for dt, (_, _, _, d) in zip(durations, checked) if d > 0)
+    sufficient = sum(dt for dt, (_, _, cap, d) in zip(durations, checked) if d > 0 and cap >= d)
+    requested = sum(dt * d for dt, (_, _, _, d) in zip(durations, checked))
+    delivered = sum(dt * min(cap, d) for dt, (_, _, cap, d) in zip(durations, checked))
+    return {'window': area, 'capable': capable / area, 'demand_time': sufficient / demanded if demanded else None, 'requested': requested, 'delivered': delivered, 'fraction_delivered': delivered / requested if requested else None}
+```
+
+```python file=service_checks.py
+from decimal import Decimal, localcontext
+from fractions import Fraction as F
+from itertools import product, permutations
+from math import exp, isclose
+import json
+import platform
+from service_study import STATES, capacity, evaluate, kernel, log_account
+from statistical_study import relaxation
+
+
+checks = 0
+
+
+def check(value):
+    global checks
+    assert value
+    checks += 1
+
+
+def event_step(current, event, priority):
+    failed = {i for i, bit in enumerate(current) if not bit}
+    restored = next((i for i in priority if i in failed), None)
+    result = list(current)
+    for i in range(3):
+        if current[i] and event[i]:
+            result[i] = 0
+    if restored is not None and event[3]:
+        result[restored] = 1
+    return tuple(result)
+
+
+def events(failures, repair):
+    rates = tuple(failures) + (repair,)
+    result = []
+    for bits in product((0, 1), repeat=4):
+        weight = F(1)
+        for bit, chance in zip(bits, rates):
+            weight *= chance if bit else 1 - chance
+        if weight:
+            result.append((bits, weight))
+    return result
+
+
+def histories(initial, failures, repair, priority, horizon, demand):
+    distribution = {s: F(0) for s in STATES}
+    delivered, mission, endpoint = F(0), F(0), F(0)
+    for history in product(events(failures, repair), repeat=horizon):
+        current, weight, total, uninterrupted = initial, F(1), 0, True
+        for event, chance in history:
+            available = (current[1] + current[2]) if current[0] else 0
+            total += min(available, demand)
+            uninterrupted = uninterrupted and available >= demand
+            weight *= chance
+            current = event_step(current, event, priority)
+        distribution[current] += weight
+        delivered += weight * total
+        mission += weight * uninterrupted
+        endpoint += weight * bool(current[0] and current[1] + current[2] >= demand)
+    return {'distribution': distribution, 'delivered': delivered, 'mission': mission, 'endpoint': endpoint}
+
+
+kernel_cases = 0
+for failures in product((F(0), F(1, 2), F(1)), repeat=3):
+    for repair, priority, current in product((F(0), F(1, 2), F(1)), permutations(range(3)), STATES):
+        observed = kernel(current, failures, repair, priority)
+        expected = {s: F(0) for s in STATES}
+        for event, weight in events(failures, repair):
+            expected[event_step(current, event, priority)] += weight
+        check(observed == expected)
+        check(sum(observed.values()) == 1 and all(p >= 0 for p in observed.values()))
+        kernel_cases += 1
+
+history_cases = 0
+failures, repair = (F(1, 4), F(1, 2), F(1, 8)), F(1, 2)
+for initial, priority, demand, horizon in product(STATES, ((0, 1, 2), (1, 2, 0)), (1, 2), range(4)):
+    actual = evaluate(initial, failures, repair, priority, horizon, demand)
+    expected = histories(initial, failures, repair, priority, horizon, demand)
+    check({s: actual['distribution'].get(s, F(0)) for s in STATES} == expected['distribution'])
+    for field in ('delivered', 'mission', 'endpoint'):
+        check(actual[field] == expected[field])
+    check(0 <= actual['delivered'] <= horizon * demand)
+    history_cases += 1
+
+reduction_cases = 0
+for failure, restore, initial, horizon in product((F(0), F(1, 3), F(1)), (F(0), F(2, 3), F(1)), (0, 1), range(9)):
+    result = evaluate((1, initial, 0), (0, failure, 0), restore, (1, 0, 2), horizon, 2)
+    marginal = sum(p for s, p in result['distribution'].items() if s[1])
+    check(marginal == relaxation(initial, restore, failure, horizon))
+    reduction_cases += 1
+
+rows = ((0, 4, 2, 1), (4, 6, 0, 2), (6, 9, 1, 2), (9, 12, 2, 0))
+account = log_account(rows, 0, 12)
+check(account == {'window': 12, 'capable': F(5, 6), 'demand_time': F(4, 9), 'requested': 14, 'delivered': 7, 'fraction_delivered': F(1, 2)})
+window_cases = 0
+for start in range(12):
+    for end in range(start + 1, 13):
+        sample = [next((cap, demand) for a, b, cap, demand in rows if a <= t < b) for t in range(start, end)]
+        result = log_account(rows, start, end)
+        demanded = sum(d > 0 for c, d in sample)
+        requested = sum(d for c, d in sample)
+        check(result['capable'] == F(sum(c >= 1 for c, d in sample), len(sample)))
+        check(result['demand_time'] == (F(sum(d > 0 and c >= d for c, d in sample), demanded) if demanded else None))
+        check(result['delivered'] == sum(min(c, d) for c, d in sample))
+        check(result['fraction_delivered'] == (F(result['delivered'], requested) if requested else None))
+        window_cases += 1
+
+check(log_account(((F(-1, 2), F(5, 2), 1, 2),), F(1, 3), F(4, 3))['delivered'] == 1)
+source_values = {}
+with localcontext() as context:
+    context.prec = 60
+    alpha, exposure = Decimal('0.05'), Decimal(800)
+    mean_lower = -exposure / alpha.ln()
+    rate_upper = -alpha.ln() / exposure
+    check(abs((-rate_upper * exposure).exp() - alpha) < Decimal('1e-58'))
+    check(round(mean_lower) == 267)
+    check(isclose(exp(-float(rate_upper) * 800), 0.05, rel_tol=1e-14))
+    check(round((-Decimal(1)).exp(), 4) == Decimal('0.3679'))
+    check(round(Decimal(1) - (-Decimal(1)).exp(), 4) == Decimal('0.6321'))
+    check(round(Decimal('0.01') * (-Decimal(1)).exp(), 4) == Decimal('0.0037'))
+    source_values = {'zero_failure_mean_lower_hours': str(mean_lower), 'zero_failure_rate_upper_per_hour': str(rate_upper)}
+
+rejections = [
+    lambda: kernel((True, 1, 1), (0, 0, 0), 1, (0, 1, 2)),
+    lambda: kernel((1, 1), (0, 0, 0), 1, (0, 1, 2)),
+    lambda: kernel((1, 1, 1), (0, 0), 1, (0, 1, 2)),
+    lambda: kernel((1, 1, 1), (0, F(3, 2), 0), 1, (0, 1, 2)),
+    lambda: kernel((1, 1, 1), (0, 0, 0), -1, (0, 1, 2)),
+    lambda: kernel((1, 1, 1), (0, 0, 0), 1, (0, 1, 1)),
+    lambda: kernel((1, 1, 1), (0, 0, 0), 1, (False, 1, 2)),
+    lambda: evaluate((1, 1, 1), (0, 0, 0), 1, (0, 1, 2), -1),
+    lambda: evaluate((1, 1, 1), (0, 0, 0), 1, (0, 1, 2), 257),
+    lambda: evaluate((1, 1, 1), (0, 0, 0), 1, (0, 1, 2), 1, 0),
+    lambda: log_account(rows, 0, 13),
+    lambda: log_account(rows, 3, 3),
+    lambda: log_account((), 0, 1),
+    lambda: log_account(((0, 1, 1, 1), (2, 3, 1, 1)), 0, 3),
+    lambda: log_account(((0, 2, 1, 1), (1, 3, 1, 1)), 0, 3),
+    lambda: log_account(((0, 1, -1, 1),), 0, 1),
+    lambda: log_account(((0, 1, 1, 0.5),), 0, 1),
+]
+for reject in rejections:
+    try:
+        reject()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+fixtures = {}
+for priority in ((0, 1, 2), (1, 2, 0)):
+    result = evaluate((0, 0, 1), failures, repair, priority, 4, 1)
+    expected = histories((0, 0, 1), failures, repair, priority, 4, 1)
+    check(result == expected)
+    history_cases += 1
+    fixtures[str(priority)] = {k: str(v) for k, v in result.items() if k != 'distribution'}
+support, first, second = F(9, 10), F(4, 5), F(4, 5)
+snapshot = sum(weight for bits, weight in events((support, first, second), 0) if bits[0] and (bits[1] or bits[2]))
+check(snapshot == F(108, 125))
+independent_paths = 1 - (1 - support * first) * (1 - support * second)
+check(independent_paths - snapshot == first * second * support * (1 - support) == F(36, 625))
+check(F(100, 105) == F(20, 21) and F(100, 125) == F(4, 5))
+check(evaluate((1, 1, 1), (1, 1, 1), 1, (0, 1, 2), 3)['mission'] == 0)
+check(evaluate((1, 1, 1), (1, 1, 1), 1, (0, 1, 2), 3)['endpoint'] == 0)
+check(evaluate((1, 1, 1), (0, 1, 1), 1, (0, 1, 2), 3)['mission'] == 0)
+check(evaluate((1, 1, 1), (0, 1, 1), 1, (0, 1, 2), 3)['endpoint'] == 1)
+print(json.dumps({'checks': checks, 'kernel_cases': kernel_cases, 'history_cases': history_cases, 'two_state_reductions': reduction_cases, 'window_cases': window_cases, 'rejected_inputs': len(rejections), 'source_values': source_values, 'policy_fixtures': fixtures, 'python': platform.python_version()}, indent=2))
+```
+
+**Independent extension:** submit the assumptions, event/state definitions, equations, source reconstruction, complete changed-model result and a reproducible checker. Include a failed rival model and explain why its conclusions differ. Separate the work actually executed from further assigned reading and physical evidence still needed. Peer criticism should target the service meaning and observation assumptions as well as arithmetic.
+
+**Author verification:** Python 3.14.8 passed 8,924 assertions: 3,888 transition cases against primitive-event enumeration, 130 finite-horizon comparisons against complete event histories, 162 reductions to the unchanged two-state formula, 78 clipped integer windows plus a fractional window, source reconstruction, dependence/cycle examples and 17 rejected inputs. A case can contain several assertions; these are finite implementation checks, not learner completion or experimental evidence. For the four-slot comparison, support-first output is 12209/8192 and endpoint probability 547289/1048576; unit-first gives 2025/4096 and 5295/16384. Both mission probabilities are zero from the stated initially unavailable state.
+
+**Continue:** [Review continuing service with its observations resources and limits](Review-continuing-service-with-its-observations-resources-and-limits.lingua#r_0030B9D7AC42BBFEFA5EBE5F15).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00D184950B7394E9C0B38294BB

@@ -1,0 +1,37 @@
+Import "general-biology/General-biology.lingua"
+Import "cell-and-molecular-biology/Cell-and-molecular-biology.lingua"
+Import "developmental-and-regenerative-biology/Developmental-and-regenerative-biology.lingua"
+Import "genetics-and-genomics/Genetics-and-genomics.lingua"
+Import "microbiology-and-virology/Microbiology-and-virology.lingua"
+Import "immunology-and-hostpathogen-interactions/Immunology-and-hostpathogen-interactions.lingua"
+Import "evolution-biodiversity-and-systematics/Evolution-biodiversity-and-systematics.lingua"
+Import "ecology-and-conservation-biology/Ecology-and-conservation-biology.lingua"
+Import "botany-and-plant-science/Botany-and-plant-science.lingua"
+Import "zoology-and-animal-physiology/Zoology-and-animal-physiology.lingua"
+Import "human-anatomy-and-physiology/Human-anatomy-and-physiology.lingua"
+Import "neuroscience-and-cognitive-science/Neuroscience-and-cognitive-science.lingua"
+Import "biotechnology-and-bioprocess-science/Biotechnology-and-bioprocess-science.lingua"
+Import "bioinformatics-and-computational-biology/Bioinformatics-and-computational-biology.lingua"
+
+Life and evolution (@life-and-evolution: 0, is #chapter, #outline, #contains "general-biology/General-biology.lingua#r_3D807AMV509WERNJZ45QABKASV", #contains "cell-and-molecular-biology/Cell-and-molecular-biology.lingua#r_3CDBT06ZS2RAY4X8K9DBNB7JTS", #contains "developmental-and-regenerative-biology/Developmental-and-regenerative-biology.lingua#r_6GS132ZZM329DPZH0ZQSN84KPG", #contains "genetics-and-genomics/Genetics-and-genomics.lingua#r_5FHJTH4A2QRDPQHAH8KJQPKNWC", #contains "microbiology-and-virology/Microbiology-and-virology.lingua#r_4WZAZDGHQ51KHDK4RG81E6XEXV", #contains "immunology-and-hostpathogen-interactions/Immunology-and-hostpathogen-interactions.lingua#r_0R6YM4J47VRR2MSX43T1HT8EVZ", #contains "evolution-biodiversity-and-systematics/Evolution-biodiversity-and-systematics.lingua#r_75WTMQ60HG47XB0S0Y6EPJE7RM", #contains "ecology-and-conservation-biology/Ecology-and-conservation-biology.lingua#r_6S5VD9BZ6D6MBHHXY7DF8VX5G3", #contains "botany-and-plant-science/Botany-and-plant-science.lingua#r_6R1EW9T0XEFH1F3W7GR02P5VCF", #contains "zoology-and-animal-physiology/Zoology-and-animal-physiology.lingua#r_3V7DRSGZ0Z5K1R2FR5BZPC75VY", #contains "human-anatomy-and-physiology/Human-anatomy-and-physiology.lingua#r_268GXQW6R4AHP8HW3JX0M2FSNJ", #contains "neuroscience-and-cognitive-science/Neuroscience-and-cognitive-science.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ", #contains "biotechnology-and-bioprocess-science/Biotechnology-and-bioprocess-science.lingua#r_10K65MX01R9C26JZVWQFGPMY8B", #contains "bioinformatics-and-computational-biology/Bioinformatics-and-computational-biology.lingua#r_2Y3XSGGJZVH3NHFQ5A94BB26KC") { r_72CYF6F3ZBTDEZ07QGWVYVPBRB
+Understand an organism and its interactions; investigate cells, heredity, development, or evolution. There are observational, historical, molecular, and quantitative entrances. A first ecology route need not wait for complete molecular biology or computational biology.
+
+**Parent:** [Gaia — Earth, living systems, and their relationships](../Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21).
+
+**Branches:**
+
+- [General biology](general-biology/General-biology.lingua#r_3D807AMV509WERNJZ45QABKASV)
+- [Cell and molecular biology](cell-and-molecular-biology/Cell-and-molecular-biology.lingua#r_3CDBT06ZS2RAY4X8K9DBNB7JTS)
+- [Developmental and regenerative biology](developmental-and-regenerative-biology/Developmental-and-regenerative-biology.lingua#r_6GS132ZZM329DPZH0ZQSN84KPG)
+- [Genetics and genomics](genetics-and-genomics/Genetics-and-genomics.lingua#r_5FHJTH4A2QRDPQHAH8KJQPKNWC)
+- [Microbiology and virology](microbiology-and-virology/Microbiology-and-virology.lingua#r_4WZAZDGHQ51KHDK4RG81E6XEXV)
+- [Immunology and host–pathogen interactions](immunology-and-hostpathogen-interactions/Immunology-and-hostpathogen-interactions.lingua#r_0R6YM4J47VRR2MSX43T1HT8EVZ)
+- [Evolution, biodiversity, and systematics](evolution-biodiversity-and-systematics/Evolution-biodiversity-and-systematics.lingua#r_75WTMQ60HG47XB0S0Y6EPJE7RM)
+- [Ecology and conservation biology](ecology-and-conservation-biology/Ecology-and-conservation-biology.lingua#r_6S5VD9BZ6D6MBHHXY7DF8VX5G3)
+- [Botany and plant science](botany-and-plant-science/Botany-and-plant-science.lingua#r_6R1EW9T0XEFH1F3W7GR02P5VCF)
+- [Zoology and animal physiology](zoology-and-animal-physiology/Zoology-and-animal-physiology.lingua#r_3V7DRSGZ0Z5K1R2FR5BZPC75VY)
+- [Human anatomy and physiology](human-anatomy-and-physiology/Human-anatomy-and-physiology.lingua#r_268GXQW6R4AHP8HW3JX0M2FSNJ)
+- [Neuroscience and cognitive science](neuroscience-and-cognitive-science/Neuroscience-and-cognitive-science.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ)
+- [Biotechnology and bioprocess science](biotechnology-and-bioprocess-science/Biotechnology-and-bioprocess-science.lingua#r_10K65MX01R9C26JZVWQFGPMY8B)
+- [Bioinformatics and computational biology](bioinformatics-and-computational-biology/Bioinformatics-and-computational-biology.lingua#r_2Y3XSGGJZVH3NHFQ5A94BB26KC)
+} r_72CYF6F3ZBTDEZ07QGWVYVPBRB

@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Choose adjustment from the causal question rather than every available column (@inquiry-causal-adjustment: 0, is #chapter, #hephaestus-core "Bound-incomplete-outcomes-without-inventing-the-missing-evidence.lingua#r_0033E9B1A78704DD440C7DB719") { r_00B69ED82548105DFBA06268EC
+A measured column may describe a cause before treatment, an intermediate consequence, a common consequence used for selection, or an imperfect proxy. Those roles cannot be inferred from its name or from correlation alone. The causal question and temporal/mechanistic account determine what an adjustment would mean. This lesson supplies finite counterexamples, not a complete graphical identification algorithm.
+
+For a mediator example, assign A independently with probability 1/2. Let M be a binary intermediate result, with P(M=1|A=0)=1/4 and P(M=1|A=1)=3/4; let Y=M. Under intervention on A, the mean outcome changes from 1/4 to 3/4, so the total effect is 1/2. Within each value of M, Y is fixed. Standardizing both arms over a common distribution of M therefore gives zero. Both arms occur at each M, so this is not just an empty-cell problem. Conditioning on a consequence of A removes the route through which this model's total effect operates. A direct-effect question requires a separately specified joint intervention and assumptions; the zero adjusted contrast alone does not establish a general mediation conclusion.
+
+For a selection example, let A and a hidden background U be independent fair bits, and set Y=U. Changing A has no effect. Retain a record only when C=1, where C indicates A=U. Before selection, all four (A,Y) pairs have mass 1/4 and the observed contrast is zero. Among retained records, only (0,0) and (1,1) remain, each with conditional probability 1/2; the contrast becomes one. C is a common consequence of A and U. Conditioning on that common consequence creates an association, despite the original random assignment.
+
+These examples connect to [Connect restored configuration to a defensible service claim](../../engineering/core/Connect-restored-configuration-to-a-defensible-service-claim.lingua#r_00ACDDD0A8E0E505FCE7A8CADC): “records that passed a return check” may be a selected subset whose inclusion depends on the intervention and underlying condition. Random assignment at the beginning does not by itself justify a comparison after outcome-related exclusions. Similarly a measured intermediate throughput is not automatically a baseline confounder to control.
+
+**Read:** the selected source's chapter 6 provides graphical language and chapters 7–8 develop confounding and selection. Those larger readings remain assigned; the two finite constructions here are independently derived. **Work:** describe the temporal order and plausible causal roles of columns in one benign service comparison. Reproduce both examples without relying on a diagram rule. Explain how measuring a baseline predictor differs from conditioning on an intervention consequence. Identify a case where the available observations do not determine which role a variable has, and state what design or subject knowledge is needed.
+
+**Continue:** [Bound incomplete outcomes without inventing the missing evidence](Bound-incomplete-outcomes-without-inventing-the-missing-evidence.lingua#r_0033E9B1A78704DD440C7DB719).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00B69ED82548105DFBA06268EC

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Assign observable values to projectors and derive their outcome moments (@physics-quantum-observable: 0, is #chapter, #hephaestus-core "Keep-conditional-state-change-separate-from-discarded-and-coherent-alternatives.lingua#r_001C98D3B17DDB7F3851FF3463") { r_00261BCD187960564B553A7174
+An ideal finite projective measurement is specified by mutually orthogonal Hermitian projectors Pⱼ summing to I and real outcome values aⱼ with declared units. For a normalized pure state, pⱼ=⟨ψ|Pⱼ|ψ⟩=||Pⱼψ||². The observable A=ΣaⱼPⱼ records those labels and directions. Its mean is Σaⱼpⱼ=⟨ψ|A|ψ⟩ and variance is Σ(aⱼ−mean)²pⱼ=⟨A²⟩−⟨A⟩². Reuse [Describe a chance quantity by its weighted mean and spread](../../inquiry/core/Describe-a-chance-quantity-by-its-weighted-mean-and-spread.lingua#r_0A9487B256CD8C0ED0083290DA). A mean need not be a possible individual outcome.
+
+For spin one-half use the Pauli matrices, written by rows: X=((0,1),(1,0)), Y=((0,−i),(i,0)), Z=((1,0),(0,−1)). Each is Hermitian and squares to I; XY=iZ, YZ=iX, ZX=iY, with reversed products changing sign. Verify these identities by the shared exact matrix arithmetic. For a real unit spatial axis n=(nₓ,nᵧ,n_z), define σ_n=nₓX+nᵧY+n_zZ. Pairwise cross terms cancel in σ_n², leaving I. Its outcome projectors are Pₙ±=(I±σ_n)/2, the explicit family developed in [Resolve a finite Hermitian model with explicit eigenvectors and projectors](../../mathematics/core/Resolve-a-finite-Hermitian-model-with-explicit-eigenvectors-and-projectors.lingua#r_005654A44ED120041A95A87694).
+
+The spin-component observable is S_n=(ℏ/2)σ_n, with possible values ±ℏ/2. Here ℏ=h/(2π) has units of action, also angular momentum. The dimensionless Pauli outcome ±1 and the physical spin outcome ±ℏ/2 must not be confused. Treat n as a spatial analyzer setting; the two-dimensional complex state space is not ordinary three-dimensional position space. A physical identification between this mathematical family and the apparatus needs calibration and empirical justification.
+
+For a prepared z-plus state |0⟩, measurement of S_z is certain at +ℏ/2, while S_x has equal probabilities for ±ℏ/2. Thus ⟨S_x⟩=0 but no individual result is zero; Var(S_x)=ℏ²/4. For the common mathematical H=((3/5,4i/5),(−4i/5,−3/5)), the corresponding axis is n=(0,−4/5,3/5), because σ_n has upper off-diagonal nₓ−inᵧ. In |0⟩, its dimensionless outcomes have probabilities 4/5 and 1/5, mean 3/5 and variance 16/25.
+
+**Work:** derive those probabilities from projectors, not a memorized diagram. Compare dimensions of mean, variance and standard deviation. Prove σ_n²=I for every real unit n and identify why a nonunit n changes the eigenvalues. This finite construction does not require the full spectral theorem and does not represent every possible laboratory detector or generalized measurement.
+
+**Continue:** [Keep conditional state change separate from discarded and coherent alternatives](Keep-conditional-state-change-separate-from-discarded-and-coherent-alternatives.lingua#r_001C98D3B17DDB7F3851FF3463).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00261BCD187960564B553A7174

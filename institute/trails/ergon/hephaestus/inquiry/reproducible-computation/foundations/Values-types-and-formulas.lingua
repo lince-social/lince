@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Translate quantities into values, types, and expressions (@rc-values: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF") { r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V
+Translate quantities into values, types, and expressions (@rc-values: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF", #hephaestus-core "Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF") { r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V
 **Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapters 1–2 in full, including exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), the tutorial introduction and numerical types.
 
 A variable name connects a value with a role in a calculation. Choose names that reveal quantities and basis, such as wet_kg and water_fraction. Assignment stores a result under a name; it is not an algebraic equation to be solved. An expression is evaluated using the language's operator precedence and the types of its operands.
@@ -16,4 +16,7 @@ Use [Functions, tables, domains, and inverse questions](../../quantitative-liter
 **Continue:** [Functions, branching, repetition, and visible state](Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the computing core:** [Functions, branching, repetition, and visible state](Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF).
+
 } r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V

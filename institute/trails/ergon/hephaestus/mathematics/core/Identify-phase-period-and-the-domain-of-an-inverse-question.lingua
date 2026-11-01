@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Identify phase period and the domain of an inverse question (@math-periodic-inverses: 0, is #chapter, #hephaestus-core "Prove-the-small-angle-limits-before-differentiating.lingua#r_00444EC0A754FAF9C77D32125A") { r_00136A9ACFD17B64955E9DAD26
+Consider f(t)=A cos(ωt+φ)+d with A≠0 and ω≠0. Its range is [d−|A|,d+|A|]. A period is 2π/|ω|. It is the least positive period: if f(t+T)=f(t) for every t, the phase spans all real values; evaluating the resulting cosine identity at phase zero forces cos(ωT)=1, hence ωT is an integer multiple of 2π. A few repeated samples do not establish the universal identity used in this proof.
+
+If t carries time units, ω has inverse-time units and ωt+φ is a dimensionless radian argument. Frequency in cycles per time is |ω|/(2π). A phase increment is an angle; the corresponding time shift requires division by ω. Changing the sign of A can be absorbed by adding π to phase. Phase is defined modulo 2π, and a zero amplitude leaves phase and frequency unidentifiable. Specify parameter conventions before comparing two fits.
+
+Sine and cosine are not globally one-to-one. Restrict sine to [−π/2,π/2] to define arcsin:[−1,1]→[−π/2,π/2], and cosine to [0,π] to define arccos:[−1,1]→[0,π]. The circle's ordered first-half/quarter geometry supplies monotonicity there; the later derivative signs give another check. The inverse returns the chosen representative, not every solution. For example, arcsin(1/2)=π/6, but sin θ=1/2 also holds at 5π/6 and at integer full-turn shifts of either value. The notation sin⁻¹ used for arcsin is not the reciprocal 1/sin.
+
+A pair of coordinates determines a nonzero point's direction modulo 2π. The ratio y/x alone loses quadrant information and is undefined when x=0. For a cos θ+b sin θ with (a,b)≠(0,0), let R=√(a²+b²) and choose φ with cos φ=a/R and sin φ=b/R. The addition identity gives R cos(θ−φ). Knowing tan φ=b/a alone does not choose the correct representative. If a=b=0, phase is arbitrary.
+
+**Read and practice:** [Algebra and Trigonometry 2e — Abramson and contributors](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), sections 8.1 and 8.3. Compare arcsin(sin(5π/6)) with 5π/6, and explain which inverse identity is valid on which domain. Reconstruct a sinusoid from coefficients 3 and 4 without rounding its amplitude 5. State what extra observations are needed if frequency is also unknown. Do not confuse an inverse-function convention with evidence identifying a physical phase.
+
+**Continue:** [Prove the small angle limits before differentiating](Prove-the-small-angle-limits-before-differentiating.lingua#r_00444EC0A754FAF9C77D32125A).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00136A9ACFD17B64955E9DAD26

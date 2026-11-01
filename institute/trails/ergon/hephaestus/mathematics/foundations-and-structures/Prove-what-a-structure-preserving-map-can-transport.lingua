@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Prove what a structure-preserving map can transport (@math-structures-maps: 0, is #chapter, #math-structures "Require-representative-independence-before-forming-a-quotient-algebra.lingua#r_002ABCE94DD13932CD0785B891") { r_00677EDB73DD2464BBA1A56200
+A map between algebras should state what it preserves. For structures (A,*,e_A) and (B,∘,e_B), this block calls h a homomorphism when h(e_A)=e_B and h(a*b)=h(a)∘h(b) for all a,b. Preserving just a set of labels is insufficient. With groups, identity preservation follows from operation preservation: h(e)=h(e)h(e), and cancellation gives the target identity. For general operation-bearing structures it is a separate condition.
+
+For any term t in this signature, h(t^A(s))=t^B(h∘s). Prove this by structural induction. Variables commute with h by definition of the transformed assignment; the constant case uses identity preservation; the operation step uses both child hypotheses and operation preservation. Therefore an equation true at an assignment in A is true at the transported assignment in B. To conclude that a universally quantified equation holds everywhere in B, require h to be surjective so every finite collection of assigned inputs has preimages. Relations require their own preservation conditions; they do not follow from operation preservation.
+
+An isomorphism is a bijective homomorphism whose inverse also preserves the declared structure. For this operation/constant signature, bijectivity and the homomorphism equations imply that inverse condition: write target elements as h(a),h(b), apply the preservation equation, then apply h⁻¹. A quotient projection is generally not injective and hence not an isomorphism. A bijection of bare sets can also fail to preserve an operation.
+
+For n≥2, an additive homomorphism from Z_n to Z_m is determined by k=h([1]). Repeated addition forces h([a])=[ak]. Since [n]=[0], nk≡0 mod m is necessary. It is sufficient: changing representative a by tn changes ak by tnk, a multiple of m. Thus the integer formula descends to classes and preserves addition. The n=1 source has one element, which must map to zero; handle it separately rather than treating arbitrary k as the image of a distinct generator.
+
+**Work:** classify maps from Z_6 to Z_8 by solving 6k≡0 mod 8; explain why only k=0 and k=4 work. Compare a map into its image with the same formula into all Z_8. Give a bijection of Z_3 that fails to preserve zero. Read [Abstract Algebra Theory and Applications Judson 2011](../sources/Abstract-Algebra-Theory-and-Applications-Judson-2011.lingua#r_0066E963AE44EE421A173499DF), section 11.1, and compare its group convention with the explicitly broader signature here.
+
+**Continue:** [Require representative independence before forming a quotient algebra](Require-representative-independence-before-forming-a-quotient-algebra.lingua#r_002ABCE94DD13932CD0785B891).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00677EDB73DD2464BBA1A56200

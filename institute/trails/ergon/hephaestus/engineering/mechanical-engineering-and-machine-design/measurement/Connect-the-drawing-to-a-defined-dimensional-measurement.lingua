@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Connect the drawing to a defined dimensional measurement (@mech-dimensional-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "../../../inquiry/metrology/applications/Dimensions-geometry-and-surfaces.lingua#r_66KYHH97TER9KH7NJJASWS9K5K") { r_101DKG7DGDQ1Q0GMRBRHBFHC4Q
+Connect the drawing to a defined dimensional measurement (@mech-dimensional-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "../../../inquiry/metrology/applications/Dimensions-geometry-and-surfaces.lingua#r_66KYHH97TER9KH7NJJASWS9K5K", #hephaestus-core "../../core/Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua#r_0AE23276AAB728BEDBFC0AC47E") { r_101DKG7DGDQ1Q0GMRBRHBFHC4Q
 **Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), inspection, then the shared dimensional-metrology Record linked next, including its complete guide and uncertainty examples.
 
 Translate each critical drawing requirement into a measurand, reference, sampling scheme and decision. Name the surface or fitted feature, reference temperature, alignment, contact force and data-processing convention. A display value alone does not establish these.
@@ -11,5 +11,10 @@ Choose a technique whose uncertainty and spatial coverage suit the decision. A c
 
 **Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
 **Continue:** [Dimensions, form, surfaces, and nanometre-scale comparisons](../../../inquiry/metrology/applications/Dimensions-geometry-and-surfaces.lingua#r_66KYHH97TER9KH7NJJASWS9K5K).
+
+
+**Second engineering-block reading:** First identify the intended gap quantity, physical references, conditions, access and missing form information, then use the next common lesson’s explicitly stipulated error-bound model. NPL Guide 79 printed pages 70–74 support the inspection/uncertainty questions; the historical standard references do not establish a current normative decision rule. The original complete dimensional-metrology continuation and broader uncertainty work remain available with their preparation.
+
+**Continue in the second engineering block:** [Connect an assembly prediction to a bounded inspection decision](../../core/Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua#r_0AE23276AAB728BEDBFC0AC47E).
 
 } r_101DKG7DGDQ1Q0GMRBRHBFHC4Q

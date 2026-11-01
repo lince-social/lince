@@ -1,0 +1,214 @@
+Import "../Engineering.lingua"
+
+Investigate compatible members stored energy and ambiguous movement (@engineering-material-study: 0, is #chapter, #hephaestus-core "Review-material-response-compatibility-and-realization-evidence.lingua#r_00BDADE402F09A1363C7851E3C") { r_00B6630CABB33AE7E80B90B9EE
+This original hypothetical study joins force balance, material response, compatibility, energy, measurement and a bounded design screen. It uses ideal bilateral axial members and explicitly excludes lateral modes, joint failure, plasticity and time-dependent behavior. No built fixture, measured material, applied structural load or certified design is claimed.
+
+Specify two parallel members between an anchored attachment and a guided attachment constrained to common axial extension without rotation or slip. Both have L=0.5 m and A=10 mm²=10⁻⁵ m². Stipulate E₁=50 GPa and E₂=150 GPa: k₁=10⁶ and k₂=3×10⁶ N/m. The reference free strains are ε₀₁=0 and ε₀₂=80×10⁻⁶, so g₁=0 and g₂=40 μm. They remain fixed during the load ramp. These are teaching coefficients, not an identified alloy dataset.
+
+At applied P=400 N, K=4×10⁶ N/m and ḡ=30 μm. Thus δ=130 μm, N₁=130 N and N₂=270 N. Check the load sum and compatible extension separately. The nominal stresses are 13 and 27 MPa. Both total strains equal 260×10⁻⁶, but their mechanical strains are 260×10⁻⁶ and 180×10⁻⁶ because only the second has nonzero free strain. No strength limit follows from these stresses alone.
+
+At P=0, δ₀=30 μm and the member forces are +30 and −30 N. Their stored energy is U₀=3/5000 J=0.0006 J. At 400 N, U=103/5000 J=0.0206 J. The difference 0.0200 J equals ∫₀⁴⁰⁰ P/K dP. With support compliance C_s=1/(8×10⁶) m/N, the support adds 50 μm movement and 0.0100 J energy at 400 N. Total movement is X=180 μm; total stored energy is 0.0306 J, while external work from the zero-load state is 0.0300 J. Account explicitly for the energy already present at zero total load.
+
+Double both member stiffnesses while retaining their free extensions and replace support compliance with 1/(4×10⁶) m/N. The rival retains ḡ=30 μm and every X(P), but its specimen extension at 400 N is 80 μm. Verify the equality for arbitrary P algebraically and for the supplied finite load grid. A force–actuator curve cannot choose between the models. The local observation proposed in [Separate specimen deformation from the movement of its supports](Separate-specimen-deformation-from-the-movement-of-its-supports.lingua#r_00F1BF6CAE5185F3E5F6A39604) can.
+
+Use [Carry a response requirement through realization and inspection](Carry-a-response-requirement-through-realization-and-inspection.lingua#r_00B6F25CACF583F02249520A8B) to reproduce the four-parameter box bounds and the 20% stiffness alternative. Separate the nominal displacement screen, conditional hard-bound guarantee and absent physical realization evidence. The exact numerical investigation cannot supply the missing material or support measurements.
+
+**Run and inspect:** save `axial_study.py` and `axial_checks.py` together, then run `python3 axial_checks.py`. All inputs are integers or Fractions in the declared units; floats and Booleans are rejected to avoid hiding input rounding. The production calculation uses the weighted common-extension formula. The independent reference instead solves the coupled force/compatibility equations by exact elimination, with one unknown for each member force and one for common extension. Additional checks compare series relations, energy changes with integrated external work, the quadratic minimum, parameter scaling, observation rivals, endpoint bounds and rejected domains. These are original programs, not copies of source software.
+
+**Independent contribution:** choose a different number of compatible members or an independently justified series arrangement, derive its equations and state its validity conditions. Construct an observational rival, propose a distinguishing measurement and check a changed requirement. Include an input or physical condition that invalidates the first model. Report arithmetic, model evidence and actual observations separately, then defend the revision. General structural analysis and physical validation remain later academic/practical formation.
+
+```python file=axial_study.py
+from fractions import Fraction as F
+
+
+def exact(value):
+    if type(value) not in (int,F):
+        raise ValueError('exact integer or Fraction required')
+    return F(value)
+
+
+def member(modulus,area,length,free_strain=0):
+    modulus,area,length,free_strain=map(exact,(modulus,area,length,free_strain))
+    if min(modulus,area,length)<=0:
+        raise ValueError('positive modulus area and reference length required')
+    return (modulus*area/length,length*free_strain)
+
+
+def members(values):
+    result=tuple((exact(k),exact(g)) for k,g in values)
+    if not result or any(k<=0 for k,g in result):
+        raise ValueError('nonempty positive-stiffness assembly required')
+    return result
+
+
+def parallel(values,force,support_compliance=0):
+    values=members(values)
+    force,cs=map(exact,(force,support_compliance))
+    if cs<0:
+        raise ValueError('negative support compliance')
+    stiffness=sum(k for k,g in values)
+    free=sum(k*g for k,g in values)/stiffness
+    extension=free+force/stiffness
+    forces=tuple(k*(extension-g) for k,g in values)
+    energy=sum(n*n/(2*k) for n,(k,g) in zip(forces,values))
+    return dict(stiffness=stiffness,free=free,extension=extension,forces=forces,
+                energy=energy,movement=extension+cs*force,support_energy=cs*force*force/2)
+
+
+def series(values,force):
+    values=members(values);force=exact(force)
+    extensions=tuple(g+force/k for k,g in values)
+    return dict(extension=sum(extensions),extensions=extensions,
+                compliance=sum(1/k for k,g in values),energy=sum(force*force/(2*k) for k,g in values))
+
+
+def load_work(values,start,end,support_compliance=0):
+    values=members(values)
+    start,end,cs=map(exact,(start,end,support_compliance))
+    if cs<0:
+        raise ValueError('negative support compliance')
+    return (end*end-start*start)*(1/sum(k for k,g in values)+cs)/2
+
+
+def fixture(force=400):
+    return parallel([member(50_000_000_000,F(1,100000),F(1,2)),
+                     member(150_000_000_000,F(1,100000),F(1,2),F(1,12500))],force,F(1,8_000_000))
+```
+
+```python file=axial_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import axial_study as m
+
+checks=0
+
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejected(call):
+    global checks
+    try:
+        call()
+    except ValueError:
+        checks+=1
+    else:
+        raise AssertionError('expected rejection')
+
+
+def linear_reference(values,force):
+    count=len(values)
+    rows=[]
+    for i,(k,g) in enumerate(values):
+        row=[F(0)]*(count+2)
+        row[i]=1/k
+        row[count]=-1
+        row[-1]=-g
+        rows.append(row)
+    rows.append([F(1)]*count+[F(0),F(force)])
+    for col in range(count+1):
+        pivot=next(i for i in range(col,count+1) if rows[i][col])
+        rows[col],rows[pivot]=rows[pivot],rows[col]
+        divisor=rows[col][col]
+        rows[col]=[v/divisor for v in rows[col]]
+        for i in range(count+1):
+            if i!=col:
+                factor=rows[i][col]
+                rows[i]=[a-factor*b for a,b in zip(rows[i],rows[col])]
+    return tuple(row[-1] for row in rows)
+
+
+cases=0
+for k1,k2,g1,g2,p,cs in product([F(1),F(2),F(5)],[F(1),F(3),F(7)],
+                                [F(-1,10),F(0),F(1,20)],[F(-1,5),F(0),F(1,10)],
+                                [-3,-1,0,2,5],[F(0),F(1,7),F(2)]):
+    values=((k1,g1),(k2,g2))
+    out=m.parallel(values,p,cs)
+    ref=linear_reference(values,p)
+    check(out['forces']==ref[:2])
+    check(out['extension']==ref[2])
+    check(sum(out['forces'])==p)
+    check(all(n/k+g==out['extension'] for n,(k,g) in zip(out['forces'],values)))
+    check(out['energy']>=0 and out['support_energy']>=0)
+    check(out['movement']==out['extension']+p*cs)
+    for h in [F(-2,7),F(1,11)]:
+        delta=out['extension']
+        potential=sum(k*(delta+h-g)**2/2 for k,g in values)-p*(delta+h)
+        at_solution=out['energy']-p*delta
+        check(potential-at_solution==(k1+k2)*h*h/2)
+    next_state=m.parallel(values,p+1,cs)
+    check(next_state['energy']+next_state['support_energy']-out['energy']-out['support_energy']==m.load_work(values,p,p+1,cs))
+    check(m.load_work(values,p,p+1,cs)==-m.load_work(values,p+1,p,cs))
+    ser=m.series(values,p)
+    check(ser['extension']==g1+g2+p*(k1+k2)/(k1*k2))
+    check(all(k*(d-g)==p for d,(k,g) in zip(ser['extensions'],values)))
+    check(ser['energy']==sum(p*(d-g)/2 for d,(k,g) in zip(ser['extensions'],values)))
+    check(m.parallel(tuple(reversed(values)),p,cs)['extension']==out['extension'])
+    cases+=1
+multi_cases=0
+for ks in product([F(1),F(2),F(3)],repeat=3):
+    values=tuple(zip(ks,[F(0),F(1,10),F(-1,10)]))
+    for p in [-2,0,4]:
+        out=m.parallel(values,p)
+        ref=linear_reference(values,p)
+        check(out['forces']==ref[:3] and out['extension']==ref[3])
+        multi_cases+=1
+out=m.fixture()
+check(out['extension']==F(13,100000))
+check(out['forces']==(130,270))
+check(out['energy']==F(103,5000))
+check(out['support_energy']==F(1,100))
+check(out['movement']==F(9,50000))
+zero=m.fixture(0)
+check(zero['extension']==F(3,100000))
+check(zero['forces']==(30,-30))
+check(zero['energy']==F(3,5000))
+check(out['energy']-zero['energy']==F(1,50))
+rival=[(F(2_000_000),F(0)),(F(6_000_000),F(1,25000))]
+for p in range(-400,801,25):
+    a=m.fixture(p);b=m.parallel(rival,p,F(1,4_000_000))
+    check(a['movement']==b['movement'])
+    check(a['extension']==b['extension'] if p==0 else a['extension']!=b['extension'])
+corners=[];stronger=[]
+for p,k1,k2,g in product([380,420],[900000,1100000],[2700000,3300000],[F(3,100000),F(1,20000)]):
+    values=[(F(k1),F(0)),(F(k2),g)]
+    corners.append(m.parallel(values,p)['extension'])
+    stronger.append(m.parallel([(k*F(6,5),v) for k,v in values],p)['extension'])
+check(min(corners)==F(479,4_400_000))
+check(max(corners)==F(37,240000))
+check(out['extension']<=F(3,20000)<max(corners))
+check(max(stronger)==F(97,720000)<F(3,20000))
+interior_cases=0
+for p,k1,k2,g in product(range(380,421,10),range(900000,1100001,50000),range(2700000,3300001,150000),[F(i,1_000_000) for i in range(30,51,5)]):
+    value=m.parallel([(k1,0),(k2,g)],p)['extension']
+    check(min(corners)<=value<=max(corners))
+    interior_cases+=1
+for modulus,area,length in product([F(2),F(10)],[F(1,10),F(1,4)],[F(1,2),F(3)]):
+    k,g=m.member(modulus,area,length,F(1,1000))
+    force=F(1,50)
+    d=m.parallel([(k,g)],force)['extension']
+    check(force/area==modulus*(d/length-F(1,1000)))
+    check(m.member(modulus,area,2*length)[0]==k/2)
+for value in [True,0.1,'1',None]:
+    rejected(lambda value=value:m.exact(value))
+for args in [(0,1,1),(-1,1,1),(1,0,1),(1,1,0)]:
+    rejected(lambda args=args:m.member(*args))
+rejected(lambda:m.parallel([],1))
+rejected(lambda:m.parallel([(0,0)],1))
+rejected(lambda:m.parallel([(-1,0)],1))
+rejected(lambda:m.parallel([(1,0)],1,-1))
+rejected(lambda:m.load_work([(1,0)],0,1,-1))
+print(json.dumps(dict(checks=checks,two_member_cases=cases,three_member_cases=multi_cases,
+                      interval_corners=len(corners),interior_cases=interior_cases,rival_loads=49)))
+```
+
+**Author verification:** the independent companion passed 17,856 exact checks through Nix/Python 3.14.8, including 1,215 two-member cases, 81 three-member cases, 16 input-box corners, 625 interior cases and 49 rival loads. The coupled-equation reference independently checks the weighted-extension calculation. The general claims retain their stated derivations; no physical material or structure is validated.
+
+**Continue:** [Review material response compatibility and realization evidence](Review-material-response-compatibility-and-realization-evidence.lingua#r_00BDADE402F09A1363C7851E3C).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00B6630CABB33AE7E80B90B9EE

@@ -1,0 +1,15 @@
+Import "../Inquiry.lingua"
+
+Review causal conclusions with their design assumptions and remaining ambiguity (@inquiry-causal-review: 0, is #chapter) { r_0075B44A727D0D560E9EDE6798
+Explain why a complete observational distribution may leave an intervention effect unidentified. Give a precise unit, intervention, outcome, target and time, then separate consistency, exchangeability, positivity, measurement and sampling assumptions. Show which parts follow from a stipulated randomized design and which require evidence about implementation and observation.
+
+Derive standardization and inverse weighting from conditional expectation. Reconstruct the service reversal and explain its workload mixture. Distinguish that population identity from the finite known-probability estimator, derive its unbiasedness without assuming independent assignment, and explain where independence enters the variance calculation. Defend why estimated probabilities and empty sample cells need additional treatment.
+
+Construct the same-observed-law pair and show its different effects. Explain why more precision on the same law cannot distinguish them. Reproduce the post-treatment adjustment and common-consequence selection examples. Derive the incomplete-outcome bounds, state precisely which contrast they bound, and distinguish them from a confidence interval or a causal-effect bound. Criticize any sensitivity range whose numerical limits lack substantive support.
+
+Complete the bounded source reconstruction, changed-model investigation and revision in the preceding study. Keep source reading, mathematical reproduction, actual observations and learner performance separate. Propose one feasible benign study that could reduce a specific ambiguity and one causal question that would remain unanswered by it.
+
+This common block prepares experimental and observational investigation across the tree. It does not finish causal inference, mathematical statistics, domain research, scientific reasoning or the inquiry core. Longitudinal methods, richer graphical identification, estimation theory, complex measurement and actual sustained investigation belong to later branches. All six areas now have eighth common blocks; compare their preparation against the major branches before selecting more common work. Preserve the breadth-first order and all existing specialist scopes.
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0075B44A727D0D560E9EDE6798

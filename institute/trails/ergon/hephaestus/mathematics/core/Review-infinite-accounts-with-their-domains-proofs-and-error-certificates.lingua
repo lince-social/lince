@@ -1,0 +1,24 @@
+Import "../Mathematics.lingua"
+
+Review infinite accounts with their domains proofs and error certificates (@math-series-review: 0, is #chapter, #hephaestus-core "Extend-linear-maps-to-complex-vectors-with-a-declared-inner-product.lingua#r_0098CD5D43423980AB2E2A2134") { r_009AA62BE77912059AFA774480
+Define sequence convergence, subsequence, boundedness, monotonicity and the Cauchy property with explicit quantifiers. Prove uniqueness and explain why a finite prefix or vanishing successive differences does not prove convergence. State the completeness premise and derive the Archimedean, monotone-convergence and Cauchy arguments; distinguish real completeness from rational approximation.
+
+Define a series through partial sums, retaining the indexing convention. Derive geometric and telescoping sums with exact finite remainders. Prove term-to-zero necessity and harmonic divergence. Develop comparison, ratio and integral-tail bounds with their hypotheses, including ratio-one failures and parameter-dependent thresholds.
+
+Prove absolute convergence implies convergence and preserves sums under permutations. Derive the alternating bound and the two-orders harmonic example using finite identities and a justified integral limit. Explain why arbitrary subtraction of divergent parts is invalid even when formal cancellations look persuasive.
+
+Separate pointwise from uniform convergence, prove continuity of a uniform limit and the uniform integral inequality, and give the spike and derivative counterexamples. State and prove the sufficient derivative-limit theorem used for geometric moments. Explain what the common bounded parameter interval contributes and why a finite grid cannot establish it.
+
+Connect finite Taylor remainders with uniform representations on bounded intervals, reusing the earlier trigonometric and exponential definitions. Prove factorial domination, retain the derivative-order hypotheses and reconstruct the smooth nonanalytic example. A Taylor series can converge without representing the function that supplied its coefficients.
+
+Derive the counted-pair normalizer, moments and parameter boundary. Reconcile grouped weights with independent coordinates, without inferring empirical probabilities from multiplicities alone. Derive truncation tails, renormalization, conditional mean error and total variation. Explain why omitted probability alone does not bound an unbounded observable and defend a cutoff using the relevant tail certificate.
+
+Reproduce the bounded published example, the original investigation and an independent extension with a valid proof, separate implementation check and response to criticism. Distinguish assigned source reading, actually inspected passages and performed learner work. Exact arithmetic checks do not replace general proofs or establish physical validity.
+
+This eighth common mathematics block supplies a bridge from finite approximations to controlled infinite reasoning. It does not complete real/complex analysis, calculus, probability, numerical analysis or any whole core. Full vector calculus, broader differential equations, measure/functional/complex analysis and independent advanced practice remain. Continue physics at comparable breadth, emphasizing statistical descriptions with explicit mathematical and physical premises, before extending a specialist mathematical trail.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue through the common operator bridge:** [Extend linear maps to complex vectors with a declared inner product](Extend-linear-maps-to-complex-vectors-with-a-declared-inner-product.lingua#r_0098CD5D43423980AB2E2A2134). Extend the existing complex arithmetic, finite linear maps and justified series into complex geometry and coupled evolution before the next physical foundations.
+
+} r_009AA62BE77912059AFA774480

@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Count independent constraints and describe every lost direction (@math-nullity-basis: 0, is #chapter, #hephaestus-core "Construct an orthogonal basis without losing the column span.lingua#r_0057292CEFC8166FB3AE577CDF") { r_009D1DD1D9B0EBCA56B64A22F0
+Let a coefficient matrix reduce to R with r pivots by the reversible operations just developed. Equivalently R=EA, where E is the invertible product of the corresponding row-operation matrices. One can verify this by applying the same operations to Iₘ. Invertibility follows by reversing the operations; no determinant formula is needed. This representation is a proof device rather than an instruction to store E in every solver.
+
+The pivot columns of R are distinct standard vectors in their first r rows. They are independent and span all its columns, since its last m−r rows are zero. Every linear relation between columns is preserved by multiplication by E and E⁻¹. Hence the corresponding **original columns of A** form a basis of im A. Their number r is the rank. The pivot columns of R themselves describe transformed outputs, so substituting them as an original output-space basis would change the object being described.
+
+Row operations preserve the span of rows: each new row is a combination of old rows, and reversibility proves the reverse containment. The r nonzero rows of R are independent because their pivot coordinates isolate their coefficients in a putative zero combination. They form a basis of the row space. Thus row and column rank are equal. Their common dimension does not depend on the elimination path: an independent list in a space spanned by k vectors has at most k members. To see the latter finite fact, express the list in those k coordinates; elimination of its homogeneous coefficient system with more columns than rows leaves a free variable and a nontrivial relation. Applying this in both directions shows any two bases have equal size.
+
+For each of the n−r free columns, solve Rx=0 with that free coordinate 1 and all other free coordinates 0. These vectors lie in ker A. They are independent because their free-coordinate entries form an identity pattern. Every kernel vector is their combination with its free coordinates as coefficients, by the pivot equations. Therefore dim ker A=n−r, and rank plus nullity equals n. If Ax₀=b is consistent, every solution is x₀+z with z∈ker A: subtraction proves necessity and linearity proves sufficiency.
+
+Full column rank r=n means at most one x for each b; consistency is still required. Full row rank r=m means every b has at least one preimage, because the image is all Rᵐ. A square matrix is invertible exactly when r=n=m: each eⱼ has a unique preimage, these preimages form an inverse matrix, and checking its action on every x gives both inverse identities. A tall full-column-rank matrix is not a square invertible matrix. A wide full-row-rank matrix still has lost input directions if n>m.
+
+In the four-reading example r=2 and nullity=1. The image basis is (c₁,c₂), and the kernel basis is ((−1,−1,1)). A new row (0,0,1) removes that kernel because it observes the free direction. It does not make contradictory earlier exact rows consistent. More independent information and model consistency must be checked separately.
+
+**Work:** derive bases for image, row space and kernel for rows (1,2,3,4), (0,1,1,2), (1,3,4,6). The third row is the sum of the first two; rank is 2, free columns are 3 and 4, and kernel basis vectors are (−1,−1,1,0) and (0,−2,0,1). Verify them and explain why the kernel is a plane in R⁴. Prove the square inverse claim by acting on arbitrary coordinates. Connect rank to identifiable coefficients in a declared model, while leaving the model's empirical adequacy as a separate question.
+
+**Continue:** [Construct an orthogonal basis without losing the column span](Construct an orthogonal basis without losing the column span.lingua#r_0057292CEFC8166FB3AE577CDF).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_009D1DD1D9B0EBCA56B64A22F0

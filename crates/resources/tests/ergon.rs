@@ -8,6 +8,2769 @@ use std::{
 };
 
 #[test]
+fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations() {
+    let directory =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/ergon/hephaestus");
+    let temporary = tempfile::tempdir().unwrap();
+    let library = Library::new(temporary.path().join("library"));
+    let publication = Publication::load(
+        &library,
+        directory.join("Hephaestus.lingua").to_str().unwrap(),
+        &[],
+        false,
+    )
+    .unwrap();
+    let records: BTreeMap<_, _> = publication
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .map(|record| (record.slug.as_deref().unwrap(), record))
+        .collect();
+    let area_slugs = [
+        "mathematics-map",
+        "physics-map",
+        "chemistry-map",
+        "computing-map",
+        "engineering-map",
+        "inquiry-map",
+    ];
+    let core_slugs = [
+        "math-core",
+        "physics-core",
+        "chemistry-core",
+        "computing-core",
+        "engineering-core",
+        "inquiry-core",
+    ];
+    let root = records["hephaestus"].uid.clone();
+    let expected_map: BTreeSet<_> = area_slugs
+        .iter()
+        .map(|slug| (root.clone(), records[slug].uid.clone()))
+        .collect();
+    assert_eq!(learning_edges(&publication, "hephaestus"), expected_map);
+    let mut expected_core = expected_map.clone();
+    expected_core.extend(
+        area_slugs
+            .iter()
+            .zip(core_slugs)
+            .map(|(area, core)| (records[area].uid.clone(), records[core].uid.clone())),
+    );
+    let mathematics = [
+        "math-core",
+        "ql-quantity",
+        "ql-arithmetic",
+        "math-domains",
+        "ql-fractions",
+        "ql-ratios",
+        "math-proportional-models",
+        "ql-equations",
+        "math-equivalent-equations",
+        "ql-functions",
+        "math-function-structure",
+        "math-quantified-claims",
+        "math-first-proofs",
+        "math-foundation-study",
+        "math-foundation-review",
+    ];
+    expected_core.extend(
+        mathematics
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics = [
+        "physics-core",
+        "physics-system-question",
+        "ql-units",
+        "physics-location-clock",
+        "ql-graphs",
+        "physics-average-local",
+        "ql-geometry",
+        "physics-constant-acceleration",
+        "ql-trigonometry",
+        "ql-vectors",
+        "mech-force",
+        "physics-momentum-balance",
+        "physics-work-energy",
+        "physics-model-evidence",
+        "physics-foundation-study",
+        "physics-foundation-review",
+    ];
+    expected_core.extend(
+        physics
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry = [
+        "chemistry-core",
+        "gc-question",
+        "gc-matter",
+        "gc-models",
+        "gc-names",
+        "gc-atomic-evidence",
+        "gc-isotopes",
+        "chemistry-quantity-bridge",
+        "gc-amount",
+        "gc-precision",
+        "gc-equations",
+        "ql-balances",
+        "gc-extent",
+        "gc-limiting",
+        "chemistry-foundation-study",
+        "chemistry-foundation-review",
+    ];
+    expected_core.extend(
+        chemistry
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing = [
+        "computing-core",
+        "computing-representation",
+        "rc-files",
+        "rc-values",
+        "rc-functions",
+        "rc-io",
+        "rc-schema",
+        "computing-contract",
+        "computing-loop-argument",
+        "computing-cost",
+        "computing-execution",
+        "computing-foundation-study",
+        "computing-foundation-review",
+    ];
+    expected_core.extend(
+        computing
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_core = [
+        "engineering-core",
+        "mech-purpose",
+        "engineering-requirements",
+        "mech-parts",
+        "engineering-interfaces",
+        "engineering-model-choices",
+        "mech-model",
+        "engineering-alternatives",
+        "engineering-evidence",
+        "engineering-operation",
+        "engineering-foundation-study",
+        "engineering-foundation-review",
+    ];
+    expected_core.extend(
+        engineering_core
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_core = [
+        "inquiry-core",
+        "inquiry-claims",
+        "met-measurand",
+        "met-principle",
+        "inquiry-variation",
+        "inquiry-comparisons",
+        "met-sampling-target",
+        "rc-claim",
+        "inquiry-reproduction",
+        "met-measurement-records",
+        "inquiry-communication",
+        "inquiry-foundation-study",
+        "inquiry-foundation-review",
+    ];
+    expected_core.extend(
+        inquiry_core
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_space = [
+        "math-foundation-review",
+        "math-geometric-reasoning",
+        "math-coordinate-frames",
+        "math-linear-combinations",
+        "math-projections",
+        "math-linear-systems",
+        "math-linear-maps",
+        "math-linear-study",
+        "math-linear-review",
+    ];
+    expected_core.extend(
+        math_space
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_space = [
+        "physics-foundation-review",
+        "physics-planar-motion",
+        "mech-free-body",
+        "physics-planar-moment",
+        "mech-moments",
+        "physics-load-resultants",
+        "mech-equilibrium",
+        "mech-constraints",
+        "physics-constraint-evidence",
+        "physics-spatial-study",
+        "physics-spatial-review",
+    ];
+    expected_core.extend(
+        physics_space
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_structure = [
+        "chemistry-foundation-review",
+        "chemistry-light-bridge",
+        "gc-light",
+        "chemistry-state-models",
+        "gc-quantum",
+        "gc-periodicity",
+        "gc-lewis",
+        "gc-resonance",
+        "chemistry-charge-models",
+        "gc-shape",
+        "gc-interactions",
+        "chemistry-thermal-bridge",
+        "gc-energy",
+        "gc-calorimetry",
+        "gc-phases",
+        "chemistry-structure-study",
+        "chemistry-structure-review",
+    ];
+    expected_core.extend(
+        chemistry_structure
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_collections = [
+        "computing-foundation-review",
+        "computing-collections",
+        "computing-aliasing",
+        "computing-order-contract",
+        "computing-linear-search",
+        "computing-binary-search",
+        "computing-index-cost",
+        "computing-collection-study",
+        "computing-collection-review",
+    ];
+    expected_core.extend(
+        computing_collections
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_geometry = [
+        "engineering-foundation-review",
+        "engineering-geometric-representations",
+        "ql-drawings",
+        "engineering-dimension-constraints",
+        "ql-tolerances",
+        "engineering-interval-models",
+        "mech-tolerance-stacks",
+        "engineering-coupled-variation",
+        "mech-dimensional-entry",
+        "engineering-decision-evidence",
+        "engineering-geometric-study",
+        "engineering-geometric-review",
+    ];
+    expected_core.extend(
+        engineering_geometry
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_design = [
+        "inquiry-foundation-review",
+        "inquiry-design-units",
+        "met-calibration-design",
+        "inquiry-finite-probability",
+        "inquiry-conditional-dependence",
+        "inquiry-expectation-variation",
+        "inquiry-randomized-comparisons",
+        "inquiry-evidence-limits",
+        "inquiry-design-study",
+        "inquiry-design-review",
+    ];
+    expected_core.extend(
+        inquiry_design
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_change = [
+        "math-linear-review",
+        "math-limit-neighborhoods",
+        "math-continuity-models",
+        "math-derivative-definition",
+        "ql-small-changes",
+        "math-derivative-rules",
+        "math-local-error",
+        "math-partition-sums",
+        "math-integral-definition",
+        "math-fundamental-theorem",
+        "math-change-study",
+        "math-change-review",
+    ];
+    expected_core.extend(
+        math_change
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_thermal = [
+        "physics-spatial-review",
+        "physics-matter-state",
+        "th-scales",
+        "physics-temperature-evidence",
+        "th-state",
+        "gc-gases",
+        "physics-molecular-pressure",
+        "th-eos",
+        "physics-energy-paths",
+        "th-closed",
+        "physics-boundary-work",
+        "th-boundary-work",
+        "physics-thermal-study",
+        "physics-thermal-review",
+    ];
+    expected_core.extend(
+        physics_thermal
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_dynamics = [
+        "chemistry-structure-review",
+        "chemistry-rate-balance",
+        "gc-rate-laws",
+        "chemistry-logarithm-bridge",
+        "chemistry-exponential-bridge",
+        "chemistry-initial-value",
+        "gc-integrated",
+        "chemistry-reversible-model",
+        "gc-qk",
+        "gc-perturb-equilibrium",
+        "gc-catalysis",
+        "chemistry-kinetic-evidence",
+        "chemistry-observation-model",
+        "gc-spectra",
+        "gc-method",
+        "chemistry-dynamics-study",
+        "chemistry-dynamics-review",
+    ];
+    expected_core.extend(
+        chemistry_dynamics
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_machine = [
+        "computing-collection-review",
+        "computing-word-encoding",
+        "computing-word-arithmetic",
+        "computing-boolean-logic",
+        "computing-state-storage",
+        "computing-rounded-numbers",
+        "rc-floating",
+        "computing-instruction-machine",
+        "computing-machine-invariant",
+        "computing-machine-study",
+        "computing-machine-review",
+    ];
+    expected_core.extend(
+        computing_machine
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_network = [
+        "engineering-geometric-review",
+        "engineering-port-balance",
+        "fd-continuity",
+        "engineering-component-laws",
+        "th-fourier",
+        "engineering-network-orientation",
+        "engineering-anchored-network",
+        "engineering-storage-response",
+        "th-lumped",
+        "engineering-design-evidence",
+        "engineering-network-study",
+        "engineering-network-review",
+    ];
+    expected_core.extend(
+        engineering_network
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_uncertainty = [
+        "inquiry-design-review",
+        "inquiry-uncertainty-meaning",
+        "met-budget",
+        "inquiry-joint-covariance",
+        "inquiry-affine-uncertainty",
+        "inquiry-local-sensitivity",
+        "met-sensitivity",
+        "inquiry-nonlinear-propagation",
+        "inquiry-model-checks",
+        "met-model-discrepancy",
+        "inquiry-uncertainty-reporting",
+        "inquiry-uncertainty-study",
+        "inquiry-uncertainty-review",
+    ];
+    expected_core.extend(
+        inquiry_uncertainty
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let mathematics_periodic = [
+        "math-change-review",
+        "math-circle-functions",
+        "math-rotation-identities",
+        "math-periodic-inverses",
+        "math-trig-limits",
+        "math-trig-calculus",
+        "math-complex-arithmetic",
+        "math-complex-rotations",
+        "math-second-order",
+        "math-trig-approximation",
+        "math-periodic-study",
+        "math-periodic-review",
+    ];
+    expected_core.extend(
+        mathematics_periodic
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_waves = [
+        "physics-thermal-review",
+        "physics-restoring",
+        "physics-oscillator-loss",
+        "physics-wave-field",
+        "physics-traveling-profile",
+        "physics-string-balance",
+        "physics-wave-boundaries",
+        "physics-wave-energy",
+        "physics-wave-study",
+        "physics-wave-review",
+    ];
+    expected_core.extend(
+        physics_waves
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_solutions = [
+        "chemistry-dynamics-review",
+        "chemistry-solution-meaning",
+        "gc-solution-interactions",
+        "chemistry-solution-amounts",
+        "gc-preparation",
+        "gc-ionic",
+        "chemistry-solution-charge",
+        "gc-acidbase",
+        "chemistry-water-activities",
+        "gc-ph",
+        "chemistry-acid-balance",
+        "gc-weak",
+        "chemistry-solution-approximation",
+        "chemistry-solution-study",
+        "chemistry-solution-review",
+    ];
+    expected_core.extend(
+        chemistry_solutions
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_memory = [
+        "computing-machine-review",
+        "computing-memory-objects",
+        "computing-activation-state",
+        "computing-process-state",
+        "computing-page-translation",
+        "computing-memory-ranges",
+        "computing-controlled-service",
+        "computing-scheduling-boundary",
+        "computing-memory-cost",
+        "computing-memory-study",
+        "computing-memory-review",
+    ];
+    expected_core.extend(
+        computing_memory
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_material = [
+        "engineering-network-review",
+        "engineering-material-meaning",
+        "mech-tensile-measures",
+        "engineering-axial-law",
+        "mech-load-response",
+        "engineering-compatible-response",
+        "mech-axial-members",
+        "engineering-stored-work",
+        "engineering-observation-compliance",
+        "engineering-realization-evidence",
+        "engineering-material-study",
+        "engineering-material-review",
+    ];
+    expected_core.extend(
+        engineering_material
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_density = [
+        "inquiry-uncertainty-review",
+        "inquiry-density-meaning",
+        "inquiry-cumulative-quantiles",
+        "inquiry-continuous-moments",
+        "inquiry-joint-density",
+        "inquiry-estimation-model",
+        "inquiry-interval-coverage",
+        "inquiry-support-and-rivals",
+        "inquiry-density-study",
+        "inquiry-density-review",
+    ];
+    expected_core.extend(
+        inquiry_density
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_finite = [
+        "math-periodic-review",
+        "math-finite-vectors",
+        "math-linear-transpose",
+        "math-row-equivalence",
+        "math-nullity-basis",
+        "math-gram-orthogonal",
+        "math-least-squares",
+        "math-rank-deficient-projection",
+        "math-metric-conditioning",
+        "math-linear-system-study",
+        "math-linear-system-review",
+    ];
+    expected_core.extend(
+        math_finite
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_electric = [
+        "physics-wave-review",
+        "physics-charge-account",
+        "em-language",
+        "physics-finite-field",
+        "em-coulomb",
+        "physics-potential-work",
+        "em-potential",
+        "physics-charge-flow",
+        "em-continuity",
+        "physics-capacitive-work",
+        "physics-circuit-meaning",
+        "em-dc-network",
+        "physics-charge-sharing",
+        "physics-electric-observation",
+        "physics-electric-study",
+        "physics-electric-review",
+    ];
+    expected_core.extend(
+        physics_electric
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_electron = [
+        "chemistry-solution-review",
+        "chemistry-redox-language",
+        "gc-redox-balance",
+        "chemistry-half-reactions",
+        "chemistry-electron-amount",
+        "chemistry-cell-boundaries",
+        "gc-cells",
+        "chemistry-product-evidence",
+        "gc-electrolysis",
+        "chemistry-electrical-work",
+        "chemistry-electron-study",
+        "chemistry-electron-review",
+    ];
+    expected_core.extend(
+        chemistry_electron
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_durable = [
+        "computing-memory-review",
+        "computing-durability",
+        "computing-file-meaning",
+        "computing-storage-contract",
+        "computing-crash-states",
+        "computing-copy-publish",
+        "computing-recovery-retry",
+        "rc-atomic",
+        "computing-storage-cost",
+        "computing-durable-study",
+        "computing-durable-review",
+    ];
+    expected_core.extend(
+        computing_durable
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_electric = [
+        "engineering-material-review",
+        "engineering-electrical-function",
+        "engineering-node-model",
+        "pe-circuits",
+        "engineering-port-equivalent",
+        "engineering-electrical-limits",
+        "pe-operating-state",
+        "engineering-electrical-bounds",
+        "engineering-electrical-observation",
+        "engineering-electric-study",
+        "engineering-electric-review",
+    ];
+    expected_core.extend(
+        engineering_electric
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_fitting = [
+        "inquiry-density-review",
+        "inquiry-fit-model",
+        "met-regression",
+        "inquiry-linear-estimator",
+        "inquiry-fit-residuals",
+        "inquiry-fit-prediction",
+        "met-regression-inverse",
+        "inquiry-fit-rivals",
+        "inquiry-fit-replication",
+        "inquiry-fitting-study",
+        "inquiry-fitting-review",
+    ];
+    expected_core.extend(
+        inquiry_fitting
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_multivariable = [
+        "math-linear-system-review",
+        "math-multivariable-domains",
+        "math-multivariable-limits",
+        "math-partial-derivatives",
+        "math-total-differentiability",
+        "math-jacobian-chain",
+        "math-gradient-metric",
+        "math-exact-differential",
+        "math-constrained-extrema",
+        "math-multivariable-study",
+        "math-multivariable-review",
+    ];
+    expected_core.extend(
+        math_multivariable
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_entropy = [
+        "physics-electric-review",
+        "physics-process-direction",
+        "th-reversibility",
+        "physics-entropy-state",
+        "th-entropy-balance",
+        "physics-reference-paths",
+        "th-entropy-properties",
+        "physics-cycle-bound",
+        "th-cycles",
+        "th-carnot",
+        "physics-irreversible-paths",
+        "physics-finite-bodies",
+        "physics-entropy-evidence",
+        "physics-entropy-study",
+        "physics-entropy-review",
+    ];
+    expected_core.extend(
+        physics_entropy
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_free_energy = [
+        "chemistry-electron-review",
+        "chemistry-thermo-constraints",
+        "th-potentials",
+        "chemistry-mixture-potential",
+        "chemistry-ideal-mixture",
+        "chemistry-reaction-derivative",
+        "gc-gibbs",
+        "chemistry-equilibrium-minimum",
+        "gc-chemical-potential",
+        "chemistry-reversible-cell",
+        "chemistry-thermo-evidence",
+        "chemistry-free-energy-study",
+        "chemistry-free-energy-review",
+    ];
+    expected_core.extend(
+        chemistry_free_energy
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_concurrency = [
+        "computing-durable-review",
+        "computing-concurrent-state",
+        "computing-interleavings",
+        "computing-lock-invariant",
+        "computing-serial-histories",
+        "computing-progress-assumptions",
+        "computing-predicate-wait",
+        "rc-scaling",
+        "computing-concurrency-evidence",
+        "computing-concurrency-study",
+        "computing-concurrency-review",
+    ];
+    expected_core.extend(
+        computing_concurrency
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_feedback = [
+        "engineering-electric-review",
+        "engineering-feedback-boundary",
+        "engineering-feedback-response",
+        "engineering-feedback-observation",
+        "engineering-feedback-limits",
+        "pe-feedback-control",
+        "engineering-feedback-sampling",
+        "wu-water-control",
+        "engineering-feedback-requirements",
+        "engineering-feedback-evidence",
+        "engineering-feedback-study",
+        "engineering-feedback-review",
+    ];
+    expected_core.extend(
+        engineering_feedback
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_reporting = [
+        "inquiry-fitting-review",
+        "inquiry-report-question",
+        "inquiry-report-chain",
+        "inquiry-report-comparison",
+        "inquiry-report-presentation",
+        "rc-reporting",
+        "inquiry-report-criticism",
+        "inquiry-report-revision",
+        "rc-archive",
+        "inquiry-reporting-study",
+        "rc-review",
+        "inquiry-reporting-review",
+    ];
+    expected_core.extend(
+        inquiry_reporting
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_discrete = [
+        "math-multivariable-review",
+        "math-discrete-objects",
+        "math-discrete-fibers",
+        "math-discrete-counting",
+        "math-discrete-induction",
+        "math-discrete-relations",
+        "math-discrete-graphs",
+        "math-discrete-reachability",
+        "math-discrete-histories",
+        "math-discrete-quotients",
+        "math-discrete-study",
+        "math-discrete-review",
+    ];
+    expected_core.extend(
+        math_discrete
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_rotation = [
+        "physics-entropy-review",
+        "physics-rotation-motion",
+        "physics-angular-balance",
+        "physics-rotation-inertia",
+        "mech-mass-inertia",
+        "physics-rotation-work",
+        "mech-angular-momentum",
+        "physics-rotation-rolling",
+        "physics-rotation-exchange",
+        "physics-rotation-observation",
+        "physics-rotation-study",
+        "physics-rotation-review",
+    ];
+    expected_core.extend(
+        physics_rotation
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_identity = [
+        "chemistry-free-energy-review",
+        "chemistry-identity-levels",
+        "chemistry-connectivity",
+        "chemistry-skeleton-counts",
+        "chemistry-conformations",
+        "chemistry-spatial-identity",
+        "chemistry-configuration",
+        "chemistry-structure-evidence",
+        "chemistry-identity-study",
+        "chemistry-identity-review",
+    ];
+    expected_core.extend(
+        chemistry_identity
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_communication = [
+        "computing-concurrency-review",
+        "computing-channel-boundaries",
+        "computing-message-framing",
+        "computing-channel-failures",
+        "computing-request-protocol",
+        "computing-protocol-invariant",
+        "computing-message-lifetimes",
+        "computing-communication-progress",
+        "computing-communication-study",
+        "computing-communication-review",
+    ];
+    expected_core.extend(
+        computing_communication
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_production = [
+        "engineering-feedback-review",
+        "engineering-production-boundary",
+        "engineering-production-visits",
+        "engineering-production-timing",
+        "engineering-production-scheduling",
+        "engineering-production-rework",
+        "engineering-production-inventory-time",
+        "engineering-production-decision",
+        "engineering-production-study",
+        "engineering-production-review",
+    ];
+    expected_core.extend(
+        engineering_production
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_learning = [
+        "inquiry-reporting-review",
+        "inquiry-learning-capability",
+        "inquiry-learning-prerequisites",
+        "inquiry-learning-practice",
+        "inquiry-learning-assessment",
+        "inquiry-learning-scoring",
+        "inquiry-learning-comparison",
+        "inquiry-learning-study",
+        "inquiry-learning-handover",
+        "inquiry-learning-review",
+    ];
+    expected_core.extend(
+        inquiry_learning
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_series = [
+        "math-discrete-review",
+        "math-sequence-limits",
+        "math-sequence-completeness",
+        "math-series-sums",
+        "math-series-tails",
+        "math-series-order",
+        "math-series-uniform",
+        "math-series-operations",
+        "math-series-taylor",
+        "math-series-weights",
+        "math-series-truncation",
+        "math-series-study",
+        "math-series-review",
+    ];
+    expected_core.extend(
+        math_series
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_statistical = [
+        "physics-rotation-review",
+        "physics-statistical-states",
+        "physics-statistical-constraints",
+        "physics-statistical-entropy",
+        "physics-statistical-reservoir",
+        "physics-statistical-canonical",
+        "physics-statistical-fluctuations",
+        "physics-statistical-countable",
+        "physics-statistical-dynamics",
+        "physics-statistical-study",
+        "physics-statistical-review",
+    ];
+    expected_core.extend(
+        physics_statistical
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let chemistry_phase = [
+        "chemistry-identity-review",
+        "chemistry-phase-description",
+        "chemistry-phase-coexistence",
+        "chemistry-phase-correlation",
+        "chemistry-phase-amounts",
+        "mat-common-tangent",
+        "chemistry-phase-tangent",
+        "mat-regular-solution",
+        "chemistry-phase-stability",
+        "mat-regular-example",
+        "chemistry-phase-certificates",
+        "chemistry-phase-evidence",
+        "chemistry-phase-study",
+        "chemistry-phase-review",
+    ];
+    expected_core.extend(
+        chemistry_phase
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_abstraction = [
+        "computing-communication-review",
+        "computing-abstraction-bindings",
+        "computing-abstraction-contracts",
+        "computing-abstraction-values",
+        "computing-abstraction-representations",
+        "computing-abstraction-refinement",
+        "computing-abstraction-exposure",
+        "rc-modules",
+        "computing-abstraction-composition",
+        "computing-abstraction-change",
+        "computing-abstraction-study",
+        "computing-abstraction-review",
+    ];
+    expected_core.extend(
+        computing_abstraction
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_service = [
+        "engineering-production-review",
+        "engineering-service-history",
+        "engineering-service-mission",
+        "engineering-service-exposure",
+        "engineering-service-dependencies",
+        "mech-maintenance",
+        "engineering-service-cycles",
+        "engineering-service-resources",
+        "mech-condition-evidence",
+        "mech-failure-investigation",
+        "mech-restoration",
+        "engineering-service-evidence",
+        "engineering-service-study",
+        "engineering-service-review",
+    ];
+    expected_core.extend(
+        engineering_service
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let inquiry_causal = [
+        "inquiry-learning-review",
+        "inquiry-causal-question",
+        "inquiry-causal-identification",
+        "inquiry-causal-standardization",
+        "inquiry-causal-weighting",
+        "inquiry-causal-ambiguity",
+        "inquiry-causal-adjustment",
+        "inquiry-causal-missing",
+        "inquiry-causal-study",
+        "inquiry-causal-review",
+    ];
+    expected_core.extend(
+        inquiry_causal
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_operators = [
+        "math-series-review",
+        "math-operator-vectors",
+        "math-operator-projection",
+        "math-operator-adjoint",
+        "math-operator-eigen",
+        "math-operator-basis",
+        "math-operator-scalar-exponential",
+        "math-operator-matrix-exponential",
+        "math-operator-evolution",
+        "math-operator-order",
+        "math-operator-study",
+        "math-operator-review",
+    ];
+    expected_core.extend(
+        math_operators
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let physics_quantum = [
+        "physics-statistical-review",
+        "physics-quantum-evidence",
+        "physics-quantum-state",
+        "physics-quantum-observable",
+        "physics-quantum-measurement",
+        "physics-quantum-mixtures",
+        "physics-quantum-uncertainty",
+        "physics-quantum-dynamics",
+        "physics-quantum-wavefunction",
+        "physics-quantum-composite",
+        "physics-quantum-observations",
+        "physics-quantum-study",
+        "physics-quantum-review",
+    ];
+    expected_core.extend(
+        physics_quantum
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let computing_trust = [
+        "computing-abstraction-review",
+        "computing-trust-task",
+        "computing-trust-state",
+        "computing-trust-accessible",
+        "computing-trust-authority",
+        "computing-trust-provenance",
+        "computing-trust-privacy",
+        "computing-trust-evaluation",
+        "computing-trust-study",
+        "computing-trust-review",
+    ];
+    expected_core.extend(
+        computing_trust
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let engineering_operation = [
+        "engineering-service-review",
+        "engineering-operation-task",
+        "engineering-operation-state",
+        "engineering-operation-observation",
+        "engineering-operation-error",
+        "engineering-operation-recovery",
+        "engineering-operation-handover",
+        "engineering-operation-branches",
+        "engineering-operation-study",
+        "engineering-operation-review",
+    ];
+    expected_core.extend(
+        engineering_operation
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let math_fields = [
+        "math-operator-review",
+        "math-fields-regions",
+        "math-fields-paths",
+        "math-fields-orientation",
+        "math-fields-coordinates",
+        "math-fields-flux",
+        "math-fields-local",
+        "math-fields-green",
+        "math-fields-gauss",
+        "math-fields-stokes",
+        "math-fields-balance",
+        "math-fields-study",
+        "math-fields-review",
+    ];
+    expected_core.extend(
+        math_fields
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let magnetic_fields = [
+        "physics-quantum-review",
+        "physics-magnetic-question",
+        "em-magnetic-force",
+        "physics-magnetic-orbit",
+        "physics-magnetic-steady",
+        "em-ampere",
+        "physics-magnetic-flux",
+        "em-induction",
+        "physics-magnetic-moving",
+        "physics-magnetic-storage",
+        "physics-magnetic-maxwell",
+        "physics-magnetic-energy",
+        "physics-magnetic-waves",
+        "physics-magnetic-study",
+        "physics-magnetic-review",
+    ];
+    expected_core.extend(
+        magnetic_fields
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let spacetime_foundations = [
+        "physics-magnetic-review",
+        "physics-spacetime-events",
+        "physics-spacetime-boost",
+        "physics-spacetime-clocks",
+        "physics-spacetime-causality",
+        "physics-spacetime-energy",
+        "em-relativity",
+        "physics-spacetime-gravity",
+        "physics-spacetime-orbits",
+        "physics-spacetime-equivalence",
+        "physics-spacetime-weakclocks",
+        "physics-spacetime-evidence",
+        "physics-spacetime-study",
+        "physics-spacetime-review",
+    ];
+    expected_core.extend(
+        spacetime_foundations
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    let astronomy_foundations = [
+        "physics-spacetime-review",
+        "physics-astronomy-directions",
+        "physics-astronomy-parallax",
+        "physics-astronomy-detectors",
+        "physics-astronomy-brightness",
+        "physics-astronomy-spectra",
+        "physics-astronomy-planets",
+        "physics-astronomy-stars",
+        "physics-astronomy-populations",
+        "physics-astronomy-galaxies",
+        "physics-astronomy-cosmos",
+        "physics-astronomy-evidence",
+        "physics-astronomy-study",
+        "physics-astronomy-review",
+    ];
+    expected_core.extend(
+        astronomy_foundations
+            .windows(2)
+            .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone())),
+    );
+    assert_eq!(
+        learning_edges(&publication, "hephaestus-core"),
+        expected_core
+    );
+    let selected: BTreeSet<_> = expected_core
+        .iter()
+        .flat_map(|(from, to)| [from.clone(), to.clone()])
+        .collect();
+    assert_eq!(selected.len(), 644);
+    let mut reached = BTreeSet::new();
+    let mut pending = vec![root];
+    while let Some(uid) = pending.pop() {
+        if reached.insert(uid.clone()) {
+            pending.extend(
+                expected_core
+                    .iter()
+                    .filter(|(from, _)| *from == uid)
+                    .map(|(_, to)| to.clone()),
+            );
+        }
+    }
+    assert_eq!(reached, selected);
+    for excluded in [
+        "engineering-source-human-factors",
+
+        "computing-source-interaction",
+        "computing-source-accessibility",
+        "computing-source-protection",
+        "computing-source-privacy",
+
+        "physics-source-quantum",
+        "math-source-operators",
+        "inquiry-source-causal",
+        "computing-source-abstraction",
+        "rc-rse",
+        "mat-mit-fundamentals",
+        "gc-webbook",
+        "th-devoe",
+        "mat-tong-statistical",
+        "math-source-analysis",
+        "inquiry-source-learning",
+        "inquiry-source-assessment",
+        "inquiry-source-retrieval",
+
+        "engineering-source-production",
+        "engineering-source-little",
+        "computing-source-tcp",
+        "computing-source-rpc",
+        "chemistry-source-organic",
+        "math-source-discrete",
+        "engineering-source-process-control",
+        "engineering-source-digital-control",
+        "water-and-sanitation",
+        "computing-source-structures",
+        "gc-harvey",
+        "em-openstax",
+        "th-yan",
+        "thermodynamics-and-heat-transfer",
+        "electromagnetism",
+        "ic-calculus",
+        "industrial-chemistry",
+        "inquiry-source-probability",
+        "mech-npl-drawings",
+        "ql-source-blueprint",
+        "mech-desenho-pt",
+        "computing-source-algorithms",
+        "pe-linear-algebra",
+        "electrical-power-engineering",
+        "math-source-proof",
+        "ql-source-algebra",
+        "ql-source-prealgebra",
+        "quantitative-literacy",
+        "ql-sources",
+        "fd-openstax",
+        "fluid-dynamics",
+        "rc-python",
+        "rc-sundnes",
+        "reproducible-computation",
+        "gc-openstax",
+        "general-chemistry",
+        "met-bell",
+        "met-handbook",
+        "ql-source-vim",
+        "rc-practices",
+        "rc-peng",
+        "metrology",
+        "mech-nasa-systems",
+        "mech-slocum",
+        "mech-statics-book",
+        "mechanical-engineering",
+    ] {
+        assert!(!selected.contains(&records[excluded].uid));
+    }
+    let engineering = learning_edges(&publication, "engineering");
+    for nested in [
+        "resources-materials-map",
+        "utilities",
+        "production-quality-map",
+    ] {
+        assert!(engineering.contains(&(
+            records["engineering-map"].uid.clone(),
+            records[nested].uid.clone(),
+        )));
+        assert!(!selected.contains(&records[nested].uid));
+    }
+    assert!(!selected.contains(&records["clean-manufacturing"].uid));
+    assert_eq!(publication.documents.len(), 3752);
+    let identities: BTreeSet<_> = records.values().map(|record| record.uid.clone()).collect();
+    assert_eq!(identities.len(), 3752);
+    for document in publication.documents.iter().filter(|document| {
+        document.project.records.iter().any(|record| {
+            record.slug.as_deref().is_some_and(|slug| {
+                [
+                    "math-source-proof",
+                    "physics-spatial-review",
+                    "math-structures-review",
+                ]
+                .contains(&slug)
+            })
+        })
+    })
+    {
+        let from_entry = Publication::load(&library, &document.uri, &[], false).unwrap();
+        let discovered: BTreeSet<_> = from_entry
+            .documents
+            .iter()
+            .flat_map(|document| &document.project.records)
+            .map(|record| record.uid.clone())
+            .collect();
+        assert_eq!(discovered, identities, "{}", document.uri);
+    }
+    let standalone = Publication::load(
+        &library,
+        directory
+            .join("inquiry/quantitative-literacy/foundations/Quantity-and-reference.lingua")
+            .to_str()
+            .unwrap(),
+        &[],
+        false,
+    )
+    .unwrap();
+    assert_eq!(standalone.documents.len(), 53);
+    let original_quantitative = learning_edges(&standalone, "quantitative-literacy");
+    assert_eq!(
+        learning_edges(&publication, "quantitative-literacy"),
+        original_quantitative
+    );
+    let mut shared_routes = BTreeMap::new();
+    for (entry, predicate, count) in [
+        (
+            "chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua",
+            "general-chemistry",
+            319,
+        ),
+        (
+            "physics/electromagnetism/sources/University-Physics-Volume-2.lingua",
+            "electromagnetism",
+            346,
+        ),
+        (
+            "physics/thermodynamics-and-heat-transfer/sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua",
+            "thermodynamics-and-heat-transfer",
+            623,
+        ),
+        (
+            "chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua",
+            "industrial-chemistry",
+            997,
+        ),
+        (
+            "engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua",
+            "electrical-power-engineering",
+            525,
+        ),
+        (
+            "inquiry/metrology/foundations/Question-and-measurand.lingua",
+            "metrology",
+            132,
+        ),
+        (
+            "inquiry/reproducible-computation/foundations/Files-paths-and-processes.lingua",
+            "reproducible-computation",
+            212,
+        ),
+        (
+            "chemistry/general-chemistry/foundations/A-chemical-question.lingua",
+            "general-chemistry",
+            319,
+        ),
+        (
+            "engineering/mechanical-engineering-and-machine-design/statics/Forces-are-interactions-across-the-chosen-boundary.lingua",
+            "mechanical-engineering",
+            1018,
+        ),
+        (
+            "physics/fluid-dynamics/sources/University-Physics-Volume-1.lingua",
+            "fluid-dynamics",
+            802,
+        ),
+        (
+            "utilities/water-and-sanitation/operations/A-tank-balance-explains-control-offset-delay-and-saturation.lingua",
+            "water-and-sanitation",
+            1247,
+        ),
+    ] {
+        let original = Publication::load(
+            &library,
+            directory.join(entry).to_str().unwrap(),
+            &[],
+            false,
+        )
+        .unwrap();
+        assert_eq!(original.documents.len(), count);
+        assert!(!original.documents.iter().any(|document| {
+            document
+                .project
+                .records
+                .iter()
+                .any(|record| record.slug.as_deref() == Some("hephaestus"))
+        }));
+        let edges = learning_edges(&original, predicate);
+        assert!(!edges.is_empty());
+        assert_eq!(learning_edges(&publication, predicate), edges);
+        shared_routes.insert(predicate, edges);
+    }
+    let stock_program = records["computing-foundation-study"]
+        .body
+        .split("```python file=stock_trace.py\n")
+        .nth(1)
+        .unwrap()
+        .split("\n```")
+        .next()
+        .unwrap()
+        .to_owned();
+    assert!(stock_program.contains("def trace_stock("));
+    let catalog_programs: Vec<_> = ["catalog_lookup.py", "catalog_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-collection-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(catalog_programs[0].contains("def lookup_prepared("));
+    assert!(catalog_programs[1].contains("import catalog_lookup as m"));
+    let allocation_programs: Vec<_> = ["allocation_study.py", "allocation_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-design-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(allocation_programs[0].contains("def summarize("));
+    assert!(allocation_programs[1].contains("import allocation_study as m"));
+    let change_programs: Vec<_> = ["change_study.py", "change_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-change-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(change_programs[0].contains("def partition_sums("));
+    assert!(change_programs[1].contains("import change_study as m"));
+    let thermal_programs: Vec<_> = ["thermal_study.py", "thermal_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-thermal-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(thermal_programs[0].contains("def moments("));
+    assert!(thermal_programs[1].contains("import thermal_study as m"));
+    let reaction_programs: Vec<_> = ["reaction_study.py", "reaction_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-dynamics-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(reaction_programs[0].contains("def state("));
+    assert!(reaction_programs[1].contains("def decay_bounds("));
+    let machine_programs: Vec<_> = ["machine_study.py", "machine_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-machine-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(machine_programs[0].contains("def step("));
+    assert!(machine_programs[1].contains("expected_pcs"));
+    let floating_program = records["rc-floating"]
+        .body
+        .split("```python file=floating.py\n")
+        .nth(1)
+        .unwrap()
+        .split("\n```")
+        .next()
+        .unwrap()
+        .to_owned();
+    let network_programs: Vec<_> = ["network_study.py", "network_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-network-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(network_programs[0].contains("def steady("));
+    assert!(network_programs[1].contains("def decay_bounds("));
+    let uncertainty_programs: Vec<_> = ["uncertainty_study.py", "uncertainty_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-uncertainty-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(uncertainty_programs[0].contains("def conductance("));
+    assert!(uncertainty_programs[1].contains("def pair_cov("));
+    let periodic_programs: Vec<_> = ["periodic_study.py", "periodic_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-periodic-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(periodic_programs[0].contains("def sine_cosine("));
+    assert!(periodic_programs[1].contains("def reference("));
+    let wave_programs: Vec<_> = ["wave_study.py", "wave_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-wave-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(wave_programs[0].contains("def energy_change("));
+    assert!(wave_programs[1].contains("integrated_right"));
+    let solution_programs: Vec<_> = ["solution_study.py", "solution_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-solution-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(solution_programs[0].contains("def solve("));
+    assert!(solution_programs[1].contains("def hydroxide_reference("));
+    let space_programs: Vec<_> = ["space_study.py", "space_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-memory-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(space_programs[0].contains("def translate("));
+    assert!(space_programs[1].contains("def reference("));
+    let axial_programs: Vec<_> = ["axial_study.py", "axial_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-material-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(axial_programs[0].contains("def parallel("));
+    assert!(axial_programs[1].contains("def linear_reference("));
+    let density_programs: Vec<_> = ["density_study.py", "density_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-density-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(density_programs[0].contains("def mean_cdf("));
+    assert!(density_programs[1].contains("def square_area_cdf("));
+    let linear_space_programs: Vec<_> = ["linear_space_study.py", "linear_space_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-linear-system-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(linear_space_programs[0].contains("def orthogonal_columns("));
+    assert!(linear_space_programs[1].contains("def minor_rank("));
+    let electric_programs: Vec<_> = ["electric_study.py", "electric_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-electric-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(electric_programs[0].contains("def sharing("));
+    assert!(electric_programs[1].contains("def midpoint_work("));
+    let redox_programs: Vec<_> = ["redox_study.py", "redox_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-electron-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(redox_programs[0].contains("from linear_space_study import eliminate"));
+    assert!(redox_programs[1].contains("def atom_charge_sum("));
+    let durable_programs: Vec<_> = ["durable_study.py", "durable_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-durable-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(durable_programs[0].contains("def explore("));
+    assert!(durable_programs[1].contains("def subset_images("));
+    let realization_programs: Vec<_> = ["realization_study.py", "realization_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-electric-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(realization_programs[0].contains("from linear_space_study import eliminate"));
+    assert!(realization_programs[1].contains("def reduced("));
+    let fitting_programs: Vec<_> = ["fitting_study.py", "fitting_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-fitting-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(fitting_programs[0].contains("from linear_space_study import eliminate"));
+    assert!(fitting_programs[1].contains("def centered("));
+    let multivariable_programs: Vec<_> = ["multivariable_study.py", "multivariable_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-multivariable-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(multivariable_programs[0].contains("from linear_space_study import eliminate"));
+    assert!(multivariable_programs[1].contains("def compose("));
+    let entropy_programs: Vec<_> = ["entropy_study.py", "entropy_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-entropy-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(entropy_programs[0].contains("from reaction_study import decimal"));
+    assert!(entropy_programs[1].contains("def logarithm_bounds("));
+    let free_energy_programs: Vec<_> = ["free_energy_study.py", "free_energy_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-free-energy-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(free_energy_programs[0].contains("from reaction_study import decimal"));
+    assert!(free_energy_programs[1].contains("from entropy_checks import logarithm_bounds"));
+    let concurrency_programs: Vec<_> = ["concurrency_study.py", "concurrency_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-concurrency-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(concurrency_programs[0].contains("def wait_successors("));
+    assert!(concurrency_programs[1].contains("def serial_prefix_oracle("));
+    let feedback_programs: Vec<_> = ["feedback_study.py", "feedback_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-feedback-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(feedback_programs[0].contains("from network_study import response, number"));
+    assert!(feedback_programs[1].contains("def root_oracle("));
+    assert!(records["computing-map"].body.contains("**Developed sixth common foundation:** concurrent actors and atomic steps"));
+    assert!(records["engineering-map"].body.contains("**Developed sixth common foundation:** feedback boundaries"));
+    let reporting_programs: Vec<_> = ["reporting_study.py", "reporting_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-reporting-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(reporting_programs[0].contains("from fitting_study import fit, partition"));
+    assert!(reporting_programs[1].contains("def oracle("));
+    assert!(records["inquiry-map"].body.contains("**Developed sixth common foundation:** scientific questions and audiences"));
+    let discrete_programs: Vec<_> = ["discrete_study.py", "discrete_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-discrete-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(discrete_programs[0].contains("def quotient("));
+    assert!(discrete_programs[1].contains("def closure_oracle("));
+    assert!(records["mathematics-map"].body.contains("**Developed seventh common foundation:** finite objects and equality"));
+    let rotation_programs: Vec<_> = ["rotation_study.py", "rotation_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-rotation-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(rotation_programs[0].contains("def rolling("));
+    assert!(rotation_programs[1].contains("expected = eliminate("));
+    assert!(records["physics-map"].body.contains("**Developed seventh common foundation:** orientation and angular motion"));
+    let identity_programs: Vec<_> = ["identity_study.py", "identity_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-identity-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(identity_programs[0].contains("def tetrahedral_classes("));
+    assert!(identity_programs[1].contains("def prufer_tree("));
+    assert!(records["chemistry-map"].body.contains("**Developed seventh common foundation:** molecular identity across composition"));
+    let communication_programs: Vec<_> = ["communication_study.py", "communication_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-communication-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(communication_programs[0].contains("class Decoder:"));
+    assert!(communication_programs[1].contains("def abstract_graph("));
+    assert!(records["computing-map"].body.contains("**Developed seventh common foundation:** communication boundaries"));
+    let production_programs: Vec<_> = ["production_study.py", "production_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-production-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(production_programs[0].contains("def window_area("));
+    assert!(production_programs[1].contains("def assignments("));
+    assert!(records["engineering-map"].body.contains("**Developed seventh common foundation:** useful production"));
+    let learning_link = regex::Regex::new(r"(\[[^\]\n]*\]\()[^)\n]+#(r_[A-Z0-9]+)\)").unwrap();
+    let learning_body = |body: &str| learning_link.replace_all(body, "$1#$2)").into_owned();
+    let learning_material: Vec<_> = inquiry_learning[1..]
+        .iter()
+        .map(|slug| (*slug, learning_body(&records[slug].body)))
+        .collect();
+    assert!(records["inquiry-learning-assessment"].body.contains("| O | 1, 2 | 0, 1 | 2 | 0 |"));
+    assert!(records["inquiry-learning-study"].body.contains("fork-and-join dependency"));
+    assert!(records["inquiry-learning-scoring"].body.contains("(1,1,0)"));
+    assert!(records["inquiry-map"].body.contains("**Developed seventh common foundation:** learning capabilities"));
+    let series_programs: Vec<_> = ["series_study.py", "series_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-series-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(series_programs[0].contains("def select_cutoff("));
+    assert!(series_programs[1].contains("pairs=[(i,j,r**(i+j))"));
+    assert!(records["mathematics-map"].body.contains("**Developed eighth common foundation:** sequences"));
+    assert!(records["ic-calculus"].body.contains("**Eighth mathematics-core inspection"));
+    let statistical_programs: Vec<_> = ["statistical_study.py", "statistical_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-statistical-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(statistical_programs[0].contains("def time_mean_variance("));
+    assert!(statistical_programs[1].contains("for path in product((0, 1), repeat=length):"));
+    assert!(records["physics-map"].body.contains("**Developed eighth common foundation:** microscopic states"));
+    assert!(records["mat-tong-statistical"].body.contains("**Eighth physics-core inspection"));
+    let phase_programs: Vec<_> = ["phase_study.py", "phase_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["chemistry-phase-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    let shared_phase_program = records["mat-regular-example"]
+        .body
+        .split("```python\n")
+        .nth(1)
+        .unwrap()
+        .split("\n```")
+        .next()
+        .unwrap()
+        .to_owned();
+    assert!(phase_programs[0].contains("def certify_binodal("));
+    assert!(phase_programs[1].contains("alternatives=[(i,total-i)"));
+    assert!(shared_phase_program.contains("def symmetric_regular_solution("));
+    assert!(records["chemistry-map"].body.contains("**Developed eighth common foundation:** phases and constraints"));
+    for slug in ["th-devoe", "gc-webbook", "mat-mit-fundamentals"] {
+        assert!(records[slug].body.contains("**Eighth chemistry-core inspection"));
+    }
+    let abstraction_programs: Vec<_> = ["abstraction_study.py", "abstraction_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-abstraction-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(abstraction_programs[0].contains("def reserve_many("));
+    assert!(abstraction_programs[1].contains("for history in product(alphabet, repeat=length):"));
+    assert!(records["computing-map"].body.contains("**Developed eighth common foundation:** names and captured environments"));
+    assert!(records["rc-modules"].body.contains("**Eighth computing-block reading:"));
+    for slug in ["rc-python", "rc-rse"] {
+        assert!(records[slug].body.contains("**Eighth computing-core inspection"));
+    }
+    let service_programs: Vec<_> = ["service_study.py", "service_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-service-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(service_programs[0].contains("def evaluate("));
+    assert!(service_programs[1].contains("for history in product(events("));
+    assert!(records["engineering-map"].body.contains("**Developed eighth common foundation:** operating histories"));
+    for slug in ["mech-maintenance", "mech-condition-evidence", "mech-failure-investigation", "mech-restoration"] {
+        assert!(records[slug].body.contains("**Eighth engineering-block reading:"));
+    }
+    for slug in ["met-handbook", "mech-nasa-systems"] {
+        assert!(records[slug].body.contains("**Eighth engineering-core inspection"));
+    }
+    let causal_programs: Vec<_> = ["causal_study.py", "causal_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["inquiry-causal-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(causal_programs[0].contains("def horvitz_thompson("));
+    assert!(causal_programs[1].contains("observed(null_model) == observed(effect_model)"));
+    assert!(records["inquiry-map"].body.contains("**Developed eighth common foundation:** causal questions"));
+    assert!(records["inquiry-source-causal"].body.contains("19 August 2026"));
+    let operator_programs: Vec<_> = ["operator_study.py", "operator_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-operator-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(operator_programs[0].contains("def exponential_partial("));
+    assert!(operator_programs[1].contains("distance+uncertainty <= tail"));
+    assert!(records["mathematics-map"].body.contains("**Developed common operator bridge:**"));
+    assert!(records["math-source-operators"].body.contains("30 October 2026"));
+    let quantum_programs: Vec<_> = ["quantum_study.py", "quantum_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-quantum-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(quantum_programs[0].contains("def dephase("));
+    assert!(quantum_programs[1].contains("q.uncertainty([1, 0, 0]"));
+    assert!(records["physics-map"].body.contains("**Developed common quantum foundations:**"));
+    assert!(records["physics-source-quantum"].body.contains("17 September 2013"));
+    let trust_programs: Vec<_> = ["trust_study.py", "trust_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["computing-trust-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(trust_programs[0].contains("from communication_study import natural, receive"));
+    assert!(trust_programs[1].contains("expected_histories"));
+    assert!(records["computing-map"].body.contains("**Developed common human-use and trust foundations:**"));
+    assert!(records["computing-source-accessibility"].body.contains("12 December 2024"));
+    let operation_programs: Vec<_> = ["operation_study.py", "operation_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["engineering-operation-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(operation_programs[0].contains("from production_study import integer"));
+    assert!(operation_programs[1].contains("independent_minimal"));
+    assert!(records["engineering-map"].body.contains("**Developed common people and operation foundations:**"));
+    assert!(records["engineering-source-human-factors"].body.contains("Open Government Licence"));
+    let field_programs: Vec<_> = ["field_study.py", "field_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-fields-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(field_programs[0].contains("from multivariable_study import segment_integral, value"));
+    assert!(field_programs[1].contains("result['boundary'], expected"));
+    assert!(records["mathematics-map"].body.contains("**Developed common oriented-field foundations:**"));
+    assert!(!selected.contains(&records["em-vector-book"].uid));
+    let magnetic_programs: Vec<_> = ["magnetic_study.py", "magnetic_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-magnetic-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(magnetic_programs[0].contains("from electric_study import exact, decay_bracket"));
+    assert!(magnetic_programs[1].contains("current_two_tau_bounds"));
+    assert!(records["physics-map"].body.contains("**Developed common magnetic and inductive foundations:**"));
+    assert!(!selected.contains(&records["em-tong"].uid));
+    let spacetime_programs: Vec<_> = ["spacetime_study.py", "spacetime_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-spacetime-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(spacetime_programs[0].contains("from electric_study import exact, rational_root, potential_field"));
+    assert!(spacetime_programs[1].contains("reported_minus_prediction_over_reported_uncertainty"));
+    assert!(records["physics-map"].body.contains("**Developed common spacetime and gravity foundations:**"));
+    for slug in ["physics-source-dynrel", "physics-source-optical-clocks", "physics-source-equivalence"] {
+        assert!(!selected.contains(&records[slug].uid));
+    }
+    let astronomy_programs: Vec<_> = ["astronomy_study.py", "astronomy_checks.py"]
+        .into_iter()
+        .map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["physics-astronomy-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(astronomy_programs[0].contains("from spacetime_study import orbit"));
+    assert!(astronomy_programs[1].contains("historical_absolute_magnitude"));
+    assert!(records["physics-map"].body.contains("**Developed common astronomical foundations:**"));
+    for slug in ["physics-source-astronomy", "physics-source-gaia-distances", "physics-source-hubble1929"] {
+        assert!(!selected.contains(&records[slug].uid));
+    }
+    let structure_slugs = [
+        "math-structures",
+        "math-structures-language",
+        "math-structures-models",
+        "math-structures-consequence",
+        "math-structures-proof",
+        "math-structures-operations",
+        "math-structures-maps",
+        "math-structures-quotients",
+        "math-structures-evidence",
+        "math-structures-study",
+        "math-structures-review",
+    ];
+    let structure_edges: BTreeSet<_> = structure_slugs.windows(2)
+        .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone()))
+        .collect();
+    assert_eq!(learning_edges(&publication, "math-structures"), structure_edges);
+    let mathematics_branches = BTreeSet::from([(
+        records["mathematics-map"].uid.clone(), records["math-structures"].uid.clone(),
+    )]);
+    assert_eq!(learning_edges(&publication, "mathematics-branches"), mathematics_branches);
+    for slug in structure_slugs.into_iter().chain(["math-source-forallx", "math-source-judson"]) {
+        assert!(!selected.contains(&records[slug].uid));
+    }
+    let structure_programs: Vec<_> = ["structures_study.py", "structures_checks.py"]
+        .into_iter().map(|filename| {
+            let marker = format!("```python file={filename}\n");
+            records["math-structures-study"].body.split(&marker).nth(1).unwrap()
+                .split("\n```").next().unwrap().to_owned()
+        }).collect();
+    let original_sources = external_references(&publication);
+    let contextual_links = |publication: &Publication| {
+        let included: BTreeSet<_> = publication
+            .documents
+            .iter()
+            .map(|document| document.base.as_str())
+            .collect();
+        let mut links = BTreeSet::new();
+        for document in &publication.documents {
+            let base = lince_resources::Url::parse(&document.base).unwrap();
+            for record in &document.project.records {
+                for target in record
+                    .body
+                    .split("](")
+                    .skip(1)
+                    .filter_map(|value| value.split_once(')').map(|(target, _)| target))
+                {
+                    let resolved = base.join(target).unwrap();
+                    let mut location = resolved.clone();
+                    location.set_fragment(None);
+                    if !included.contains(location.as_str()) {
+                        links.insert(resolved.to_string());
+                    }
+                }
+            }
+        }
+        links
+    };
+    let original_context = contextual_links(&publication);
+    assert!(!original_context.is_empty());
+    let destination = temporary.path().join("export");
+    let exported = publication.export(&library, &destination, false).unwrap();
+    let entry = exported.strip_prefix(&destination).unwrap().to_owned();
+    let moved = temporary.path().join("moved");
+    fs::rename(&destination, &moved).unwrap();
+    let fresh_library = Library::new(temporary.path().join("fresh-library"));
+    let reopened = Publication::load(
+        &fresh_library,
+        moved.join(entry).to_str().unwrap(),
+        &[],
+        false,
+    )
+    .unwrap();
+    assert_eq!(learning_edges(&reopened, "hephaestus"), expected_map);
+    assert_eq!(learning_edges(&reopened, "hephaestus-core"), expected_core);
+    assert_eq!(reopened.documents.len(), 3752);
+    assert_eq!(learning_edges(&reopened, "math-structures"), structure_edges);
+    assert_eq!(learning_edges(&reopened, "mathematics-branches"), mathematics_branches);
+    let reopened_structure = reopened.documents.iter().flat_map(|d| &d.project.records)
+        .find(|r| r.slug.as_deref() == Some("math-structures-study")).unwrap();
+    for program in structure_programs {
+        assert!(reopened_structure.body.contains(&program));
+    }
+    assert_eq!(
+        learning_edges(&reopened, "quantitative-literacy"),
+        original_quantitative
+    );
+    assert_eq!(contextual_links(&reopened), original_context);
+    assert_eq!(external_references(&reopened), original_sources);
+    let reopened_stock = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-foundation-study"))
+        .unwrap();
+    assert!(reopened_stock.body.contains(&stock_program));
+    let reopened_catalog = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-collection-study"))
+        .unwrap();
+    for program in catalog_programs {
+        assert!(reopened_catalog.body.contains(&program));
+    }
+    let reopened_allocation = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-design-study"))
+        .unwrap();
+    for program in allocation_programs {
+        assert!(reopened_allocation.body.contains(&program));
+    }
+    let reopened_change = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-change-study"))
+        .unwrap();
+    for program in change_programs {
+        assert!(reopened_change.body.contains(&program));
+    }
+    let reopened_thermal = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-thermal-study"))
+        .unwrap();
+    for program in thermal_programs {
+        assert!(reopened_thermal.body.contains(&program));
+    }
+    let reopened_reaction = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-dynamics-study"))
+        .unwrap();
+    for program in reaction_programs {
+        assert!(reopened_reaction.body.contains(&program));
+    }
+    let reopened_machine = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-machine-study"))
+        .unwrap();
+    for program in machine_programs {
+        assert!(reopened_machine.body.contains(&program));
+    }
+    assert!(reopened.documents.iter().flat_map(|document| &document.project.records).any(
+        |record| record.slug.as_deref() == Some("rc-floating")
+            && record.body.contains(&floating_program)
+    ));
+    let reopened_network = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-network-study"))
+        .unwrap();
+    for program in network_programs {
+        assert!(reopened_network.body.contains(&program));
+    }
+    let reopened_uncertainty = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-uncertainty-study"))
+        .unwrap();
+    for program in uncertainty_programs {
+        assert!(reopened_uncertainty.body.contains(&program));
+    }
+    let reopened_periodic = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-periodic-study"))
+        .unwrap();
+    for program in periodic_programs {
+        assert!(reopened_periodic.body.contains(&program));
+    }
+    let reopened_waves = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-wave-study"))
+        .unwrap();
+    for program in wave_programs {
+        assert!(reopened_waves.body.contains(&program));
+    }
+    let reopened_solutions = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-solution-study"))
+        .unwrap();
+    for program in solution_programs {
+        assert!(reopened_solutions.body.contains(&program));
+    }
+    let reopened_memory = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-memory-study"))
+        .unwrap();
+    for program in space_programs {
+        assert!(reopened_memory.body.contains(&program));
+    }
+    let reopened_material = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-material-study"))
+        .unwrap();
+    for program in axial_programs {
+        assert!(reopened_material.body.contains(&program));
+    }
+    let reopened_density = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-density-study"))
+        .unwrap();
+    for program in density_programs {
+        assert!(reopened_density.body.contains(&program));
+    }
+    let reopened_linear_space = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-linear-system-study"))
+        .unwrap();
+    for program in linear_space_programs {
+        assert!(reopened_linear_space.body.contains(&program));
+    }
+    let reopened_electric = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-electric-study"))
+        .unwrap();
+    for program in electric_programs {
+        assert!(reopened_electric.body.contains(&program));
+    }
+    let reopened_redox = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-electron-study"))
+        .unwrap();
+    for program in redox_programs {
+        assert!(reopened_redox.body.contains(&program));
+    }
+    let reopened_durable = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-durable-study"))
+        .unwrap();
+    for program in durable_programs {
+        assert!(reopened_durable.body.contains(&program));
+    }
+    let reopened_realization = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-electric-study"))
+        .unwrap();
+    for program in realization_programs {
+        assert!(reopened_realization.body.contains(&program));
+    }
+    let reopened_fitting = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-fitting-study"))
+        .unwrap();
+    for program in fitting_programs {
+        assert!(reopened_fitting.body.contains(&program));
+    }
+    let reopened_multivariable = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-multivariable-study"))
+        .unwrap();
+    for program in multivariable_programs {
+        assert!(reopened_multivariable.body.contains(&program));
+    }
+    let reopened_entropy = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-entropy-study"))
+        .unwrap();
+    for program in entropy_programs {
+        assert!(reopened_entropy.body.contains(&program));
+    }
+    let reopened_free_energy = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-free-energy-study"))
+        .unwrap();
+    for program in free_energy_programs {
+        assert!(reopened_free_energy.body.contains(&program));
+    }
+    let reopened_concurrency = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-concurrency-study"))
+        .unwrap();
+    for program in concurrency_programs {
+        assert!(reopened_concurrency.body.contains(&program));
+    }
+    let reopened_feedback = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-feedback-study"))
+        .unwrap();
+    for program in feedback_programs {
+        assert!(reopened_feedback.body.contains(&program));
+    }
+    let reopened_reporting = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-reporting-study"))
+        .unwrap();
+    for program in reporting_programs {
+        assert!(reopened_reporting.body.contains(&program));
+    }
+    let reopened_discrete = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-discrete-study"))
+        .unwrap();
+    for program in discrete_programs {
+        assert!(reopened_discrete.body.contains(&program));
+    }
+    let reopened_rotation = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-rotation-study"))
+        .unwrap();
+    for program in rotation_programs {
+        assert!(reopened_rotation.body.contains(&program));
+    }
+    let reopened_identity = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-identity-study"))
+        .unwrap();
+    for program in identity_programs {
+        assert!(reopened_identity.body.contains(&program));
+    }
+    let reopened_communication = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-communication-study"))
+        .unwrap();
+    for program in communication_programs {
+        assert!(reopened_communication.body.contains(&program));
+    }
+    let reopened_production = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-production-study"))
+        .unwrap();
+    for program in production_programs {
+        assert!(reopened_production.body.contains(&program));
+    }
+    for (slug, body) in learning_material {
+        let restored = reopened
+            .documents
+            .iter()
+            .flat_map(|document| &document.project.records)
+            .find(|record| record.slug.as_deref() == Some(slug))
+            .unwrap();
+        assert_eq!(learning_body(&restored.body), body, "{slug}");
+    }
+    let reopened_series = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-series-study"))
+        .unwrap();
+    for program in series_programs {
+        assert!(reopened_series.body.contains(&program));
+    }
+    let reopened_statistical = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-statistical-study"))
+        .unwrap();
+    for program in statistical_programs {
+        assert!(reopened_statistical.body.contains(&program));
+    }
+    let reopened_phase = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("chemistry-phase-study"))
+        .unwrap();
+    for program in phase_programs {
+        assert!(reopened_phase.body.contains(&program));
+    }
+    let reopened_shared_phase = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("mat-regular-example"))
+        .unwrap();
+    assert!(reopened_shared_phase.body.contains(&shared_phase_program));
+    let reopened_abstraction = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-abstraction-study"))
+        .unwrap();
+    for program in abstraction_programs {
+        assert!(reopened_abstraction.body.contains(&program));
+    }
+    let reopened_service = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-service-study"))
+        .unwrap();
+    for program in service_programs {
+        assert!(reopened_service.body.contains(&program));
+    }
+    let reopened_causal = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("inquiry-causal-study"))
+        .unwrap();
+    for program in causal_programs {
+        assert!(reopened_causal.body.contains(&program));
+    }
+    let reopened_operators = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-operator-study"))
+        .unwrap();
+    for program in operator_programs {
+        assert!(reopened_operators.body.contains(&program));
+    }
+    let reopened_quantum = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-quantum-study"))
+        .unwrap();
+    for program in quantum_programs {
+        assert!(reopened_quantum.body.contains(&program));
+    }
+    let reopened_trust = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("computing-trust-study"))
+        .unwrap();
+    for program in trust_programs {
+        assert!(reopened_trust.body.contains(&program));
+    }
+    let reopened_operation = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("engineering-operation-study"))
+        .unwrap();
+    for program in operation_programs {
+        assert!(reopened_operation.body.contains(&program));
+    }
+    let reopened_fields = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("math-fields-study"))
+        .unwrap();
+    for program in field_programs {
+        assert!(reopened_fields.body.contains(&program));
+    }
+    let reopened_magnetic = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-magnetic-study"))
+        .unwrap();
+    for program in magnetic_programs {
+        assert!(reopened_magnetic.body.contains(&program));
+    }
+    let reopened_spacetime = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-spacetime-study"))
+        .unwrap();
+    for program in spacetime_programs {
+        assert!(reopened_spacetime.body.contains(&program));
+    }
+    let reopened_astronomy = reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .find(|record| record.slug.as_deref() == Some("physics-astronomy-study"))
+        .unwrap();
+    for program in astronomy_programs {
+        assert!(reopened_astronomy.body.contains(&program));
+    }
+    for (predicate, original) in shared_routes {
+        assert_eq!(learning_edges(&reopened, predicate), original);
+    }
+    let locations: BTreeMap<_, _> = reopened
+        .documents
+        .iter()
+        .flat_map(|document| {
+            document
+                .project
+                .records
+                .iter()
+                .map(|record| (record.uid.as_str(), document.base.as_str()))
+        })
+        .collect();
+    for record in reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+    {
+        for assertion in &record.assertions {
+            if ["contains", "math-structures", "mathematics-branches", "hephaestus", "hephaestus-core", "quantitative-literacy", "mechanical-engineering", "fluid-dynamics", "general-chemistry", "reproducible-computation", "metrology", "electrical-power-engineering", "water-and-sanitation"]
+                .contains(&assertion.predicate.as_str())
+            {
+                let (location, uid) = assertion
+                    .object_uri
+                    .as_ref()
+                    .unwrap()
+                    .rsplit_once('#')
+                    .unwrap();
+                assert_eq!(location, locations[uid]);
+            }
+        }
+    }
+    assert!(reopened.resources().unwrap().is_empty());
+}
+
+#[test]
 fn mining_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
     let directory = trails.join("ergon/hephaestus/engineering/mining-and-mineral-engineering");

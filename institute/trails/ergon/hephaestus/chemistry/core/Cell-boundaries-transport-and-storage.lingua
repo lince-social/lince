@@ -1,0 +1,21 @@
+Import "../Chemistry.lingua"
+
+Keep electrode reactions ionic transport and charge storage separate (@chemistry-cell-boundaries: 0, is #chapter, #hephaestus-core "../general-chemistry/electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX") { r_004C91BC24CBBFB3B68858E025
+A cell account connects electron-conducting regions, ion-containing regions and their interfaces. The anode is the electrode role at which oxidation occurs; the cathode is the role at which reduction occurs. Those roles do not alone assign a universal positive or negative terminal label. Begin with [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), section 17.2's discussion of the external and ionic paths. The following shared cell Record retains the larger thermodynamic formation.
+
+Draw three boundaries: the whole assembly; one electrode with its adjacent interface; and a selected solution compartment. Electrons crossing the external conductor can be balanced by reaction at an interface, changes in interfacial charge, or both. Ionic transport can carry charge through a solution. A whole-reaction equation does not specify which ion traverses which internal boundary, or how rapidly.
+
+For a compartment, write dQ_region/dt=I_in−I_out with a single sign convention and all material and electrical boundary fluxes. Local electroneutrality is a bulk approximation with a length/time domain; it does not forbid separated interfacial charge. Do not enforce exact zero charge on each region while simultaneously retaining charge storage there. A globally neutral assembly can have equal and opposite charged interfaces.
+
+The original investigation below maintains a neutral aggregate chemical inventory, plus two explicitly tracked surface-charge changes +Fs n* and −Fs n*. The external electron-equivalent amount is N n*, the chemical electron amount is H n*, and N=H+s. The anodic chemical donation is H n*, while the additional s n* electrons leaving that conductor increase its positive surface charge. The cathodic interface consumes H n* chemically and gains s n* stored electrons. This closes the chosen electron account on both sides. The counterion's total amount stays constant; internal ion redistribution has not been solved. No spatial charge density, double-layer law or compartment transport trajectory is predicted.
+
+Use this as a disciplined division of questions: total charge and species balances constrain possible histories; electrochemical thermodynamics constrains driving forces; kinetics and transport constrain which histories occur; an instrument model connects histories with readings. An electrical trace cannot replace all four.
+
+**Sign translation:** this common investigation defines I_e positive for electron arrival at the reducing side. The Green Book's electrode-current convention gives cathodic partial current a negative sign and anodic partial current a positive sign. In that convention the investigation's cathodic Faradaic current is −F n* dH/dt. An explicitly chosen positive magnitude is compatible with the convention when the translation is retained. Never add a signed conventional current to an unsigned amount without this step.
+
+**Work:** make a table of region, initial charge, boundary transfer, reaction transfer and final charge. Close it for N=4, H=7/2 and s=1/2 in the reference amount unit. State what ionic transport information is absent. Explain why the balanced aggregate ledger cannot be used to claim a physically realized cell with those exact terminal and storage histories.
+
+**Continue:** [Connect an electrochemical cell with a balanced reaction and energy account](../general-chemistry/electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_004C91BC24CBBFB3B68858E025

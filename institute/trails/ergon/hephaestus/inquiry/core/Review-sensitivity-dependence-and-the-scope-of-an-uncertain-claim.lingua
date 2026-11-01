@@ -1,0 +1,20 @@
+Import "../Inquiry.lingua"
+
+Review sensitivity dependence and the scope of an uncertain claim (@inquiry-uncertainty-review: 0, is #chapter, #hephaestus-core "Assign-continuous-probability-to-intervals-rather-than-individual-density-values.lingua#r_001CB0C3AE88E7CFC0E0B77898") { r_000B35720D754EE82413312EED
+Explain a reported result to a reader who knows the question but not the calculation. Define the measurand and distinguish error, correction, uncertainty, repeatability, population variation, numerical representation and physical model discrepancy. State what the finite weights mean and what evidence could justify changing them. An interval alone is not a probability distribution.
+
+**Derive:** recover covariance from centered products, affine propagation from an expected square, the covariance quadratic's nonnegativity and the two-variable bound. Give a dependent zero-covariance example and a valid singular covariance. Reconstruct common-source cancellation and the uncertainty floor of a repeated-reading average. Do not use the word independent as a substitute for a joint model.
+
+**Approximate and check:** derive the partial sensitivities from one-variable changes, state sufficient smoothness and the path-integral remainder, and compare the affine surrogate with exact finite propagation. Recover both conductance output laws, mean shifts and variances. Explain the denominator boundary and why exact numerical evaluation does not eliminate model error. Identify when the nonlinear source amendment becomes relevant without claiming its advanced formulas have all been developed here.
+
+**Decide and criticize:** distinguish modeled interval probability, hard bounds and repeated-design inference. Explain why two-standard-deviation coverage is not universally 95%. Show how the invented decision changes with dependence, and give a fitted-model rival plus an independent check. Preserve source editions, inputs, code, assumptions and the reason for a revision.
+
+The common inquiry core remains unfinished. Continuous probability and estimation, defensible intervals, richer experimental/observational and causal reasoning, model comparison, scholarly synthesis, learning/teaching and knowledge preservation still need progressively deeper formation and independent work. The existing metrology and computation trails supply shared depth; their references do not turn this beginning into completion of the whole area.
+
+All six areas now have three coherent common blocks. Review their actual coverage and missing preparation before the next pass. Continue across their common foundations at comparable depth before developing a specialized leaf. Retain the original studies and the pending publication/export/relocation evidence in the handoff.
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Continue in the fourth common pass:** [Assign continuous probability to intervals rather than individual density values](Assign-continuous-probability-to-intervals-rather-than-individual-density-values.lingua#r_001CB0C3AE88E7CFC0E0B77898). The fourth inquiry block develops continuous probability, sampling models and interval interpretation using the existing integral and finite-probability preparation. Preserve all earlier investigations, then review coverage across all six common areas before further branches.
+
+} r_000B35720D754EE82413312EED

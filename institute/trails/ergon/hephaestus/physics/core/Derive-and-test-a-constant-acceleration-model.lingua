@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Derive and test a constant-acceleration model (@physics-constant-acceleration: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ") { r_0943E6F21D49F8A1308767CC41
+Acceleration is the rate of change of velocity. In a straight-line model with constant acceleration a, each equal time interval changes velocity by the same amount. Starting at velocity v₀ and taking elapsed time t from zero gives v = v₀ + at. The unit m/s² means a change in m/s per second. A negative acceleration does not always mean slowing down: the answer also depends on the sign of velocity.
+
+The velocity-time graph is a straight line under this assumption. Its area over time gives displacement: a rectangle v₀t plus a triangle with height at and base t. Thus x − x₀ = v₀t + at²/2. This argument introduces the constant-acceleration result through geometry; it does not justify using the formula for a motion with arbitrary changing acceleration. Areas below the time axis contribute negative displacement.
+
+For a hypothetical marker starting at x₀ = 2 m with v₀ = 1 m/s and a = 0.5 m/s², after 4 s the velocity is 3 m/s and the displacement is 8 m, so x = 10 m. The average velocity is 2 m/s, the mean of the initial and final velocities for this linear velocity history. The same endpoint velocity does not determine displacement if the history between endpoints changes.
+
+For a separate case, start at +3 m/s with a = −1 m/s². The object reaches zero velocity at 3 s and then reverses under the continued assumed acceleration. At 5 s its velocity is −2 m/s, its displacement is +2.5 m, and its distance travelled is 4.5 + 2 = 6.5 m. Treating distance as the signed graph area would miss the reversal.
+
+**Read:** [University Physics Volume 1](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 3.4. Work the constant-acceleration problems and state where the acceleration assumption enters each derivation. Keep variable-acceleration calculus for a later foundation pass.
+
+**Work:** derive the reversal time and calculate the two displacement segments independently. Sketch position, velocity and acceleration together. Explain why one flat position-time segment means something different from one flat velocity-time segment. Identify which sampled observations could refute a constant-acceleration hypothesis without claiming that a finite set proves it universally.
+
+**Before the shared spatial lessons:** geometry, trigonometry and vectors supply directions and projections. Work their elementary constructions and component exercises. Before the shared force lesson, read [Engineering Statics](../../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80) chapter 1, sections 2.1–2.7 and sections 3.1–3.4 progressively. Work the one- and two-dimensional particle cases first; keep general three-dimensional equilibrium for the later linear-systems preparation. The original mechanical trail retains its fuller assignment.
+
+**Continue:** [Angles, grade, triangles, and periodic relationships](../../inquiry/quantitative-literacy/foundations/Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0943E6F21D49F8A1308767CC41

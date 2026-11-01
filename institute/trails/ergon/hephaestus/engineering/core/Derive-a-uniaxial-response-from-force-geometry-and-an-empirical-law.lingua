@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Derive a uniaxial response from force geometry and an empirical law (@engineering-axial-law: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/materials/Load-extension-stiffness-and-recoverable-deformation.lingua#r_48SM2DMGKVVHE2EVHKFN03NW8J") { r_00D14518ED004AB4B636D0A263
+Take a uniform straight member of reference length L>0 and area A>0. Cut it across the axis and define positive section force N as tension. With no intermediate axial load, quasi-static force balance gives the same N along its length. For the uniform uniaxial approximation, nominal axial stress is σ=N/A. If its endpoints move apart by δ, the mean engineering strain is ε=δ/L. These definitions do not yet predict a deformation.
+
+The additional empirical model is σ=E(ε−ε₀), with E>0 and a prescribed uniform free strain ε₀. The model is linear elastic in mechanical strain ε−ε₀ over its stated range. It is not deduced from force balance and is not made valid by choosing a small numerical step. Set g=Lε₀, the free extension relative to the chosen reference. Substitution gives N=(EA/L)(δ−g)=k(δ−g), with k=EA/L>0. Thus δ=g+N/k. Stress is in Pa, strain is dimensionless, g and δ are lengths, and k has units N/m.
+
+For ε₀=0, doubling length halves k; doubling area or modulus doubles k. A larger stiffness can therefore come from a different material or a larger section, with different mass, processing and interface consequences. The same k does not identify E,A,L separately. A changing force–extension slope can result from changing geometry, an evolving material state, slipping contacts or another omitted interaction; fitting a new E is not automatically the right interpretation.
+
+The free strain may represent an imposed small thermal strain αΔT when the coefficient, temperature and reference are specified, or an explicitly modeled assembly mismatch. At N=0 the member extends by g. At δ=0 it carries N=−kg. Zero displacement therefore does not imply zero force, and zero force does not imply zero strain. Changing g during a loading path introduces another energy exchange; the later fixed-g work argument cannot be reused unchanged.
+
+**Derive and challenge:** recover the existing worked bar calculation in [Load, extension, stiffness and recoverable deformation](../mechanical-engineering-and-machine-design/materials/Load-extension-stiffness-and-recoverable-deformation.lingua#r_48SM2DMGKVVHE2EVHKFN03NW8J) from these definitions. State the observation needed to distinguish E from support stiffness. Explain why a yield/proof stress cannot be obtained from E alone. Read [Stress–strain measures and the tensile test](../mechanical-engineering-and-machine-design/materials/Stress-strain-measures-and-the-tensile-test.lingua#r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P) for the distinction between reference and current geometry; large-deformation conversions and local multiaxial behavior remain later preparation. The common investigation will use specified coefficients rather than claim a real alloy's properties.
+
+**Continue:** [Load, extension, stiffness and recoverable deformation](../mechanical-engineering-and-machine-design/materials/Load-extension-stiffness-and-recoverable-deformation.lingua#r_48SM2DMGKVVHE2EVHKFN03NW8J).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00D14518ED004AB4B636D0A263

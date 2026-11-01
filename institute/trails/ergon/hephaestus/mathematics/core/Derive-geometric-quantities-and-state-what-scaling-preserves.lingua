@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Derive geometric quantities and state what scaling preserves (@math-geometric-reasoning: 0, is #chapter, #hephaestus-core "Distinguish-a-point-a-displacement-and-its-coordinates.lingua#r_062423188E960EBAB9A92CE3E4") { r_059C90E2E6CC1CCD2FAD802C6C
+Begin with a sketch, labeled lengths and a question about a shape. A line segment has length, a region has area and a solid has volume. The numerical value depends on the unit. A scale drawing represents these objects; its ink, pixels and thickness do not automatically have the physical dimensions of the represented object.
+
+**Read and reuse:** the [shared geometry lesson](../../inquiry/quantitative-literacy/foundations/Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW), including its full perimeter/area/volume readings and Prealgebra chapter 9 preparation. Use the [shared trigonometry lesson](../../inquiry/quantitative-literacy/foundations/Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ) for angles and right-triangle relationships. This block adds mathematical reasons and connections to coordinates and linear constraints; the existing geometric examples remain available rather than being copied into a second introduction.
+
+For a rectangle of side lengths a and b, unit-square counting motivates area ab. Subdividing sides into equal rational units extends the counting argument beyond integer lengths. A diagonal divides the rectangle into congruent triangles, each of area ab/2. A parallelogram can be cut and translated into a rectangle with the same base and perpendicular height, so its area is base times height. A sloping side is generally not that height. Label the perpendicular distance before applying the formula.
+
+Scale every length in a rectangle by a positive factor λ. Its area becomes (λa)(λb) = λ²ab. A rectangular box similarly changes volume from abc to λ³abc. Triangulating a polygon extends the area argument to that polygon. General curved boundaries need an appropriate definition of area and approximation or limiting arguments; a finite sketch is not by itself a proof for every curved region. Shape similarity is also a stronger condition than increasing just one dimension.
+
+For a 2 by 3 rectangle, doubling both sides gives area 24 instead of 6. Doubling only its first side gives area 12 and changes its aspect ratio. Both changes are legitimate transformations, but they preserve different features. If a box of dimensions 2, 3 and 4 is uniformly doubled, its volume changes from 24 to 192. Mass follows this scaling only under an additional assumption about density and composition. Mechanical strength and service performance require other models.
+
+An enclosing rectangle can bound a region's area, and a collection of non-overlapping contained rectangles can provide a lower bound. The assumptions about overlap, omitted holes and exact dimensions matter. A numerical estimate between such bounds is a statement about the chosen representation and information. Later integration makes the relation between refined partitions and limiting area precise.
+
+**Work:** derive the rectangle, triangle and parallelogram areas using diagrams and rearrangement. Construct two rectangles with equal area but different perimeters, and two similar rectangles whose area ratio is nine. Explain which hypotheses support each conclusion. Compare a geometric quantity, its measured estimate and a design requirement. Record which part of your reasoning is exact mathematics and which depends on observations of an actual object.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Distinguish a point a displacement and its coordinates](Distinguish-a-point-a-displacement-and-its-coordinates.lingua#r_062423188E960EBAB9A92CE3E4).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_059C90E2E6CC1CCD2FAD802C6C

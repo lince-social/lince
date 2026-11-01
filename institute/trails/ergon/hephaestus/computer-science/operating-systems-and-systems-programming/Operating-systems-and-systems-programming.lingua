@@ -1,0 +1,5 @@
+Operating systems and systems programming (@operating-systems-and-systems-programming: 0, is #chapter, #outline) { r_3P147C4AXPCMBSYEXYR6NWPE65
+Operating systems manage computation, memory, devices, storage, and isolation on shared hardware. This material connects processes, scheduling, virtual memory, filesystems, drivers, concurrency, and resource management with low-level programming, performance, fault handling, and the foundations supporting higher-level software.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_3P147C4AXPCMBSYEXYR6NWPE65

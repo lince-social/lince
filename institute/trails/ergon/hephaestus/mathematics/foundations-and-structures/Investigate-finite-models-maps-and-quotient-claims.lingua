@@ -1,0 +1,267 @@
+Import "../Mathematics.lingua"
+
+Investigate finite models maps and quotient claims (@math-structures-study: 0, is #chapter, #math-structures "Review-models-proofs-and-preserved-structure-before-the-next-branch.lingua#r_00871D52F29C75057810297F4C") { r_004797A521484FF4E6DDBFF6C4
+Carry out one connected investigation before opening further theory. First specify the language and model, then classify the evidence used at every step. The code is an original finite evaluator and algebra checker. It is not a proof assistant, a parser for arbitrary mathematical text, an unbounded first-order decision procedure or a substitute for the general proofs in the preceding lessons.
+
+**Prepare:** recover the unchanged `discrete_study.py` from [Investigate finite configurations histories and misleading observations](../core/Investigate-finite-configurations-histories-and-misleading-observations.lingua#r_002AF0272204D854378B58CA13). This investigation actually imports its integer validator and fiber partition helper. Put that file and the two programs below in one working directory. Run `python3 -B structures_checks.py`; no network or third-party package is needed. The checked interpreter is recorded in the development handoff. Finite models use domain labels 0,…,n−1; the constructor's `identity` parameter names the interpretation of e and does not itself enforce an identity law. The internal term evaluator assumes the syntax has been validated by `holds`.
+
+**Investigate:** derive the displayed Z_6 factorization on paper and independently check its quotient table. Give a full countermodel to the attempted reversal of quantifiers and to associativity from identity alone. Explain the capture example using assignments. Compare the code's quantifier evaluation with independent row/column counts; compare generated cyclic maps with exhaustive enumeration of all functions on the smaller domains. Explain the separate one-element-source case.
+
+**Independent extension:** choose one substantive change: add a unary operation and prove/implement its term-preservation clause; construct a nonabelian finite example and analyze why normality is needed; or implement capture-avoiding substitution and prove its substitution lemma. Before coding, write the domain, representation, expected theorem and failure conditions. Provide an independently computed example, an adversarial counterexample and a revised claim after criticism. Do not declare the extension completed because the supplied programs passed.
+
+**Defense:** submit definitions, proofs, source reconstruction, executable output, a limitation statement and a response to a reviewer who challenges an assumption. A useful reviewer question is whether a quotient's compatible operation also preserves a physical measurement or a transition system. Answer only for the structures actually modeled; an algebraic theorem alone establishes no apparatus behavior.
+
+```python file=structures_study.py
+from itertools import product
+from discrete_study import natural, fibers
+
+
+def variable(name):
+    if not isinstance(name, str) or not name.isidentifier():
+        raise ValueError('a variable name is required')
+    return name
+
+
+def term_variables(term):
+    if not isinstance(term, tuple) or not term:
+        raise ValueError('a term tuple is required')
+    if term[0] == 'v' and len(term) == 2:
+        return {variable(term[1])}
+    if term == ('e',):
+        return set()
+    if term[0] == '*' and len(term) == 3:
+        return term_variables(term[1]) | term_variables(term[2])
+    raise ValueError('unknown term')
+
+
+def free_variables(formula):
+    if not isinstance(formula, tuple) or not formula:
+        raise ValueError('a formula tuple is required')
+    tag = formula[0]
+    if tag in ('=', 'R') and len(formula) == 3:
+        return term_variables(formula[1]) | term_variables(formula[2])
+    if tag == 'not' and len(formula) == 2:
+        return free_variables(formula[1])
+    if tag in ('and', 'or', 'implies') and len(formula) == 3:
+        return free_variables(formula[1]) | free_variables(formula[2])
+    if tag in ('all', 'exists') and len(formula) == 3:
+        return free_variables(formula[2]) - {variable(formula[1])}
+    raise ValueError('unknown formula')
+
+
+class Model:
+    def __init__(self, table, identity=0, relation=()):
+        self.table = tuple(tuple(row) for row in table)
+        self.n = len(self.table)
+        if self.n == 0 or any(len(row) != self.n for row in self.table):
+            raise ValueError('a nonempty square operation table is required')
+        self.domain = tuple(range(self.n))
+        for row in self.table:
+            for value in row:
+                self.element(value)
+        self.identity = self.element(identity)
+        pairs = tuple(tuple(pair) for pair in relation)
+        for pair in pairs:
+            if len(pair) != 2:
+                raise ValueError('a binary relation is required')
+            for value in pair:
+                self.element(value)
+        self.relation = frozenset(pairs)
+
+    def element(self, value):
+        if type(value) is not int or not 0 <= value < self.n:
+            raise ValueError('element outside the finite domain')
+        return value
+
+    def term(self, term, assignment):
+        if term[0] == 'v':
+            return assignment[term[1]]
+        if term[0] == 'e':
+            return self.identity
+        return self.table[self.term(term[1], assignment)][self.term(term[2], assignment)]
+
+    def holds(self, formula, assignment=None):
+        free = free_variables(formula)
+        values = {} if assignment is None else dict(assignment)
+        if not free <= values.keys():
+            raise ValueError('missing free-variable assignment')
+        for name, value in values.items():
+            variable(name)
+            self.element(value)
+        return self._holds(formula, values)
+
+    def _holds(self, f, values):
+        tag = f[0]
+        if tag == '=':
+            return self.term(f[1], values) == self.term(f[2], values)
+        if tag == 'R':
+            return (self.term(f[1], values), self.term(f[2], values)) in self.relation
+        if tag == 'not':
+            return not self._holds(f[1], values)
+        if tag in ('all', 'exists'):
+            results = (self._holds(f[2], values | {f[1]: d}) for d in self.domain)
+            return all(results) if tag == 'all' else any(results)
+        left, right = self._holds(f[1], values), self._holds(f[2], values)
+        if tag == 'and':
+            return left and right
+        if tag == 'or':
+            return left or right
+        return not left or right
+
+
+def cyclic(n):
+    n = natural(n)
+    if n == 0:
+        raise ValueError('a positive modulus is required')
+    return Model(tuple(tuple((a + b) % n for b in range(n)) for a in range(n)))
+
+
+def homomorphism(source, target, mapping):
+    mapping = tuple(mapping)
+    if len(mapping) != source.n:
+        raise ValueError('one image per source element is required')
+    for value in mapping:
+        target.element(value)
+    return mapping[source.identity] == target.identity and all(
+        mapping[source.table[a][b]] == target.table[mapping[a]][mapping[b]]
+        for a, b in product(source.domain, repeat=2)
+    )
+
+
+def quotient_table(model, labels):
+    labels = tuple(labels)
+    if len(labels) != model.n:
+        raise ValueError('one class label per element is required')
+    for label in labels:
+        natural(label)
+    groups = fibers({a: () for a in model.domain}, labels.__getitem__)
+    names = tuple(sorted(groups))
+    index = {name: i for i, name in enumerate(names)}
+    rows = []
+    for left in names:
+        row = []
+        for right in names:
+            outputs = {labels[model.table[a][b]] for a in groups[left] for b in groups[right]}
+            if len(outputs) != 1:
+                raise ValueError('operation depends on representatives')
+            row.append(index[outputs.pop()])
+        rows.append(tuple(row))
+    return Model(rows, index[labels[model.identity]]), names, groups
+```
+
+```python file=structures_checks.py
+from itertools import product, permutations
+from math import gcd
+import json
+from structures_study import Model, cyclic, free_variables, homomorphism, quotient_table
+
+
+def run():
+    checks = 0
+    def check(condition):
+        nonlocal checks
+        assert condition
+        checks += 1
+    x, y, z, e = ('v', 'x'), ('v', 'y'), ('v', 'z'), ('e',)
+    mul = lambda a, b: ('*', a, b)
+    eq = lambda a, b: ('=', a, b)
+    assoc = ('all', 'x', ('all', 'y', ('all', 'z', eq(mul(mul(x, y), z), mul(x, mul(y, z))))))
+    identity = ('all', 'x', ('and', eq(mul(e, x), x), eq(mul(x, e), x)))
+    inverse = ('all', 'x', ('exists', 'y', ('and', eq(mul(x, y), e), eq(mul(y, x), e))))
+    table_cases = 0
+    for n in (1, 2):
+        for cells in product(range(n), repeat=n*n):
+            table = tuple(tuple(cells[a*n:(a+1)*n]) for a in range(n))
+            for unit in range(n):
+                model = Model(table, unit)
+                check(model.holds(assoc) == all(table[table[a][b]][c] == table[a][table[b][c]] for a,b,c in product(range(n), repeat=3)))
+                check(model.holds(identity) == all(table[unit][a] == a == table[a][unit] for a in range(n)))
+                check(model.holds(inverse) == all(any(table[a][b] == unit == table[b][a] for b in range(n)) for a in range(n)))
+                table_cases += 1
+    rxy = ('R', x, y)
+    every_some = ('all', 'x', ('exists', 'y', rxy))
+    some_every = ('exists', 'y', ('all', 'x', rxy))
+    relation_cases = 0
+    for n in (1, 2, 3):
+        pairs = tuple(product(range(n), repeat=2))
+        for bits in product((False, True), repeat=n*n):
+            relation = {p for p, bit in zip(pairs, bits) if bit}
+            model = Model(cyclic(n).table, relation=relation)
+            rows = [sum((a,b) in relation for b in range(n)) for a in range(n)]
+            columns = [sum((a,b) in relation for a in range(n)) for b in range(n)]
+            check(model.holds(every_some) == (min(rows) > 0))
+            check(model.holds(some_every) == (max(columns) == n))
+            check(model.holds(('implies', some_every, every_some)))
+            check(model.holds(('not', every_some)) == model.holds(('exists', 'x', ('all', 'y', ('not', rxy)))))
+            for permutation in permutations(range(n)):
+                moved = {(permutation[a],permutation[b]) for a,b in relation}
+                renamed = Model(cyclic(n).table, relation=moved)
+                check(model.holds(every_some) == renamed.holds(every_some))
+            relation_cases += 1
+    m = Model(cyclic(2).table, relation={(0,0),(1,1)})
+    check(m.holds(every_some) and not m.holds(some_every))
+    check(free_variables(('exists', 'y', eq(x,y))) == {'x'})
+    check(not m.holds(('all','x',('exists','x',('not',eq(x,x))))))
+    check(m.holds(('exists','y',('not',eq(x,y))), {'x':0}))
+    check(not m.holds(('exists','y',('not',eq(y,y))), {'y':0}))
+    countermodel = Model(((0,1,2),(1,2,0),(2,0,0)))
+    check(countermodel.holds(identity))
+    check(not countermodel.holds(assoc))
+    map_cases = 0
+    for n,m in product(range(2,9), range(1,9)):
+        source,target = cyclic(n),cyclic(m)
+        accepted = 0
+        for k in range(m):
+            mapping = tuple(k*a % m for a in range(n))
+            actual = homomorphism(source,target,mapping)
+            check(actual == (n*k % m == 0))
+            map_cases += 1
+            if actual:
+                accepted += 1
+                quotient,names,groups = quotient_table(source,mapping)
+                check(homomorphism(quotient,target,names))
+                check(len(names) == len(set(mapping)))
+                check(n == len(groups[0])*len(groups))
+                for a,b in product(range(n),repeat=2):
+                    check((mapping[a] == mapping[b]) == (mapping[(a-b)%n] == 0))
+                    term = mul(mul(x,e),mul(y,x))
+                    check(mapping[source.term(term,{'x':a,'y':b})] == target.term(term,{'x':mapping[a],'y':mapping[b]}))
+        check(accepted == gcd(n,m))
+    exhaustive_maps = 0
+    for n,m in product(range(1,5),repeat=2):
+        source,target=cyclic(n),cyclic(m)
+        observed=set()
+        for mapping in product(range(m),repeat=n):
+            if homomorphism(source,target,mapping):
+                observed.add(mapping)
+            exhaustive_maps += 1
+        expected={tuple(k*a % m for a in range(n)) for k in range(m) if n*k % m == 0}
+        check(observed == expected)
+    q,names,groups=quotient_table(cyclic(6),(0,2,4,0,2,4))
+    check(names == (0,2,4) and groups[0] == frozenset({0,3}))
+    check(q.table == cyclic(3).table)
+    units8={a for a in range(8) if any(a*b % 8 == 1 for b in range(8))}
+    check(units8 == {1,3,5,7})
+    for a in range(8):
+        check((a in units8) == (gcd(a,8) == 1))
+    rejected=0
+    invalid=[lambda:cyclic(0),lambda:cyclic(True),lambda:Model(()),lambda:Model(((0,1),)),lambda:Model(((True,),)),lambda:Model(((0,),),1),lambda:Model(((0,),),relation={(0,1)}),lambda:cyclic(2).holds(eq(x,e)),lambda:cyclic(2).holds(eq(x,e),{'x':2}),lambda:cyclic(2).holds(('or',eq(e,e),('bogus',))),lambda:cyclic(2).holds(('all','bad name',eq(e,e))),lambda:homomorphism(cyclic(2),cyclic(2),(0,)),lambda:homomorphism(cyclic(2),cyclic(2),(0,2)),lambda:quotient_table(cyclic(4),(0,0,1,1)),lambda:quotient_table(cyclic(2),(0,)),lambda:quotient_table(cyclic(2),(0,-1))]
+    for call in invalid:
+        try:
+            call()
+        except ValueError:
+            rejected += 1
+        else:
+            raise AssertionError('invalid input accepted')
+    check(rejected == len(invalid))
+    return {'assertions':checks,'operation_models':table_cases,'relation_models':relation_cases,'cyclic_map_candidates':map_cases,'exhaustive_maps':exhaustive_maps,'rejected_calls':rejected,'published_Z8_units':sorted(units8)}
+
+
+if __name__ == '__main__':
+    print(json.dumps(run(),indent=2))
+```
+
+**Continue:** [Review models proofs and preserved structure before the next branch](Review-models-proofs-and-preserved-structure-before-the-next-branch.lingua#r_00871D52F29C75057810297F4C).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_004797A521484FF4E6DDBFF6C4

@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Distinguish the present composition from the equilibrium relation (@gc-qk: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N") { r_2E5AXFZWT12G4Y2BGG89YHSG4G
+Distinguish the present composition from the equilibrium relation (@gc-qk: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N", #hephaestus-core "Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N") { r_2E5AXFZWT12G4Y2BGG89YHSG4G
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 13 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), All about chemical equilibrium completely; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), activities and equilibrium constants.
 
 The reaction quotient Q describes the current activity combination for an identified balanced reaction. At thermodynamic equilibrium under the appropriate conditions it equals K for that reaction, temperature, and standard-state convention. A concentration-form expression can approximate that account under explicit conditions; its numerical units and conventions need examination.
@@ -16,4 +16,9 @@ Read the complete equilibrium chapter and Chem1 unit, including the distinction 
 **Continue:** [Predict a changed equilibrium by changing Q and the constraints](Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Third chemistry-block reading:** Use the distinction between current quotient and equilibrium relation with the preceding symbolic reversible model. Keep activities dimensionless and standard states explicit; the common ratio b/a uses a declared ideal same-reference model. Full activity, thermodynamic and chemical-potential derivations and whole Chem1/IUPAC assignments remain later formation. The ratio of directional constants is established only for the stipulated elementary first-order model.
+
+**Continue in the third chemistry block:** [Predict a changed equilibrium by changing Q and the constraints](Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N).
+
 } r_2E5AXFZWT12G4Y2BGG89YHSG4G

@@ -1,0 +1,24 @@
+Import "../Mathematics.lingua"
+
+Begin with numbers, models and mathematical arguments (@math-core: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK") { r_0BC762DF1B7E019C36477207F3
+Mathematics studies quantities, relations and structures through explicit definitions and arguments. Start by counting objects, comparing lengths and describing a pattern; unfamiliar symbols should be introduced when the question needs them. A number can represent a count, a measurement or an abstract object. The same arithmetic can serve different purposes, but the interpretation must be stated.
+
+Suppose a store holds 12 identical pieces, receives 7 and uses 5. Its final count is 12 + 7 − 5 = 14. Replace these particular numbers with letters: final stock S = initial stock I + receipts R − uses U. A letter represents a quantity whose allowed values and meaning we specify. If pieces are indivisible, stock counts are integers. A model that gives half a piece needs a different interpretation or a corrected assumption.
+
+An equation asserts equality; it is different from an instruction to perform a calculation. In 2x + 3 = 11, subtracting 3 from both sides and dividing both sides by 2 gives x = 4. Substitution checks 2 × 4 + 3 = 11. A mathematical argument explains why these operations preserve the solutions. An example that works cannot by itself prove a statement about every possible number.
+
+For a first proof, define an even integer to be an integer of the form 2k. If a = 2m and b = 2n, then a + b = 2(m + n), which is even because integers are closed under addition. This proves the claim for every pair of even integers. By contrast, the claim that every sum of two odd integers is odd is refuted by 1 + 3 = 4. State assumptions, distinguish proof from observation and look for counterexamples.
+
+The stock equation leads toward algebra; changes in stock over time toward functions and analysis; shapes and spatial relations toward geometry; connections and arrangements toward discrete mathematics; uncertain observations toward probability and inference. These branches share reasoning but ask different questions. Pure mathematical problems also deserve study without an immediate industrial application.
+
+**Read and practise:** [Prealgebra 2e](../../inquiry/quantitative-literacy/sources/Prealgebra.lingua#r_36KCS76R5ZTWZMVPV5B11Y3BKS) supplies the full arithmetic-to-algebra foundation and exercises. Use [Equations, unknowns, systems and constraints](../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ) for the next equation study. The existing source Records retain edition and reuse information; this introduction adds original examples.
+
+**Work:** change the stock example to 12 + 7 − 23 and explain the difference between a valid integer calculation and an infeasible physical inventory. Solve 3x − 2 = 10 and check the result. Prove that an even integer plus an odd integer is odd from their definitions. Give a counterexample to the claim that every increasing numerical pattern continues linearly.
+
+**Review:** explain a quantity, an expression, an equation, a model and a proof in your own words. Show where each appears in your work. This first lesson does not complete algebra, proof, analysis or the mathematics core; it establishes a common beginning for their development.
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the mathematics core:** [A number needs a quantity and a reference](../../inquiry/quantitative-literacy/foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK).
+
+} r_0BC762DF1B7E019C36477207F3

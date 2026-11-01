@@ -1,0 +1,23 @@
+Import "../Inquiry.lingua"
+
+Specify which result another investigator can reconstruct (@inquiry-reproduction: 0, is #chapter, #hephaestus-core "../metrology/foundations/Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC") { r_0B84B9BB7199B19E8B2B61EF3F
+Agreement has several meanings. Another person might recover the same arithmetic from the same input, implement the stated calculation independently, collect new observations with the same procedure, or test the claim with a different method. State the particular agreement sought and the circumstances in which a difference would matter. Vocabulary varies across disciplines, so define the claim rather than relying on the word “reproducible” alone.
+
+**Read:** [Wilson and colleagues' Good enough practices in scientific computing](../reproducible-computation/sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), especially data management and explicit analysis dependencies, after the [shared computational-claim lesson](../reproducible-computation/foundations/Question-and-claim.lingua#r_2G13323XWBD8ZQD7S8FVE13AT0). Read the complete paper as the larger assignment. [Peng's short article](../reproducible-computation/sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9) remains linked by the shared source Record for comparison of terminology; distinguish a supplied computational account from independent evidence about the world. Consult the sources' availability and inspection notes rather than assuming every linked page was freshly retrieved.
+
+Suppose a table contains values 10, 20 and 30 but omits the unit. Two independently written programs can agree that the mean is 20 while one investigator interprets centimetres and another millimetres. Their arithmetic agrees and their physical conclusions disagree by a factor of ten. A third person using the same mistaken unit may reproduce the erroneous physical conclusion exactly. Independence of implementation does not repair a shared input interpretation.
+
+Preserve the chain of reasoning. Identify the original observation or invented input, the meaning of each field, object and event identifiers, units, missing-value conventions, transformations, excluded values and the reason for each exclusion. Keep a corrected table distinguishable from the original. Record the calculation and environment sufficiently for the stated reconstruction, then check a few cases by a route that does not simply repeat the same implementation.
+
+For the paired observations in the later study, calculate each within-object difference before averaging. Independently subtract the two overall means, using exactly the same paired objects and equal weights. These two calculations must agree algebraically. If a value is missing, silently dropping it in only one method breaks that shared-data condition. Report the actual selected pairs and the scope of the resulting estimate; do not turn a missing observation into a measured zero.
+
+Reconstruction is a means of exposing assumptions and errors, not a guarantee of truth. A saved graph may be regenerated while the sampling population remains wrong. A well-documented failed calculation can be valuable evidence about a method's limits. Conversely, a plausible conclusion with unavailable inputs cannot be independently checked to the same extent as a complete account.
+
+**Work:** create an original miniature input table with explicit units, meanings and object identifiers. Ask a reader to reconstruct one result using only the table and your description. Record the first ambiguity. Compare a direct hand calculation with a small program using the already developed computing preparation. Introduce one missing value and state your handling rule before recalculating. Explain exactly which claim your checks establish and which requires new observations.
+
+**Next shared reading:** [A measurement record another person can interpret and repeat](../metrology/foundations/Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC). First construct the observation, unit, identity and revision account. Standard-uncertainty combination, sensitivity coefficients and advanced reporting calculations retain their later preparation. Reuse [data meaning and schema](../reproducible-computation/data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH) when describing the input table.
+
+**Continue:** [A measurement record another person can interpret and repeat](../metrology/foundations/Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0B84B9BB7199B19E8B2B61EF3F

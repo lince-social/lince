@@ -1,0 +1,25 @@
+Import "political-economy-value-production-and-distribution/Political-Economy-value-production-and-distribution.lingua"
+Import "markets-organisations-and-economic-coordination/Markets-organisations-and-economic-coordination.lingua"
+Import "money-finance-and-macroeconomic-systems/Money-finance-and-macroeconomic-systems.lingua"
+Import "states-power-and-political-institutions/States-power-and-political-institutions.lingua"
+Import "public-finance-collective-provision-and-commons/Public-finance-collective-provision-and-commons.lingua"
+Import "development-inequality-and-international-political-economy/Development-inequality-and-international-Political-Economy.lingua"
+Import "history-and-methods-of-political-economy/History-and-methods-of-Political-Economy.lingua"
+Import "political-economy-of-production-and-infrastructure/Political-Economy-of-production-and-infrastructure.lingua"
+
+Political-Economy (@political-economy: 0, is #chapter, #outline, #contains "political-economy-value-production-and-distribution/Political-Economy-value-production-and-distribution.lingua#r_40G56P5QGFBE8R837HVXQMWK2R", #contains "markets-organisations-and-economic-coordination/Markets-organisations-and-economic-coordination.lingua#r_36S6PP6AZYT11CGX09K042DRGY", #contains "money-finance-and-macroeconomic-systems/Money-finance-and-macroeconomic-systems.lingua#r_5XNVJW39BEKCCDC97ABTDMD98H", #contains "states-power-and-political-institutions/States-power-and-political-institutions.lingua#r_3H1ZBJRD94KFV7ZQ0AZVEQ14MZ", #contains "public-finance-collective-provision-and-commons/Public-finance-collective-provision-and-commons.lingua#r_2EE3Y6NDNF2VNYQEW6AZCJNZ09", #contains "development-inequality-and-international-political-economy/Development-inequality-and-international-Political-Economy.lingua#r_34KW7KS9CP6TSBK63H7JJNX64S", #contains "history-and-methods-of-political-economy/History-and-methods-of-Political-Economy.lingua#r_695B2H52DHR8RZDZMZYPVT2KHE", #contains "political-economy-of-production-and-infrastructure/Political-Economy-of-production-and-infrastructure.lingua#r_787Q5KHYKT8VXDA1BD94VABJS7") { r_2WPG1Y767BM24Z0K4BY6Y6T62W
+Study production, distribution, exchange, power, and political institutions together. Enter through a question about work, resources, money, a collective arrangement, or a historical change, and introduce the relevant concepts, accounts, evidence, and formal methods at the depth used. Compare explanations through Sociology, History, and Philosophy.
+
+**Parent:** [Scholazein — pursuits of a well-spent life](../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6).
+
+**Branches:**
+
+- [Political-Economy: value, production, and distribution](political-economy-value-production-and-distribution/Political-Economy-value-production-and-distribution.lingua#r_40G56P5QGFBE8R837HVXQMWK2R)
+- [Markets, organisations, and economic coordination](markets-organisations-and-economic-coordination/Markets-organisations-and-economic-coordination.lingua#r_36S6PP6AZYT11CGX09K042DRGY)
+- [Money, finance, and macroeconomic systems](money-finance-and-macroeconomic-systems/Money-finance-and-macroeconomic-systems.lingua#r_5XNVJW39BEKCCDC97ABTDMD98H)
+- [States, power, and political institutions](states-power-and-political-institutions/States-power-and-political-institutions.lingua#r_3H1ZBJRD94KFV7ZQ0AZVEQ14MZ)
+- [Public finance, collective provision, and commons](public-finance-collective-provision-and-commons/Public-finance-collective-provision-and-commons.lingua#r_2EE3Y6NDNF2VNYQEW6AZCJNZ09)
+- [Development, inequality, and international Political-Economy](development-inequality-and-international-political-economy/Development-inequality-and-international-Political-Economy.lingua#r_34KW7KS9CP6TSBK63H7JJNX64S)
+- [History and methods of Political-Economy](history-and-methods-of-political-economy/History-and-methods-of-Political-Economy.lingua#r_695B2H52DHR8RZDZMZYPVT2KHE)
+- [Political-Economy of production and infrastructure](political-economy-of-production-and-infrastructure/Political-Economy-of-production-and-infrastructure.lingua#r_787Q5KHYKT8VXDA1BD94VABJS7)
+} r_2WPG1Y767BM24Z0K4BY6Y6T62W

@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Measure a memory hierarchy under a declared cost model (@computing-memory-cost: 0, is #chapter, #hephaestus-core "Investigate-private-state-shared-pages-and-complete-service-effects.lingua#r_0044D31C76AB50C657C6A092BB") { r_008EC6006BF0912737390C8789
+Correct translation and protection do not determine how long an access takes. A hierarchy can retain nearby or recently used data in smaller faster storage, while translations may also have their own cache. A data-cache miss and an absent-page event are different: one asks a lower storage level for data under an existing access, the other concerns a mapping/residency rule. Our upcoming cost example models only a data-address trace, separately from the process service simulator.
+
+Assume a read-only, physically addressed, direct-mapped cache with two lines and one word per line. Initially both are invalid. Physical address a selects line i=a mod 2 and tag q=floor(a/2). A matching valid tag is a hit; otherwise load that word/tag and count a miss. The reference memory is fixed during this trace, so there is no write policy or coherence problem in the example. These restrictions matter; the policy is not a description of every real cache.
+
+Suppose lookup costs one unit and a miss adds five units. Every access pays the lookup; a miss costs six in total. For N accesses and M misses, total cost is N+5M and average cost is 1+5M/N when N>0. Without the cache, assume a direct reference-memory access costs five units, giving 5N. The modeled cache is faster exactly when M/N<4/5. The empty trace costs zero and has no average per-access cost. The units are invented accounting units, not nanoseconds or measured CPU cycles.
+
+Original trace 4,5,4,5,6,4,5,4 has four misses and four hits, costing 28 units instead of 40 direct units. Trace 4,6,4,6,4,6,4,6 repeatedly conflicts in line zero: eight misses cost 48 units, worse than direct access. Equal instruction/reference counts need not imply equal cost. A claim that more capacity or a different replacement policy helps must be evaluated against its changed costs and the actual trace, not a slogan that caching always speeds things up.
+
+The address context also matters. A cache keyed only by virtual address could confuse process 0's virtual 0 with process 1's virtual 0 unless it incorporates the necessary context or uses a suitable invalidation/tagging design. Our small cost model instead takes physical addresses and makes no claim about translation-cache implementation. The baseline process example gives physical 4 and 8 at those same-number virtual addresses.
+
+**Reading and work:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), selected topic 14 hit/miss and policy discussion, with topic 16's translation context. Independently predict the tags after each reference in both traces. Prove the cost formula and break-even criterion, then design two traces of the same length with different locality. Full hardware timing, write-back, multi-core coherence, translation caches and measured system performance remain later work.
+
+**Continue:** [Investigate private state shared pages and complete service effects](Investigate-private-state-shared-pages-and-complete-service-effects.lingua#r_0044D31C76AB50C657C6A092BB).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_008EC6006BF0912737390C8789

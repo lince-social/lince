@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Prove when a common tangent is a global coexistence certificate (@chemistry-phase-tangent: 0, is #chapter, #hephaestus-core "../../engineering/materials-engineering/thermodynamics/Regular-solutions-and-local-versus-global-stability.lingua#r_1T9CWJMKN5W5P6KED07XB3GY0J") { r_000E7AF39B889246EA66B3464F
+The preceding shared lesson gives the geometrical construction. Derive its chemical meaning from G=n g(x) with n=n_A+n_B and x=n_B/n at fixed T,p. Since ∂x/∂n_A=−x/n and ∂x/∂n_B=(1−x)/n,
+
+μ_A=g−x g′, and μ_B=g+(1−x)g′.
+
+The tangent line L(y)=g(x)+g′(x)(y−x) has values μ_A at y=0 and μ_B at y=1. Equality of both component chemical potentials in two phases therefore means their tangent lines coincide. Equal slopes alone omit the intercept condition. For different candidate phase curves, use their own g values on the same chemical reference basis.
+
+Now prove a global statement rather than merely solving two equalities. Suppose one line L(y)=a+by lies at or below every admissible phase free-energy curve throughout its allowed compositions, and touches phases α and β at x_α,x_β. Any assemblage with amount fractions f_k≥0, Σf_k=1 and Σf_kx_k=z has molar bulk free energy Σf_k g_k(x_k)≥Σf_k L(x_k)=L(z). For z between the contacts, the lever-rule mixture attains this bound. It is therefore globally minimizing within the declared candidate set and omitted-interface approximation.
+
+A tangent that crosses below only part of one curve is not this certificate. A common tangent between two selected curves can fail when a third admissible phase lies lower. Likewise, satisfying μ_A^α=μ_A^β and μ_B^α=μ_B^β identifies a stationary transfer account but need not identify the global minimum. The lower convex envelope records the lowest bulk free energy attainable by allowed mixtures; its construction is an optimization under material conservation.
+
+Adding the same reference line c+dy to every candidate g_k changes every assemblage at overall composition z by c+dz. It leaves phase choices, coexistence compositions, curvature and lever fractions unchanged. Independently shifting only one physical phase changes its relative free energy and can change equilibrium. This distinction explains why a symmetric mixing contribution may have a horizontal coexistence line even when the complete molar G includes unequal pure-component reference terms.
+
+The proof ignores interfacial energy per mole, coherency stresses and long-range constraints. Those can matter for finite domains or particular materials and cannot be removed merely by calling a sample equilibrium. The supporting-line argument is exact for its stated bulk model, while the physical suitability of that model needs evidence.
+
+**Work:** derive the partial derivatives and the line endpoints, prove the weighted lower bound and give a third-phase counterexample to an otherwise valid pairwise tangent. Reuse [Define chemical potential as a constrained change of amount](Define-chemical-potential-as-a-constrained-change-of-amount.lingua#r_00B3C5E118A7E5D485373E95A5) for extensivity and [Common tangents and conservation across coexisting phases](../../engineering/materials-engineering/thermodynamics/Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5) for conservation. Read [Fundamentals of Materials Science — MIT 3.012](../../engineering/materials-engineering/sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z) thermodynamics lecture 17 with the stated source-inspection boundaries.
+
+**Continue:** [Regular solutions and local versus global stability](../../engineering/materials-engineering/thermodynamics/Regular-solutions-and-local-versus-global-stability.lingua#r_1T9CWJMKN5W5P6KED07XB3GY0J).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_000E7AF39B889246EA66B3464F

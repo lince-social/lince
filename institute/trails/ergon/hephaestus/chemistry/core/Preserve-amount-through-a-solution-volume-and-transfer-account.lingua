@@ -1,0 +1,19 @@
+Import "../Chemistry.lingua"
+
+Preserve amount through a solution volume and transfer account (@chemistry-solution-amounts: 0, is #chapter, #hephaestus-core "../general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6") { r_0087CFF91BFEFF9962C419ED59
+For a homogeneous phase, amount concentration is c_i=n_i/V, where V is total solution volume under specified conditions. An analytical component concentration C is its total component amount divided by that same V. It can equal a sum of species concentrations with stoichiometric coefficients even when no species has concentration C by itself. Keep c_i distinct from mass fraction, molality and amount fraction: their denominators differ.
+
+If a homogeneous aliquot of volume v is taken from a stock with analytical concentration C_s, it contains component amount C_s v. Complete transfer to a final solution volume V, with no component loss or addition, gives C_f=C_s v/V. This does not assert that solvent and stock volumes add exactly. V is the declared final solution volume. The equation concerns a conserved component, so species may re-equilibrate during dilution without invalidating the component balance.
+
+For two inputs, n_total=C₁v₁+C₂v₂ and C_f=n_total/V_final under the same closed-component assumptions. Using V_final=v₁+v₂ requires an additional volume model. If a sample is removed and only its solvent replaced, the amount after each well-mixed withdrawal is multiplied by the retained-volume fraction; replenishing solvent does not restore removed solute.
+
+Original paper ledger: a hypothetical stock has C_s=9×10⁻⁶ mol/L. An aliquot v=0.005 L contains 4.5×10⁻⁸ mol of the A component. Its stated final volume is 0.100 L, giving C=4.5×10⁻⁷ mol/L. The ledger does not specify actual apparatus or claim a laboratory preparation. A two-stage transfer multiplies the two dilution fractions; it does not make two independent copies of the stock uncertainty. Reuse the inquiry covariance account if uncertainty is assessed.
+
+[Prepare and dilute a solution under an explicit amount and volume model](../general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6) preserves the broader preparation/standardization reading and practical demands. Here establish amount, volume, homogeneity and transfer assumptions before choosing instrumentation. [Identify aqueous species and write a defensible net ionic equation](../general-chemistry/reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89) then distinguishes the actual species account from a compact molecular equation.
+
+**Read and work:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), section 3.3. Recover the original component amount from the final concentration and volume; compare a direct dilution with two stages having the same product of fractions. Give one situation in which the amount balance still holds but a volume-additivity shortcut fails, and one in which the liquid component balance itself needs an extra phase or loss term. Numerical precision cannot establish transfer completeness or equilibrium.
+
+**Continue:** [Prepare and dilute a solution under an explicit amount and volume model](../general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0087CFF91BFEFF9962C419ED59

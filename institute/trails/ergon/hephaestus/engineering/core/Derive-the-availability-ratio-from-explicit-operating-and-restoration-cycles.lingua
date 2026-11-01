@@ -1,0 +1,23 @@
+Import "../Engineering.lingua"
+
+Derive the availability ratio from explicit operating and restoration cycles (@engineering-service-cycles: 0, is #chapter, #hephaestus-core "Model-finite-service-with-one-repair-crew-and-shared-dependencies.lingua#r_009187D1F4248E8A8ECB008F87") { r_00F129849803FE41D31C9AD071
+The preceding shared maintenance lesson gives the familiar mean-up/(mean-up+mean-down) expression. Establish what makes such a statement meaningful before using it as a performance promise. This derivation is original and conditional on the specified averages; it does not infer those averages from a short log.
+
+Let Uᵢ≥0 be useful operating time in cycle i and Dᵢ≥0 the entire following interval without the required function. Include diagnosis, access, waiting, active repair and return checks in Dᵢ if they prevent that function. Let Cᵢ=Uᵢ+Dᵢ and Sₙ=Σᵢ≤ₙCᵢ. At a completed cycle boundary the observed up fraction is
+
+A(Sₙ)=ΣUᵢ/ΣCᵢ = (ΣUᵢ/n)/(ΣUᵢ/n+ΣDᵢ/n).
+
+If the two sample averages converge to finite u and d with u+d>0, elementary limits give A(Sₙ)→u/(u+d). This algebra does not require independence. Independent identically distributed pairs with finite means are one familiar sufficient probabilistic model through the strong law of large numbers; the strong law itself is not proved here. Correlation within a pair is permitted. An aging or changing maintenance policy need not supply stable limiting averages.
+
+Why can the statement extend beyond cycle boundaries? From Sₙ/n→c=u+d>0, one has Cₙ/n=Sₙ/n−[(n−1)/n][Sₙ₋₁/(n−1)]→0. For Sₙ≤t<Sₙ₊₁ the extra elapsed time and extra up time are at most Cₙ₊₁. Both are negligible relative to Sₙ, so the ratio has the same limit. This argument needs the convergent finite cycle averages and nonexplosive time progression; merely naming a typical repair time is insufficient.
+
+With u=100 h and d=5 h the ratio is 20/21. If the actual unavailability contains an additional twenty-hour mean wait, it is 100/125=0.8 under otherwise comparable limiting cycles. Counting only five hours of hands-on repair would overstate continuing service. A shorter physical replacement can coexist with a longer logistical wait. A repair that fails its return check belongs in the unfinished restoration interval, not in a newly claimed period of useful operation.
+
+This is a long-run time fraction under a cycle model, not first-mission survival, probability of meeting a deadline, or a guarantee that next week's up fraction equals it. An observed finite window may start mid-cycle and end during restoration. Use [Define the service window before calculating availability](Define-the-service-window-before-calculating-availability.lingua#r_00A91BB3D08F5899C309280754) for its actual accounting.
+
+**Work:** make a finite sequence with the same total up time and different repair grouping. Compare time fraction, longest interruption and useful output during a demand peak. Construct a sequence of progressively longer down cycles for which the proposed stable-mean premise fails. Explain why fitting the ratio alone cannot identify a failure mechanism or choose a replacement interval.
+
+**Continue:** [Model finite service with one repair crew and shared dependencies](Model-finite-service-with-one-repair-crew-and-shared-dependencies.lingua#r_009187D1F4248E8A8ECB008F87).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00F129849803FE41D31C9AD071

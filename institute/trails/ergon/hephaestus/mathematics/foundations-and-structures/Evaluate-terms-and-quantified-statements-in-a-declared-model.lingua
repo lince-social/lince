@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Evaluate terms and quantified statements in a declared model (@math-structures-models: 0, is #chapter, #math-structures "Separate-truth-in-one-structure-from-consequence-across-structures.lingua#r_00C6FF23EE30BF39F28B2A4DD9") { r_005F4DEF67F10EF22F085DD086
+An interpretation M supplies a nonempty domain D, an element e^M, a total binary function *^M:D×D→D and a relation R^M⊆D×D. The symbol e need not act as an identity unless an axiom requires that. A variable assignment s sends variable names to domain elements. Interpret a term recursively: x denotes s(x), e denotes e^M, and u*v denotes the operation applied to the interpreted children. Equality means equality of the resulting elements.
+
+The notation M,s⊨φ means that φ is true in this model under this assignment. For an atomic R(u,v), test membership of the interpreted ordered pair in R^M. Negation reverses truth; conjunction needs both parts; disjunction needs at least one; implication fails exactly when its antecedent is true and consequent false. For ∀x φ, evaluate φ under every assignment s[x↦d], d∈D. For ∃x φ, at least one such assignment must work. Quantifiers range over the domain, including elements with no constant name.
+
+Take D={0,1}, e^M=0, *=addition modulo 2 and R={(0,0),(1,1)}. Then ∀x∃y R(x,y) is true by choosing y=x. But ∃y∀x R(x,y) is false: each proposed y fails for the other x. A finite evaluator can exhaust this model. The result says nothing by itself about all models or an infinite domain.
+
+Assignments matter only at free occurrences. This follows by induction: term values depend on their occurring variables; atomic formulas inherit that dependency; connectives preserve it; and under a quantifier the assigned bound variable is overwritten in both evaluations. Consequently a sentence has a truth value independent of the initial assignment.
+
+Substitution must avoid capture. In ∃y(x≠y), replacing free x by the term y naively gives ∃y(y≠y), always false. On a two-element domain the intended instance, with the outside y fixed, is true. First rename the bound y to fresh z, then substitute to obtain ∃z(y≠z). This is a semantic error, not a stylistic objection. The supplied evaluator changes assignments and scopes directly; it does not implement general capture-avoiding symbolic substitution.
+
+**Work:** evaluate the two quantifier orders by listing witnesses and failed candidates. Prove assignment independence for sentences, filling in the quantifier step. Construct a different R for which both sentences are true and one for which both are false. Read [forall x Calgary formal logic](../sources/forall-x-Calgary-formal-logic.lingua#r_00A7D972F37307C8A2E5871D87), chapter 31; compare its fresh-name presentation with this assignment-based one.
+
+**Continue:** [Separate truth in one structure from consequence across structures](Separate-truth-in-one-structure-from-consequence-across-structures.lingua#r_00C6FF23EE30BF39F28B2A4DD9).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_005F4DEF67F10EF22F085DD086

@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Derive storage from a charge voltage relation (@physics-capacitive-work: 0, is #chapter, #hephaestus-core "State-the-physical-assumptions-behind-a-lumped-circuit.lingua#r_001A7088BC509FE999669C908D") { r_0044E82DC1FD162C1B4C9F03EA
+An ideal linear capacitor has a signed plate charge Q and voltage difference v related by Q=Cv, with C>0 fixed by the declared geometry and material state. The other plate has −Q in this two-terminal model. C has units coulombs per volt, or farads. It is a response coefficient within a domain, not the maximum charge, maximum voltage, or a certification of a real device. Zero Q and v leave the same C defined by the relation; division of an observed zero by zero would not measure it.
+
+With current entering the chosen positive-voltage terminal, I=Q′=Cv′ if C is constant. From p=vI, the change in stored energy is dU=v dQ=(Q/C)dQ. Integrating from the uncharged state gives U=Q²/(2C)=Cv²/2≥0. This remains positive for either charge sign. It is the reversible electrical storage of the specified ideal element, not necessarily all the work supplied by a source during a dissipative charging process. It also does not automatically include chemical storage, mechanical work or dielectric loss.
+
+The constant-C assumption matters. If geometry changes, differentiating Q=Cv gives I=Cv′+vC′, and the electric storage derivative need not equal port power because mechanical work can cross the system boundary. If a nonlinear reversible relation v(Q) is specified, the appropriate storage difference is ∫v(Q)dQ; replacing it by Qv/2 requires a linear relation through the origin. Hysteresis or leakage needs further state and dissipation information. Do not generalize the quadratic formula by its appearance alone.
+
+Parallel ideal capacitors with the same terminal voltage have Q_total=(C₁+C₂)v and summed energy (C₁+C₂)v²/2. An initially neutral floating internal node between two series capacitors imposes equal signed transferred charge magnitudes, so v=Q/C₁+Q/C₂ and C_series=C₁C₂/(C₁+C₂). If that internal node has a nonzero initial net charge, its constraint must be retained and the simple zero-offset reduction is insufficient. These reductions follow from specific connections and charge accounts rather than from the shapes of symbols.
+
+For two separately charged ideal capacitors, adding their stored energies is valid in the declared independent-element approximation. Stray mutual capacitance and the surrounding field can require a larger relation between conductor charges and potentials. The familiar parallel-plate estimate C=ε₀A/d further assumes a suitable vacuum geometry with negligible edge effects; deriving that field relation belongs to the fuller Gauss-law formation. The work derivation above needs only the stipulated linear charge–voltage relation and does not depend on an unproved general field-energy density formula.
+
+**Work and reading:** derive the quadratic storage using signed Q, then check Q=−Cv₀. Compare a 2 μF capacitor at 5 V (25 μJ) with a 3 μF capacitor at 0 V. Determine each charge and energy before any connection is made. Show why neutral total charge does not imply zero energy. Read [University Physics Volume 2 — OpenStax](../electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q) 8.1 and 8.3 progressively. Qualify the opening phrase about a largest or maximum charge per volt: the common C is the linear response coefficient, while device ratings require separate evidence. Use the work integral to establish the formula before studying the broader field-energy claims and source exercises.
+
+**Continue:** [State the physical assumptions behind a lumped circuit](State-the-physical-assumptions-behind-a-lumped-circuit.lingua#r_001A7088BC509FE999669C908D).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0044E82DC1FD162C1B4C9F03EA

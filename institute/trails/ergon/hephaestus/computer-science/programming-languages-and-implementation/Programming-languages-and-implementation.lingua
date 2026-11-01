@@ -1,0 +1,7 @@
+Programming languages and implementation (@programming-languages-and-implementation: 0, is #chapter, #outline) { r_6KBB90GBE4TN7WZ6KA1QRC63DT
+Programming languages provide ways to express computation and organise software. This material connects language semantics, types, abstraction, compilers, interpreters, runtime systems, and program analysis, explaining how written programs acquire meaning and become executable behaviour on real machines.
+
+**Common preparation developed:** [Names, procedure calls and captured environments](../core/Follow-names-procedure-calls-and-captured-environments.lingua) begins the eighth computing block, connecting scope/effects to abstract values and representation-independent client behavior. Language semantics, type systems, compiler/interpreter construction and the full planned scope remain pending.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_6KBB90GBE4TN7WZ6KA1QRC63DT

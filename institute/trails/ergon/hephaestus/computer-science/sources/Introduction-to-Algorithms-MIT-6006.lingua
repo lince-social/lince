@@ -1,0 +1,15 @@
+Import "../Computing.lingua"
+
+Introduction to Algorithms — MIT 6.006, Spring 2020 (@computing-source-algorithms: 0, is #reference) { r_04AEC4B446A81994AEEB84801D
+Erik Demaine, Jason Ku and Justin Solomon. MIT 6.006 Introduction to Algorithms, Spring 2020, undergraduate course. [Course lecture notes and teaching attribution](https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/pages/lecture-notes/).
+
+For this common block, read lecture 2's interface, sequence and set definitions and compare its array and linked representations. Read lecture 3's sorting specification and insertion-sort explanation. The notes assume programming and mathematical reasoning; use the preceding shared programming, contract and invariant lessons first. General amortization, recursion, merge-sort recurrences and later graph/dynamic-programming work require further preparation. This assignment does not declare the whole course completed.
+
+[Lecture 2 — Data Structures, authorized PDF](https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/79a07dc1cb47d76dae2ffedc701e3d2b_MIT6_006S20_lec2.pdf) · [Lecture 3 — Sorting, authorized PDF](https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/6d1ae5278d02bbecb5c4428928b24194_MIT6_006S20_lec3.pdf).
+
+**Inspection — 31 October 2026:** checked course identity, instructors and lecture listing; inspected lecture 2's interface and representation passages and lecture 3's sorting specification and insertion argument. The course Set interface admits unique keys; our original catalog instead preserves duplicate occurrences. The original iterative program, fixtures and independent checks are authored for this trail and are not copied course code. No complete course, assignment-solution or video audit is claimed.
+
+MIT OCW links the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 licence](https://creativecommons.org/licenses/by-nc-sa/4.0/) and its [terms](https://ocw.mit.edu/terms/). Check individual notices before adapting source material. The course and PDFs remain external references; no source media is bundled.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_04AEC4B446A81994AEEB84801D

@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Separate truth in one structure from consequence across structures (@math-structures-consequence: 0, is #chapter, #math-structures "State-proof-rules-and-prove-a-bounded-soundness-result.lingua#r_00F6A6145EFF19A739C68F6214") { r_00C6FF23EE30BF39F28B2A4DD9
+A theory T is a set of sentences. A model of T makes every member true. Write T⊨φ when every model of T also satisfies φ. To refute this claim, supply one model of all the assumptions in which φ is false. To support it, a large sample of successful models is insufficient unless a separate argument proves that the search covers every relevant possibility.
+
+Let T contain ∀x(x*e=x) and ∀x(e*x=x). Its models have a two-sided identity, but no associativity assumption. An operation on {0,1,2} with identity 0 and nonzero products 1*1=2, 1*2=0, 2*1=0, 2*2=0 satisfies T. Associativity fails: (1*1)*2=0, whereas 1*(1*2)=1. This countermodel defeats a proposed proof of associativity from identity alone. It also identifies the precise missing axiom rather than rejecting the whole idea of algebraic reasoning.
+
+Satisfiability asks whether a theory has at least one model. Our identity theory does: integer addition with e=0. A theory containing e≠e has none. Under the definition of consequence, a theory with no models entails every sentence, because there is no model witnessing failure. This formal fact does not make an inconsistent specification useful; check that assumptions can hold before interpreting consequences as descriptions of anything.
+
+Finite-model search has a specific limit even when it is exhaustive up to a chosen size. Consider the assertion that an injective self-map is surjective. For a finite domain of n objects, n distinct images exhaust the domain. On the nonnegative integers, f(a)=a+1 is injective but misses 0. Thus this assertion is true for every finite domain and false for one infinite domain. No increase of a finite size bound repairs that distinction.
+
+**Work:** write the countermodel's complete table, verify both identity laws, and calculate the associativity witness independently. Prove the finite injection argument using [Use functions and fibers to justify a counting argument](../core/Use-functions-and-fibers-to-justify-a-counting-argument.lingua#r_007F005168981CB5DB6A4D8B3A); distinguish its counting premise from the infinite example. Formulate one claim in each category: true in the chosen model, consequence of specified axioms, and false by a countermodel. Read [forall x Calgary formal logic](../sources/forall-x-Calgary-formal-logic.lingua#r_00A7D972F37307C8A2E5871D87), chapter 32, for the semantic vocabulary.
+
+**Continue:** [State proof rules and prove a bounded soundness result](State-proof-rules-and-prove-a-bounded-soundness-result.lingua#r_00F6A6145EFF19A739C68F6214).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00C6FF23EE30BF39F28B2A4DD9

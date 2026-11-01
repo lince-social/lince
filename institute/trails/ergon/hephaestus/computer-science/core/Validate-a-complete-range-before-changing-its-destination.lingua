@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Validate a complete range before changing its destination (@computing-memory-ranges: 0, is #chapter, #hephaestus-core "Define-controlled-services-and-distinguish-errors-from-process-faults.lingua#r_0006F078C2118768132F7C3690") { r_005694F6345B9E47E54BF7D899
+A service that copies n words from source s to destination d needs every requested source word readable and every requested destination word writable. Checking only the first address misses page boundaries. Checking only the last address misses holes and intervening permissions. In this small model, enumerate the complete ranges; later implementations can validate whole-page segments with an equivalent argument.
+
+Define an admissible numerical request by exact integer start a and length n, with 0≤a≤16, n≥0 and n≤16−a. For n>0 this implies a<16 and all accessed words lie below 16. For n=0, the empty range is accepted even at a=16 or in an unmapped region; it accesses no word. This is a declared service convention, not a claim that every language/API accepts every empty pointer representation. Boolean values are rejected as arguments despite Python's integer subtype relationship.
+
+The subtraction form n≤16−a avoids computing a+n in a narrow machine word before validity is known. For example, in a four-bit modular addition, 14+4 becomes 2; treating that as an endpoint could conceal a range crossing the address-space limit. The Python model uses arbitrary-precision integers but still applies the explicit bounded-address contract. A finite-width implementation must preserve the intended mathematical comparisons rather than wrap them.
+
+The copy service first translates all source words for reading and all destination words for writing. If either validation fails, memory is unchanged. Only after validation does it snapshot the source values, then write the targets. This supplies a precise overlap rule: the copied values come from the pre-operation state. Copying virtual [0,3) to [1,4) when the initial contents are [4,5,6,7] produces [4,4,5,6], not the repeated first value a naive forward read/write loop could produce.
+
+For process 0, copying two words to destination 3 crosses from writable page 0 into read-only page 1. The entire request is rejected before the first write. Copying zero words at endpoint 16 succeeds without looking up page 4. Distinguish these explicit cases in the contract before implementation.
+
+This validation-then-mutation argument assumes the maps and memory cannot be concurrently changed by another actor during the operation. Our service runs as one model step. Real concurrent implementations need further synchronization, lifetime and device-failure reasoning; an initial check alone does not guarantee the later state is still valid. Snapshot semantics also require enough temporary resources, which the fixed small example supplies.
+
+**Work:** use [Specify inputs, results and failure before implementing](Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D) and [Derive modular arithmetic and separate carry from signed overflow](Derive-modular-arithmetic-and-separate-carry-from-signed-overflow.lingua#r_0799AD8A6C4DEFE0A73A667C19) to derive boundary cases and a failed-request invariant. Compare a request ending exactly at 16 with one crossing it, and a request crossing a page boundary with one crossing into an absent page. Explain why the overlap snapshot is an observable part of the service contract, not merely an implementation detail.
+
+**Continue:** [Define controlled services and distinguish errors from process faults](Define-controlled-services-and-distinguish-errors-from-process-faults.lingua#r_0006F078C2118768132F7C3690).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_005694F6345B9E47E54BF7D899

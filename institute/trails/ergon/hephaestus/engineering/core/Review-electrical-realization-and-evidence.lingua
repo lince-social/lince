@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Review electrical realization model limits and observation evidence (@engineering-electric-review: 0, is #chapter, #hephaestus-core "Define-a-feedback-boundary-before-choosing-a-controller.lingua#r_0059798C63AB0B169306355791") { r_00214755551BAD6328E985555B
+Begin from the intended function and the stated model domain. Reconstruct the investigation before reading its program output. Use [Investigate electrical alternatives with bounds and independent evidence](Investigate-electrical-alternatives-bounds-and-observations.lingua#r_00A42EEA72C24821EBF4557EB7) afterward to inspect each calculation and its assumptions.
+
+**Demonstrate:**
+
+1. Draw the source, accessible source terminal, common connection, both branches and actual return path. Distinguish the chosen potential reference from a physical conductor and ideal-source voltage from loaded terminal voltage.
+2. Derive the nodal system with units and signs, prove uniqueness under positive connected resistances, and solve it independently by reduction. Reconstruct the full power balance and source-boundary choice. Explain why those checks do not prove a real topology or component limit.
+3. Derive the load-port relation for arbitrary attached current. State what the equivalent preserves and why it does not replace an internal loss account. Prove the maximum-power bound and distinguish that objective from efficiency and the stated terminal requirements.
+4. Reproduce the nominal alternatives. Derive every monotonic direction used for voltage/current box extrema, then justify the conservative component-loss products. Give B's actual violating voltage corner and C's rational acceptance bounds. Explain why a failed sufficient bound need not prove infeasibility.
+5. Prove the source/connection-resistance ambiguity and identify the added observations needed to separate them. Model the finite meter and keep its power distinct from useful load power. State which measurement/state assumptions remain unverified.
+6. Run the two new programs with their preserved shared linear solver. Inspect the independent solution and range checks, including domain rejection. Extend one requirement or parameter range, defend the revised decision and list what a physical realization would still require.
+
+The fifth common engineering block now connects electrical function, model, alternatives, bounded requirements and evidence. It does not complete the broad engineering core. Induction, AC and active circuits, control, thermal/electrical coupling, broader physical realization, production systems, reliability, human use and advanced independent practice remain required formation with explicit prerequisites. Existing specialist power-engineering routes retain their original scope. Continue inquiry's fitting and model criticism at comparable depth before another coverage review across all six cores.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the sixth common pass:** [Define a feedback boundary before choosing a controller](Define-a-feedback-boundary-before-choosing-a-controller.lingua#r_0059798C63AB0B169306355791). Develop feedback boundaries, continuous and sampled dynamics, actuator limits, observation ambiguity and requirements with independently checked evidence. Preserve earlier electrical and thermal investigations and continue inquiry at comparable depth.
+
+} r_00214755551BAD6328E985555B

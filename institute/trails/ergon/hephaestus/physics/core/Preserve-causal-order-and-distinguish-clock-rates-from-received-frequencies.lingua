@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Preserve causal order and distinguish clock rates from received frequencies (@physics-spacetime-causality: 0, is #chapter, #hephaestus-core "Connect-relativistic-momentum-energy-and-electromagnetic-frame-changes.lingua#r_00AA5B239C317ABD18D2FE89BC") { r_00F4F31E0DC57AC39F51E3B5DA
+For a nonzero future causal displacement, ΔT>0 and |Δx|≤ΔT. Under an allowed boost, ΔT′=γ(ΔT−βΔx)≥γΔT(1−|β|)>0. A causal influence permitted by this model therefore cannot have its event order reversed by changing inertial frame. A spacelike pair can: (ΔT,Δx)=(1,2), β=3/5 gives (−1/4,7/4). Its interval is −3 in both frames. No rest-frame clock can travel between those events at a permitted speed; an ordering convention is not a faster-than-light signal.
+
+Differentiate the boost along a one-dimensional path. For w=u/c, obtain w′=(w−β)/(1−βw). If |w|≤1 the denominator is positive. The identities 1−w′=(1−w)(1+β)/(1−βw) and 1+w′=(1+w)(1−β)/(1−βw) show causal speeds remain causal. Light retains w′=±1. If w=β the particle is stationary in S′. This formula compares coordinate velocities; it is not obtained by subtracting speeds of received images.
+
+For a clock source receding from a stationary receiver in flat spacetime at β>0, successive emissions separated by proper time Δτ have lab emission separation γΔτ. During that interval the source travels βcγΔτ farther away, so the arrival interval is γ(1+β)Δτ. Hence received frequency divided by rest emission frequency is 1/[γ(1+β)]=√[(1−β)/(1+β)]. At β=3/5 the ratio is 1/2, whereas the coordinate clock-rate factor 1/γ is 4/5. The extra difference is propagation, not another change in the source clock. Reversing recession to approach reverses the appropriate factor.
+
+In three dimensions transverse motion and changing direction require the relevant emission and reception geometry. In a medium, signal speed and dispersion introduce additional premises; the vacuum c postulate does not claim every pulse or material disturbance travels at c. Later astronomy must distinguish a spectral shift, peculiar motion, gravitational comparison and cosmic expansion before inferring a distance or velocity.
+
+**Work:** derive the two identities preserving |w′|≤1, verify the numerical spacelike reversal, and calculate the received interval for the approaching counterpart. Explain why synchronizing clocks, comparing proper times and reading a spectrum are three related but different measurement problems. Use [Dynamics and Relativity by David Tong](../sources/Dynamics-and-Relativity-by-David-Tong.lingua#r_007464FDC6A818524F8C87C426) 7.2.2 and 7.2.5 for the causal and velocity argument; the received-pulse calculation here is an original explicit model.
+
+**Continue:** [Connect relativistic momentum energy and electromagnetic frame changes](Connect-relativistic-momentum-energy-and-electromagnetic-frame-changes.lingua#r_00AA5B239C317ABD18D2FE89BC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00F4F31E0DC57AC39F51E3B5DA

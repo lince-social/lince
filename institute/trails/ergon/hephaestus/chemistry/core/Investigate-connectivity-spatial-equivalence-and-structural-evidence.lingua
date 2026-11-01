@@ -1,0 +1,309 @@
+Import "../Chemistry.lingua"
+
+Investigate connectivity spatial equivalence and structural evidence (@chemistry-identity-study: 0, is #chapter, #hephaestus-core "Review-molecular-identity-through-representations-transformations-and-evidence.lingua#r_0076E2B38375A5256FCEB27DAE") { r_008B1AD546865580AD2F407C80
+Investigate identity at three levels: a carbon connectivity model, a labeled tetrahedral spatial model and a synthetic two-enantiomer observation account. The question is what information each representation preserves, what it forgets and what additional evidence is needed. Derive the preceding identities and equivalences before running the finite program. The carbon and tetrahedral counts have bounded textbook comparisons; the programs, coordinate models, counterexamples and synthetic optical values are original connecting work.
+
+Save `identity_study.py` and `identity_checks.py` below beside unchanged `linear_space_study.py` from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) and unchanged `rotation_study.py` from [Investigate rotational accounts constraints and internal exchange](../../physics/core/Investigate-rotational-accounts-constraints-and-internal-exchange.lingua#r_002C1C42745EA90F6446369066). The latter supplies only the explicit cross product here and itself imports the mathematics helper. Run both new programs using Python 3 through the repository Nix environment or an independently recorded environment. Retain the actual interpreter, dependency bytes, inputs and output in a reproducible report using [Investigate a traceable report correction and fresh restoration](../../inquiry/core/Investigate-a-traceable-report-correction-and-fresh-restoration.lingua#r_00E2E70343DD382577BCA102F6).
+
+The graph part accepts one through six numbered carbon vertices. Every candidate edge is a pair of distinct valid integer indices; loops, duplicate edges, disconnected or cyclic structures and degree above four are rejected. The restricted size documents a deliberately finite exhaustive investigation, not a chemical limit on molecular size. A connected n-vertex graph with n−1 edges is a tree: starting from one vertex, connectedness permits n−1 distinct edges that reach new vertices, leaving no edges for a cycle. Its implicit hydrogen completion uses four minus the vertex degree. No aromaticity, charge, stereochemistry or quantum-energy model is silently supplied by this validator.
+
+The canonical tree code is justified in the connectivity lesson. Independent checks reconstruct all permitted labeled trees by the leaf-removal-code decoder, and compare full adjacency strings over every vertex permutation for n≤5. Each tree's hydrogen and degree sums are checked; reversing the arbitrary numbering preserves its code. For every unrooted class through n=6, explicitly counted automorphisms and labeled images satisfy the n! orbit relation. The two six-vertex trees sharing one degree sequence remain separate classes. The reported constitutional counts are 1,1,1,2,3,5; the corresponding accepted labeled counts are 1,1,3,16,125,1290.
+
+The tetrahedral part declares four nonempty ligand labels and groups site assignments under even vertex permutations. An independent geometric construction enumerates signed Cartesian axis-permutation matrices, retains those mapping the actual regular tetrahedral vertices to themselves, and separates them by directly expanded determinant. Exactly twelve have determinant +1 and induce the same vertex permutations as the proper-rotation implementation. Another twelve have determinant −1. Explicit orbit traversal and a fixed-point double count check the classes for ABCD,AABC,AABB,AAAB,AAAA. Translation/scaling/permutation tests compare signed volume with preserved edge distances; a coplanar example gives zero rather than a spurious handedness label.
+
+The fixed-point identity used in the checker has a short proof. Count pairs (g,x) where a group operation fixes an arrangement x. Summing by g gives the sum of fixed-arrangement counts. Within one orbit, each arrangement has equally many fixing operations, and orbit size times that number equals the group size: operations carrying a chosen starting arrangement to any target form equal-size sets. Thus each orbit contributes exactly |G| fixing pairs, and the total divided by |G| gives the number of orbits. This applies to the actual finite rotation action, not to an arbitrary set of allowed moves lacking group closure. Reuse the earlier counting/fiber arguments rather than treating this formula as a numerical trick.
+
+The optical function solves the declared linear two-species account with exact integers/Fractions and rejects incompatible input. Its positive/negative outputs refer to the stipulated signs of specific rotation, not structural R/S. The checks reconstruct observations from known nonnegative component concentrations and verify inversion including pure and equal-mixture boundaries. Inputs outside the physical assumptions remain unvalidated even when the arithmetic passes. The graph, geometry and optical stages are different models connected by questions; the program does not derive a spectrum or rotation coefficient from a molecular graph.
+
+**Independent investigation:** extend the connectivity model to small labeled C/O trees under a declared neutral single-bond valence rule, preserving full element labels and counting hydrogen completion explicitly. Prove how the canonical encoding must change so an oxygen cannot be exchanged with a carbon. Compare at least one formula shared by two different connectivities and explain what observations could distinguish them. Independently check the enumeration by a different representation or hand classification. Keep valence-compatible candidate structures separate from established chemical species.
+
+Then extend the spatial argument with a differently scaled or distorted noncoplanar tetrahedron: compare it and its mirror using ordered distances, volume and permitted label correspondences. Determine which symmetries of the regular model survive. Do not assume the twelve regular-tetrahedron rotations also map an arbitrary distorted geometry onto itself. If discussing actual chemical conformers, connect that geometry to a source and a physical interconversion account. A mathematical result alone does not establish a stable molecular stereoisomer.
+
+**Defense and revision:** state the precise identity being claimed, a descriptor that fails, an independent discriminating observation and a counterexample that would force revision. Compare a published structural example with the finite model's actual scope. Have a reader challenge the treatment of equivalent ligands, hidden hydrogens, configuration conventions, optical additivity and sample purity. Preserve source access/edition limits and a correction record. No laboratory, full textbook problem set, general stereochemical software or completed independent learner research is claimed by the author checks.
+
+
+```python file=identity_study.py
+from fractions import Fraction as F
+from itertools import combinations, permutations
+from linear_space_study import scalar, vector, dot
+from rotation_study import cross
+import json
+
+
+def size(value):
+    if type(value) is not int or not 1 <= value <= 6:
+        raise ValueError('this finite investigation requires 1 through 6 vertices')
+    return value
+
+
+def tree(n, edges):
+    n = size(n)
+    normalized = []
+    adjacency = [set() for _ in range(n)]
+    for edge in edges:
+        pair = tuple(edge)
+        if len(pair) != 2 or any(type(v) is not int or not 0 <= v < n for v in pair):
+            raise ValueError('edge endpoints must be distinct valid vertex indices')
+        a, b = sorted(pair)
+        if a == b or b in adjacency[a]:
+            raise ValueError('loops and duplicate edges are excluded')
+        adjacency[a].add(b)
+        adjacency[b].add(a)
+        normalized.append((a, b))
+    reached, pending = set(), [0]
+    while pending:
+        v = pending.pop()
+        if v not in reached:
+            reached.add(v)
+            pending.extend(adjacency[v]-reached)
+    if len(normalized) != n-1 or len(reached) != n or any(len(a) > 4 for a in adjacency):
+        raise ValueError('a connected carbon tree with degree at most four is required')
+    return tuple(sorted(normalized)), tuple(tuple(sorted(a)) for a in adjacency)
+
+
+def tree_code(n, edges):
+    _, adjacency = tree(n, edges)
+
+    def rooted(v, parent):
+        return '('+''.join(sorted(rooted(w, v) for w in adjacency[v] if w != parent))+')'
+
+    return min(rooted(root, -1) for root in range(n))
+
+
+def skeletons(n):
+    n = size(n)
+    representatives = {}
+    labeled = []
+    for candidate in combinations(combinations(range(n), 2), n-1):
+        try:
+            edges, adjacency = tree(n, candidate)
+        except ValueError:
+            continue
+        labeled.append(edges)
+        representatives.setdefault(tree_code(n, edges), edges)
+    return {'representatives': representatives, 'labeled': tuple(labeled), 'hydrogens': 2*n+2}
+
+
+def permutation_sign(p):
+    p = tuple(p)
+    if any(type(i) is not int for i in p) or sorted(p) != list(range(len(p))):
+        raise ValueError('a permutation of consecutive indices is required')
+    inversions = sum(p[i] > p[j] for i in range(len(p)) for j in range(i+1, len(p)))
+    return -1 if inversions % 2 else 1
+
+
+def tetrahedral_classes(labels, reflections=False):
+    labels = tuple(labels)
+    if len(labels) != 4 or any(type(label) is not str or not label for label in labels):
+        raise ValueError('four nonempty ligand labels are required')
+    if type(reflections) is not bool:
+        raise ValueError('the reflection option must be Boolean')
+    group = tuple(p for p in permutations(range(4)) if reflections or permutation_sign(p) == 1)
+    return tuple(sorted({min(tuple(arrangement[i] for i in p) for p in group)
+                         for arrangement in set(permutations(labels))}))
+
+
+def signed_volume_six(points):
+    points = tuple(vector(point, 3) for point in points)
+    if len(points) != 4:
+        raise ValueError('four three-dimensional points are required')
+    differences = tuple(tuple(points[i][j]-points[3][j] for j in range(3)) for i in range(3))
+    return dot(differences[0], cross(differences[1], differences[2]))
+
+
+def enantiomer_account(total, rotation, path, specific):
+    total, rotation, path, specific = map(scalar, (total, rotation, path, specific))
+    if total <= 0 or path <= 0 or specific <= 0:
+        raise ValueError('positive total concentration path and rotation magnitude are required')
+    difference = rotation/(path*specific)
+    if abs(difference) > total:
+        raise ValueError('the two-enantiomer linear model is inconsistent with these values')
+    return {'positive': (total+difference)/2, 'negative': (total-difference)/2,
+            'signed_excess': difference/total}
+
+
+def investigation():
+    vertices = ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
+    return {'carbon_trees': {n: {'labeled': len(skeletons(n)['labeled']),
+                                'classes': len(skeletons(n)['representatives']), 'hydrogens': 2*n+2}
+                             for n in range(1, 7)},
+            'tetrahedra': {''.join(labels): len(tetrahedral_classes(labels))
+                           for labels in ('ABCD', 'AABC', 'AABB', 'AAAB', 'AAAA')},
+            'all_distinct_with_reflections': len(tetrahedral_classes('ABCD', True)),
+            'oriented_volume_six': signed_volume_six(vertices),
+            'synthetic_mixture': enantiomer_account(F(1, 10), F(2, 5), 2, 10)}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=identity_checks.py
+from fractions import Fraction as F
+from itertools import combinations, permutations, product
+from math import factorial
+from linear_space_study import action, dot
+from identity_study import tree, tree_code, skeletons, permutation_sign, tetrahedral_classes, signed_volume_six, enantiomer_account
+import json
+
+
+checks = 0
+
+
+def require(condition):
+    global checks
+    if not condition:
+        raise AssertionError('structural identity check failed')
+    checks += 1
+
+
+def rejects(function):
+    try:
+        function()
+    except ValueError:
+        require(True)
+    else:
+        raise AssertionError('expected rejection')
+
+
+def prufer_tree(n, sequence):
+    degrees = [1+sequence.count(i) for i in range(n)]
+    edges = []
+    for v in sequence:
+        leaf = next(i for i, degree in enumerate(degrees) if degree == 1)
+        edges.append(tuple(sorted((leaf, v))))
+        degrees[leaf] -= 1
+        degrees[v] -= 1
+    remaining = [i for i, degree in enumerate(degrees) if degree == 1]
+    edges.append(tuple(remaining))
+    return tuple(sorted(edges))
+
+
+def adjacency_key(n, edges):
+    graph = {tuple(sorted(e)) for e in edges}
+    return min(tuple(int(tuple(sorted((p[i], p[j]))) in graph) for i, j in combinations(range(n), 2))
+               for p in permutations(range(n)))
+
+
+def degree_sequence(n, edges):
+    return tuple(sorted(sum(i in e for e in edges) for i in range(n)))
+
+
+graphs = 0
+reference_classes = (1, 1, 1, 2, 3, 5)
+reference_labeled = (1, 1, 3, 16, 125, 1290)
+results = {}
+for n in range(1, 7):
+    result = skeletons(n)
+    results[n] = result
+    independent = {()} if n == 1 else {prufer_tree(n, sequence) for sequence in product(range(n), repeat=n-2)
+                                      if max(1+sequence.count(i) for i in range(n)) <= 4}
+    require(set(result['labeled']) == independent)
+    require(len(result['labeled']) == reference_labeled[n-1])
+    require(len(result['representatives']) == reference_classes[n-1])
+    by_code, by_key = {}, {}
+    for edges in result['labeled']:
+        degrees = degree_sequence(n, edges)
+        require(sum(4-degree for degree in degrees) == result['hydrogens'])
+        require(sum(degrees) == 2*(n-1))
+        reverse = tuple(sorted(tuple(sorted((n-1-a, n-1-b))) for a, b in edges))
+        require(tree_code(n, reverse) == tree_code(n, edges))
+        if n <= 5:
+            code, key = tree_code(n, edges), adjacency_key(n, edges)
+            by_code.setdefault(code, set()).add(key)
+            by_key.setdefault(key, set()).add(code)
+        graphs += 1
+    require(all(len(v) == 1 for v in by_code.values()))
+    require(all(len(v) == 1 for v in by_key.values()))
+    for representative in result['representatives'].values():
+        automorphisms = 0
+        graph = set(representative)
+        for p in permutations(range(n)):
+            changed = {tuple(sorted((p[a], p[b]))) for a, b in representative}
+            automorphisms += changed == graph
+        fiber = sum(tree_code(n, candidate) == tree_code(n, representative) for candidate in result['labeled'])
+        require(fiber*automorphisms == factorial(n))
+six_by_degrees = {}
+for code, edges in results[6]['representatives'].items():
+    six_by_degrees.setdefault(degree_sequence(6, edges), []).append(code)
+require(sorted(len(v) for v in six_by_degrees.values()) == [1, 1, 1, 2])
+vertices = ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
+require(signed_volume_six(vertices) == 16)
+proper, improper = [], []
+for axes in permutations(range(3)):
+    for signs in product((-1, 1), repeat=3):
+        matrix = tuple(tuple(signs[i] if j == axes[i] else 0 for j in range(3)) for i in range(3))
+        moved = tuple(action(matrix, v) for v in vertices)
+        if set(moved) != set(vertices):
+            continue
+        image = tuple(vertices.index(v) for v in moved)
+        determinant = (matrix[0][0]*(matrix[1][1]*matrix[2][2]-matrix[1][2]*matrix[2][1])
+                       -matrix[0][1]*(matrix[1][0]*matrix[2][2]-matrix[1][2]*matrix[2][0])
+                       +matrix[0][2]*(matrix[1][0]*matrix[2][1]-matrix[1][1]*matrix[2][0]))
+        require(determinant == permutation_sign(image))
+        require(signed_volume_six(moved) == determinant*16)
+        (proper if determinant == 1 else improper).append(image)
+require(len(set(proper)) == len(set(improper)) == 12)
+require(set(proper) == {p for p in permutations(range(4)) if permutation_sign(p) == 1})
+colorings = 0
+for labels in ('ABCD', 'AABC', 'AABB', 'AAAB', 'AAAA'):
+    arrangements = set(permutations(labels))
+    remaining = set(arrangements)
+    orbits = []
+    while remaining:
+        seed = min(remaining)
+        orbit = {tuple(seed[i] for i in p) for p in proper}
+        orbits.append(orbit)
+        remaining -= orbit
+    require(set(tetrahedral_classes(labels)) == {min(orbit) for orbit in orbits})
+    fixed_sum = sum(all(arrangement[i] == arrangement[p[i]] for i in range(4))
+                    for p in proper for arrangement in arrangements)
+    require(fixed_sum == 12*len(orbits))
+    require(len(orbits) == (2 if len(set(labels)) == 4 else 1))
+    require(len(tetrahedral_classes(labels, True)) == 1)
+    for arrangement in arrangements:
+        reflected = tuple(arrangement[i] for i in improper[0])
+        own = next(orbit for orbit in orbits if arrangement in orbit)
+        require((reflected in own) == (len(set(labels)) < 4))
+        colorings += 1
+geometry_cases = 0
+for p, scale, shift in product(tuple(permutations(range(4))), (F(1, 2), F(1), F(3)), (-2, 0, 5)):
+    transformed = tuple(tuple(scale*vertices[i][j]+shift*(j+1) for j in range(3)) for i in p)
+    require(signed_volume_six(transformed) == 16*scale**3*permutation_sign(p))
+    for i, j in combinations(range(4), 2):
+        difference = tuple(transformed[i][k]-transformed[j][k] for k in range(3))
+        require(dot(difference, difference) == 8*scale**2)
+    geometry_cases += 1
+require(signed_volume_six(((0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0))) == 0)
+mixture_cases = 0
+for total, path, specific, fraction in product((F(1, 10), F(1, 5)), (F(1, 2), F(2)), (F(5), F(10)), (F(0), F(1, 4), F(1, 2), F(3, 4), F(1))):
+    positive, negative = total*fraction, total*(1-fraction)
+    rotation = path*specific*(positive-negative)
+    result = enantiomer_account(total, rotation, path, specific)
+    require(result['positive'] == positive and result['negative'] == negative)
+    require(result['signed_excess'] == 2*fraction-1)
+    mixture_cases += 1
+require(enantiomer_account(F(1, 10), F(2, 5), 2, 10) == {'positive': F(3, 50), 'negative': F(1, 25), 'signed_excess': F(1, 5)})
+invalid = [lambda: skeletons(True), lambda: skeletons(0), lambda: skeletons(7),
+           lambda: tree(2, ((0, 0),)), lambda: tree(3, ((0, 1), (1, 0))),
+           lambda: tree(3, ((0, 1), (0, 3))), lambda: tree(4, ((0, 1), (1, 2), (2, 0))),
+           lambda: tree(6, tuple((0, i) for i in range(1, 6))),
+           lambda: permutation_sign((0, 0)), lambda: permutation_sign((False, 1)),
+           lambda: tetrahedral_classes('ABC'), lambda: tetrahedral_classes(('A', 'B', 'C', '')),
+           lambda: tetrahedral_classes('ABCD', 1), lambda: signed_volume_six(((0, 0, 0),)*3),
+           lambda: signed_volume_six(((0, 0),)*4), lambda: enantiomer_account(1, 2, 1, 1),
+           lambda: enantiomer_account(0, 0, 1, 1), lambda: enantiomer_account(1, 0, 0, 1),
+           lambda: enantiomer_account(1, 0, 1, -1), lambda: enantiomer_account(1.0, 0, 1, 1)]
+for case in invalid:
+    rejects(case)
+print(json.dumps({'checks': checks, 'labeled_carbon_trees': graphs, 'tetrahedral_colorings': colorings,
+                  'geometry_cases': geometry_cases, 'mixture_cases': mixture_cases,
+                  'invalid_inputs': len(invalid)}, indent=2))
+```
+
+**Author verification:** 6,084 exact checks passed through Nix/Python 3.14.8: 1,436 accepted labeled carbon trees, 47 tetrahedral colorings, 216 transformed geometries, forty synthetic mixture cases and twenty rejected inputs. Independent leaf-code enumeration, adjacency permutation, automorphism/orbit counts, Cartesian symmetry matrices and fixed-point counts check the original implementation. Additional displayed graph, torsion and orientation examples were checked separately. General claims retain the written proofs; no chemical experiment or completed independent learner research is claimed.
+
+**Continue:** [Review molecular identity through representations transformations and evidence](Review-molecular-identity-through-representations-transformations-and-evidence.lingua#r_0076E2B38375A5256FCEB27DAE).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_008B1AD546865580AD2F407C80

@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Ask which electrical quantities an observation identifies (@physics-electric-observation: 0, is #chapter, #hephaestus-core "Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045") { r_00248BCB328E2A41569B7E86C8
+An exact solution can answer a conditional model question while leaving the physical parameters underdetermined. In the charge-sharing system, both voltage histories depend on initial voltages, the capacitance ratio and τ=R C₁C₂/(C₁+C₂). For any λ>0, replace C₁,C₂ by λC₁,λC₂ and R by R/λ. The ratio, final common voltage and τ remain unchanged. Consequently every voltage at every time is identical, although current, separated charge and stored/dissipated energy are multiplied by λ. This is an explicit family of indistinguishable models for voltage-only observations.
+
+In the original numerical case, doubling both capacitances and halving R gives C₁=4 μF, C₂=6 μF and R=2.5 kΩ. At t=τ ln 2 the voltages are still 3.5 V and 1 V, but current is 1 mA rather than 0.5 mA. The initial and remaining energies also double. More exact samples of the same voltage histories do not break this symmetry. An independently calibrated current, capacitance or resistance observation can supply a scale, provided its own model and uncertainty are included. This connects directly to the mathematics of lost directions, even though the parameter transformation here is not a single fixed linear map.
+
+Observation can also change the system. Model a voltmeter across C₂ as a finite positive resistance R_m from node 2 to node 0. Then C₁v₁′=−(v₁−v₂)/R and C₂v₂′=(v₁−v₂)/R−v₂/R_m. The upper-node charge sum now decreases at rate v₂/R_m when v₂>0. Energy satisfies U′=−(v₁−v₂)²/R−v₂²/R_m. The uninstrumented exponential solution no longer solves these equations. The entire arrangement still conserves charge; a different subsystem is losing charge through the meter path.
+
+At the original half-decay state (3.5 V,1 V), take R_m=100 kΩ and compare instantaneous derivatives immediately after adding this ideal load. The meter current is 10 μA, v₁′=−250 V/s and v₂′=490/3 V/s, versus 500/3 V/s for uninstrumented v₂. These are derivatives at the same stipulated state, not a computed full loaded trajectory or a claim about a real meter's transient. A real instrument may also have input capacitance, bandwidth, offsets and calibration uncertainty.
+
+The finite-source investigation supplies a second observation lesson. A reported zero potential depends on a reference, while two voltage differences are invariant under adding a common constant. Their ability to determine two unknown source amounts depends on the assumed positions and exclusion of other sources. A successful two-equation inversion cannot establish that no other physical source configuration explains those observations. Additional spatial measurements can challenge the model, but must be chosen using a stated alternative.
+
+**Work:** prove the λ transformation for all times and identify an observable that changes. Derive the loaded charge and energy balances from the equations rather than subtracting rounded energies. Explain what reference, loading, time base and calibration information a defensible report needs. Design a benign comparison of two stated models, predicting which observation distinguishes them and which remains ambiguous. Keep a proposed measurement separate from performed evidence. Later inquiry develops estimation and model comparison; later engineering develops realization and instrument selection.
+
+**Continue:** [Investigate electric work charge redistribution and observation limits](Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00248BCB328E2A41569B7E86C8

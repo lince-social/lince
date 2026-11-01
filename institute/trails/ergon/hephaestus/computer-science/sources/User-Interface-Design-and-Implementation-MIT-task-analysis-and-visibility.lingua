@@ -1,0 +1,13 @@
+Import "../Computing.lingua"
+
+User Interface Design and Implementation MIT task analysis and visibility (@computing-source-interaction: 0, is #reference) { r_00344623022A36BF7031B5BCAE
+Robert Miller, MIT 6.831/6.813, Spring 2011, English. [Lecture index](https://ocw.mit.edu/courses/6-831-user-interface-design-and-implementation-spring-2011/pages/lecture-notes/) · [Lecture 7 Task analysis](https://ocw.mit.edu/courses/6-831-user-interface-design-and-implementation-spring-2011/e9395ea03b0487fd1df5ccf1cd03775c_MIT6_831S11_lec07.pdf) · [Lecture 3 Visibility](https://ocw.mit.edu/courses/6-831-user-interface-design-and-implementation-spring-2011/a6b07e952da55deae19d4b13fdd98d8c_MIT6_831S11_lec03.pdf).
+
+**Actual inspection — 1 November 2026:** course identity and note index; selected prose in lecture 7 associated with PDF pages 4–6 and 22–24, concerning users/context and essential versus concrete tasks; selected prose in lecture 3 associated with PDF pages 16–17 and 19–23, concerning feedback, delay and perceivable state. Text extraction was inspected; no claim of checking every slide graphic, video or full course. PDF page positions are one-based and differ from some printed slide labels.
+
+**Use:** begin with the selected task and feedback passages; reconstruct the distinctions in an original task rather than treating a historical interface as a current recommendation. Broader lecture reading is assigned, not claimed fully inspected. No observed participant dataset is supplied by the common study.
+
+The OCW page links [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) and [OCW terms](https://ocw.mit.edu/pages/privacy-and-terms-of-use/). Component credits and exceptions still apply, especially third-party screenshots. Keep source media external; the common lessons supply original scenarios and code, not copied slides.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00344623022A36BF7031B5BCAE

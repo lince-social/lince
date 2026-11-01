@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Preserve the solution set when transforming an equation (@math-equivalent-equations: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2") { r_0C01413EDCA4D1F8302B3EFF20
+A solution set contains every allowed value that makes the original equation true. A transformation is equivalent when it preserves that set in both directions. Adding the same defined expression to both sides is reversible. Multiplying both sides by a nonzero number is reversible. Multiplication by zero erases information, and division by an expression requires it to be nonzero on the cases being considered.
+
+Consider x(x − 4) = 0 over the reals. The product is zero when x = 0 or x = 4. Dividing immediately by x assumes away x = 0, losing a solution. A sound argument separates the zero case and, in the nonzero case, divides to obtain x = 4. The restriction is part of the proof, not a footnote to the final number.
+
+For (x² − 9)/(x − 3) = 6, the original expression requires x ≠ 3. Factoring the numerator gives (x − 3)(x + 3), so the equation becomes x + 3 = 6 on that restricted domain. Its only candidate is 3, which is forbidden. The original equation has no solution. A simplified formula does not fill a hole in the original domain unless one deliberately defines a different function.
+
+Squaring illustrates the opposite risk. The equation √(x + 6) = x requires x ≥ 0 because the principal real square root is nonnegative. Squaring gives x² − x − 6 = 0, or (x − 3)(x + 2) = 0. Candidates are 3 and −2; substitution in the original equation accepts 3 and rejects −2. “Implies” means that every original solution satisfies the transformed condition; it need not mean that every transformed solution satisfies the original one.
+
+**Read:** [Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), chapter 2, alongside the shared equations lesson. Use [Book of Proof](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 2, to connect implication and equivalence with the reasoning above.
+
+**Work:** solve x(x + 5) = 0 without losing a case. Compare (x² − 4)/(x − 2) = 5 with the same left side equal to 4. Explain why the first has a permitted solution and the second does not. Give an operation that can introduce candidates and one that can discard solutions. A numerical root finder returning one answer is not a proof that all cases have been found.
+
+**Check:** report the original domain, transformations and their conditions, candidate values, substitution checks and completeness argument. Use that structure again when equations describe an actual system of constraints.
+
+**Continue:** [Functions, tables, domains, and inverse questions](../../inquiry/quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0C01413EDCA4D1F8302B3EFF20

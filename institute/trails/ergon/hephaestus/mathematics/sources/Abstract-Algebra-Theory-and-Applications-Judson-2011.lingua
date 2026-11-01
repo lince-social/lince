@@ -1,0 +1,13 @@
+Import "../Mathematics.lingua"
+
+Abstract Algebra Theory and Applications Judson 2011 (@math-source-judson: 0, is #book) { r_0066E963AE44EE421A173499DF
+Thomas W. Judson, *Abstract Algebra: Theory and Applications*, 10 August 2011 edition, Stephen F. Austin State University. This fixed author-hosted edition is deliberately identified rather than described as the latest version.
+
+[Author-hosted edition](https://judsonbooks.org/aata-files/aata-20110810.pdf).
+
+Inspection on 1 November 2026: title/permission pages, contents, selected section 3.1 modular-operation passages and printed pages 38–39, section 11.1 opening definition/examples and section 11.2 Theorem 11.3 with its representative-independence argument. The bounded source reconstruction concerns units modulo 8. The complete chapters, exercises, subgroup prerequisites and general algebra course were not audited or completed. Read chapters 3, 9–11 progressively as their prerequisites develop; do not begin advanced assignments solely because they are linked here.
+
+The edition states GNU Free Documentation License version 1.2 or later, with no invariant sections and no front/back cover texts; its appendix contains the licence. Source text and media remain external. Trail examples, explanations and programs are independently written. Source assignments do not complete the unfinished foundations or algebra scopes.
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0066E963AE44EE421A173499DF

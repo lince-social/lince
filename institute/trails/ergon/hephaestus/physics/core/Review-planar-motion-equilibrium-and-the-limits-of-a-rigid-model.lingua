@@ -1,0 +1,24 @@
+Import "../Physics.lingua"
+
+Review planar motion equilibrium and the limits of a rigid model (@physics-spatial-review: 0, is #chapter, #hephaestus-core "Connect-many-constituents-to-a-macroscopic-material-state.lingua#r_0830CAE5F449015AF4585C7380") { r_0D0D1162B173B1D0C2C283E764
+This block connects spatial mathematical preparation with physical motion, force geometry and equilibrium. Four existing mechanical lessons supply free-body, moment, reaction and constraint formation; new explanations establish their planar prerequisites and a connected investigation. Reusing those Records preserves their distinct mechanical-engineering route and broader later readings.
+
+**Describe:** distinguish position, displacement, path length, average velocity and speed. Derive constant-acceleration component histories from the earlier one-dimensional account and say where a piecewise idealization has no finite acceleration. Explain the difference between fixed coordinate changes and moving observers whose dynamics require further work.
+
+**Derive:** construct the planar moment formula from components and verify it by perpendicular-distance geometry. Prove the total-moment origin-shift identity. Explain why a couple survives when the resultant force vanishes, and why an equivalent point load preserves a rigid-body external account without preserving internal deformation or stress. Reconstruct the uniform-load midpoint argument without silently assuming general integration.
+
+**Solve and criticize:** draw a body and list the interactions its support models permit. Solve the fixture and the shared beam example from more than one moment origin. Check units, signs and physical admissibility. Distinguish an underconstrained body, a redundant reaction family, a uniquely solved but sensitive system, and a lost contact. State what evidence supports the assumptions independently of zero equation residuals.
+
+**Read and practise:** work the named planar sections and exercises in Engineering Statics and the selected motion, torque and equilibrium passages in University Physics. Keep the existing complete chapter/book assignments as later formation rather than claiming they were completed here. Defend and revise the original fixture investigation, including its finite checks, symbolic arguments and conditional uncertainty bounds.
+
+General three-dimensional mechanics, angular momentum and rotational dynamics, continuum deformation, calculus-based motion, fuller experimental methods, thermal matter, fields, waves, quantum/statistical descriptions, relativity, astronomy and advanced academic/practical work remain. No physics subject is retired by this block. Next develop the comparable chemistry block on electronic structure, bonding, interactions, phases and energy before extending a mechanics specialization.
+
+**Reading companions:** [Engineering Statics — Baker and Haynes](../../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80); [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6). Use the selected passages named above; their broader assignments retain later preparation.
+
+**Next common area:** [review the first chemistry block](../../chemistry/core/Review-chemical-identity-amounts-and-conservation.lingua#r_0B848D430993C26623D91AFBAE) and develop its next conceptual layer. The mathematics continuation remains available through [the spatial and linear review](../../mathematics/core/Review-spatial-representations-linear-constraints-and-transformations.lingua#r_0231F3E26722D7A3632D78A7AD).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the third common pass:** [Connect many constituents to a macroscopic material state](Connect-many-constituents-to-a-macroscopic-material-state.lingua#r_0830CAE5F449015AF4585C7380). The second pass is now present across all six areas, and mathematical change/accumulation supplies additional preparation. The original cart and fixture studies remain unchanged.
+
+} r_0D0D1162B173B1D0C2C283E764

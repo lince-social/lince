@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Define a graph walk before reasoning about what can happen (@math-discrete-graphs: 0, is #chapter, #hephaestus-core "Prove-when-conserved-counts-are-sufficient-for-reachability.lingua#r_00EA195EBD1EE1E2AFB5B51D6C") { r_00F6592164EEB9B8572CCD8486
+A directed graph consists of a vertex set V and an edge set E⊆V×V. Here edges are ordered pairs, so there are no parallel edges with the same endpoints; a self-loop is permitted in the general definition. An undirected edge {u,v} records a symmetric connection. When using an undirected graph as a transition model, include both ordered directions explicitly. Geometry in a drawing does not supply extra edges, lengths or probabilities.
+
+A walk of length m is a sequence v_0,…,v_m whose successive pairs are edges. A path has no repeated vertices. A length-zero walk contains one vertex. A cycle is a positive-length closed walk with no repeated vertices except its equal endpoints. These conventions matter: concatenated walks may repeat vertices and need not be paths. Histories in the forward token graph will happen to be paths because a strictly increasing rank prevents revisits.
+
+If a walk repeats a vertex, remove the portion between two occurrences; the remaining sequence is still a walk with the same endpoints. Repeating this deletion gives a path between distinct reachable endpoints. Hence in a finite graph with M vertices, every reachable pair has a witness of length at most M−1, including length 0 for equal endpoints. This bounds the length needed to establish reachability, not the number of possible walks; cycles can generate arbitrarily long walks.
+
+Reachability is the smallest reflexive transitive relation containing E. Every edge is a length-one walk, and concatenation proves transitivity. Conversely, induction on length shows that any reflexive transitive relation containing E must contain every walk's endpoints. A finite search that repeatedly adds successors computes this closure when it stops, provided it begins with the starting vertex and never discards a newly found successor. Its termination follows because each genuinely new vertex can be added only once.
+
+The token model has a base graph on boxes and a different state graph on allocations. A base edge i→j permits one state transition only when box i has a token. The base graph's three vertices are not the allocation graph's C(N+2,2) vertices. Neither graph is a physical claim about rates, scheduling, capacity, stochastic behavior or a particular transport system. Those require additional model structure.
+
+**Read and work:** [Mathematics for Computer Science Lehman Leighton and Meyer](../sources/Mathematics-for-Computer-Science-Lehman-Leighton-and-Meyer.lingua#r_004640451E14878C1AA242D107), the actual 2015 PDF sections 9.1–9.2 and 9.6, for directed-graph and relational conventions. Draw the N=1 and N=2 forward state graphs from their complete edge sets. Distinguish vertices, transitions and histories, then show an example with cycles and explain why finite reachability search can terminate despite infinitely many walks. Existing [Review concurrent state safety progress and observation limits](../../computer-science/core/Review-concurrent-state-safety-progress-and-observation-limits.lingua#r_002962E53DB9AFD36AEA18CA3C) provides a contextual application, not a prerequisite to finish operating systems.
+
+**Continue:** [Prove when conserved counts are sufficient for reachability](Prove-when-conserved-counts-are-sufficient-for-reachability.lingua#r_00EA195EBD1EE1E2AFB5B51D6C).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00F6592164EEB9B8572CCD8486

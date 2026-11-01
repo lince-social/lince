@@ -1,0 +1,207 @@
+Import "../Chemistry.lingua"
+
+Investigate reversible change and the evidence carried by a chemical signal (@chemistry-dynamics-study: 0, is #chapter, #hephaestus-core "Review-chemical-rates-equilibrium-and-the-limits-of-analytical-evidence.lingua#r_06BA596F1D795709F9872DAC21") { r_09C8CB1E42C30D3138ED67EA4A
+This original study combines a symbolic kinetic model with a separate stipulated observation model. No physical reaction, instrument calibration or analytical method validation was performed. Reconstruct both accounts and distinguish their mathematical predictions from the empirical evidence that would be needed to use them for a real specimen.
+
+**Chemical account:** use C=1 mmol/L, b₀=0, k_f=3/4 min⁻¹ and k_r=1/4 min⁻¹ in [Derive dynamic balance and relaxation for a reversible model](Derive-dynamic-balance-and-relaxation-for-a-reversible-model.lingua#r_08C68F9BE198AA15DE975BAF90). Derive b_eq=3/4, λ=1 min⁻¹ and K=3. At zero, one, two and three half-relaxation times, b is 0, 3/8, 9/16 and 21/32 mmol/L. Derive the a values by conservation. Compare doubling both rates, reversing the initial displacement, one vanishing rate and both vanishing rates. A finite set of numerical checks supplements the analytic solution and positivity proof; it does not replace them.
+
+**Observation account:** normalize concentrations by 1 mmol/L. Compare the blind response 1/5+2a+2b with the informative response 1/5+a+3b. Recover composition using the independently stipulated total only in the second case. Demonstrate the unknown-baseline pair from the previous lesson and the sensitivity amplification as the two coefficients approach each other. Reconcile a constant response during changing composition with a constant composition maintained by the separate driven account. These are different sources of observational ambiguity.
+
+Save the following program as `reaction_study.py` and run with Python 3. The kinetic helper uses minutes and mmol/L, nonnegative constant rate parameters and 50-digit Decimal arithmetic. It returns (a,b); it does not infer rates from observations. The response helpers perform exact arithmetic when given Fractions and assume a valid affine model and stated total. Recovering values inside the admissible interval is necessary but does not validate those assumptions.
+
+```python file=reaction_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+
+
+def decimal(value):
+    if isinstance(value, F):
+        return D(value.numerator)/D(value.denominator)
+    return D(value)
+
+
+def state(total, b0, forward, reverse, time):
+    with localcontext() as ctx:
+        ctx.prec = 50
+        total, b0, forward, reverse, time = map(decimal, (total,b0,forward,reverse,time))
+        if not all(x.is_finite() for x in (total,b0,forward,reverse,time)):
+            raise ValueError('finite inputs required')
+        if total < 0 or not 0 <= b0 <= total or min(forward,reverse,time) < 0:
+            raise ValueError('nonnegative rates/time and admissible composition required')
+        rate = forward+reverse
+        if rate == 0:
+            return total-b0, b0
+        equilibrium = total*forward/rate
+        decay = (-rate*time).exp()
+        b = b0*decay+equilibrium*(1-decay)
+        return total-b, b
+
+
+def signal(a, b, baseline=F(1,5), sensitivity_a=F(2), sensitivity_b=F(2)):
+    return baseline+sensitivity_a*a+sensitivity_b*b
+
+
+def recover(total, response, baseline, sensitivity_a, sensitivity_b):
+    if sensitivity_a == sensitivity_b:
+        raise ValueError('response does not distinguish the two species')
+    b = (response-baseline-sensitivity_a*total)/(sensitivity_b-sensitivity_a)
+    if not 0 <= b <= total:
+        raise ValueError('response is incompatible with this composition model')
+    return total-b,b
+
+
+if __name__ == '__main__':
+    for time in (0,1,2,4):
+        print(time, 'minutes; A,B', state(1,0,F(3,4),F(1,4),time))
+    for b in (F(0),F(3,8),F(9,16),F(3,4)):
+        a=1-b
+        distinct=signal(a,b,F(1,5),F(1),F(3))
+        print('B',b,'blind signal',signal(a,b),'distinct signal',distinct,
+              'recovered',recover(F(1),distinct,F(1,5),F(1),F(3)))
+```
+
+The companion below checks the numerical exponential against rational bounds, not another call to the same exponential implementation. For 0≤y≤1, repeated substitution of f(y)=1−∫₀ʸ f(s)ds for f(y)=exp(−y) gives alternating polynomial partial sums. The remaining nested integral has the next sign and magnitude at most yⁿ/n! because 0<f≤1. Thus even-degree 24 and odd-degree 25 partial sums bracket exp(−y). For x>0 choose integer m=ceil(x), put y=x/m and raise both positive bounds to m using the exponential product law. The resulting exact interval checks exp(−x), with an explicit 10⁻⁴⁴ allowance for Decimal input/operation rounding in the tested bounded domain. This allowance is a numerical comparison tolerance, not a chemical uncertainty or a proven global error bound for all inputs.
+
+For ln2, differentiate ln((1+z)/(1−z)) to get 2/(1−z²). At z=0 its value is zero. Integrate the finite geometric identity 1/(1−z²)=Σⱼ₌₀ᴺ⁻¹ z²ʲ+z²ᴺ/(1−z²) up to z=1/3. This brackets ln2 between 2Σⱼ₌₀ᴺ⁻¹(1/3)²ʲ⁺¹/(2j+1) and that sum plus 2(1/3)²ᴺ⁺¹/[(2N+1)(1−1/9)]. Positivity and the upper bound on the denominator factor justify the remainder. No infinite-series convergence rule is being assumed without this remainder. Save the companion as `reaction_checks.py` beside the main program.
+
+
+```python file=reaction_checks.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from itertools import product
+import json
+import reaction_study as m
+
+checks=0
+
+def check(condition):
+    global checks
+    assert condition
+    checks+=1
+
+
+def decay_bounds(x):
+    x=F(x)
+    assert x>=0
+    if x==0:
+        return F(1),F(1)
+    pieces=(x.numerator+x.denominator-1)//x.denominator
+    y=x/pieces
+    term=F(1)
+    value=term
+    for j in range(1,25):
+        term*=-y/j
+        value+=term
+    upper=value
+    lower=value+term*(-y/25)
+    return lower**pieces,upper**pieces
+
+
+def log_two_bounds(terms):
+    z=F(1,3)
+    lower=2*sum(z**(2*j+1)/F(2*j+1) for j in range(terms))
+    upper=lower+2*z**(2*terms+1)/(F(2*terms+1)*(1-z*z))
+    return lower,upper
+
+with localcontext() as ctx:
+    ctx.prec=50
+    families=0
+    for total,fraction,kf,kr,time in product((F(0),F(1),F(5,2)),(F(0),F(1,3),F(1)),(F(0),F(1,4),F(3,4)),(F(0),F(1,4),F(1)),(F(0),F(1,2),F(1),F(2))):
+        families+=1
+        b0=total*fraction
+        a,b=m.state(total,b0,kf,kr,time)
+        af,bf=F(a),F(b)
+        tolerance=F(1,10**44)
+        check(abs(af+bf-total)<=tolerance)
+        check(af>=0 and bf>=0)
+        rate=kf+kr
+        if rate:
+            eq=total*kf/rate
+            lo,hi=decay_bounds(rate*time)
+            ends=[eq+(b0-eq)*v for v in (lo,hi)]
+            check(min(ends)-tolerance<=bf<=max(ends)+tolerance)
+            check(min(eq,b0)-tolerance<=bf<=max(eq,b0)+tolerance)
+            slope=kf*af-kr*bf
+            check(abs(slope-rate*(eq-bf))<=tolerance)
+            a2,b2=m.state(total,b0,kf*2,kr*2,time/2)
+            check(abs(F(b2)-bf)<=tolerance)
+            first=m.state(total,b0,kf,kr,time/2)
+            again=m.state(total,first[1],kf,kr,time/2)
+            check(abs(F(again[1])-bf)<=tolerance)
+        else:
+            check(abs(bf-b0)<=tolerance)
+        if time==0:
+            check(abs(bf-b0)<=tolerance)
+    logarithm_cases=0
+    for terms in (1,2,4,8,16,32):
+        lo,hi=log_two_bounds(terms)
+        check(lo<F(D(2).ln())<hi)
+        logarithm_cases+=1
+    half=D(2).ln()
+    for j,expected in [(0,F(0)),(1,F(3,8)),(2,F(9,16)),(3,F(21,32))]:
+        a,b=m.state(1,0,F(3,4),F(1,4),j*half)
+        check(abs(F(b)-expected)<F(1,10**44))
+    near=m.state(1,0,F(3,4),F(1,4),100)[1]
+    check(abs(near-D('0.75'))<D('3e-44'))
+    for bad in [(-1,0,1,1,1),(1,-1,1,1,1),(1,2,1,1,1),(1,0,-1,1,1),(1,0,1,1,-1),(1,0,1,1,'NaN')]:
+        try:
+            m.state(*bad)
+        except ValueError:
+            check(True)
+        else:
+            check(False)
+    a,b=m.state(1,F(3,4),F(3,4),F(1,4),10)
+    check((a,b)==(D('0.25'),D('0.75')))
+
+signal_cases=0
+for total,part,baseline,sa,sb in product((F(1),F(2)),(F(0),F(1,4),F(1,2),F(1)),(F(0),F(1,5)),(F(1),F(2),F(3)),(F(1),F(2),F(3))):
+    signal_cases+=1
+    b=total*part
+    a=total-b
+    y=m.signal(a,b,baseline,sa,sb)
+    check(y==baseline+sa*total+(sb-sa)*b)
+    if sa!=sb:
+        check(m.recover(total,y,baseline,sa,sb)==(a,b))
+        delta=F(1,100)
+        shifted=m.recover(total,y+delta,baseline+delta,sa,sb)
+        check(shifted==(a,b))
+    else:
+        check(y==m.signal(total,F(0),baseline,sa,sb))
+        try:
+            m.recover(total,y,baseline,sa,sb)
+        except ValueError:
+            check(True)
+        else:
+            check(False)
+check(m.signal(F(5,8),F(3,8),F(1,5),F(1),F(3))==F(39,20))
+check(m.signal(F(7,16),F(9,16),F(1,5),F(1),F(3))==F(93,40))
+check(m.signal(F(5,8),F(3,8),F(1,5),F(1),F(3))==m.signal(F(3,4),F(1,4),F(9,20),F(1),F(3)))
+check((F(1,2)+F(1,5))/(1+F(1,5))==F(7,12))
+for epsilon in (F(1),F(1,10),F(1,100)):
+    b=F(1,2)
+    y=m.signal(1-b,b,F(0),F(1),1+epsilon)
+    delta=epsilon/10
+    recovered=m.recover(F(1),y+delta,F(0),F(1),1+epsilon)[1]
+    check(recovered-b==delta/epsilon)
+check(F(3,4)*F(1,2)-F(1,4)*F(1,2)==F(1,4))
+for a,b,r in [(F(1),F(1),F(1,10)),(F(2),F(1),F(2,5)),(F(1),F(2),F(1,5))]:
+    check(F(1,10)*a*a*b==r)
+check(F(12,100)/2==F(6,100))
+with localcontext() as ctx:
+    ctx.prec=50
+    for n in (1,2,4,8,16,32):
+        lower=sum(F(1,n+j+1) for j in range(n))
+        upper=sum(F(1,n+j) for j in range(n))
+        check(upper-lower==F(1,2*n))
+        check(lower<F(D(2).ln())<upper)
+print(json.dumps({'checks':checks,'trajectory_families':families,'signal_cases':signal_cases,'logarithm_bounds':logarithm_cases,'equilibrium_B':'3/4','half_relaxation_B':'3/8','two_half_relaxations_B':'9/16','blind_signal':'11/5','distinct_half_signal':'39/20'},indent=2))
+```
+
+**Independent extension and defense:** choose a new admissible initial composition and rate pair, predict the direction, equilibrium and timescale before computing, and check a held-out time. Change a baseline or sensitivity and exhibit a pair of indistinguishable states, then state which additional independent evidence would distinguish them. Explain the rate normalization, numerical bound and signal uncertainty separately. Compare your derivation with the assigned sources, record one criticism and revise the account. Full parameter estimation, networks, nonideal thermodynamics, laboratory competence and research reproduction remain later formation.
+
+**Author verification:** the companion passed 2,679 checks through Nix, including 324 trajectory families, 144 signal cases and six rational logarithm bounds. Exact fractions independently bracket the 50-digit numerical functions and verify the response algebra. The calculations do not establish real-material kinetics or method performance.
+
+**Continue:** [Review chemical rates equilibrium and the limits of analytical evidence](Review-chemical-rates-equilibrium-and-the-limits-of-analytical-evidence.lingua#r_06BA596F1D795709F9872DAC21).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_09C8CB1E42C30D3138ED67EA4A

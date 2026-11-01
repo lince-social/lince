@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Separate conversion charge allocation collection and purity (@chemistry-product-evidence: 0, is #chapter, #hephaestus-core "../general-chemistry/electrochemistry/Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT") { r_009C72EF3E678A04900EC544DA
+Suppose x mol of Cu²⁺ becomes Cu and y mol of Fe³⁺ becomes Fe²⁺ in the stipulated two-channel account. Let s mol-electron-equivalent be added to interfacial storage, N=2x+y+s the external electron-equivalent amount, and c=r x the collected copper amount, with recovery 0≤r≤1. This observation law presumes the collected copper originates from this reaction, with no initial copper contribution, later reaction or contamination. A different experiment may require a different law.
+
+The following ratios answer different questions. For nonzero denominators, copper's fraction of total charge is 2x/N, its fraction among these Faradaic reactions is 2x/(2x+y), collected-copper charge-equivalent fraction is 2c/N, recovery is c/x, and conversion is x/n_Cu²⁺,initial. Purity needs a separate account of other species in the collected material. Energy efficiency needs a defined useful-energy numerator and energy-input denominator. None of those last quantities can be silently substituted for a charge ratio.
+
+In units n*=1 μmol, use x=1, y=3/2, s=1/2 and r=3/4. Then N=4 and H=2x+y=7/2. Copper, iron and storage account respectively for 1/2, 3/8 and 1/8 of total charge. Among Faradaic reactions copper accounts for 4/7 and iron 3/7. Collected copper is 3/4 μmol, so its charge-equivalent fraction is 3/8. With initial copper amount 3 μmol, conversion is 1/3. Uncollected copper is 1/4 μmol. The chemical copper balance is 2 remaining +3/4 collected +1/4 uncollected =3 μmol.
+
+Now hide x, y and r. Observe only N=4, s=1/2 and c=3/4. Nonnegative channels give y=7/2−2x; recovery at most one requires x≥3/4. The initial stocks x≤3 and y≤4 add constraints. Combining them gives
+
+3/4≤x≤7/4, y=7/2−2x, r=3/(4x).
+
+Both (x,y,r)=(3/4,2,1) and (7/4,0,3/7) fit these observations. They are ledger-compatible alternatives; no claim is made that complete physical devices realizing both would have identical voltage histories. Reaction energetics, rates and interfaces have not been supplied. A separate Fe²⁺ amount observation y=3/2 fixes x=(7/2−3/2)/2=1 and r=3/4. This is the shared linear-identifiability question from [Investigate inconsistent readings lost directions and projected fits](../../mathematics/core/Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B) expressed in chemical quantities.
+
+The ratios above lie in [0,1] because each channel and storage change was nonnegative. General signed current ratios need not. A reduction current magnitude 3 A opposed by oxidation magnitude 2 A gives net reduction magnitude 1 A; the reduction/net ratio is 3, and with equal opposed currents the net denominator is zero. This arithmetic does not violate charge conservation. It shows why the word fraction requires a declared nonnegative partition. [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F) supplies the signed partial-current convention; do not promote the present special model into a universal efficiency bound.
+
+**Work:** derive the full feasible interval when H=N−s, collected amount c≥0, Cu stock 3, Fe stock 4 and Zn stock 5 are specified. Show that max(0,(H−4)/2,c)≤x≤min(3,H/2), subject to H/2≤5. Empty intervals reject the model/data combination. At x=c=0 recovery is unidentified rather than equal to zero. Discuss how uncertainty in the independent iron measurement would propagate through x=(H−y)/2 without claiming a statistical distribution.
+
+**Continue:** [Account for electrical charge, chemical amount, and competing electrode products](../general-chemistry/electrochemistry/Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_009C72EF3E678A04900EC544DA

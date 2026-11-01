@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Describe convergence with a bound on every sufficiently late term (@math-sequence-limits: 0, is #chapter, #hephaestus-core "Use-completeness-to-prove-that-a-bounded-approximation-has-a-limit.lingua#r_00F83D434154FB30935068D16C") { r_0094415C33162608F707950619
+A finite list records only the terms supplied. An infinite sequence specifies a value for every index in an unbounded integer domain. Here a sequence a_n is a function on n=0,1,2,… unless another start is stated. A formula or a recurrence with enough initial data can define it; an observed pattern alone cannot. Reuse the distinctions between sets, ordered objects and functions from [Review discrete arguments counting and preserved structure](Review-discrete-arguments-counting-and-preserved-structure.lingua#r_002045D0F1E9276EAC8563DADF).
+
+The statement a_n→L means: for every ε>0 there is an integer N such that |a_n−L|<ε for every n≥N. The choice of N may depend on ε, but must cover the whole remaining tail. This is the index version of [Specify a limit with an output tolerance and an input neighborhood](Specify-a-limit-with-an-output-tolerance-and-an-input-neighborhood.lingua#r_055F93E108268B814620D86FE6), not a claim that a last term equals L. For a_n=3+2/(n+1), choosing N with N+1>2/ε proves convergence to 3. A larger N also works. Later we justify the real-number property that guarantees an integer exceeds a given real threshold.
+
+Changing finitely many terms does not change convergence: enlarge N beyond every changed index. Conversely, any finite observed prefix can be extended by a constant tail or an alternating ±1 tail. The former converges and the latter does not. No finite table by itself proves convergence of an otherwise unspecified sequence.
+
+A convergent sequence is bounded. Choose N for ε=1; its tail lies within one of L, and the finite prefix has a finite maximum absolute value. Taking the larger bound covers every term. Boundedness alone is insufficient: a_n=(−1)^n has even terms 1 and odd terms −1. Any convergent sequence has the same limit along every subsequence a_{n_k} with strictly increasing indices, because n_k eventually exceeds each required N. Thus these two subsequences disprove convergence. A subsequence must keep the original order and have indices tending to infinity.
+
+Limits are unique: if L and M differed by d>0, sufficiently late terms would be within d/3 of each, contradicting d≤|L−a_n|+|a_n−M|<2d/3. Sum and scalar-multiple laws follow by distributing the requested tolerance across terms. The product law uses boundedness: a_nb_n−LM=a_n(b_n−M)+M(a_n−L). For division, first ensure a denominator tending to nonzero M remains at least |M|/2 away from zero. These arguments explain why the nonzero-denominator hypothesis cannot be omitted.
+
+**Read:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 2 section 5.1, and [Basic Analysis I by Jiri Lebl](../sources/Basic-Analysis-I-by-Jiri-Lebl.lingua#r_00D018D5107F06EE77E9066592), section 2.1. Compare the quantifiers with a numerical plot. Prove convergence of n/(n+1), divergence of an alternating subsequence pair and the product law with an explicit tolerance choice. Distinguish a sequence tending without bound from one oscillating without a limit; neither has a finite real limit in this definition.
+
+**Continue:** [Use completeness to prove that a bounded approximation has a limit](Use-completeness-to-prove-that-a-bounded-approximation-has-a-limit.lingua#r_00F83D434154FB30935068D16C).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0094415C33162608F707950619

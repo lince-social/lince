@@ -1,0 +1,19 @@
+Import "../Chemistry.lingua"
+
+Distinguish a dissolved component from its chemical species (@chemistry-solution-meaning: 0, is #chapter, #hephaestus-core "../general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95") { r_00F9AB4A31E0A317BDB0CC50C1
+A material name on an input container tells us what entered a system. It does not uniquely describe the particles present after dissolution and reaction. In a homogeneous aqueous model, water is the solvent and dissolved material is described through molecules, ions and any relevant complexes. Homogeneity is an assumption about the region and scale of interest; a clear appearance alone does not establish equilibrium, composition or the absence of colloidal material.
+
+Separate three questions. How much of a conserved component entered? In which chemical species is that component now distributed? Which observation responds to those species? The previous stoichiometric and analytical preparation supplies the first and third questions; this block connects them through solution equilibria.
+
+Use an abstract neutral acid HA and its singly charged conjugate form A⁻. Here A denotes a conserved chemical group, not a new periodic-table element. Each HA and A⁻ contains one such group, so in a closed single liquid phase the component amount is n_A,total=n_HA+n_A⁻. Proton exchange with solvent changes the two species amounts but preserves this sum. If an additional species contained two A groups, its amount would enter with coefficient two. If the group left through an outlet, entered a solid or adsorbed to a wall, the chosen liquid-phase sum would require that additional account. The component identity and system boundary come before the equation.
+
+Dissolution transfers material into a solution; dissociation separates or transforms its constituent species. A neutral molecule can dissolve without becoming ions. An ionic input can yield solvated ions, but assigning every aqueous formula complete dissociation is not justified. Rates of reaching a state and its equilibrium composition are separate questions, as already established for reaction dynamics.
+
+[Explain solution formation through interactions and thermodynamic conditions](../general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95) supplies the shared solution/interaction account. Read its qualitative discussion now and retain its full thermodynamic and solution/colloid reading for the appropriate later preparation. We have not yet derived a general chemical-potential minimization principle. Statements about interaction energy or dispersal motivate questions; they do not independently predict every solubility or phase outcome.
+
+**Work:** draw a ledger with input components, candidate species and proposed observations. Explain why a total elemental assay can stay fixed while a free-ion measurement changes. Specify what would be missing from a two-species description if a solid or a second protonation state became important. Use [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), section 11.1, as a second reading; write your own component account rather than copying its examples.
+
+**Continue:** [Explain solution formation through interactions and thermodynamic conditions](../general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00F9AB4A31E0A317BDB0CC50C1

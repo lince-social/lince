@@ -1,6 +1,6 @@
 Import "../Electrical-power-engineering.lingua"
 
-Ratings, operating states, models and evidence (@pe-operating-state: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "../mathematics/Linear-algebra-differential-equations-and-control-bridges.lingua#r_5HPRA3VXTJQKHD1RDH620HJW43") { r_4BA5QEZMPE71TKF40R5EYJ9HMQ
+Ratings, operating states, models and evidence (@pe-operating-state: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "../mathematics/Linear-algebra-differential-equations-and-control-bridges.lingua#r_5HPRA3VXTJQKHD1RDH620HJW43", #hephaestus-core "../../core/Electrical-parameter-ranges-and-sufficient-bounds.lingua#r_00E07F85F9615342B24454DB4E") { r_4BA5QEZMPE71TKF40R5EYJ9HMQ
 **Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), equipment selection, operating conditions and verification; [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), complete applicable equipment/design context.
 
 Separate normal operating conditions, startup, overload, fault, isolated maintenance and return to service. Equipment that carries a current continuously may not safely make or interrupt the prospective fault current. A thermal limit, dielectric withstand, stability boundary and protection setting constrain different phenomena and time scales.
@@ -12,4 +12,9 @@ Use simple models initially, then state what has been omitted and what observati
 **Continue:** [Matrix, differential-equation and control bridges](../mathematics/Linear-algebra-differential-equations-and-control-bridges.lingua#r_5HPRA3VXTJQKHD1RDH620HJW43).
 
 **Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+
+**Fifth engineering-block reading:** Use the distinction between nominal values, stated operating limits, model assumptions and realization evidence. The common investigation supplies invented steady DC limits and parameter boxes, not ratings or qualification of an actual device. Startup, faults, isolation, protection, sinusoidal/dynamic analyses and full source installation/design contexts retain their specialist preparation and original assignments. No electrical installation or component is certified by the common calculations.
+
+**Continue in the fifth engineering block:** [Prove parameter bounds before screening a design](../../core/Electrical-parameter-ranges-and-sufficient-bounds.lingua#r_00E07F85F9615342B24454DB4E).
+
 } r_4BA5QEZMPE71TKF40R5EYJ9HMQ

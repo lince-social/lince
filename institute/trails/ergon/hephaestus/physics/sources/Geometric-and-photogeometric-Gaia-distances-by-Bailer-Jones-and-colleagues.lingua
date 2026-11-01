@@ -1,0 +1,11 @@
+Import "../Physics.lingua"
+
+Geometric and photogeometric Gaia distances by Bailer Jones and colleagues (@physics-source-gaia-distances: 0, is #reference) { r_007956C9890AE867351FD7DD98
+C. A. L. Bailer-Jones, J. Rybizki, M. Fouesneau, M. Demleitner and R. Andrae, *Estimating distances from parallaxes. V: Geometric and photogeometric distances to 1.47 billion stars in Gaia Early Data Release 3*. [Author page](https://bailer-jones.www3.mpia.de/gedr3_distances.html), [accepted manuscript](https://www2.mpia-hd.mpg.de/~calj/gedr3_distances/gedr3_distances.pdf), and [author FAQ](https://bailer-jones.www3.mpia.de/gedr3_distances/FAQ.html).
+
+Inspected on 1 November 2026: manuscript title/authors and acceptance date 31 December 2020, abstract and selected introduction on nonlinear inversion, negative measured parallaxes, geometric versus photogeometric information, selection, priors and unresolved-source limitations; FAQ opening on these choices, zero points and lack of a sharp inverse-parallax threshold. The browser rejected the large PDF; a temporary external download permitted reading its opening text. The full catalogue, inference code, posterior sampler and validation sections were not reproduced or fully audited.
+
+The common tangent-plane and interval examples are original mathematical fixtures, not Gaia reductions. The source is specifically EDR3; do not silently substitute a different release or universal zero-point correction. Author-hosted free access was verified, but no blanket redistribution licence was established. PDF and catalogue media remain external.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_007956C9890AE867351FD7DD98

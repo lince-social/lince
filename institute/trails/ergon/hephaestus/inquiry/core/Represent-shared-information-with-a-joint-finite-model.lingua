@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Represent shared information with a joint finite model (@inquiry-joint-covariance: 0, is #chapter, #hephaestus-core "Derive-affine-propagation-and-common-source-cancellation.lingua#r_0048ADA9C3341D57921ECA3B7D") { r_000276339E263B799013315258
+Reuse [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71), sections 6.1–6.2 and exercise 6.2.23, with the finite-outcome preparation already developed. For outcomes ω with nonnegative weights p_ω summing to one, define μ_X=Σp_ω X_ω and the centered value X_ω−μ_X. Covariance is the average product of centered values:
+
+cov(X,Y)=Σp_ω(X_ω−μ_X)(Y_ω−μ_Y)=E(XY)−E(X)E(Y).
+
+Expand the product and use linearity of expectation to derive the second expression. Covariance is symmetric. cov(X,X)=var(X), and its units are the product of the two quantities' units. Correlation divides covariance by the product of the two positive standard deviations, giving a dimensionless number; if either standard deviation is zero this quotient is undefined.
+
+For independent finite variables, joint weights factor, so E(XY)=Σ_xΣ_y p_x p_y xy=E(X)E(Y) and covariance vanishes. The converse fails. Let X take −1,0,+1 equally and Y=X². E(X)=E(XY)=0, so covariance is zero. But observing X=0 determines Y=0: their joint probability is 1/3, whereas the product of the two marginal probabilities is 1/9. Dependence can survive zero linear association.
+
+A joint model must describe shared causes. In a hypothetical temperature comparison, X=22+S+E₁ and Y=20+S+E₂, with numerical temperatures in °C and corrections/differences in K. Let S take ±1/2 K equally and E₁,E₂ take ±1/4 K equally, all three primitive variables independent. The eight triples have weight 1/8. Then var(X)=var(Y)=1/4+1/16=5/16 K² and cov(X,Y)=var(S)=1/4 K². The same S appears twice; it is not drawn independently for each reading.
+
+If separate offsets S₁,S₂ of the same marginal distribution replace S, the two readings have identical individual distributions to the first model, but covariance becomes zero. Sixteen primitive outcomes now describe the joint model. Marginal tables alone cannot distinguish the cases. Instrument identity, calibration history and the physical way an effect enters the observations supply evidence about the joint relation; a shared label by itself is not a quantitative covariance estimate.
+
+**Practice:** enumerate the eight and sixteen outcomes, verify normalization and recover each marginal table. Construct another pair with the same marginal distributions and negative covariance. Derive the covariance of X with a constant and explain why a constant correction changes an estimate without itself adding variance; uncertainty in that correction is a separate variable.
+
+**Continue:** [Derive affine propagation and common source cancellation](Derive-affine-propagation-and-common-source-cancellation.lingua#r_0048ADA9C3341D57921ECA3B7D).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_000276339E263B799013315258

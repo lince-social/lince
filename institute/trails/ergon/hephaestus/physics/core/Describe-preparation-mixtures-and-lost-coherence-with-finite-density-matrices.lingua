@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Describe preparation mixtures and lost coherence with finite density matrices (@physics-quantum-mixtures: 0, is #chapter, #hephaestus-core "Derive-quantum-outcome-spread-without-confusing-it-with-measurement-error.lingua#r_00ED2673F9FDB95BDE04601BBA") { r_00A61A36241CEC41AC1100D5A5
+A classical preparation lottery chooses normalized pure state ψₖ with probability wₖ. Define its density matrix ρ=Σwₖ|ψₖ⟩⟨ψₖ|. It is Hermitian, has trace one and is positive semidefinite: for every v, v†ρv=Σwₖ|⟨ψₖ|v⟩|²≥0. Trace means the sum of diagonal entries; finite sums prove Tr(AB)=Tr(BA). Averaging the Born rule gives p(P)=Tr(ρP), and averaging observable means gives ⟨A⟩=Tr(ρA). This derivation uses an ordinary lottery over specified preparations, not a new claim that every pure state is ignorance about definite outcomes.
+
+For two states, write ρ=(I+rₓX+rᵧY+r_zZ)/2 with real r. Matrix entries are ((1+r_z,rₓ−irᵧ),(rₓ+irᵧ,1−r_z))/2. Its determinant is (1−|r|²)/4. A Hermitian two-by-two matrix with trace one is positive semidefinite exactly when both diagonal entries are nonnegative and its determinant is nonnegative. If its first diagonal a>0, complete the square in v†ρv to obtain a|v₁+(b/a)v₂|²+(d−|b|²/a)|v₂|² for upper off-diagonal b; when a=0 positivity forces b=0. This proves the criterion and gives |r|≤1. Hence the program validates density matrices with exact rational arithmetic without a numerical eigenvalue tolerance.
+
+Direct multiplication gives Tr(ρ²)=(1+|r|²)/2. The boundary |r|=1 describes pure states; for |r|<1, choose the two eigenprojectors along r with weights (1±|r|)/2 to exhibit a mixture (r=0 gives I/2). The coefficients r are called the Bloch vector. They summarize state predictions, not a classical spin vector whose three components are simultaneous outcomes. In particular p(n,+)=(1+r·n)/2.
+
+The equal mixture of |0⟩ and |1⟩ has ρ=I/2. It is also the equal mixture of x-plus and x-minus. Those preparation histories differ but all measurements on this isolated two-state system have the same probabilities. By contrast, the coherent x-plus state gives p(x,+)=1 instead of one-half. A density matrix does not uniquely identify the preparation lottery or its retained classical labels.
+
+For the ideal projective instrument, retaining result P gives ρ′=PρP/Tr(ρP); forgetting the result of axis n gives Dₙ(ρ)=ΣₛPₙₛρPₙₛ. The Bloch vector becomes r′=(r·n)n. Derive this by the Pauli identities or by averaging the two conditional states ±n. Dephasing removes transverse coherence; it preserves trace and positivity but is generally irreversible when the record/environment is unavailable. The pure-state unitary law instead gives ρ′=UρU†.
+
+**Work:** compare these operations on |0⟩ and x-plus, calculate purity, and give two different preparation ensembles with the same density. Prove the positivity criterion including its zero-diagonal case. General density-operator and open-system theory remains later formation; this lesson establishes the finite accounts needed to distinguish preparation, selection and unobserved outcomes.
+
+**Continue:** [Derive quantum outcome spread without confusing it with measurement error](Derive-quantum-outcome-spread-without-confusing-it-with-measurement-error.lingua#r_00ED2673F9FDB95BDE04601BBA).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00A61A36241CEC41AC1100D5A5

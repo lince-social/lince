@@ -1,0 +1,21 @@
+Import "../Computing.lingua"
+
+Derive a batch operation from interface guarantees (@computing-abstraction-composition: 0, is #chapter, #hephaestus-core "Separate-behavioral-substitutability-from-cost-and-changed-requirements.lingua#r_0093E00EA98E496E9BC6C23AA1") { r_00B5EDC9D78BFFA550AB83560D
+Build a client of the slot interface without reading its fields. `reserve_many(state,requests)` receives a valid state (m,S) and an exact tuple of distinct exact slot integers. First validate the complete tuple. If it is malformed, raise ValueError. For a valid request set R, if C=S∩R is nonempty return the unchanged abstract state and ('conflict',min C). Otherwise return a state for (m,S∪R) and ('accepted',|R|). Request order cannot change the abstract result or selected conflict. An empty request is accepted with count zero.
+
+The implementation first checks types, ranges and repetitions, then observes all conflicts, then calculates a new result only when none exists. This ordering establishes the malformed-input priority. The selected minimum conflict is an explicit deterministic rule; returning the first encountered conflict would give a different observation for reordered requests. No caller state is mutated in any case.
+
+On the successful path, after k insertions the accumulating result represents S∪{r_0,...,r_{k−1}}. The interface's insertion law proves preservation. The finite request length proves termination under the resource assumptions. After the last insertion, the required union is obtained. The original state is still S because all intermediate values are immutable under the permitted operations. On the conflict path there is no proposal update; the result remains S and the reported member belongs to C and is its minimum. The proof uses interface laws, so it applies to either representation.
+
+For m=5, S={3}, and requests (1,3), the correct result is the original set with conflict 3. A rival that accumulates insertions and returns its intermediate candidate when it sees a conflict instead returns {1,3}. Its conflict label is correct but its state result is wrong. Checking only the status would miss the violation. A rival that stops validation when it sees an occupied slot also mishandles a later malformed value.
+
+This local all-or-conflict result is not a transaction involving a physical resource. Two separate callers starting from the same old value can each calculate acceptance for the same slot. Committing a unique shared reservation needs a different coordination/persistence contract, connected to [Review concurrent state safety progress and observation limits](Review-concurrent-state-safety-progress-and-observation-limits.lingua#r_002962E53DB9AFD36AEA18CA3C) and [Review communication contracts identity and conditional completion](Review-communication-contracts-identity-and-conditional-completion.lingua#r_00AEE3B68FE4F0253687A55642). No network or storage guarantee follows from returning an immutable proposal.
+
+Use the shared module lesson to separate decoding, abstract validation, proposal calculation, rendering and external commitment. A textual adapter owns its units and syntax; the pure operation owns the set behavior. Changing the renderer must not quietly change conflict choice or failure interpretation. Importing the study module defines functions/classes and creates no booking or report.
+
+**Work:** derive all three branches and the successful-loop invariant. Test a reordered multi-conflict request and a conflict followed by invalid input. Identify the exact observation distinguishing the incremental rival. Design the additional interface needed for shared commitment without pretending the local proposal already supplies it.
+
+**Continue:** [Separate behavioral substitutability from cost and changed requirements](Separate-behavioral-substitutability-from-cost-and-changed-requirements.lingua#r_0093E00EA98E496E9BC6C23AA1).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00B5EDC9D78BFFA550AB83560D

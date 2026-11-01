@@ -1,0 +1,19 @@
+Import "../Chemistry.lingua"
+
+Relate reaction progress to amounts concentrations and observed rates (@chemistry-rate-balance: 0, is #chapter, #hephaestus-core "../general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ") { r_0AAA65374BC254C65DF16A76C6
+The preceding chemistry block connected composition, structure and energy. It did not determine how quickly a composition changes. Begin with the physical boundary and the quantities that can change, using [Use reaction extent to connect species changes with conserved elements](../general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y), [Connect many constituents to a macroscopic material state](../../physics/core/Connect-many-constituents-to-a-macroscopic-material-state.lingua#r_0830CAE5F449015AF4585C7380) and [Define a derivative as a justified local rate](../../mathematics/core/Define-a-derivative-as-a-justified-local-rate.lingua#r_02335A93A6AF69D38C38651917). An equilibrium relation, a rate law and a measurement relation answer different questions.
+
+For a closed system with one identified reaction, write n_i(t)=n_i(0)+ν_i ξ(t). Here n_i is amount of species i, ξ is reaction extent in moles, and ν_i is its signed stoichiometric number, negative for a reactant and positive for a product. Differentiating gives dn_i/dt=ν_i dξ/dt. For a fixed volume V, c_i=n_i/V and r=(1/V)dξ/dt give dc_i/dt=ν_i r. A signed net r can be negative when the reaction progresses in the reverse direction. Distinguish that net convention from a nonnegative forward disappearance rate.
+
+For a symbolic 2A → B account at fixed V, a measured d c_A/dt=−0.12 mmol L⁻¹ min⁻¹ corresponds to r=0.06 mmol L⁻¹ min⁻¹ and d c_B/dt=0.06 mmol L⁻¹ min⁻¹. This accounts for conserved constituents when B contains two A units; the total number of molecular entities need not be constant. The written stoichiometry alone does not show that two A particles collide in an elementary step or that r is proportional to c_A².
+
+If volume changes, differentiating n_i=Vc_i instead gives dc_i/dt=ν_i(dξ/dt)/V−(c_i/V)dV/dt for the same closed single-reaction account. Dilution can lower concentration even with dξ/dt=0. For an open boundary add the incoming and outgoing amount rates before dividing by V. Several reactions need the sum of their contributions. Do not interpret every falling concentration as disappearance by one reaction.
+
+An observation y(t) may be an electrical, optical or other response. Inferring concentration from it requires a declared observation relation. The slope of y is not automatically the reaction rate: a baseline can drift, an instrument can respond slowly, and another constituent can affect the signal. Finite differences estimate changes over intervals; they do not supply a noiseless instantaneous derivative. The later common observation lesson will expose these ambiguities algebraically.
+
+**Read and derive:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), sections 12.1 and 12.3, with the net-rate convention above; then the following shared rate-law lesson. Draw the amount, volume and signal accounts separately. Reproduce the stoichiometric rate conversion, construct a dilution-only counterexample and specify one observation that could distinguish it from reaction. Preserve temperature, mixing and specimen conditions when comparing rates. No laboratory reaction is performed or prescribed here.
+
+**Continue:** [Define a reaction rate and infer a law from appropriate evidence](../general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0AAA65374BC254C65DF16A76C6

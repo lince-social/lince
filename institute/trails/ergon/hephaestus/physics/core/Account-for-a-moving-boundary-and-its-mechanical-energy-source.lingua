@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Account for a moving boundary and its mechanical energy source (@physics-magnetic-moving: 0, is #chapter, #hephaestus-core "Derive-inductive-storage-and-the-transient-circuit-balance.lingua#r_006E188F44A894E3AE0A38D123") { r_00DDDFEB0B9CC4D7E775FF0A7E
+For a smoothly moving material loop, the force-per-charge account is ℰ=∮(E+u×B)·dl, where u is local wire velocity in the chosen frame. Assume a regular evolving surface with that boundary and smooth divB=0. During a short time dt, a boundary element dl sweeps an oriented strip u dt×dl. Its flux is B·(u×dl)dt=(B×u)·dl dt. Combining the strips with the field's explicit time change gives dΦ_B/dt=∫_S ∂tB·n dA+∮(B×u)·dl. Interior surface choices agree because divB=0. Faraday's fixed-surface law then yields ℰ=−dΦ_B/dt. This derivation identifies the assumptions behind the moving-boundary rule; it does not cover arbitrary changing contacts or reconnections by naming an imagined loop.
+
+Derive a sliding-bar case directly, since its contacts join moving and stationary conductors. A vertical bar of length ℓ moves toward +x at speed v between horizontal rails; B points +z. Choose the loop clockwise as viewed from +z, so its normal is −z and its right-hand bar segment runs downward. Along that bar, u×B=−vB e_y. Pairing with the downward segment gives +Bℓv. The oriented flux is −Bℓx and its negative derivative agrees. The electrostatic field may redistribute charges, but its circulation around the instantaneous closed path is zero under the model's assumptions.
+
+With positive loop resistance R, negligible inductive storage and other losses, clockwise current is i=Bℓv/R. The bar force is I dl×B=−iℓB e_x, opposing the motion for either sign of v. Constant speed requires external force +iℓB e_x. Mechanical input is iℓBv=ℰi=Ri². This benign ideal calculation is not an apparatus construction or performance specification; real contacts, fields and mechanics need separate evidence.
+
+The zero magnetic work on an individual charge does not make a moving circuit an energy source. The charge's total velocity includes conductor motion and drift; separating their magnetic power terms gives equal and opposite contributions, while constraints, electric fields and the external drive complete the transfer account. Energy entering the resistor ultimately comes from the drive in this case. [Moving loops, motional emf and reference frame](../electromagnetism/induction/Moving-loops-motional-emf-and-reference-frame.lingua#r_2J3AWCEN6GVBWXBS1PYYGAXT44) retains the fuller electromechanical and frame assignments.
+
+**Work:** for B=2,ℓ=1/2,v=3,R=4 in consistent units, obtain ℰ=3,i=3/4,F_x=−3/4 and input/heating 9/4. Reverse v and track every sign. Then explain what the equality omits when inductive storage matters. A significant position-dependent inductance adds terms through λ=L(x)i; do not append a constant-L formula to a changing geometry without justifying the approximation.
+
+**Continue:** [Derive inductive storage and the transient circuit balance](Derive-inductive-storage-and-the-transient-circuit-balance.lingua#r_006E188F44A894E3AE0A38D123).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00DDDFEB0B9CC4D7E775FF0A7E

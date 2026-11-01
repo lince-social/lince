@@ -1,4 +1,10 @@
-Farming (@farming: 0, is #chapter, #contains @farming-foundations, #contains @farming-compost, #contains @farming-crops, #contains @farming-orchards, #contains @farming-livestock, #contains @farming-aquatic-foods, #contains @farming-nutrition, #contains @farming-sources, #farming-practice "Aquatic-foods.lingua#r_0YEX298P6W6YXAHDZK8WEYWG7H", #farming-practice "Compost.lingua#r_65Y9FF8CM0H3HY7V9DMFXFF22Z", #farming-practice "Crops.lingua#r_7N1XGTB65EQAAN25KSZPAZMG91", #farming-practice "Foundations.lingua#r_1B0889C6NVH20P61QDGAHT7HD5", #farming-practice "Livestock.lingua#r_7JQED5KAHXM0SXKETE4G4WN7B3", #farming-practice "Nutrition.lingua#r_6K5MKDYYSKVCXVYQE2YJDXGG2W", #farming-practice "Orchards.lingua#r_4PGVMHY31EAJNXCSTDSSNB7VSD", #farming-practice "Production.lingua#r_65PXZHNA5DW8ZZRCQKG3ZX8ME1", #farming-practice "Sources.lingua#r_3Y2340J1G65F0B140KR0K63GJD") { r_13YG8DNJGT3QRX08G4BAMD92F3
+Import "agriculture-and-agronomy/Agriculture-and-agronomy.lingua"
+Import "animal-science-and-veterinary-science/Animal-science-and-veterinary-science.lingua"
+Import "forestry-and-land-stewardship/Forestry-and-land-stewardship.lingua"
+Import "fisheries-aquaculture-and-aquatic-biology/Fisheries-aquaculture-and-aquatic-biology.lingua"
+Import "food-science-and-human-nutrition/Food-science-and-human-nutrition.lingua"
+
+Farming (@farming: 0, is #chapter, #contains @farming-foundations, #contains @farming-compost, #contains @farming-crops, #contains @farming-orchards, #contains @farming-livestock, #contains @farming-aquatic-foods, #contains @farming-nutrition, #contains @farming-sources, #farming-practice "Aquatic-foods.lingua#r_0YEX298P6W6YXAHDZK8WEYWG7H", #farming-practice "Compost.lingua#r_65Y9FF8CM0H3HY7V9DMFXFF22Z", #farming-practice "Crops.lingua#r_7N1XGTB65EQAAN25KSZPAZMG91", #farming-practice "Foundations.lingua#r_1B0889C6NVH20P61QDGAHT7HD5", #farming-practice "Livestock.lingua#r_7JQED5KAHXM0SXKETE4G4WN7B3", #farming-practice "Nutrition.lingua#r_6K5MKDYYSKVCXVYQE2YJDXGG2W", #farming-practice "Orchards.lingua#r_4PGVMHY31EAJNXCSTDSSNB7VSD", #farming-practice "Production.lingua#r_65PXZHNA5DW8ZZRCQKG3ZX8ME1", #farming-practice "Sources.lingua#r_3Y2340J1G65F0B140KR0K63GJD", #contains "agriculture-and-agronomy/Agriculture-and-agronomy.lingua#r_5WNCD0H2PEAHZRZKPQEM7JMC7P", #contains "animal-science-and-veterinary-science/Animal-science-and-veterinary-science.lingua#r_7P49MCRJJSZ1Y4DMF49E0GJQJV", #contains "forestry-and-land-stewardship/Forestry-and-land-stewardship.lingua#r_2YCQFY7S7YR040JSVP7DNK6WTR", #contains "fisheries-aquaculture-and-aquatic-biology/Fisheries-aquaculture-and-aquatic-biology.lingua#r_7Q1DAC2DFXNP55JEQXJG8CPC8X", #contains "food-science-and-human-nutrition/Food-science-and-human-nutrition.lingua#r_264041REESKFNAYEN2AHRH04YC") { r_13YG8DNJGT3QRX08G4BAMD92F3
 Grow food, understand the organism, measure the result, return suitable residues to the soil.
 
 Follow @farming-foundations, @farming-compost, @farming-crops, @farming-orchards, then `@farming-livestock`. Use @farming-aquatic-foods for fish and shellfish. @farming-nutrition connects production to ../nutrition/Nutrients.lingua without changing its food preparations or nutrient measurements.
@@ -10,6 +16,16 @@ Temperatures are °C; dimensions are metric. Days are planning ranges, not promi
 No location is assumed. Use local frost dates, rainfall, soil temperature, day length, and cultivar requirements through `@farming-calendar`. Brazil supplies the food examples; northern-hemisphere source months must be translated into local conditions.
 
 Practice: complete one small bed and one compost batch before expanding. Keep observations in personal Records linked to the lesson; reuse the supplied text without adopting a scoring system.
+
+**Scope:** Grow and observe a food crop; follow nutrients through a food system; investigate animal, forest, or aquatic care. Introduce the organism, locality, quantities, and recurring work relevant to the selected goal; machinery design and laboratory specialisation remain distinct continuations.
+
+**Branches:**
+
+- [Agriculture and agronomy](agriculture-and-agronomy/Agriculture-and-agronomy.lingua#r_5WNCD0H2PEAHZRZKPQEM7JMC7P)
+- [Animal science and veterinary science](animal-science-and-veterinary-science/Animal-science-and-veterinary-science.lingua#r_7P49MCRJJSZ1Y4DMF49E0GJQJV)
+- [Forestry and land stewardship](forestry-and-land-stewardship/Forestry-and-land-stewardship.lingua#r_2YCQFY7S7YR040JSVP7DNK6WTR)
+- [Fisheries, aquaculture, and aquatic biology](fisheries-aquaculture-and-aquatic-biology/Fisheries-aquaculture-and-aquatic-biology.lingua#r_7Q1DAC2DFXNP55JEQXJG8CPC8X)
+- [Food science and human nutrition](food-science-and-human-nutrition/Food-science-and-human-nutrition.lingua#r_264041REESKFNAYEN2AHRH04YC)
 } r_13YG8DNJGT3QRX08G4BAMD92F3
 
 Extension @farming "lince.source" {

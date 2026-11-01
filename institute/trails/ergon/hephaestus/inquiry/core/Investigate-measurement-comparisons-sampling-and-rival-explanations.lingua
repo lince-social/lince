@@ -1,0 +1,34 @@
+Import "../Inquiry.lingua"
+
+Investigate measurement comparisons sampling and rival explanations (@inquiry-foundation-study: 0, is #chapter, #hephaestus-core "Review-the-chain-from-question-to-shared-scientific-claim.lingua#r_0093C5B9C7363BE10B1DFAD7E5") { r_01E750DF8466C4FE1C5F3C0088
+Build a connected inquiry account from three deliberately separate hypothetical exercises. Their numbers are original teaching inputs, not a published experiment or measurements performed by the author. The first examines agreement between procedures, the second examines explanations of an observation pattern, and the third examines inference from selected objects to a population. Do not combine their different objects or units as though they were one measured dataset.
+
+**Read:** return to the selected Bell and VIM passages, NIST design sections and Wilson paper as each question requires. Reuse the shared measurand, procedure, sampling, computational-claim and reporting lessons. Record what the sources support, what the original examples demonstrate and what remains proposed learner work.
+
+For the first exercise, two procedures indicate the following lengths in millimetres for the same four identified cards. No independent reference length is supplied, and the observation order has not been recorded.
+
+| Card | A indication, mm | B indication, mm | B − A, mm |
+| --- | --- | --- | --- |
+| P | 9.9 | 10.2 | 0.3 |
+| Q | 20.0 | 20.2 | 0.2 |
+| R | 30.1 | 30.4 | 0.3 |
+| S | 40.0 | 40.2 | 0.2 |
+
+The means are 25.0 mm for A, 25.25 mm for B and 0.25 mm for the paired differences. Reconstruct the difference both by averaging the last column and by subtracting the two method means. Add the same 0.4 mm offset to every indication from both methods: their means become 25.4 and 25.65 mm while the paired differences remain unchanged. This proves a cancellation in this calculation, not that either method is accurate. If B was always used later, drift could contribute to the contrast. Propose a comparison with recorded order and independent reference information; do not invent missing observations to complete the present table.
+
+For the second exercise, use the three reference-length/time observations and rival models from the comparison lesson. Reconstruct their identical predictions along the original schedule and their different predictions for a 10 mm reference at minute 3. Make a table of the proposed observation, each prediction, relevant uncertainty sources and the interpretation of several possible outcomes. Specify how an outcome inconsistent with both models would change the next investigation. The proposed observation has not been performed.
+
+For the third exercise, define a finite population of ten distinct pieces: eight have exact hypothetical thickness 1 mm and two have thickness 3 mm. The population mean is (8 × 1 + 2 × 3)/10 = 1.4 mm. A convenient selection of two thin pieces gives a sample mean of 1 mm, regardless of how often those same pieces are reread without error. Enumerate every unordered pair of distinct pieces: there are 10 × 9/2 = 45. Twenty-eight pairs are thin/thin and have mean 1 mm, sixteen are mixed and have mean 2 mm, and one is thick/thick with mean 3 mm. The mean of these 45 sample means is (28 × 1 + 16 × 2 + 1 × 3)/45 = 1.4 mm.
+
+If, and only if, the sampling procedure gives each unordered pair equal probability, these counts define its sampling distribution. The probability that it misses both thick pieces is 28/45. Thus an average over all possible samples can equal the population mean while a particular sample misses an important subgroup. This calculation is about the specified sampling design with exact item values, not a complete measurement-uncertainty budget. Selecting objects at random and repeatedly reading the same object are different operations.
+
+**Deliver:** precise questions and quantities; input provenance and units; independent arithmetic; competing explanations and a proposed comparison; the full pair enumeration or a checkable equivalent; a report with appropriately bounded claims; and a revised explanation following criticism. Use a small original program only after predicting its answers by hand, and state its runtime and input meaning. Do not claim that the invented data demonstrate actual instrument accuracy, real sampling performance or successful learner experiments.
+
+**Source companions:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](../metrology/sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1); [International vocabulary of metrology — JCGM and Inmetro](../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH); [Measurement Process Characterization — NIST/SEMATECH](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN); [Good enough practices in scientific computing — Wilson and colleagues](../reproducible-computation/sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B).
+
+**Author verification:** exact rational arithmetic passed 925 comparisons. These include the stated means, intervals and paired contrasts; the confounded and separating model predictions; all 45 pairs of the ten-piece population; sampling identities over 360 small finite populations; and 81 common-shift cases. Enumeration and direct population accounting agree under their explicit assumptions. No physical measurement or educational experiment was performed.
+
+**Continue:** [Review the chain from question to shared scientific claim](Review-the-chain-from-question-to-shared-scientific-claim.lingua#r_0093C5B9C7363BE10B1DFAD7E5).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_01E750DF8466C4FE1C5F3C0088

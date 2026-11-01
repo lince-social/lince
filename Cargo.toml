@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-exclude = ["crates/vendor/parley", "crates/vendor/smithay"]
+exclude = ["crates/vendor/parley", "crates/vendor/smithay", "crates/vendor/bevy-interleave-macros", "crates/vendor/gemm-common"]
 members = [
     "crates/lince",
     "crates/utils",
@@ -62,7 +62,6 @@ homepage = "https://lince.social"
 lince-i18n = { version = "=0.8.0", path = "crates/i18n" }
 lince-ithkuil = { version = "=0.8.0", path = "crates/ithkuil" }
 tnil = "=0.1.3"
-lince = { version = "=0.8.0", path = "crates/lince" }
 utils = { version = "=0.8.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
 simulation = { version = "=0.8.0", path = "crates/simulation", package = "lince-simulation" }
@@ -84,7 +83,6 @@ fiote = { version = "=0.8.0", path = "crates/fiote", package = "lince-fiote" }
 lince-ailuros = { version = "=0.8.0", path = "crates/ailuros" }
 
 argon2 = "0.6.0"
-async-stream = "0.3.6"
 async-trait = "0.1.92"
 axum = "0.8.9"
 base64 = "0.23.1"
@@ -93,17 +91,14 @@ base64 = "0.23.1"
 # have replaced both the sync protocol and the CRDT.
 chacha20poly1305 = "0.11.0"
 chrono = "0.4.45"
-color-eyre = "0.6.5"
 cpal = { version = "=0.18.2", features = ["pulseaudio"] }
 crossterm = "0.29.0"
 dirs = "7.0.0"
-dotenvy = "0.15.7"
 ed25519-dalek = "3.0.0"
 futures = "0.3.34"
 # gpui = { version = "0.2.2" }
 # gpui-component = { version = "0.5.0" }
 # gpui-component-assets = { version = "0.5.0" }
-include_dir = "0.7.4"
 # Exact-pinned (Ontology §11 "Compatibility and revocation floor"): two Cells on
 # different iroh builds is a silent protocol change between peers. Bump
 # deliberately, never via a caret range.
@@ -113,7 +108,7 @@ iroh-mdns-address-lookup = "=0.5.0"
 # QR rendering for pairing codes. Server-side because the sand runs under a CSP
 # that blocks external scripts.
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
-rqrr = "=0.11.0"
+rqrr = { version = "=0.11.0", default-features = false }
 # Only the two formats a browser canvas actually produces. The default feature
 # set pulls a dozen codec crates that would never be called.
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
@@ -121,11 +116,7 @@ postcard = { version = "1.1.3", features = ["alloc"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.
 loro = "=1.16.0"
-maud = "0.27.0"
 portable-pty = "0.9.0"
-proc-macro2 = "1.0.107"
-quote = "1.0.47"
-ratatui = { version = "0.30.2" }
 regex = "1.13.1"
 schemars = "1.2.2"
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
@@ -135,35 +126,29 @@ reqwest = { version = "0.13.5", default-features = false, features = ["json", "r
 # specific feature choice matters (a GTK-based picker is what crashes).
 rfd = { version = "0.17.2", default-features = false, features = ["xdg-portal", "wayland"] }
 ropey = "1.6.1"
-semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
 sensei = { version = "=0.8.0", path = "crates/sensei" }
-geist = { version = "=0.8.0", path = "crates/geist" }
 rust-sitter = "0.4.5"
 rust-sitter-tool = "0.4.5"
 hkdf = "0.13.0"
 getrandom = "0.4.3"
 x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
-socket2 = "0.6.5"
 sqlx = { version = "0.8.6" }
-syn = { version = "3.0.5", features = ["full"] }
 tokio = { version = "1.53.1", features = ["io-util", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
-tokio-stream = { version = "0.1.19", features = ["sync"] }
 tokio-util = "0.7.19"
 toml = "1.1.6"
-tower-http = { version = "0.7.1", features = ["cors"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["fmt"] }
-urlencoding = "2.1.3"
-utoipa = { version = "5.5.0" }
 uuid = { version = "1.26.1", features = ["v4"] }
 vodozemac = { version = "=0.11.1", default-features = false }
 zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
+gemm-common = { path = "crates/vendor/gemm-common" }
+bevy_interleave_macros = { path = "crates/vendor/bevy-interleave-macros" }
 parley = { path = "crates/vendor/parley" }
 smithay = { path = "crates/vendor/smithay" }
 

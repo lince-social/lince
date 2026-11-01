@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Bound a finite trigonometric calculation before trusting decimals (@math-trig-approximation: 0, is #chapter, #hephaestus-core "Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409") { r_009546FA47C08EFAEFC38F8134
+The geometric functions and their derivatives are already defined. A finite polynomial can now approximate them with a proved remainder. This reasoning does not require assuming that an infinite power series converges to sine or cosine.
+
+First derive integration by parts from the product rule and fundamental theorem: ∫u v'=[uv]−∫u'v on an interval with the required continuous derivatives. Repeated integration by parts, or induction using this identity, gives
+
+f(x)=Σ from k=0 to n of f^(k)(0)xᵏ/k! + (1/n!)∫₀ˣ(x−s)ⁿ f^(n+1)(s) ds.
+
+For the induction step integrate the remainder once using a primitive of (x−s)ⁿ, or equivalently isolate the next derivative at zero; state the boundary terms. The n=0 case is the fundamental theorem. Here k! means the product of positive integers through k, with 0!=1. All sine/cosine derivatives are continuous and bounded in magnitude by one, so the remainder magnitude is at most |x|^(n+1)/(n+1)! for either sign of x. The negative-x case follows by reversing the integral and bounding absolute distances.
+
+For n=59, the sine polynomial contains odd powers through 59 and the cosine polynomial even powers through 58. Both have error bounded by |x|⁶⁰/60!. These rational coefficients give exact upper/lower references at a rational argument. The bound is conservative near zero and is a mathematical truncation bound; floating evaluation introduces another error. Keep the two separate.
+
+The original evaluator below restricts |x|≤4 radians, repeatedly halves until |y|≤1/2, evaluates finite sine/cosine polynomials through degrees 49/48 using 80-digit Decimal arithmetic, then reconstructs by double-angle identities. It is deliberately a bounded teaching evaluator with no arbitrary-angle reduction or library-conformance claim. The independent check uses direct exact Fraction polynomials of degree at most 59 and their proved remainder bounds. A stated 10⁻⁶⁵ slack in finite comparisons accommodates numerical evaluation; no global error guarantee for arbitrary inputs is claimed by those tests.
+
+For later checks, the n=2 sine polynomial is x and gives |sin x−x|≤|x|³/6; the n=1 cosine polynomial is 1 and gives |cos x−1|≤x²/2. These bounds control the fixed-time zero-frequency limit and quantify a local approximation already justified geometrically. They do not supply a physical small-amplitude criterion without a separate model.
+
+**Practice:** derive the first two polynomial approximations and their error bounds, then compare a direct and a halved evaluation. Explain why increasing polynomial degree and increasing arithmetic precision address different errors. Choose a requested tolerance and a bounded argument range, and justify an adequate finite degree before reporting decimals. Full approximation theory and general numerical libraries remain later formation.
+
+**Continue:** [Investigate periodic states exact rotations and sampling ambiguity](Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_009546FA47C08EFAEFC38F8134

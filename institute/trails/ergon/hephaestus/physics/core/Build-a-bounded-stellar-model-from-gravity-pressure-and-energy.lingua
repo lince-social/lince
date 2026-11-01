@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Build a bounded stellar model from gravity pressure and energy (@physics-astronomy-stars: 0, is #chapter, #hephaestus-core "Connect-stellar-populations-evolution-and-the-interstellar-medium.lingua#r_000B4835BBD7D8C0F2F7BCA48D") { r_00F8BE3ACB1A7ECBAFAB896747
+A star is a self-gravitating physical system, not merely a colored point. In a spherical, slowly evolving model let M(r) be enclosed mass, ρ(r) density and P(r) pressure. A thin shell gives dM/dr=4πr²ρ. Balancing its pressure gradient against gravity gives dP/dr=−GM(r)ρ/r². These equations need an equation of state, thermal transport, composition, boundary conditions and an energy account before they determine a star. Hydrostatic balance does not mean global thermal equilibrium: a shining star transports energy outward.
+
+For an original constant-density illustration, M(r)=4πρr³/3. Define C=4πGρ/3, so g_r=−Cr and dP/dr=−ρCr. With P(R)=0, integrate P(r)=ρC(R²−r²)/2. Taking normalized ρ=3,C=2,R=2 gives central pressure 12. The gradient, not pressure's absolute value, balances weight. This toy sphere is not a realistic stellar density or temperature profile. If combined with an ideal-gas equation of state it imposes a particular temperature profile; it still says nothing about how the required energy is supplied or transported.
+
+Let ε_net be net local energy supplied per mass and time in a quasi-steady model. Then dL/dr=4πr²ρ ε_net, with source and loss conventions declared. In evolving matter, stored thermal energy, compression and composition changes enter too. Radiative diffusion, convection and sometimes conduction connect this balance to a temperature gradient. The opacity and equation of state are material models, not quantities fixed by hydrostatic balance alone. The shared thermal and field-energy lessons provide the conservation framework.
+
+In a hydrogen-burning main-sequence star, nuclear reactions convert some initial rest energy into kinetic energy and radiation, with neutrinos carrying part away. The previous relativistic energy account permits this; rates and reaction networks require nuclear/particle formation. A schematic available energy η f Mc² gives a time scale η f Mc²/L, where f is the participating mass fraction and η the conversion fraction. It is a reservoir/rate estimate, not an exact lifetime for an evolving star. Gravitational contraction provides another store of order GM²/R; dividing it by L gives a distinct contraction time scale.
+
+**Read and work:** selected equilibrium and energy passages of 16.3 in [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F). Derive the shell balances and uniform-sphere solution, change R, and identify which observables could reject constant density. Distinguish photospheric temperature from central temperature and mechanical balance from an energy-generation mechanism. A computed equilibrium is not proof of stability; perturbation and transport analyses belong to the stellar branch.
+
+**Continue:** [Connect stellar populations evolution and the interstellar medium](Connect-stellar-populations-evolution-and-the-interstellar-medium.lingua#r_000B4835BBD7D8C0F2F7BCA48D).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00F8BE3ACB1A7ECBAFAB896747

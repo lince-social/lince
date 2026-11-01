@@ -1,0 +1,23 @@
+Import "../Mathematics.lingua"
+
+Use linear combinations to explain span independence and coordinates (@math-linear-combinations: 0, is #chapter, #hephaestus-core "Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B") { r_004D242DF23E1A3D1718672EAE
+A linear combination adds scalar multiples of vectors. For vectors u and v and real numbers α and β, the combination αu + βv is formed by scaling each vector and adding the results in a shared coordinate description. The scalars are coefficients. Their allowed values matter: arbitrary real coefficients, nonnegative coefficients and integer coefficients define different attainable sets.
+
+**Read:** Boyd and Vandenberghe sections 1.2–1.3 and 5.1–5.2, with their elementary exercises. Use the [first mathematical proof lessons](Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A) to turn a worked example into an argument for all allowed coefficients. The broader theory of vector spaces and dimension continues later; begin by establishing the claims in the two-dimensional examples here.
+
+The span of a list of vectors is the set of all their real linear combinations. Take b₁ = (1,0) and b₂ = (1,1). Any vector (x,y) can be written as (x−y)b₁ + yb₂, so these vectors span the plane. A list is linearly independent if its zero combination forces every coefficient to be zero. Here αb₁ + βb₂ = (α+β,β) = (0,0) first gives β = 0 and then α = 0. The same two vectors are therefore independent as well as spanning.
+
+A basis is an independent spanning list. Every vector in its space has unique coordinates in that list. To see uniqueness, suppose two coefficient pairs represent the same vector. Subtract the two representations. Independence forces both coefficient differences to vanish. Existence comes from spanning; uniqueness comes from independence. These are different parts of the argument.
+
+Compare c₁ = (1,2) and c₂ = (2,4). The combination −2c₁ + c₂ is zero with nonzero coefficients, so the list is dependent. Its span is only the line y = 2x. For instance (3,6) has representations 3c₁ + 0c₂ and c₁ + c₂, whereas (0,1) has none. Adding another vector on the same line would not supply the missing direction.
+
+Now restrict coefficients in the b₁,b₂ example. Nonnegative coefficients require y ≥ 0 and x−y ≥ 0, giving the wedge x ≥ y ≥ 0. Integer coefficients reach a discrete set of points. These restrictions may be appropriate for a physical allocation, but they change the question from spanning a real vector space. Mathematical coordinates need not be physically executable actions.
+
+**Work:** derive the coordinates of (5,3) in the b basis and verify the reconstructed vector. Prove that a list containing the zero vector is dependent. Give one vector outside the c span and explain why no coefficient search can find it. For a proposed collection of observations, distinguish repeated information from an additional independent constraint. Avoid concluding independence merely because the vectors have different names or different numerical entries.
+
+**Reading companions:** [OpenStax Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Boyd and Vandenberghe, Introduction to Applied Linear Algebra](../../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW). Follow the selected sections named above; the sources retain their separate, broader assignments.
+
+**Continue:** [Resolve a vector into a projection and an orthogonal remainder](Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua#r_0E1019900E901787E7D6D8001B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_004D242DF23E1A3D1718672EAE

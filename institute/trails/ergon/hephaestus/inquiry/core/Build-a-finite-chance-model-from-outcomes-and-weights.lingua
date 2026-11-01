@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Build a finite chance model from outcomes and weights (@inquiry-finite-probability: 0, is #chapter, #hephaestus-core "Condition-on-information-without-assuming-independence.lingua#r_07DA2E41CFC98507FD5297EA72") { r_0ECC7C2601996048D46E15C104
+A finite probability model begins with a set Ω of distinguishable possible outcomes and a weight p(ω) for each outcome ω. Every weight is nonnegative and their sum is one. An event E is a subset of Ω; its probability is the sum of the weights of its members. These definitions make the empty event have probability zero and the whole set probability one. They do not identify the correct physical model by themselves. State the procedure or assumption that justifies the weights.
+
+For disjoint events E and F, adding their weights gives P(E or F)=P(E)+P(F). If they overlap, the same outcomes were counted twice, so subtract P(E and F). The complement has probability 1−P(E). Zero weight means impossible under the stated model, not a proof that the model covers every physical possibility. Reuse [Fractions, decimals, rounding, and equivalent values](../quantitative-literacy/foundations/Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD) for exact ratios and [State what a mathematical claim says about its objects](../../mathematics/core/Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA) for claims whose domains must be explicit.
+
+With six labeled units and exactly three assigned Q, an outcome is a three-member subset. Choosing an ordered first, second and third unit gives 6×5×4 possibilities. Every subset appears 3×2×1 times under those orderings, so there are 20 distinct assignments. This is the meaning of six choose three. A uniform balanced design assigns probability 1/20 to each subset. One way to justify that model is to assume a uniform random permutation of all six labels and use its first three; each subset occupies the first group in the same number of permutations. Merely enumerating twenty subsets in a program does not perform a random assignment.
+
+For three declared pairs, choosing one Q unit from each pair gives 2×2×2=8 assignments. Giving each independent pair choice probability one half makes each combined assignment have probability 1/8. This is a different outcome set. An assignment with both members of a pair in Q is excluded. A procedure that samples one of the eight outcomes uniformly has the same mathematical allocation distribution, even if implemented differently.
+
+Uniformity is not automatic. Suppose three outcomes have weights 1/2, 1/3 and 1/6. An event containing the second and third has probability 1/2, not two thirds. Counting favorable cases divided by all cases works only when the cases being counted have equal weight. Likewise, grouping labeled outcomes by a repeated numerical result does not generally leave equally likely groups.
+
+**Read:** [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71), the finite definitions in section 1.2 and the counting introductions in 3.1–3.2. Draw a complete outcome table for selecting two of four labels. Explain both the ordered count and the division that removes order. Then group the six-unit allocations by the number of units drawn from the first pair, and calculate each group's probability by counting its constituent assignments. Do not declare the groups uniform.
+
+**Boundary practice:** assign all six units to Q. There is one allocation, but the difference between Q and P group means is undefined because the P group is empty. A valid probability model does not make every proposed statistic meaningful. State the domain of both the allocation rule and the calculation.
+
+**Continue:** [Condition on information without assuming independence](Condition-on-information-without-assuming-independence.lingua#r_07DA2E41CFC98507FD5297EA72).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0ECC7C2601996048D46E15C104

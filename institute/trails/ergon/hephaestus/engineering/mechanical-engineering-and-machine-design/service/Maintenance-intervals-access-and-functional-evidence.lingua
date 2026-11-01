@@ -1,6 +1,6 @@
 Import "../Mechanical-engineering-and-machine-design.lingua"
 
-Maintenance intervals, access and functional evidence (@mech-maintenance: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68", #materials-engineering "../../materials-engineering/service/Failure-evidence-links-history-mechanism-and-alternatives.lingua#r_6JQNH0AAKYQB85CXPHJJBXK1Q6", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Maintenance-tasks-must-address-an-identified-mechanism.lingua#r_6XK2YC9A7KJD7V60X4801TZJ37") { r_0GJDWMZFSFC6Y6DYH6G07BP5F1
+Maintenance intervals, access and functional evidence (@mech-maintenance: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68", #materials-engineering "../../materials-engineering/service/Failure-evidence-links-history-mechanism-and-alternatives.lingua#r_6JQNH0AAKYQB85CXPHJJBXK1Q6", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Maintenance-tasks-must-address-an-identified-mechanism.lingua#r_6XK2YC9A7KJD7V60X4801TZJ37", #hephaestus-core "../../core/Derive-the-availability-ratio-from-explicit-operating-and-restoration-cycles.lingua#r_00F129849803FE41D31C9AD071") { r_0GJDWMZFSFC6Y6DYH6G07BP5F1
 **Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), lubrication, inspection and replacement; [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY), maintenance decisions and validation.
 
 Choose maintenance from failure mechanisms, consequences, detectability and the work needed to restore function. Calendar time, operating hours and load cycles describe different exposure. Inspection can itself disturb alignment, cleanliness or preload, so more frequent intervention is not automatically better.
@@ -16,5 +16,10 @@ For an ideal repairable process alternating independent operating and repair int
 
 
 **Continue in gas and vacuum systems:** [Maintenance tasks must address an identified mechanism](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Maintenance-tasks-must-address-an-identified-mechanism.lingua#r_6XK2YC9A7KJD7V60X4801TZJ37).
+
+
+**Eighth engineering-block reading:** Use the distinctions between exposure, failure mechanism, intervention and restoration resources. The next common lesson derives the availability ratio with explicit limiting premises. Bearing-specific procedures and full source assignments remain later discipline work; they are not prerequisites for this paper/software service study.
+
+**Continue in the eighth engineering block:** [Derive the availability ratio from explicit operating and restoration cycles](../../core/Derive-the-availability-ratio-from-explicit-operating-and-restoration-cycles.lingua#r_00F129849803FE41D31C9AD071).
 
 } r_0GJDWMZFSFC6Y6DYH6G07BP5F1

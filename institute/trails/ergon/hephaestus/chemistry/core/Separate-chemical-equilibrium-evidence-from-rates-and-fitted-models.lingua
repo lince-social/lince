@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Separate chemical equilibrium evidence from rates and fitted models (@chemistry-thermo-evidence: 0, is #chapter, #hephaestus-core "Investigate-chemical-direction-finite-Gibbs-changes-and-reversible-work.lingua#r_002CB3AFEA9BCF9BB21D1AFE36") { r_00DA32ADB90E1CBAE83339D4A4
+Thermodynamic functions, composition measurements and rate laws make different claims. For the ideal A⇌B model, equilibrium requires Q=K when both directions are admissible. Observing no composition change over a finite interval can instead reflect slow kinetics, constrained transport, an insensitive measurement or an external steady-state balance. Reuse [Investigate reversible change and the evidence carried by a chemical signal](Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A) and [Use competing explanations to choose informative observations](../../inquiry/core/Use competing explanations to choose informative observations.lingua#r_0077B280D63642B767F8BF007D) when deciding which conclusion the observations support.
+
+Suppose an additional autonomous rate model is dn_B/dt=k_f n_A−k_r n_B with k_f,k_r>0. Its stationary ratio is k_f/k_r. Consistency with the stipulated ideal equilibrium at the same T requires k_f/k_r=K. Under that premise,
+
+dG/dt=RT ln(Q/K) k_r n_A(K−Q)≤0,
+
+because ln u has the sign of u−1 for u>0. This provides a consistency check, not a derivation of kinetic coefficients from thermodynamics. Multiplying both rate coefficients by the same positive factor preserves K but changes relaxation time. A rival k_f=k_r with K=4 would at y=3/5 give dn_B/dt<0 and Δ_rG<0, hence dG/dt>0. It cannot describe an undriven closed relaxation within that same model; hidden driving or a changed state model would need to be stated.
+
+A measured equilibrium composition can help estimate K only with adequate evidence for equilibrium, species identification and an activity model. More digits in a logarithm do not reduce uncertainties in temperature, composition or model adequacy. Changing the assumed activity coefficient while holding concentration data fixed can change inferred K. A single mixture result does not independently identify all activity coefficients and standard chemical potentials.
+
+**Published reconstruction:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), section 16.4 Example 16.7 supplies the standard vaporization differences Δ_vapH°=44.01 kJ/mol and Δ_vapS°=118.8 J/(mol K). Using its T=298 K gives Δ_vapG°=8607.6 J/mol, consistent with its 8.6 kJ rounding. This is a calculation from supplied tabular quantities, not a new water-property measurement. The positive standard vaporization quantity does not prohibit evaporation into sufficiently unsaturated air: the vapor activity changes the actual chemical-potential difference. In the ideal-vapor/pure-liquid approximation, equilibrium requires p_v/p°=exp(−Δ_vapG°/RT); pressure corrections, temperature consistency and material data require their own accuracy assessment.
+
+Use the source's 298 K in its numerical reconstruction; do not silently substitute 298.15 K while claiming an exact reproduction. Distinguish approximate temperature labels, rounded source constants, exact SI defining constants and uncertain thermochemical data. The numerical program precision is not the physical precision of the published example.
+
+**Report:** separate the declared environment, material model, reference conventions, observations, derived state changes, kinetic hypotheses and missing evidence. Propose one discriminating observation for a rival account, then state what it still would not establish. Preserve wider nonideal, phase, transport and electrochemical formation as later common or branch work.
+
+**Continue:** [Investigate chemical direction finite Gibbs changes and reversible work](Investigate-chemical-direction-finite-Gibbs-changes-and-reversible-work.lingua#r_002CB3AFEA9BCF9BB21D1AFE36).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00DA32ADB90E1CBAE83339D4A4

@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Distinguish a fitted function from an observation model (@inquiry-fit-model: 0, is #chapter, #hephaestus-core "../metrology/calibration/Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH") { r_000ABE05441CF937D7970B1070
+A graph can answer several different questions. Which affine function is nearest the recorded points under a stated distance? What procedure estimates an unknown mean response over repeated observations? What physical relation could explain the response? These questions need different premises. Begin with [Derive least squares from orthogonality and a squared norm](../../mathematics/core/Derive least squares from orthogonality and a squared norm.lingua#r_0014DEEF56C47EADBBE05BB395) and [Separate the fitted output from ambiguous coefficients](../../mathematics/core/Separate the fitted output from ambiguous coefficients.lingua#r_00084EE12BB22B58AB5FC115D4): projection supplies the first answer without a probability distribution or causal claim.
+
+Let x_i be fixed declared input values, Y_i random response variables and y_i their realized values. Write Y_i=α+βx_i+ε_i for i=1,…,n. Uppercase distinguishes a variable before observation from its realized value. If x has unit X and Y unit U, α has unit U, β has unit U/X and ε has unit U. The parameters α,β are fixed unknown quantities in this repeated-observation model. An estimator is a function of the random data; its observed result is an estimate.
+
+There are several assumptions to defend separately. An affine mean specifies E(Y_i)=α+βx_i, hence E(ε_i)=0. Equal variance specifies Var(ε_i)=σ². Uncorrelated errors specify Cov(ε_i,ε_j)=0 for distinct observations. Independence is stronger and is not required for the coefficient covariance derivation below. Normality is a further distributional assumption and is not used in this block. Fixed inputs are part of this particular model; uncertain reference values require a joint observation account.
+
+A more honest rival can be Y_i=α+βx_i+d(x_i)+ε_i, where d is systematic discrepancy. Moving d into an unnamed error does not make its mean zero. Likewise, a common reference offset can move every observation together. Revisit [Model discrepancy, double counting, and sensitivity to assumptions](../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3) and distinguish unexplained scatter, parameter uncertainty and structural inadequacy.
+
+**Read and compare:** [Measurement Process Characterization — NIST/SEMATECH](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), selected process-model section 4.1.4.1. Linear in the coefficients can include known nonlinear functions of x, such as x². Explain why α+βx+γx² has three linear coefficients although its graph need not be straight. The common route next reuses the existing response-fitting lesson; its wider calibration readings remain assignments with their own preparation.
+
+**Work:** state an input, response, unit, domain and repetition procedure for a benign sensor comparison. Identify which quantities would remain fixed, what could vary together, and which assumptions could be tested by additional observations. An uncontrolled association does not establish that changing x causes the response.
+
+**Continue:** [Fit a response relation and inspect what the residuals say](../metrology/calibration/Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_000ABE05441CF937D7970B1070

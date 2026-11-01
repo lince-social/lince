@@ -1,0 +1,13 @@
+Import "research-design-and-experimentation/Research-design-and-experimentation.lingua"
+Import "../metrology/Metrology.lingua"
+
+Measurement and research (@measurement-and-research: 0, is #chapter, #outline, #contains "research-design-and-experimentation/Research-design-and-experimentation.lingua#r_46ZFQQBMNRDP7HA63J3B7AJR8H", #contains "../metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5") { r_63SRHN81RMJ2MTA76HE11C5WR0
+Make and report a bounded measurement; design an informative comparison; follow an investigation from question to conclusion. Begin with quantities and observations; introduce uncertainty, sampling, and later statistical methods where the selected question needs them.
+
+**Parent:** [Scientific inquiry and practice — questions, evidence and shared knowledge](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Branches:**
+
+- [Research design and experimentation](research-design-and-experimentation/Research-design-and-experimentation.lingua#r_46ZFQQBMNRDP7HA63J3B7AJR8H)
+- [Measurement and metrology](../metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5)
+} r_63SRHN81RMJ2MTA76HE11C5WR0

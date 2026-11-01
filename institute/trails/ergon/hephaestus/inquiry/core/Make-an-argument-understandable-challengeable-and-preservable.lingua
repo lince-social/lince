@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Make an argument understandable challengeable and preservable (@inquiry-communication: 0, is #chapter, #hephaestus-core "Investigate-measurement-comparisons-sampling-and-rival-explanations.lingua#r_01E750DF8466C4FE1C5F3C0088") { r_094622380644F206A98B67A516
+A scientific account should allow a reader to see how the conclusion follows and where it could fail. Begin with the question and the claim actually supported. Present definitions, relevant observations, transformations and reasoning in an order the reader can reconstruct. Keep qualifications beside the claims they limit, rather than hiding them in a distant appendix.
+
+**Read:** the [shared measurement-report lesson](../metrology/foundations/Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC) for the information accompanying a result, and [Wilson and colleagues' sections](../reproducible-computation/sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B) on collaboration, project organization and manuscripts. Use the vocabulary reference when a technical word is doing important work. An accessible explanation should introduce a term before relying on it; precision need not mean assuming that the reader already knows the entire discipline.
+
+Compare “method B is accurate to 0.25 mm” with “for these four paired objects, the mean indicated B-minus-A difference was 0.25 mm under the recorded procedure.” The second claim states a comparison and its boundary. It does not declare either method accurate against an independent reference, or establish performance for every future object. A heading, caption or abstract must preserve that distinction as carefully as the detailed calculation.
+
+Choose representations that answer the question. A table of paired readings keeps object identities visible. A plot of the differences against object size can expose a pattern hidden by one mean. A plot against measurement order can challenge a drift explanation. Axes need quantities and units; show omitted points and explain any aggregation. An apparently smooth line is a graphical choice, not additional observation between measured locations.
+
+Teach the idea by asking the learner to make a prediction, explain it, confront a counterexample and revise the explanation. For example, ask whether adding the same offset to every reading changes the range before displaying the arithmetic. Ask the learner to construct a different example that preserves the same principle. Repeating the teacher's words alone supplies weak evidence that the learner can apply the distinction elsewhere. This exercise is an original teaching proposal, not a reported educational experiment or a complete theory of learning.
+
+Preservation includes meaning and permission as well as bytes. Record authorship, source identity, edition or version, relevant passages, access location and stated reuse terms. Keep your own observations and explanations distinct from a source's text or data. A stable citation helps someone locate a work; it does not promise continued access or grant rights that its licence withholds. For original results, preserve the definitions and operations needed to interpret the saved material after the original author is unavailable.
+
+**Work:** write a short report with one claim, one supporting table, one alternative explanation and one proposed discriminating observation. Give it to another reader for reconstruction and criticism. Record and repair an ambiguity without erasing the earlier version. Prepare a five-minute explanation for a beginner, including a prediction and transfer question. Identify the reading needed before that explanation makes sense, and preserve a source account that distinguishes inspected passages from further assigned study.
+
+**Continue:** [Investigate measurement comparisons sampling and rival explanations](Investigate-measurement-comparisons-sampling-and-rival-explanations.lingua#r_01E750DF8466C4FE1C5F3C0088).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_094622380644F206A98B67A516

@@ -1,0 +1,15 @@
+Import "../Mathematics.lingua"
+
+Review models proofs and preserved structure before the next branch (@math-structures-review: 0, is #chapter) { r_00871D52F29C75057810297F4C
+The first middle-layer mathematics block now has a precise boundary. It introduces a declared language, recursive term and formula semantics, assignments and scope, consequence and countermodels, a specified equational calculus with a soundness proof, modular operations, homomorphisms and compatible quotients. The investigation connects these through finite models and original residue-map examples. The common mathematics core remains at 111 learning Records; these ten new lessons belong to a separate branch route.
+
+**Show understanding:** explain why two expression trees may have equal values, why a sentence is assignment-independent, why a model of the premises can refute a purported consequence, and why a sound proof system rules out a derivation when a countermodel exists. Prove representative independence, term preservation and the image factorization without appealing to a successful program run. Identify the exact roles of surjectivity, injectivity, the codomain and the operation's axioms.
+
+**Transfer:** specify a small scientific or computational representation and name which structure a proposed translation preserves. Demonstrate a failure of a stronger claim with an explicit example. Link to shared finite maps and graph quotients instead of redefining them. Physical validity, measurement accuracy and empirical adequacy need their own evidence.
+
+**Remaining formation:** full first-order natural deduction and metatheory, sets and infinity, computability and incompleteness, type/category foundations, broader group theory and actions, rings/ideals, fields, modules and representations remain unfinished. ERG-012 and ERG-013 retain their identities and full scope. No learner achievement or complete academic formation is inferred from authored lessons.
+
+**Next development:** open the comparable physics mechanics branch, then chemistry, computing, engineering and inquiry. Return to the remaining mathematical families in the cross-tree middle-layer passes. Develop this branch further after siblings have coherent entries; do not take it directly to a terminal research specialization.
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00871D52F29C75057810297F4C

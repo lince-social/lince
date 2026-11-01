@@ -1,0 +1,22 @@
+Import "../Mathematics.lingua"
+
+Review discrete arguments counting and preserved structure (@math-discrete-review: 0, is #chapter, #hephaestus-core "Describe-convergence-with-a-bound-on-every-sufficiently-late-term.lingua#r_0094415C33162608F707950619") { r_002045D0F1E9276EAC8563DADF
+Distinguish a set, sequence, multiset, tuple and power set. State the universe, equality convention and empty cases. Prove set equality through membership in both directions. Explain the difference between labeled boxes, labeled tokens and configurations whose labels are forgotten.
+
+Define a function with domain/codomain, its image and fibers. Prove the inverse/bijection connection and the finite fiber-count identity. State exactly when division of a count is justified. Derive the pigeonhole conclusion and a counterexample to a false equal-fiber claim. Keep probabilities separate from raw counts.
+
+Derive sum/product/subset formulas, the separator bijection for allocations and the forward edge count. Present a complete induction and explain why a recursive dependency terminates. Prove that the allocation generator is sound, complete and nonduplicating. Reconstruct the bounded published subset example and distinguish its finite verification from general argument.
+
+Prove the equivalence-class/partition correspondence and representative-independence requirement. Distinguish equivalence, partial order and reachability. Define graph, walk, path and cycle with explicit zero-length/loop conventions. Prove the finite path-length witness bound and smallest-closure property. Do not confuse a base graph with its state graph.
+
+Prove the directed two-cut reachability criterion, the rank and termination conditions, and the reversible component-total criterion. Explain why an invariant can fail to be sufficient and why termination differs from a finite waiting guarantee. Derive complete-history counts by the reflection bijection and unique recursive decomposition.
+
+Reconstruct the observed-cycle counterexample, the sufficient local lifting condition and its reflection-symmetry proof in the reversible model. Derive class counts with fixed points rather than naive division. Explain which conclusions about history counts, probabilities and physical identity are not preserved by this quotient argument.
+
+Present the original investigation, an independently checked extension and a reasoned response to criticism. The new finite toolkit serves later computing, chemistry and production reasoning while retaining pure mathematical scope. The seventh mathematics block does not complete discrete mathematics, graph theory, combinatorics, logic or the whole core. Deeper analysis/series, vector calculus, broader differential/numerical methods, probability and advanced independent proof remain. Continue physics rotational dynamics at comparable depth before specializing further.
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+
+**Continue in the eighth common pass:** [Describe convergence with a bound on every sufficiently late term](Describe-convergence-with-a-bound-on-every-sufficiently-late-term.lingua#r_0094415C33162608F707950619). Connect finite approximation with sequences, series, completeness, uniform control and justified infinite accounts. Continue the other five areas at comparable breadth before deeper specialization.
+
+} r_002045D0F1E9276EAC8563DADF

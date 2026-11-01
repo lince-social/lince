@@ -24,7 +24,6 @@ sha2 = { workspace = true }
 uuid = { workspace = true }
 
 [build-dependencies]
-sha2 = { workspace = true }
 sensei = { workspace = true }
 
 [lints]

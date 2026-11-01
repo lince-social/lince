@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+State the question and the kind of evidence its answer needs (@inquiry-claims: 0, is #chapter, #hephaestus-core "../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_0E928F81D1D0CA612417C8B8CA
+A question becomes investigable when possible answers have different consequences for reasoning or observation. Begin by naming what you want to know, the objects or population involved, the circumstances, and what would count as an answer. “This method is better” leaves the comparison open. Better could mean smaller bias, less variation, lower cost, faster completion or easier reconstruction by another person. These are different questions.
+
+**Read:** the [shared computational-claim lesson](../reproducible-computation/foundations/Question-and-claim.lingua#r_2G13323XWBD8ZQD7S8FVE13AT0) for the separation between a question, an operation and a supported conclusion. Consult [VIM entry 2.3](../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH) before the following measurand lesson. Follow [Bell's opening sections](../metrology/sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1) 1–2 for a first measurement discussion, comparing its historical introductory wording with the vocabulary reference. Formal mathematical arguments are developed in the [shared mathematical-claims](../../mathematics/core/Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA) and [proof lessons](../../mathematics/core/Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A); use them when a statement concerns all members of a defined mathematical domain.
+
+Distinguish three examples. “The sum of these four recorded values is 100” is a checkable arithmetic claim about a fixed input. “Every even integer has an even square” is a general mathematical claim needing an argument from definitions. “This instrument estimates a card's width adequately for a specified use” needs a defined quantity, observations, an uncertainty account and a use criterion. A proof about the arithmetic cannot establish the last claim. Conversely, many physical observations do not replace a proof of the second.
+
+Make the premises visible. If a model assumes one outgoing object per accepted input, a count balance follows only within that assumption. Observing a mismatch may challenge the count, the boundary or the assumption. State alternatives before deciding which one failed. Questions about interpretation and purpose also deserve reasons: the chosen definition of “acceptable” must serve the intended use, not merely make the data convenient.
+
+A useful research note separates the question, the claim currently supported, the evidence, and the remaining alternatives. For an invented report of three readings, the statement “their mean is 10.2 mm” can be established from the numbers. The statement “the object's true length is exactly 10.2 mm” does not follow. It adds a claim about the object and the observation process. Identify that extra step explicitly.
+
+**Work:** write a mathematical, empirical and design question about an ordinary sheet of paper. Give the evidence each would need and one result that would count against a proposed answer. For each, distinguish the object from its representation in a table or model. Rewrite a vague comparative claim using an outcome, conditions and comparison. Finally explain one question that cannot be answered by collecting more of the same kind of data because a different definition or observation is needed.
+
+**First-reading boundary:** the shared metrology lessons retain their full later reading assignments. In this common pass, first develop definitions and the distinction between a procedure, an indication and an interpreted result. Formal uncertainty propagation, reference hierarchies and instrument-specific calibration follow their mathematical and physical preparation.
+
+**Continue:** [Begin with a question and specify the measurand](../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0E928F81D1D0CA612417C8B8CA

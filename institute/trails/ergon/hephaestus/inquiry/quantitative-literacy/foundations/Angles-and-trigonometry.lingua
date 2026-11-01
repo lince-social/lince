@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Angles, grade, triangles, and periodic relationships (@ql-trigonometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-3, #source @ql-source-algebra, #quantitative-literacy "Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_0FPTH1YN87PZ97SHWGX19ZJZDZ
+Angles, grade, triangles, and periodic relationships (@ql-trigonometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-3, #source @ql-source-algebra, #quantitative-literacy "Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J", #hephaestus-core "Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_0FPTH1YN87PZ97SHWGX19ZJZDZ
 **Read:** Math for Trades, Volume 3, Grade and Total Fall and Trigonometry, complete. Continue with Algebra and Trigonometry 2e chapter 7, sections 8.1–8.3, and the law-of-sines and law-of-cosines sections of chapter 10.
 
 Grade as a rise/run ratio uses horizontal run; the inclined path length is the hypotenuse. A 10% grade has tan θ = 0.10, so θ is about 5.71°, not 10°. Degrees and radians describe the same angle with different numerical values. Arc length s = rθ uses θ expressed in radians.
@@ -14,4 +14,7 @@ A periodic model A sin(ωt + φ) requires a dimensionless phase. Angular frequen
 **Continue:** [Vectors, coordinate systems, and spatial meaning](Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in the physics core:** [Vectors, coordinate systems, and spatial meaning](Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
 } r_0FPTH1YN87PZ97SHWGX19ZJZDZ

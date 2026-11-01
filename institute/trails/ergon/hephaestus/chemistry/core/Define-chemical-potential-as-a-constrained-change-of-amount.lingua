@@ -1,0 +1,27 @@
+Import "../Chemistry.lingua"
+
+Define chemical potential as a constrained change of amount (@chemistry-mixture-potential: 0, is #chapter, #hephaestus-core "Derive-an-ideal-mixture-model-and-keep-its-reference-states-visible.lingua#r_0069318FE79B9671D452C213DB") { r_00B3C5E118A7E5D485373E95A5
+Use [Require a linear approximation with a controlled remainder](../../mathematics/core/Require-a-linear-approximation-with-a-controlled-remainder.lingua#r_0032A09B51DFEE9C2FC70DCE4C), [Compose local maps and derive change along a path](../../mathematics/core/Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412) and [Thermodynamic potentials, natural variables and constraints](../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM). For an equilibrium state model with only simple compressible mechanical work, fixed composition gives dU=T dS−p dV. When neutral species amounts can also vary, introduce their conjugate coefficients μ_i in the extended fundamental relation dU=T dS−p dV+Σμ_i dn_i. This is a physical thermodynamic state model; calculus alone does not establish its applicability to a material. Additional surface, elastic, magnetic or electrical work coordinates require additional terms.
+
+Apply the product rule to H=U+pV, A=U−TS and G=U+pV−TS. The resulting differentials are
+
+dH=T dS+V dp+Σμ_i dn_i,
+
+dA=−S dT−p dV+Σμ_i dn_i,
+
+dG=−S dT+V dp+Σμ_i dn_i.
+
+Thus μ_i=(∂G/∂n_i) at fixed T,p and all other species amounts, with unit J/mol for amounts in mol. It is an incremental response, not generally G divided by total amount, nor the pure-substance molar G at the same T,p. Amount addition changes composition. A partial derivative holding other amounts fixed differs from a derivative holding all fractions fixed.
+
+The state family may be thermally and mechanically equilibrated while composition is constrained against reaction. These composition-constrained states provide the Gibbs function whose variation later tests reaction equilibrium. Defining G away from chemical equilibrium does not claim the actual reaction path passes through full chemical equilibrium at every instant.
+
+For a homogeneous bulk mixture at fixed T,p, assume extensivity: G(λn₁,…,λn_s)=λG(n₁,…,n_s) for λ>0. Differentiate with respect to λ at 1 to obtain G=Σn_i μ_i. Differentiating this equality at fixed T,p and comparing with dG=Σμ_i dn_i gives Σn_i dμ_i=0. The chemical potentials therefore cannot be varied independently along a composition change at those constraints. Surface contributions or nonextensive models would require revisiting the scaling premise.
+
+If the same neutral species can transfer between two phases α and β at fixed T,p, a small transfer dn from α to β changes total G by (μ_β−μ_α)dn. An unconstrained interior equilibrium requires equal chemical potentials; a partition that blocks transfer changes the admissible variations. This argument introduces phase equilibrium without claiming to solve a general multiphase problem.
+
+**Read and work:** [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected 9.2 definitions and chemical-potential discussion, and [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), the thermodynamic quantity definitions. Derive the scaling identity and its differential rather than memorizing them. Explain why independently adding a macroscopic amount of one ion raises electrical-neutrality and measurement issues; the neutral-mixture derivation is not permission to ignore them.
+
+**Continue:** [Derive an ideal mixture model and keep its reference states visible](Derive-an-ideal-mixture-model-and-keep-its-reference-states-visible.lingua#r_0069318FE79B9671D452C213DB).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00B3C5E118A7E5D485373E95A5

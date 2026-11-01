@@ -1,0 +1,15 @@
+Import "../Physics.lingua"
+
+Review astronomical evidence before opening the major branches (@physics-astronomy-review: 0, is #chapter) { r_002EA39AB9CCC5153EB1AD5D30
+Starting from directions, times and signals, explain what an astronomical observation actually records. Derive the small-angle parallax account with its baseline and angular units, distinguish proper motion from parallax, and exhibit an observing design that cannot identify both. Compare a positive inverse interval with a noisy or negative parallax estimate, retaining the inference model and reference uncertainty.
+
+Connect photon energy to the detector expectation, preserving bin widths, efficiency and background. Derive inverse-square spreading and the magnitude/distance relation under their stated premises. Show at least two luminosity/distance/extinction or spectrum/dust rivals. Explain how wavelength and frequency spectral densities differ, why one color is not a unique temperature, and how line shifts depend on the physical propagation model.
+
+Reuse orbital conservation and the period relation to obtain a binary mass/projection account. Distinguish a relative semimajor axis from one barycentric or projected radius. Demonstrate the transit dilution ambiguity and the limits of an ideal planetary temperature. Connect stellar mass/pressure/energy balances with populations, evolution and interstellar material without pretending that a uniform-density sphere solves a real star.
+
+Derive the spherical circular-orbit mass account and its limits for galaxies. In the declared cosmological metric distinguish redshift, local velocity, look-back time and the several distance definitions. Recover the prescribed expansion example and the historical source calculation. Explain the circular validation failure and how an independent distance anchor changes the evidence.
+
+Complete [Investigate an astronomical measurement chain and its unresolved alternatives](Investigate-an-astronomical-measurement-chain-and-its-unresolved-alternatives.lingua#r_0009599DE5F7197F559EAB8037) with independent changed-case work, criticism and revision. The common physics route now has 150 learning Records. This connects planetary, stellar, galactic, cosmological and space-environment questions to shared physics, chemistry, mathematics and inquiry. It does not complete the full astronomy/astrophysics/cosmology subjects or establish learner observing competence. Review the same 134-scope mapping across all six areas before opening major branches; advanced analysis and practice remain obligations at their proper layer.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_002EA39AB9CCC5153EB1AD5D30

@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Verify recoverable work and the energy already stored by mismatch (@engineering-stored-work: 0, is #chapter, #hephaestus-core "Separate-specimen-deformation-from-the-movement-of-its-supports.lingua#r_00F1BF6CAE5185F3E5F6A39604") { r_002989209401FEA524316EECFE
+For one ideal linear elastic member with fixed g and k, mechanical deformation relative to its free state is e=δ−g. The quasi-static work to reach e from zero is ∫₀ᵉ kx dx=ke²/2=N²/(2k). This quantity U is nonnegative and has units N·m=J. The formula remains positive for a negative e because the integration direction and negative force both reverse. This is recoverable energy within the elastic model, not a strength criterion or a proof against instability in excluded directions. Reuse [Define the integral and distinguish net change from total magnitude](../../mathematics/core/Define-the-integral-and-distinguish-net-change-from-total-magnitude.lingua#r_0AEC763D73DF3124CDBB2E86D1).
+
+For compatible parallel members U(δ)=Σkᵢ(δ−gᵢ)²/2. Differentiating at fixed kᵢ,gᵢ gives U'(δ)=ΣNᵢ=P at equilibrium. For a prescribed dead load P, define Π(δ)=U(δ)−Pδ. At the solution δ*, expand the squares: Π(δ*+h)−Π(δ*)=(K/2)h², because the linear term is h(ΣNᵢ−P)=0. K>0 proves the unique minimum in this one-dimensional model. This is a bounded direct proof, not a general theorem about nonlinear structures or dynamic stability.
+
+At zero total force, δ₀=ḡ can still leave stored energy U₀=Σkᵢ(ḡ−gᵢ)²/2. Substitute δ=ḡ+P/K. The cross term cancels because Σkᵢ(ḡ−gᵢ)=0, giving U(P)=U₀+P²/(2K). The energy already introduced by an earlier mismatch-producing process is not erased by setting the later external load to zero. A force ramp from P_a to P_b at fixed mismatch performs work (P_b²−P_a²)/(2K), which equals U(P_b)−U(P_a). Unloading can give negative work.
+
+If the complete assembly is in series with a linear support of compliance C_s≥0, total movement is X=δ+C_sP and support energy is C_sP²/2. The same force ramp does work W=∫P dX=(P_b²−P_a²)(1/K+C_s)/2. Include both stored-energy changes. C_s=0 represents an ideal rigid support for this relative account. If free strain, temperature, stiffness or connection conditions change during the path, the fixed-parameter argument does not account for all work and heat; state the changed model before making an energy claim.
+
+**Work:** obtain the mismatch energy for two members directly from their forces, then independently from squared mechanical extensions. Verify cancellation and units. Explain why Pδ/2 generally differs from total U when ḡ or U₀ is nonzero. Compare with [Connect a restoring interaction to an oscillating physical state](../../physics/core/Connect-a-restoring-interaction-to-an-oscillating-physical-state.lingua#r_008CD8E3B5B6619C71A1297FF2) while retaining the different reference state. Form a counterexample to the claim that zero net applied force implies no stored elastic energy.
+
+**Continue:** [Separate specimen deformation from the movement of its supports](Separate-specimen-deformation-from-the-movement-of-its-supports.lingua#r_00F1BF6CAE5185F3E5F6A39604).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_002989209401FEA524316EECFE

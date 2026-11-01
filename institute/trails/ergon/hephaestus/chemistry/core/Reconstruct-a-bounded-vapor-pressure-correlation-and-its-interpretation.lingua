@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Reconstruct a bounded vapor pressure correlation and its interpretation (@chemistry-phase-correlation: 0, is #chapter, #hephaestus-core "Determine-phase-amounts-from-composition-balances-and-a-declared-basis.lingua#r_006071148641AD2A0369C96ADA") { r_0085D7567BA2BB167C72A8FB15
+A fitted property relation needs species identity, phase meaning, units, fitted range and provenance. [NIST Chemistry WebBook — evaluated properties and their sources](../general-chemistry/sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP) supplies the selected published checkpoint: water, CAS 7732-18-5, Antoine row for 273–303 K. It states log₁₀(P/bar)=A−B/(T/K+C), with A=5.40221, B=1838.675 and C=−31.737 in that numerical convention. NIST attributes the underlying data to Bridgeman and Aldrich (1964) and says it calculated the coefficients. This reconstructs that correlation, not the original measurements or their fit.
+
+At T=298.15 K the formula gives P≈0.03166749 bar≈3.166749 kPa. The digits are computational output, not an uncertainty statement. The selected row supplies no parameter covariance or pointwise uncertainty here; the reconstruction must not manufacture either. A temperature entered as Celsius or a pressure interpreted as pascals without conversion changes the calculation. The program rejects temperatures outside the chosen row rather than silently extrapolating.
+
+Differentiate the stipulated numerical formula within its valid range. In consistent kelvin units,
+
+dln P/dT=ln(10) B/(T+C)².
+
+Combining this derivative with the ideal-vapor Clapeyron approximation defines an apparent transition enthalpy h_app(T)=RT²ln(10)B/(T+C)². At 298.15 K it is about 44.08731 kJ/mol. This is an inference from the fitted slope under the approximation; it is not a new calorimetric measurement. The distinction matters when a derivative amplifies small errors in a fit.
+
+As an original comparison, anchor a constant-enthalpy pressure model at 298.15 K using that h_app. At 303 K it exceeds the original correlation by about 0.054193%. Both calculations are based on the same fitted relation; their agreement does not independently validate either. Since C<0 and T+C>0 here, differentiating [T/(T+C)]² shows h_app decreases with T. Its endpoint values therefore enclose the integrated logarithmic pressure change over this interval under the same approximation.
+
+The selected row includes temperatures near a phase-stability boundary. Numerical availability of a liquid-vapor correlation does not establish that the liquid is the globally stable condensed phase under every listed condition. Reference phase, pressure and possible metastability must accompany an application. Do not turn this one row into an all-temperature water model or an arbitrary-substance vapor-pressure law.
+
+**Work:** independently evaluate the displayed coefficients, reproduce the derivative and apparent-enthalpy inference, and separate rounding, source uncertainty and model discrepancy. State what additional original data and uncertainty information would be required for a fit-quality assessment. Keep source media and the database external; only this bounded factual coefficient selection is used.
+
+**Continue:** [Determine phase amounts from composition balances and a declared basis](Determine-phase-amounts-from-composition-balances-and-a-declared-basis.lingua#r_006071148641AD2A0369C96ADA).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_0085D7567BA2BB167C72A8FB15

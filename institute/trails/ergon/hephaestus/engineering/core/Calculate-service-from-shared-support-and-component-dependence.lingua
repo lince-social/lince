@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Calculate service from shared support and component dependence (@engineering-service-dependencies: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/service/Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1") { r_0064D5D7B1AF09AA70DFF8597F
+Two installed units are not two independent service paths if both require the same support. Let S, A and B be indicators of functioning support and two units at a specified observation time. One unit of service requires S=1 and at least one of A,B=1. Its indicator is S[1−(1−A)(1−B)], while two units of service require SAB. Draw the functional dependency before calculating probabilities.
+
+In a stipulated snapshot model, S, A and B are independent with probabilities rₛ, rₐ and rᵦ. Then one-unit service probability is rₛ[1−(1−rₐ)(1−rᵦ)]. For rₛ=9/10 and rₐ=rᵦ=4/5 this is 108/125 = 0.864. Treating the complete paths SA and SB as independent instead gives 1−(1−0.72)² = 0.9216. Their covariance is rₐrᵦrₛ(1−rₛ)=0.0576, exactly the overstatement. Derive this by computing E[(SA)(SB)]−E[SA]E[SB], using S²=S. Installing another unit does not remove the common support limit: one-unit service probability can never exceed rₛ.
+
+Without independent units, condition on support: P(service)=P(S=1){P(A=1|S=1)+P(B=1|S=1)−P(A=B=1|S=1)}. Marginal component reliabilities do not determine the intersection. If A and B always share the same condition, both with marginal probability 0.8, adding B contributes no redundancy. If repair work competes for one crew, the component states can become dependent even when primitive failure events were independent.
+
+Availability also depends on the required output. In the independent snapshot example, two-unit service probability is 0.9×0.8² = 0.576. A station that is “available” for half demand may fail a full-demand requirement. The dynamic study therefore retains capacity as well as a binary adequate-service indicator.
+
+**Work:** identify possible common supports in a benign workshop or document service: electricity, shared input material, a configuration file, a trained operator, an access route or a calibration reference. Identify an observation that distinguishes a failed unit from a failed support. Propose an alternative whose independence claim can actually be checked. Include duplicated maintenance work and added interfaces in the comparison; the snapshot formula alone is not a design recommendation.
+
+**Continue:** [Maintenance intervals, access and functional evidence](../mechanical-engineering-and-machine-design/service/Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0064D5D7B1AF09AA70DFF8597F

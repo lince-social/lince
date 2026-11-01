@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Distinguish an estimator from its observed value and sampling law (@inquiry-estimation-model: 0, is #chapter, #hephaestus-core "Derive-interval-coverage-before-interpreting-an-observed-interval.lingua#r_0056910F906DD78644AFAD2A11") { r_005E2BFADCD92ADE6D82747D66
+Consider observations Y₁=θ+E₁ and Y₂=θ+E₂. The parameter θ is an unknown fixed location; a>0 is a stipulated known error half-width. The independent uniform errors define repeated hypothetical pairs at that same θ. The estimator M=(Y₁+Y₂)/2 is a function of random data. After a particular pair is supplied, its numerical value m is an estimate, not a still-random value under that completed observation.
+
+The sampling error M−θ equals Z from [Construct an average distribution from a declared joint experiment](Construct-an-average-distribution-from-a-declared-joint-experiment.lingua#r_00EC9152CEA661437ABDED65BB). Hence E_θ[M]=θ and Var_θ(M)=a²/6 for every θ in the location model. This proves unbiasedness and the variance within the model. It does not show that the instrument has that error law or that the realized estimate equals θ. The subscript emphasizes which repeated experiment supplies the expectation; it is not a probability distribution assigned to θ.
+
+With an unmodeled fixed calibration offset b, Yᵢ=θ+b+Eᵢ. Now E_θ[M]−θ=b and mean-square error is b²+a²/6. The within-pair difference Y₁−Y₂ removes θ and b, so repeatability of those differences cannot identify the common offset. Replacing (θ,b) with (θ+h,b−h) leaves the complete observation law unchanged. A reference or another informative observation is needed to separate them. Relate this to the support/specimen ambiguity in [Separate specimen deformation from the movement of its supports](../../engineering/core/Separate-specimen-deformation-from-the-movement-of-its-supports.lingua#r_00F1BF6CAE5185F3E5F6A39604).
+
+For n independent centered errors the mean remains unbiased with variance a²/(3n). For a shared random error C and independent residuals Rᵢ, a declared model Yᵢ=θ+C+Rᵢ gives Var(mean)=Var(C)+Var(Rᵢ)/n when those components are independent. A finite number of repeats does not eliminate either a fixed unknown offset or a shared uncertainty term. This block derives these moment statements, not a full law of large numbers or a normal limit theorem.
+
+**Work:** write the parameter, random data, statistic, sampling law and observed estimate separately. Derive the bias/variance/MSE account with a nonzero b. Explain why the known a cannot be replaced by a range estimated from the same two readings while retaining the same sampling-law proof. Use [Challenge a fitted model with evidence it did not fit](Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418) to identify data that would challenge the model rather than merely refit it.
+
+**Continue:** [Derive interval coverage before interpreting an observed interval](Derive-interval-coverage-before-interpreting-an-observed-interval.lingua#r_0056910F906DD78644AFAD2A11).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_005E2BFADCD92ADE6D82747D66

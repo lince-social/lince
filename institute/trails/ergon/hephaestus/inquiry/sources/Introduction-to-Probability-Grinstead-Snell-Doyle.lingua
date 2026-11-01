@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Grinstead and Snell’s Introduction to Probability — CHANCE version (@inquiry-source-probability: 0, is #book) { r_041A5B2D3F5CDC4C2EFED46B71
+The CHANCE Project, version dated 4 July 2006, of Charles M. Grinstead and J. Laurie Snell’s Introduction to Probability. The title page credits Peter G. Doyle, copyright 2006, and identifies this as a version of the second edition published by the American Mathematical Society, copyright 2003 Grinstead and Snell. Preserve that distinction when citing it. [Official Dartmouth-hosted PDF](https://math.dartmouth.edu/~prob/prob/prob.pdf).
+
+For the finite inquiry block, read the finite probability definitions and examples in section 1.2, the introductory counting arguments in 3.1–3.2, finite conditional probability and independence in 4.1, and finite expectation and variance in 6.1–6.2. Their printed starting pages are 18, 75, 92, 133, 225 and 257 respectively. Build labeled outcome tables and derive the finite formulas before using them in experimental design. Select exercises supported by this preparation; continuous densities, integration, infinite-series arguments and later asymptotic or stochastic-process chapters require further mathematics. The book remains a shared source for those later trails, not an immediate whole-book prerequisite.
+
+**Inspection — 31 October 2026:** the university PDF was accessible. Its title, version, rights statement and contents were inspected, together with selected finite-distribution, combination, conditional-probability/independence, expectation and discrete-variance passages. This is not a full textbook or exercise audit. The introductory author-page request failed, so the direct institutional PDF is the verified entrance. Text extraction was used outside the repository; no source PDF or figures are bundled.
+
+The title page permits redistribution under the GNU Free Documentation License. Consult the document’s exact terms before reusing its text or figures; this Record links the external reading. The cards, six-unit allocation models, derivations and programs in the new inquiry block are original teaching content, not claims to reproduce a performed experiment or one of the book’s data studies.
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Third inquiry-core inspection — 31 October 2026:** rechecked the university PDF title/version and GNU FDL notice, selected section 6.2 variance/sum/average derivations and exercise 6.2.23 on covariance and nonindependence. These support the finite common preparation; the new joint temperature models, exact reciprocal propagation, original programs and interpretation exercises are independently authored. Complete later continuous/asymptotic formation remains uninspected/unfinished here; no whole-book audit or copied source media is claimed.
+
+
+**Fourth inquiry-core inspection — 31 October 2026:** rechecked the institutional PDF title/version and GNU FDL notice. Selected text passages in section 2.2 (density, interval probability and CDF), 4.2 (positive-probability conditioning, joint laws and independence), 6.3 (continuous moments and variance), and 7.2 (sum densities and the two-uniform example) were inspected. Their printed starting pages are 55, 162, 268 and 291. Read these progressively with the common integral and finite-probability preparation; the full course assumes further multivariable mathematics, and later unbounded/asymptotic examples retain that requirement. The common CDF derivative is stated at continuity points of the density. Complete sections, exercises, figures and source programs were not audited or performed. The new location/coverage investigation, calibration/dependence rivals and polygon-area checker are original constructions; all source media remain external.
+
+} r_041A5B2D3F5CDC4C2EFED46B71

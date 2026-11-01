@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Connect orbital and transit evidence to planetary systems (@physics-astronomy-planets: 0, is #chapter, #hephaestus-core "Build-a-bounded-stellar-model-from-gravity-pressure-and-energy.lingua#r_00F8BE3ACB1A7ECBAFAB896747") { r_0061F9B72C184476321D5F90D0
+Use [Derive orbital shape timing and the limits of parameter inference](Derive-orbital-shape-timing-and-the-limits-of-parameter-inference.lingua#r_003B0A54AD3132E93CD761C01A) for the relative two-body orbit: P²=4π²a³/[G(m₁+m₂)]. Here a is the physical semimajor axis of the relative orbit, not one star's barycentric radius or its projected angular separation at one epoch. A visual orbit needs projection geometry and distance. For an isolated binary, m₁r₁+m₂r₂=0 about its center of mass, so the barycentric semimajor axes satisfy a₁/a₂=m₂/m₁ and a=a₁+a₂.
+
+For a circular orbit, the line-of-sight velocity amplitudes are K₁=(2π/P)a₁ sin i and K₂=(2π/P)a₂ sin i, with i=0 face-on. Their ratio gives m₂/m₁ when both are measured, but their scale leaves an inclination ambiguity. Adding the amplitudes and using the period relation gives (m₁+m₂)sin³i=P(K₁+K₂)³/(2πG). A face-on system has zero projected amplitudes even with substantial orbital speed. Eccentric cases add the appropriate √(1−e²) factor and phase model; do not use the circular expression unmodified.
+
+For a dark small planet fully overlapping a uniformly bright stellar disk, ignoring limb effects and contaminating light, the fractional transit depth is δ=(R_p/R_*)². With additional constant light F_c relative to stellar flux F_*, it becomes δ=(R_p/R_*)²/(1+F_c/F_*). A radius ratio 1/10 without dilution and 1/5 with contamination ratio 3 both give depth 1/100. Transit depth alone gives neither planet mass nor a unique physical radius. Grazing geometry, limb darkening, stellar variability and blended eclipses require further evidence.
+
+Planetary science connects these remote constraints to material properties, gravity, rotation, internal heating, atmospheres and surface history. For a uniformly reradiating spherical body with Bond albedo A_B and emissivity ε, absorbed power πR²(1−A_B)F_* balances 4πR²εσT_eq⁴, so T_eq⁴=(1−A_B)F_*/(4εσ). This is an ideal energy-balance temperature, not automatically a surface temperature or habitability test. Atmospheres, internal heat and incomplete heat redistribution alter it; geological and chemical interpretation uses Gaia and chemistry where developed.
+
+**Work:** derive the circular projected mass relation, then use the shared orbit evaluator to recover center-of-mass position and momentum for changed masses. Construct the two transit rivals and name evidence that distinguishes them. Compare a planet receiving four times the stellar flux under otherwise identical assumptions: its equilibrium temperature grows by √2, not by four. Larger chapters 7–14 and 21 of [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F) remain branch reading rather than prerequisites to every common lesson.
+
+**Continue:** [Build a bounded stellar model from gravity pressure and energy](Build-a-bounded-stellar-model-from-gravity-pressure-and-energy.lingua#r_00F8BE3ACB1A7ECBAFAB896747).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0061F9B72C184476321D5F90D0

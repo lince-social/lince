@@ -1,0 +1,22 @@
+Import "../Physics.lingua"
+
+Review systems, motion and physical evidence (@physics-foundation-review: 0, is #chapter, #hephaestus-core "Describe-planar-motion-with-components-and-a-declared-frame.lingua#r_0F215E6253BB0BF99F4B22E201") { r_0B390092C821608D642BF70359
+This first physics block connects system definitions and measured quantities with coordinate descriptions, rates, forces, momentum and energy. It reuses the existing units, graphs, geometry, angles, vectors and force-interaction lessons. The new explanations introduce the physical interpretation and the elementary cases before directing readers toward calculus-dependent mechanics.
+
+**Demonstrate the foundation:** choose a benign motion question and state its system, frame, quantities, units and initial information. Distinguish position from displacement, speed from velocity, and an interval average from a model's local rate. Draw the force account and explain why each interaction belongs on that system. Derive a prediction, check its dimensions and compare momentum and energy accounts without treating them as interchangeable equations.
+
+**Reading and practice:** work the relevant introductory book sections and the shared lessons' exercises. Where a source reaches unfamiliar calculus, record the prerequisite and return after its mathematical foundation rather than guessing the notation. Include geometrical/vector exercises, graph interpretation and a physical critique, not just substitution into formulas. A source link does not demonstrate that its reading or practical work has been completed.
+
+**Criticism:** ask another reader to change the origin, reverse an axis, enlarge the boundary, alter a force history or challenge an observation's interpretation. Explain what remains invariant and which conclusions must be recalculated. In the cart study, defend why the stopping model ends at rest and why a finite table cannot establish a unique physical law.
+
+**Scope:** this authored block does not complete physics or the classical-mechanics subject. Rotation, general motion, fuller mathematical and experimental methods, matter and thermal behavior, fields and waves, quantum/statistical reasoning, relativity, astronomy and advanced academic/practical formation remain. The first common pass across all six areas is present. Continue below into the second spatial-physics block, then return to comparable chemistry formation before specializing further in mechanics.
+
+**Return later:** connect the calculus-based mechanical momentum and work-energy lessons, the shared uncertainty formation, and deeper physics sources when the necessary concepts are established. Preserve questions that this elementary model cannot answer; they are part of the continuation, not defects to conceal with a more complicated formula.
+
+**Next broad area:** [Begin with substances, particles and chemical accounting](../../chemistry/core/Substances-particles-and-chemical-accounting.lingua#r_06A721F480CCA6DC7EB5D006D8). Return to [Review quantities, domains and mathematical claims](../../mathematics/core/Review-quantities-domains-and-mathematical-claims.lingua#r_05C49871382970924AB854ED53) for the algebraic and reasoning foundation. These connections do not declare either area complete.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the second common pass:** [Describe planar motion with components and a declared frame](Describe-planar-motion-with-components-and-a-declared-frame.lingua#r_0F215E6253BB0BF99F4B22E201).
+
+} r_0B390092C821608D642BF70359

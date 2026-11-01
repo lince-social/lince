@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Balance angular momentum about a declared origin (@physics-angular-balance: 0, is #chapter, #hephaestus-core "Derive-rotational-inertia-from-mass-geometry-and-kinetic-energy.lingua#r_00B0A1A46C90BC921F3C495245") { r_00092886C87E4AA85B6AAE729A
+Angular momentum describes a particle even when its path is straight. In a fixed inertial Cartesian frame, choose an origin O and let r be displacement from O, p=mv the momentum of a constant-mass particle, and F its net force. Define L_O=r×p and τ_O=r×F. Differentiating gives dL_O/dt=v×mv+r×dp/dt=τ_O because v×v=0. Units are kg·m²/s for L and N·m for τ. Although torque and energy share base dimensions, torque is a turning moment and work depends on displacement; they are not interchangeable quantities.
+
+For several particles define P=Σp_i and L_O=Σr_i×p_i. To replace total torque by external torque, state why internal torques cancel. If the force of particle j on i is F_ij and F_ji=−F_ij, their combined moment is (r_i−r_j)×F_ij. This is zero when the pair force acts along their separation. Equal and opposite forces alone do not guarantee zero pair torque. Classical point-mass models with central internal forces satisfy the cancellation; more general bodies or fields may require internal couples or additional angular-momentum storage. Here a closed constant-mass system with zero net internal torque is the explicit model.
+
+Changing the origin changes the moment account. If O′ is displaced by a fixed vector c from O, then L_O′=L_O−c×P and τ_O′=τ_O−c×F_external. These follow by expanding each cross product and summing. They explain why a force couple is origin-independent when its resultant force is zero, and why an angular momentum need not be origin-independent. A free particle with p=(0,2,0) kg·m/s at r=(3,0,0) m has L_O=(0,0,6) kg·m²/s; shifting the origin to c=(1,0,0) m gives L_O′=(0,0,4). No physical impulse accompanied that change of bookkeeping.
+
+A moving origin A needs more care. Define L_A=Σ(r_i−r_A)×p_i using absolute inertial momenta. Direct differentiation gives dL_A/dt=τ_A−v_A×P under the same internal-torque assumption. Thus a moving pivot does not automatically obey the fixed-origin formula. At the center of mass G, v_G=P/M, so v_G×P=0 and dL_G/dt=τ_G. This result allows an accelerating center of mass; it does not require G to be fixed. Defining momenta relative to another moving frame changes the definition and demands its own derivation.
+
+Integrating the balance gives ΔL_O=∫τ_O dt, the angular impulse about the declared fixed origin. Conservation follows when the net external torque is zero throughout the interval, or equality of endpoint angular momenta when its integrated impulse is zero. Neither statement alone gives constant angular speed: a changing mass distribution can change the relation between angular momentum and angular velocity. Nor does conserved angular momentum imply conserved kinetic energy.
+
+**Read and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 11.2, for particle and system angular momentum. Reconstruct the derivative in fixed components and calculate the origin-shift example independently. Give an equal/opposite noncentral force pair whose net torque is nonzero. Explain what must be added to its physical system to account for angular momentum. For the shared later rigid-body lesson, retain these origin and internal-interaction assumptions rather than applying a scalar equation indiscriminately.
+
+**Continue:** [Derive rotational inertia from mass geometry and kinetic energy](Derive-rotational-inertia-from-mass-geometry-and-kinetic-energy.lingua#r_00B0A1A46C90BC921F3C495245).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00092886C87E4AA85B6AAE729A

@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Trace material energy and information across interfaces (@engineering-interfaces: 0, is #chapter, #hephaestus-core "Choose-what-a-model-must-represent-before-calculating.lingua#r_0F7FD805EB7379B6E978BD4F6C") { r_0247145FE15239D16A42C0B328
+An interface is where parts of a system interact. Begin with a boundary around the system and draw arrows across it. Label each arrow with what crosses, its direction, its quantity or meaning, and the conditions both sides expect. An arrow for material is different from an arrow for information about that material. A sensor message does not move the object it reports.
+
+**Read:** [NASA Systems Engineering Handbook](../mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) section 6.3, especially identifying interfaces during design and checking them during integration. Revisit the shared machine-parts lesson. Translate its contact and load paths into a second diagram for material, energy and information. A physical connection can carry several interactions, and the drawing should say which question each arrow answers.
+
+In the card example, stage A accepts blanks and transfers suitable intermediate cards into a buffer. Stage B removes intermediate cards, labels them and separates acceptable output from rejected material. Define the same counted object at every boundary. During a ten-hour accounting interval suppose A processes 1,080 blanks and accepts 1,026, rejecting 54. Suppose B processes 950 of those intermediates, accepts 931 and rejects 19. With an initially empty buffer, its final stock is 76. The complete count is 1,080 = 54 + 19 + 931 + 76. The 76 are unfinished inventory, not an unexplained loss or an accepted delivery.
+
+For a general interval, write final stock = initial stock + arrivals − departures. This equation does not say when events happened. A buffer ending with 76 items may have exceeded its capacity earlier. It may also have been empty while B was ready to work. To answer those questions, give event times and use the shared stock-trace reasoning. A net change is insufficient evidence about every intermediate state.
+
+Add energy and information to the drawing without combining unlike units. Electrical energy entering the equipment may appear as useful mechanical work, heating and other transfers; a piece count is not an energy balance. A command to advance one card needs a defined meaning, an acknowledgement or other observable result, and behavior when the command is repeated or the card is absent. A width measurement needs a unit, object identity and time or sequence association. A correct number attached to the wrong card is a failed interface.
+
+**Work:** make one boundary diagram for the whole line and another for stage B alone. Explain which interactions become external in the second view. Describe how a repeated “advance” message could produce a mismatch if the receiver treats every message as a new request. Propose an observable exchange contract without assuming a particular network or controller. Add an access requirement for inspection and maintenance, and an output destination for rejects. Use material balances to detect omitted streams, then explain what those balances cannot establish about forces, energy or information correctness.
+
+**Shared balance preparation:** [Mass and component balances — account for every stream](../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H). **Shared event reasoning:** [Investigate a stock trace with independent computational evidence](../../computer-science/core/Investigate-a-stock-trace-with-independent-computational-evidence.lingua#r_06AE2B0429294B062E80CC37F6).
+
+**Continue:** [Choose what a model must represent before calculating](Choose-what-a-model-must-represent-before-calculating.lingua#r_0F7FD805EB7379B6E978BD4F6C).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0247145FE15239D16A42C0B328

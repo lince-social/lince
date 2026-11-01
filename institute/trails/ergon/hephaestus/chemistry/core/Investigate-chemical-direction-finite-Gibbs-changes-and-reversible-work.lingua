@@ -1,0 +1,344 @@
+Import "../Chemistry.lingua"
+
+Investigate chemical direction finite Gibbs changes and reversible work (@chemistry-free-energy-study: 0, is #chapter, #hephaestus-core "Review-chemical-potentials-equilibrium-and-the-evidence-for-a-direction.lingua#r_0025E329FF02B6F7F00E96FD65") { r_002CB3AFEA9BCF9BB21D1AFE36
+Build a complete account of the original ideal A⇌B model: conserved amount, composition domain, standard-state choice, Gibbs function, reaction derivative, unique minimum and finite change. Explain every physical premise before running the calculation. Use [Prove an equilibrium composition and calculate a finite change](Prove-an-equilibrium-composition-and-calculate-a-finite-change.lingua#r_00759EA4E4647C3A4DC7A61E04) and [Connect reaction extent to the derivative of Gibbs energy](Connect-reaction-extent-to-the-derivative-of-Gibbs-energy.lingua#r_00A0C1342E9088D59AB6BDCD5D) for the analytical derivation; the numerical output is supporting evidence, not the derivation itself.
+
+The original main program treats N=5 mol,K=4,T=300 K and n_B=5/2→4 mol, then explores positive K, amounts and temperatures. Each K is stipulated at the temperature of its individual case; varying T while holding K numerically fixed is not a prediction for one real substance's K(T). A separate general ideal-mixture function checks species amount, pressure ratios, chemical potentials and extensivity. Exact quotient transformations and a separate hypothetical reversible-cell interface test normalization without assigning a cell mechanism to A and B.
+
+Save `free_energy_study.py` and `free_energy_checks.py` together. Reuse the unchanged `reaction_study.py` from [Investigate reversible change and the evidence carried by a chemical signal](Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A) for exact-to-Decimal conversion, and the unchanged `entropy_checks.py` and `entropy_study.py` from [Investigate entropy work bounds and changing source temperatures](../../physics/core/Investigate-entropy-work-bounds-and-changing-source-temperatures.lingua#r_0099FE8B08ED994548C5F84AD2) for rational logarithm enclosures and their import dependency. None of those shared modules runs its investigation merely by being imported. Run `nix shell nixpkgs#python3 -c python3 free_energy_checks.py`.
+
+The study accepts integers or Fractions, rejecting floats and booleans. It evaluates logarithms with 70-digit Decimal arithmetic and treats x ln x at zero by its continuous limit. It returns no finite reaction derivative at a pure endpoint. The general mixture interface instead requires every species amount to be positive. These different domains are explicit, not a numerical patch for ln0. R=N_Ak_B and F=N_Ae use exact defining-constant products; all property models remain stipulated or source-supplied.
+
+Independent checks use the prior rational logarithm bounds, exact amount/charge accounts, pressure and reference transformations, and Euler/Gibbs–Duhem identities. They compare the Gibbs decrease with a separately expressed gap to the minimum. They also integrate the reaction derivative independently over interior composition intervals. Let h(y)=ln[y/(K(1−y))]. On 0<a≤y≤b<1, |h″(y)|≤1/a²+1/(1−b)²=M. A midpoint expansion has a linear term whose integral over a symmetric panel is zero; its remaining integral is bounded by M times the cube of the panel width divided by 24. For m equal panels the total error is at most M(b−a)³/(24m²). Rational enclosures of each midpoint logarithm plus that error enclose the integral. Reversing the integration limits reverses the interval signs. This checks finite ΔG without computing it by the study's endpoint formula.
+
+The tests use 16 and 64 panels for these bounded interior cases, and an additional absolute rounding tolerance 10⁻⁶⁰ when comparing 70-digit outputs with mathematical enclosures. Endpoint limits and the global minimum are proved analytically rather than inferred from the finite grid. They check sign-consistent kinetic directions, the counterexample with inconsistent rates, and the difference between a necessary balance screen and realized operation.
+
+Two bounded published calculations are reconstructed: standard water vaporization using the supplied 298 K data, and the concentration-cell voltage using the source's rounded coefficient. Exact and rational-bound comparisons verify the calculations; no thermochemical measurement, cell construction, source figure or full problem set is claimed reproduced.
+
+**Independent investigation:** choose another benign composition path or an additional admissible constraint. Derive its amount domain, appropriate thermodynamic function and direction test. Check finite energy change against a second method, separate standard from actual mixture quantities, and propose evidence that could falsify the material or rate model. Receive criticism and revise the account. Explain which part could be reused by a later phase, electrochemical or engineering trail and which assumptions would have to change.
+
+
+```python file=free_energy_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from reaction_study import decimal
+import json
+
+
+R = F('8.31446261815324')
+FARADAY = F('96485.3321233100184')
+
+
+def exact(value):
+    if isinstance(value, bool) or not isinstance(value, (int, F)):
+        raise ValueError('exact integer or Fraction inputs required')
+    return F(value)
+
+
+def positive(*values):
+    result = tuple(exact(v) for v in values)
+    if any(v <= 0 for v in result):
+        raise ValueError('positive model parameters required')
+    return result
+
+
+def mixture(amounts, standard_mu, temperature, pressure_ratio=1):
+    amounts = positive(*amounts)
+    standard_mu = tuple(exact(v) for v in standard_mu)
+    temperature, pressure_ratio = positive(temperature, pressure_ratio)
+    if not amounts or len(amounts) != len(standard_mu):
+        raise ValueError('matching nonempty species lists required')
+    total = sum(amounts)
+    fractions = tuple(n/total for n in amounts)
+    with localcontext() as ctx:
+        ctx.prec = 70
+        rt = decimal(R*temperature)
+        mixing = sum(decimal(n)*decimal(x).ln() for n, x in zip(amounts, fractions))
+        standard = sum(n*mu for n, mu in zip(amounts, standard_mu))
+        gibbs = decimal(standard)+rt*(mixing+decimal(total)*decimal(pressure_ratio).ln())
+        mu = tuple(decimal(m)+rt*decimal(x*pressure_ratio).ln()
+                   for m, x in zip(standard_mu, fractions))
+        return {'gibbs': gibbs, 'chemical_potentials': mu, 'fractions': fractions}
+
+
+def binary(total, amount_b, equilibrium_constant, temperature):
+    total, equilibrium_constant, temperature = positive(total, equilibrium_constant, temperature)
+    amount_b = exact(amount_b)
+    if not 0 <= amount_b <= total:
+        raise ValueError('composition outside conserved amount interval')
+    y = amount_b/total
+    with localcontext() as ctx:
+        ctx.prec = 70
+        yd, kd, rt = decimal(y), decimal(equilibrium_constant), decimal(R*temperature)
+        phi = D(0)
+        if y > 0:
+            phi += yd*decimal(y/equilibrium_constant).ln()
+        if y < 1:
+            phi += decimal(1-y)*decimal(1-y).ln()
+        equilibrium_b = total*equilibrium_constant/(1+equilibrium_constant)
+        minimum = -decimal(total)*rt*decimal(1+equilibrium_constant).ln()
+        gibbs = decimal(total)*rt*phi
+        derivative = None if y in (0, 1) else rt*decimal(y/((1-y)*equilibrium_constant)).ln()
+        return {'gibbs': gibbs, 'reaction_gibbs': derivative,
+                'equilibrium_b': equilibrium_b, 'minimum_gibbs': minimum,
+                'available_work': gibbs-minimum}
+
+
+def compare(total, initial_b, final_b, equilibrium_constant, temperature):
+    first = binary(total, initial_b, equilibrium_constant, temperature)
+    last = binary(total, final_b, equilibrium_constant, temperature)
+    with localcontext() as ctx:
+        ctx.prec = 70
+        change = last['gibbs']-first['gibbs']
+        return {'delta_gibbs': change, 'reversible_nonpv_work': -change,
+                'initial_reaction_gibbs': first['reaction_gibbs'],
+                'final_reaction_gibbs': last['reaction_gibbs']}
+
+
+def quotient(stoichiometry, activities):
+    activities = positive(*activities)
+    if not stoichiometry or len(stoichiometry) != len(activities):
+        raise ValueError('matching nonempty species lists required')
+    if any(isinstance(v, bool) or not isinstance(v, int) for v in stoichiometry) or not any(stoichiometry):
+        raise ValueError('nonzero integer stoichiometric vector required')
+    result = F(1)
+    for coefficient, activity in zip(stoichiometry, activities):
+        result *= activity**coefficient
+    return result
+
+
+def work_account(delta_u, delta_s, delta_v, temperature, pressure, nonpv_work):
+    temperature, pressure = positive(temperature, pressure)
+    delta_u, delta_s, delta_v, nonpv_work = map(exact, (delta_u, delta_s, delta_v, nonpv_work))
+    heat = delta_u+pressure*delta_v+nonpv_work
+    gibbs = delta_u+pressure*delta_v-temperature*delta_s
+    generated = delta_s-heat/temperature
+    return {'heat': heat, 'delta_gibbs': gibbs, 'entropy_generated': generated,
+            'passes_screen': generated >= 0, 'nonpv_work_bound': -gibbs}
+
+
+def reversible_cell(equilibrium_constant, reaction_quotient, temperature, electrons):
+    equilibrium_constant, reaction_quotient, temperature = positive(equilibrium_constant, reaction_quotient, temperature)
+    if isinstance(electrons, bool) or not isinstance(electrons, int) or electrons <= 0:
+        raise ValueError('positive integer electron coefficient required')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        rt = decimal(R*temperature)
+        reaction_gibbs = rt*decimal(reaction_quotient/equilibrium_constant).ln()
+        voltage = -reaction_gibbs/decimal(electrons*FARADAY)
+        standard = rt*decimal(equilibrium_constant).ln()/decimal(electrons*FARADAY)
+        return {'reaction_gibbs': reaction_gibbs, 'voltage': voltage, 'standard_voltage': standard}
+
+
+def published_examples():
+    water = F(44010)-F(298)*F('118.8')
+    with localcontext() as ctx:
+        ctx.prec = 70
+        cell = D('0.0592')/2*D(5).ln()/D(10).ln()
+        return {'water_j_per_mol': water, 'source_rounded_constant_cell_volts': cell}
+
+
+def investigation():
+    return {'initial_binary': binary(5, F(5, 2), 4, 300),
+            'equilibrium_binary': binary(5, 4, 4, 300),
+            'finite_change': compare(5, F(5, 2), 4, 4, 300),
+            'energy_only_rival': work_account(-100, F(1, 2), F(1, 1000), 300, 100000, 200),
+            'published_examples': published_examples()}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), default=str, indent=2))
+```
+
+```python file=free_energy_checks.py
+from fractions import Fraction as F
+from itertools import product
+from entropy_checks import logarithm_bounds, scaled, combined
+import free_energy_study as m
+import json
+
+
+checks = 0
+tolerance = F(1, 10**60)
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def encloses(bounds, actual):
+    check(bounds[0]-tolerance <= F(actual) <= bounds[1]+tolerance)
+
+
+def potential_bounds(y, k):
+    terms = []
+    if y:
+        terms.append(scaled(logarithm_bounds(y), y))
+        terms.append(scaled(logarithm_bounds(k), -y))
+    if y != 1:
+        terms.append(scaled(logarithm_bounds(1-y), 1-y))
+    return combined(*terms)
+
+
+def integral_bounds(a, b, k, panels):
+    if a > b:
+        return scaled(integral_bounds(b, a, k, panels), -1)
+    width = (b-a)/panels
+    intervals = []
+    for j in range(panels):
+        mid = a+(F(j)+F(1, 2))*width
+        intervals.append(scaled(logarithm_bounds(mid/(k*(1-mid))), width))
+    lo, hi = combined(*intervals)
+    error = (b-a)**3*(1/a**2+1/(1-b)**2)/(24*panels**2)
+    return lo-error, hi+error
+
+
+def run():
+    check(m.R == F('6.02214076e23')*F('1.380649e-23'))
+    check(m.FARADAY == F('6.02214076e23')*F('1.602176634e-19'))
+    binary_cases = 0
+    for total, k, temperature, step in product((F(1, 2), F(1), F(5)),
+                                               (F(1, 4), F(1, 2), F(1), F(2), F(4), F(7)),
+                                               (F(250), F(300)), range(21)):
+        y = F(step, 20)
+        rt = m.R*temperature
+        result = m.binary(total, total*y, k, temperature)
+        encloses(scaled(potential_bounds(y, k), total*rt), result['gibbs'])
+        eq = k/(1+k)
+        check(result['equilibrium_b']/total == eq)
+        encloses(scaled(logarithm_bounds(1+k), -total*rt), result['minimum_gibbs'])
+        check(F(result['available_work']) >= -tolerance)
+        if y in (0, 1):
+            check(result['reaction_gibbs'] is None)
+        else:
+            q = y/(1-y)
+            encloses(scaled(logarithm_bounds(q/k), rt), result['reaction_gibbs'])
+            check((result['reaction_gibbs'] > 0) == (y > eq))
+            check((result['reaction_gibbs'] < 0) == (y < eq))
+            gap = combined(scaled(logarithm_bounds(y/eq), y),
+                           scaled(logarithm_bounds((1-y)/(1-eq)), 1-y))
+            encloses(scaled(gap, total*rt), result['available_work'])
+            rate = total*((1-y)*k-y)
+            check(F(result['reaction_gibbs'])*rate <= tolerance)
+        doubled = m.binary(total*2, total*y*2, k, temperature)
+        check(abs(F(doubled['gibbs'])-2*F(result['gibbs'])) < tolerance)
+        check(doubled['reaction_gibbs'] == result['reaction_gibbs'])
+        at_eq = m.binary(total, total*eq, k, temperature)
+        check(at_eq['reaction_gibbs'] == 0)
+        check(abs(F(at_eq['available_work'])) < tolerance)
+        binary_cases += 1
+    mixture_cases = 0
+    for n1, n2, pressure, temperature in product((F(1, 2), F(1), F(3)),
+                                                (F(1), F(2), F(4)), (F(1, 2), F(1), F(3)), (250, 300)):
+        amounts = (n1, n2, F(1, 4))
+        standards = (F(-1000), F(500), F(1300))
+        result = m.mixture(amounts, standards, temperature, pressure)
+        total = sum(amounts)
+        rt = m.R*temperature
+        check(sum(result['fractions']) == 1)
+        for n, standard, mu in zip(amounts, standards, result['chemical_potentials']):
+            lo, hi = scaled(logarithm_bounds(n*pressure/total), rt)
+            encloses((lo+standard, hi+standard), mu)
+        summed = sum(n*F(mu) for n, mu in zip(amounts, result['chemical_potentials']))
+        check(abs(summed-F(result['gibbs'])) < tolerance)
+        double = m.mixture(tuple(2*n for n in amounts), standards, temperature, pressure)
+        check(abs(F(double['gibbs'])-2*F(result['gibbs'])) < tolerance)
+        check(double['chemical_potentials'] == result['chemical_potentials'])
+        shift = m.mixture(amounts, tuple(v+123 for v in standards), temperature, pressure)
+        check(abs(F(shift['gibbs'])-F(result['gibbs'])-123*total) < tolerance)
+        direction = (F(2), F(-1), F(3))
+        derivative_mu = tuple(rt*(dn/n-sum(direction)/total) for n, dn in zip(amounts, direction))
+        check(sum(n*dmu for n, dmu in zip(amounts, derivative_mu)) == 0)
+        mixture_cases += 1
+    integral_cases = 0
+    for a, b in ((F(1, 5), F(3, 5)), (F(1, 2), F(4, 5)), (F(8, 9), F(4, 5)),
+                 (F(1, 4), F(3, 4)), (F(3, 5), F(1, 10))):
+        for k in (F(1, 2), F(1), F(4)):
+            result = m.compare(5, 5*a, 5*b, k, 300)
+            for panels in (16, 64):
+                bounds = scaled(integral_bounds(a, b, k, panels), 5*m.R*300)
+                encloses(bounds, result['delta_gibbs'])
+            reverse = m.compare(5, 5*b, 5*a, k, 300)
+            check(abs(F(result['delta_gibbs'])+F(reverse['delta_gibbs'])) < tolerance)
+            midpoint = (a+b)/2
+            first = m.compare(5, 5*a, 5*midpoint, k, 300)
+            last = m.compare(5, 5*midpoint, 5*b, k, 300)
+            check(abs(F(result['delta_gibbs'])-F(first['delta_gibbs'])-F(last['delta_gibbs'])) < tolerance)
+            integral_cases += 1
+    quotient_cases = 0
+    for activity_a, activity_b, scale, pressure in product((F(1, 4), F(1), F(3)),
+                                                         (F(1, 2), F(1), F(4)), (1, 2, 3), (F(1, 2), F(2))):
+        acts = (activity_a, activity_b)
+        q = m.quotient((-1, 2), acts)
+        check(q == activity_b**2/activity_a)
+        check(m.quotient((-scale, 2*scale), acts) == q**scale)
+        check(m.quotient((1, -2), acts) == 1/q)
+        check(m.quotient((-1, 2), tuple(x*pressure for x in acts)) == pressure*q)
+        factors = (F(2), F(3))
+        c = m.quotient((-1, 2), factors)
+        shifted = m.quotient((-1, 2), tuple(a*f for a, f in zip(acts, factors)))
+        check(shifted == c*q)
+        check(shifted/(c*4) == q/4)
+        quotient_cases += 1
+    cell_cases = 0
+    for k, q, z, temperature in product((F(1, 2), F(1), F(4)), (F(1, 4), F(1), F(8)), (1, 2), (250, 300)):
+        cell = m.reversible_cell(k, q, temperature, z)
+        bounds = scaled(logarithm_bounds(k/q), m.R*temperature/(z*m.FARADAY))
+        encloses(bounds, cell['voltage'])
+        check(abs(F(cell['reaction_gibbs'])+z*m.FARADAY*F(cell['voltage'])) < tolerance)
+        doubled = m.reversible_cell(k*k, q*q, temperature, 2*z)
+        check(abs(F(doubled['voltage'])-F(cell['voltage'])) < tolerance)
+        check(abs(F(doubled['reaction_gibbs'])-2*F(cell['reaction_gibbs'])) < tolerance)
+        reverse = m.reversible_cell(1/k, 1/q, temperature, z)
+        check(abs(F(reverse['voltage'])+F(cell['voltage'])) < tolerance)
+        cell_cases += 1
+    work_cases = 0
+    for du, ds, dv, w in product((-100, 0, 100), (F(-1, 2), F(0), F(1, 2)),
+                                 (F(0), F(1, 1000)), (0, 100, 200)):
+        result = m.work_account(du, ds, dv, 300, 100000, w)
+        check(result['heat']-100000*dv-w == du)
+        check(result['delta_gibbs']+w == -300*result['entropy_generated'])
+        check(result['passes_screen'] == (w <= result['nonpv_work_bound']))
+        work_cases += 1
+    source = m.published_examples()
+    check(source['water_j_per_mol'] == F(43038, 5))
+    l5, u5 = logarithm_bounds(F(5))
+    l10, u10 = logarithm_bounds(F(10))
+    encloses((F('0.0296')*l5/u10, F('0.0296')*u5/l10), source['source_rounded_constant_cell_volts'])
+    initial = m.binary(5, F(5, 2), 4, 300)
+    encloses(scaled(logarithm_bounds(F(5, 4)), 5*m.R*300), initial['available_work'])
+    check(m.binary(1, F(3, 5), 4, 300)['reaction_gibbs'] < 0)
+    check(1-2*F(3, 5) < 0)
+    for call in (lambda: m.binary(1, 2, 4, 300), lambda: m.binary(1, -1, 4, 300),
+                 lambda: m.binary(True, 0, 4, 300), lambda: m.binary(1, F(1, 2), 0, 300),
+                 lambda: m.binary(1, F(1, 2), 4, 0), lambda: m.binary(1.0, 0, 4, 300),
+                 lambda: m.mixture((), (), 300), lambda: m.mixture((1, 0), (0, 0), 300),
+                 lambda: m.mixture((1, 2), (0,), 300), lambda: m.quotient((-1, 1), (0, 1)),
+                 lambda: m.quotient((0, 0), (1, 1)), lambda: m.quotient((-1.0, 1), (1, 1)),
+                 lambda: m.reversible_cell(4, 1, 300, 0), lambda: m.reversible_cell(4, 1, 300, True)):
+        try:
+            call()
+        except ValueError:
+            check(True)
+        else:
+            raise AssertionError('invalid input accepted')
+    print(json.dumps({'checks': checks, 'binary_cases': binary_cases, 'mixture_cases': mixture_cases,
+                      'integral_cases': integral_cases, 'quotient_cases': quotient_cases,
+                      'cell_cases': cell_cases, 'work_cases': work_cases,
+                      'available_work_j': str(initial['available_work']),
+                      'published_water_j_per_mol': str(source['water_j_per_mol']),
+                      'published_cell_v': str(source['source_rounded_constant_cell_volts'])}))
+
+
+if __name__ == '__main__':
+    run()
+```
+
+**Author verification:** 10,773 exact and rational-enclosure comparisons passed through Nix/Python 3.14.8: 756 binary states, 54 general mixtures, 15 independent finite-change integrals, 54 quotient transformations, 36 reversible-cell comparisons and 54 work/entropy screens, plus published calculations, exact defining-constant products and invalid inputs. The existing conversion and logarithm-bound programs are reused unchanged. Continuous claims rely on the accompanying proofs; no chemical experiment or apparatus validation is claimed.
+
+**Continue:** [Review chemical potentials equilibrium and the evidence for a direction](Review-chemical-potentials-equilibrium-and-the-evidence-for-a-direction.lingua#r_0025E329FF02B6F7F00E96FD65).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_002CB3AFEA9BCF9BB21D1AFE36

@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Derive the surface circulation identity from a parameter patch (@math-fields-stokes: 0, is #chapter, #hephaestus-core "Localize-an-integral-balance-with-explicit-regularity-and-domain.lingua#r_0083DE48564035390466617B57") { r_00FB68AFB25B0AA0ABA7407DAB
+Let φ map a rectangle U injectively to a regular surface patch, with φ∈C² near U, and let F∈C¹ near its image. Choose orientation φ_u×φ_v. Its positively oriented boundary is the image of the counterclockwise parameter boundary. Define A(u,v)=F(φ)·φ_u and B(u,v)=F(φ)·φ_v. The chain rule turns the surface boundary circulation into ∮_∂U A du+B dv. The proved rectangle identity gives ∬_U(B_u−A_v)du dv.
+
+Differentiate the pairings: B_u−A_v=(DF(φ)φ_u)·φ_v−(DF(φ)φ_v)·φ_u+F(φ)·(φ_vu−φ_uv). The last term is zero by the C² mixed-partial theorem. Expanding the remaining two products and collecting antisymmetric component pairs gives (curlF)(φ)·(φ_u×φ_v). Substitution is exactly the oriented surface integral. This proves Stokes' identity on the stated rectangle patch. It also shows why inconsistent boundary/surface orientations cannot be fixed by changing only the name of the normal.
+
+Finite oriented patch unions follow when internal boundary curves agree and have opposite induced orientations. The general theorem for piecewise smooth orientable surfaces, with compatible boundary orientation and a C¹ field on a neighborhood of the surface, is accepted beyond this patch proof. Read [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 6.7 Theorem 6.19. Surfaces with several boundary components require the induced orientation on each; a field singularity on the chosen spanning surface prevents the application even if the boundary curve avoids it.
+
+For φ=(u,v,hu+kv+quv) and F=(−a y²,b x²,cxy), the curl is (cx,−cy,2bx+2ay). Dotting with the oriented area vector (−h−qv,−k−qu,1) cancels the two quv terms and leaves (2b−ch)u+(2a+ck)v. On [0,2]×[−1,1], a=1,b=2,c=3,h=2,k=−1,q=1, the surface result is −8. Direct boundary parameterization gives edge integrals −8,16,−16,0, also totaling −8. The graph is nonplanar when q≠0, so this is more than a flat-square check.
+
+**Work:** repeat with q=0 and q=3 and explain why this family's answer is unchanged although the surfaces and their boundary curves change. It is the computed cancellation here, not a claim that all deformations preserve circulation. Reverse both orientations and obtain +8. Set h=k=q=c=0 to recover the planar example.
+
+**Continue:** [Localize an integral balance with explicit regularity and domain](Localize-an-integral-balance-with-explicit-regularity-and-domain.lingua#r_0083DE48564035390466617B57).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00FB68AFB25B0AA0ABA7407DAB

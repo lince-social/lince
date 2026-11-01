@@ -1,0 +1,13 @@
+Import "../Physics.lingua"
+
+Dynamics and Relativity by David Tong (@physics-source-dynrel: 0, is #reference) { r_007464FDC6A818524F8C87C426
+David Tong, introductory first-year *Dynamics and Relativity*, [course index](https://davidtong.org/teaching/dynamics-and-relativity/) and [166-page lecture PDF](https://davidtong.org/pdfs/teaching/dynamics-and-relativity/dynrel.pdf). This is distinct from the existing advanced [Classical Dynamics — David Tong](../../engineering/mechanical-engineering-and-machine-design/sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA) source.
+
+Inspected on 1 November 2026: contents and selected 2.3 gravity/escape/mass passages; 4.3–4.3.2 orbit equation, ellipse and period; 5.1.5 two-body reduction; 7.1 standard boosts, 7.2.1 simultaneity, opening 7.2.3 time dilation, 7.2.5 velocities, 7.3.1 interval, and selected 7.4.1/7.4.3/7.4.4 proper-time and energy-momentum passages. Printed pages differ from PDF indices by five. Larger section/problem assignments remain learner reading, not a whole-course inspection claim.
+
+Compare notation and premises with the common lessons. In particular distinguish reduced mass from gravitational parameter, derived algebra from physical postulates, and historical precision claims from current evidence. The PDF's Newtonian escape analogy is not a derivation of a relativistic black-hole solution. No numerical current experimental limit is adopted here.
+
+The author makes these notes freely readable; no blanket adaptation licence was verified. Keep the PDF, illustrations and author exercises external. The trail's connecting explanations, examples and programs are original.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_007464FDC6A818524F8C87C426

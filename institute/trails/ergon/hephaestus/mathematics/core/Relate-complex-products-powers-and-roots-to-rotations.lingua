@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Relate complex products powers and roots to rotations (@math-complex-rotations: 0, is #chapter, #hephaestus-core "Solve-a-second-order-initial-problem-and-test-boundary-data.lingua#r_0072284625C39BA0E04DDA3D2E") { r_007A555DF9E363BDCFDBD9976D
+For a nonzero z=a+bi, set r=|z|>0 and choose an angle θ such that (cos θ,sin θ)=(a/r,b/r). Write z=r cis θ, where cis θ is shorthand for cos θ+i sin θ. This is a notation defined from the geometric functions, not yet a complex exponential. The argument θ is determined modulo 2π. Zero has modulus zero and no defined direction.
+
+Multiplication and the addition identities prove cis α cis β=cis(α+β). Hence multiplying by r cis θ scales lengths by r and rotates by θ. Positive integer powers give (r cis θ)ⁿ=rⁿcis(nθ), proved by induction. For nonzero z, negative integer powers follow by taking the reciprocal, with inverse angle −θ. The zeroth power is the multiplicative identity by convention; questions involving 0⁰ require a separately stated convention and are not limits inferred from that notation.
+
+For w≠0 with modulus ρ and argument φ, solve zⁿ=w for a positive integer n. Moduli require |z|=ρ^(1/n), the positive real root. Angles satisfy nθ=φ+2πk, giving candidates ρ^(1/n)cis((φ+2πk)/n), k=0,...,n−1. Verify their powers and show the listed candidates are distinct modulo 2π. Conversely any solution must have that modulus and one of those angles, so the list is complete for this equation. This is a result about powers, not a proof that all degree-n polynomials have n roots.
+
+The fourth roots of one are 1,i,−1,−i. Their multiplication is a finite cycle: multiplying by i advances a quarter turn. Real rational points on the unit circle also support exact arithmetic. For u=3/5+4i/5, u²=−7/25+24i/25 and |uⁿ|=1 for every integer n, even though the angle has no supplied simple expression in π units.
+
+For real coefficients a,b, the real part of (a−bi)cis θ is a cos θ+b sin θ. The minus sign matters. In particular, coefficients 3 and 4 correspond to 3−4i and amplitude 5. This is an algebraic representation of a real function; it does not assert that a measured quantity itself has an imaginary physical component.
+
+**Read and practice:** [Algebra and Trigonometry 2e — Abramson and contributors](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), section 10.5. Derive integer powers rather than memorizing a polar rule, recover all cube roots of one and show their sum is zero. Explain why choosing just one argument branch can omit roots. Euler's complex-exponential identity and analytic complex functions remain later development; none is required for these finite algebraic proofs.
+
+**Continue:** [Solve a second order initial problem and test boundary data](Solve-a-second-order-initial-problem-and-test-boundary-data.lingua#r_0072284625C39BA0E04DDA3D2E).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_007A555DF9E363BDCFDBD9976D

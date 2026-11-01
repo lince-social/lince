@@ -154,7 +154,7 @@ pub(super) async fn execute(
         None
     };
     let cached = if unavailable.is_none() {
-        store::projection::read(&store.pool, &context, now).await?
+        store::projection::read(store, &context, now).await?
     } else {
         None
     };
@@ -178,7 +178,7 @@ pub(super) async fn execute(
     let schedule = if let Some(cached) = cached {
         cached.schedule
     } else if refreshing {
-        store::projection::previous_schedule(&store.pool, &context, now).await?
+        store::projection::previous_schedule(store, &context, now).await?
     } else {
         Vec::new()
     };

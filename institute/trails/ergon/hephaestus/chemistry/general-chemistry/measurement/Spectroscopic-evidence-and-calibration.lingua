@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Use a spectrum as chemical evidence with an observation model (@gc-spectra: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #general-chemistry "Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surface-measurement/Infrared-evidence-relates-bands-mixtures-and-observed-amount.lingua#r_3NDNVBAZBYZS0TM9J2XPVK51J9") { r_5KF8FB97G6AMW8SNB4Y21E2ZHZ
+Use a spectrum as chemical evidence with an observation model (@gc-spectra: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #general-chemistry "Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surface-measurement/Infrared-evidence-relates-bands-mixtures-and-observed-amount.lingua#r_3NDNVBAZBYZS0TM9J2XPVK51J9", #hephaestus-core "Validate-a-chemical-method.lingua#r_35SBSG78BYDMNMGSEKHB7PGZBR") { r_5KF8FB97G6AMW8SNB4Y21E2ZHZ
 **Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 10 in full; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), guide and the chosen spectral/property record with conditions; [The Fitness for Purpose of Analytical Methods — Eurachem](../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), validation and selectivity guidance relevant to the example.
 
 A spectrum relates a measured response to a variable such as wavelength, frequency, energy, or mass-to-charge ratio under a specified method. Signal processing, calibration, instrument response, specimen preparation, and chemical environment help determine what the observation means. A familiar peak is evidence to evaluate alongside alternatives and other measurements.
@@ -18,5 +18,10 @@ Read Harvey's entire spectroscopic chapter and connect the quantum/bonding found
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 
 **Continue in clean manufacturing:** [Infrared evidence relates bands, mixtures and observed amount](../../../production/clean-manufacturing-and-contamination-control/surface-measurement/Infrared-evidence-relates-bands-mixtures-and-observed-amount.lingua#r_3NDNVBAZBYZS0TM9J2XPVK51J9).
+
+
+**Third chemistry-block reading:** Use the distinction between identification and quantification and the need for an observation relation. The preceding common logarithm lesson prepares the absorbance notation, but the synthetic affine response is not a validated spectroscopic law. Harvey chapter 5’s selected signal/sensitivity passages supply the fresh common reading. Full spectroscopy, evaluated reference-spectrum consultation and method-specific validation remain broader assignments.
+
+**Continue in the third chemistry block:** [Judge a chemical method for a specified use and specimen](Validate-a-chemical-method.lingua#r_35SBSG78BYDMNMGSEKHB7PGZBR).
 
 } r_5KF8FB97G6AMW8SNB4Y21E2ZHZ

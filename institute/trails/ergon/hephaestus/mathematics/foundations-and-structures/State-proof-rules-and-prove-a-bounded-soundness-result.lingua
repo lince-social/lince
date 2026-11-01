@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+State proof rules and prove a bounded soundness result (@math-structures-proof: 0, is #chapter, #math-structures "Build-modular-operations-and-distinguish-algebraic-axioms.lingua#r_00A4387C8D4F6566D2B3E39253") { r_00F6A6145EFF19A739C68F6214
+Semantic consequence quantifies over models. Derivability instead refers to a specified formal procedure. Here use a small equational calculus, not an undeclared complete first-order proof system. Its judgments are equations s=t, understood universally over their free variables. Start from declared equational axioms and permit: reflexivity t=t; symmetry; transitivity; replacement of equal terms in either input of *; and simultaneous substitution of terms for variables throughout an equation. A derivation is a finite sequence, each line an axiom instance or justified by these rules and earlier lines.
+
+For a model satisfying the axioms, every derivable equation holds under every assignment. Prove this by induction on the derivation length. Reflexivity, symmetry and transitivity use the corresponding properties of actual equality. For replacement, a function assigns equal outputs to equal inputs. For substitution, first prove a term lemma by structural induction: evaluating a substituted term at s equals evaluating the original term at the assignment sending each variable x to the value at s of its replacement. Variable and constant cases are immediate; the operation step applies the same function to the two induction hypotheses. A universally true equation therefore remains true after substitution. Axioms hold by the chosen model premise. These cases establish soundness for exactly the rules listed.
+
+With identity and associativity axioms, derive (x*e)*(e*y)=x*y. Replace x*e by x in the left input of the outer operation, obtaining x*(e*y); then replace e*y by y. Transitivity joins the two equalities. No associativity step was actually needed. Listing the assumptions used can expose that a result holds under weaker conditions than expected.
+
+Soundness has a useful contrapositive: the preceding identity countermodel proves there is no derivation of associativity from those identity axioms using these rules. This does not mean associativity is never provable—it can be an axiom of a different theory. Completeness would assert a converse connecting all semantic consequences of an appropriate form to derivations. No completeness theorem, decision procedure or first-order proof checker is established here.
+
+**Work:** write every substitution and replacement in the displayed derivation. Prove the substitution lemma precisely, stating that substitution is simultaneous rather than repeated rewriting. Propose an extra rule that infers y=x from x=x; refute its soundness in a two-element model. Read the selected soundness argument in [forall x Calgary formal logic](../sources/forall-x-Calgary-formal-logic.lingua#r_00A7D972F37307C8A2E5871D87), chapter 48, and compare its assumption-tracking method with this independently specified equational calculus. Its full natural-deduction rules are a later assignment.
+
+**Continue:** [Build modular operations and distinguish algebraic axioms](Build-modular-operations-and-distinguish-algebraic-axioms.lingua#r_00A4387C8D4F6566D2B3E39253).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00F6A6145EFF19A739C68F6214

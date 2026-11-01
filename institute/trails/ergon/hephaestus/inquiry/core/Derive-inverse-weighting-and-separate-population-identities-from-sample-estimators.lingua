@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Derive inverse weighting and separate population identities from sample estimators (@inquiry-causal-weighting: 0, is #chapter, #hephaestus-core "Construct-different-causal-models-with-the-same-observed-distribution.lingua#r_00439239A656E00CF2A399CE63") { r_00AE2B43054AE59C571FEE42F0
+Let eₐ(l)=P(A=a|L=l)>0. Expand E[1(A=a)Y/eₐ(L)] by L and A. For each l, the contribution is P(L=l)eₐ(l)mₐ(l)/eₐ(l)=P(L=l)mₐ(l). Summing gives the same standardized mean. This is an algebraic identity for the observed distribution; it becomes an intervention mean under the preceding identification assumptions. For another target mixture g(l), the corresponding observed weight is g(l)/[P(L=l)eₐ(l)], with positivity and justified transfer of conditional response means. The implemented `weighted` calculation uses precisely this expression.
+
+A pseudo-population is an accounting device for weights. Replicating a row twelve times does not create twelve independent observations. Small e values create large weights and can magnify noise or model error. Trimming or capping them changes the calculation and may change its target or introduce bias; it is not a free numerical repair.
+
+Now make a distinct finite-design statement. Fix N units and their potential outcomes. Let Iᵢ indicate actual assignment to procedure 1, with known marginal probability eᵢ strictly between zero and one. Define
+
+T=(1/N)Σᵢ[IᵢYᵢ(1)/eᵢ−(1−Iᵢ)Yᵢ(0)/(1−eᵢ)].
+
+Only the outcome under the received procedure is needed to evaluate each realized term. Taking expectation over the assignment mechanism and using E[Iᵢ]=eᵢ gives E[T]=(1/N)Σᵢ[Yᵢ(1)−Yᵢ(0)]. Independence between assignments is not needed for this mean result. This is the Horvitz–Thompson form, extending the known-probability reasoning in [Derive what randomized comparisons average over](Derive-what-randomized-comparisons-average-over.lingua#r_0BA266DD53DF13150425227195). It can be defined even when one realized assignment leaves an arm empty, because its denominators are known design probabilities, not observed arm counts.
+
+If the Iᵢ are independent Bernoulli choices, the variance is N⁻²Σᵢeᵢ(1−eᵢ)[Yᵢ(1)/eᵢ+Yᵢ(0)/(1−eᵢ)]². Derive it by subtracting the two possible values of each summand and adding independent variances. For a dependent allocation design, covariance terms remain. The checker compares this expression with complete enumeration, reusing [Investigate a conductance estimate from shared temperature evidence](Investigate-a-conductance-estimate-from-shared-temperature-evidence.lingua#r_00C193D005D33F686AE905C292) for weighted means and covariance.
+
+A finite sample's fitted propensities, empirical stratum proportions and conditional sample means are random quantities. The population identity does not prove their nonlinear ratio estimates unbiased, nor eliminate empty cells. A confidence procedure needs its own sampling/design assumptions. **Work:** enumerate all assignments of three units under unequal known probabilities; reproduce the expectation and variance. Then explain which part of the proof breaks if probabilities are selected after seeing the outcomes.
+
+**Continue:** [Construct different causal models with the same observed distribution](Construct-different-causal-models-with-the-same-observed-distribution.lingua#r_00439239A656E00CF2A399CE63).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00AE2B43054AE59C571FEE42F0

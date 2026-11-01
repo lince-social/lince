@@ -1,0 +1,13 @@
+Import "../Mathematics.lingua"
+
+Mathematics for Computer Science Lehman Leighton and Meyer (@math-source-discrete: 0, is #reference) { r_004640451E14878C1AA242D107
+Eric Lehman, F Thomson Leighton and Albert R Meyer. Mathematics for Computer Science, revision 18 May 2015,01:43. [MIT OCW textbook resource](https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/resources/mit6_042js15_textbook/) and [authorized full PDF](https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf). The associated undergraduate 6.042J Spring 2015 course names Meyer and Adam Chlipala as instructors; course instructors and textbook authors are different metadata.
+
+Read the needed sets/functions, induction/recursive-structure and directed-graph chapters progressively, completing their preparation and exercises rather than treating a graph diagram as the entire subject. For this common block, the actual PDF sections 9.1–9.2 and 9.6 provide directed-graph, walk and relational conventions. The full course and advanced counting/probability chapters remain larger assignments.
+
+On 1 November 2026, the official course/readings/resource pages and actual PDF title/version/licence, contents and selected directed-graph/walk/partial-order passages were inspected. The readings-page session 12 resource opens chapter 8 Number Theory in this PDF; use the actual chapter titles and revision when resolving an assignment instead of assuming a Structures unit label identifies graph content. No complete course, source program, figure or every exercise was reproduced.
+
+The PDF's own notice is CC BY-NC-SA 3.0. The current [OCW site terms](https://ocw.mit.edu/pages/privacy-and-terms-of-use/) state CC BY-NC-SA 4.0 with component qualifications; retain the PDF's specific notice rather than silently relabeling it. All source media remain external. The token investigation, its proofs, programs and counterexamples are independently written original connecting material.
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_004640451E14878C1AA242D107

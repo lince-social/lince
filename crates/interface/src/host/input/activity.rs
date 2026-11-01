@@ -22,7 +22,7 @@ impl InputActivity {
     pub fn frame_revision(&self) -> u64 { self.1.unwrap_or_else(|| self.revision()) }
 
     pub fn set_active(&self, active: bool) {
-        let _ = self.0.fetch_update(Ordering::AcqRel, Ordering::Acquire, |state| {
+        let _ = self.0.try_update(Ordering::AcqRel, Ordering::Acquire, |state| {
             if state == 0 || (state & 1 != 0) == active { return None; }
             Some(state.checked_add(2).map(|next| (next & !1) | u64::from(active)).unwrap_or(0))
         });

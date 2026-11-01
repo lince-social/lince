@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Derive state entropy changes without declaring the actual path reversible (@physics-reference-paths: 0, is #chapter, #hephaestus-core "../thermodynamics-and-heat-transfer/entropy/Entropy-properties-integration-and-reference-paths.lingua#r_5PBN5Q06X2XF6SN21MCCWR8VJY") { r_00AD3AE9AA539FA8AA5D2FF51C
+Begin with fixed matter, no composition change and a simple compressible equilibrium model. Along a reversible reference path with only pressure-volume work, dU=δQ_rev−p dV and δQ_rev=T dS, so T dS=dU+p dV. This identity relates neighboring equilibrium states under the stated model. It does not say that actual irreversible work is p dV using an arbitrary system pressure, nor that actual heat always equals T dS.
+
+For an ideal gas with fixed amount n, let A=nR have unit J/K, pV=AT and total constant-volume heat capacity C_V>0 be constant over the modeled range. Suppose U=U_ref+C_V(T−T_ref). Then dS=C_V dT/T+A dV/V. The shared logarithm construction gives
+
+S(T,V)−S(T_ref,V_ref)=C_V ln(T/T_ref)+A ln(V/V_ref).
+
+All logarithm arguments are dimensionless and positive. Temperature and volume reference values set the arbitrary additive constant. Substituting V₂/V₁=(T₂/T₁)/(p₂/p₁) gives ΔS=(C_V+A)ln(T₂/T₁)−A ln(p₂/p₁). With C_P=C_V+A this is the pressure form. Molar, mass-specific and total capacities are different quantities; change basis consistently.
+
+Two reversible reference routes connect (T₁,V₁) to (T₂,V₂). Route one changes temperature at V₁, then volume at T₂; route two changes volume at T₁, then temperature at V₂. Both entropy sums are C_V ln(T₂/T₁)+A ln(V₂/V₁). Their works are respectively AT₂ ln(V₂/V₁) and AT₁ ln(V₂/V₁), and their heats are ΔU plus those works. Thus equal state changes coexist with different path transfers. Reversible heating requires a succession of matching-temperature surroundings, not uncontrolled contact with a single hotter reservoir.
+
+For the original A=2 J/K,C_V=3 J/K,T₁=200 K,T₂=400 K,V₁=1 m³,V₂=2 m³, ΔU=600 J and ΔS=5 ln2 J/K. The two works are 800 ln2 J and 400 ln2 J. The chosen quantities are stipulated teaching data, not properties of a validated apparatus.
+
+A fixed-volume, single-phase constant-capacity body with negligible other work instead has dU=C dT and ΔS=C ln(T₂/T₁). C is the body's total heat capacity. Variable capacities require integration of C(T)/T; phase changes or changing composition need their own state relations. The later finite-body comparison stays within the constant-capacity model.
+
+**Read and work:** [Entropy properties, integration and reference paths](../thermodynamics-and-heat-transfer/entropy/Entropy-properties-integration-and-reference-paths.lingua#r_5PBN5Q06X2XF6SN21MCCWR8VJY) and its selected Yan 6.7 reading; reuse [Construct a logarithm from accumulated reciprocal change](../../chemistry/core/Construct-a-logarithm-from-accumulated-reciprocal-change.lingua#r_048F416B6E95AE137A181635B7) and [Compose local maps and derive change along a path](../../mathematics/core/Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412). Verify the two gas-reference paths and units independently. Explain how the same state formula can describe endpoints of free expansion even though that actual path has Q=W=0.
+
+**Continue:** [Entropy properties, integration and reference paths](../thermodynamics-and-heat-transfer/entropy/Entropy-properties-integration-and-reference-paths.lingua#r_5PBN5Q06X2XF6SN21MCCWR8VJY).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00AD3AE9AA539FA8AA5D2FF51C

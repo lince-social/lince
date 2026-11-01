@@ -1,0 +1,300 @@
+Import "../Computing.lingua"
+
+Investigate every crash boundary in a durable update model (@computing-durable-study: 0, is #chapter, #hephaestus-core "Review-persistence-publication-and-recovery.lingua#r_0075E888A3D04E2A65A32F27A8") { r_00E0361A5584392811B997F505
+**Question:** which recovered states can an interrupted logical update expose? Reconstruct the nine-word storage model and the two-slot protocol before running the programs. This is an original finite state-machine investigation, not a crash test of Python, a filesystem or storage hardware. Its model premises are part of every claim.
+
+Use total T=20 and initial record (sequence,amount,left,right)=(0,0,12,8) in both slots, with selector 0. Request (1,3) asks for new (1,3,9,11) in slot 1. Device events may persist any pending word independently; a crash drops the pending set and volatile control. Acknowledgment is an observed event that the verifier can distinguish from the local flag lost at crash.
+
+**Predict first.** Before the selector changes, every subset of the four candidate writes may be durable: 16 durable images. After the selector changes, all four candidate fields must be durable: one more image. Since all four new values differ from the initialized inactive values, these 17 images are distinct. Each recovers exactly old or new. The program-state count is 1+2+4+8+16+5=36: the subset choices after issuing k=0…4 candidate writes, followed by the five distinct control/device states for passing the data barrier, issuing/persisting the selector, passing its barrier and acknowledging. These counts apply to this finite operation list, not to arbitrary storage systems.
+
+The independent oracle constructs durable subsets directly, without the event-transition function. The main explorer follows every possible program/device interleaving and merges identical states. Compare their entire durable-image sets, not just their sizes. Check every state against the independently specified relation: recovered record∈{old,new}, and acknowledged⇒recovered=new. Separately check stock conservation, representation rejection and idempotent recovery/reset. A conserved total alone is too weak.
+
+**Remove premises deliberately.** The in-place variant overwrites the selected record. The no-data-barrier variant can publish before candidate durability. The no-root-barrier variant acknowledges before selector durability. Obtain at least one failing state for each and explain its causal sequence; the reported numbers count violating reachable states, not independent real-world failures or probabilities. In the worked case the three variants have respectively 25,14,1 violating states under the checking relation/schema.
+
+**Retry and reuse.** For every reachable crash image, retry (1,3). Explore crashes during that retry, then finish a successful run and repeat the same request. It must end at (1,3,9,11) without double transfer. Continue with (2,2) and then (3,1), alternating slots; old attempts must have no surviving pending writes. A matching latest request is a no-write duplicate, a stale request is rejected, and sequence exhaustion is explicit. The proof of active-slot preservation supplies the induction for further attempts within the representation range; the finite enumeration checks the implementation for the declared cases.
+
+**Run:** save `durable_study.py` and `durable_checks.py` below in one directory and use the established Nix/Python environment. The first program exposes validation, operation construction, state transitions, exhaustive exploration, crash reset and one chosen terminating schedule. Its tuples model storage; neither program writes any filesystem data. The companion derives target tuples directly, constructs an independent subset oracle and checks 84 small first updates plus retries and 34 slot-reuse cases. Its selected malformed images test rejection, not recovery from arbitrary media corruption. The API is a teaching model; `State` and operation tuples passed to the transition explorer are trusted constructions, not an untrusted network protocol.
+
+
+```python file=durable_study.py
+from dataclasses import dataclass
+
+
+def word(value):
+    if type(value) is not int or not 0 <= value <= 255:
+        raise ValueError('Require an unsigned eight-bit integer')
+    return value
+
+
+def initial(left, right):
+    left, right = word(left), word(right)
+    if left+right > 255:
+        raise ValueError('Reference total exceeds the model range')
+    record = (0, 0, left, right)
+    return (0,)+record+record
+
+
+def recover(durable, total):
+    total = word(total)
+    if not isinstance(durable, tuple) or len(durable) != 9:
+        raise ValueError('Require nine durable words')
+    for value in durable:
+        word(value)
+    selector = durable[0]
+    if selector not in (0, 1):
+        raise ValueError('Invalid selector')
+    start = 1+4*selector
+    record = durable[start:start+4]
+    sequence, amount, left, right = record
+    if left+right != total or (sequence == 0) != (amount == 0) or amount > right:
+        raise ValueError('Selected record violates the schema')
+    return record
+
+
+def plan(durable, total, sequence, amount, variant='ordered'):
+    sequence, amount = word(sequence), word(amount)
+    old = recover(durable, total)
+    if sequence == old[0] and sequence > 0 and amount == old[1]:
+        return (('ack',),), old
+    if sequence != old[0]+1 or amount == 0 or amount > old[2]:
+        raise ValueError('Require the next request with an available positive transfer')
+    if variant not in ('ordered', 'no-data-barrier', 'no-root-barrier', 'inplace'):
+        raise ValueError('Unknown protocol variant')
+    new = (sequence, amount, old[2]-amount, old[3]+amount)
+    slot = durable[0] if variant == 'inplace' else 1-durable[0]
+    operations = [('write', 1+4*slot+i, value) for i, value in enumerate(new)]
+    if variant != 'no-data-barrier':
+        operations.append(('barrier',))
+    if variant != 'inplace':
+        operations.append(('write', 0, slot))
+        if variant != 'no-root-barrier':
+            operations.append(('barrier',))
+    operations.append(('ack',))
+    return tuple(operations), new
+
+
+@dataclass(frozen=True)
+class State:
+    durable: tuple
+    pending: tuple = ()
+    pc: int = 0
+    acknowledged: bool = False
+
+
+def successors(state, operations):
+    result = []
+    if state.pc < len(operations):
+        op = operations[state.pc]
+        if op[0] == 'write':
+            if any(address == op[1] for address, value in state.pending):
+                raise ValueError('Model permits one outstanding write per address')
+            pending = tuple(sorted(state.pending+((op[1], op[2]),)))
+            result.append(State(state.durable, pending, state.pc+1, state.acknowledged))
+        elif op[0] == 'barrier':
+            if not state.pending:
+                result.append(State(state.durable, (), state.pc+1, state.acknowledged))
+        elif op[0] == 'ack':
+            result.append(State(state.durable, state.pending, state.pc+1, True))
+        else:
+            raise ValueError('Unknown operation')
+    for i, (address, value) in enumerate(state.pending):
+        durable = list(state.durable)
+        durable[address] = value
+        result.append(State(tuple(durable), state.pending[:i]+state.pending[i+1:], state.pc, state.acknowledged))
+    return tuple(result)
+
+
+def explore(durable, operations):
+    start = State(durable)
+    found, pending = {start}, [start]
+    while pending:
+        current = pending.pop()
+        for next_state in successors(current, operations):
+            if next_state not in found:
+                found.add(next_state)
+                pending.append(next_state)
+    return frozenset(found)
+
+
+def crash(state):
+    return State(state.durable)
+
+
+def run(durable, operations):
+    state = State(durable)
+    while state.pc < len(operations) or state.pending:
+        choices = successors(state, operations)
+        if not choices:
+            raise ValueError('Execution is stuck')
+        state = choices[-1]
+    return state
+
+
+def study():
+    durable = initial(12, 8)
+    operations, new = plan(durable, 20, 1, 3)
+    states = explore(durable, operations)
+    crash_images = {state.durable for state in states}
+    records = {recover(image, 20) for image in crash_images}
+    completed = run(durable, operations)
+    retry, same = plan(completed.durable, 20, 1, 3)
+    later, second = plan(completed.durable, 20, 2, 2)
+    return {'states': len(states), 'crash_images': len(crash_images),
+            'recovered_records': sorted(records), 'new': new,
+            'retry_operations': retry, 'retry_record': same,
+            'second_record': recover(run(completed.durable, later).durable, 20),
+            'expected_second': second}
+
+
+if __name__ == '__main__':
+    print(study())
+```
+
+```python file=durable_checks.py
+from itertools import product
+import json
+from durable_study import State, initial, recover, plan, explore, crash, run, study
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    if not condition:
+        raise AssertionError(checks)
+
+
+def rejects(function, *args):
+    try:
+        function(*args)
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+
+def subset_images(durable, target):
+    offset = 1+4*(1-durable[0])
+    images = set()
+    for flags in product((False, True), repeat=4):
+        image = list(durable)
+        for i, selected in enumerate(flags):
+            if selected:
+                image[offset+i] = target[i]
+        images.add(tuple(image))
+    complete = list(durable)
+    complete[offset:offset+4] = target
+    complete[0] = 1-durable[0]
+    images.add(tuple(complete))
+    return images
+
+
+def inspect(durable, total, sequence, amount):
+    old = recover(durable, total)
+    target = (sequence, amount, old[2]-amount, old[3]+amount)
+    operations, planned = plan(durable, total, sequence, amount)
+    check(planned == target)
+    states = explore(durable, operations)
+    images = {state.durable for state in states}
+    check(images == subset_images(durable, target))
+    for state in states:
+        recovered = recover(state.durable, total)
+        check(recovered in (old, target))
+        check(not state.acknowledged or recovered == target)
+        check(recovered[2]+recovered[3] == total)
+        check(crash(crash(state)) == crash(state))
+        check(crash(state).pending == () and not crash(state).acknowledged)
+        check(recover(crash(state).durable, total) == recovered)
+    for image in images:
+        before_retry = recover(image, total)
+        retry, returned = plan(image, total, sequence, amount)
+        check(returned == target)
+        retry_states = explore(image, retry)
+        expected_images = {image} if before_retry == target else subset_images(image, target)
+        check({s.durable for s in retry_states} == expected_images)
+        for interrupted in retry_states:
+            observed = recover(crash(interrupted).durable, total)
+            check(observed in (old, target))
+            check(not interrupted.acknowledged or observed == target)
+        after_retry = run(image, retry)
+        check(after_retry.acknowledged and recover(after_retry.durable, total) == target)
+        if before_retry == target:
+            check(retry == (('ack',),) and after_retry.durable == image)
+        again, returned = plan(after_retry.durable, total, sequence, amount)
+        check(again == (('ack',),) and returned == target)
+    return states, images
+
+
+case = study()
+check(case['new'] == (1, 3, 9, 11))
+check(case['recovered_records'] == [(0, 0, 12, 8), (1, 3, 9, 11)])
+check(case['retry_operations'] == (('ack',),))
+check(case['second_record'] == (2, 2, 7, 13))
+update_cases = reachable_states = crash_images = 0
+for left, right in product(range(1, 7), range(4)):
+    for amount in range(1, left+1):
+        durable = initial(left, right)
+        states, images = inspect(durable, left+right, 1, amount)
+        update_cases += 1
+        reachable_states += len(states)
+        crash_images += len(images)
+reuse_cases = 0
+first_states, first_images = inspect(initial(12, 8), 20, 1, 3)
+for image in first_images:
+    retry, target = plan(image, 20, 1, 3)
+    finished = run(image, retry)
+    states, images = inspect(finished.durable, 20, 2, 2)
+    check(all(recover(s.durable, 20) in ((1, 3, 9, 11), (2, 2, 7, 13)) for s in states))
+    reuse_cases += 1
+first_plan, first_target = plan(initial(12, 8), 20, 1, 3)
+first_complete = run(initial(12, 8), first_plan)
+second_plan, second_target = plan(first_complete.durable, 20, 2, 2)
+second_images = {s.durable for s in explore(first_complete.durable, second_plan)}
+for image in second_images:
+    retry, target = plan(image, 20, 2, 2)
+    completed = run(image, retry)
+    inspect(completed.durable, 20, 3, 1)
+    rejects(plan, completed.durable, 20, 1, 3)
+    reuse_cases += 1
+broken = {}
+durable = initial(12, 8)
+old, target = (0, 0, 12, 8), (1, 3, 9, 11)
+for variant in ('inplace', 'no-data-barrier', 'no-root-barrier'):
+    operations, ignored = plan(durable, 20, 1, 3, variant)
+    violations = 0
+    for state in explore(durable, operations):
+        try:
+            recovered = recover(state.durable, 20)
+            invalid = recovered not in (old, target) or (state.acknowledged and recovered != target)
+        except ValueError:
+            invalid = True
+        violations += invalid
+    check(violations > 0)
+    broken[variant] = violations
+completed = run(durable, plan(durable, 20, 1, 3)[0])
+for sequence, amount in ((1, 2), (0, 0), (3, 1), (2, 0), (2, 10), (256, 1), (True, 1), (2, 1.0)):
+    rejects(plan, completed.durable, 20, sequence, amount)
+for bad in ((), (0,)*8, (2,)+(0,0,12,8)*2, (0,0,0,12,9,0,0,12,8), (0,0,0,True,8,0,0,12,8)):
+    rejects(recover, bad, 20)
+rejects(initial, -1, 8)
+rejects(initial, 255, 1)
+last = (0,255,1,9,11,0,0,12,8)
+rejects(plan, last, 20, 256, 1)
+check(plan(last, 20, 255, 1)[0] == (('ack',),))
+print(json.dumps({'checks': checks, 'update_cases': update_cases,
+                  'reachable_states': reachable_states, 'crash_images': crash_images,
+                  'reuse_cases': reuse_cases, 'broken_protocol_violations': broken,
+                  'worked_states': case['states'], 'worked_crash_images': case['crash_images']}))
+```
+
+**Extend with a proof obligation:** introduce a third payload field with its own invariant, or permit an explicit write failure. Specify the allowed recovered states before changing the protocol. For a write error, distinguish known non-effect from an unknown partial persistence outcome; do not acknowledge merely because the error was caught. If introducing concurrent readers, give an explicit old-slot lifetime rule before reusing storage. Each extension must state which part of the original proof survives and which does not.
+
+**Submission:** include the layout/schema, allowed-state relation, transition definitions, invariant proof, oracle construction, counterexample traces, retry/reuse account and the distinction between word counts and measured performance. Compare the construction with the assigned primary readings, identify unverified hardware/API premises, and explain what additional evidence a real implementation would require.
+
+**Author verification:** the companion passed 171,775 checks through Nix/Python 3.14.8. Its 84 first-update cases cover 3,024 reachable states and 1,428 case-counted crash images, with independent subset-image comparison, all-state old/new and acknowledgment checks, interrupted retries, 34 slot-reuse cases and malformed-domain checks. The worked case has 36 states and 17 durable images. Three intentionally defective protocols produce counterexamples. These are finite abstract-state checks, not filesystem/device fault-injection or performance measurements.
+
+**Continue:** [Review persistence publication recovery and the evidence for them](Review-persistence-publication-and-recovery.lingua#r_0075E888A3D04E2A65A32F27A8).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00E0361A5584392811B997F505

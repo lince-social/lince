@@ -67,6 +67,7 @@ rustix = { version = "=1.1.4", features = ["fs", "process", "time"] }
 
 [build-dependencies]
 sensei = { workspace = true }
+sha2 = { workspace = true }
 
 [lints]
 workspace = true

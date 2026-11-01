@@ -1,0 +1,7 @@
+Cybersecurity and privacy engineering (@cybersecurity-and-privacy-engineering: 0, is #chapter, #outline) { r_0G3AP7Y3TXS1JVAS5TVMB5PBZS
+Security engineering investigates how systems preserve intended properties despite faults, misuse, and adversarial behaviour. The material connects threat modelling, authentication, access control, cryptography, isolation, secure development, monitoring, and recovery with privacy requirements and the practical management of digital infrastructure.
+
+**Common preparation developed:** the [common authority lesson](../core/Check-authority-for-the-particular-object-and-effect-when-it-is-used.lingua) connects authenticated-actor assumptions, current object/effect grants, revocation, retained request identity and recovery. The connected privacy lesson treats purpose, exposure and retention without a compliance claim. This prepares branch entry; full cryptography, security engineering, privacy methods and real deployment remain pending.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0G3AP7Y3TXS1JVAS5TVMB5PBZS

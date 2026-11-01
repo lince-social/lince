@@ -1,0 +1,23 @@
+Import "../Chemistry.lingua"
+
+Connect reaction extent to the derivative of Gibbs energy (@chemistry-reaction-derivative: 0, is #chapter, #hephaestus-core "../general-chemistry/energy/Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6") { r_00A0C1342E9088D59AB6BDCD5D
+Write a reaction using signed stoichiometric numbers ν_i, positive for products and negative for reactants. At fixed T,p, species amounts follow n_i=n_i,0+ν_iξ, where ξ is reaction extent in mol. Nonnegative amounts restrict the admissible interval of ξ. Element conservation requires the element-composition matrix to satisfy Bν=0; charge must also balance where relevant. Reuse the earlier amount and electron ledgers in [Review reaction charge chemical evidence and terminal work](Review-electron-charge-products-and-work.lingua#r_0072FD178E3BC3AAC82E035558).
+
+By the chain rule, dG/dξ=Σμ_i dn_i/dξ=Σν_i μ_i. Denote this local molar reaction quantity Δ_rG, with unit J/mol. It differs from the finite system change ΔG, whose unit is J. Along a changing composition,
+
+ΔG=∫ from ξ₁ to ξ₂ Δ_rG(ξ) dξ.
+
+Multiplying the initial Δ_rG by the whole extent change is generally only an approximation. This distinction also separates a standard reaction quantity from the actual mixture's driving derivative.
+
+For the neutral activity description, substitute μ_i=μ_i°+RT ln a_i. Define Δ_rG°=Σν_i μ_i° and Q=∏a_i^ν_i. The logarithm product law gives Δ_rG=Δ_rG°+RT ln Q. For an allowed interior reaction direction at equilibrium with no coupled non-pressure-volume work, stationarity requires Δ_rG=0. Define K=exp(−Δ_rG°/RT); then Δ_rG=RT ln(Q/K). At a boundary or under additional constraints, use allowed one-sided variations rather than demanding an unavailable two-sided derivative vanish. A stationary point also needs stability analysis.
+
+For A⇌B, take A and B to be hypothetical distinguishable species with the same elemental composition, ν=(−1,1). Total amount N is conserved. In an ideal gas mixture Q=x_B/x_A, because the pressure factors cancel. For A⇌2B with A carrying twice B's conserved elemental unit, the ideal quotient is Q=(x_B²/x_A)(p/p°); neither the pressure cancellation nor the constant-total-amount formula survives. Balance the specific reaction before selecting a formula.
+
+If all stoichiometric numbers are multiplied by an integer c>0, ξ′=ξ/c describes the same physical amount change, Δ_rG′=cΔ_rG, Q′=Q^c and K′=K^c. The finite ΔG is unchanged. Reversing the reaction changes the sign of Δ_rG and inverts Q,K. If activity references change by factors c_i, set C=∏c_i^ν_i: Q′=CQ, K′=CK and Δ_rG°′=Δ_rG°−RT ln C, leaving Q/K and the actual derivative unchanged.
+
+**Read and work:** [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../general-chemistry/sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), reaction Gibbs energy, affinity, quotient and thermodynamic equilibrium constant; [Thermodynamics and Chemistry — Howard DeVoe](../../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected 11.8. Distinguish the dimensionless thermodynamic K used in the logarithm from dimensional pressure- or concentration-based constants that require conversion factors. Derive every normalization transformation and explain why K alone does not specify a reaction rate.
+
+**Continue:** [Relate chemical direction to Gibbs energy under stated constraints](../general-chemistry/energy/Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00A0C1342E9088D59AB6BDCD5D

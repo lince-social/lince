@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Normalize countable weights without assigning probability from counts alone (@math-series-weights: 0, is #chapter, #hephaestus-core "Separate-omitted-mass-from-the-error-of-a-normalized-average.lingua#r_0011B5DB162366534860F2D9BE") { r_009B007FED35B6ED29D669B6FA
+Consider ordered pairs (i,j) of nonnegative integers and let n=i+j. There are n+1 such pairs for each n: choose i from 0 through n and then j=n−i. This is the shared finite-counting argument in [Count by disjoint cases products and explicit bijections](Count-by-disjoint-cases-products-and-explicit-bijections.lingua#r_00310CC3F2A2C1C4D9E6CF5397). Now stipulate a weight r^(i+j) for each pair, with 0≤r<1. The combined weight at total n is w_n=(n+1)r^n. The counts alone did not choose these weights or establish a physical probability law.
+
+Using the justified geometric moment identities from [Justify exchanging a limit with an integral or derivative](Justify-exchanging-a-limit-with-an-integral-or-derivative.lingua#r_001E30FA67E83674F48C0427F2), with d=1−r, the total weight is Z=Σ(n+1)r^n=1/d². It is positive and finite. Define p_n=w_n/Z; these are nonnegative and sum to one, so they specify a probability distribution on n=0,1,…. At r=0, p_0=1 and every other probability is zero; the term r^0 is one by the power convention. At r=1 the weights have no finite sum, and at r>1 they do not even vanish. Negative r gives signed weights and is not a probability parameter for this model.
+
+The unnormalized first-moment sum is Σn(n+1)r^n=2r/d³, giving mean μ=2r/d. For a second moment one more justified geometric derivative, with the same polynomial-geometric uniform bounds, gives Σn(n−1)(n−2)r^n=6r³/d⁴. Express n²(n+1)=n(n−1)(n−2)+4n(n−1)+2n. Dividing the resulting sum by Z yields E[n²]=2r(1+2r)/d² and variance E[n²]−μ²=2r/d². The nonnegative variance is a consequence of this distribution, not a measured fluctuation of an apparatus.
+
+There is another account of normalization. Let I and J be independent with probabilities P(I=i)=d r^i and P(J=j)=d r^j. Their joint probabilities are d²r^(i+j); adding the n+1 disjoint pairs with total n gives p_n. This representation is an independently specified probability construction. Independence is a premise here, not inferred merely from seeing two coordinates. A different joint weighting can change the distribution even when the same pair counts remain.
+
+As r approaches one from below, both Z and the mean grow without bound. A finite cutoff may still produce a perfectly finite normalized table at r=1, but that table is a different finite-support model. It is not evidence that the infinite model normalizes. This boundary matters when a later physical theory proposes weights from energies or constraints; those physical premises must be established separately.
+
+**Work:** derive all normalization and moment formulas with their domains. Reconstruct p_0,p_1,p_2 for r=1/2 and compare the mean of I+J with the direct grouped sum. Change the rule to weight only pairs with i=j and derive the resulting normalizer. Explain what additional reasoning or observations would be needed before using either construction to describe a physical ensemble.
+
+**Continue:** [Separate omitted mass from the error of a normalized average](Separate-omitted-mass-from-the-error-of-a-normalized-average.lingua#r_0011B5DB162366534860F2D9BE).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_009B007FED35B6ED29D669B6FA

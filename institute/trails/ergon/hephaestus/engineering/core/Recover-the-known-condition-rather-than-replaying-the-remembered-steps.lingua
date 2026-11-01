@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Recover the known condition rather than replaying the remembered steps (@engineering-operation-recovery: 0, is #chapter, #hephaestus-core "Hand-over-current-state-pending-work-and-the-evidence-needed-to-continue.lingua#r_00F01DCD35E9090CCE1C4098DD") { r_004A1CF19B7D055580CD2CFF6C
+Interruption can invalidate a remembered sequence while leaving work partly completed. Reuse [Connect restored configuration to a defensible service claim](Connect-restored-configuration-to-a-defensible-service-claim.lingua#r_00ACDDD0A8E0E505FCE7A8CADC) and [Check authority for the particular object and effect when it is used](../../computer-science/core/Check-authority-for-the-particular-object-and-effect-when-it-is-used.lingua#r_00250BA8CBCE73EF3045E82456). Restoring permission to act is different from restoring a useful physical configuration. A restart command is also different from evidence that the original task can continue correctly.
+
+In the paper model, suppose the person remembers requesting a card but does not know whether it reached the buffer. Hold leaves two possibilities: incoming with a pending request, or buffered with no pending request. Blindly canceling is not the same as returning a card. Once an exact observation distinguishes them, cancel clears the pending flag in the first case; recover returns the card to incoming in the second. Both reach (2,0,0,false,hold) for this particular history. Resume then has a defined precondition and the requested work can be reconsidered deliberately.
+
+That convergence depends on the unchanged two-card account. If one card has already finished, recovery returns to a state with one finished card, not the original all-incoming state. No allowed action reduces F. Thus the recovery invariant preserves completed work rather than erasing it to make the display resemble startup. A rival reset that sets all counts to their initial values without relocating cards destroys the account. A rival resume that silently clears a pending request changes intent. Neither is a repair merely because the next control becomes available.
+
+For a general known hold state, cancel if P is true; that preserves the counts and leaves P false. If B=1, recover that card; this increases I by one, sets B to zero and leaves F and P unchanged. After at most two commands, the state is held with P false and B zero, so resume is permitted. All intermediate counts remain nonnegative and sum to two. This proves a recovery path for every legal held state, given exact knowledge and successful command execution; it does not erase finished work or prove the information is available.
+
+The model assumes a hold action takes effect immediately and that state observations are exact. In real equipment those assumptions require specific physical evidence. A stopped indicator need not establish absence of motion, energy, hazardous material or another controller's command. Keep the actual domain's protection, isolation and return-to-service requirements in its branch; the paper rules are not a field procedure.
+
+**Work:** develop a recovery table for every reachable hold state, stating observations, permitted actions, resulting state and preserved finished count. Prove there exists a finite cancel/recover sequence reaching a resumable state under the model. This is an existence claim; it does not prove a person will identify or execute it. State the additional observations and competence evidence needed to support that wider claim. Then alter the buffer capacity or card-loss premise and identify which arguments must be redone.
+
+**Continue:** [Hand over current state pending work and the evidence needed to continue](Hand-over-current-state-pending-work-and-the-evidence-needed-to-continue.lingua#r_00F01DCD35E9090CCE1C4098DD).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_004A1CF19B7D055580CD2CFF6C

@@ -1,0 +1,21 @@
+Import "../Inquiry.lingua"
+
+Derive affine propagation and common source cancellation (@inquiry-affine-uncertainty: 0, is #chapter, #hephaestus-core "Build-a-local-sensitivity-approximation-without-hiding-its-remainder.lingua#r_00A188972204572AAE92C46790") { r_0048ADA9C3341D57921ECA3B7D
+Let Z=b+Σ_i a_iX_i with fixed coefficients and offsets. Its mean is b+Σ_i a_iμ_i. Subtract that mean, square and average to obtain the exact identity
+
+var(Z)=Σ_iΣ_j a_i a_j cov(X_i,X_j).
+
+No independence assumption was used. For two inputs the cross contribution appears twice: a₁²var(X₁)+a₂²var(X₂)+2a₁a₂cov(X₁,X₂). Each term must have the square of Z's unit. For a temperature difference, coefficients +1 and −1 are dimensionless and the result has K² units. A negative coefficient changes the cross term's sign, not the nonnegativity of a variance.
+
+Write the covariances as a matrix Σ. For any real coefficient vector a, aᵀΣa is the expectation of a squared centered combination and therefore nonnegative. This is the meaning of positive semidefinite. Symmetry alone is insufficient. For two variables, var(X)var(Y)−cov(X,Y)²≥0: if var(Y)>0, minimize the nonnegative variance of X−tY at t=cov(X,Y)/var(Y); if var(Y)=0, Y is constant on positive-weight outcomes and covariance is zero. Thus absolute correlation cannot exceed one. A singular covariance can be valid when an exact relationship forces one combination to be constant.
+
+In the shared-temperature model, D=X−Y=2+E₁−E₂; S cancels before any propagation. var(D)=5/16+5/16−2(1/4)=1/8 K². The sum X+Y instead contains 2S and has variance 9/8 K². With independent offsets the difference variance is 5/8 K². Using the independent formula in the shared model would overstate difference uncertainty and understate sum uncertainty. This is a consequence of the particular coefficient signs, not a general rule that correlation always helps or harms.
+
+Repeated readings need the same care. Suppose each reading is μ+S+E_j, where S is common with variance v_s and the E_j are mutually independent, independent of S, centered and have variance v_e. The average of n readings has variance v_s+v_e/n. Derive this by keeping S once and averaging only the E_j. Increasing n does not remove the shared contribution. If the E_j are themselves correlated, their cross terms remain too; a formula containing only n cannot establish the relevant effective information.
+
+**Practice:** derive the sum/difference results from primitive variables and again from the covariance matrix. Show a rank-one valid covariance using X=Y, then reject a proposed covariance whose off-diagonal magnitude exceeds the product of standard deviations. Relate this exact probability calculation to the engineering assembly's hard-bound cancellation without treating the two descriptions as interchangeable.
+
+**Continue:** [Build a local sensitivity approximation without hiding its remainder](Build-a-local-sensitivity-approximation-without-hiding-its-remainder.lingua#r_00A188972204572AAE92C46790).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0048ADA9C3341D57921ECA3B7D

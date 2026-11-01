@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Boundary work, quasistatic paths and irreversibility (@th-boundary-work: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863") { r_3FJYGFE1APRF36P7GC0QZYCW0P
+Boundary work, quasistatic paths and irreversibility (@th-boundary-work: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863", #hephaestus-core "../../core/Investigate-particle-moments-and-thermal-paths-with-independent-accounts.lingua#r_09AD947C70D415B571ECFEB02F") { r_3FJYGFE1APRF36P7GC0QZYCW0P
 **Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), closed systems and irreversibility; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), work, reversible paths and free expansion.
 
 Mechanical boundary work depends on the actual external force/displacement. For an appropriate piston model it is an integral of external pressure against volume change. Substituting the system's equilibrium pressure requires the relevant quasistatic mechanical conditions; a free expansion does not deliver the reversible isothermal work.
@@ -12,4 +12,9 @@ A slow process can still dissipate through friction, finite temperature differen
 **Continue:** [Use a gas model with defined pressure, temperature, volume, and composition](../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Third physics-block reading:** Use the force/displacement, external-pressure and quasistatic/reversible distinctions now, with the preceding polynomial/affine path example. The logarithmic reversible-isothermal formula and quantitative entropy analysis require their further mathematical/thermal preparation and are not prerequisites for this common study. Preserve the original free-expansion comparison and complete specialist assignments.
+
+**Continue in the third physics block:** [Investigate particle moments and thermal paths with independent accounts](../../core/Investigate-particle-moments-and-thermal-paths-with-independent-accounts.lingua#r_09AD947C70D415B571ECFEB02F).
+
 } r_3FJYGFE1APRF36P7GC0QZYCW0P

@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Infer galactic structure and gravitating mass from declared geometry (@physics-astronomy-galaxies: 0, is #chapter, #hephaestus-core "Distinguish-cosmic-redshift-from-local-velocity-and-distance.lingua#r_0058DFF60802A489E7233DDDCF") { r_001D2128B301B01C518E71DBBB
+A galaxy combines stars, gas, dust, compact objects and gravitating components that need not emit detectable light. Observations provide angular images, fluxes, spectra and motion information; a three-dimensional mass distribution is an inference. Distance, inclination, attenuation and the population's light per unit mass affect that inference. A beautiful image does not show every mass component or every velocity direction.
+
+In a spherical Newtonian model, a circular test orbit at radius r has v_c²=GM(<r)/r. Thus M(<r)=rv_c²/G. This uses the shell theorem and circular equilibrium; it is not the general force formula for a thin disk or an eccentric tracer population. If all gravitating mass is inside a fixed outer radius, then beyond it v_c∝r^(−1/2). If instead v_c=v₀ is constant over a radial range, the spherical model requires M(<r)=v₀²r/G and ρ(r)=v₀²/(4πGr²) there. The last formula follows from differentiating enclosed mass, and must not be extended to r=0 or infinity without boundaries.
+
+This calculation explains how a rotation curve can test a luminous-matter-only model, given an independent conversion from light to mass and the dynamics assumptions. It does not identify a dark-matter particle or eliminate all measurement/model alternatives by algebra. Independent lensing, tracer populations and other constraints can probe related gravitating structure with different assumptions. A line-of-sight speed must be corrected for systemic motion and projection before being called circular speed.
+
+Consider original normalized circular speeds v=2 at r=1 and r=2 with G=1. The inferred enclosed masses are 4 and 8. A fixed point mass fitted to the first datum predicts speed √2 at r=2, not 2. The second datum therefore rejects that specific fixed-mass circular model if its observational premises hold. A distance rescaling changes both physical radius and inferred mass; residual agreement alone does not calibrate an absolute scale.
+
+**Work and reading:** derive the mass/density accounts and identify the assumptions lost for a disk, pressure-supported system or nonequilibrium tracer. Use selected 25.3 of [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F) as a starting point, keeping its simplified geometry explicit. Build a comparison table of imaging, spectroscopy and dynamics: measured quantity, inferred quantity, calibration and main ambiguity. Full galactic dynamics, lensing and dark-matter research belong to branches.
+
+**Continue:** [Distinguish cosmic redshift from local velocity and distance](Distinguish-cosmic-redshift-from-local-velocity-and-distance.lingua#r_0058DFF60802A489E7233DDDCF).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_001D2128B301B01C518E71DBBB

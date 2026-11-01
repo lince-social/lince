@@ -1,0 +1,20 @@
+Import "../Engineering.lingua"
+
+Review material response compatibility and realization evidence (@engineering-material-review: 0, is #chapter, #hephaestus-core "Electrical-function-ports-and-requirements.lingua#r_000F14ED9998133B2218854532") { r_00BDADE402F09A1363C7851E3C
+Begin from a function and observable requirement. Distinguish material modulus, component stiffness, strength and the evidence for an actual material state. Identify reference geometry, load path, boundary constraints, local deformation and total observed movement. Explain why a dimensional fit or an exact calculation does not establish all aspects of intended use.
+
+Derive the uniform axial law from the stated stress/strain definitions and empirical constitutive premise. Explain the units and signs of free extension, mechanical strain and force. Reconstruct parallel load sharing and series compliance from their distinct compatibility conditions. Identify when force balance is insufficient, when a displacement is only relative, and which omitted mechanisms can invalidate the simple account.
+
+Derive stored elastic energy, the fixed-load quadratic minimum and the work between two force levels at fixed mismatch. Account for nonzero energy at zero total external force and for support energy. Explain why these proofs cover only the permitted one-dimensional model and do not establish strength, buckling resistance or behavior during changing material/free-strain conditions.
+
+Reproduce the original member forces, strains, energy and support movement using both closed expressions and independent coupled equations. Prove the actuator-observation ambiguity and specify an informative local measurement. Show why the nominal 150 μm screen differs from the bounded result; justify the monotonic endpoint argument and the 20% stiffness alternative. Record which requirements and physical evidence remain unaddressed.
+
+Carry one revised case through requirement, model, parameters, realization description, independent calculation, proposed observation and criticism. Read the primary modules progressively and defend the assumptions in an unfamiliar example. Assigned full texts, laboratory work and independent scholarly reconstruction remain learner demands, not claimed author accomplishments.
+
+The broad engineering core remains unfinished. Electrical and transport systems, production and realization across disciplines, controls, reliability, human use, environmental/resource accounts and advanced independent work still need connected development. Continue inquiry's continuous probability and estimation at comparable depth, then review preparation across all six areas before extending specialized branches.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Continue in the fifth common pass:** [Translate an electrical function into source connection and load requirements](Electrical-function-ports-and-requirements.lingua#r_000F14ED9998133B2218854532). The fifth engineering block develops electrical requirements, nodal/port models, power and component limits, parameter bounds, alternatives and observation evidence. Preserve the earlier function, geometry, transport and material investigations. Inquiry follows at comparable depth before specialized branches.
+
+} r_00BDADE402F09A1363C7851E3C

@@ -1,0 +1,330 @@
+Import "../Mathematics.lingua"
+
+Investigate complex operators coordinate changes and certified evolution (@math-operator-study: 0, is #chapter, #hephaestus-core "Review-finite-complex-geometry-and-evolution-before-assigning-physical-meaning.lingua#r_00830E077A601AFC41FCE357A6") { r_00DB3E45916EBAD5985DC5A91D
+Build and defend an original finite investigation using the earlier [Investigate periodic states exact rotations and sampling ambiguity](Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409) and [Investigate inconsistent readings lost directions and projected fits](Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B). Extract their `periodic_study.py` and `linear_space_study.py` programs unchanged. The first supplies exact complex multiplication/conjugation/norm helpers; the second supplies a separate real-matrix arithmetic implementation. Extract the two programs below into that same working directory and run `python3 operator_checks.py`. Only Python's standard library is required. Do not run with assertions disabled: the checking program uses `assert` to enforce its claims.
+
+**Develop the argument before the computation:** declare complex scalar convention, dimensions, basis, metric, generator and initial value. Prove the inner-product, adjoint, projector and evolution identities for the stated domains. Then specialize the two-coordinate family to d=3/5,z=4i/5. Reconstruct both its exact eigenvectors and projectors, and solve its coupled initial problem in the standard basis and the eigenbasis. Interpret every conserved quantity as a mathematical property of the model before considering an application.
+
+**Source reconstruction and extension:** reproduce Axler's real rectangular-adjoint example 7.2 and the MIT note's nilpotent example 3B and initial-value example 3C, with exact matrices and an independent derivative check. Then vary the original complex family through rational u,v, change to both unitary and oblique coordinates, and preserve the correct metric. These explicit source calculations are bounded reconstructions; the complex model, program and test families here are original and are not copied source software.
+
+**Independent evidence:** the checker converts complex maps to real block matrices and calls the existing real implementation for products, adjoints and actions. It checks a family of exact Hermitian involutions and rational unit-circle evolutions, including orthogonal projectors, composition and invariant quadratic forms. For the matrix exponential it compares the finite polynomial with a separate scalar sine/cosine Taylor construction through degree 60. Each scalar remainder is at most |t|⁶¹/61!, using the established finite trigonometric remainder. The resulting closed-form matrix enclosure has row-bound radius at most that remainder times (1+M(H)). Adding the enclosure radius to the measured polynomial difference yields a completely rational upper bound, checked against the independent exponential-series tail certificate. No rounded transcendental value is treated as exact.
+
+**Failed rivals and revision:** attempt ordinary transpose in place of adjoint, unweighted norm after the oblique basis change, swapped transformation order, and Euler steps interpreted as exact evolution. Find a concrete witness for each failure and explain why an apparently successful case could miss it. Compare the non-diagonalizable nilpotent model; do not repair it by inventing absent eigenvectors. Revise the argument or calculation that actually failed rather than changing the target after seeing its result.
+
+**Deliver:** a derivation with all assumptions, exact source reconstruction, changed model/basis, error certificate, independent computational checks and a criticism/revision record. Have another reader reproduce the quantities from the declared data. Distinguish general mathematical proofs, finite implementation checks and any future physical observations. Passing the author's checks does not demonstrate a learner's proof competence or validate a physical quantum model.
+
+The teaching interface accepts exact integers/Fractions and complex pairs, nonempty matrices up to six rows/columns, and polynomial degrees through 128. It rejects floating inputs, malformed dimensions, non-Hermitian/non-involutory projector requests and unavailable geometric-tail certificates. These bounds keep the executable example finite; the proved finite-dimensional identities are not restricted to six coordinates. Large rational numerators can still be expensive. No resource-budget or production numerical-library claim is made.
+
+```python file=operator_study.py
+from fractions import Fraction as F
+from math import factorial
+from periodic_study import multiply as cmul, conjugate, norm_squared
+
+
+def rational(x):
+    if type(x) is not int and type(x) is not F:
+        raise ValueError('exact integer or Fraction required')
+    return F(x)
+
+
+def scalar(x):
+    if type(x) in (int, F):
+        return rational(x), F(0)
+    if type(x) not in (tuple, list) or len(x) != 2:
+        raise ValueError('complex value requires two exact components')
+    return tuple(rational(v) for v in x)
+
+
+def matrix(a):
+    if type(a) not in (tuple, list) or not 1 <= len(a) <= 6:
+        raise ValueError('one to six rows required')
+    if any(type(row) not in (tuple, list) for row in a):
+        raise ValueError('rows required')
+    n = len(a[0])
+    if not 1 <= n <= 6 or any(len(row) != n for row in a):
+        raise ValueError('one to six equal length columns required')
+    return tuple(tuple(scalar(x) for x in row) for row in a)
+
+
+def identity(n):
+    if type(n) is not int or not 1 <= n <= 6:
+        raise ValueError('dimension must be an integer from one to six')
+    return matrix([[int(i == j) for j in range(n)] for i in range(n)])
+
+
+def add(a, b):
+    a, b = matrix(a), matrix(b)
+    if (len(a), len(a[0])) != (len(b), len(b[0])):
+        raise ValueError('matching shapes required')
+    return tuple(tuple((x[0]+y[0], x[1]+y[1]) for x, y in zip(r, s)) for r, s in zip(a, b))
+
+
+def scale(c, a):
+    c, a = scalar(c), matrix(a)
+    return tuple(tuple(cmul(c, x) for x in row) for row in a)
+
+
+def adjoint(a):
+    return tuple(tuple(conjugate(x) for x in col) for col in zip(*matrix(a)))
+
+
+def multiply(a, b):
+    a, b = matrix(a), matrix(b)
+    if len(a[0]) != len(b):
+        raise ValueError('inner dimensions must agree')
+    result = []
+    for row in a:
+        out = []
+        for col in zip(*b):
+            terms = [cmul(x, y) for x, y in zip(row, col)]
+            out.append(tuple(sum((v[k] for v in terms), F(0)) for k in (0, 1)))
+        result.append(tuple(out))
+    return tuple(result)
+
+
+def column(x):
+    if type(x) not in (list, tuple):
+        raise ValueError('vector coordinates required')
+    return matrix([[v] for v in x])
+
+
+def action(a, x):
+    return tuple(row[0] for row in multiply(a, column(x)))
+
+
+def inner(x, y):
+    return multiply(adjoint(column(x)), column(y))[0][0]
+
+
+def squared_length(x):
+    return inner(x, x)[0]
+
+
+def bound(a):
+    return max(sum((abs(x[0])+abs(x[1]) for x in row), F(0)) for row in matrix(a))
+
+
+def exponential_partial(a, t, degree):
+    a, t = matrix(a), rational(t)
+    if len(a) != len(a[0]):
+        raise ValueError('square matrix required')
+    if type(degree) is not int or not 0 <= degree <= 128:
+        raise ValueError('degree must be an integer from zero to 128')
+    b = abs(t)*bound(a)
+    ratio = b/(degree+2)
+    if ratio >= 1:
+        raise ValueError('increase degree until the tail ratio is below one')
+    term = total = identity(len(a))
+    for k in range(1, degree+1):
+        term = scale(t/k, multiply(a, term))
+        total = add(total, term)
+    tail = b**(degree+1)/factorial(degree+1)/(1-ratio)
+    return total, tail
+
+
+def involution(u, v):
+    u, v = rational(u), rational(v)
+    denominator = 1+u*u+v*v
+    d = (1-u*u-v*v)/denominator
+    z = 2*u/denominator, 2*v/denominator
+    return matrix([[d, z], [conjugate(z), -d]])
+
+
+def projectors(h):
+    h = matrix(h)
+    if len(h) != len(h[0]) or adjoint(h) != h or multiply(h, h) != identity(len(h)):
+        raise ValueError('Hermitian involution required')
+    return scale(F(1, 2), add(identity(len(h)), h)), scale(F(1, 2), add(identity(len(h)), scale(-1, h)))
+
+
+def circle(q):
+    q = rational(q)
+    return (1-q*q)/(1+q*q), 2*q/(1+q*q)
+
+
+def evolution(h, c, s):
+    projectors(h)
+    c, s = rational(c), rational(s)
+    if c*c+s*s != 1:
+        raise ValueError('exact point on the unit circle required')
+    return add(scale(c, identity(len(h))), scale((0, -s), h))
+```
+
+```python file=operator_checks.py
+from fractions import Fraction as F
+from math import factorial
+import json
+import operator_study as o
+import linear_space_study as real
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    assert condition
+    checks += 1
+
+
+def block(a):
+    a = o.matrix(a)
+    return tuple(tuple(z[0] for z in row)+tuple(-z[1] for z in row) for row in a)+tuple(tuple(z[1] for z in row)+tuple(z[0] for z in row) for row in a)
+
+
+def coordinates(x):
+    x = tuple(o.scalar(z) for z in x)
+    return tuple(z[0] for z in x)+tuple(z[1] for z in x)
+
+
+def sample(m, n, seed):
+    return [[(F((i+2*j+seed) % 7-3, 3), F((2*i-j+seed) % 5-2, 4)) for j in range(n)] for i in range(m)]
+
+
+rectangular = 0
+for m in range(1, 5):
+    for n in range(1, 5):
+        for k in range(1, 5):
+            a, b = sample(m, n, k), sample(n, k, m)
+            x = [row[0] for row in sample(n, 1, k)]
+            y = [row[0] for row in sample(m, 1, n)]
+            check(block(o.multiply(a, b)) == real.multiply(block(a), block(b)))
+            check(block(o.adjoint(a)) == real.transpose(block(a)))
+            check(coordinates(o.action(a, x)) == real.action(block(a), coordinates(x)))
+            check(o.inner(o.action(a, x), y) == o.inner(x, o.action(o.adjoint(a), y)))
+            check(o.adjoint(o.multiply(a, b)) == o.multiply(o.adjoint(b), o.adjoint(a)))
+            check(o.bound(o.multiply(a, b)) <= o.bound(a)*o.bound(b))
+            check(o.norm_squared(o.inner(x, x)) == o.squared_length(x)**2)
+            rectangular += 1
+
+h = o.involution(0, F(1, 2))
+check(h == o.matrix([[F(3, 5), (0, F(4, 5))], [(0, F(-4, 5)), F(-3, 5)]]))
+fplus, fminus = [2, (0, -1)], [1, (0, 2)]
+check(o.action(h, fplus) == tuple(o.scalar(z) for z in fplus))
+check(o.action(h, fminus) == tuple(o.cmul((-1, 0), o.scalar(z)) for z in fminus))
+check(o.inner(fplus, fminus) == (0, 0))
+check(o.squared_length(fplus) == o.squared_length(fminus) == 5)
+pp, pm = o.projectors(h)
+check(pp == o.scale(F(1, 5), o.multiply(o.column(fplus), o.adjoint(o.column(fplus)))))
+
+projection_cases = 0
+for j in range(-5, 6):
+    v = [1, (F(j, 3), F(1, 2))]
+    x = [(F(j, 4), F(2, 3)), 2]
+    coefficient = tuple(z/o.squared_length(v) for z in o.inner(v, x))
+    projected = tuple(o.cmul(coefficient, o.scalar(z)) for z in v)
+    residual = tuple((a[0]-b[0], a[1]-b[1]) for a, b in zip(map(o.scalar, x), projected))
+    check(o.inner(v, residual) == (0, 0))
+    check(o.squared_length(x) == o.squared_length(projected)+o.squared_length(residual))
+    check(o.norm_squared(o.inner(v, x)) <= o.squared_length(v)*o.squared_length(x))
+    projection_cases += 1
+
+families = phases = 0
+zero = o.matrix([[0, 0], [0, 0]])
+for u in [F(j, 3) for j in range(-4, 5)]:
+    for v in [F(j, 4) for j in range(-4, 5)]:
+        a = o.involution(u, v)
+        p, q = o.projectors(a)
+        check(o.adjoint(a) == a)
+        check(o.multiply(a, a) == o.identity(2))
+        check(o.multiply(p, p) == p and o.multiply(q, q) == q)
+        check(o.multiply(p, q) == o.multiply(q, p) == zero)
+        check(o.add(p, q) == o.identity(2))
+        check(o.multiply(a, p) == p and o.multiply(a, q) == o.scale(-1, q))
+        for z in [F(-2), F(-1, 3), F(0), F(2, 5), F(1)]:
+            c, s = o.circle(z)
+            unitary = o.evolution(a, c, s)
+            x = [1, (u, v)]
+            moved = o.action(unitary, x)
+            check(o.multiply(o.adjoint(unitary), unitary) == o.identity(2))
+            check(o.squared_length(moved) == o.squared_length(x))
+            check(o.inner(moved, o.action(a, moved)) == o.inner(x, o.action(a, x)))
+            d, t = o.circle(F(1, 3))
+            check(o.multiply(o.evolution(a, d, t), unitary) == o.evolution(a, c*d-s*t, s*d+c*t))
+            phases += 1
+        families += 1
+
+s = o.matrix([[1, 1], [0, 1]])
+si = o.matrix([[1, -1], [0, 1]])
+g = o.multiply(o.adjoint(s), s)
+hprime = o.multiply(o.multiply(si, h), s)
+check(o.multiply(o.adjoint(hprime), g) == o.multiply(g, hprime))
+check(o.adjoint(hprime) != hprime)
+x = [2, 1]
+xprime = o.action(si, x)
+check(o.inner(xprime, o.action(g, xprime)) == o.inner(x, x))
+check(o.squared_length(xprime) != o.squared_length(x))
+q = o.matrix([[F(3, 5), (0, F(4, 5))], [(0, F(4, 5)), F(3, 5)]])
+check(o.multiply(o.adjoint(q), q) == o.identity(2))
+check(o.adjoint(o.multiply(o.multiply(o.adjoint(q), h), q)) == o.multiply(o.multiply(o.adjoint(q), h), q))
+
+hx, hz = o.matrix([[0, 1], [1, 0]]), o.matrix([[1, 0], [0, -1]])
+c, s = F(3, 5), F(4, 5)
+ux, uz = o.evolution(hx, c, s), o.evolution(hz, c, s)
+x = [F(3, 5), F(4, 5)]
+first = o.action(o.multiply(uz, ux), x)
+second = o.action(o.multiply(ux, uz), x)
+check(first != second)
+check(o.norm_squared(first[0]) != o.norm_squared(second[0]))
+for n in range(1, 13):
+    step = o.add(o.identity(2), o.scale((0, -F(1, n)), h))
+    moved = tuple(o.scalar(z) for z in x)
+    for _ in range(n):
+        moved = o.action(step, moved)
+    check(o.squared_length(moved) == (1+F(1, n*n))**n)
+
+published = o.matrix([[0, 1, 3], [2, 0, 0]])
+check(o.adjoint(published) == o.matrix([[0, 2], [1, 0], [3, 0]]))
+nilpotent = o.matrix([[0, 1], [0, 0]])
+for t in [F(j, 3) for j in range(-12, 13)]:
+    partial, tail = o.exponential_partial(nilpotent, t, 8)
+    check(partial == o.matrix([[1, t], [0, 1]]))
+    check(o.multiply(o.add(o.identity(2), o.scale(t, nilpotent)), o.add(o.identity(2), o.scale(-t, nilpotent))) == o.identity(2))
+
+source_cases = 0
+source_a = o.matrix([[2, 1], [0, 2]])
+for t in [F(j, 8) for j in range(-8, 9)]:
+    polynomial = [1+2*t, 2]
+    derivative = [2+2*polynomial[0], 2*polynomial[1]]
+    check(o.action(source_a, polynomial) == tuple(o.scalar(z) for z in derivative))
+    degree = 12
+    diagonal = sum(((2*t)**k/factorial(k) for k in range(degree+1)), F(0))
+    offdiagonal = sum((k*2**(k-1)*t**k/factorial(k) for k in range(1, degree+1)), F(0))
+    partial, _ = o.exponential_partial(source_a, t, degree)
+    check(partial == o.matrix([[diagonal, offdiagonal], [0, diagonal]]))
+    source_cases += 1
+original = [[(1, 2), 3], [4, (5, -6)]]
+saved = [row[:] for row in original]
+o.exponential_partial(original, F(1, 10), 12)
+check(original == saved)
+
+certificates = 0
+for t in [F(j, 4) for j in range(-8, 9)]:
+    sine = sum(((-1)**j*t**(2*j+1)/factorial(2*j+1) for j in range(30)), F(0))
+    cosine = sum(((-1)**j*t**(2*j)/factorial(2*j) for j in range(31)), F(0))
+    remainder = abs(t)**61/factorial(61)
+    closed = o.add(o.scale(cosine, o.identity(2)), o.scale((0, -sine), h))
+    uncertainty = remainder*(1+o.bound(h))
+    for degree in [4, 8, 12, 20]:
+        partial, tail = o.exponential_partial(o.scale((0, -1), h), t, degree)
+        distance = o.bound(o.add(partial, o.scale(-1, closed)))
+        check(distance+uncertainty <= tail if t else distance == tail == uncertainty == 0)
+        certificates += 1
+
+bad = [lambda: o.scalar(True), lambda: o.scalar(0.1), lambda: o.scalar('1'), lambda: o.scalar((0, False)), lambda: o.matrix([]), lambda: o.matrix([[]]), lambda: o.matrix([[1], [1, 2]]), lambda: o.matrix([[1]]*7), lambda: o.identity(True), lambda: o.identity(0), lambda: o.multiply([[1, 2]], [[1, 2]]), lambda: o.add([[1]], [[1, 2]]), lambda: o.action([[1]], [1, 2]), lambda: o.exponential_partial([[1, 2]], 1, 8), lambda: o.exponential_partial([[1]], 1, True), lambda: o.exponential_partial([[1]], 1, 129), lambda: o.exponential_partial([[1]], 2, 0), lambda: o.exponential_partial([[1]], 0.5, 8), lambda: o.projectors([[0, 1], [0, 0]]), lambda: o.evolution(h, 1, 1)]
+for fn in bad:
+    try:
+        fn()
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+
+print(json.dumps({'checks': checks, 'rectangular_compositions': rectangular, 'projection_cases': projection_cases, 'published_coupled_cases': source_cases, 'hermitian_involutions': families, 'exact_evolutions': phases, 'certified_exponential_cases': certificates, 'rejected_inputs': len(bad), 'ordered_first_component_norms': [str(o.norm_squared(first[0])), str(o.norm_squared(second[0]))]}))
+```
+
+**Author verification:** Python 3.14.8 passed 2,787 assertions, including 64 rectangular complex compositions compared with a separate real block implementation, 11 projection cases, 81 Hermitian involutions and 405 exact unit-circle evolutions, 68 independently enclosed exponential cases, 17 published coupled-system checks, nilpotent/adjoint reconstructions, changed metrics/order, Euler invariant error and 20 rejected requests. General mathematical proofs remain separate from finite checking. No learner competence, physical experiment or quantum postulate is established by this run.
+
+**Continue:** [Review finite complex geometry and evolution before assigning physical meaning](Review-finite-complex-geometry-and-evolution-before-assigning-physical-meaning.lingua#r_00830E077A601AFC41FCE357A6).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00DB3E45916EBAD5985DC5A91D

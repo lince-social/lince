@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Investigate error in the task equipment and working conditions (@engineering-operation-error: 0, is #chapter, #hephaestus-core "Recover-the-known-condition-rather-than-replaying-the-remembered-steps.lingua#r_004A1CF19B7D055580CD2CFF6C") { r_00D90123A8C5984D3F7984EC40
+[HSE human failure procedures and shift handover](../sources/HSE-human-failure-procedures-and-shift-handover.lingua#r_005E57B92B1E14D9A4710D1943) distinguishes slips/lapses, mistaken decisions and deliberate departures from procedures, while warning against stopping an investigation at operator error. Use these distinctions as questions about evidence, not labels assigned from an outcome alone. Several mechanisms can produce the same visible mistake, and a procedure may itself be poorly suited to the work.
+
+In the card example, consider three original accounts of an omitted pending marker. Someone knows a request was accepted but forgets to pass the marker after an interruption; someone believes acceptance already means completion and removes it intentionally; someone knows the rule but bypasses it because the marker is kept out of reach and the group rewards uninterrupted speed. The resulting board can look similar. Explanations, task observation, interface layout and work constraints discriminate among these accounts; the final card count does not.
+
+Compare repairs against the mechanism. Making the request marker persist with the board can reduce reliance on remembering a separate message. Distinguishing requested, buffered and finished states can challenge the mistaken interpretation. Moving needed materials within the ordinary task flow and revising unrealistic scheduling can address reasons for a workaround. Each is a proposal to evaluate, not a proven effect on people. The finite model checks whether missing information changes available actions, not how frequently someone will omit it.
+
+Distinguish an indication, an attention request and an action restriction. An indication reports a measured or inferred condition. An alarm calls for attention and an appropriate response. A restriction prevents a modeled action under specified conditions. Reusing the same uncertain input for all three does not supply independent evidence. In this exercise the resume precondition is enforced by the program, while the person's handover must still explain why it is unavailable and how to resolve the state.
+
+**Work:** preserve an as-found account before proposing a cause. Write two competing explanations for a rejected resume, identify missing evidence and propose a benign discriminating observation. Compare a training-only response with a design revision and state what each could address. Reuse [Review causal conclusions with their design assumptions and remaining ambiguity](../../inquiry/core/Review-causal-conclusions-with-their-design-assumptions-and-remaining-ambiguity.lingua#r_0075B44A727D0D560E9EDE6798) before attributing improved performance to an intervention. Do not assign precise error probabilities without an empirical basis and an applicable model.
+
+**Continue:** [Recover the known condition rather than replaying the remembered steps](Recover-the-known-condition-rather-than-replaying-the-remembered-steps.lingua#r_004A1CF19B7D055580CD2CFF6C).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00D90123A8C5984D3F7984EC40

@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Locate an object with an origin, axis and clock (@physics-location-clock: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2") { r_086B1D7D3642FCD5CB83EF8FB4
+In a one-dimensional description, choose an origin and a positive direction. The coordinate x is a signed distance from that origin. A marked object at x = −1 m is one metre in the negative direction; the sign does not describe a negative physical length. Record which point on the object is tracked. A rotating body does not give every marked point the same displacement.
+
+Suppose a marker is at −1 m when a clock reads 2 s, at 5 m at 5 s, and at 2 m at 7 s. Its successive displacements are +6 m and −3 m. Its total displacement is +3 m. If it moves monotonically between those observations, its travelled distance is 6 + 3 = 9 m. Without that assumption, the same samples could hide additional forward and backward motion, making the total distance larger.
+
+Moving the coordinate origin changes position values but not displacement between the same events. If the new origin lies at old coordinate +2 m, use x′ = x − 2 m. The three coordinates become −3, 3 and 0 m, and their differences remain +6 and −3 m. Reversing the axis changes signs while preserving travelled distances. Shifting a clock's zero changes time readings but not elapsed intervals measured by the same clock model.
+
+Define Δx as final position minus initial position and Δt as final time minus initial time. The Greek letter Δ denotes a change. A displacement without its direction, or an interval without its endpoints, can be ambiguous. A video frame number becomes time only after its timing convention is known; image coordinates become physical lengths only after a valid scale and geometry are supplied.
+
+**Work:** draw the three observations on an axis and in a table. Translate the origin, reverse the axis and shift the time zero separately. Identify what changes and what stays the same. Construct an unobserved round trip between two samples that leaves all recorded coordinates unchanged.
+
+**Read:** use [University Physics Volume 1](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 3.1, with its position and displacement exercises. The next shared graph lesson will turn the table into a visual account without pretending that an interpolated line is an observation.
+
+**Before the shared graph lesson:** work its linear axes, slope, interpolation and rectangle-area exercises now. Its logarithmic-axis comparison belongs after the exponential/logarithmic lesson in the quantitative formation; record that later task instead of assuming logarithms at this entrance.
+
+**Continue:** [Read graphs, interpolate, and question a visual claim](../../inquiry/quantitative-literacy/foundations/Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_086B1D7D3642FCD5CB83EF8FB4

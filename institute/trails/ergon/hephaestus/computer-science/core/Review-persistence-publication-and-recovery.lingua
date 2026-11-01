@@ -1,0 +1,24 @@
+Import "../Computing.lingua"
+
+Review persistence publication recovery and the evidence for them (@computing-durable-review: 0, is #chapter, #hephaestus-core "Describe-concurrent-actors-and-declare-the-atomic-steps.lingua#r_0091D2A7EF6FC417B026FF3627") { r_0075E888A3D04E2A65A32F27A8
+Explain how durable information differs from a live variable, an encoded record, a named file and buffered output. State which failure removes which parts of the model. Reuse [Investigate every crash boundary in a durable update model](Investigate-durable-updates-crashes-and-retries.lingua#r_00E0361A5584392811B997F505) to check your answers after writing an independent derivation.
+
+**Demonstrate:**
+
+1. Reconstruct the nine-word layout and its schema, including the independently retained total and the request sequence range. Decode a valid record, reject a malformed one and construct a schema-valid but history-invalid one.
+2. State the exact acceptance, atomicity, ordering and durability contracts. Explain why atomic word writes do not make an entire record atomic. Distinguish process interruption from host failure and media corruption.
+3. Derive both direct-overwrite counterexamples. Define the state graph and explain why all crash timing boundaries are represented under atomic persistence. Prove termination of this finite exploration without introducing a probability distribution.
+4. Prove old-or-new recovery and acknowledged-implies-new for copy, data barrier, selector, selector barrier and acknowledgment. Give a concrete counterexample for each removed barrier and for overwriting the active slot. Identify the fairness premise needed for eventual completion.
+5. Explain recovery/reset idempotence, lost acknowledgments, matching request identities, stale requests, sequence exhaustion and safe slot reuse. Show why the guarantee does not automatically cover external effects, concurrent readers or surviving old writes.
+6. Reconstruct the 17 durable images and 36 reachable states for the worked case and compare the independent oracle with the transition implementation. Inspect the 84-case enumeration, crash-during-retry checks and later updates. Say exactly which claims follow from the invariant proof and which are finite implementation evidence.
+7. Derive word/barrier counts and the declared cost model. Distinguish crash consistency from retained history, backup restoration, corruption detection and the provenance needed to interpret archived scientific information. Describe what a real storage/API validation would additionally require.
+
+The common computing formation now connects representations and algorithms with finite-machine execution, process/memory boundaries and durable state transitions. It remains unfinished: broader algorithms and discrete foundations, language translation, concurrency, communication, software construction/reliability, human interaction and advanced academic/practical formation still need connected development. The current pass proceeds to engineering electrical realization and inquiry fitting before specializing in operating systems, databases or distributed storage.
+
+Read the assigned OSTEP chapters and platform references progressively. Complete textbook projects, actual hardware failure experiments and production filesystem validation are not claimed by the original model or its passing checks.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the sixth common pass:** [Describe concurrent actors and declare the atomic steps](Describe-concurrent-actors-and-declare-the-atomic-steps.lingua#r_0091D2A7EF6FC417B026FF3627). The sixth computing block declares concurrent actors and atomic steps, enumerates interleavings, proves a protected-update invariant, compares defective protocols and separates safety from conditional progress. Predicate waiting and shared scaling connect to independently checked original models. Preserve earlier programs and their distinct failure boundaries; continue engineering at comparable depth.
+
+} r_0075E888A3D04E2A65A32F27A8

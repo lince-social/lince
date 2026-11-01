@@ -1,0 +1,24 @@
+Import "../Inquiry.lingua"
+
+Review the chain from question to shared scientific claim (@inquiry-foundation-review: 0, is #chapter, #hephaestus-core "Define-the-units-and-comparisons-before-choosing-an-allocation.lingua#r_0D6650DB3035D66F497D72ADE2") { r_0093C5B9C7363BE10B1DFAD7E5
+Return to the question before assessing the apparent quality of a result. Name the mathematical objects or empirical target, the quantity or outcome, the conditions, the evidence and the inference. Explain why that inference is appropriate for the claim. A correct answer to a different question does not complete the intended investigation.
+
+**Read again:** your source notes and selected passages alongside the revised study. Distinguish what you derived, what a source states, what was observed, what was assumed and what you propose to investigate next. Preserve uncertainty about an unavailable source passage rather than replacing it with a remembered summary. Further reading should deepen the argument, not merely enlarge its bibliography.
+
+Demonstrate the following through examples: observation versus interpretation; quantity versus its indication; repeat variation versus a common influence; a correction versus exact knowledge of an error; a specimen versus a population; a repeated readout versus an independent experimental unit; a fitted relation versus an explanation distinguished by evidence; and computational agreement versus independent support for a physical claim. Use the mathematical foundation to separate an exhaustive argument from a finite list of examples.
+
+Reproduce the first study's 0.25 mm paired difference and show why a common offset remains invisible to it. Reconstruct the two equally fitting length/time models and propose a separating observation. Enumerate the 45 two-piece samples, recover the population mean across them, and explain why a particular random sample can still miss both thick pieces. Identify all assumptions under which those calculations support the stated conclusions.
+
+Transfer the reasoning to the other areas. In physics, ask whether motion observations distinguish a proposed force model from another explanation. In chemistry, distinguish a composition inferred from a sampled portion from a claim about a heterogeneous batch. In computing, distinguish correct processing from correct input meaning. In engineering, distinguish a predicted capacity from observed service. In mathematics, specify the domain and premises of a general claim and defend its proof. Follow the existing shared studies rather than copying them into a second trail.
+
+**Evidence of understanding:** submit a reproducible report, an explicit unresolved alternative, a proposed next observation and a revision made after criticism. Teach one distinction to a beginner using a prediction and a new example. Give enough provenance and source information for another person to preserve and challenge the account. A polished report does not substitute for missing evidence, and a successful rerun does not enlarge the original claim's scope.
+
+This completes the first inquiry block's bounded formation when the learner can demonstrate that work. The broad inquiry core still needs deeper logic and argument, probability and statistical inference, experimental and observational design, uncertainty modelling, causal reasoning, scholarly criticism, technical communication, learning/teaching, preservation and independent research. The current breadth-first pass now has a first block in every area. Review the six cores for missing preparation and uneven depth before deepening them together; the specialist leaves remain later work.
+
+**Shared investigations:** [mathematical models](../../mathematics/core/Investigate-a-stock-model-and-its-alternatives.lingua#r_0149F4044C03C0F4316E216838); [motion and energy](../../physics/core/Investigate-a-cart-with-motion-momentum-and-energy.lingua#r_005C89AACDDC8AD7217B4BF754); [chemical quantities](../../chemistry/core/Investigate-composition-transfer-and-reaction-as-different-accounts.lingua#r_0360DE1F62D1CE75374608DDE1); [computational evidence](../../computer-science/core/Investigate-a-stock-trace-with-independent-computational-evidence.lingua#r_06AE2B0429294B062E80CC37F6); [engineering service](../../engineering/core/Investigate-a-service-from-requirements-to-operating-evidence.lingua#r_0154834E27D6627BE8DA2ED738).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Continue in the second common pass:** [Define the units and comparisons before choosing an allocation](Define-the-units-and-comparisons-before-choosing-an-allocation.lingua#r_0D6650DB3035D66F497D72ADE2). The first investigation above remains the preparation for this next design/probability block.
+
+} r_0093C5B9C7363BE10B1DFAD7E5

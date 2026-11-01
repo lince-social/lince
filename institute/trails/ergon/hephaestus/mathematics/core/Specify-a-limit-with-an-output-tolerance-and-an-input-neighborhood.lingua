@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Specify a limit with an output tolerance and an input neighborhood (@math-limit-neighborhoods: 0, is #chapter, #hephaestus-core "Separate-continuity-from-a-drawing-or-a-list-of-observations.lingua#r_0C8135C0FD2CA421CC59E691E2") { r_055F93E108268B814620D86FE6
+The earlier function lessons fixed a domain and an output rule. A limit asks a different question: what do outputs approach when inputs approach a specified point through the domain? Begin with real numerical coordinates; physical units will be attached when a mathematical function represents a quantity. Reuse [Connect domains, composition and inverse questions](Domains-composition-and-inverse-questions.lingua#r_07C292DB06749E12B30235383A) and [State what a mathematical claim says about its objects](Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA) rather than leaving the domain or the order of the quantifiers implicit.
+
+Suppose f is defined on an open interval around a, except possibly at a itself. To say lim_(x→a) f(x)=L means that for every output tolerance ε>0 there is an input radius δ>0 such that 0<|x−a|<δ implies |f(x)−L|<ε. Choose δ after ε and before the particular admissible x. The condition must hold for all inputs in that punctured neighborhood, not just the numbers in a table. The radius may depend on ε, a and the function. For quantity-valued models, the tolerances have the respective input/output units; their numerical comparison must use consistent coordinates.
+
+For f(x)=x² at a, factor the output difference: |x²−a²|=|x−a||x+a|. If |x−a|<1, then |x+a|≤|x−a|+2|a|<1+2|a|. Given ε>0, choose δ=min(1,ε/(1+2|a|)). Every admissible x then gives |x²−a²|<ε. This proves the limit a² for every real a. Substituting several increasingly close values would illustrate the claim but would not establish that universal guarantee.
+
+The puncture matters. Let g(x)=(x²−9)/(x−3) for x≠3, and set g(3)=20. For all other x, g(x)=x+3, so the limit at 3 is 6, while its assigned value at 3 is 20. The algebraic cancellation applies only where the denominator is nonzero; it establishes nearby behavior without rewriting the original value. A limit can also exist when the function has no value at the approached point.
+
+A left-hand limit restricts x<a and a right-hand limit restricts x>a. On a two-sided neighborhood, both must agree for the two-sided limit to exist. If j(x)=0 for x<1 and j(x)=2 for x≥1, its left/right limits at 1 are 0 and 2; changing just j(1) cannot reconcile them. At a domain endpoint, name a one-sided question instead of silently using unavailable inputs. Infinite limits and limits at infinity need their own definitions later; infinity is not a real output L in the present definition.
+
+**Read and prove:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 sections 2.2 and 2.5, with 2.3 for limit laws. Match each quantifier to the square-function bound above. Prove uniqueness: if two proposed limits differ by d>0, request tolerance d/3 for each, choose a nonzero input within both radii, and apply the triangle inequality to obtain a contradiction. The assumed punctured interval ensures such an input exists. Then derive a tolerance radius for an affine function, including its constant case.
+
+**Critique:** explain why choosing a favorable x after seeing ε is not the definition, and why a plot with a missing point need not show the assigned value there. State whether a question is about a function value, a limit, a finite observation or a physical model's validity before calculating.
+
+**Continue:** [Separate continuity from a drawing or a list of observations](Separate-continuity-from-a-drawing-or-a-list-of-observations.lingua#r_0C8135C0FD2CA421CC59E691E2).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_055F93E108268B814620D86FE6

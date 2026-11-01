@@ -1,4 +1,15 @@
-Resources and materials — feedstocks, useful properties, production, and recovery (@resources-materials-map: 0, is #chapter, #resources-and-materials "metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #resources-and-materials "../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #resources-and-materials "chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #resources-and-materials "../engineering/materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9") { r_14HP6K610XB12E2WGNK9A6VN8D
+Import "mineral-resources-extraction-and-refining-systems/Mineral-resources-extraction-and-refining-systems.lingua"
+Import "ceramics-glass-cement-and-mineral-products/Ceramics-glass-cement-and-mineral-products.lingua"
+Import "polymers-rubber-composites-and-coatings-production/Polymers-rubber-composites-and-coatings-production.lingua"
+Import "machine-tools-and-precision-production-infrastructure/Machine-tools-and-precision-production-infrastructure.lingua"
+Import "textiles-clothing-and-technical-fabrics/Textiles-clothing-and-technical-fabrics.lingua"
+Import "timber-paper-and-packaging-systems/Timber-paper-and-packaging-systems.lingua"
+Import "metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua"
+Import "chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua"
+
+Import "../engineering/Engineering.lingua"
+
+Resources and materials — feedstocks, useful properties, production, and recovery (@resources-materials-map: 0, is #chapter, #resources-and-materials "metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #resources-and-materials "../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #resources-and-materials "chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #resources-and-materials "../engineering/materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9", #contains "mineral-resources-extraction-and-refining-systems/Mineral-resources-extraction-and-refining-systems.lingua#r_1T654Z06ZJ9CA149M75XP0AF95", #contains "ceramics-glass-cement-and-mineral-products/Ceramics-glass-cement-and-mineral-products.lingua#r_3RDJQY81P7KTR82EDETYYE6S37", #contains "polymers-rubber-composites-and-coatings-production/Polymers-rubber-composites-and-coatings-production.lingua#r_5QG0QPP2K5BB78CKWK6YFEYF5P", #contains "machine-tools-and-precision-production-infrastructure/Machine-tools-and-precision-production-infrastructure.lingua#r_54AAZ2Y0HK952ZRH8YCYBHJDPA", #contains "textiles-clothing-and-technical-fabrics/Textiles-clothing-and-technical-fabrics.lingua#r_7J4PQT2PP272F5D218AYG8W3YQ", #contains "timber-paper-and-packaging-systems/Timber-paper-and-packaging-systems.lingua#r_1EK7CM15ZR70X480KKR4F150KT", #contains "metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #contains "chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q") { r_14HP6K610XB12E2WGNK9A6VN8D
 Follow a material from its source and preparation through composition, structure, useful properties, fabrication, inspection, use, and recovery. Connect each transfer with its quantities, evidence, utilities, equipment, maintenance, and human work.
 
 Begin with [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1) for primary and secondary feed, extraction/refining, alloys and transformations, qualified products, service evidence, operation, and recovery. [Mining and mineral engineering — extraction, processing, and continuing work](../engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) and [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../../gaia/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN) supply connected mineral and preparation knowledge.
@@ -9,10 +20,23 @@ Connect industrial substances, reaction/separation systems, useful chemical prod
 
 Follow specified chemical feedstocks from origin through suppliers, storage, delivery, acceptance, continuity and recovery in [Chemical feedstocks and supply systems — specified materials from origin to accepted use](chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
 
-[Development scope: Resources and materials](../../../lince/Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+[Development scope: Resources and materials](Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D).
 
 **Materials engineering:** [Materials engineering — structure, processing and useful behavior](../engineering/materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9) begins with material functions, quantities, state/history, bonding, structure and measurement. Equilibrium and kinetics lead into material-family studies and mechanical response: elasticity, viscoelasticity, plasticity, fracture, fatigue and creep. Functional properties connect quantum/statistical foundations with charge, heat, polarization, light and magnetism. Twelve sustained studies and five original numerical examples connect derivations with evidence. Fabrication/state control, degradation, selection, production/service and independent research remain under development.
 
+
+**Scope:** Follow one material from source through processing, specification, use, and recovery. Enter through the object or feedstock; link the particular geology, chemistry, properties, machines, and quantities needed at each depth.
+
+**Branches:**
+
+- [Mineral resources, extraction, and refining systems](mineral-resources-extraction-and-refining-systems/Mineral-resources-extraction-and-refining-systems.lingua#r_1T654Z06ZJ9CA149M75XP0AF95)
+- [Ceramics, glass, cement, and mineral products](ceramics-glass-cement-and-mineral-products/Ceramics-glass-cement-and-mineral-products.lingua#r_3RDJQY81P7KTR82EDETYYE6S37)
+- [Polymers, rubber, composites, and coatings production](polymers-rubber-composites-and-coatings-production/Polymers-rubber-composites-and-coatings-production.lingua#r_5QG0QPP2K5BB78CKWK6YFEYF5P)
+- [Machine tools and precision production infrastructure](machine-tools-and-precision-production-infrastructure/Machine-tools-and-precision-production-infrastructure.lingua#r_54AAZ2Y0HK952ZRH8YCYBHJDPA)
+- [Textiles, clothing, and technical fabrics](textiles-clothing-and-technical-fabrics/Textiles-clothing-and-technical-fabrics.lingua#r_7J4PQT2PP272F5D218AYG8W3YQ)
+- [Timber, paper, and packaging systems](timber-paper-and-packaging-systems/Timber-paper-and-packaging-systems.lingua#r_1EK7CM15ZR70X480KKR4F150KT)
+- [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1)
+- [Chemical feedstocks and supply systems — specified materials from origin to accepted use](chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q)
 } r_14HP6K610XB12E2WGNK9A6VN8D
 
 Extension @resources-materials-map "lince.vocabulary" {

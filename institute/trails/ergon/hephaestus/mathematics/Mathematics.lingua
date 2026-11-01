@@ -1,0 +1,226 @@
+Import "mathematical-foundations-logic-and-proof/Mathematical-foundations-logic-and-proof.lingua"
+Import "algebra/Algebra.lingua"
+Import "linear-and-multilinear-algebra/Linear-and-multilinear-algebra.lingua"
+Import "number-theory/Number-theory.lingua"
+Import "discrete-mathematics-and-combinatorics/Discrete-mathematics-and-combinatorics.lingua"
+Import "graphs-networks-and-discrete-relationships/Graphs-networks-and-discrete-relationships.lingua"
+Import "geometry/Geometry.lingua"
+Import "topology/Topology.lingua"
+Import "calculus-and-vector-analysis/Calculus-and-vector-analysis.lingua"
+Import "real-and-complex-analysis/Real-and-complex-analysis.lingua"
+Import "functional-and-harmonic-analysis/Functional-and-harmonic-analysis.lingua"
+Import "differential-equations-and-dynamical-systems/Differential-equations-and-dynamical-systems.lingua"
+Import "probability-and-stochastic-processes/Probability-and-stochastic-processes.lingua"
+Import "statistics-and-inference/Statistics-and-inference.lingua"
+Import "numerical-analysis/Numerical-analysis.lingua"
+Import "optimisation-and-operations-research/Optimisation-and-operations-research.lingua"
+Import "applied-mathematics-and-mathematical-modelling/Applied-mathematics-and-mathematical-modelling.lingua"
+Import "information-and-coding-theory/Information-and-coding-theory.lingua"
+Import "mathematical-cryptography/Mathematical-cryptography.lingua"
+Import "game-theory-and-decision-theory/Game-theory-and-decision-theory.lingua"
+
+Import "foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua"
+Import "foundations-and-structures/Declare-a-language-before-interpreting-its-expressions.lingua"
+Import "foundations-and-structures/Evaluate-terms-and-quantified-statements-in-a-declared-model.lingua"
+Import "foundations-and-structures/Separate-truth-in-one-structure-from-consequence-across-structures.lingua"
+Import "foundations-and-structures/State-proof-rules-and-prove-a-bounded-soundness-result.lingua"
+Import "foundations-and-structures/Build-modular-operations-and-distinguish-algebraic-axioms.lingua"
+Import "foundations-and-structures/Prove-what-a-structure-preserving-map-can-transport.lingua"
+Import "foundations-and-structures/Require-representative-independence-before-forming-a-quotient-algebra.lingua"
+Import "foundations-and-structures/Reconstruct-a-published-algebra-example-and-criticize-finite-evidence.lingua"
+Import "foundations-and-structures/Investigate-finite-models-maps-and-quotient-claims.lingua"
+Import "foundations-and-structures/Review-models-proofs-and-preserved-structure-before-the-next-branch.lingua"
+Import "sources/forall-x-Calgary-formal-logic.lingua"
+Import "sources/Abstract-Algebra-Theory-and-Applications-Judson-2011.lingua"
+Import "core/Accumulate-scalar-quantities-over-rectangles-and-volumes.lingua"
+Import "core/Distinguish-scalar-path-accumulation-from-oriented-circulation.lingua"
+Import "core/Construct-oriented-area-from-tangent-vectors.lingua"
+Import "core/Preserve-measure-and-orientation-when-changing-coordinates.lingua"
+Import "core/Integrate-normal-flux-through-an-oriented-surface.lingua"
+Import "core/Derive-divergence-and-curl-from-small-oriented-regions.lingua"
+Import "core/Prove-the-rectangle-boundary-identity-before-using-Green-theorem.lingua"
+Import "core/Relate-a-closed-boundary-flux-to-a-volume-derivative.lingua"
+Import "core/Derive-the-surface-circulation-identity-from-a-parameter-patch.lingua"
+Import "core/Localize-an-integral-balance-with-explicit-regularity-and-domain.lingua"
+Import "core/Investigate-oriented-boundaries-coordinates-and-local-conservation.lingua"
+Import "core/Review-oriented-field-identities-before-applying-physical-laws.lingua"
+Import "core/Extend-linear-maps-to-complex-vectors-with-a-declared-inner-product.lingua"
+Import "core/Derive-complex-orthogonality-projection-and-the-norm-inequality.lingua"
+Import "core/Derive-the-adjoint-from-the-pairing-and-preserve-composition-order.lingua"
+Import "core/Resolve-a-finite-Hermitian-model-with-explicit-eigenvectors-and-projectors.lingua"
+Import "core/Change-complex-coordinates-without-changing-the-geometry-being-represented.lingua"
+Import "core/Connect-complex-exponential-notation-to-the-already-defined-periodic-functions.lingua"
+Import "core/Justify-coupled-linear-evolution-with-a-convergent-matrix-series.lingua"
+Import "core/Derive-a-norm-preserving-coupled-evolution-and-its-conserved-quantities.lingua"
+Import "core/Test-evolution-order-and-distinguish-numerical-growth-from-model-growth.lingua"
+Import "core/Investigate-complex-operators-coordinate-changes-and-certified-evolution.lingua"
+Import "core/Review-finite-complex-geometry-and-evolution-before-assigning-physical-meaning.lingua"
+Import "sources/Linear-Algebra-Done-Right-by-Sheldon-Axler.lingua"
+Import "../physics/thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua"
+Import "core/Describe-convergence-with-a-bound-on-every-sufficiently-late-term.lingua"
+Import "core/Use-completeness-to-prove-that-a-bounded-approximation-has-a-limit.lingua"
+Import "core/Define-an-infinite-sum-through-its-finite-partial-sums.lingua"
+Import "core/Control-omitted-terms-with-comparisons-and-explicit-tail-bounds.lingua"
+Import "core/Keep-the-order-of-a-conditionally-convergent-account-explicit.lingua"
+Import "core/Ask-whether-one-approximation-bound-covers-the-whole-input-domain.lingua"
+Import "core/Justify-exchanging-a-limit-with-an-integral-or-derivative.lingua"
+Import "core/Turn-a-finite-Taylor-remainder-into-a-justified-series-representation.lingua"
+Import "core/Normalize-countable-weights-without-assigning-probability-from-counts-alone.lingua"
+Import "core/Separate-omitted-mass-from-the-error-of-a-normalized-average.lingua"
+Import "core/Investigate-normalization-truncation-and-the-limits-of-finite-evidence.lingua"
+Import "core/Review-infinite-accounts-with-their-domains-proofs-and-error-certificates.lingua"
+Import "sources/Basic-Analysis-I-by-Jiri-Lebl.lingua"
+Import "core/Distinguish-finite-sets-sequences-and-counted-configurations.lingua"
+Import "core/Use-functions-and-fibers-to-justify-a-counting-argument.lingua"
+Import "core/Count-by-disjoint-cases-products-and-explicit-bijections.lingua"
+Import "core/Prove-recursive-constructions-with-a-base-and-a-decreasing-dependency.lingua"
+Import "core/Separate-equivalence-classes-from-ordering-and-reachability.lingua"
+Import "core/Define-a-graph-walk-before-reasoning-about-what-can-happen.lingua"
+Import "core/Prove-when-conserved-counts-are-sufficient-for-reachability.lingua"
+Import "core/Count-legal-histories-by-reflection-and-recursive-decomposition.lingua"
+Import "core/Check-what-a-quotient-preserves-before-merging-graph-states.lingua"
+Import "core/Investigate-finite-configurations-histories-and-misleading-observations.lingua"
+Import "core/Review-discrete-arguments-counting-and-preserved-structure.lingua"
+Import "sources/Mathematics-for-Computer-Science-Lehman-Leighton-and-Meyer.lingua"
+Import "core/Declare-several-inputs-before-interpreting-a-surface.lingua"
+Import "core/Control-every-nearby-direction-in-a-multivariable-limit.lingua"
+Import "core/Differentiate-a-slice-while-stating-what-remains-fixed.lingua"
+Import "core/Require-a-linear-approximation-with-a-controlled-remainder.lingua"
+Import "core/Compose-local-maps-and-derive-change-along-a-path.lingua"
+Import "core/Separate-directional-rates-from-the-geometry-of-steepest-change.lingua"
+Import "core/Distinguish-a-state-differential-from-a-path-dependent-account.lingua"
+Import "core/Check-feasible-directions-boundaries-and-global-evidence.lingua"
+Import "core/Investigate-local-change-path-accounts-and-constrained-extrema.lingua"
+Import "core/Review-multivariable-change-with-its-hypotheses-and-bounds.lingua"
+Import "core/Extend vectors and their geometry to finitely many coordinates.lingua"
+Import "core/Read rectangular maps and the transpose through their dimensions.lingua"
+Import "core/Reduce rectangular constraints with reversible row operations.lingua"
+Import "core/Count independent constraints and describe every lost direction.lingua"
+Import "core/Construct an orthogonal basis without losing the column span.lingua"
+Import "core/Derive least squares from orthogonality and a squared norm.lingua"
+Import "core/Separate the fitted output from ambiguous coefficients.lingua"
+Import "core/Keep coordinate choices error metrics and sensitivity distinct.lingua"
+Import "core/Investigate inconsistent readings lost directions and projected fits.lingua"
+Import "core/Review finite systems projections and the evidence for a fit.lingua"
+Import "core/Define-periodic-functions-from-an-oriented-unit-circle.lingua"
+Import "core/Derive-trigonometric-addition-from-composed-rotations.lingua"
+Import "core/Identify-phase-period-and-the-domain-of-an-inverse-question.lingua"
+Import "core/Prove-the-small-angle-limits-before-differentiating.lingua"
+Import "core/Differentiate-periodic-functions-and-connect-their-accumulated-values.lingua"
+Import "core/Construct-complex-arithmetic-and-identify-its-algebraic-limits.lingua"
+Import "core/Relate-complex-products-powers-and-roots-to-rotations.lingua"
+Import "core/Solve-a-second-order-initial-problem-and-test-boundary-data.lingua"
+Import "core/Bound-a-finite-trigonometric-calculation-before-trusting-decimals.lingua"
+Import "core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua"
+Import "core/Review-periodic-arguments-complex-algebra-and-second-order-evidence.lingua"
+Import "core/Specify-a-limit-with-an-output-tolerance-and-an-input-neighborhood.lingua"
+Import "core/Separate-continuity-from-a-drawing-or-a-list-of-observations.lingua"
+Import "core/Define-a-derivative-as-a-justified-local-rate.lingua"
+Import "core/Derive-differentiation-rules-and-preserve-composition-assumptions.lingua"
+Import "core/Use-derivative-information-with-explicit-interval-and-error-bounds.lingua"
+Import "core/Build-accumulation-from-signed-sums-and-controlled-partitions.lingua"
+Import "core/Define-the-integral-and-distinguish-net-change-from-total-magnitude.lingua"
+Import "core/Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua"
+Import "core/Investigate-a-changing-rate-with-accumulation-and-approximation-bounds.lingua"
+Import "core/Review-limits-local-change-and-accumulated-quantities.lingua"
+Import "../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua"
+Import "../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua"
+Import "core/Derive-geometric-quantities-and-state-what-scaling-preserves.lingua"
+Import "core/Distinguish-a-point-a-displacement-and-its-coordinates.lingua"
+Import "core/Use-linear-combinations-to-explain-span-independence-and-coordinates.lingua"
+Import "core/Resolve-a-vector-into-a-projection-and-an-orthogonal-remainder.lingua"
+Import "core/Solve-simultaneous-constraints-without-losing-their-solution-set.lingua"
+Import "core/Read-a-matrix-as-a-map-and-distinguish-translation-from-linearity.lingua"
+Import "core/Investigate-an-affine-coordinate-model-and-the-information-it-preserves.lingua"
+Import "core/Review-spatial-representations-linear-constraints-and-transformations.lingua"
+Import "../engineering/electrical-power-engineering/sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua"
+Import "core/Number-domains-and-allowed-operations.lingua"
+Import "core/Proportions-offsets-and-the-meaning-of-a-model.lingua"
+Import "core/Equivalent-equations-and-admissible-solutions.lingua"
+Import "core/Domains-composition-and-inverse-questions.lingua"
+Import "core/Statements-quantifiers-and-counterexamples.lingua"
+Import "core/Proof-from-definitions-and-preserved-assumptions.lingua"
+Import "core/Investigate-a-stock-model-and-its-alternatives.lingua"
+Import "core/Review-quantities-domains-and-mathematical-claims.lingua"
+Import "sources/Book-of-Proof-Hammack.lingua"
+Import "../inquiry/quantitative-literacy/Quantitative-literacy.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Numbers-models-and-mathematical-arguments.lingua"
+
+Mathematics — quantity, structure, space, change and proof (@mathematics-map: 0, is #chapter, #hephaestus-core "core/Numbers-models-and-mathematical-arguments.lingua#r_0BC762DF1B7E019C36477207F3", #mathematics-branches "foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua#r_00218B916C7BAB5B984FE5590E", #contains "mathematical-foundations-logic-and-proof/Mathematical-foundations-logic-and-proof.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7", #contains "algebra/Algebra.lingua#r_3TKT81FRMZKC1D63FV1RHY8DCJ", #contains "linear-and-multilinear-algebra/Linear-and-multilinear-algebra.lingua#r_4C8YDS3J7HYQNE68NZX2EEFHGN", #contains "number-theory/Number-theory.lingua#r_74PAJV119ZN0GRE3RPCCPGD8Q3", #contains "discrete-mathematics-and-combinatorics/Discrete-mathematics-and-combinatorics.lingua#r_6NJKZBXXX36NAX3FDKFKEGCXQ4", #contains "graphs-networks-and-discrete-relationships/Graphs-networks-and-discrete-relationships.lingua#r_71FC22AAFF4VJ4AMPEGYVJWA17", #contains "geometry/Geometry.lingua#r_76B5P2QMTDB7ED93FDFK3W954T", #contains "topology/Topology.lingua#r_246NMRJK7MZRA0HVPG0D58F815", #contains "calculus-and-vector-analysis/Calculus-and-vector-analysis.lingua#r_3162WTR2P83XKAKSGCKV4486EV", #contains "real-and-complex-analysis/Real-and-complex-analysis.lingua#r_6MBY9DSF31HHBZ7RV8CGJZAK3X", #contains "functional-and-harmonic-analysis/Functional-and-harmonic-analysis.lingua#r_1H74W8BF6ZVMKCG68HEP4ABYBC", #contains "differential-equations-and-dynamical-systems/Differential-equations-and-dynamical-systems.lingua#r_448403JJMVPXKMBJKADBGVXNWN", #contains "probability-and-stochastic-processes/Probability-and-stochastic-processes.lingua#r_7CDRN3668AN4H1PGAM2VYBRDQ4", #contains "statistics-and-inference/Statistics-and-inference.lingua#r_25MTMT0Q4Y4W5NX5X9AJQ8V393", #contains "numerical-analysis/Numerical-analysis.lingua#r_7V52J6PBQGN2JKG2DF4JRBR5HV", #contains "optimisation-and-operations-research/Optimisation-and-operations-research.lingua#r_7C57C37F6Z004CPC870K3CTNPT", #contains "applied-mathematics-and-mathematical-modelling/Applied-mathematics-and-mathematical-modelling.lingua#r_1TNNPVRP2TYCN2GW6FYAJYQAW4", #contains "information-and-coding-theory/Information-and-coding-theory.lingua#r_62S7KWB7MGVWMJ3HRKTMZJ0611", #contains "mathematical-cryptography/Mathematical-cryptography.lingua#r_43616S50S5ZA8KQES0Y8PQ4M0A", #contains "game-theory-and-decision-theory/Game-theory-and-decision-theory.lingua#r_2Z4K5GNESAAA2QEDAD1HSKMC8M") { r_0BDE857C410434BA79D017008C
+Mathematics develops exact reasoning about quantities, structures, spaces, change and uncertainty. Begin with counting and explicit meanings; grow toward symbolic argument, proof and abstraction without making industrial usefulness a requirement for pure theory.
+
+The major branches are foundations and proof; algebra and discrete structures; geometry and topology; analysis and dynamical systems; probability and statistical inference; and numerical modelling, optimization and information. Their relationships should become visible before one specialist branch is developed to research depth.
+
+Shared arithmetic, equations, functions, units and graphs already live in Inquiry's quantitative formation. Reuse them at the point of need. This entrance and its first lesson begin the mathematics core; the twenty pending mathematical subjects retain their full scope.
+
+**Begin the shared area core:** [Begin with numbers, models and mathematical arguments](core/Numbers-models-and-mathematical-arguments.lingua#r_0BC762DF1B7E019C36477207F3).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
+**Developed first foundation block:** quantities and number domains, shared arithmetic and fractions, proportional/offset models, equations and solution sets, functions and inverse questions, quantified statements and elementary proof. A stock-model investigation and review connect the ideas. The progression reuses six quantitative-literacy Records and adds eight connecting lessons; this is one foundation block, not completion of mathematics.
+
+**Developed second foundation block:** geometry and scaling, points/displacements and coordinate frames, span and independence, orthogonal projections, simultaneous constraints, matrix action and affine maps. Eight new lessons extend the existing first review; shared geometry, trigonometry, vectors and equations supply contextual preparation. An original affine-coordinate investigation connects inverses, areas, lost information and sensitivity. Continue the comparable second physics block before deepening a specialization. The full mathematical core remains unfinished.
+
+**Sources:** [Book of Proof — Hammack](sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8); [Algebra and Trigonometry 2e](../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX); [Prealgebra 2e](../inquiry/quantitative-literacy/sources/Prealgebra.lingua#r_36KCS76R5ZTWZMVPV5B11Y3BKS).
+
+**Return:** [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001).
+
+**Developed third common foundation:** limits and continuity, a derivative as local rate, polynomial/product/composition rules, the mean value theorem and controlled approximation, signed partition sums, the definite integral and the fundamental theorem. Ten new lessons reuse the existing small-change Record and OpenStax calculus source. An original rate/volume investigation compares exact accumulation with proved finite-partition and local-error bounds, with two executable programs. General analysis foundations used without proof, wider calculus and advanced formation remain explicit later work. Continue physics at comparable depth before deeper branches; this block does not complete the mathematical core.
+
+
+**Developed fourth common foundation:** oriented circle functions, rotation/addition identities, periodic parameters and inverse domains, small-angle limits, trigonometric calculus, complex pair arithmetic and polar powers, second-order initial/boundary questions and finite numerical bounds. Eleven new lessons preserve existing shared geometry/trigonometry and source identities by reference. The original investigation combines exact rotations, a proved initial-value solution and a uniform-sample ambiguity with independent calculations. This does not complete complex analysis, harmonic analysis or a physics apparatus. Continue physics at comparable depth; the whole mathematics core and its twenty pending subjects remain unfinished.
+
+
+**Developed fifth common foundation:** finite real coordinate spaces, rectangular maps and transpose, reversible elimination, rank and null spaces, orthogonal bases and conditional QR, projection and least-squares proofs, coefficient ambiguity, metric choices and exact sensitivity. Ten new lessons extend the earlier planar work without adding conflicting shared continuation edges. An original four-reading investigation compares elimination and geometric projection, basis changes, a fifth independent reading and changed residual weights, with exact executable checks. Numerical stability and statistical inference remain distinct later preparation. Continue physics at comparable depth. The full mathematics core and all twenty pending subjects remain unfinished.
+
+
+**Developed sixth common foundation:** functions of several inputs, neighborhood limits and path counterexamples, partial/total derivatives with remainder proofs, Jacobian composition, gradients under a declared metric, exact versus path-dependent accounts, and constrained extrema with boundary/regularity qualifications. Ten new lessons reuse shared calculus, finite maps, logarithms, physical field and thermal-differential preparation by reference. Original polynomial and quadratic investigations have independently checked calculations, and one published calculus exercise was reconstructed. Continue physics entropy and process direction at comparable depth; no whole mathematics core or pending subject is completed.
+
+
+**Developed seventh common foundation:** finite objects and equality, functions/fibers, counting bijections, induction/recursive construction, equivalence and partial order, graphs/walks, necessary and sufficient reachability, complete-history counts and quotient/symmetry limits. Eleven new lessons reuse earlier proof/function/state and reporting preparation by reference. An original token investigation has 63,704 exact checks and a bounded published subset reconstruction. The existing Hammack source is extended and one MIT discrete-mathematics source supplies graph conventions with its specific revision/licence. Continue physics rotational dynamics at comparable depth; no whole core or pending subject is completed.
+
+
+**Developed eighth common foundation:** sequences, completeness, series and tail bounds, order of summation, uniform convergence, justified operation exchange, Taylor representations and countable-weight approximation. Twelve new lessons reuse existing limits, integrals, finite remainders, counting, logarithms/exponentials and inquiry by reference. One analysis source Record and an appended inspection note preserve actual source scope and rights. An original exact weighted-pair investigation has 10,087 checks with independent finite enumeration and tail enclosures. Mathematics now has 88 common learning Records; continue statistical physics and the other cores at comparable breadth. The whole core and all twenty pending mathematics subject scopes remain unfinished.
+
+
+**Developed common operator bridge:** finite complex vector spaces, conjugate inner products, projections, adjoints, Hermitian/unitary maps, explicit eigencomponents, basis/metric changes, justified complex/matrix exponentials and coupled evolution. Eleven original lessons reuse the real-linear, periodic and series formation and two unchanged programs. Exact model families and rational error certificates distinguish proof, computation and physical interpretation. Mathematics now has 99 common learning Records. This closes the finite-operator preparation gap for quantum foundations; oriented-field integration remains a common gap, while full spectral/functional analysis and advanced dynamics remain branches. The whole mathematics core and its pending subjects remain unfinished.
+
+
+**Developed common oriented-field foundations:** scalar region integrals, paths, oriented area, coordinate measure, normal flux, divergence/curl, rectangle/box/patch proofs of integral identities and continuous localization of fixed-region balance. Twelve original lessons reuse the existing path/derivative preparation and source identities. An exact investigation compares boundary and region calculations, reconstructs one published hemisphere example and exposes sign, coordinate, domain and global-to-local errors. Mathematics now has 111 common learning Records. Magnetic, spacetime/gravity and astronomical physics remain common gaps before the same readiness review. The whole mathematics core and its branches remain unfinished.
+
+
+**Developed first major-branch block:** [Foundations logic and algebraic structure](foundations-and-structures/Foundations-logic-and-algebraic-structure.lingua#r_00218B916C7BAB5B984FE5590E) connects language, models, consequence, sound equational reasoning, modular operations, homomorphisms and quotients through ten new lessons and an original investigation. This route is separate from the 111-learning-Record common mathematics core. The shared six-area preparation now supports middle-layer entry; the next comparable block is physics mechanics. The full foundations/algebra scopes remain pending.
+
+
+**Scope:** Construct a mathematical argument; use equations and functions; understand linear transformations; later pursue the chosen structures, spaces, analysis, or uncertain systems. Select the relevant arithmetic, notation, and reasoning rather than placing all foundational mathematics before every application.
+
+**Branches:**
+
+- [Mathematical foundations, logic, and proof](mathematical-foundations-logic-and-proof/Mathematical-foundations-logic-and-proof.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7)
+- [Algebra](algebra/Algebra.lingua#r_3TKT81FRMZKC1D63FV1RHY8DCJ)
+- [Linear and multilinear algebra](linear-and-multilinear-algebra/Linear-and-multilinear-algebra.lingua#r_4C8YDS3J7HYQNE68NZX2EEFHGN)
+- [Number theory](number-theory/Number-theory.lingua#r_74PAJV119ZN0GRE3RPCCPGD8Q3)
+- [Discrete mathematics and combinatorics](discrete-mathematics-and-combinatorics/Discrete-mathematics-and-combinatorics.lingua#r_6NJKZBXXX36NAX3FDKFKEGCXQ4)
+- [Graphs, networks, and discrete relationships](graphs-networks-and-discrete-relationships/Graphs-networks-and-discrete-relationships.lingua#r_71FC22AAFF4VJ4AMPEGYVJWA17)
+- [Geometry](geometry/Geometry.lingua#r_76B5P2QMTDB7ED93FDFK3W954T)
+- [Topology](topology/Topology.lingua#r_246NMRJK7MZRA0HVPG0D58F815)
+- [Calculus and vector analysis](calculus-and-vector-analysis/Calculus-and-vector-analysis.lingua#r_3162WTR2P83XKAKSGCKV4486EV)
+- [Real and complex analysis](real-and-complex-analysis/Real-and-complex-analysis.lingua#r_6MBY9DSF31HHBZ7RV8CGJZAK3X)
+- [Functional and harmonic analysis](functional-and-harmonic-analysis/Functional-and-harmonic-analysis.lingua#r_1H74W8BF6ZVMKCG68HEP4ABYBC)
+- [Differential equations and dynamical systems](differential-equations-and-dynamical-systems/Differential-equations-and-dynamical-systems.lingua#r_448403JJMVPXKMBJKADBGVXNWN)
+- [Probability and stochastic processes](probability-and-stochastic-processes/Probability-and-stochastic-processes.lingua#r_7CDRN3668AN4H1PGAM2VYBRDQ4)
+- [Statistics and inference](statistics-and-inference/Statistics-and-inference.lingua#r_25MTMT0Q4Y4W5NX5X9AJQ8V393)
+- [Numerical analysis](numerical-analysis/Numerical-analysis.lingua#r_7V52J6PBQGN2JKG2DF4JRBR5HV)
+- [Optimisation and operations research](optimisation-and-operations-research/Optimisation-and-operations-research.lingua#r_7C57C37F6Z004CPC870K3CTNPT)
+- [Applied mathematics and mathematical modelling](applied-mathematics-and-mathematical-modelling/Applied-mathematics-and-mathematical-modelling.lingua#r_1TNNPVRP2TYCN2GW6FYAJYQAW4)
+- [Information and coding theory](information-and-coding-theory/Information-and-coding-theory.lingua#r_62S7KWB7MGVWMJ3HRKTMZJ0611)
+- [Mathematical cryptography](mathematical-cryptography/Mathematical-cryptography.lingua#r_43616S50S5ZA8KQES0Y8PQ4M0A)
+- [Game theory and decision theory](game-theory-and-decision-theory/Game-theory-and-decision-theory.lingua#r_2Z4K5GNESAAA2QEDAD1HSKMC8M)
+} r_0BDE857C410434BA79D017008C
+
+Extension @mathematics-map "lince.vocabulary" {
+    definitions {
+        mathematics-branches "An entrance from mathematics into one of its developed major branches."
+    }
+}

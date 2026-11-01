@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Functions, branching, repetition, and visible state (@rc-functions: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8") { r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF
+Functions, branching, repetition, and visible state (@rc-functions: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8", #hephaestus-core "Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8") { r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF
 **Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapters 3–4 completely, then 7–9 during sustained study; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), functions, control flow, data structures, and modules.
 
 A function packages a transformation with explicit inputs and a returned result. This lets a test examine the numerical operation without opening files or launching a command. Prefer a dry_mass(wet, water_fraction) calculation whose arguments say what it needs over a function that silently reads whichever global variables a previous notebook cell left behind.
@@ -16,4 +16,7 @@ Continue through dictionaries, strings, classes, and object-oriented programming
 **Continue:** [Input, output, and errors are part of the method](Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the computing core:** [Input, output, and errors are part of the method](Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8).
+
 } r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF

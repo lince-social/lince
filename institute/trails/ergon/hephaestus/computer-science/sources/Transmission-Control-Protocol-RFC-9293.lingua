@@ -1,0 +1,7 @@
+Import "../Computing.lingua"
+
+Transmission Control Protocol RFC 9293 (@computing-source-tcp: 0, is #reference) { r_00164F03A32413E111F34FBA9F
+Wesley Eddy, editor. Transmission Control Protocol (TCP), RFC 9293, August 2022, STD 7. The [RFC Editor record](https://www.rfc-editor.org/info/rfc9293/) identifies Internet Standard status. On 1 November 2026 the official metadata, copyright notice and actual [section 2.2](https://www.rfc-editor.org/rfc/rfc9293.html#section-2.2) were inspected for byte-stream ordering, delivery and liveness distinctions. This is a focused specification reading, not a complete implementation audit or an assertion that all related RFCs and errata were reviewed.
+
+Read that section after the original endpoint/encoding lesson; use the full specification and its references progressively in the later networking branch. Copyright belongs to the IETF Trust and named contributors; the notice invokes the applicable BCP 78/Trust provisions, code-component terms and qualifications for older contributions. Public access is not an unrestricted licence to rewrite the standard. No standard text, diagrams or code components are bundled. Our codec and ledger are original teaching models and do not implement TCP.
+} r_00164F03A32413E111F34FBA9F

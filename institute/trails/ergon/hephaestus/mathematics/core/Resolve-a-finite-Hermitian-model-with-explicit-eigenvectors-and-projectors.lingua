@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Resolve a finite Hermitian model with explicit eigenvectors and projectors (@math-operator-eigen: 0, is #chapter, #hephaestus-core "Change-complex-coordinates-without-changing-the-geometry-being-represented.lingua#r_00F3E28C190908F570F20A405A") { r_005654A44ED120041A95A87694
+An eigenvector of a square A is a nonzero v satisfying Av=λv for a scalar λ. The zero vector is excluded because it satisfies this equation for every λ. If H†=H, the identities ⟨v,Hv⟩=λ||v||² and ⟨Hv,v⟩=conj(λ)||v||² imply λ is real. For eigenvectors u,v with distinct eigenvalues λ,μ, the adjoint identity gives λ⟨u,v⟩=μ⟨u,v⟩, so they are orthogonal. These statements concern eigenvectors that exist; by themselves they do not prove that every matrix has a complete eigenbasis.
+
+Consider the original two-coordinate family
+
+H = ((d,z),(conj(z),−d)), with d real and d²+|z|²=1.
+
+The notation lists rows. Multiplication shows H†=H and H²=I: the diagonal entries of H² are d²+|z|² and the off-diagonal terms cancel. Define P₊=(I+H)/2 and P₋=(I−H)/2. Direct algebra yields P₊²=P₊, P₋²=P₋, P₊P₋=P₋P₊=0, P₊+P₋=I and HP₊=P₊, HP₋=−P₋. Both projectors are Hermitian. Consequently every x splits as x=P₊x+P₋x into orthogonal eigencomponents, with either component allowed to vanish. This proves completeness for this family without invoking the general spectral theorem.
+
+Take d=3/5 and z=4i/5. Then f₊=(2,−i) and f₋=(1,2i) have eigenvalues +1 and −1, are orthogonal and each has squared norm 5. Their normalized versions f₊/sqrt(5), f₋/sqrt(5) form a basis. For e₁=(1,0), P₊e₁=(4/5,−2i/5) and P₋e₁=(1/5,2i/5); their squared norms are 4/5 and 1/5. Verify that their sum is e₁. The projectors are unchanged if an eigenvector is multiplied by a unit complex scalar, because ff†/⟨f,f⟩ is unchanged.
+
+The nilpotent N=((0,1),(0,0)) is a useful contrast. N²=0 but N≠0. Any eigenvalue must satisfy λ²=0, hence λ=0; its eigenvectors have second coordinate zero and do not span C². A generic diagonalization recipe therefore fails. The finite-dimensional Hermitian spectral theorem supplies a much broader complete-basis result, but its general proof and extensions remain branch work. Here every use of completeness can be checked from the two explicit projectors.
+
+**Work:** prove all projector identities, recover H=P₊−P₋ and compute ⟨x,Hx⟩=||P₊x||²−||P₋x||². Construct the family with rational parameters u,v by d=(1−u²−v²)/(1+u²+v²), z=(2u+2iv)/(1+u²+v²), and prove its normalization. Identify the real/complex assumptions and compare a repeated eigenvalue with a missing eigenbasis. Retain pure structural reasoning alongside possible applications.
+
+**Continue:** [Change complex coordinates without changing the geometry being represented](Change-complex-coordinates-without-changing-the-geometry-being-represented.lingua#r_00F3E28C190908F570F20A405A).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_005654A44ED120041A95A87694

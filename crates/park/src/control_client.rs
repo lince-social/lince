@@ -3,6 +3,8 @@ use lince_interface::host::control::{self as contract, Invocation, Response};
 use std::{io, time::{Duration, Instant}};
 use wayland_client::{Connection, Dispatch, EventQueue, QueueHandle, protocol::{wl_callback, wl_registry}};
 
+const REPLY_TIMEOUT: Duration = Duration::from_secs(12);
+
 #[derive(Default)]
 struct State {
     manager: Option<Manager>,
@@ -22,6 +24,8 @@ pub struct ControlClient {
     queue: EventQueue<State>,
     state: State,
     next: u32,
+    #[cfg(all(test, feature = "server-tests"))]
+    reply_timeout: Duration,
 }
 
 impl ControlClient {
@@ -34,7 +38,10 @@ impl ControlClient {
         let queue = connection.new_event_queue();
         connection.display().get_registry(&queue.handle(), ());
         connection.display().sync(&queue.handle(), ());
-        let mut client = Self { connection, queue, state: State::default(), next: 1 };
+        let mut client = Self { connection, queue, state: State::default(), next: 1,
+            #[cfg(all(test, feature = "server-tests"))]
+            reply_timeout: REPLY_TIMEOUT,
+        };
         let deadline = Instant::now() + Duration::from_secs(5);
         while !client.state.ready { client.pump(deadline, true)?; }
         if client.state.manager.is_none() {
@@ -54,7 +61,10 @@ impl ControlClient {
     }
 
     fn reply(&mut self) -> io::Result<Response> {
-        let deadline = Instant::now() + Duration::from_secs(12);
+        #[cfg(not(all(test, feature = "server-tests")))]
+        let deadline = Instant::now() + REPLY_TIMEOUT;
+        #[cfg(all(test, feature = "server-tests"))]
+        let deadline = Instant::now() + self.reply_timeout;
         while self.state.reply.is_none() {
             if let Err(error) = self.pump(deadline, false) {
                 if let Some(id) = self.state.expected.take() { self.state.retired = id; }
@@ -65,6 +75,11 @@ impl ControlClient {
         if let Some(id) = self.state.expected.take() { self.state.retired = id; }
         self.flush()?;
         Ok(self.state.reply.take().unwrap())
+    }
+
+    #[cfg(all(test, feature = "server-tests"))]
+    pub(crate) fn reply_timeout_for_test(&mut self, timeout: Duration) -> Duration {
+        std::mem::replace(&mut self.reply_timeout, timeout)
     }
 
     pub fn snapshot(&mut self, revision: u64, cursor: u32) -> io::Result<Response> {

@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Foundations logic and algebraic structure (@math-structures: 0, is #chapter, #math-structures "Declare-a-language-before-interpreting-its-expressions.lingua#r_0078C9FB7FDB06339D08F572A1", #part-of "../Mathematics.lingua#r_0BDE857C410434BA79D017008C") { r_00218B916C7BAB5B984FE5590E
+This branch asks how a mathematical description gets a meaning, how a proof depends on its rules and assumptions, and how changing representation can preserve some structure while losing other information. It begins with explicit symbolic languages and finite models, then connects operations, maps and quotients. It is the first middle-layer block, not completion of foundations or abstract algebra.
+
+**Preparation:** use [State what a mathematical claim says about its objects](../core/Statements-quantifiers-and-counterexamples.lingua#r_096B0C0E0744E81B6D17247FEA), [Build a proof from definitions and preserved assumptions](../core/Proof-from-definitions-and-preserved-assumptions.lingua#r_0616F35DE35A48DA7F91EC9D6A), [Prove recursive constructions with a base and a decreasing dependency](../core/Prove-recursive-constructions-with-a-base-and-a-decreasing-dependency.lingua#r_00AEC3D470E37C51E964F8B0AB) and [Check what a quotient preserves before merging graph states](../core/Check-what-a-quotient-preserves-before-merging-graph-states.lingua#r_009AE8B87EF9B264029366B97B). Those Records already teach quantifiers, direct arguments, induction, equivalence classes and the danger of merging states. Read the particular prerequisites needed here; completing every mathematical core lesson is not a prerequisite for this branch.
+
+The opening investigation uses the same finite structure in several roles: as an interpretation of a language, as an algebra satisfying equations, and as the domain of a map. Later work must develop full proof systems, sets and infinity, computability and limits, foundational alternatives, groups and actions, rings, fields, modules and representations. The pending ERG-012 and ERG-013 scopes remain intact. Other mathematical branches and the other Hephaestus areas must open before this branch is taken to specialist research depth.
+
+**Use:** follow the `math-structures` route. Its lessons are separate from the common `hephaestus-core` selection. Shared prerequisites remain contextual links with their original routes and identities.
+
+**Continue:** [Declare a language before interpreting its expressions](Declare-a-language-before-interpreting-its-expressions.lingua#r_0078C9FB7FDB06339D08F572A1).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00218B916C7BAB5B984FE5590E
+
+Extension @math-structures "lince.vocabulary" {
+    definitions {
+        math-structures "A continuation through models, proof rules and algebraic structure in the mathematics middle layer."
+    }
+}

@@ -1,0 +1,13 @@
+Import "../Computing.lingua"
+
+WCAG 2.2 selected interaction criteria and conformance scope (@computing-source-accessibility: 0, is #reference) { r_003FD04F1BEB6F767F948CC12E
+W3C Accessibility Guidelines Working Group, *Web Content Accessibility Guidelines (WCAG) 2.2*, English, [Recommendation dated 12 December 2024](https://www.w3.org/TR/2024/REC-WCAG22-20241212/). Editors listed include Alastair Campbell, Chuck Adams, Rachael Bradley Montgomery, Michael Cooper and Andrew Kirkpatrick. [Version landing page](https://www.w3.org/TR/WCAG22/).
+
+**Actual inspection — 1 November 2026:** version/status, selected criteria 1.3.3, 1.4.1, 2.4.3, 2.4.7, 2.4.11, 3.3.1–3.3.4, 4.1.2–4.1.3 and section 5.2; [Keyboard explanation](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html) and [No Keyboard Trap explanation](https://www.w3.org/WAI/WCAG22/Understanding/no-keyboard-trap.html), including their reproduced criteria. Understanding documents are informative. The common lessons select these passages; they do not claim full-standard inspection or conformance of any application.
+
+Read the criteria with their conditions and exceptions. A textual model can clarify intended information/actions but cannot establish rendered behavior, assistive-technology support or complete-process conformance.
+
+Copyright © 2020–2024 World Wide Web Consortium. [W3C document-use terms](https://www.w3.org/copyright/document-license-2023/) apply; they permit copying with notices and impose conditions on derivatives. This Record references the Recommendation; it is not an altered specification. Keep the source external and preserve its status, attribution and terms when using portions.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_003FD04F1BEB6F767F948CC12E

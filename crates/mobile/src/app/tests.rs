@@ -1,6 +1,99 @@
 use super::*;
 
 #[test]
+fn confirmation_waits_for_status_reply_and_runs_once() {
+    let mut world = fixture();
+    world.init_resource::<Intents>();
+    world.resource_mut::<Mobile>().deleting =
+        Some(Intent::ReplyTo("thread".into(), Some("message".into())));
+    world.resource_mut::<Mobile>().pending.insert(
+        "status".into(),
+        Pending {
+            topic: "roster",
+            silent: true,
+            ..Default::default()
+        },
+    );
+    apply_intent(&mut world, Intent::Confirm).unwrap();
+    apply(&mut world);
+    assert!(world.resource::<Mobile>().deleting.is_some());
+    assert!(world.resource::<Mobile>().confirmed);
+    assert!(world.resource::<Mobile>().pending.contains_key("status"));
+    assert!(
+        !world
+            .resource::<Mobile>()
+            .drafts
+            .contains_key("thread/parent")
+    );
+    receive_message(
+        &mut world,
+        ServerMessage::ActionOk {
+            id: "status".into(),
+            created: None,
+            facts: 0,
+            warnings: vec![],
+            data: Some(serde_json::json!({"devices": []})),
+        },
+    );
+    apply(&mut world);
+    assert_eq!(
+        world.resource::<Mobile>().drafts["thread/parent"],
+        "message"
+    );
+    assert_eq!(
+        world.resource::<Mobile>().rows["roster"][0]["devices"],
+        serde_json::json!([])
+    );
+    assert!(world.resource::<Mobile>().deleting.is_none());
+    assert!(!world.resource::<Mobile>().confirmed);
+    world
+        .resource_mut::<Mobile>()
+        .drafts
+        .remove("thread/parent");
+    apply(&mut world);
+    assert!(
+        !world
+            .resource::<Mobile>()
+            .drafts
+            .contains_key("thread/parent")
+    );
+}
+
+#[test]
+fn cancel_stops_deferred_confirmation_and_failed_submission_keeps_review() {
+    let mut world = fixture();
+    world.init_resource::<Intents>();
+    world.resource_mut::<Mobile>().deleting =
+        Some(Intent::Act(engine::actions::Action::RosterCreateOrgan));
+    world.resource_mut::<Mobile>().pending.insert(
+        "status".into(),
+        Pending {
+            topic: "roster",
+            ..Default::default()
+        },
+    );
+    apply_intent(&mut world, Intent::Confirm).unwrap();
+    apply_intent(&mut world, Intent::CancelDelete).unwrap();
+    assert!(!world.resource::<Mobile>().confirmed);
+    assert!(world.resource::<Mobile>().deleting.is_none());
+    assert!(world.resource::<Mobile>().pending.contains_key("status"));
+    world.resource_mut::<Mobile>().pending.remove("status");
+    apply(&mut world);
+    assert!(world.resource::<Mobile>().deleting.is_none());
+    apply_intent(
+        &mut world,
+        Intent::Ask(engine::actions::Action::RosterCreateOrgan),
+    )
+    .unwrap();
+    assert!(apply_intent(&mut world, Intent::Confirm).is_err());
+    assert!(matches!(
+        world.resource::<Mobile>().deleting,
+        Some(Intent::Act(engine::actions::Action::RosterCreateOrgan))
+    ));
+    assert!(!world.resource::<Mobile>().confirmed);
+}
+
+#[test]
 fn saved_address_replies_reach_the_record_panel_without_starting_live_location() {
     use lince_interface::location as ui;
     let mut world = fixture();

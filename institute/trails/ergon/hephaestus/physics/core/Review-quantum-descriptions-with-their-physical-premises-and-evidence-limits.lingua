@@ -1,0 +1,20 @@
+Import "../Physics.lingua"
+
+Review quantum descriptions with their physical premises and evidence limits (@physics-quantum-review: 0, is #chapter, #hephaestus-core "Specify-a-magnetic-observation-and-the-field-model-it-tests.lingua#r_0026FFA29D3ABE4D35EB1264C1") { r_00CFA9ABD5C9D7D59E8532DC9F
+Begin with a preparation, transformation and measurement question. Explain what an ideal two-state description retains and excludes. Distinguish amplitude, probability, phase, frequency and density; demonstrate global-phase invariance and a measurable relative-phase difference. Translate between bras/kets and the existing complex-vector convention.
+
+Specify projectors and outcome values with units, derive means and variances, and distinguish observable mean from individual outcome. Reconstruct the ideal analyzer sequence with every denominator explicit. Compare conditional state update, forgetting an outcome and coherent recombination without assuming they implement the same physical operation. Derive the finite density description from a preparation lottery and show why its ensemble decomposition is not unique.
+
+Derive the state-dependent uncertainty inequality and its counterexamples to stronger unsupported claims. Separate outcome spread, calibration error, estimator uncertainty and disturbance. Connect a time-independent Hermitian Hamiltonian to the already justified exponential solution, retain units and distinguish passive coordinates from active dynamics. State what evidence would support the chosen generator.
+
+Reconstruct the normalized infinite-well eigenfunctions and the original two-mode interference comparison, retaining boundaries and the difference between a finite model and continuous operator domains. Define the four-coordinate composite system, derive joint probabilities and distinguish entanglement from a classical correlation through another measurement setting. Explain the role of marginalization and communicated outcome records without suggesting superluminal signaling.
+
+Complete [Investigate quantum preparation measurement order coherence and observed counts](Investigate-quantum-preparation-measurement-order-coherence-and-observed-counts.lingua#r_00385A80F5644BEA5DBB42BCBC) with an independent changed case, exact checks, a defended observation/calibration plan and criticism/revision. Identify an observationally ambiguous preparation/efficiency pair and specify additional evidence needed to separate it. No learner performance, physical apparatus, empirical dataset replication or experimental quantum validation is established by the author's calculations.
+
+This block supplies common quantum preparation for physical, chemical, materials and computing branches. It does not complete quantum mechanics, quantum field theory, atomic/nuclear/particle science, quantum information or the whole physics core. Field integration, magnetism/induction, relativity/gravitation and astronomical evidence remain common gaps. Continue next with human use and trust in [Computing — representation, algorithms and working systems](../../computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641), then human operation in [Engineering — systems, design, construction, and operation](../../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), before returning to the remaining physical bridges. The six-area breadth-first structure and existing specialist boundaries remain unchanged.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue through magnetic and inductive fields:** [Specify a magnetic observation and the field model it tests](Specify-a-magnetic-observation-and-the-field-model-it-tests.lingua#r_0026FFA29D3ABE4D35EB1264C1). Connect magnetic observations, force and motion, induced circulation, circuit storage, consistent field equations and energy propagation using the developed field mathematics.
+
+} r_00CFA9ABD5C9D7D59E8532DC9F

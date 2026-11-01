@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Begin astronomical inference with directions times and recorded signals (@physics-astronomy-directions: 0, is #chapter, #hephaestus-core "Infer-distance-from-parallax-while-retaining-the-observation-model.lingua#r_00AA339D3B96FFF6166AF65FB2") { r_0094B78B73E7B72485479C6EDB
+Looking upward begins with directions, changes and received light, not with a ready-made list of distances and masses. Record where and when an observation was made, the reference clock and coordinate frame, the instrument and passband, what was actually read and which processing was applied. Apparent movement can arise from the observer, the source, propagation or an instrument. Reuse [Describe events clocks and the comparison of inertial frames](Describe-events-clocks-and-the-comparison-of-inertial-frames.lingua#r_0066EF1C04ECAE6E24E72A9C47) and [Preserve causal order and distinguish clock rates from received frequencies](Preserve-causal-order-and-distinguish-clock-rates-from-received-frequencies.lingua#r_00F4F31E0DC57AC39F51E3B5DA) before equating a reception time with an event at the source.
+
+A celestial direction is a unit vector. In equatorial coordinates, right ascension α locates a direction around the reference equator and declination δ measures its angle above it: n=(cosδ cosα,cosδ sinα,sinδ). Right ascension is often written in hours, with 24 h corresponding to 360 degrees; it is an angle coordinate here, not an elapsed observation time. The angle between two directions satisfies cosθ=n₁·n₂. Use a stated reference frame and epoch; directions change through observer motion, proper motion, precession and other modeled effects. An altitude/azimuth coordinate is tied to the local horizon and observation time.
+
+The apparent sky is a directional map, not a sphere on which all objects physically lie. Sources in one angular patch can be at very different distances. A small angular separation θ corresponds approximately to transverse separation dθ only when θ is in radians, the distance d is known and the chosen geometry is appropriate. For a nearby extended target, a sightline distance and a surface size require their own geometric model.
+
+Separate repeatable annual parallax from nearly linear proper motion over a limited interval, short-period orbital motion and calibration drift. A sufficiently short observing span may make distinct functions nearly indistinguishable. More measurements of the same poorly chosen epochs need not remove that ambiguity. Metrology, shared least squares and inquiry supply the language of reference uncertainty, correlation and model criticism.
+
+**Work:** convert a right-ascension difference of 1 h to radians and compare it with the actual angular separation at declinations 0 and near a pole. Write an observation record for two visits to the same apparent source without inventing a distance. Draw how a reference-source error could affect several targets together. [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F) supplies progressive reading in chapters 2, 4 and 6; those full assignments are broader than the selected passages inspected for this block.
+
+**Continue:** [Infer distance from parallax while retaining the observation model](Infer-distance-from-parallax-while-retaining-the-observation-model.lingua#r_00AA339D3B96FFF6166AF65FB2).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0094B78B73E7B72485479C6EDB

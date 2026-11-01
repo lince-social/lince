@@ -1,6 +1,6 @@
 Import "../Materials-engineering.lingua"
 
-Common tangents and conservation across coexisting phases (@mat-common-tangent: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ") { r_05MARTRXT25F6PKERYYB70H0Z5
+Common tangents and conservation across coexisting phases (@mat-common-tangent: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ", #hephaestus-core "../../../chemistry/core/Prove-when-a-common-tangent-is-a-global-coexistence-certificate.lingua#r_000E7AF39B889246EA66B3464F") { r_05MARTRXT25F6PKERYYB70H0Z5
 **Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 8, common tangents, phase rule and lever rule; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), free-energy curves and lever rule; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 17–19.
 
 At fixed T,p, bulk phase coexistence requires equal chemical potentials for each exchangeable component. For two composition-dependent phases, their common tangent encodes both equalities. A lower tangent involving another phase can invalidate an apparently satisfactory two-phase construction.
@@ -11,5 +11,10 @@ Conservation fixes proportions after the phase compositions are established: f_�
 
 **Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
 **Continue in materials engineering:** [An inspectable symmetric phase-separation account](../computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ).
+
+
+**Eighth chemistry-block reading:** Use the stated chemical-potential conditions, two-phase balance and worked amount fractions. The next chemistry lesson proves when a common tangent is globally supporting. The broader source assignments and materials continuation retain their separate scope.
+
+**Continue in the eighth chemistry block:** [Prove when a common tangent is a global coexistence certificate](../../../chemistry/core/Prove-when-a-common-tangent-is-a-global-coexistence-certificate.lingua#r_000E7AF39B889246EA66B3464F).
 
 } r_05MARTRXT25F6PKERYYB70H0Z5

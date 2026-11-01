@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Keep coordinate choices error metrics and sensitivity distinct (@math-metric-conditioning: 0, is #chapter, #hephaestus-core "Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B") { r_00BDB35AFC4D0B673CC82739C7
+Exact solution equivalence and approximate closeness are separate. An invertible row transformation E sends Ax=b to EAx=Eb with exactly the same solutions, because E can be undone. But minimizing ‖E(Ax−b)‖² generally uses a different metric from minimizing ‖Ax−b‖². For A=(1,1)ᵀ and b=(0,2)ᵀ, the unweighted fit is x=1. Multiply the second equation by 2; the exact systems are both inconsistent, but the new objective x²+(2x−4)² has minimizer x=8/5. Eliminating exact equations before defining a least-squares metric can silently change the question.
+
+A positive diagonal D defines the weighted sum Σᵢdᵢ²(Ax−b)ᵢ². Each row's unit or declared scale may motivate dᵢ, but a probabilistic interpretation requires further assumptions. Multiplying every row and right-hand side by the same nonzero factor multiplies the objective by a positive constant and leaves minimizers unchanged. Relative row scaling generally does not. If some dᵢ=0, an observation is discarded and even the identifiable directions may change; that is outside the invertible-scaling argument.
+
+In the four-reading study, choose D=diag(1,1,2,1). The third residual has four times its previous weight. In the independent (u,v) coordinates the equations become 9u+2v=22 and 2u+6v=15, yielding u=51/25 and v=91/50. The weighted squared error is 41/50. This value cannot be compared directly with 11/17 as if both optimized the same objective. The actual predicted readings have changed; weight choice is part of the modeling decision.
+
+Changing coefficient coordinates x=Sy also preserves achievable outputs if S is invertible. If a length is meant to measure x, express it as ‖Sy‖²=yᵀSᵀSy. Replacing it with yᵀy introduces a new length unless SᵀS=I. Thus output residual metric, coefficient coordinates and any preference for small coefficients are distinct choices. Selecting the smallest coefficient norm among multiple fits would be an additional optimization problem, not information supplied by the observations alone.
+
+Sensitivity concerns changed input data even when every algebraic step is exact. Revisit [Solve simultaneous constraints without losing their solution set](Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B) with Cε having rows (1,1) and (1,1+ε), ε>0. For b=(2,2+ε), x=(1,1). Change only b₂ by δ. Subtraction gives Δx=(−δ/ε,δ/ε). With the vector maximum norm ‖z‖∞=maxᵢ|zᵢ|, ‖Δb‖∞=|δ| and ‖Δx‖∞=|δ|/ε. The absolute amplification along this perturbation is exactly 1/ε when δ≠0. Relative to these base values, the amplification ratio is (2+ε)/ε. These are proved responses in a specified direction and norms, not a computed worst-case condition number for arbitrary matrix perturbations.
+
+At ε=0, the base system has an entire solution line; a nonzero δ makes it inconsistent. For ε=10⁻⁶ and δ=10⁻⁶, the unique solution changes from (1,1) to (0,2). A printed or stored matrix that rounds 1+ε to 1 has changed the problem's exact rank. Exact Fractions preserve the supplied numbers; they cannot establish how accurately those numbers represent measurements or whether a floating implementation is stable.
+
+**Work:** derive both fits after row scaling, prove invariance under orthogonal row transformations using EᵀE=I, and give an invertible E that is not norm preserving. Derive the absolute and relative amplification formulas with δ≠0, then state what happens at δ=0 without dividing by zero. Design a report that states data scale, arithmetic representation, residual and sensitivity separately. Reuse the earlier finite-machine and floating-representation preparation when implementing approximate arithmetic; numerical linear algebra needs further analysis beyond this exact block.
+
+**Continue:** [Investigate inconsistent readings lost directions and projected fits](Investigate inconsistent readings lost directions and projected fits.lingua#r_005B6E212C56EB47DF7702079B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00BDB35AFC4D0B673CC82739C7

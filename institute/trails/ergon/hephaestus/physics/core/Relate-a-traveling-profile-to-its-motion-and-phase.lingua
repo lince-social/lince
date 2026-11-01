@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Relate a traveling profile to its motion and phase (@physics-traveling-profile: 0, is #chapter, #hephaestus-core "Derive-a-string-wave-model-from-transverse-force-balance.lingua#r_00FE4E21627306701470DD439E") { r_00D39A23468A856A9F39DD0AEC
+Let g be twice differentiable and c>0. In y(x,t)=g(x−ct), a feature at argument ξ₀ occurs at x=ξ₀+ct: the profile moves right at speed c. For g(x+ct) it moves left. These need not be periodic profiles. Their derivatives are y_t=−c g', y_x=g', y_tt=c²g'' and y_xx=g'', so they satisfy y_tt=c²y_xx. This verification does not yet explain why a material should obey that equation or prove that these are all possible solutions.
+
+For a sinusoidal example, choose A≥0, k>0, ω>0, phase φ and direction d=±1:
+
+y=A cos(kx−dωt+φ).
+
+The argument is dimensionless in radian convention: k has units m⁻¹ and ω units s⁻¹. Its wavelength is λ=2π/k, time period P=2π/ω and frequency f=ω/(2π). A constant-phase location moves with signed velocity dω/k. The transverse velocity is y_t=dAω sin(kx−dωt+φ), while y_x=−Ak sin(kx−dωt+φ). Their relation y_t=−d(ω/k)y_x describes this traveling profile; particle velocity can vanish at a crest even while the crest moves.
+
+A material wave equation may constrain ω and k; choosing them independently before supplying the medium model gives only a proposed description. At A=0, phase and propagation speed cannot be inferred from the zero field. Negative amplitudes can be absorbed into a phase shift of π; do not count these as distinct physical waves. The direction convention avoids interpreting a sign change in a plot's displacement as a reversal of travel.
+
+At a fixed position, a nonzero sinusoid follows the same mathematical second-order time equation as an oscillator. That observation does not imply a separate grounded spring for every string element: neighboring elements exert the restoring forces. A spatial derivative relates those interactions. Likewise, no general rule identifies phase velocity with signal or energy velocity in dispersive media; equality here will be established only for the chosen ideal string model.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 16.2. Work an original profile with A=0.01 m, k=1 m⁻¹, ω=2 s⁻¹. At phase zero, find y, y_t and the crest velocity. At phase π/2, find the opposite pattern. Verify both directions by differentiating. Then compare a translating smooth pulse g(x−ct) with a standing pattern: periodicity of a point's motion is not the definition of propagation.
+
+**Continue:** [Derive a string wave model from transverse force balance](Derive-a-string-wave-model-from-transverse-force-balance.lingua#r_00FE4E21627306701470DD439E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00D39A23468A856A9F39DD0AEC

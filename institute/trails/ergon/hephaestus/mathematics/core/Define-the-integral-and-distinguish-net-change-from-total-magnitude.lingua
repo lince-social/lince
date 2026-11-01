@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Define the integral and distinguish net change from total magnitude (@math-integral-definition: 0, is #chapter, #hephaestus-core "Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0") { r_0AEC763D73DF3124CDBB2E86D1
+For a bounded function f on [a,b] with a<b, the Riemann integral is a number I with the following property: for every ε>0 there is a mesh threshold δ>0 such that every tagged partition of mesh less than δ has its sum within ε of I. Both the partition and its tags are arbitrary within those conditions. We write I=∫_a^b f(x) dx. The symbol dx identifies the integrated input; it is not an ordinary finite width to be set to zero. Renaming the internal variable leaves the same integral.
+
+The previous monotone polynomial bracket establishes this definition for f(s)=s²−1 on [0,2], with value 2/3. Its nonuniform width bound controls every tagged partition. More generally, a continuous function on a closed bounded interval is integrable. We use that established real-analysis theorem here; its general uniform-continuity/completeness proof is later formation. The explicit polynomial construction supplies a fully worked case instead of treating the general theorem as a plot-based intuition.
+
+Linearity follows by distributing each finite tagged sum and passing to the common limits: ∫(cf+dg)=c∫f+d∫g for fixed constants and integrable functions. Splitting at an interior point adds the two oriented integrals; partitions can be joined or refined to include that point. Define ∫_b^a f=−∫_a^b f and ∫_a^a f=0. These conventions preserve interval cancellation. If m≤f≤M on an interval of positive length, comparison of sums gives m(b−a)≤∫_a^b f≤M(b−a). None of these statements requires f to be nonnegative.
+
+If r is a signed net transfer rate, ∫r is net change. The integral of |r| is the total magnitude of that signed transfer. For r(s)=s²−1, the sign is negative before s=1 and positive afterward. The net value on [0,2] is 2/3; the separate negative magnitude is 2/3 and positive contribution 4/3, giving total magnitude 2. These subinterval values will be recovered with the theorem in the next lesson. If separate simultaneous inward and outward streams exist, integrating the absolute value of their net does not measure their total throughput; that would require both individual nonnegative rates.
+
+Integrability does not require continuity everywhere. The step j(s)=0 for s<1 and j(s)=2 for s≥1 is integrable on [0,2]; only intervals touching the jump can contribute a nonshrinking height difference, and their total width tends to zero with mesh. Its accumulation from 0 to s is 0 up to 1 and 2(s−1) thereafter. This accumulation is continuous but has unequal one-sided slopes at 1. Thus an integrable function's accumulation need not be differentiable at every point.
+
+**Read and distinguish:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 section 5.2. Explain why a definite integral is a number for fixed endpoints, while a varying endpoint makes an accumulation function. Changing the integrand at one point changes at most two tagged terms; their magnitude is bounded by twice the mesh times the fixed value change, so the integral is unchanged. The derivative question at that point can nevertheless change. Keep pointwise behavior, accumulated behavior and a physical measurement of either distinct.
+
+**Continue:** [Connect accumulated change and local rate under stated conditions](Connect-accumulated-change-and-local-rate-under-stated-conditions.lingua#r_0005E569C642147DA7E568DFE0).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0AEC763D73DF3124CDBB2E86D1

@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Ampère law, symmetry and magnetic flux (@em-ampere: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Vector-potential-gauge-and-linked-flux.lingua#r_3DPJ91YTSE9VC10VWH8G6AA5XM") { r_45A2A15VVK27WJ4JAGQ3WC1BE9
+Ampère law, symmetry and magnetic flux (@em-ampere: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Vector-potential-gauge-and-linked-flux.lingua#r_3DPJ91YTSE9VC10VWH8G6AA5XM", #hephaestus-core "../../core/Fix-loop-orientation-before-interpreting-induced-voltage.lingua#r_0067D0F203242EDDB5A0DF39FC") { r_45A2A15VVK27WJ4JAGQ3WC1BE9
 **Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), Ampère law and magnetostatic examples; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), magnetic field equations.
 
 In vacuum magnetostatics, ∮B·dl = μ₀I_enclosed and ∇·B = 0. The circulation law yields a simple field only with enough symmetry; it does not say that B vanishes outside any loop enclosing zero current. The divergence law states zero net magnetic flux through a closed surface, consistent with no observed magnetic monopole sources in this classical model.
@@ -12,4 +12,9 @@ Analyze a toroidal winding and a long solenoid, stating the neglected leakage/ed
 **Continue:** [Vector potential, gauge and linked flux](Vector-potential-gauge-and-linked-flux.lingua#r_3DPJ91YTSE9VC10VWH8G6AA5XM).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Common magnetic-block reading:** Use the steady current, closed-flux and cylindrical-symmetry account after the preceding source-geometry derivation. The new mathematics supplies oriented circulation and divergence meanings. Toroids, general Biot–Savart quadrature, skin effect and complete Ellingson/Tong assignments remain progressive branch work. A zero circulation alone never establishes a zero field.
+
+**Continue in the common magnetic block:** [Fix loop orientation before interpreting induced voltage](../../core/Fix-loop-orientation-before-interpreting-induced-voltage.lingua#r_0067D0F203242EDDB5A0DF39FC).
+
 } r_45A2A15VVK27WJ4JAGQ3WC1BE9

@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Check feasible directions boundaries and global evidence (@math-constrained-extrema: 0, is #chapter, #hephaestus-core "Investigate-local-change-path-accounts-and-constrained-extrema.lingua#r_00B49342C72C3CFCAF4863EBCF") { r_00C9503CB678B21E9AA8585F8D
+At a differentiable local extremum in an open domain, every line direction has zero derivative: apply the one-variable interior-extremum argument to f(a+tv). Hence Df(a)=0 is necessary. It is not sufficient: x²−y² has zero gradient at the origin but increases along one axis and decreases along the other. Nor must a boundary optimum have zero gradient. Distinguish feasible directions before solving equations.
+
+For an equality g(x,y)=0, suppose near the candidate the feasible curve has a differentiable parameterization γ with nonzero tangent, both f,g are continuously differentiable, and ∇g≠0. At an interior constrained extremum, ∇f·γ′=0 and ∇g·γ′=0. In two dimensions the orthogonal complement of the nonzero tangent is one-dimensional, so ∇f=λ∇g. This derives the multiplier condition under an explicit regular parameterization. The general regular-level-set theorem supplies such a local parameterization under the usual C¹/nonzero-gradient hypotheses; its full existence proof is later analysis. Our worked affine constraint is parameterized directly.
+
+Minimize Q(x,y)=a x²+b y² subject to x+y=c, x,y≥0, where a,b>0 and c≥0. Write y=c−x, 0≤x≤c. Completing the square gives Q=ab c²/(a+b)+(a+b)[x−bc/(a+b)]². Therefore the unique minimum is x*=bc/(a+b), y*=ac/(a+b), with value ab c²/(a+b). This is a global proof on the whole feasible interval. The stationary equations 2ax=λ,2by=λ,x+y=c give the same candidate through shared linear elimination, with λ=2ab c/(a+b). At c=0 the feasible set is a singleton; the completed-square argument still works without pretending there is an interior feasible interval.
+
+For a=1,b=2,c=3, the minimum is (2,1), Q=6, λ=4. If an additional cap x≤3/2 is imposed, the allowed interval ends before the free minimum. Q decreases throughout this interval, so the constrained minimum becomes (3/2,3/2), Q=27/4. More generally with cap m≥0, choose the point of [0,min(c,m)] nearest x*. The largest value on the original interval occurs at an endpoint: the square is largest at one of the interval's extremes, giving max(ac²,bc²). Inspecting only interior stationary points would miss that maximum.
+
+Regularity matters. The constraint x²+y²=0 has only the origin as a feasible point. The objective f=x has a constrained minimum and maximum there, but ∇f=(1,0) cannot equal λ∇g=0. The nonzero-gradient hypothesis fails. This example also separates the geometry of a feasible set from a particular equation representing it.
+
+**Read and work:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 sections 4.7–4.8, with the regularity and boundary hypotheses retained. Reconstruct the square completion, capped comparison and singular counterexample. A stationary point, a local extremum and a global optimum are distinct claims. General Hessian tests, nonlinear constraints and inequality optimality theory remain broader assignments with their own preparation.
+
+**Continue:** [Investigate local change path accounts and constrained extrema](Investigate-local-change-path-accounts-and-constrained-extrema.lingua#r_00B49342C72C3CFCAF4863EBCF).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00C9503CB678B21E9AA8585F8D

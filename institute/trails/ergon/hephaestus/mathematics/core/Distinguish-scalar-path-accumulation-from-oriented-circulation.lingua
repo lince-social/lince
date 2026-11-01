@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Distinguish scalar path accumulation from oriented circulation (@math-fields-paths: 0, is #chapter, #hephaestus-core "Construct-oriented-area-from-tangent-vectors.lingua#r_008F296747E05726CB43E1FA62") { r_00D6A7AD4898E4E6881370A983
+A piecewise continuously differentiable curve is a map γ:[a,b]→R³, with finitely many smooth pieces and matching positions at joins. A regular piece has γ′≠0. A scalar line integral is ∫ f(γ(t))|γ′(t)|dt: it accumulates against length. A vector line integral is ∫ F(γ(t))·γ′(t)dt: it pairs the field with oriented displacement. The latter is often called circulation when the path closes. A field with force units gives work; that interpretation requires a physical force model, not merely the integral notation.
+
+For a C¹ increasing bijective reparameterization t=ψ(s), the chain rule gives d(γ∘ψ)/ds=γ′(ψ(s))ψ′(s), and substitution preserves both integrals. A decreasing reparameterization preserves the scalar length integral because of the absolute value, but reverses the vector integral. The curve must be counted with its traversal multiplicity; traversing a loop twice is not a harmless reparameterization of one traversal. Piecewise calculations add over the pieces.
+
+Take the segment γ(t)=(2t,0,0), 0≤t≤1. With scalar f=3, the accumulated value is 6. With F=(1,0,0), circulation is 2. Reverse the segment: the values become 6 and −2. Replacing γ′ by a unit tangent in the vector formula while forgetting the speed would give 1 in the forward case. A parameter is not automatically arc length.
+
+[Distinguish a state differential from a path dependent account](Distinguish-a-state-differential-from-a-path-dependent-account.lingua#r_00204337E177A0330276621E37) already proves the endpoint identity for df along a path. Reuse that proof: if F=∇f on a neighborhood of the curve, the chain rule and one-dimensional fundamental theorem give ∫ F·dr=f(end)−f(start). A general field need not have a potential. For F=(−y,x,0), the unit square traversed counterclockwise has circulation 2; the diagonal from the origin to (1,1) gives zero. This does not conflict with endpoint independence for gradients because this F is not a gradient on the plane.
+
+**Read and work:** [Vector Calculus — David Tong](../../physics/electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), chapter 1 curve/line-integral sections are further reading, with the existing exact-differential lesson supplying the developed proof here. Parameterize every edge of a rectangle yourself. Check reversal and joining at an intermediate point. Explain the different units of ∫ f ds and ∫ F·dr before comparing their numerical values.
+
+**Continue:** [Construct oriented area from tangent vectors](Construct-oriented-area-from-tangent-vectors.lingua#r_008F296747E05726CB43E1FA62).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00D6A7AD4898E4E6881370A983

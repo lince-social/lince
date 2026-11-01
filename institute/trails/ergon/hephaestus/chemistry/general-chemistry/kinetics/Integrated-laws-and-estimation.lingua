@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Derive and test integrated rate laws instead of selecting a convenient straight line (@gc-integrated: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ") { r_2WZTK2PWSJ27S4PB9K0BYCAJF3
+Derive and test integrated rate laws instead of selecting a convenient straight line (@gc-integrated: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ", #hephaestus-core "../../core/Derive-dynamic-balance-and-relaxation-for-a-reversible-model.lingua#r_08C68F9BE198AA15DE975BAF90") { r_2WZTK2PWSJ27S4PB9K0BYCAJF3
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s integrated laws and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), integrated laws and experimental methods; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 13’s kinetic-observation treatment.
 
 For an ideal first-order disappearance in a constant-volume system, dc_A/dt = −kc_A gives c_A(t) = c_A(0) exp(−kt), with half-life ln 2/k. Here c_A denotes the amount concentration of A. The differential law, integration conditions, and initial value are the reason for the expression. A second-order law has a different integrated form and concentration-dependent half-life.
@@ -16,4 +16,9 @@ Use [Reproducible computational work](../../../inquiry/reproducible-computation/
 **Continue:** [Explain temperature dependence and interpret an activation model](Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Third chemistry-block reading:** Use Chemistry 2e 12.4 with the preceding common logarithm, exponential and initial-value derivations. Zero-, first- and second-order models have distinct units and admissible domains. Numerical parameter fitting, uncertainty models and Harvey’s complete kinetic-observation chapter remain later work. A baseline-sensitive hypothetical trace is not a performed kinetic experiment.
+
+**Continue in the third chemistry block:** [Derive dynamic balance and relaxation for a reversible model](../../core/Derive-dynamic-balance-and-relaxation-for-a-reversible-model.lingua#r_08C68F9BE198AA15DE975BAF90).
+
 } r_2WZTK2PWSJ27S4PB9K0BYCAJF3

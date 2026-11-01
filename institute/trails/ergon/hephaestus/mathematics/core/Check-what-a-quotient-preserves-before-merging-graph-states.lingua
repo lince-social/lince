@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Check what a quotient preserves before merging graph states (@math-discrete-quotients: 0, is #chapter, #hephaestus-core "Investigate-finite-configurations-histories-and-misleading-observations.lingua#r_002AF0272204D854378B58CA13") { r_009AE8B87EF9B264029366B97B
+For a label function f on graph vertices, form an observed graph whose vertices are the nonempty fibers and whose edges f(u)→f(v) exist whenever some concrete u→v exists. Every concrete walk projects to an observed walk. The reverse implication can fail: consecutive observed edges may have witnesses at incompatible members of their shared middle class. An observation-equivalence relation is mathematically valid without being an adequate state description for dynamics.
+
+For N=1 in the forward model, label a state only by its middle-box count b. The concrete path is (1,0,0)→(0,1,0)→(0,0,1), with labels 0→1→0. The observed graph consequently contains edges 0→1 and 1→0. It admits the walk 0→1→0→1, but no concrete walk can lift that history: after two moves the sole token is in box 2 and cannot move. Even 0→1 cannot be lifted starting from (0,0,1). A cycle has appeared in the observed graph although the underlying graph is acyclic.
+
+One sufficient condition for lifting every observed walk from any compatible initial vertex is local: for every concrete x and every observed edge f(x)→q, there is an edge x→y with f(y)=q. Choose such a successor at each step; induction on the observed walk length constructs a lift. This criterion concerns existence of histories, not their counts, rates or probabilities. A quotient satisfying it may still merge different numbers of concrete executions.
+
+Symmetry supplies a useful special case. An automorphism is a bijection of vertices preserving edges in both directions. For the reversible three-box path, reflection R(a,b,c)=(c,b,a) is an automorphism with R² equal to the identity. Its classes are {s,R(s)}. If a quotient edge is witnessed by u→v and the required initial x is either u or R(u), use the edge itself or its reflected edge. This proves the local lifting condition. Reflection is not an automorphism of the forward path: it reverses the permitted direction, so this proof cannot be transferred there.
+
+Count reflection classes without dividing blindly by two. Fixed states have a=c, so a can be any integer from 0 through floor(N/2), giving F_N=floor(N/2)+1 fixed states. Every other class has two members. Thus the number of classes is F_N+(|S_N|−F_N)/2=(|S_N|+F_N)/2. At N=2 there are four classes, not six divided by two. For N=0 the unique state is fixed. These are orbits of one declared symmetry, not an assertion that box identity never matters.
+
+**Work and transfer:** reconstruct the false observed history and the exact lifting failure. Prove the reflection count and identify every fixed state for N=4. Explain which extra label repairs the forward observation. Relate representative independence to a future chemical identity convention and sufficient state to a communication protocol, while retaining each subject's own physical and semantic assumptions. Graph relabeling alone does not decide molecular identity or correct protocol behavior.
+
+**Continue:** [Investigate finite configurations histories and misleading observations](Investigate-finite-configurations-histories-and-misleading-observations.lingua#r_002AF0272204D854378B58CA13).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_009AE8B87EF9B264029366B97B

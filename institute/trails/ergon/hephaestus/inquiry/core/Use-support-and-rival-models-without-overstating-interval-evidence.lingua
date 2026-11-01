@@ -1,0 +1,17 @@
+Import "../Inquiry.lingua"
+
+Use support and rival models without overstating interval evidence (@inquiry-support-and-rivals: 0, is #chapter, #hephaestus-core "Investigate-exact-continuous-coverage-and-the-assumptions-that-change-it.lingua#r_000A2640C64970EAA40BE1670B") { r_006D26B1B561C67863DF2AB840
+Under Yᵢ=θ+Eᵢ with |Eᵢ|≤a, each observation implies θ∈[Yᵢ−a,Yᵢ+a]. Their intersection is S(Y)=[max(Y₁,Y₂)−a,min(Y₁,Y₂)+a]. If |Y₁−Y₂|>2a, it is empty: no θ can explain that pair under the exact support premise. This is a model contradiction, not merely a large estimated standard error. Rounding or uncertainty in a changes the observation/support model and must be included before interpreting the contradiction.
+
+For model-generated data, θ belongs to S(Y) with probability one. Intersecting I(Y) with S(Y) therefore preserves its unconditional coverage: apart from any probability-zero boundary conventions, θ∈I∩S exactly when θ∈I. This argument does not claim conditional coverage given the observed range, or that S is a posterior credible interval. A narrower-looking reported interval still needs its stated construction and interpretation.
+
+At a=2 and c=1, the independent centered model gives coverage 3/4. If the two errors are identical uniforms, M−θ is uniform and coverage is only c/a=1/2. If the errors are perfectly opposite, M=θ and the same nonnegative-width interval covers with probability one. These examples preserve each individual error marginal and change only their joint dependence. There is no universal confidence correction based only on the marginal standard deviation.
+
+Keep independence but add fixed offset b=1. Coverage becomes P(−c−b≤Z≤c−b)=F_Z(c−b)−F_Z(−c−b). With a=2,c=1 this is F_Z(0)−F_Z(−2)=1/2. More independent residual readings can shrink a nominal interval around the biased location without repairing the offset. A reference observation can address that ambiguity; repeating the same setup alone may not.
+
+**Work:** derive all three dependence cases and the shifted coverage. State which model premise each changes. Construct a pair incompatible with the stipulated support, and explain why an automatic interval output would hide the failure. Propose an independent reference or acquisition change that could distinguish two rivals. No simulated or invented readings are evidence that a real measuring system follows the uniform model.
+
+**Continue:** [Investigate exact continuous coverage and the assumptions that change it](Investigate-exact-continuous-coverage-and-the-assumptions-that-change-it.lingua#r_000A2640C64970EAA40BE1670B).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_006D26B1B561C67863DF2AB840

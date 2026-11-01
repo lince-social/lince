@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Combine equilibrium and compatible deformation before sharing a load (@engineering-compatible-response: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/structures/Axial-members-compatibility-and-load-sharing.lingua#r_1VCFFVTFXWNAS0G6CJC2B8DVKN") { r_008B2AB436AD7A960352D2E6C4
+Force balance alone permits infinitely many pairs N₁+N₂=P. The connection geometry supplies missing information. Consider parallel axial members whose attachments enforce one common relative extension δ without rotation or slip; transverse motion is excluded by this model. Each has kᵢ>0 and prescribed free extension gᵢ. The individual law Nᵢ=kᵢ(δ−gᵢ), together with ΣNᵢ=P, gives Kδ=P+Σkᵢgᵢ, where K=Σkᵢ. Consequently δ=ḡ+P/K and ḡ=Σkᵢgᵢ/K. K>0 gives one extension and one force in each member. If attachments rotate or a member can go slack, this compatibility/model changes.
+
+With every gᵢ=0, forces divide in proportion to stiffness: Nᵢ=(kᵢ/K)P. Equal areas alone do not imply equal forces. With unequal gᵢ, even P=0 can leave nonzero self-equilibrated forces. For two members, N₁=(k₁/K)P+(k₁k₂/K)(g₂−g₁) and N₂=P−N₁. Derive these expressions by eliminating δ. The mismatch term has force units and changes sign when the two free extensions exchange.
+
+Series members have a different compatibility statement. With no intermediate axial load, every segment carries the same signed P, while end-to-end extension adds: δ_total=Σ(gᵢ+P/kᵢ)=G+CP, where G=Σgᵢ and C=Σ1/kᵢ. Thus series compliances add and parallel stiffnesses add, under their respective assumptions. A parallel pair with stiffnesses k₁,k₂ has stiffness k₁+k₂; a series pair has k₁k₂/(k₁+k₂). Drawing the connection before using either formula prevents an otherwise dimensionally plausible mistake.
+
+The positive-stiffness model excludes a disconnected assembly and negative stiffness. A zero stiffness would require a separate description of whether a component is absent, slack or a mechanism. An unanchored displacement model can leave an arbitrary common translation even when relative extension is determined. Our equations specify relative extension between an anchored end and a guided end, so no absolute rigid-body location is being solved. This is connected to the anchoring distinction in [Review conservation component behavior and engineering evidence](Review-conservation-component-behavior-and-engineering-evidence.lingua#r_00CEE9876C1F6E9B9A6C941F00), but a mechanical stored energy has different units from the earlier thermal quadratic.
+
+**Work:** solve both series and parallel arrangements for two unequal members before reading [Axial members, compatibility and load sharing](../mechanical-engineering-and-machine-design/structures/Axial-members-compatibility-and-load-sharing.lingua#r_1VCFFVTFXWNAS0G6CJC2B8DVKN). Then introduce a free-extension mismatch and show directly that the sum of internal forces still equals P. Draw the equal-extension constraint and the free bodies. Identify exactly which equation must change if a connection slips or a tension-only member loses tension. Full trusses, spatial frames and contact remain later branch work.
+
+**Continue:** [Axial members, compatibility and load sharing](../mechanical-engineering-and-machine-design/structures/Axial-members-compatibility-and-load-sharing.lingua#r_1VCFFVTFXWNAS0G6CJC2B8DVKN).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_008B2AB436AD7A960352D2E6C4

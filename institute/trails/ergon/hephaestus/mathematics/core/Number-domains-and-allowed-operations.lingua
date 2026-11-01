@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Choose the number domain and the allowed operations (@math-domains: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD") { r_0EF253E2622226C5346A3F368C
+A domain specifies which objects a question allows. For a stock of intact pieces, use nonnegative whole numbers. For changes in stock, signed integers can distinguish receipts from withdrawals. For equal portions of a whole, fractions are useful. These choices concern the mathematical question, not the shape of the written numerals.
+
+Use Z for the integers, Q for rational numbers and R for real numbers. A rational number is a/b with integers a and b and b nonzero; the slash denotes division. The symbol ∈ means “belongs to”: −3 ∈ Z. We will say explicitly whether zero is included when discussing natural numbers, since conventions vary. The real numbers include the rationals and numbers such as the positive square root of 2—the positive number whose square is 2—which is not rational. Squaring means multiplying a number by itself; x² denotes x times x. Their fuller construction and completeness belong to later analysis; this block uses their usual ordered arithmetic.
+
+An operation may lead outside a chosen domain. The equation 5 + x = 2 has no nonnegative whole-number solution but has the integer solution −3. The equation 2x = 1 has no integer solution but has the rational solution 1/2. Neither observation says that the original inventory or divisibility question should silently change its allowed objects.
+
+Division by zero is undefined in this arithmetic. If 0 × y = 1, there is no possible y; if 0 × y = 0, every y works, so the relation does not determine a quotient. Defining a single reciprocal of zero cannot preserve the ordinary inverse rule. When an expression has a variable denominator, state where it is nonzero before cancelling or evaluating it.
+
+**Read:** [Algebra and Trigonometry 2e](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), section 1.1, with its classification and expression exercises. Use [Book of Proof](../sources/Book-of-Proof-Hammack.lingua#r_027C6E588EEF719F2C13655FF8), chapter 1, for the set language; the whole chapter is assigned reading, not a claim that the trail has already developed every set operation.
+
+**Work:** classify the allowed values for a piece count, an elevation relative to sea level, a fraction of a batch and a real-valued coordinate in an ideal geometric model. For each, distinguish a mathematical domain from the precision of an actual observation. Solve 4x = 10 over integers and rationals. Explain why a negative answer can be valid mathematics yet fail a physical constraint.
+
+**Check:** give an example of addition, subtraction and division that stays inside a chosen domain, and one that leaves it. State the domain before reporting a solution. Continue through the shared fraction lesson before assuming that different written fractions are different values.
+
+**Continue:** [Fractions, decimals, rounding, and equivalent values](../../inquiry/quantitative-literacy/foundations/Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0EF253E2622226C5346A3F368C

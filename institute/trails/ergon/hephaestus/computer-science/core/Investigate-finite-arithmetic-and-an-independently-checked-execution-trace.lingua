@@ -1,0 +1,261 @@
+Import "../Computing.lingua"
+
+Investigate finite arithmetic and an independently checked execution trace (@computing-machine-study: 0, is #chapter, #hephaestus-core "Review-finite-representations-logic-and-machine-execution-evidence.lingua#r_0FC88E84E9CD09337751DA7A10") { r_067F495969F16395BCE0789A85
+This original investigation connects mathematical representations, Boolean identities, encoded instructions and a complete program trace. It is a Python model, not an assembled processor or a measured hardware experiment. Keep its separate immutable code and four-bit data rules explicit when comparing it with the assigned architecture reading.
+
+Save the following program as `machine_study.py`. `bits`, `unsigned`, `signed` and `add_word` implement the declared finite representations. The word adder follows the Boolean carry recurrence. `State` is frozen and contains immutable memory tuples so recorded states are not later rewritten by a store. The internal `step` helper assumes a valid state and byte program established by `run`; it is not a general validator for arbitrary manually constructed objects. `run` copies supplied program/memory sequences, checks their sizes and ranges, and returns a status plus the trace. Input-contract violations raise ValueError; execution faults return their named status and completed trace.
+
+```python file=machine_study.py
+from dataclasses import dataclass
+
+
+class Fault(ValueError):
+    pass
+
+
+def bits(value, width):
+    if type(width) is not int or width < 1 or type(value) is not int or not 0 <= value < 1 << width:
+        raise ValueError('integer value must fit the declared positive width')
+    return tuple((value >> i) & 1 for i in range(width-1,-1,-1))
+
+
+def unsigned(word):
+    if not word or any(type(b) is not int or b not in (0,1) for b in word):
+        raise ValueError('a nonempty sequence of integer bits is required')
+    value=0
+    for b in word:
+        value=2*value+b
+    return value
+
+
+def signed(value, width):
+    bits(value,width)
+    return value if value < 1 << (width-1) else value-(1 << width)
+
+
+def add_word(a, b, width):
+    bits(a,width)
+    bits(b,width)
+    result=0
+    carry=0
+    for i in range(width):
+        x,y=(a >> i) & 1,(b >> i) & 1
+        digit=x ^ y ^ carry
+        carry=(x & y) | (carry & (x ^ y))
+        result |= digit << i
+    return result,carry
+
+
+def encode(op, argument=0):
+    if type(op) is not int or type(argument) is not int or not 0 <= op <= 7 or not 0 <= argument <= 15 or (op==0 and argument!=0):
+        raise Fault('invalid instruction fields')
+    return (op << 4) | argument
+
+
+def decode(byte):
+    if type(byte) is not int or not 0 <= byte <= 255:
+        raise Fault('instruction must be one byte')
+    op,argument=byte >> 4,byte & 15
+    if op > 7 or (op==0 and argument!=0):
+        raise Fault('reserved encoding')
+    return op,argument
+
+
+@dataclass(frozen=True)
+class State:
+    pc: int
+    acc: int
+    memory: tuple
+    halted: bool=False
+
+
+def step(program, state):
+    if state.halted:
+        return state
+    if not 0 <= state.pc < len(program):
+        raise Fault('fetch outside code')
+    op,arg=decode(program[state.pc])
+    pc,acc,memory=state.pc+1,state.acc,list(state.memory)
+    if op==0:
+        return State(state.pc,acc,tuple(memory),True)
+    if op==1:
+        acc=memory[arg]
+    elif op==2:
+        memory[arg]=acc
+    elif op==3:
+        acc=add_word(acc,memory[arg],4)[0]
+    elif op==4:
+        acc=(acc-memory[arg]) & 15
+    elif op==5 or (op==6 and acc==0):
+        if arg >= len(program):
+            raise Fault('target outside code')
+        pc=arg
+    elif op==7:
+        acc=arg
+    return State(pc,acc,tuple(memory))
+
+
+def run(program, memory, limit):
+    program=tuple(program)
+    memory=tuple(memory)
+    if not 1 <= len(program) <= 16 or any(type(x) is not int or not 0 <= x <= 255 for x in program):
+        raise ValueError('one to sixteen instruction bytes required')
+    if len(memory)!=16 or any(type(x) is not int or not 0 <= x <= 15 for x in memory):
+        raise ValueError('sixteen four-bit data words required')
+    if type(limit) is not int or limit < 0:
+        raise ValueError('nonnegative integer step limit required')
+    state=State(0,0,memory)
+    trace=[state]
+    for _ in range(limit):
+        if state.halted:
+            break
+        try:
+            state=step(program,state)
+        except Fault as failure:
+            return str(failure),tuple(trace)
+        trace.append(state)
+    return ('halt' if state.halted else 'budget'),tuple(trace)
+
+
+SUM_PROGRAM=tuple(encode(op,arg) for op,arg in ((7,0),(2,1),(1,0),(6,10),(3,1),(2,1),(1,0),(4,2),(2,0),(5,2),(0,0)))
+
+
+def initial(n):
+    bits(n,4)
+    return (n,0,1)+(0,)*13
+
+
+if __name__=='__main__':
+    print('code',tuple(f'{x:02X}' for x in SUM_PROGRAM))
+    for n in (0,4,6,15):
+        status,trace=run(SUM_PROGRAM,initial(n),125)
+        print(n,status,'steps',len(trace)-1,'result',trace[-1].memory[1])
+```
+
+Save `machine_checks.py` beside the program. It compares the bitwise adder with independent integer equations for widths one through six, and signed overflow with the independently computed mathematical range. It enumerates all byte encodings, independently specifies the expected program-counter sequence, and checks the loop-head closed formula rather than running a second copy of the interpreter. Store isolation, branches, faults, exact-budget halt and a deliberately changed store address provide additional execution evidence. The final miniature floating set uses exact Fraction values and its declared nearest/lower-tie rule; it does not test IEEE hardware conformance.
+
+
+```python file=machine_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import machine_study as m
+
+checks=0
+
+def check(condition):
+    global checks
+    assert condition
+    checks+=1
+
+arithmetic_pairs=0
+for width in range(1,7):
+    modulus=2**width
+    for a in range(modulus):
+        word=m.bits(a,width)
+        check(m.unsigned(word)==a)
+        check(sum(bit*2**(width-1-i) for i,bit in enumerate(word))==a)
+        check(-modulus//2<=m.signed(a,width)<modulus//2)
+        for b in range(modulus):
+            arithmetic_pairs+=1
+            result,carry=m.add_word(a,b,width)
+            check(result+modulus*carry==a+b)
+            check(result==(a+b)%modulus)
+            exact=m.signed(a,width)+m.signed(b,width)
+            overflow=not -modulus//2<=exact<modulus//2
+            same_sign=(a>=modulus//2)==(b>=modulus//2)
+            changed_sign=(result>=modulus//2)!=(a>=modulus//2)
+            check(overflow==(same_sign and changed_sign))
+for a,b,c in product((0,1),repeat=3):
+    digit=a^b^c
+    carry=(a & b) | (c & (a ^ b))
+    check(digit+2*carry==a+b+c)
+valid_codes=0
+for byte in range(256):
+    legal=byte==0 or 16<=byte<=127
+    try:
+        op,arg=m.decode(byte)
+    except m.Fault:
+        check(not legal)
+    else:
+        valid_codes+=1
+        check(legal)
+        check(m.encode(op,arg)==byte)
+check(valid_codes==113)
+program_cases=0
+for n in range(16):
+    program_cases+=1
+    initial=m.initial(n)
+    status,trace=m.run(m.SUM_PROGRAM,initial,8*n+5)
+    check(status=='halt')
+    check(len(trace)-1==8*n+5)
+    check(trace[-1].memory[0]==0)
+    check(trace[-1].memory[1]==sum(range(n+1))%16)
+    check(initial==m.initial(n))
+    heads=[state for state in trace if state.pc==2 and not state.halted]
+    check(len(heads)==n+1)
+    for j,state in enumerate(heads):
+        check(state.memory[0]==n-j)
+        check(state.memory[1]==(j*(2*n-j+1)//2)%16)
+        check(state.memory[2:]==initial[2:])
+    expected_pcs=(0,1)+tuple(pc for _ in range(n) for pc in (2,3,4,5,6,7,8,9))+(2,3,10)
+    check(tuple(s.pc for s in trace[:-1])==expected_pcs)
+    status_short,short=m.run(m.SUM_PROGRAM,initial,8*n+4)
+    check(status_short=='budget' and not short[-1].halted)
+    check(short==trace[:-1])
+for acc,address in product(range(16),range(16)):
+    memory=tuple((i*3)%16 for i in range(16))
+    state=m.State(0,acc,memory)
+    stored=m.step((m.encode(2,address),),state)
+    check(stored.memory[address]==acc)
+    check(all(stored.memory[i]==memory[i] for i in range(16) if i!=address))
+    check(state.memory==memory)
+    loaded=m.step((m.encode(1,address),),state)
+    check(loaded.acc==memory[address] and loaded.memory==memory)
+    subtracted=m.step((m.encode(4,address),),state)
+    check(subtracted.acc==(acc+16-memory[address])%16)
+for acc in range(16):
+    state=m.State(0,acc,(0,)*16)
+    branched=m.step((m.encode(6,2),0,0),state)
+    check(branched.pc==(2 if acc==0 else 1))
+    check(branched.acc==acc)
+check(m.run((0,),m.initial(0),1)[0]=='halt')
+check(m.run((1,),m.initial(0),1)[0]=='reserved encoding')
+check(m.run((0x80,),m.initial(0),1)[0]=='reserved encoding')
+check(m.run((m.encode(7,1),),m.initial(0),2)[0]=='fetch outside code')
+check(m.run((m.encode(5,15),),m.initial(0),1)[0]=='target outside code')
+check(m.run((m.encode(5,0),),m.initial(0),20)[0]=='budget')
+check(m.run((0,),m.initial(0),0)[0]=='budget')
+bad=list(m.SUM_PROGRAM);bad[5]=m.encode(2,2)
+status,trace=m.run(bad,m.initial(4),125)
+check(status!='halt' or trace[-1].memory[1]!=10)
+for args in [((0,),(0,)*15,1),((0,),m.initial(0),-1),((256,),m.initial(0),1),((0,),m.initial(0),True)]:
+    try:
+        m.run(*args)
+    except ValueError:
+        check(True)
+    else:
+        check(False)
+float_values=sorted({F(0)}|{F(sign*mantissa)*F(2)**exponent for sign in (-1,1) for mantissa in range(4,8) for exponent in range(-3,3)})
+def nearest(value):
+    return min(float_values,key=lambda candidate:(abs(candidate-value),candidate))
+check(nearest(F(1,10))==0)
+check(nearest(F(9,8))==1)
+check(nearest(F(11,8))==F(5,4))
+check(nearest(F(7)+F(1,4))==7)
+check(nearest(nearest(F(7)+F(1,4))-7)==0)
+check(nearest(nearest(F(7)-7)+F(1,2))==F(1,2))
+check(nearest(F(7)+nearest(-F(7)+F(1,2)))==0)
+print(json.dumps({'checks':checks,'arithmetic_pairs':arithmetic_pairs,'valid_encodings':valid_codes,'sum_inputs':program_cases,'toy_float_values':len(float_values)},indent=2))
+```
+
+**Independent extension:** change the program to compute a different bounded quantity, write its modular and unbounded contracts separately, derive a loop invariant and stopping argument, then predict a trace before execution. Choose a fault case and a valid-but-wrong-address case and explain why they are different failures. Expand the finite word width only after updating the representation, instruction/address and data contracts coherently. Do not assume an exhaustive four-bit test proves a general wider implementation.
+
+**Criticism and revision:** compare the original model with a selected course architecture passage, naming both a preserved conceptual relation and a deliberate simplification. Explain which observations would be needed to establish actual hardware timing, energy, memory behavior or I/O reliability. Retain the existing stock/catalog and floating examples as distinct investigations, record a critic’s objection and revise one claim accordingly.
+
+**Author verification:** the companion passed 19,019 checks through Nix, including 5,460 operand pairs across widths one through six, every byte encoding and all sixteen sum-program inputs. The original floating set contains 49 exact values. These checks establish the tested logical/numerical behavior, not physical hardware performance.
+
+**Continue:** [Review finite representations logic and machine execution evidence](Review-finite-representations-logic-and-machine-execution-evidence.lingua#r_0FC88E84E9CD09337751DA7A10).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_067F495969F16395BCE0789A85

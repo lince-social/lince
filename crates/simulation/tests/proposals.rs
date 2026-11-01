@@ -736,13 +736,11 @@ fn occurrence_evidence_keeps_boundary_metadata_target_revision_and_zero_delta_ap
         let options = store::sqlx::sqlite::SqliteConnectOptions::new()
             .filename(&source)
             .read_only(true);
-        let historical_store = store::Store {
-            pool: store::sqlx::sqlite::SqlitePoolOptions::new()
+        let historical_store = store::Store::from_pool(store::sqlx::sqlite::SqlitePoolOptions::new()
                 .max_connections(1)
                 .connect_with(options)
                 .await
-                .unwrap(),
-        };
+                .unwrap());
         historical.proposal = Some(
             Proposal::capture(
                 engine,

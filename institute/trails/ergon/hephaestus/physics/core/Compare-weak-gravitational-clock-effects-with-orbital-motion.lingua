@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Compare weak gravitational clock effects with orbital motion (@physics-spacetime-weakclocks: 0, is #chapter, #hephaestus-core "Reconstruct-a-published-optical-clock-comparison-within-its-evidence-limits.lingua#r_005C21A503CEFC482EF37A51F5") { r_0085AC67472F44FE636C42D515
+To connect clocks with gravity, introduce an additional relativistic model. In a weak, static gravitational field with a stated approximately inertial spatial coordinate system, take the leading interval as c²dτ²≈(1+2Φ/c²)c²dt²−|dx|². Omitted spatial-metric corrections contribute at higher order to the slow-clock rate considered here; this expression is not a complete metric for arbitrary light propagation. Require |Φ|/c²≪1 and v²/c²≪1 in the chosen reference convention. The weak-field interval is an accepted gravitational-model input, not derivable solely from Newton's force law.
+
+Divide by c²dt² and expand the square root to first order: dτ/dt≈1+Φ/c²−v²/(2c²). Terms quadratic in Φ/c² or v²/c², and their products, are beyond this approximation. For two paths compared against the same coordinate time, the rate difference is [Φ₂−Φ₁−(v₂²−v₁²)/2]/c². Adding the same constant to the potentials cancels at this order; an absolute coordinate clock rate also depends on the reference time choice. A real comparison must include how the clock signals are transferred.
+
+At rest in a common local laboratory, raising a clock by Δh gives ΔΦ≈gΔh, so the higher clock runs faster by fractional rate gΔh/c² in this approximation. This concerns clock rates compared through a specified link. A photon sent upward from a fixed lower emitter is received with a lower frequency relative to the faster upper local clock; the redshift sign is compatible with the higher clock's faster rate. The local vacuum speed of light remains c. Neither an instantaneous Newtonian potential nor a coordinate light speed can substitute for a causal relativistic field theory.
+
+For the fixed-source version of the normalized ellipse in the preceding lesson, Φ_apo−Φ_peri=6/5 and v_apo²−v_peri²=−12/5. Thus the apoapsis clock-rate excess over periapsis, for an ideal clock following that orbit at these two instants, is (12/5)/c². Taking the model conversion speed c=1000 makes the fractional difference 3/1250000. These are normalized teaching parameters, not physical Earth-orbit values. Both shallower potential and slower motion contribute. Integrate rates along paths for accumulated timing; an endpoint rate difference is not a total clock offset.
+
+**Work:** obtain the first-order expansion and classify the neglected orders. Find a speed-squared increase that cancels the clock effect of an upward Δh in the formula. Explain why a cancellation of two modeled effects cannot prove either one absent. The next lesson connects this calculation with inspected published evidence; rotating Earth coordinates, precise time standards and operational orbit determination remain later branch work.
+
+**Continue:** [Reconstruct a published optical clock comparison within its evidence limits](Reconstruct-a-published-optical-clock-comparison-within-its-evidence-limits.lingua#r_005C21A503CEFC482EF37A51F5).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0085AC67472F44FE636C42D515

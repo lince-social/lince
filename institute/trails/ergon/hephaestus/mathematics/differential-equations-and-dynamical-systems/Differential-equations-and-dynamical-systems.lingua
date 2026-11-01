@@ -1,0 +1,9 @@
+Differential equations and dynamical systems (@differential-equations-and-dynamical-systems: 0, is #chapter, #outline) { r_448403JJMVPXKMBJKADBGVXNWN
+Differential equations describe rates and relationships; dynamical systems study evolution and qualitative behaviour. This material joins ordinary and partial equations, boundary conditions, stability, bifurcations, chaos, and multiscale models, connecting mathematical methods with physical, biological, and engineered processes.
+
+**Common preparation developed:** the [coupled evolution investigation](../core/Investigate-complex-operators-coordinate-changes-and-certified-evolution.lingua) derives the finite constant-matrix exponential, initial-value uniqueness and a finite truncation certificate. It reconstructs bounded MIT examples, tests an original Hermitian family and exposes order/metric/numerical errors through independent exact checks. Nonlinear/time-varying systems, PDEs, advanced solvers and full dynamical-systems formation remain pending.
+
+**Common preparation developed:** the [local-balance lesson](../core/Localize-an-integral-balance-with-explicit-regularity-and-domain.lingua) proves the fixed-region integral-to-local implication under continuity and all-small-region hypotheses. A singular-domain example, a discontinuous residual and a single-global-region counterexample delimit its scope. Moving boundaries, weak formulations, PDE solution theory and full dynamical systems remain pending.
+
+**Parent:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_448403JJMVPXKMBJKADBGVXNWN

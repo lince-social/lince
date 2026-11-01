@@ -1,0 +1,29 @@
+Import "../Physics.lingua"
+
+Derive local wave energy and transport across a boundary (@physics-wave-energy: 0, is #chapter, #hephaestus-core "Investigate-string-modes-energy-transfer-and-invisible-motion.lingua#r_000E36175B4D0D0ECA6FE26CC7") { r_0015B67A83CB25AF990B8BABEF
+Return to the same ideal string and its small-slope model. The kinetic energy per equilibrium length is μy_t²/2. A segment with slope s has geometric length factor √(1+s²). Its excess length is approximately s²/2, because √(1+s²)−1=s²/(√(1+s²)+1). More precisely, the difference between s²/2 and this expression is s⁴/[2(√(1+s²)+1)²], between zero and s⁴/8. Under the constant-prestress approximation the leading energy associated with this extra length is τy_x²/2 per equilibrium length. Corrections from tension changes or bending remain outside this model.
+
+Define the leading mechanical energy density and signed rightward power by
+
+e=μy_t²/2+τy_x²/2,     J=−τy_t y_x.
+
+The units are J/m and W. The sign of J follows the end-force work: the material to the left exerts approximately −τy_x on the material to the right, whose transverse velocity is y_t. Their product is power delivered rightward. A moving shape can transmit power although the material's longitudinal velocity has been neglected.
+
+For constant μ,τ and continuous second partial derivatives,
+
+e_t=μy_t y_tt+τy_x y_xt,
+J_x=−τ(y_tx y_x+y_t y_xx),
+e_t+J_x=y_t(μy_tt−τy_xx)=0.
+
+Integrating the local balance gives d/dt ∫ₐᵇe dx=J(a,t)−J(b,t). Interchanging time differentiation and integration here is justified for the smooth fields on a finite interval. At fixed ends y_t=0, so no power crosses the ends and the full energy is constant. Energy may still redistribute inside. If a distributed external transverse force per length q were added to the equation, the right side would be qy_t, its local input power; do not discard a nonzero residual just to obtain a conservation identity.
+
+For y=A cos(kx−dωt+φ), with ω=ck, the two density terms are equal pointwise and e=μA²ω²sin²(phase). Thus J=dc e and the mean over a full cycle is dμA²ω²c/2. This equality of energy and phase transport is specific to this nondispersive model. It does not identify particle speed with c.
+
+For y=A sin(kx)cos(ωt), the density is μA²ω²[sin²(kx)sin²(ωt)+cos²(kx)cos²(ωt)]/2. Its power is τA²kω sin(kx)cos(kx)sin(ωt)cos(ωt). The cycle-mean power at each position is zero, although instantaneous power generally is not. On an allowed fixed-end mode, ∫₀ᴸsin²(kx)dx=∫₀ᴸcos²(kx)dx=L/2, so total E=μA²ω²L/4. These integrals follow from the double-angle antiderivatives already developed. Local energy is not obtained by giving every element an independent spring potential proportional to y²; the interaction energy depends on spatial slope.
+
+**Reading and work:** [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), section 16.4 for the wave-energy and cycle-power reading, together with the direct balance above. Reproduce the geometric remainder, boundary signs and local cancellation. Compare a progressive wave with a standing mode at a node, an antinode and an intermediate point. Derive the uniqueness argument promised in the preceding lesson, stating positivity, continuity and the fixed-end condition. The assigned source gives context; the local derivation and the following investigation are independently constructed.
+
+**Continue:** [Investigate string modes energy transfer and invisible motion](Investigate-string-modes-energy-transfer-and-invisible-motion.lingua#r_000E36175B4D0D0ECA6FE26CC7).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0015B67A83CB25AF990B8BABEF

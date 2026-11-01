@@ -1,0 +1,30 @@
+Import "../Chemistry.lingua"
+
+Derive one admissible acid water equilibrium from coupled balances (@chemistry-acid-balance: 0, is #chapter, #hephaestus-core "../general-chemistry/aqueous/Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP") { r_00B40681235B166A572A4E4545
+Consider a closed, homogeneous single liquid phase containing only neutral HA, A⁻, H⁺, OH⁻ and solvent water. There are no other charged components, complexes, additional acid forms, precipitates or gas exchange in this bounded model. Assume equilibrium, fixed temperature, the ideal concentration conventions just stated, analytical concentration C≥0 and positive coefficients K_a,c and K_w,c. These are explicit model inputs, not properties established by the calculation.
+
+Write all four equations before eliminating anything:
+
+[HA]+[A⁻]=C,
+h=[A⁻]+o,
+h[A⁻]=K_a,c[HA],
+ho=K_w,c.
+
+The cross-multiplied acid equation also makes sense when C=0, whereas a ratio dividing by [HA] would then be undefined. From the component and acid equations,
+
+[A⁻]=C K_a,c/(K_a,c+h),   [HA]=C h/(K_a,c+h).
+
+From water, o=K_w,c/h. Charge balance leaves F(h)=h−K_w,c/h−C K_a,c/(K_a,c+h)=0 for h>0. A polynomial can be obtained by multiplying by the positive denominator h(K_a,c+h): h³+K_a,c h²−(K_w,c+C K_a,c)h−K_a,c K_w,c=0. Only positive roots with the reconstructed species account are admissible. A formal polynomial root alone is not a chemical state.
+
+Existence and uniqueness are accessible with the prepared calculus. F is continuous on h>0, tends to −∞ as h approaches zero and to +∞ as h grows. Its derivative is 1+K_w,c/h²+C K_a,c/(K_a,c+h)²>0. A sign-changing finite bracket therefore contains exactly one root. Reconstructed species are nonnegative, preserve the total and obey both equilibrium equations. For C>0 the root is above √K_w,c, since substituting that neutral value makes F negative. Also h=K_w,c/h+[A⁻]≤√K_w,c+C at the root. For C=0 the root is exactly √K_w,c.
+
+Numerical bracketing can preserve this proof instead of trusting an unconstrained iteration. Use dimensionless x=h/c°, C*=C/c°, a=K_a,c/c° and w=K_w,c/(c°)². Define U=C*+a+w+1 and L=w/(2U). Then U>1 and U>w, L<1/2, F*(U)>0 and F*(L)<0. Repeated bisection keeps the unique root within [L,U]; after n steps the width is the original width divided by 2ⁿ. A stopping rule U−L≤εL bounds the width relative to every possible root in the bracket. An exhausted iteration budget is a failure to reach that bound, not a solution.
+
+At any positive trial x, the reconstructed species preserve component/acid/water equations exactly, while F*(x) measures the remaining charge residual. Since the derivative is at least one, the mean-value theorem gives |x−x_true|≤|F*(x)|. This is a mathematical error certificate for exact inputs within this model, not a chemical-parameter uncertainty. Monotonic species functions turn a root bracket into species brackets: OH⁻ and A⁻ decrease with h, while HA increases. Do not pair independent-looking endpoint choices as though they were separately realized states.
+
+**Reading and work:** [Analytical Chemistry 2.1 — David Harvey](../general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), section 6.7, and [Derive a weak-acid calculation and test its approximation](../general-chemistry/aqueous/Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP). Derive the rational residual and cubic independently, prove the bracket signs, and identify what breaks if a counterion is added without entering charge balance. Explain why a numerical root is unique here without claiming uniqueness for every multiphase chemical equilibrium.
+
+**Continue:** [Derive a weak-acid calculation and test its approximation](../general-chemistry/aqueous/Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_00B40681235B166A572A4E4545

@@ -1,0 +1,17 @@
+Import "../Computing.lingua"
+
+Interpret finite words only after declaring their encoding (@computing-word-encoding: 0, is #chapter, #hephaestus-core "Derive-modular-arithmetic-and-separate-carry-from-signed-overflow.lingua#r_0799AD8A6C4DEFE0A73A667C19") { r_02C6715D46F125388428D7A956
+The earlier [Distinguish a value from its digital representation](Distinguish-a-value-from-its-digital-representation.lingua#r_0849AE8813413F872ABE90EDB2) distinguished a value from its representation. Now make a representation finite. A bit has two abstract values, 0 and 1. A word of width w has w ordered bits and 2ʷ possible patterns, because each position doubles the choices. The physical distinction used to store a bit is an additional engineering question; a logical one is not a universal voltage specification.
+
+For an unsigned binary word b_(w−1)…b₀ define U=Σᵢ₌₀ʷ⁻¹ bᵢ2ⁱ. Its range is 0 through 2ʷ−1, since the sum of the weights is 2ʷ−1. Reading left to right, repeatedly replace the accumulated value u by 2u+b. After each position u is the value of the prefix read; this proves the conversion. Repeated division by two obtains the reverse encoding: each remainder is the next low bit and the quotient decreases to zero. A value outside the declared range needs a different representation or an explicit failure rule.
+
+Hexadecimal is compact notation for groups of four bits: digits 0–9 then A–F stand for values 0–15. For example the byte 0110 1010 has unsigned value 106 and notation 0x6A. Leading zeros preserve declared width even though they do not change the unsigned value. Bit order in this written notation is separate from the byte order chosen to store a multi-byte value.
+
+A bit pattern does not name its own type. The same byte can be an integer, part of encoded text, an instruction or a component of an address. A text character is not generally one byte, and byte count is not generally character count. Reuse the existing text/bytes and input-schema distinctions; this block does not define a complete text encoding or serialization protocol. Reading an instruction byte as a quantity can produce a plausible number with the wrong meaning.
+
+**Read and reconstruct:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 1’s binary/hex representation passages; [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), exact-version integer and bytes documentation. Encode and decode 0, the largest word and a value just beyond its range. Prove the prefix-conversion invariant and explain which interpretation makes 0x6A a branch in the later original machine. Python integers do not themselves impose this machine’s fixed width.
+
+**Continue:** [Derive modular arithmetic and separate carry from signed overflow](Derive-modular-arithmetic-and-separate-carry-from-signed-overflow.lingua#r_0799AD8A6C4DEFE0A73A667C19).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_02C6715D46F125388428D7A956

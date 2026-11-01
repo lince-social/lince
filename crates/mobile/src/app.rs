@@ -42,6 +42,7 @@ pub struct Mobile {
     pub kanban_column: usize,
     pub column_settings: bool,
     pub deleting: Option<Intent>,
+    confirmed: bool,
     pub ready: bool,
     pub dirty: bool,
     pending: BTreeMap<String, Pending>,
@@ -63,6 +64,7 @@ pub struct Mobile {
     next_status: std::time::Instant,
 }
 
+#[derive(Default)]
 struct Pending {
     field: Option<(String, String)>,
     text_snapshot: Option<String>,
@@ -120,6 +122,7 @@ impl Mobile {
             kanban_column: 1,
             column_settings: false,
             deleting: None,
+            confirmed: false,
             ready: false,
             dirty: true,
             pending: Default::default(),
@@ -390,6 +393,7 @@ fn poll_status(world: &mut World) {
     if !state.ready
         || state.identity == crate::session::Identity::Locked
         || state.navigation.current != Page::Organ
+        || state.deleting.is_some()
         || !state.pending.is_empty()
         || std::time::Instant::now() < state.next_status
     {
@@ -1412,6 +1416,12 @@ fn apply(world: &mut World) {
             world.resource_mut::<Mobile>().status = error;
         }
     }
+    let state = world.resource::<Mobile>();
+    if state.confirmed && state.pending.is_empty() {
+        if let Err(error) = apply_intent(world, Intent::Confirm) {
+            world.resource_mut::<Mobile>().status = error;
+        }
+    }
 }
 
 fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
@@ -1848,11 +1858,21 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
                 Some(Intent::Act(Action::DeleteRecord { target: uid }))
         }
         Intent::Confirm => {
-            if let Some(intent) = world.resource_mut::<Mobile>().deleting.take() {
+            if !world.resource::<Mobile>().pending.is_empty() {
+                world.resource_mut::<Mobile>().confirmed = true;
+                return Ok(());
+            }
+            world.resource_mut::<Mobile>().confirmed = false;
+            if let Some(intent) = world.resource::<Mobile>().deleting.clone() {
                 apply_intent(world, intent)?;
+                world.resource_mut::<Mobile>().deleting = None;
             }
         }
-        Intent::CancelDelete => world.resource_mut::<Mobile>().deleting = None,
+        Intent::CancelDelete => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.deleting = None;
+            state.confirmed = false;
+        }
         Intent::Workflow(intent) => crate::workflows::apply(world, intent)?,
         Intent::Map(intent) => crate::map::apply(world, intent)?,
         Intent::Transport(intent) => crate::transport::apply(world, intent)?,
@@ -1880,7 +1900,11 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             crate::visibility::close(world);
         }
         Intent::ObserveLocation => crate::location::open_observer(world),
-        Intent::Ask(action) => world.resource_mut::<Mobile>().deleting = Some(Intent::Act(action)),
+        Intent::Ask(action) => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.deleting = Some(Intent::Act(action));
+            state.confirmed = false;
+        }
         Intent::MoveMenu(uid) => {
             let mut state = world.resource_mut::<Mobile>();
             state.moving = if state.moving.as_ref() == Some(&uid) {
@@ -1988,6 +2012,7 @@ pub fn back(world: &mut World) {
     }
     let mut state = world.resource_mut::<Mobile>();
     if state.deleting.take().is_some() {
+        state.confirmed = false;
         state.dirty = true;
         return;
     }

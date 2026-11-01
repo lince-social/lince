@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Define an infinite sum through its finite partial sums (@math-series-sums: 0, is #chapter, #hephaestus-core "Control-omitted-terms-with-comparisons-and-explicit-tail-bounds.lingua#r_00C302EEF8B1668584FF8D01D2") { r_00E1C4C68DEB473F10A7A3A9EE
+For terms a_0,a_1,… define S_N=Σ_(n=0 to N)a_n. The series Σ_(n=0 to ∞)a_n converges to S exactly when S_N→S. The sum is a limit, not an instruction to finish infinitely many additions. Index conventions matter: N is the largest included index here, so S_N contains N+1 terms. A formula using a number of terms K instead must state that convention.
+
+If the series converges, its terms tend to zero, because a_N=S_N−S_(N−1) and both partial sums tend to S. The converse fails. For the harmonic series Σ_(n=1 to ∞)1/n, the terms vanish, but each block n=2^j+1,…,2^(j+1) contains 2^j terms at least 1/2^(j+1). Every block adds at least 1/2, so partial sums are unbounded. Their successive increments vanish even though the partial sums are not Cauchy.
+
+For r≠1, finite cancellation gives Σ_(n=0 to N)r^n=(1−r^(N+1))/(1−r). If |r|<1, r^n→0. For 0<q<1, write 1/q=1+h with h>0; induction gives (1+h)^n≥1+nh, so q^n≤1/(1+nh)→0. The q=0 case is immediate, and negative r is bounded in magnitude by q^n. Hence the geometric sum is 1/(1−r), with exact signed remainder r^(N+1)/(1−r). When r=1 the partial sums are N+1. When r=−1 they alternate; when |r|>1 the terms fail to vanish. The domain condition is part of the result.
+
+Finite telescoping is another route to an exact remainder. Since 1/[n(n+1)]=1/n−1/(n+1), summing from 1 through N gives 1−1/(N+1). Thus the infinite sum is 1 and the omitted tail is exactly 1/(N+1). Cancellation is justified at every finite stage before taking the limit. An expression with divergent positive and negative parts cannot be rearranged arbitrarily by appealing to the appearance of cancellation.
+
+**Bounded published reconstruction:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 2 section 5.2, Example 5.9(1), supplies a geometric series with first term 9 and ratio −3/4. For K terms our independent finite account is S_K=(36/7)[1−(−3/4)^K]; the sum is 36/7 and the signed remainder is (36/7)(−3/4)^K. The checker reconstructs fourteen finite cases directly from the source's indexed summands. This verifies one stated example and our remainder account, not the whole chapter or an experiment.
+
+**Work:** derive both finite cancellations without using an infinite-sum formula. Choose K giving an absolute remainder below 1/100 for the published example, with a proved bound. Explain why a geometric formula evaluated at r=1 is invalid even though every finite sum exists. Read section 5.2 in full and defend a second independent telescoping construction.
+
+**Continue:** [Control omitted terms with comparisons and explicit tail bounds](Control-omitted-terms-with-comparisons-and-explicit-tail-bounds.lingua#r_00C302EEF8B1668584FF8D01D2).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00E1C4C68DEB473F10A7A3A9EE

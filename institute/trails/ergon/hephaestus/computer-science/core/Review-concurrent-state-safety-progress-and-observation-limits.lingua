@@ -1,0 +1,22 @@
+Import "../Computing.lingua"
+
+Review concurrent state safety progress and observation limits (@computing-concurrency-review: 0, is #chapter, #hephaestus-core "Separate-a-channel-from-the-meaning-of-a-remote-operation.lingua#r_002510E9971EAFA78DDF45C715") { r_002962E53DB9AFD36AEA18CA3C
+Explain concurrency using overlapping activities and saved local state, without assuming simultaneous hardware execution. Declare the atomic steps and sequential-consistency premise of the teaching model. Distinguish a source-level operation, its modeled instructions, an execution prefix, a reachable state and a complete history.
+
+Derive the twenty two-actor schedules, explain their final-value counts and reject an unsupported probability interpretation. Reconstruct the selected published counter trace with its original initial value. Explain the ancestry oracle and why it is independent of the numeric transition function. Extend the schedule-count formula to finite repeated jobs, including empty plans.
+
+Prove the locked invariant transition by transition, characterize the exact reachable set and derive its state count. Relate protected writes to an abstract serial addition specification, identifying what a richer returned-value or multi-field contract would require. Exhibit and replay failures of split check/set and early release, naming the failed invariant rather than merely saying there is a race.
+
+Separate safety, possible completion, deadlock, starvation and termination. Give the infinite spin execution, state the finite-work and scheduling premises of the termination proof, and explain why actor fairness alone does not guarantee acquisition in an unbounded workload. Derive 5M+k instruction cost and why weak fairness supplies no finite waiting bound.
+
+Explain the predicate-wait abstraction, its implementation contract and its limits. Reconstruct a lost notification and a premature finish after a spurious wake. Defend the need for rechecking the predicate under its synchronization discipline. Distinguish exhaustive finite safety checks from a claim that every scheduler eventually completes.
+
+Present the original investigation and an independently challenged extension with explicit provenance, assumptions, counterexamples and revision. Separate author-run checks from your own work and separate abstract simulation from host behavior. Explain the conditional fixed-work speedup bound and why the enumerator's runtime does not measure parallel speedup.
+
+This sixth computing block extends common formation; it does not complete operating systems, concurrency, networks, software construction or the twenty-two pending computing scopes. Continue engineering feedback and inquiry reporting at comparable depth, then review breadth across all six cores before deeper branches. Preserve the earlier representation, machine, memory and durable-state investigations as distinct reusable foundations.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the seventh common pass:** [Separate a channel from the meaning of a remote operation](Separate-a-channel-from-the-meaning-of-a-remote-operation.lingua#r_002510E9971EAFA78DDF45C715). Develop channel boundaries, framing, request identity, remote effects and conditional progress through original finite investigations. Continue engineering production flow at comparable breadth before deeper computing specialization.
+
+} r_002962E53DB9AFD36AEA18CA3C

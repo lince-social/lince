@@ -1,0 +1,256 @@
+Import "../Physics.lingua"
+
+Investigate clocks frames and an orbit with independent checks (@physics-spacetime-study: 0, is #chapter, #hephaestus-core "Review-spacetime-gravity-and-orbital-evidence-before-astronomy.lingua#r_00FE99CB3D010BD1DF46CE229F") { r_005B1CB83312C1A9F46556C399
+Construct a paper observatory account that keeps three kinds of evidence separate: invariant calculations in flat spacetime, a Newtonian orbit with a weak-clock correction, and the bounded published clock comparison. Use the preceding definitions and keep their approximation domains visible. The program is original; physical parameters, initial conditions and measurements must not be inferred from its success.
+
+First transform events (5,3,0,0) and (1,2,0,0) at β=3/5. Verify interval, inverse and causal classification by hand. Compare the two reunion paths and the receding pulse frequency. Then form two opposite-momentum particles and check their summed invariant mass before and after a boost. Test the rival Galilean map against a null event. State when its low-speed approximation would still suffice for a less precise task.
+
+Next use μ=1,h=1,e=3/5 for the ellipse. Recover position and velocity at both apsides, ε=−8/25, a=25/16 and h=1. At other phases compare the independently derived conic, vis-viva and acceleration relations. Change e, keeping μ,h fixed, and explain the changes in orbital size and energy. Do not label equally spaced phase samples as equal elapsed times. Use the areal law or integrate dt=r²dθ/h to assign times.
+
+Connect the apoapsis/periapsis weak-clock difference to both potential and motion. Reject a rival that keeps the orbital speed constant along this ellipse: it fails angular conservation and the energy account. For an inverse problem, show that the measured relative orbit determines μ=G(m₁+m₂), not G and the two masses independently. Specify the extra independent mass-ratio information needed to partition the masses. Finally reproduce the published small-height calculation from the preceding lesson, retaining its statistical and systematic limits.
+
+The exact evaluator uses h_boost in (−1,1), β=2h_boost/(1+h_boost²), γ=(1+h_boost²)/(1−h_boost²). This rational parametrization gives exact test cases; it does not restrict physical velocities to rational numbers. `proper_length` requires rational square roots and rejects other valid timelike examples as outside this evaluator's exact domain. Its result is cτ, not seconds. `orbit` evaluates only elliptic nonradial cases with positive angular orientation and exact unit-circle phases. `clock_difference` returns the leading approximation and enforces a declared 1/1000 upper bound on each input effect, but that bound alone neither bounds all omitted physics nor verifies the absolute potential's weak-field premise.
+
+Reuse unchanged `electric_study.py` from [Investigate electric work charge redistribution and observation limits](Investigate-electric-work-charge-redistribution-and-observation-limits.lingua#r_00E6095DF06C1A01CC1DE14045) for exact inputs, rational distances and inverse-distance potential/field evaluation, and `periodic_study.py` from [Investigate periodic states exact rotations and sampling ambiguity](../../mathematics/core/Investigate-periodic-states-exact-rotations-and-sampling-ambiguity.lingua#r_001D348AE25C32431381761409) for the phase norm. Extract those two programs and the two blocks below to one temporary directory; run `python3 -B spacetime_checks.py`. The gravity source is a negative strength in the shared mathematical evaluator, not negative physical mass. Invalid inputs, units and mathematical domains remain the caller's responsibility where not checked explicitly.
+
+The independent checks use null-coordinate products and inverse maps, direct conic/energy/acceleration identities, mass-shell invariants and a separate high-precision decimal calculation. Finite rational cases complement the derivations; they do not prove every real-valued case or validate a real observatory. `spacetime_study` imports without output or file writes. The check program prints only its verification summary.
+
+**Independent work and revision:** submit derivations, a changed orbit and a changed clock comparison before running the checks. Give a plausible observational rival and a measurement capable of distinguishing it. Have a peer identify an unspoken frame, unit, approximation or inference assumption; revise the model and explicitly state what remains untested. General relativistic orbit corrections, gravitational radiation and precision timing software require later formation rather than embellishing this common investigation.
+
+```python file=spacetime_study.py
+from fractions import Fraction as F
+from electric_study import exact, rational_root, potential_field
+from periodic_study import norm_squared
+
+
+def coordinates(values, size):
+    values = tuple(exact(v) for v in values)
+    if len(values) != size:
+        raise ValueError('wrong coordinate count')
+    return values
+
+
+def boost_parameters(h):
+    h = exact(h)
+    if abs(h) >= 1:
+        raise ValueError('boost parameter must lie strictly between minus one and one')
+    return 2*h/(1+h*h), (1+h*h)/(1-h*h)
+
+
+def boost(event, h):
+    t, x, y, z = coordinates(event, 4)
+    beta, gamma = boost_parameters(h)
+    return gamma*(t-beta*x), gamma*(x-beta*t), y, z
+
+
+def interval(event):
+    t, x, y, z = coordinates(event, 4)
+    return t*t-x*x-y*y-z*z
+
+
+def velocity_transform(u, h):
+    u = exact(u)
+    beta, _ = boost_parameters(h)
+    if abs(u) > 1:
+        raise ValueError('causal velocity in units of c required')
+    return (u-beta)/(1-beta*u)
+
+
+def proper_length(segments):
+    total = F(0)
+    for segment in segments:
+        segment = coordinates(segment, 4)
+        if segment[0] <= 0 or interval(segment) <= 0:
+            raise ValueError('future timelike segment required')
+        total += rational_root(interval(segment))
+    return total
+
+
+def particle(mass, h, c):
+    mass, c = exact(mass), exact(c)
+    if mass <= 0 or c <= 0:
+        raise ValueError('positive rest mass and c required')
+    beta, gamma = boost_parameters(h)
+    return gamma*mass*c*c, gamma*mass*beta*c
+
+
+def gravity(mu, point):
+    mu = exact(mu)
+    point = coordinates(point, 3)
+    if mu <= 0:
+        raise ValueError('positive gravitational parameter required')
+    return potential_field([(-mu, (0, 0, 0))], point)
+
+
+def tidal(mu, point):
+    mu = exact(mu)
+    point = coordinates(point, 3)
+    if mu <= 0:
+        raise ValueError('positive gravitational parameter required')
+    r = rational_root(sum(x*x for x in point))
+    return tuple(tuple(mu*(3*point[i]*point[j]/r**5-F(i == j)/r**3)
+                       for j in range(3)) for i in range(3))
+
+
+def orbit(mu, angular, eccentricity, phase):
+    mu, angular, eccentricity = map(exact, (mu, angular, eccentricity))
+    cosine, sine = coordinates(phase, 2)
+    if mu <= 0 or angular <= 0 or not 0 <= eccentricity < 1:
+        raise ValueError('positive mu and angular momentum and elliptic eccentricity required')
+    if norm_squared((cosine, sine)) != 1:
+        raise ValueError('unit circle phase required')
+    p = angular*angular/mu
+    r = p/(1+eccentricity*cosine)
+    position = r*cosine, r*sine, F(0)
+    velocity = -mu*sine/angular, mu*(eccentricity+cosine)/angular, F(0)
+    potential, acceleration = gravity(mu, position)
+    energy = sum(v*v for v in velocity)/2+potential
+    return {'r': r, 'position': position, 'velocity': velocity,
+            'acceleration': acceleration, 'energy': energy,
+            'semimajor': p/(1-eccentricity*eccentricity)}
+
+
+def clock_difference(delta_potential, first_speed_squared, second_speed_squared, c):
+    potential, first, second, c = map(exact, (delta_potential, first_speed_squared,
+                                            second_speed_squared, c))
+    if c <= 0 or min(first, second) < 0:
+        raise ValueError('positive c and nonnegative squared speeds required')
+    if max(abs(potential), first, second)/c**2 > F(1, 1000):
+        raise ValueError('outside this evaluators declared weak-effect domain')
+    return (potential-(second-first)/2)/c**2
+```
+
+```python file=spacetime_checks.py
+from fractions import Fraction as F
+from decimal import Decimal as D, localcontext
+from itertools import product
+import json
+from spacetime_study import boost_parameters, boost, interval, velocity_transform
+from spacetime_study import proper_length, particle, gravity, tidal, orbit, clock_difference
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    assert condition
+    checks += 1
+
+
+hs = [F(i, 5) for i in range(-4, 5)]
+event_cases = 0
+for h in hs:
+    beta, gamma = boost_parameters(h)
+    check(gamma*gamma*(1-beta*beta) == 1)
+    for event in product(range(-2, 3), repeat=4):
+        transformed = boost(event, h)
+        t, x, y, z = event
+        check(interval(transformed) == (t-x)*(t+x)-y*y-z*z)
+        check(boost(transformed, -h) == event)
+        check(transformed[0]+transformed[1] == (1-h)/(1+h)*(t+x))
+        event_cases += 1
+    for u in [F(i, 5) for i in range(-5, 6)]:
+        out = velocity_transform(u, h)
+        transformed = boost((1, u, 0, 0), h)
+        check(out == transformed[1]/transformed[0])
+        check(abs(out) <= 1 and transformed[0] > 0)
+    check(proper_length([boost((5, 3, 0, 0), h), boost((5, -3, 0, 0), h)]) == 8)
+check(boost((1, 2, 0, 0), F(1, 3)) == (F(-1, 4), F(7, 4), 0, 0))
+check(proper_length([(10, 0, 0, 0)]) == 10)
+check(proper_length([(5, 3, 0, 0), (5, -3, 0, 0)]) == 8)
+particle_cases = 0
+for mass, c, h in product([1, 2, F(3, 2)], [1, 3, 299792458], hs):
+    energy, momentum = particle(mass, h, c)
+    check(energy**2-(momentum*c)**2 == mass**2*c**4)
+    check(energy-mass*c*c == momentum**2*c*c/(energy+mass*c*c))
+    for frame in [F(-1, 3), F(1, 4)]:
+        prime = boost((energy/c, momentum, 0, 0), frame)
+        check(prime[0] > 0 and interval(prime) == mass**2*c*c)
+    particle_cases += 1
+phases = [(F(1), F(0)), (F(-1), F(0))]
+for s in [F(i, 3) for i in range(-4, 5)]:
+    phases.append(((1-s*s)/(1+s*s), 2*s/(1+s*s)))
+orbit_cases = 0
+for mu, angular, e, phase in product([1, 2, F(3, 2)], [1, 2, F(3, 2)],
+                                     [F(0), F(1, 5), F(3, 5), F(4, 5)], phases):
+    result = orbit(mu, angular, e, phase)
+    r, a = result['r'], result['semimajor']
+    x, y, _ = result['position']
+    vx, vy, _ = result['velocity']
+    check(x*vy-y*vx == angular)
+    check(result['energy'] == -mu/(2*a))
+    check(vx*vx+vy*vy == mu*(2/r-1/a))
+    check((x+a*e)**2/a**2+y*y/(a*a*(1-e*e)) == 1)
+    rate = angular/r**2
+    derivative_velocity = (-mu*phase[0]*rate/angular, -mu*phase[1]*rate/angular, 0)
+    check(result['acceleration'] == derivative_velocity)
+    j = tidal(mu, result['position'])
+    check(sum(j[i][i] for i in range(3)) == 0)
+    check(all(sum(j[i][k]*result['position'][k] for k in range(3)) ==
+              2*mu*result['position'][i]/r**3 for i in range(3)))
+    orbit_cases += 1
+peri = orbit(1, 1, F(3, 5), (1, 0))
+apo = orbit(1, 1, F(3, 5), (-1, 0))
+check((peri['r'], apo['r'], peri['semimajor'], peri['energy']) ==
+      (F(5, 8), F(5, 2), F(25, 16), F(-8, 25)))
+check(peri['velocity'] == (0, F(8, 5), 0) and apo['velocity'] == (0, F(-2, 5), 0))
+c = 299792458
+height, g = F(33, 100), F(49, 5)
+prediction = clock_difference(g*height, 0, 0, c)
+reported, uncertainty = F(41, 10**18), F(16, 10**18)
+with localcontext() as context:
+    context.prec = 60
+    independent = D('9.80')*D('0.33')/(D('299792458')**2)
+    check(abs(D(prediction.numerator)/D(prediction.denominator)-independent) < D('1e-75'))
+    check(D('3.5983e-17') < independent < D('3.5984e-17'))
+check(abs(reported-prediction) < uncertainty)
+check(F(30, 100) < (reported-prediction)/uncertainty < F(32, 100))
+check(clock_difference(2*g*height, 0, 0, c) == 2*prediction)
+check(clock_difference(-g*height, 0, 0, c) == -prediction)
+check(clock_difference(0, 0, 10**2, c) < 0)
+check(clock_difference(g*height, 0, 2*g*height, c) == 0)
+orbital_rate = clock_difference(-1/apo['r']+1/peri['r'],
+                                sum(v*v for v in peri['velocity']),
+                                sum(v*v for v in apo['velocity']), 1000)
+check(orbital_rate == F(12, 5*10**6))
+check((1-F(3, 5))**2 != 1)
+check((1**2-(1-F(3, 5))**2) != 0)
+rejections = [lambda: boost((1, 0, 0, 0), 1),
+              lambda: boost((1, 0, 0, 0), -1),
+              lambda: boost((1, 0, 0), 0),
+              lambda: boost((True, 0, 0, 0), 0),
+              lambda: boost((1.0, 0, 0, 0), 0),
+              lambda: velocity_transform(2, 0),
+              lambda: proper_length([(1, 1, 0, 0)]),
+              lambda: proper_length([(-1, 0, 0, 0)]),
+              lambda: proper_length([(2, 1, 0, 0)]),
+              lambda: particle(0, 0, 1),
+              lambda: particle(1, 0, 0),
+              lambda: gravity(1, (0, 0, 0)),
+              lambda: gravity(-1, (1, 0, 0)),
+              lambda: tidal(1, (0, 0, 0)),
+              lambda: orbit(1, 0, 0, (1, 0)),
+              lambda: orbit(1, 1, 1, (1, 0)),
+              lambda: orbit(1, 1, 0, (1, 1)),
+              lambda: clock_difference(0, -1, 0, 1),
+              lambda: clock_difference(1, 0, 0, 1)]
+for operation in rejections:
+    try:
+        operation()
+    except ValueError:
+        check(True)
+    else:
+        raise AssertionError('invalid input accepted')
+print(json.dumps({'checks': checks, 'events': event_cases, 'particles': particle_cases,
+                  'orbits': orbit_cases, 'rejected': len(rejections),
+                  'predicted_fractional_clock_shift': float(prediction),
+                  'reported_minus_prediction_over_reported_uncertainty': float((reported-prediction)/uncertainty),
+                  'normalized_orbital_rate_difference': str(orbital_rate)}, indent=2))
+```
+
+**Author verification:** Python 3.14.8 passed 20,222 assertions across 5,625 event cases, 81 particle cases, 396 orbit cases, the published clock calculation, changed cases and nineteen rejected calls. Independent null-coordinate, conic, energy, acceleration and decimal calculations complement the shared arithmetic. These verify the teaching model and implementation, not a physical measurement or learner capability.
+
+**Continue:** [Review spacetime gravity and orbital evidence before astronomy](Review-spacetime-gravity-and-orbital-evidence-before-astronomy.lingua#r_00FE99CB3D010BD1DF46CE229F).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005B1CB83312C1A9F46556C399

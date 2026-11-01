@@ -1,0 +1,241 @@
+Import "../Chemistry.lingua"
+
+Investigate coexistence phase amounts and nonideal stability with bounded evidence (@chemistry-phase-study: 0, is #chapter, #hephaestus-core "Review-phase-equilibrium-with-conservation-stability-and-material-evidence.lingua#r_00AC7BC9CDA367232B59350893") { r_000718E1A60501A838E7BA5E84
+Build one connected dossier linking equilibrium constraints, a property correlation and an original phase-separation model. Begin by stating what is measured, what is stipulated and what is derived. A pressure correlation for water, a hypothetical regular-solution mixture and a generic phase-amount example do not describe one physical substance. Their common methods are shared, while their material identities and evidence remain separate.
+
+Reconstruct the pure-phase coexistence slope, its ideal-vapor reduction and the finite enthalpy bound. Independently evaluate the selected water correlation at 298.15 K and compare the locally anchored constant-enthalpy prediction at 303 K. Explain the source's range, units and attribution, the absence of an uncertainty estimate in this selection, and why this is a correlation reconstruction rather than replication of original measurements.
+
+Recover the phase-amount examples in mole, mass and volume bases, including the bounded DeVoe reconstruction. Prove the common-tangent chemical-potential identities and global supporting-line argument. For the symmetric regular model, establish the χ≤2 and χ>2 cases analytically before running a solver. Distinguish the binodal, spinodal and central stationary point, and give a third-phase counterexample to a restricted candidate search.
+
+Use χ=3 with overall composition 0.35 and total amount 10 mol for the original quantitative study. Preserve the shared solver, independently certify its binodal bracket and free-energy minimum, and enclose phase amounts. Use x=0.1 to demonstrate positive curvature with a lower separated state. Check that a common reference-line change leaves phase fractions unchanged. Then identify the material observations needed before interpreting χ as a property of a real mixture.
+
+For the executable account, save the unchanged plain Python block in [An inspectable symmetric phase-separation account](../../engineering/materials-engineering/computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ) as `shared_regular_solution.py`. Obtain `entropy_study.py` and `entropy_checks.py` unchanged from [Investigate entropy work bounds and changing source temperatures](../../physics/core/Investigate-entropy-work-bounds-and-changing-source-temperatures.lingua#r_0099FE8B08ED994548C5F84AD2), plus their existing `reaction_study.py` dependency from [Investigate reversible change and the evidence carried by a chemical signal](Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua#r_09C8CB1E42C30D3138ED67EA4A). Save the two blocks below alongside them and run `python3 phase_checks.py` through the repository's Nix Python environment. The checker suppresses the shared solver's demonstration prints during import only; it does not edit that program. Mathematical logarithm bounds, decimal tolerances and binary comparison tolerances remain distinct.
+
+The independent checks enumerate feasible integer phase amounts, compare rational potential/slope enclosures with high-precision Decimal evaluations, certify proposed solver outputs using exact logarithm intervals, and reconstruct the bounded published calculations. The finite grid is implementation evidence; the global supporting proof is not replaced by the grid. Exact input fractions and code range limits do not certify real material parameters or supply their uncertainty.
+
+**Independent extension:** add an asymmetric composition term or a third candidate phase with a physically explained reference. Derive the modified chemical potentials and identify why the symmetric solver is no longer sufficient. Produce a bounded independent reference and either a valid supporting certificate or an explicitly unresolved stability question. Alternatively obtain an authorized small phase-equilibrium dataset, with its uncertainty and reference conventions, and compare a fitted model with a withheld observable. Distinguish actual retrieved measurements from hypothetical values. Present the derivation, source criticism, implementation checks and discriminating evidence plan to a critic, then revise the model or its stated limits.
+
+
+```python file=phase_study.py
+from decimal import Decimal as D, localcontext
+from fractions import Fraction as F
+from entropy_checks import logarithm_bounds, scaled, combined
+from reaction_study import decimal
+
+
+def exact(value):
+    if type(value) not in (int, F):
+        raise ValueError('exact integer or Fraction input required')
+    return F(value)
+
+
+def fraction(value):
+    value = exact(value)
+    if not 0 <= value <= 1:
+        raise ValueError('composition must lie in [0,1]')
+    return value
+
+
+def lever(total, overall, left, right):
+    total = exact(total)
+    overall, left, right = map(fraction, (overall, left, right))
+    if total <= 0 or not left < right or not left <= overall <= right:
+        raise ValueError('positive amount and a valid ordered tie interval required')
+    n_right = total*(overall-left)/(right-left)
+    return total-n_right, n_right
+
+
+def phi_bounds(x, chi):
+    x, chi = fraction(x), exact(chi)
+    if x in (0, 1):
+        return F(0), F(0)
+    interaction = chi*x*(1-x)
+    return combined(scaled(logarithm_bounds(x), x), scaled(logarithm_bounds(1-x), 1-x), (interaction, interaction))
+
+
+def slope_bounds(x, chi):
+    x, chi = fraction(x), exact(chi)
+    if x in (0, 1):
+        raise ValueError('interior composition required for slope')
+    term = chi*(1-2*x)
+    return combined(logarithm_bounds(x/(1-x)), (term, term))
+
+
+def curvature(x, chi):
+    x, chi = fraction(x), exact(chi)
+    if x in (0, 1):
+        raise ValueError('interior composition required for curvature')
+    return 1/(x*(1-x))-2*chi
+
+
+def certify_binodal(chi, low, high):
+    chi, low, high = map(exact, (chi, low, high))
+    if not 2 < chi <= 20 or not 0 < low < high < F(1, 2):
+        raise ValueError('finite teaching interaction and ordered left-root bracket required')
+    lo_slope, hi_slope = slope_bounds(low, chi), slope_bounds(high, chi)
+    if curvature(high, chi) <= 0 or lo_slope[1] >= 0 or hi_slope[0] <= 0:
+        raise ValueError('bracket does not certify the unique left minimum')
+    middle = (low+high)/2
+    value = phi_bounds(middle, chi)
+    bound = max(abs(v) for v in lo_slope+hi_slope)*(high-low)/2
+    return {'left': (low, high), 'right': (1-high, 1-low),
+            'minimum': (value[0]-bound, value[1]+bound)}
+
+
+def phase_amount_bounds(total, overall, certificate):
+    total, overall = exact(total), fraction(overall)
+    low, high = certificate['left']
+    if not high <= overall <= 1-high:
+        raise ValueError('overall composition must be inside every certified tie interval')
+    choices = [lever(total, overall, x, 1-x) for x in (low, high)]
+    return tuple((min(row[i] for row in choices), max(row[i] for row in choices)) for i in (0, 1))
+
+
+def water_correlation(temperature):
+    temperature = exact(temperature)
+    if not 273 <= temperature <= 303:
+        raise ValueError('selected NIST coefficient row is restricted to 273 through 303 K')
+    exponent = F('5.40221')-F('1838.675')/(temperature-F('31.737'))
+    slope_factor = F('1838.675')/(temperature-F('31.737'))**2
+    with localcontext() as ctx:
+        ctx.prec = 70
+        ln10 = D(10).ln()
+        pressure_bar = (decimal(exponent)*ln10).exp()
+        slope = decimal(slope_factor)*ln10
+        rgas = D('8.31446261815324')
+        apparent_enthalpy = rgas*decimal(temperature)**2*slope
+        return {'log10_pressure_bar': exponent, 'pressure_bar': pressure_bar,
+                'dlnp_dT_per_K': slope, 'apparent_enthalpy_J_per_mol': apparent_enthalpy}
+```
+
+```python file=phase_checks.py
+from fractions import Fraction as F
+from decimal import Decimal as D, localcontext
+from itertools import product
+import contextlib,io,json,math
+with contextlib.redirect_stdout(io.StringIO()):
+    from shared_regular_solution import symmetric_regular_solution
+from reaction_study import decimal
+from entropy_checks import logarithm_bounds, scaled
+import phase_study as m
+
+checks=0
+
+def check(condition):
+    global checks
+    checks+=1
+    assert condition
+
+
+def encloses(interval,value):
+    tolerance=F(1,10**60)
+    check(interval[0]-tolerance <= F(value) <= interval[1]+tolerance)
+
+
+lever_cases=0
+for left_index in range(0,8):
+    for right_index in range(left_index+1,9):
+        left,right=F(left_index,8),F(right_index,8)
+        for n_left,n_right in product(range(0,5),repeat=2):
+            total=n_left+n_right
+            if total==0:
+                continue
+            overall=(n_left*left+n_right*right)/total
+            answer=m.lever(total,overall,left,right)
+            alternatives=[(i,total-i) for i in range(total+1) if i*left+(total-i)*right==total*overall]
+            check(alternatives==[answer])
+            check(answer[0]+answer[1]==total)
+            lever_cases+=1
+check(m.lever(1,F(2,5),0,F(1,2))==(F(1,5),F(4,5)))
+check(m.lever(4,F(7,20),F(1,5),F(4,5))==(3,1))
+check(F(3*24,3*24+36)==F(2,3))
+check(F(3*24,2)==36)
+
+with localcontext() as ctx:
+    ctx.prec=75
+    potential_cases=0
+    for chi in [F(-1),F(0),F(2),F(3),F(5)]:
+        for i in range(1,40):
+            x=F(i,40)
+            xd,cd=decimal(x),decimal(chi)
+            phi=xd*xd.ln()+(1-xd)*(1-xd).ln()+cd*xd*(1-xd)
+            slope=(xd/(1-xd)).ln()+cd*(1-2*xd)
+            encloses(m.phi_bounds(x,chi),phi)
+            encloses(m.slope_bounds(x,chi),slope)
+            check(m.phi_bounds(x,chi)==m.phi_bounds(1-x,chi))
+            check(m.curvature(x,chi)==m.curvature(1-x,chi))
+            if chi<=2:
+                check(m.curvature(x,chi)>=0)
+            potential_cases+=1
+    certificate_cases=0
+    for chi in [F('2.0001'),F('2.01'),F('2.1'),F('2.5'),F(3),F(5),F(10),F(20)]:
+        result=symmetric_regular_solution(float(chi))
+        proposed=F(result['binodal'][0])
+        radius=F(1,10**10)
+        certificate=m.certify_binodal(chi,proposed-radius,proposed+radius)
+        check(certificate['left'][1]-certificate['left'][0]==2*radius)
+        check(certificate['minimum'][1]<0)
+        for z in [F(1,2),F(1,2)-radius,F(1,2)+radius]:
+            amounts=m.phase_amount_bounds(7,z,certificate)
+            check(all(lo>=0 and hi<=7 for lo,hi in amounts))
+            check(amounts[0][0]+amounts[1][1]==7)
+        certificate_cases+=1
+    certificate=m.certify_binodal(3,F('0.07072018'),F('0.07072019'))
+    check(m.curvature(F(1,10),3)==F(46,9))
+    check(m.phi_bounds(F(1,10),3)[0]>certificate['minimum'][1])
+    check(m.phi_bounds(F(1,2),3)[0]>0)
+    check(certificate['minimum'][0]>-1)
+    bounds=m.phase_amount_bounds(10,F('0.35'),certificate)
+    check(F('6.74711217')<bounds[0][0]<bounds[0][1]<F('6.74711222'))
+    check(F('3.25288778')<bounds[1][0]<bounds[1][1]<F('3.25288783'))
+    for chi in [0,1.5,2]:
+        result=symmetric_regular_solution(chi)
+        check(result['binodal'] is None and result['spinodal'] is None)
+    water_cases=0
+    for temperature in [F(t) for t in range(273,304)]+[F('298.15')]:
+        result=m.water_correlation(temperature)
+        td=decimal(temperature)
+        exponent=D('5.40221')-D('1838.675')/(td-D('31.737'))
+        check(abs(decimal(result['log10_pressure_bar'])-exponent)<D('1e-65'))
+        encloses(scaled(logarithm_bounds(10),result['log10_pressure_bar']),result['pressure_bar'].ln())
+        binary=10**(5.40221-1838.675/(float(temperature)-31.737))
+        check(abs(float(result['pressure_bar'])-binary)/binary<1e-12)
+        slope_factor=F('1838.675')/(temperature-F('31.737'))**2
+        encloses(scaled(logarithm_bounds(10),slope_factor),result['dlnp_dT_per_K'])
+        enthalpy_factor=F('8.31446261815324')*temperature**2*slope_factor
+        encloses(scaled(logarithm_bounds(10),enthalpy_factor),result['apparent_enthalpy_J_per_mol'])
+        water_cases+=1
+    result=m.water_correlation(F('298.15'))
+    check(D('0.03166748')<result['pressure_bar']<D('0.03166749'))
+    check(D('44087.31')<result['apparent_enthalpy_J_per_mol']<D('44087.32'))
+    ratio=(D(40000)/D('8.31446261815324')*(1/D(300)-1/D(310))).exp()
+    check(D('1.677')<ratio<D('1.678'))
+    t1,t2=D('298.15'),D(303)
+    h=result['apparent_enthalpy_J_per_mol']
+    constant_prediction=result['pressure_bar']*(h/D('8.31446261815324')*(1/t1-1/t2)).exp()
+    discrepancy=constant_prediction/m.water_correlation(F(303))['pressure_bar']-1
+    check(D('0.0005')<discrepancy<D('0.0006'))
+    log_gap=F(m.water_correlation(F(303))['pressure_bar'].ln()-result['pressure_bar'].ln())
+    hlow=F(m.water_correlation(F(303))['apparent_enthalpy_J_per_mol'])
+    hhigh=F(h)
+    integral_factor=(1/F('298.15')-1/F(303))/F('8.31446261815324')
+    check(hlow*integral_factor<log_gap<hhigh*integral_factor)
+
+rejected=0
+for call in [lambda:m.lever(0,F(1,2),0,1),lambda:m.lever(1,F(1,2),F(1,2),F(1,2)),lambda:m.lever(1,0,F(1,5),F(4,5)),lambda:m.lever(1,2,0,1),lambda:m.phi_bounds(0.5,3),lambda:m.slope_bounds(0,3),lambda:m.curvature(1,3),lambda:m.certify_binodal(2,F(1,10),F(1,5)),lambda:m.certify_binodal(3,F(1,5),F(1,4)),lambda:m.certify_binodal(3,F('0.49'),F('0.499')),lambda:m.water_correlation(304),lambda:m.water_correlation(272),lambda:m.water_correlation(True),lambda:m.phase_amount_bounds(1,F(0),certificate)]:
+    try:
+        call()
+    except ValueError:
+        rejected+=1
+    else:
+        raise AssertionError('invalid input accepted')
+check(rejected==14)
+print(json.dumps({'checks':checks,'lever_cases':lever_cases,'potential_cases':potential_cases,'certified_shared_solver_cases':certificate_cases,'water_cases':water_cases,'rejected_inputs':rejected,'water_at_298_15_K_bar':str(result['pressure_bar']),'apparent_enthalpy_J_per_mol':str(result['apparent_enthalpy_J_per_mol']),'constant_enthalpy_relative_difference_at_303_K':str(discrepancy)},indent=2))
+```
+
+**Author verification:** 2,868 checks passed, including 864 independently enumerated phase-amount cases, 195 potential/slope cases compared with high-precision arithmetic, eight independently certified shared-solver proposals, 32 bounded water-correlation evaluations and fourteen rejected inputs. Exact rational enclosures and finite-precision comparison tolerances are distinguished in the code. These checks verify the authored accounts, not a real material model, laboratory experiment or learner performance.
+
+**Continue:** [Review phase equilibrium with conservation stability and material evidence](Review-phase-equilibrium-with-conservation-stability-and-material-evidence.lingua#r_00AC7BC9CDA367232B59350893).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_000718E1A60501A838E7BA5E84

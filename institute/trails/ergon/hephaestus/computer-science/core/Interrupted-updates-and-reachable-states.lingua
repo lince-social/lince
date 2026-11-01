@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Find the states that an interrupted direct update can leave (@computing-crash-states: 0, is #chapter, #hephaestus-core "Copy-persist-publish-and-acknowledge.lingua#r_00122E30DCA27BFCE26486692A") { r_009433FC754E5B84607D18E3BF
+Start with two recorded stocks a=12 and b=8. A logical transfer of d=3 has specification (a,b)→(a−d,b+d)=(9,11). It preserves a+b=20. Two independent durable overwrites cannot simply be treated as one logical step. If the left write persists first, a crash can leave (9,8), total 17. If the right write persists first, it can leave (12,11), total 23. Atomicity of each individual word does not make the pair atomic.
+
+Adding a request number does not automatically repair this. For the four-field record, writing sequence=1 and amount=3 while leaving stocks (12,8) produces a format-valid but semantically false completion record. A checker needs an independent allowed-state relation: recovery must return either the entire old tuple or the entire new tuple, and acknowledgment requires the new tuple. Checking only the sum misses this counterexample.
+
+Represent execution as a directed graph of states S=(D,P,k,A): durable words D, pending writes P, next program operation k and acknowledgment flag A. There are two classes of normal transition. The program may issue its next write, pass a satisfied barrier or acknowledge. Independently, the device may persist any pending word. A crash can occur at every reached state. Since a word persistence is atomic, a crash during it has the same durable outcome as one of its before/after states. This is the reason the graph covers that timing boundary under the model.
+
+For a fixed finite operation list, each program transition advances k and each persistence removes a write that was issued once. There is no unlimited background writer or loop in one attempt. Exploration therefore terminates. Merge identical states to avoid revisiting the same future possibilities; merging states is not an estimate of their probability. No transition probabilities are assumed.
+
+An independent oracle can enumerate possible durable subsets without simulating interleavings: before a publication point, choose which of the four candidate fields persisted. There are 2⁴ subsets. Later we will compare this independently constructed set with the state-graph results. Equal sets check both missing possibilities and spurious possibilities for the tested inputs.
+
+**Work:** list the four durable stock pairs after zero, one or two direct writes persist. Classify each by total conservation and the stronger old-or-new specification. Then include request metadata and find a state that satisfies conservation but fails the specification. Explain why one favorable execution order, or a test with a crash only after every barrier, misses the essential failure.
+
+**Continue:** [Prove a copy and publish protocol under explicit persistence premises](Copy-persist-publish-and-acknowledge.lingua#r_00122E30DCA27BFCE26486692A).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_009433FC754E5B84607D18E3BF

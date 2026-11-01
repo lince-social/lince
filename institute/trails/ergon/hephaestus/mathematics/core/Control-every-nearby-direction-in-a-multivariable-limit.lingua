@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Control every nearby direction in a multivariable limit (@math-multivariable-limits: 0, is #chapter, #hephaestus-core "Differentiate-a-slice-while-stating-what-remains-fixed.lingua#r_003FDB567E526DF76A8B13FE66") { r_004BE7654C0E09317437A7DD6F
+For an interior point a of D, the statement f(z)→L as z→a means: for every ε>0 there is δ>0 such that 0<‖z−a‖<δ implies |f(z)−L|<ε for all admissible z. This is uniform control over nearby inputs, not a separate choice of radius for each path. At a boundary use domain-relative approaches; do not claim two-sided derivatives merely from one-sided availability. Continuity at a means the limit equals f(a).
+
+In two normalized coordinates, let ρ=max(|h|,|k|). Then ρ≤sqrt(h²+k²)≤sqrt(2)ρ, directly from the squares. Therefore the maximum norm and Euclidean norm define the same limits after changing δ by a constant factor. A numerical value of distance still depends on the declared coordinates and metric. Reuse [Specify a limit with an output tolerance and an input neighborhood](Specify-a-limit-with-an-output-tolerance-and-an-input-neighborhood.lingua#r_055F93E108268B814620D86FE6) and [Keep coordinate choices error metrics and sensitivity distinct](Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7).
+
+Two paths giving different limits disprove a limit. Set g(x,y)=xy/(x²+y²) away from the origin and g(0,0)=0. Both coordinate axes give zero, while the diagonal x=y≠0 gives 1/2. Thus agreement on the two axes proves little. Even checking every straight line can fail: q(x,y)=x²y/(x⁴+y²), with q(0,0)=0, tends to zero along every line through the origin. For y=mx with m≠0 it becomes mx/(x²+m²); the axes give zero separately. Along y=x² it is 1/2. This counterexample is a statement about all these paths, not a finite graphing experiment.
+
+For the study F, direct expansion at (a,b) gives
+
+F(a+h,b+k)−F(a,b)=(2ab+3)h+(a²+4b)k+b h²+2a hk+2k²+h²k.
+
+For ρ≤1, its absolute value is at most Cρ, where C=|2ab+3|+|a²+4b|+|b|+2|a|+3. Since C>0, δ=min(1,ε/C) with a strict ρ<δ establishes continuity without sampling directions. The expression also prepares a stronger local approximation.
+
+**Read and defend:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 3 section 4.2. Explain why a path disagreement is decisive but agreement along finitely many paths is not. Give explicit ε–δ bounds for a new two-variable polynomial, using absolute-value inequalities. A plot may suggest a candidate limit; a neighborhood bound establishes it.
+
+**Continue:** [Differentiate a slice while stating what remains fixed](Differentiate-a-slice-while-stating-what-remains-fixed.lingua#r_003FDB567E526DF76A8B13FE66).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_004BE7654C0E09317437A7DD6F

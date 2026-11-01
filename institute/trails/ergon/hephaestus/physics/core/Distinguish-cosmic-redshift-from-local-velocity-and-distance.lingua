@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Distinguish cosmic redshift from local velocity and distance (@physics-astronomy-cosmos: 0, is #chapter, #hephaestus-core "Reconstruct-a-historical-distance-calculation-without-circular-validation.lingua#r_00801894D8EC4DDBC5ABEAE629") { r_0058DFF60802A489E7233DDDCF
+For a common cosmological entrance, adopt a spatially flat homogeneous/isotropic model with radial interval ds²=c²dt²−a(t)²dχ². The dimensionless scale factor a(t) describes the separation of freely comoving positions; choose a(t₀)=1 today. This metric is a physical-model input, not a result established by a balloon analogy or Newtonian orbit calculation. Bound local systems need not follow the same expansion law. No unique spatial center is selected by a homogeneous model.
+
+A radial light path has dχ=±c dt/a(t), so its comoving separation is χ=∫[t_e,t₀] c dt/a(t). For two nearby successive wave crests from a comoving source at fixed χ, differentiating this integral gives δt₀/a₀=δt_e/a_e. Hence 1+z=δt₀/δt_e=a₀/a_e. Peculiar motion, gravitational shifts and observer corrections can add to the observed spectrum; use their respective models. Do not apply the special-relativistic longitudinal velocity formula to every cosmological z.
+
+Several distances answer different questions. The look-back time is t₀−t_e. Proper separation today is a₀χ, not generally c times look-back time. In this flat, transparent model with photon conservation, emitted energy per photon and arrival rate each acquire a factor 1/(1+z), giving F=L/[4π(a₀χ)²(1+z)²]. Luminosity distance is D_L=(1+z)a₀χ. An object's transverse proper size at emission gives angular-diameter distance D_A=a_eχ. Thus D_L=(1+z)²D_A under these premises. Curvature, absorption or other propagation assumptions require corresponding changes.
+
+Use an original prescribed example a(t)=(t/t₀)², with t₀=1, t_e=1/2 and c=1 in consistent units. Then a_e=1/4, z=3, χ=1, look-back time=1/2, D_L=4 and D_A=1/4. Integrate c t₀²/t² to verify χ. These are teaching parameters, not a fitted universe or a solution claimed derived from gravitational field equations. The model's current H=ȧ/a=2/t₀ differs from the inverse age 1/t₀. In general 1/H₀ is a time scale, not automatically the universe's age.
+
+At sufficiently small cosmological redshift and distance, z≈H₀d/c is the first-order relation. Nearby peculiar velocities and calibration can dominate it. At larger distances the full expansion history matters. A model of a hotter denser past connects expansion with a cooled thermal radiation background and light-element abundances; these are different evidence channels with different foreground, calibration and physical assumptions. Selected 29.2–29.4 passages in [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F) introduce them. Full Friedmann dynamics, abundance calculations, perturbations, parameter inference and competing cosmologies remain branches.
+
+**Work:** derive the redshift and two-distance relations, solve the prescribed example and compare its four time/distance quantities. Explain why a cosmological recession rate of proper separation is not a speed measured locally beside a photon. State which observations would test the expansion history rather than merely define a fitted H₀.
+
+**Continue:** [Reconstruct a historical distance calculation without circular validation](Reconstruct-a-historical-distance-calculation-without-circular-validation.lingua#r_00801894D8EC4DDBC5ABEAE629).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0058DFF60802A489E7233DDDCF

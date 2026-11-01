@@ -1,0 +1,23 @@
+Import "../Inquiry.lingua"
+
+Bound incomplete outcomes without inventing the missing evidence (@inquiry-causal-missing: 0, is #chapter, #hephaestus-core "Investigate-identification-selection-and-competing-causal-accounts.lingua#r_007BAC0E4A319EE8A20507E8BC") { r_0033E9B1A78704DD440C7DB719
+Missing records can change the population actually compared. Preserve assignment, eligibility, observation time, exclusion reasons and which outcomes are absent. In the original binary selection example, the retained contrast is one although the intervention effect is zero. A precise fit to the retained data cannot restore the excluded outcomes or justify their absence.
+
+A simple finite bound needs only a bounded outcome. In group a, suppose nₐ units were assigned, sₐ observed successes were recorded, and mₐ outcomes are missing. With every outcome either zero or one, the completed group mean lies between sₐ/nₐ and (sₐ+mₐ)/nₐ. Therefore the completed group-1 minus group-0 contrast lies between
+
+s₁/n₁−(s₀+m₀)/n₀ and (s₁+m₁)/n₁−s₀/n₀.
+
+Both endpoints are attainable by filling every missing outcome in one arm with zero and in the other with one. This is a sharp bound on that finite completed-data contrast, not automatically on a population causal effect. Random sampling/assignment and the causal assumptions would be additional parts of any population inference. It is not a confidence interval.
+
+For two groups of ten, let (s₀,m₀)=(4,2) and (s₁,m₁)=(5,4). The complete-case means are 4/8 and 5/6, difference 1/3. Yet the completed-data contrast may range from −1/10 to 1/2. Reconstruct both endpoints, including the observed failures. The checker enumerates every binary completion for small group sizes and compares the extrema with the formula.
+
+Outcome-dependent selection can sometimes be addressed with additional measurements and justified response probabilities. Weighting by a response model requires its own exchangeability and positivity assumptions; it does not follow merely from having used assignment weights earlier. If the response probability is zero for a relevant subgroup, no finite inverse weight reconstructs its unobserved outcomes without further information. Record the difference between data missing by design, loss of observation and actual failure of the system being studied.
+
+Interference and carryover create another issue: there may not be a single Yᵢ(a) independent of others' assignments or past states. A shared-crew comparison may need unit clusters, an explicit assignment vector, timing or a reset period. Do not label those absent potential outcomes as ordinary missing entries and fill them using a formula derived for independent units.
+
+**Work:** revise a study proposal to preserve a complete eligibility and observation account. Derive bounds for a bounded continuous outcome [l,u] by replacing missing zeros/ones with l/u. Explain what additional evidence would justify narrower bounds. Use [Investigate a traceable report correction and fresh restoration](Investigate-a-traceable-report-correction-and-fresh-restoration.lingua#r_00E2E70343DD382577BCA102F6) to keep assumptions, exclusions, code and corrections traceable.
+
+**Continue:** [Investigate identification selection and competing causal accounts](Investigate-identification-selection-and-competing-causal-accounts.lingua#r_007BAC0E4A319EE8A20507E8BC).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0033E9B1A78704DD440C7DB719

@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Separate a fitted mean from a future reading and an inverse (@inquiry-fit-prediction: 0, is #chapter, #hephaestus-core "../metrology/calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N") { r_0028FEE8ABD73A3BBD7DA47A04
+At a declared input x*, the mean-response estimator is m̂*=α̂+β̂x*. Under the correct fixed-input model and equal uncorrelated errors, its variance is σ²[1/n+(x*−x̄)²/Sxx]. Derive this by substituting coefficient variances and their covariance. Discarding that covariance gives the wrong expression except in special coordinates. Farther from the design centre, uncertainty increases; even a small variance does not defend extrapolation beyond the physical model's domain.
+
+A future reading is Y*=α+βx*+ε*. If its error is independent of the calibration errors with variance σ², then Var(Y*−m̂*)=σ²+Var(m̂*). The extra term reflects variation of the future observation. If a reference disturbance is shared, use the joint covariance instead: Var(Y*−m̂*)=Var(Y*)+Var(m̂*)−2Cov(Y*,m̂*). The relation between future and past observations must be stated.
+
+Variance alone does not define an interval's coverage. The investigation below uses known σ=1 and independent equally probable errors ±1, so all probabilities can be counted. With five centred inputs, m̂*(0)=α̂. The interval [α̂−3/5,α̂+3/5] covers the fixed true centre mean in 30 of 32 error vectors, or 15/16. Applied to a new independent reading, that same interval covers only 12 of 64 joint states, or 3/16. Enlarging the half-width to 8/5 covers 62/64=31/32 future states. These are the exact coverages of these specific procedures, not 95% normal-model formulas.
+
+The fixed mean is not randomly drawn inside the observed interval. The random endpoints vary over the specified sampling procedure. Replacing known σ with s changes the procedure and requires a new coverage derivation. Revisit [Review continuous models estimation and the scope of coverage](Review-continuous-models-estimation-and-the-scope-of-coverage.lingua#r_0092AAD67F9A97EFCB0180340A) for this interpretation before using a convenient software interval label.
+
+Inverse calibration asks for x from a new response: x̂=(Y*−α̂)/β̂. Both numerator and denominator may be random and correlated. A usable nonzero observed slope is necessary but does not make the ratio linear. The following reused calibration Record develops local sensitivities and coefficient covariance; its errors-in-variables and advanced source assignments remain broader work. Here do not present a linear approximation as an exact ratio distribution.
+
+**Work:** enumerate the finite intervals before running the program. Explain which guarantee survives adding a known offset that is corrected, an unknown fixed offset, or a random offset shared with the future reading. For each, define the target quantity before calculating coverage.
+
+**Continue:** [Use a fitted calibration without discarding coefficient uncertainty](../metrology/calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0028FEE8ABD73A3BBD7DA47A04

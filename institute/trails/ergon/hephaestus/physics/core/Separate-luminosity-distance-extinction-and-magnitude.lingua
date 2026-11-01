@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Separate luminosity distance extinction and magnitude (@physics-astronomy-brightness: 0, is #chapter, #hephaestus-core "Interpret-spectral-shape-lines-and-shifts-with-competing-physical-explanations.lingua#r_0021544784FC107EAF259C12AC") { r_00FC1BF76C7838A0F9BE86C9BF
+For a steady isotropic source in a transparent locally Euclidean region, power L crosses each sphere of area 4πd², so bolometric energy flux F=L/(4πd²). A passband flux uses luminosity in that band and the detector response; it is not automatically the total luminosity. Intervening transmission T gives F=L T/(4πd²) in a simple screen model. Beaming, scattering into an aperture, time dependence and cosmological propagation require extensions.
+
+Write Q=L/(4π) in normalized examples. Q=100,d=10,T=1 gives F=1. Q=400,d=20,T=1 gives the same flux, as does Q=200,d=10,T=1/2. The transformation Q→k²Q,d→kd leaves F unchanged. One measured brightness therefore does not determine intrinsic luminosity or distance. An independently constrained parallax can remove the distance ambiguity while leaving extinction and luminosity coupled.
+
+Magnitude is a logarithmic reporting convention: m=−2.5 log₁₀(F/F_ref) for a specified passband and zero point. Thus m₂−m₁=−2.5 log₁₀(F₂/F₁). A factor of 100 brighter means five magnitudes smaller. Use [Construct a logarithm from accumulated reciprocal change](../../chemistry/core/Construct-a-logarithm-from-accumulated-reciprocal-change.lingua#r_048F416B6E95AE137A181635B7) to define log₁₀x=lnx/ln10; do not round the one-magnitude factor before compounding it. For the same source without extinction, absolute magnitude M is the apparent magnitude at 10 pc, giving m−M=5 log₁₀(d/10 pc). Add passband extinction A_mag=−2.5 log₁₀T when appropriate.
+
+With a fixed luminosity threshold and no extinction, a flux-limited survey sees more luminous objects to greater d, and the accessible Euclidean volume scales as d³, hence L^(3/2). A count of detected stars is therefore not automatically the local distribution of stellar luminosities. Spatial structure, evolving populations, variable sensitivity and extinction change the selection function. The distance-inference prior and the sample selection must be made consistent.
+
+**Read and work:** selected 17.1 in [Astronomy second edition by OpenStax](../sources/Astronomy-second-edition-by-OpenStax.lingua#r_00466D09500F8EEF3B1876A23F). Recover the three flux-equivalent models and design one additional observation that separates two of them. Derive the distance-modulus formula from flux ratios and explain why apparent magnitude alone cannot be plotted as physical luminosity for a mixed-distance sample. Compare volume-limited and flux-limited samples before interpreting population frequencies.
+
+**Continue:** [Interpret spectral shape lines and shifts with competing physical explanations](Interpret-spectral-shape-lines-and-shifts-with-competing-physical-explanations.lingua#r_0021544784FC107EAF259C12AC).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00FC1BF76C7838A0F9BE86C9BF

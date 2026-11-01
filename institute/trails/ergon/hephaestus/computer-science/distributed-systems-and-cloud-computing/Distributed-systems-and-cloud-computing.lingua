@@ -1,0 +1,5 @@
+Distributed systems and cloud computing (@distributed-systems-and-cloud-computing: 0, is #chapter, #outline) { r_6KXN2YDFKMTV3CW8F54913HBBX
+Distributed systems coordinate computation and state across independently failing machines and communication links. The material covers replication, consistency, consensus, scheduling, distributed storage, services, and deployment, connecting system design to networks, physical facilities, operational work, and resource constraints.
+
+**Parent:** [Computing — representation, algorithms and working systems](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_6KXN2YDFKMTV3CW8F54913HBBX

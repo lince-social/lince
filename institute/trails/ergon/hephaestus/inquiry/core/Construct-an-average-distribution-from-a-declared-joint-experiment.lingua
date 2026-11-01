@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Construct an average distribution from a declared joint experiment (@inquiry-joint-density: 0, is #chapter, #hephaestus-core "Distinguish-an-estimator-from-its-observed-value-and-sampling-law.lingua#r_005E2BFADCD92ADE6D82747D66") { r_00EC9152CEA661437ABDED65BB
+Let E₁,E₂ be independent uniform errors on [−a,a]. The product model assigns probability area/(4a²) to a region in the square [−a,a]². Rectangle probabilities factor, which states the independence premise. For a region bounded by piecewise straight lines, compute area by integrating its vertical slice length. This explains the iterated integral used here without assuming a general theorem for every multivariable function or set. Read the joint/independence portions of section 4.2 in [Grinstead and Snell’s Introduction to Probability — CHANCE version](../sources/Introduction-to-Probability-Grinstead-Snell-Doyle.lingua#r_041A5B2D3F5CDC4C2EFED46B71).
+
+Define Z=(E₁+E₂)/2. For −a≤z≤0, the event Z≤z is the part of the square below e₁+e₂=2z, a triangle with two side lengths 2(z+a). Its area is 2(z+a)², so F_Z(z)=(z+a)²/(2a²). For 0≤z≤a, use the complementary upper triangle: F_Z(z)=1−(a−z)²/(2a²). Below −a the CDF is zero and above a it is one. The two expressions agree at zero and at their support endpoints.
+
+Differentiating inside the two pieces gives f_Z(z)=(a−|z|)/a² for |z|≤a, and zero outside. Its area is one. This triangular density belongs to the mean of two independent uniforms; it is not a normal approximation. A separate slice argument for the sum S=E₁+E₂ gives density (2a−|s|)/(4a²) for |s|≤2a. Transforming S/2 multiplies density height by two and recovers the same result. The convolution formula is a later general expression of this overlap calculation; selected section 7.2 of the source supplies further reading.
+
+Direct integration gives E[Z]=0 and Var(Z)=a²/6, agreeing with the covariance calculation for independent E₁,E₂. For even n≥0, E[Zⁿ]=2∫₀ᵃ zⁿ(a−z)/a² dz=2aⁿ/((n+1)(n+2)); odd moments vanish. Integrating the density or computing the square region are independent ways to obtain interval probabilities.
+
+The marginals alone do not justify the square model. If E₂=E₁, the pair lies on a diagonal, each error is still uniform, and Z is uniform. If E₂=−E₁, both marginals are still uniform but Z=0 identically. These joint laws are concentrated on lines and have no ordinary two-dimensional area density. Treating them as a constant density over the square would replace the experiment rather than approximate its dependence.
+
+**Work:** derive both triangles using coordinates and slice integration. Normalize the density and calculate its second moment separately. Compare the three joint models' mean variances: a²/6, a²/3 and zero. Explain which acquisition or calibration evidence could support independence; writing the product density is an assumption until connected to the investigation.
+
+**Continue:** [Distinguish an estimator from its observed value and sampling law](Distinguish-an-estimator-from-its-observed-value-and-sampling-law.lingua#r_005E2BFADCD92ADE6D82747D66).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00EC9152CEA661437ABDED65BB

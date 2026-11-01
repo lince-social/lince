@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Preserve process state while separating eligibility from scheduling policy (@computing-scheduling-boundary: 0, is #chapter, #hephaestus-core "Measure-a-memory-hierarchy-under-a-declared-cost-model.lingua#r_008EC6006BF0912737390C8789") { r_009ADB7C7B16D8EF5718E860FA
+A scheduler selects among eligible processes. In our model a finite sequence of process identifiers is supplied externally, and each selected ready process performs one complete instruction. This is a controlled schedule for an experiment, not an algorithm that guarantees fairness, bounded response time or eventual completion for arbitrary programs.
+
+Each step selects one saved process record and its table. The other process record, protected tables and program descriptions remain unchanged. A switch need not reset acc or pc: the next process has its own saved values. Nor does the switch copy all physical memory; in the conceptual model that memory remains while address interpretation changes. The host implementation's full-state copying is used only to return inspectable snapshots.
+
+Consider process 0 setting acc=40, storing to virtual 0, then waiting. Process 1 sets acc=90 and stores to its own virtual 0, then reads the shared page. The waiting process must retain acc=40 and its continuation even though process 1's acc changes to 12. Waking process 0 restores eligibility; it does not use process 1's last accumulator as its own. The separate records make this invariant explicit.
+
+Private-memory isolation can make some schedules observationally equivalent, but intentional sharing can expose order. In a variant where both page-2 mappings refer to writable frame 5, a write through process 0's virtual 8 becomes visible through process 1's virtual 8. That is authorized sharing, not a violation of the baseline proof: its disjointness premise was changed. A load before the write can see the old value, while a load after it sees the new value. Atomically copying a range in this model does not solve all higher-level concurrent protocols.
+
+Blocking, failure and an observation budget remain separate. A program waiting for an event that never arrives may never finish even under an otherwise fair scheduler. A finite trace ending early proves only its prefix. A fault explains a stopped process under a specific rule. Richer threads, synchronization, resource deadlocks, scheduling proofs and asynchronous devices require later common/branch formation.
+
+**Work:** derive the saved-state invariant by induction over the selected-process trace. List every assumption needed for the private-memory argument and one schedule-sensitive shared-memory observation. Connect [Derive a loop from an invariant and a stopping rule](Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9): a termination proof needs a decreasing measure and progress assumptions; merely alternating process identifiers supplies neither for a blocked program.
+
+**Continue:** [Measure a memory hierarchy under a declared cost model](Measure-a-memory-hierarchy-under-a-declared-cost-model.lingua#r_008EC6006BF0912737390C8789).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_009ADB7C7B16D8EF5718E860FA

@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Define entropy changes through reversible comparisons (@physics-entropy-state: 0, is #chapter, #hephaestus-core "../thermodynamics-and-heat-transfer/entropy/Entropy-transfer-generation-and-accumulation.lingua#r_0FC03677A8H7RVJCY8WKQRRTTP") { r_004E2CAE37300D29985DB2F68F
+Entropy S is an extensive state quantity with unit J/K. For equilibrium endpoint states that can be joined by appropriate reversible reference paths, its difference is ΔS=∫δQ_rev/T. T is the absolute temperature where the reversible heat exchange occurs. The symbol δ distinguishes a path-dependent heat increment from the differential dS of a state function. Reuse [Distinguish a state differential from a path dependent account](../../mathematics/core/Distinguish-a-state-differential-from-a-path-dependent-account.lingua#r_00204337E177A0330276621E37) and the earlier state/path distinction.
+
+One classical route takes the Clausius cycle inequality ∮δQ/T_b≤0 as a second-law statement for a closed system, where T_b is the relevant heat-transfer boundary temperature. This premise is not proved from calculus here. For a reversible cycle its reverse is also admissible, so the inequality holds with both signs; therefore the integral is zero. Joining a reversible path A→B to the reverse of another such path gives a cycle. Zero cycle integral makes both A→B integrals equal. A reference value S(A) then defines S(B) consistently on the connected family of states under consideration.
+
+For an actual A→B process, append a reversible return B→A. The cycle inequality gives ∫actual δQ/T_b−ΔS≤0. Write ΔS=∫actual δQ/T_b+S_gen with S_gen≥0. Generated entropy is an account for a process and boundary; it is not another state property. The actual process need not supply a uniform temperature or pressure at every instant for an endpoint state difference to be evaluated through a valid reference path.
+
+For several heat-transfer locations, sum their separate ∫δQ_j/T_b,j contributions. Do not silently replace all boundary temperatures with a convenient bulk temperature. A boundary temperature can equal a system or reservoir temperature under suitable conditions; that equality must be justified. For a nonuniform transient, the correct heat-transfer account may require additional spatial/time evidence. Matter-carried entropy belongs to an open-system balance, not this closed-system formula.
+
+A system may lose entropy while exporting more entropy than it generates. For an isolated composite system the transfer term is zero, so its total entropy cannot decrease under this macroscopic model. In a composite of bodies plus a cyclic device and ideal work receiver, keep every body's state change; the device's cyclic state change is zero. Do not replace these precise statements with a general visual claim about disorder.
+
+**Read and work:** [Thermodynamics and Chemistry — Howard DeVoe](../thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), selected sections 4.4–4.5, and [Introduction to Engineering Thermodynamics — Claire Yu Yan](../thermodynamics-and-heat-transfer/sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), selected sections 6.5–6.6. The broader foundations and nonequilibrium extensions remain assignments. Reconstruct the reversible-path and actual-plus-return arguments, explicitly naming the physical premise. Distinguish a definition, a consequence of the premise and a constitutive model for a material.
+
+**Continue:** [Entropy transfer, generation and accumulation](../thermodynamics-and-heat-transfer/entropy/Entropy-transfer-generation-and-accumulation.lingua#r_0FC03677A8H7RVJCY8WKQRRTTP).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_004E2CAE37300D29985DB2F68F

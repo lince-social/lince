@@ -1,4 +1,188 @@
-Physics — fields, matter, motion and physical evidence (@physics-map: 0, is #chapter, #physics "electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY", #physics "../engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ") { r_04A5CP8RTBERZEN4XCCDQ3T47W
+Import "classical-mechanics/Classical-mechanics.lingua"
+Import "continuum-and-solid-mechanics/Continuum-and-solid-mechanics.lingua"
+Import "statistical-and-nonequilibrium-physics/Statistical-and-nonequilibrium-physics.lingua"
+Import "waves-and-acoustics/Waves-and-acoustics.lingua"
+Import "optics-photonics-and-laser-science/Optics-photonics-and-laser-science.lingua"
+Import "quantum-mechanics/Quantum-mechanics.lingua"
+Import "atomic-and-molecular-physics/Atomic-and-molecular-physics.lingua"
+Import "condensed-matter-physics/Condensed-matter-physics.lingua"
+Import "soft-matter-and-complex-materials/Soft-matter-and-complex-materials.lingua"
+Import "nuclear-physics/Nuclear-physics.lingua"
+Import "particle-physics-and-quantum-fields/Particle-physics-and-quantum-fields.lingua"
+Import "relativity-and-gravitation/Relativity-and-gravitation.lingua"
+Import "plasma-physics/Plasma-physics.lingua"
+Import "nonlinear-physics-and-complex-systems/Nonlinear-physics-and-complex-systems.lingua"
+Import "biological-physics/Biological-physics.lingua"
+Import "computational-physics/Computational-physics.lingua"
+Import "experimental-physics-and-instrumentation/Experimental-physics-and-instrumentation.lingua"
+Import "radiation-and-medical-physics/Radiation-and-medical-physics.lingua"
+Import "quantum-information-science/Quantum-information-science.lingua"
+Import "nanophysics-and-surface-science/Nanophysics-and-surface-science.lingua"
+Import "universe-and-space/Universe-and-space.lingua"
+Import "electromagnetism/Electromagnetism.lingua"
+Import "thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua"
+Import "fluid-dynamics/Fluid-dynamics.lingua"
+
+Import "core/Begin-astronomical-inference-with-directions-times-and-recorded-signals.lingua"
+Import "core/Infer-distance-from-parallax-while-retaining-the-observation-model.lingua"
+Import "core/Connect-astronomical-photons-to-detector-counts-and-uncertainty.lingua"
+Import "core/Separate-luminosity-distance-extinction-and-magnitude.lingua"
+Import "core/Interpret-spectral-shape-lines-and-shifts-with-competing-physical-explanations.lingua"
+Import "core/Connect-orbital-and-transit-evidence-to-planetary-systems.lingua"
+Import "core/Build-a-bounded-stellar-model-from-gravity-pressure-and-energy.lingua"
+Import "core/Connect-stellar-populations-evolution-and-the-interstellar-medium.lingua"
+Import "core/Infer-galactic-structure-and-gravitating-mass-from-declared-geometry.lingua"
+Import "core/Distinguish-cosmic-redshift-from-local-velocity-and-distance.lingua"
+Import "core/Reconstruct-a-historical-distance-calculation-without-circular-validation.lingua"
+Import "core/Investigate-an-astronomical-measurement-chain-and-its-unresolved-alternatives.lingua"
+Import "core/Review-astronomical-evidence-before-opening-the-major-branches.lingua"
+Import "sources/Astronomy-second-edition-by-OpenStax.lingua"
+Import "sources/Geometric-and-photogeometric-Gaia-distances-by-Bailer-Jones-and-colleagues.lingua"
+Import "sources/Hubble-1929-distance-and-radial-velocity-paper.lingua"
+Import "core/Describe-events-clocks-and-the-comparison-of-inertial-frames.lingua"
+Import "core/Derive-a-Lorentz-boost-and-its-invariant-interval.lingua"
+Import "core/Compare-proper-time-simultaneity-and-measured-lengths.lingua"
+Import "core/Preserve-causal-order-and-distinguish-clock-rates-from-received-frequencies.lingua"
+Import "core/Connect-relativistic-momentum-energy-and-electromagnetic-frame-changes.lingua"
+Import "core/Derive-Newtonian-gravity-from-a-declared-source-and-potential.lingua"
+Import "core/Derive-orbital-shape-timing-and-the-limits-of-parameter-inference.lingua"
+Import "core/Distinguish-local-free-fall-from-tidal-gravitational-structure.lingua"
+Import "core/Compare-weak-gravitational-clock-effects-with-orbital-motion.lingua"
+Import "core/Reconstruct-a-published-optical-clock-comparison-within-its-evidence-limits.lingua"
+Import "core/Investigate-clocks-frames-and-an-orbit-with-independent-checks.lingua"
+Import "core/Review-spacetime-gravity-and-orbital-evidence-before-astronomy.lingua"
+Import "sources/Dynamics-and-Relativity-by-David-Tong.lingua"
+Import "sources/Optical-Clocks-and-Relativity-by-Chou-and-colleagues.lingua"
+Import "sources/Local-equivalence-and-tidal-gravity-with-Einstein-Online.lingua"
+Import "electromagnetism/dynamics/Special-relativity-electric-and-magnetic-fields.lingua"
+Import "core/Specify-a-magnetic-observation-and-the-field-model-it-tests.lingua"
+Import "core/Derive-uniform-magnetic-motion-without-assigning-work-to-deflection.lingua"
+Import "core/Connect-steady-currents-to-magnetic-geometry-and-its-limits.lingua"
+Import "core/Fix-loop-orientation-before-interpreting-induced-voltage.lingua"
+Import "core/Account-for-a-moving-boundary-and-its-mechanical-energy-source.lingua"
+Import "core/Derive-inductive-storage-and-the-transient-circuit-balance.lingua"
+Import "core/Make-magnetic-circulation-consistent-with-changing-charge.lingua"
+Import "core/Derive-field-energy-transport-with-an-explicit-matter-transfer-sign.lingua"
+Import "core/Connect-electromagnetic-propagation-to-the-shared-wave-and-energy-accounts.lingua"
+Import "core/Investigate-magnetic-deflection-induction-and-energy-evidence.lingua"
+Import "core/Review-magnetic-and-inductive-models-before-extending-physical-scope.lingua"
+Import "electromagnetism/magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua"
+Import "electromagnetism/magnetostatics/Ampere-law-symmetry-and-magnetic-flux.lingua"
+Import "electromagnetism/induction/Faraday-law-Lenz-law-and-changing-flux.lingua"
+Import "core/Begin-quantum-descriptions-with-preparation-transformations-and-observed-outcomes.lingua"
+Import "core/Represent-a-pure-state-without-confusing-amplitudes-and-probabilities.lingua"
+Import "core/Assign-observable-values-to-projectors-and-derive-their-outcome-moments.lingua"
+Import "core/Keep-conditional-state-change-separate-from-discarded-and-coherent-alternatives.lingua"
+Import "core/Describe-preparation-mixtures-and-lost-coherence-with-finite-density-matrices.lingua"
+Import "core/Derive-quantum-outcome-spread-without-confusing-it-with-measurement-error.lingua"
+Import "core/Connect-a-Hamiltonian-to-unitary-evolution-and-measurable-phase-differences.lingua"
+Import "core/Connect-finite-state-models-to-a-normalized-wavefunction-with-explicit-boundaries.lingua"
+Import "core/Introduce-composite-states-and-separate-entanglement-from-a-classical-correlation.lingua"
+Import "core/Compare-quantum-predictions-with-counts-losses-and-alternative-preparation-accounts.lingua"
+Import "core/Investigate-quantum-preparation-measurement-order-coherence-and-observed-counts.lingua"
+Import "core/Review-quantum-descriptions-with-their-physical-premises-and-evidence-limits.lingua"
+Import "sources/Quantum-Physics-II-by-Barton-Zwiebach-MIT-8-05.lingua"
+Import "../engineering/materials-engineering/sources/Quantum-Mechanics-Tong.lingua"
+Import "core/Specify-microscopic-states-macroscopic-questions-and-statistical-premises.lingua"
+Import "core/Derive-subsystem-fluctuations-under-a-fixed-total-energy.lingua"
+Import "core/Connect-state-counts-entropy-and-equilibrium-with-explicit-constraints.lingua"
+Import "core/Derive-thermal-weights-while-keeping-the-finite-reservoir-visible.lingua"
+Import "core/Obtain-energy-entropy-and-response-from-a-normalized-thermal-model.lingua"
+Import "core/Distinguish-concentration-correlations-and-uncertainty-in-an-observation.lingua"
+Import "core/Use-controlled-infinite-sums-in-a-stipulated-energy-ladder.lingua"
+Import "core/Separate-equilibrium-weights-from-a-law-of-relaxation-and-sampling.lingua"
+Import "core/Investigate-finite-reservoirs-fluctuations-and-distinct-relaxation-laws.lingua"
+Import "core/Review-statistical-descriptions-with-their-constraints-dynamics-and-evidence.lingua"
+Import "../engineering/materials-engineering/sources/Statistical-Physics-Tong.lingua"
+Import "core/Describe-orientation-angular-motion-and-the-acceleration-of-a-rotating-point.lingua"
+Import "core/Balance-angular-momentum-about-a-declared-origin.lingua"
+Import "core/Derive-rotational-inertia-from-mass-geometry-and-kinetic-energy.lingua"
+Import "core/Connect-angular-impulse-rotational-work-and-the-limits-of-a-fixed-axis.lingua"
+Import "core/Solve-rolling-constraints-and-check-the-required-contact-force.lingua"
+Import "core/Separate-angular-momentum-exchange-from-kinetic-energy-conservation.lingua"
+Import "core/Connect-rotational-predictions-to-observations-and-distinguishable-parameters.lingua"
+Import "core/Investigate-rotational-accounts-constraints-and-internal-exchange.lingua"
+Import "core/Review-angular-momentum-with-its-geometry-constraints-and-evidence.lingua"
+Import "../engineering/mechanical-engineering-and-machine-design/dynamics/Mass-inertia-and-the-geometry-of-moving-matter.lingua"
+Import "../engineering/mechanical-engineering-and-machine-design/dynamics/Angular-momentum-and-rigid-body-equations-of-motion.lingua"
+Import "core/Ask-which-energy-conserving-processes-can-occur.lingua"
+Import "core/Define-entropy-changes-through-reversible-comparisons.lingua"
+Import "core/Derive-state-entropy-changes-without-declaring-the-actual-path-reversible.lingua"
+Import "core/Derive-a-reservoir-work-bound-and-state-its-limits.lingua"
+Import "core/Compare-irreversible-expansions-with-the-same-endpoint-entropy.lingua"
+Import "core/Find-the-work-limit-when-both-source-temperatures-change.lingua"
+Import "core/Separate-thermodynamic-feasibility-from-evidence-for-a-process.lingua"
+Import "core/Investigate-entropy-work-bounds-and-changing-source-temperatures.lingua"
+Import "core/Review-process-direction-without-losing-boundaries-or-assumptions.lingua"
+Import "thermodynamics-and-heat-transfer/entropy/Reversibility-reservoirs-and-physical-irreversibilities.lingua"
+Import "thermodynamics-and-heat-transfer/entropy/Entropy-transfer-generation-and-accumulation.lingua"
+Import "thermodynamics-and-heat-transfer/entropy/Entropy-properties-integration-and-reference-paths.lingua"
+Import "thermodynamics-and-heat-transfer/balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua"
+Import "thermodynamics-and-heat-transfer/entropy/Carnot-limits-and-thermodynamic-temperature.lingua"
+Import "core/Begin-electrical-reasoning-with-charge-and-a-declared-system.lingua"
+Import "core/Build-a-finite-electric-field-from-signed-vector-contributions.lingua"
+Import "core/Derive-potential-differences-from-work-on-a-fixed-probe.lingua"
+Import "core/Connect-signed-current-to-accumulated-and-stored-charge.lingua"
+Import "core/Derive-storage-from-a-charge-voltage-relation.lingua"
+Import "core/State-the-physical-assumptions-behind-a-lumped-circuit.lingua"
+Import "core/Solve-charge-redistribution-and-account-for-the-dissipated-energy.lingua"
+Import "core/Ask-which-electrical-quantities-an-observation-identifies.lingua"
+Import "core/Investigate-electric-work-charge-redistribution-and-observation-limits.lingua"
+Import "core/Review-charge-fields-circuits-and-electrical-evidence.lingua"
+Import "electromagnetism/foundations/Charge-field-potential-current-and-energy.lingua"
+Import "electromagnetism/electrostatics/Coulomb-force-superposition-and-test-charge.lingua"
+Import "electromagnetism/electrostatics/Work-potential-difference-and-reference-choice.lingua"
+Import "electromagnetism/foundations/Charge-conservation-and-current-density.lingua"
+Import "electromagnetism/currents/Circuit-approximations-sources-resistance-and-power.lingua"
+Import "core/Connect-a-restoring-interaction-to-an-oscillating-physical-state.lingua"
+Import "core/Account-for-oscillation-losses-and-external-work.lingua"
+Import "core/Describe-a-field-without-confusing-position-and-time.lingua"
+Import "core/Relate-a-traveling-profile-to-its-motion-and-phase.lingua"
+Import "core/Derive-a-string-wave-model-from-transverse-force-balance.lingua"
+Import "core/Connect-fixed-boundaries-and-initial-data-to-standing-modes.lingua"
+Import "core/Derive-local-wave-energy-and-transport-across-a-boundary.lingua"
+Import "core/Investigate-string-modes-energy-transfer-and-invisible-motion.lingua"
+Import "core/Review-oscillations-waves-boundaries-and-physical-evidence.lingua"
+Import "core/Connect-many-constituents-to-a-macroscopic-material-state.lingua"
+Import "core/Distinguish-temperature-equilibrium-and-a-thermometer-indication.lingua"
+Import "core/Derive-a-wall-pressure-from-momentum-transfer-and-velocity-moments.lingua"
+Import "core/Separate-stored-energy-from-heat-and-work-along-a-process.lingua"
+Import "core/Connect-boundary-displacement-to-pressure-work-and-path-dependence.lingua"
+Import "core/Investigate-particle-moments-and-thermal-paths-with-independent-accounts.lingua"
+Import "core/Review-matter-temperature-and-thermal-energy-without-losing-model-limits.lingua"
+Import "thermodynamics-and-heat-transfer/foundations/Absolute-temperature-units-and-reference-levels.lingua"
+Import "thermodynamics-and-heat-transfer/foundations/Equilibrium-state-variables-and-local-description.lingua"
+Import "../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua"
+Import "thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua"
+Import "thermodynamics-and-heat-transfer/balances/Closed-system-energy-and-storage.lingua"
+Import "thermodynamics-and-heat-transfer/balances/Boundary-work-quasistatic-paths-and-irreversibility.lingua"
+Import "electromagnetism/sources/University-Physics-Volume-2.lingua"
+Import "thermodynamics-and-heat-transfer/sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua"
+Import "core/Describe-planar-motion-with-components-and-a-declared-frame.lingua"
+Import "core/Connect-turning-effects-to-force-geometry-and-moment-origins.lingua"
+Import "core/Replace-a-simple-distributed-load-while-preserving-its-external-account.lingua"
+Import "core/Interpret-equilibrium-solutions-through-support-constraints-and-evidence.lingua"
+Import "core/Investigate-a-planar-fixture-through-forces-moments-and-admissible-reactions.lingua"
+Import "core/Review-planar-motion-equilibrium-and-the-limits-of-a-rigid-model.lingua"
+Import "core/Choose-a-physical-system-and-a-question.lingua"
+Import "core/Locate-an-object-with-an-origin-axis-and-clock.lingua"
+Import "core/Compare-average-rates-with-local-motion.lingua"
+Import "core/Derive-and-test-a-constant-acceleration-model.lingua"
+Import "core/Relate-forces-to-momentum-and-system-boundaries.lingua"
+Import "core/Connect-work-energy-and-power-with-the-model.lingua"
+Import "core/Separate-a-prediction-from-a-fitted-description.lingua"
+Import "core/Investigate-a-cart-with-motion-momentum-and-energy.lingua"
+Import "core/Review-systems-motion-and-physical-evidence.lingua"
+Import "../engineering/mechanical-engineering-and-machine-design/statics/Forces-are-interactions-across-the-chosen-boundary.lingua"
+Import "fluid-dynamics/sources/University-Physics-Volume-1.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Systems-change-and-physical-explanations.lingua"
+
+Physics — fields, matter, motion and physical evidence (@physics-map: 0, is #chapter, #physics "electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY", #physics "../engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ", #hephaestus-core "core/Systems-change-and-physical-explanations.lingua#r_0C0B264F8BB7FF26E566E6B5DB", #contains "classical-mechanics/Classical-mechanics.lingua#r_0SDRWJN2A6ZJ15JWQGQDPV932X", #contains "continuum-and-solid-mechanics/Continuum-and-solid-mechanics.lingua#r_0S9MAG1084RSH4NGGFBEC90YSA", #contains "statistical-and-nonequilibrium-physics/Statistical-and-nonequilibrium-physics.lingua#r_2NCC3TE3GE2MNZB7B55QMM2JYW", #contains "waves-and-acoustics/Waves-and-acoustics.lingua#r_2WAQHN607TSEVR815T405B9BP4", #contains "optics-photonics-and-laser-science/Optics-photonics-and-laser-science.lingua#r_3G9J2ZB6A56CVVRPPVMES1Y1TS", #contains "quantum-mechanics/Quantum-mechanics.lingua#r_3QKXAVG6MAM4QY6K34TH62J0H2", #contains "atomic-and-molecular-physics/Atomic-and-molecular-physics.lingua#r_03W9BFZS0RH01E9MB5V1DY1Q41", #contains "condensed-matter-physics/Condensed-matter-physics.lingua#r_4226CPSR4ZCTJZXJCJRYQN2TX8", #contains "soft-matter-and-complex-materials/Soft-matter-and-complex-materials.lingua#r_0TMZS4Z4YK54MYJEJRQV9H8P7P", #contains "nuclear-physics/Nuclear-physics.lingua#r_3AGVT8PFMNSTXS10HTA3WSS5B2", #contains "particle-physics-and-quantum-fields/Particle-physics-and-quantum-fields.lingua#r_1KKKHDY1ZZH43E4PH18YEBEN62", #contains "relativity-and-gravitation/Relativity-and-gravitation.lingua#r_47N92WJBM5AJRF9NHTBBMT1JSW", #contains "plasma-physics/Plasma-physics.lingua#r_0S8HNABDKT1SVXEGYD76B04ERN", #contains "nonlinear-physics-and-complex-systems/Nonlinear-physics-and-complex-systems.lingua#r_5QMYV4N2YEEPYAM17H3P4BKZE1", #contains "biological-physics/Biological-physics.lingua#r_0BDXQ37554WA4ZX0W3R3MSDW0D", #contains "computational-physics/Computational-physics.lingua#r_3DCBZAS81PTFC874GAGNRBV9XM", #contains "experimental-physics-and-instrumentation/Experimental-physics-and-instrumentation.lingua#r_6B235FF0NQSETNXHKF6HTVYN2E", #contains "radiation-and-medical-physics/Radiation-and-medical-physics.lingua#r_1KKCXMQWNT1M14DTT4N1SF7E0G", #contains "quantum-information-science/Quantum-information-science.lingua#r_6XAN2RY6M9Z21MB8AYGKGBA08R", #contains "nanophysics-and-surface-science/Nanophysics-and-surface-science.lingua#r_6QMJF5G8RY6N4MP55QC238WM2B", #contains "universe-and-space/Universe-and-space.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP", #contains "electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY", #contains "thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E", #contains "fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ") { r_04A5CP8RTBERZEN4XCCDQ3T47W
+**Begin the shared area core:** [Begin with systems, change and physical explanations](core/Systems-change-and-physical-explanations.lingua#r_0C0B264F8BB7FF26E566E6B5DB).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
 Connect observed physical behavior with mathematical models, measurements, approximations and the material systems that use them. Begin from a concrete question, deepen the shared foundations at the step that uses them and compare predictions with evidence.
 
 [Electromagnetism — charge, fields, matter, waves and physical evidence](electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY) starts with charge, voltage, current and fields, then develops static boundaries, matter, induction, Maxwell conservation, relativity, waves, radiation, computation, experiments and independent research. Complete technical books and public undergraduate/graduate programmes support the increasing depth.
@@ -11,7 +195,72 @@ Connect fields and material response with power systems, machines, conversion, m
 
 **Fluid dynamics:** [Fluid dynamics — motion, forces, transport and evidence](fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ) connects observed fluid motion with pressure, forces, conservation laws, transport and the mathematical and experimental evidence for a flow model.
 
-[Development scope: Physics](../../../lince/Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
+**Developed first foundation block:** systems and quantities, coordinates, graphs and rates, constant acceleration, geometrical/vector preparation, force interactions, momentum, work and energy, and model evidence. Nine new lessons reuse six existing quantitative and mechanical Records. A piecewise cart investigation and review connect the accounts; this opening block does not complete mechanics or the broader physics core. Begin from the shared opening above.
+
+**Developed second foundation block:** planar motion and coordinate descriptions, free-body accounts, moments/couples and origin changes, a uniform-load resultant, equilibrium and independent/redundant/contact-limited constraints. Six new lessons reuse four mechanical Records in a ten-step continuation after the first review. An original fixture investigation compares moment origins, complete coordinate changes, admissible reactions and conditional hard bounds. It does not establish physical fixture performance or complete mechanics. Continue comparable chemistry formation next.
+
+**Reading:** [University Physics Volume 1](fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6) and [Engineering Statics](../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), with the selected passages and preparation stated in the learning Records.
+
+[Development scope: Physics](Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Developed third common foundation:** material state, temperature/equilibrium and measurement, gas state models, pressure from particle momentum, caloric information, closed-system energy and boundary work. Seven new lessons connect six shared chemical/thermal Records. Original finite-particle and three-path investigations distinguish means from squared speeds, model moments from equilibrium, and state-energy changes from heat/work histories. Two runnable programs carry independent exact checks. Existing specialist readings and routes remain; no physical experiment or material/installation validation is claimed. Continue chemistry at comparable depth; the whole physics core and its twenty-five planned subjects remain unfinished.
+
+
+**Developed fourth common foundation:** restoring interactions and oscillation energy, loss and external work, field/partial-derivative meaning, traveling profiles, string force balance, fixed-end modes and local energy transport. Nine new lessons reuse the mathematical periodic and second-order preparation, chemical exponential bridge and inquiry model criticism by reference. The original investigation compares local and integrated energy accounts and shows motion invisible to a midpoint observation. Exact independent programs check the analytic calculations; no string apparatus, material law or performed experiment is claimed. Continue chemistry at comparable depth; the whole physics core and its twenty-five pending subjects remain unfinished.
+
+
+**Developed fifth common foundation:** signed charge and finite fields, potential/work from a parametrized path, current and charge storage, capacitor work, circuit premises, coupled redistribution, energy dissipation and observation limits. Ten new lessons connect five preserved electromagnetic Records with bounded reading notes. An original finite-source and two-capacitor investigation independently checks work, charge and energy, voltage-only parameter ambiguity and meter loading. Shared logarithm/exponential and linear mathematics remain contextual reuse. Continue chemistry at comparable depth. No apparatus is validated, and the full physics core and all twenty-five pending subjects remain unfinished.
+
+
+**Developed sixth common foundation:** process direction beyond energy conservation, reversible comparison and entropy as a state quantity, transfer/generation balances, constant-capacity and ideal-gas reference paths, reservoir-cycle work bounds, irreversible expansions and finite-body work extraction. Nine new lessons connect five preserved thermal Records with shared logarithm/differential preparation. An original investigation has independent rational numerical checks and reconstructs one published entropy example. No apparatus or actual material-property range is validated. Continue chemistry at comparable depth; the whole physics core and its twenty-five pending descendant subjects remain unfinished.
+
+
+**Developed seventh common foundation:** orientation and angular motion, angular-momentum origins and transport, mass inertia and kinetic energy, axial work/impulse, rolling constraints and contact admissibility, internal exchange and observational ambiguity. Nine new lessons and two preserved mechanical lessons connect these concepts to an original exact investigation with 3,266 checks and a bounded published washer reconstruction. The existing OpenStax and Tong source identities retain actual inspection and reuse boundaries. Continue chemistry molecular identity and structure at comparable breadth; full mechanics and the physics core remain unfinished.
+
+
+**Developed eighth common foundation:** microscopic states and preparation, constrained subsystems, statistical entropy, finite reservoirs and canonical weighting, fluctuations/correlations, controlled energy ladders, and relaxation versus equilibrium. Ten new lessons reuse counting, probability, thermodynamic and infinite-sum preparation plus the existing Tong source identity. An original exact investigation compares equal means with different constraints and equal equilibrium weights with different dynamics; 2,578 finite checks pass. Physics now has 98 common learning Records. Continue chemistry at comparable breadth; statistical mechanics, quantum theory, relativity, astronomy and the whole core remain unfinished.
+
+
+**Developed common quantum foundations:** preparation and evidence, amplitudes and Born probabilities, finite spin observables, conditional instruments, mixtures/dephasing, state-dependent uncertainty, Hamiltonian dynamics, a bounded continuous-well bridge, composite states and calibrated count comparisons. Twelve original lessons reuse the complex-operator, wave, chemical-state and inquiry/statistical formation and three unchanged programs. Ideal source models are reconstructed without claiming laboratory reproduction. Physics now has 110 common learning Records. This prepares quantum-related branch entry; field integration, magnetic/inductive, relativistic/gravitational and astronomical foundations remain common gaps, and whole physics/quantum subjects remain unfinished. Continue computing human use/trust and engineering human operation before deeper specializations.
+
+
+**Developed common magnetic and inductive foundations:** magnetic observation and force, signed uniform-field motion, steady-current geometry, oriented induction, moving boundaries, inductive storage, Maxwell consistency, field energy and propagation. Eleven original lessons connect three preserved electromagnetic lessons with bounded common-reading notes. An exact investigation checks deflection, boundary circulation, mechanical/circuit/field energy and a current-only parameter ambiguity; one published RL example is reconstructed. Physics now has 124 common learning Records. Spacetime/gravity and astronomical evidence remain common gaps before the same readiness review. Whole physics and its advanced branches remain unfinished.
+
+
+**Developed common spacetime and gravity foundations:** events and clock comparison, Lorentz transformations, proper time, causality and received signals, relativistic energy, Newtonian gravity and orbits, local equivalence, tidal structure and weak gravitational clock effects. Twelve original lessons connect one preserved electromagnetic lesson and three bounded source Records. An exact investigation checks frame and orbital invariants, rival descriptions and a published optical-clock calculation. Physics now has 137 common learning Records. Astronomical evidence remains next before the same 134-scope readiness review. Whole physics and its advanced branches remain unfinished.
+
+
+**Developed common astronomical foundations:** directions and epochs, parallax inference, detector counts, flux/magnitude/extinction, spectral meaning, planetary and binary evidence, stellar balances and populations, galactic mass and cosmic distances. Thirteen original lessons reuse the shared spacetime, quantum, thermal, chemical and inquiry preparation. An exact investigation checks observation models and ambiguities and reconstructs one historical distance/magnitude calculation. Physics now has 150 common learning Records. Review the same 134-scope mapping across all six areas before developing major branches; full astrophysics, astronomy and cosmology remain unfinished.
+
+
+**Scope:** Explain and measure motion, energy, a circuit, or a wave; develop more rigorous accounts of a chosen system. Offer qualitative and quantitative entrances; add algebra, calculus, linear algebra, or statistical methods at the steps that actually use them.
+
+**Branches:**
+
+- [Classical mechanics](classical-mechanics/Classical-mechanics.lingua#r_0SDRWJN2A6ZJ15JWQGQDPV932X)
+- [Continuum and solid mechanics](continuum-and-solid-mechanics/Continuum-and-solid-mechanics.lingua#r_0S9MAG1084RSH4NGGFBEC90YSA)
+- [Statistical and nonequilibrium physics](statistical-and-nonequilibrium-physics/Statistical-and-nonequilibrium-physics.lingua#r_2NCC3TE3GE2MNZB7B55QMM2JYW)
+- [Waves and acoustics](waves-and-acoustics/Waves-and-acoustics.lingua#r_2WAQHN607TSEVR815T405B9BP4)
+- [Optics, photonics, and laser science](optics-photonics-and-laser-science/Optics-photonics-and-laser-science.lingua#r_3G9J2ZB6A56CVVRPPVMES1Y1TS)
+- [Quantum mechanics](quantum-mechanics/Quantum-mechanics.lingua#r_3QKXAVG6MAM4QY6K34TH62J0H2)
+- [Atomic and molecular physics](atomic-and-molecular-physics/Atomic-and-molecular-physics.lingua#r_03W9BFZS0RH01E9MB5V1DY1Q41)
+- [Condensed matter physics](condensed-matter-physics/Condensed-matter-physics.lingua#r_4226CPSR4ZCTJZXJCJRYQN2TX8)
+- [Soft matter and complex materials](soft-matter-and-complex-materials/Soft-matter-and-complex-materials.lingua#r_0TMZS4Z4YK54MYJEJRQV9H8P7P)
+- [Nuclear physics](nuclear-physics/Nuclear-physics.lingua#r_3AGVT8PFMNSTXS10HTA3WSS5B2)
+- [Particle physics and quantum fields](particle-physics-and-quantum-fields/Particle-physics-and-quantum-fields.lingua#r_1KKKHDY1ZZH43E4PH18YEBEN62)
+- [Relativity and gravitation](relativity-and-gravitation/Relativity-and-gravitation.lingua#r_47N92WJBM5AJRF9NHTBBMT1JSW)
+- [Plasma physics](plasma-physics/Plasma-physics.lingua#r_0S8HNABDKT1SVXEGYD76B04ERN)
+- [Nonlinear physics and complex systems](nonlinear-physics-and-complex-systems/Nonlinear-physics-and-complex-systems.lingua#r_5QMYV4N2YEEPYAM17H3P4BKZE1)
+- [Biological physics](biological-physics/Biological-physics.lingua#r_0BDXQ37554WA4ZX0W3R3MSDW0D)
+- [Computational physics](computational-physics/Computational-physics.lingua#r_3DCBZAS81PTFC874GAGNRBV9XM)
+- [Experimental physics and instrumentation](experimental-physics-and-instrumentation/Experimental-physics-and-instrumentation.lingua#r_6B235FF0NQSETNXHKF6HTVYN2E)
+- [Radiation and medical physics](radiation-and-medical-physics/Radiation-and-medical-physics.lingua#r_1KKCXMQWNT1M14DTT4N1SF7E0G)
+- [Quantum information science](quantum-information-science/Quantum-information-science.lingua#r_6XAN2RY6M9Z21MB8AYGKGBA08R)
+- [Nanophysics and surface science](nanophysics-and-surface-science/Nanophysics-and-surface-science.lingua#r_6QMJF5G8RY6N4MP55QC238WM2B)
+- [Universe and space](universe-and-space/Universe-and-space.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP)
+- [Electromagnetism — charge, fields, matter, waves and physical evidence](electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY)
+- [Thermodynamics and heat transfer](thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E)
+- [Fluid dynamics — motion, forces, transport and evidence](fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ)
 } r_04A5CP8RTBERZEN4XCCDQ3T47W
 
 Extension @physics-map "lince.vocabulary" {

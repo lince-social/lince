@@ -1,0 +1,21 @@
+Import "../Engineering.lingua"
+
+Preserve shared causes when comparing dimensional alternatives (@engineering-coupled-variation: 0, is #chapter, #hephaestus-core "../mechanical-engineering-and-machine-design/measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua#r_101DKG7DGDQ1Q0GMRBRHBFHC4Q") { r_096EB930A4D4801B02F0B0B349
+Marginal bounds on each dimension can discard relationships between dimensions. Revisit [Turn dimensions into independent and testable constraints](Turn-dimensions-into-independent-and-testable-constraints.lingua#r_05128EACECEA90BEE05B27AD39): when several quantities depend on a common input, carry that input through the model before bounding the result. Repeating its interval independently can permit combinations that the model itself forbids.
+
+Consider a second, explicitly stipulated family of hypothetical assemblies: A=50+δ+e_A, B=20+δ+e_B and C=29+e_C, all in mm. Here |δ|≤0.10, |e_A|≤0.02, and |e_B|,|e_C|≤0.01 mm, with all combinations of these four primitive inputs allowed. Then g=A−B−C=1+e_A−e_B−e_C. The shared δ cancels exactly. The actual gap range for this family is 0.96–1.04 mm.
+
+Viewed separately, the dimensions have intervals A=50±0.12, B=20±0.11 and C=29±0.01 mm. Treating all combinations of those marginal intervals as possible gives the wider 0.76–1.24 mm gap range. It remains a bound, but its extreme combinations are unattainable in the stated joint family. At δ=+0.10 the same δ cannot simultaneously be −0.10 in the B expression. Preserving shared variables can therefore change a design conclusion without changing any marginal limits.
+
+This cancellation is conditional. Merely making two features on one tool does not establish equal signed coupling or bound the residuals. The joint model needs evidence. This exercise describes dimensional values; if δ instead represented a shared measurement bias, cancellation would concern the estimate's error account, not prove that a physical gap was manufactured correctly. Keep the interpretation of every term visible.
+
+A shared effect does not always cancel. If the same additive δ enters A, B and C, then g=1−δ for nominal dimensions, because the coefficient sum is 1−1−1=−1. If all three lengths scale by λ, the gap scales by λ as well: λA−λB−λC=λg. Neither a common additive error nor a common scale factor can be discarded merely because it is common. Derive its signed coefficient first. More complicated thermal and deformation couplings require their own physical laws and preparation; no such law is inferred here.
+
+**Work:** list the primitive inputs, derive the expression and then enumerate their endpoints. Compare that result with marginal-interval arithmetic and identify a spurious marginal corner. Produce one change in coupling coefficients that makes the design fail its requirement. Explain what measurements or process evidence would distinguish competing coupling models. Read the later sensitivity/correlation work in [Tolerance stacks, correlation and assembly yield](../mechanical-engineering-and-machine-design/design/Tolerance-stacks-correlation-and-assembly-yield.lingua#r_3EFDXEEGHFYPJNVJNJEFH2Y6CN) as a continuation: probabilistic dependence and covariance refine a different question from this finite bound calculation.
+
+**Engineering decision:** the tightened independent design and the stipulated coupled family both meet the gap requirement conditionally. Selecting between them also needs evidence about process control, cost, inspection and continuing stability. A narrower mathematical bound alone is insufficient for choosing a real manufacturing process. Reuse [Compare alternatives under constraints and explicit tradeoffs](Compare-alternatives-under-constraints-and-explicit-tradeoffs.lingua#r_0848D9CBAED01BC33DD0081EA7) to keep those unresolved comparisons explicit.
+
+**Continue:** [Connect the drawing to a defined dimensional measurement](../mechanical-engineering-and-machine-design/measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua#r_101DKG7DGDQ1Q0GMRBRHBFHC4Q).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_096EB930A4D4801B02F0B0B349

@@ -1,0 +1,28 @@
+Import "../Computing.lingua"
+
+Specify an abstract slot value before choosing its representation (@computing-abstraction-values: 0, is #chapter, #hephaestus-core "Relate-concrete-representations-to-abstract-values-and-invariants.lingua#r_004B8AEF7722C03E763F0A6783") { r_0002C57036D15BA3CE98EC2DED
+Let U_m={0,...,m−1}, with integer 0≤m≤256. An abstract slot value is the pair (m,S), where S is a subset of U_m. Think of S as the slots recorded as occupied in one proposal. Empty sets with different m are different values: they offer different possible future operations. No date, person, physical resource or actual booking is implied by a slot number.
+
+The public interface is defined by its abstract behavior:
+
+| Operation | Valid result and state meaning |
+| --- | --- |
+| empty(m) | (m,∅) |
+| extent() | m |
+| members() | All elements of S, once each, as an increasing tuple of exact integers |
+| contains(x) | Whether x∈S, for exact integer x∈U_m |
+| insert(x) | A value representing (m,S∪{x}); the original remains unchanged |
+| remove(x) | A value representing (m,S∖{x}); absence is allowed; the original remains unchanged |
+
+Widths and slots reject Booleans, floats, strings and integer subclasses; the accepted type is the exact built-in integer. The finite width bound is an explicit teaching scope. `from_values` accepts an exact tuple of slots, validates every element and collapses repetitions through insertion. This is set construction; the later reservation batch instead rejects repeated requests. Those are different operations with different meanings.
+
+The interface commits to increasing order in members(), even though a mathematical set is unordered. Otherwise clients could observe implementation-dependent enumeration. It does not commit to object identity, fresh allocation, concrete class, private fields, printed representation, serialization bytes, execution time or memory consumption. Abstract equality is `same_value`, comparing m and the ordered members, not Python object identity or generated field equality. Calling insert on a present element may reuse an existing object or allocate another one while preserving the abstract result.
+
+Both implementations must produce the stated valid observations and ValueError for the explicitly invalid ordinary inputs. Clients obtain values through the interface and use its operations; arbitrary forged objects or implementations that violate the contract are not covered by the theorem. A language interface declaration can help check available operations, but names alone do not establish their semantics. The study's Python adapters use explicit checks, not an assumption that annotations guarantee correctness.
+
+**Work:** derive insertion/removal idempotence and show why removing an absent element must not insert it. Distinguish S∪{x} from toggling membership. Give a client that depends only on the stated observations and another that depends on a forbidden representation detail. Explain why adding insertion-order enumeration would change this contract, even if every contains result remained the same.
+
+**Continue:** [Relate concrete representations to abstract values and invariants](Relate-concrete-representations-to-abstract-values-and-invariants.lingua#r_004B8AEF7722C03E763F0A6783).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0002C57036D15BA3CE98EC2DED

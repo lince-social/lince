@@ -1,6 +1,6 @@
 Import "../Materials-engineering.lingua"
 
-An inspectable symmetric phase-separation account (@mat-regular-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "../thermodynamics/Read-binary-diagrams-with-their-constraints-and-basis.lingua#r_70VAEYWMTB5QF46JQ52RANZQX7") { r_1ZQTEHAPQAXJECBG9EBDQDJZGZ
+An inspectable symmetric phase-separation account (@mat-regular-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "../thermodynamics/Read-binary-diagrams-with-their-constraints-and-basis.lingua#r_70VAEYWMTB5QF46JQ52RANZQX7", #hephaestus-core "../../../chemistry/core/Certify-a-phase-split-independently-of-a-floating-point-solver.lingua#r_00F44FCF73DA5C87DF329AC453") { r_1ZQTEHAPQAXJECBG9EBDQDJZGZ
 **Read:** The preceding regular-solution and common-tangent derivations; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), sections 7.11 and 8.4–8.5. The original program uses only Python's standard library.
 
 Let χ=Ω/(RT). Symmetry makes the coexistence tangent horizontal and its endpoints x and 1−x. With y=ln[(1−x)/x]>0, solve χ tanh(y/2)−y=0 for the nonzero root. Bisection uses the residual divided by y; its small-y series avoids cancellation close to the critical point. The limit χ≤2 has no finite miscibility gap. Inputs are deliberately bounded to −20≤χ≤20 for this teaching calculation.
@@ -40,5 +40,10 @@ At χ=3, coexistence compositions are approximately 0.07072018 and 0.92927982; t
 
 **Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
 **Continue in materials engineering:** [Read binary diagrams with their constraints and basis](../thermodynamics/Read-binary-diagrams-with-their-constraints-and-basis.lingua#r_70VAEYWMTB5QF46JQ52RANZQX7).
+
+
+**Eighth chemistry-block reading:** Read and run the existing program unchanged as a proposal for the declared symmetric model. Save its plain Python block as shared_regular_solution.py for the chemistry study. The next chemistry lesson verifies relevant output with independent exact intervals; a finite iteration count or small residual alone is not a certificate.
+
+**Continue in the eighth chemistry block:** [Certify a phase split independently of a floating point solver](../../../chemistry/core/Certify-a-phase-split-independently-of-a-floating-point-solver.lingua#r_00F44FCF73DA5C87DF329AC453).
 
 } r_1ZQTEHAPQAXJECBG9EBDQDJZGZ

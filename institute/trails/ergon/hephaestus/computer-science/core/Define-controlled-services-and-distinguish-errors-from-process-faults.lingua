@@ -1,0 +1,28 @@
+Import "../Computing.lingua"
+
+Define controlled services and distinguish errors from process faults (@computing-controlled-service: 0, is #chapter, #hephaestus-core "Preserve-process-state-while-separating-eligibility-from-scheduling-policy.lingua#r_009ADB7C7B16D8EF5718E860FA") { r_0006F078C2118768132F7C3690
+An operating system needs controlled entry to operations beyond an ordinary process's authority. A normal procedure call changes control flow under a calling convention; a protected service entry additionally establishes which privileged code executes and which arguments/state it may use. Real trap/return mechanisms and privilege levels enforce that boundary in architecture-specific ways. Our original model represents the boundary through a trusted dispatcher with a fixed operation set; Python function privacy is not a security mechanism against a caller that can mutate the host objects.
+
+The service-level instruction contract is:
+
+| Instruction | Successful effect |
+| --- | --- |
+| set(value) | Set acc to an exact integer from 0 through 255 |
+| load(address) | Read one permitted virtual word into acc |
+| store(address) | Write acc to one permitted virtual word |
+| copy(source,destination,length) | Validate and copy pre-operation words; report the count |
+| wait(event) | Save a nonempty event name and become blocked |
+| halt() | Become done |
+
+Every successfully handled instruction advances pc by one. copy validation failure is an ordinary returned error: memory and acc are preserved, last records the reason, status remains ready and pc advances. An invalid load/store address or permission is instead a process fault, preserving memory, acc and the faulting pc while setting status and reason. An unsupported instruction or malformed instruction contract faults at the same pc. Running past the trusted program list produces a fetch fault. These choices belong to this model; real APIs and exceptions must be read on their own terms.
+
+A wait is accepted and advances pc, but execution cannot continue until a matching event changes blocked to ready. The event model supplies no input payload and performs no real I/O. wake preserves the saved acc, pc and memory; it changes waiting/status/result bookkeeping. A wrong event or an attempt to schedule a nonready process is rejected by the controller API without creating a user step. The controller is trusted, and no user instruction can install a new mapping or choose an arbitrary privileged handler.
+
+The dispatcher constructs a new state from the old one, which makes before/after evidence inspectable and preserves the input object. That copying is a host implementation choice for this tiny investigation, not a model of OS context-switch cost. The proof of protected effects concerns the permitted transitions and fixed maps, not adversarial Python code, hardware faults, side channels or a real kernel.
+
+**Reading and work:** [Operating Systems Three Easy Pieces](../sources/Operating-Systems-Three-Easy-Pieces.lingua#r_009CB72626232ED2E08E80BFC4), chapter 6's controlled-operation/trap discussion, and [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 17's service/state passages. Trace a rejected copy, a forbidden store and a blocked wait. For each, list exactly which fields change and which do not. Explain why adding an unrestricted map instruction would invalidate the previous fixed-map isolation proof unless a new authority policy were supplied.
+
+**Continue:** [Preserve process state while separating eligibility from scheduling policy](Preserve-process-state-while-separating-eligibility-from-scheduling-policy.lingua#r_009ADB7C7B16D8EF5718E860FA).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0006F078C2118768132F7C3690

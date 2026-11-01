@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Partition replicated variation before interpreting lack of fit (@inquiry-fit-replication: 0, is #chapter, #hephaestus-core "Investigate fitting uncertainty and competing observation models.lingua#r_00FEC32E133E78D019BFE134C2") { r_00DD59967EC8F06A432063A5FE
+Suppose input level j has n_j responses y_jk and group mean ȳ_j. An affine fit assigns the same fitted value f_j to every response at that level. Write y_jk−f_j=(y_jk−ȳ_j)+(ȳ_j−f_j). Squaring and summing gives SSE=SS_PE+SS_LOF, where SS_PE=Σ_jΣ_k(y_jk−ȳ_j)² and SS_LOF=Σ_j n_j(ȳ_j−f_j)². The cross term vanishes because within each group Σ_k(y_jk−ȳ_j)=0. This is an algebraic identity for the recorded values, before any probability model is imposed.
+
+For g distinct levels and n readings with an identifiable affine fit, within-group contrasts have n−g dimensions and the deviations of group means from the two-dimensional affine space have g−2. Their sum is n−2. A meaningful within-level scatter estimate requires actual repeated observation units, not duplicated rows. If all readings at one level share a disturbance, their apparent replication may omit the variation relevant to another day, reference or specimen.
+
+Construct x=(−1,−1,0,0,1,1) and y=(−3/4,−1/4,7/4,9/4,21/4,23/4). The group means are −1/2,2,11/2. Their relation is 2+3x+x²/2, with paired deviations ±1/4. The affine fit has α̂=7/3, β̂=3. Thus SS_PE=3/8, SS_LOF=1/3 and SSE=17/24. Degrees of freedom are 3,1 and 4. Verify the partition directly from all six residuals and again from the three means. These constructed pairs are not a performed experiment.
+
+Under a justified same-variance independent-error model, the within-level term helps estimate scatter without imposing an affine mean across levels. A probabilistic significance test additionally needs its distributional assumptions. This lesson does not infer an F distribution from the algebraic partition or assign a p-value to the constructed pairs. Unequal variance, dependence, level uncertainty and adaptive selection require their own treatment.
+
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), selected section 4.4.4.6 for the role of replication in checking functional adequacy. Its full test formulas are later work after the needed sampling distributions. Compare the source's common test setting with the exact partition here.
+
+**Work:** change the pair deviations while holding all three means fixed; then change the centre mean while holding within-pair differences fixed. Predict which sum changes before calculation. Design a small repeated-measurement comparison that can distinguish curvature from a day effect; state the actual unit randomized and the reference shared by observations. Reuse earlier design lessons instead of mistaking a fitted curve for an experimental design.
+
+**Continue:** [Investigate fitting uncertainty and competing observation models](Investigate fitting uncertainty and competing observation models.lingua#r_00FEC32E133E78D019BFE134C2).
+
+**Return:** [Inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00DD59967EC8F06A432063A5FE

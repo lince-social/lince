@@ -3,7 +3,19 @@ use serde::{Deserialize, Serialize};
 use crate::karma::{CanonicalHash, TypedUid, canonical_hash};
 use crate::simulation::{Cause, Quantity};
 
-pub const BUILD: &str = env!("LINCE_EXECUTION_BUILD_HASH");
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutionIdentity(CanonicalHash);
+
+impl ExecutionIdentity {
+    pub fn parse(value: impl Into<String>) -> Result<Self, crate::karma::KarmaBoundaryError> {
+        CanonicalHash::parse(value).map(Self)
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 pub const MAX_SPANS: usize = 50_000;
 pub const MAX_CACHE_BYTES: usize = 16 * 1024 * 1024;
 pub const MAX_STEPS: u64 = 100_000;
@@ -123,10 +135,13 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn key(&self) -> Result<CanonicalHash, crate::karma::KarmaBoundaryError> {
+    pub fn key(
+        &self,
+        identity: &ExecutionIdentity,
+    ) -> Result<CanonicalHash, crate::karma::KarmaBoundaryError> {
         canonical_hash(
             "lince.projection.v1",
-            &(&self.actor, BUILD, chrono_tz::IANA_TZDB_VERSION),
+            &(&self.actor, identity.as_str(), chrono_tz::IANA_TZDB_VERSION),
         )
     }
 }

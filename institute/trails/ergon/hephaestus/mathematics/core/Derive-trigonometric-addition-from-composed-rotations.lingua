@@ -1,0 +1,26 @@
+Import "../Mathematics.lingua"
+
+Derive trigonometric addition from composed rotations (@math-rotation-identities: 0, is #chapter, #hephaestus-core "Identify-phase-period-and-the-domain-of-an-inverse-question.lingua#r_00136A9ACFD17B64955E9DAD26") { r_00CF00FCDE36C6BE809208BACF
+A rotation through α takes the first basis vector to (cos α,sin α). The positively oriented perpendicular unit vector is (−sin α,cos α), the image of the second basis vector. A vector (x,y) therefore maps to
+
+R(α)(x,y)=(x cos α−y sin α, x sin α+y cos α).
+
+This is a linear map because it acts on the basis coefficients. Expanding the squared length of the image and using cos²α+sin²α=1 gives x²+y²: the mixed terms cancel. Its determinant is one, its transpose is R(−α), and their product is the identity. Reuse the earlier matrix/coordinate foundations; a rotation changes components without changing the geometric length.
+
+Geometric composition of oriented rotations adds their angles. Apply R(α) to the unit point (cos β,sin β). Since the result is the unit point for α+β, comparison of coordinates proves
+
+cos(α+β)=cos α cos β−sin α sin β,
+sin(α+β)=sin α cos β+cos α sin β.
+
+Replacing β by −β proves the difference identities. This argument uses rotation composition as a geometric fact; it does not assume trigonometric derivatives or a differential equation. Compare it with the equal-chord/distance derivation in [Algebra and Trigonometry 2e — Abramson and contributors](../../inquiry/quantitative-literacy/sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX), section 9.2.
+
+Setting β=α gives sin 2α=2sin α cos α and cos 2α=cos²α−sin²α. Substituting the circle identity yields cos 2α=1−2sin²α=2cos²α−1. For a positive first-quadrant half-angle, sin(α/2)=√((1−cos α)/2); outside that domain the sign needs separate information. Squaring an equation can conceal this choice.
+
+A rational unit point supplies an exact rotation without needing a named angle. The pair (3/5,4/5) has squared length one. The corresponding rotation takes (2,−1) to (2,1), preserving squared length 5. Its square has cosine −7/25 and sine 24/25, obtained by matrix multiplication or the double-angle identities. The angle exists by the unit-circle definition, but a rational coordinate does not make its angle a rational multiple of π.
+
+**Practice:** derive R(α)R(β)=R(α+β) entry by entry. Use a 30° and 45° composition to obtain exact 75° values, retaining radical signs. Explain why reversing the order matters for some three-dimensional rotations even though these planar rotations commute; a three-dimensional proof is later work, not supplied by the planar calculation.
+
+**Continue:** [Identify phase period and the domain of an inverse question](Identify-phase-period-and-the-domain-of-an-inverse-question.lingua#r_00136A9ACFD17B64955E9DAD26).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00CF00FCDE36C6BE809208BACF

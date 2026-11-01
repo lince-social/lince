@@ -1,0 +1,30 @@
+Import "../Computing.lingua"
+
+Specify an encoded machine before executing its instructions (@computing-instruction-machine: 0, is #chapter, #hephaestus-core "Connect-a-high-level-sum-with-an-encoded-loop-and-a-proof.lingua#r_0778162F79E4E9910D1B03EE10") { r_02135B96E55F97B0360B787685
+A stored program makes the sequence of requested transitions available as data for a decoder. The course in [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB) develops a real instructional architecture; the following machine is an original, deliberately smaller model with different encodings and rules. It supplies a complete traceable contract without claiming to implement the course’s Beta or a commercial processor.
+
+There are sixteen data locations, each holding an unsigned four-bit word, and a separate immutable code sequence of one to sixteen bytes. State consists of a program counter pc, four-bit accumulator acc, the sixteen data words and a halted flag. Initial pc and acc are zero. A byte has a four-bit operation field and a four-bit argument: byte=16·op+arg. Its argument is an immediate word, data address or absolute code index according to the operation.
+
+| op | Name | State effect |
+| --- | --- | --- |
+| 0 | HALT | Only argument zero is valid; set halted and retain pc |
+| 1 | LD d | acc becomes data[d] |
+| 2 | ST d | data[d] becomes acc |
+| 3 | ADD d | acc becomes (acc+data[d]) modulo 16 |
+| 4 | SUB d | acc becomes (acc−data[d]) modulo 16 |
+| 5 | JMP q | pc becomes q |
+| 6 | JZ q | If acc=0, pc becomes q; otherwise advance |
+| 7 | LDI v | acc becomes argument v |
+
+Unless a taken jump or HALT says otherwise, pc advances by one code byte. Operations 8–15 and operation zero with a nonzero argument are reserved and fault when fetched. A taken jump beyond the supplied code faults immediately; an untaken conditional jump does not validate an unused target. Sequential advance beyond the supplied code faults on the next fetch. The counter does not wrap. No instruction changes the code sequence, and no implicit signed interpretation changes a branch: JZ tests the stored accumulator for zero.
+
+There are 113 legal instruction encodings: one HALT plus seven operations with sixteen arguments. Decoding a legal instruction does not prove that it is executable at a particular pc with a particular code length. For example a valid jump encoding can still name an absent instruction. Data addresses fit the complete sixteen-location memory, but reading the wrong valid address is a logical error rather than an out-of-bounds fault.
+
+The execution driver distinguishes halt, a specified fault and exhausted step budget. It records the initial state and every successful transition; a fault returns the pre-fault trace without inventing a completed instruction. HALT counts as a transition. At a budget exactly sufficient to execute HALT, the result is halt. A zero budget does not execute even a leading HALT. Budget exhaustion by itself proves neither termination nor nontermination.
+
+**Read and reconstruct:** [Computation Structures — MIT 6.004 Spring 2017](../sources/Computation-Structures-MIT-6004.lingua#r_08E48B371DEF44C3F62A70A8CB), topic 9’s instruction/data/control passages. Compare its architecture with this explicit model, keeping the encodings separate. Decode 0x6A, distinguish a jump target from a data address and predict the difference between a fetch fault and a reserved opcode. Identify the excluded work: calling conventions, compilation, operating systems, caching, interrupts, concurrent devices and physical timing.
+
+**Continue:** [Connect a high-level sum with an encoded loop and a proof](Connect-a-high-level-sum-with-an-encoded-loop-and-a-proof.lingua#r_0778162F79E4E9910D1B03EE10).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_02135B96E55F97B0360B787685

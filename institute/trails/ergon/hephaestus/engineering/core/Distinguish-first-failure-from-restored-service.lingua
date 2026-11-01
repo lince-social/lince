@@ -1,0 +1,17 @@
+Import "../Engineering.lingua"
+
+Distinguish first failure from restored service (@engineering-service-mission: 0, is #chapter, #hephaestus-core "Retain-incomplete-lifetimes-and-interpret-zero-observed-failures.lingua#r_002B196D374AE4936178F09F3B") { r_006C65B9E2B5F143EC63962FE9
+**Preparation:** [Build a finite chance model from outcomes and weights](../../inquiry/core/Build-a-finite-chance-model-from-outcomes-and-weights.lingua#r_0ECC7C2601996048D46E15C104), [Assign continuous probability to intervals rather than individual density values](../../inquiry/core/Assign-continuous-probability-to-intervals-rather-than-individual-density-values.lingua#r_001CB0C3AE88E7CFC0E0B77898) and the rate/accumulation foundations. **Read:** [Measurement Process Characterization — NIST/SEMATECH](../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 8.1.6.1, linked in its new inspection note. Its exponential example uses a rate of 0.01 per hour and time 100 hours. Reconstruct the failure probability, survival and probability density; density has inverse-time units and is not the probability of failure at exactly that instant.
+
+For a nonnegative first-failure time T, define survival R(t)=P(T>t). When T has density f and R(t)>0, the conditional failure rate is h(t)=f(t)/R(t): over a short interval Δt the conditional failure probability is h(t)Δt+o(Δt). Since R′(t)=−f(t), division and integration give R(t)=exp(−∫₀ᵗh(u)du) when R(0)=1. Thus a constant rate λ gives R(t)=exp(−λt). Its units matter: λt must be dimensionless. A flat rate is an assumption, not a consequence of a component having operated successfully before. Wear, environment, loading and prior repairs may change the rate.
+
+Now let U(t) indicate whether a repairable service meets its stated function at time t. Instantaneous availability is P(U(t)=1); observed availability is an actual time fraction from a log. Mission reliability over [0,t] is the probability that the required service holds throughout that interval. A repair can increase availability after an interruption, but it cannot undo that interruption in the same mission. Define the mission's initial state and whether it tolerates degraded capacity or a permitted interruption duration.
+
+The finite model later measures service at slot starts X₀,…,Xₙ₋₁. Its mission event requires adequate capacity at all those starts. Endpoint availability refers separately to Xₙ. These conventions are essential: for n=0 the empty mission has probability one, no output is delivered, and the endpoint is the initial state. For n>0, a process that was down midway and returns up at the endpoint fails the uninterrupted mission. If your real question concerns continuous time inside a slot, the slot model supplies no evidence until that time resolution is justified.
+
+**Work:** construct two four-slot logs with identical total up time but different longest interruptions. Give a requirement that accepts one and rejects the other. Explain why an exponential first-failure mean, a mean time between repeated failures and a mean restoration duration answer different questions. Never infer a repair-duration rate from the handbook's phrase “repair rate” for occurrence of repair events.
+
+**Continue:** [Retain incomplete lifetimes and interpret zero observed failures](Retain-incomplete-lifetimes-and-interpret-zero-observed-failures.lingua#r_002B196D374AE4936178F09F3B).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_006C65B9E2B5F143EC63962FE9

@@ -1,0 +1,24 @@
+Import "../Inquiry.lingua"
+
+Begin with questions, evidence and reproducible claims (@inquiry-core: 0, is #chapter, #hephaestus-core "State-the-question-and-the-kind-of-evidence-its-answer-needs.lingua#r_0E928F81D1D0CA612417C8B8CA") { r_0148905A021EECB61916C70B2C
+Inquiry starts with a question whose possible answers can be distinguished. “This process is better” leaves its purpose and comparison unclear. “Under these conditions, does it produce more acceptable pieces per scheduled hour?” names an outcome, a denominator and a comparison. Some questions require mathematical proof, others observation, interpretation or design judgment; choose evidence appropriate to the claim.
+
+Define the quantity before choosing an instrument. A container's geometric capacity and the amount it delivers after draining can differ. A measurement result needs a method, reference conditions, unit and uncertainty account. A recorded number is evidence produced by a procedure; it is not identical to the property being investigated.
+
+Suppose three hypothetical length readings are 10.1, 10.2 and 10.3 mm. Their arithmetic mean is 10.2 mm and their range is 0.2 mm. Neither is a complete uncertainty statement. A shared calibration offset could affect all readings without widening the range. Repeating the reading can reveal some variation but cannot, by itself, reveal every systematic influence.
+
+A second method reports 10.0 mm. Before declaring either method wrong, compare definitions, conditions, resolution, calibration and sampling. Write competing explanations and identify an observation that could separate them. If two methods examine different parts of a nonuniform object, disagreement may reveal a real property rather than a defective instrument.
+
+Keep observations, transformations and interpretations distinguishable. Save original data, units, provenance, calculation steps and the conditions under which a result can be reproduced. Repeating a calculation on the same data checks a different claim from collecting new observations. Explain a result in enough detail for another person to challenge it; a polished graph is not a substitute for accessible evidence.
+
+**Read and practise:** [Begin with a question and specify the measurand](../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) provides the next measurement step and source readings. [Begin with a question and a result someone can check](../reproducible-computation/foundations/Question-and-claim.lingua#r_2G13323XWBD8ZQD7S8FVE13AT0) connects the claim to reproducible computation. [Prealgebra 2e](../quantitative-literacy/sources/Prealgebra.lingua#r_36KCS76R5ZTWZMVPV5B11Y3BKS) supplies arithmetic preparation when needed.
+
+**Work:** write two distinct measurable questions about the same object. For the hypothetical readings, calculate the mean and range, then add 0.5 mm to every reading and explain which summary changes. Draft an observation log and a calculation record. State one claim the data support and one they do not establish.
+
+**Review:** explain how definitions, observations, uncertainty, reasoning and criticism interact. The shared core will extend into study design, argument, technical communication, teaching, source stewardship and independent investigation. These methods support all five other areas without requiring readers to complete a separate methods curriculum before beginning them.
+
+**Return:** [Scientific inquiry and practice — questions, evidence and shared knowledge](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Continue in the inquiry core:** [State the question and the kind of evidence its answer needs](State-the-question-and-the-kind-of-evidence-its-answer-needs.lingua#r_0E928F81D1D0CA612417C8B8CA).
+
+} r_0148905A021EECB61916C70B2C

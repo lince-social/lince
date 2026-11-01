@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Connect steady currents to magnetic geometry and its limits (@physics-magnetic-steady: 0, is #chapter, #hephaestus-core "../electromagnetism/magnetostatics/Ampere-law-symmetry-and-magnetic-flux.lingua#r_45A2A15VVK27WJ4JAGQ3WC1BE9") { r_005AC3749D945400D7238C408B
+Current density J is signed charge transport per area per time. A time-independent charge density satisfies divJ=0 by local charge conservation, but a steady current generally also requires a source, return path and material response. A finite wire whose current simply terminates is not a complete stationary source. Reuse [Biot–Savart fields of steady currents](../electromagnetism/magnetostatics/Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA) for the full-circuit warning and advanced assignments.
+
+For a localized steady current distribution in vacuum, the Biot–Savart model is B(r)=μ₀/(4π)∫ J(r′)×(r−r′)/|r−r′|³ dV′. Observation coordinate r and source coordinate r′ have different roles. A thin-wire idealization replaces J dV′ by I dl′ where its current geometry is adequate; it is singular on an ideal filament and is not a material model. μ₀ is the vacuum magnetic constant. No numerical value or claim of an exact present SI value is needed for these symbolic derivations.
+
+For a circular loop of radius a in the xy-plane carrying positive counterclockwise current as viewed from +z, parameterize r′=(a cosθ,a sinθ,0) and dl′=(−a sinθ,a cosθ,0)dθ. At (0,0,z), the cross product has transverse terms that integrate to zero and z-component a²dθ. Its denominator is constant (a²+z²)^(3/2). Integrating θ from 0 to 2π gives B_z=μ₀Ia²/[2(a²+z²)^(3/2)]. At z=0 it gives μ₀I/(2a), while for |z|≫a its leading dependence is a²/|z|³. These are consequences of the steady thin-loop premise, not measured coil specifications.
+
+The shared [Ampère law, symmetry and magnetic flux](../electromagnetism/magnetostatics/Ampere-law-symmetry-and-magnetic-flux.lingua#r_45A2A15VVK27WJ4JAGQ3WC1BE9) now connects circulation to enclosed current and divergence to closed flux. For a long cylindrical wire with uniformly distributed axial current, cylindrical symmetry makes B azimuthal and constant on a centered circle. Inside radius a, I_enclosed=I r²/a²; 2πrB=μ₀I_enclosed gives B=μ₀Ir/(2πa²). Outside, B=μ₀I/(2πr). Both meet at r=a, and the interior tends to zero at the axis. The exterior formula is not valid at the axis. Real finite wires, return paths, nonuniform current and magnetic materials limit the reduction.
+
+**Work:** show why ∮B·dl=0 does not imply B vanishes on a loop: a uniform nonzero field has zero circulation on any closed polygon. Contrast this with the stronger symmetry premises used for the wire. Derive the loop-axis expression directly before consulting [Biot–Savart fields of steady currents](../electromagnetism/magnetostatics/Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA). More general source quadrature, magnetic matter and full static boundary problems remain branches; the core needs the distinction between a field law and the additional geometry that makes it soluble.
+
+**Continue:** [Ampère law, symmetry and magnetic flux](../electromagnetism/magnetostatics/Ampere-law-symmetry-and-magnetic-flux.lingua#r_45A2A15VVK27WJ4JAGQ3WC1BE9).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_005AC3749D945400D7238C408B

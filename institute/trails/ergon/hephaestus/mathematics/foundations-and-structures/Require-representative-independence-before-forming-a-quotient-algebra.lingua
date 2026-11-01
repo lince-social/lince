@@ -1,0 +1,19 @@
+Import "../Mathematics.lingua"
+
+Require representative independence before forming a quotient algebra (@math-structures-quotients: 0, is #chapter, #math-structures "Reconstruct-a-published-algebra-example-and-criticize-finite-evidence.lingua#r_00AC95836968349257B514FFC7") { r_002ABCE94DD13932CD0785B891
+Let ∼ be an equivalence relation on an operation-bearing set A. To define [a]*[b]=[a*b] on classes, require compatibility: a∼a′ and b∼b′ imply a*b∼a′*b′. This extra property makes the equivalence a congruence for the operation. An arbitrary partition does not supply it. Addition modulo 4 partitioned into {0,1} and {2,3} fails: 0+0 is in the first class, but 1+1 is in the second, although both pairs choose representatives of the same input classes.
+
+Every homomorphism h defines an equivalence a∼b iff h(a)=h(b). It is compatible because h(a*b)=h(a)∘h(b), which depends only on the two images. Define q(a)=[a] and j([a])=h(a), with j targeting the image h(A). Representative independence makes j well-defined; equal images give equal classes, so j is injective; the image definition makes it surjective. Both q and j preserve the operation and constant, and h=j∘q when h is viewed with its image as codomain. This proves the factorization for this signature, without assuming a general theorem about every kind of structure.
+
+For additive groups define K={a:h(a)=0}. It contains zero and is closed under subtraction, since h(a−b)=h(a)−h(b); preservation of negatives follows by applying h to a+(−a)=0. Then h(a)=h(b) exactly when a−b∈K. In an abelian group the classes are translates a+K, called cosets. Noncommutative normal-subgroup theory is later work; do not transfer additive formulas without checking order.
+
+Take h:Z_6→Z_6 with h(a)=2a mod 6. Its image is {0,2,4}; K={0,3}. The fibers are {0,3}, {1,4}, {2,5}, which add as Z_3. The induced map sends these classes to 0,2,4 respectively and is an isomorphism onto the image. The original h is neither injective nor surjective onto Z_6. The codomain restriction is mathematically essential.
+
+**Connection:** [Check what a quotient preserves before merging graph states](../core/Check-what-a-quotient-preserves-before-merging-graph-states.lingua#r_009AE8B87EF9B264029366B97B) already showed that a graph observation may create false histories. A congruence here addresses representative independence of an operation; it does not automatically supply a graph walk-lifting property or preserve probabilities. Match the preservation theorem to the structure actually used.
+
+**Work:** prove every fiber of this group map is a translate of K and hence has the same size. Derive |A|=|K|·|h(A)| for finite A by disjoint counting. Build the displayed quotient table independently. Read [Abstract Algebra Theory and Applications Judson 2011](../sources/Abstract-Algebra-Theory-and-Applications-Judson-2011.lingua#r_0066E963AE44EE421A173499DF), Theorem 11.3, after its subgroup/normality prerequisites, and explain the relation to the narrower argument developed here.
+
+**Continue:** [Reconstruct a published algebra example and criticize finite evidence](Reconstruct-a-published-algebra-example-and-criticize-finite-evidence.lingua#r_00AC95836968349257B514FFC7).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_002ABCE94DD13932CD0785B891

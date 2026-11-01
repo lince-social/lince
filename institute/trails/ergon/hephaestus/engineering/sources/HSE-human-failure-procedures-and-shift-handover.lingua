@@ -1,0 +1,13 @@
+Import "../Engineering.lingua"
+
+HSE human failure procedures and shift handover (@engineering-source-human-factors: 0, is #reference) { r_005E57B92B1E14D9A4710D1943
+Health and Safety Executive, English web guidance: [Managing human failures](https://www.hse.gov.uk/humanfactors/topics/humanfail.htm), [Procedures](https://www.hse.gov.uk/humanfactors/topics/procedures.htm), and [Shift handover](https://www.hse.gov.uk/humanfactors/topics/shift-handover.htm).
+
+**Actual inspection — 1 November 2026:** human-failure definitions, selected error/violation discussion, management principles and common pitfalls; procedure rationale and design principles; handover purpose, preparation/exchange/cross-checking, communication and incoming-information needs. The displayed procedure page date is 12 January 2026; the handover page shows 29 October 2024. These are retrieved web pages, not a claim to have inspected all of HSG48, the linked research reports or current requirements for every jurisdiction.
+
+Read those sections in that order. The common paper-board investigation applies the arguments to original simulated cases. It supplies no HSE experiment, human-error probability, industrial operating procedure or certification.
+
+[HSE copyright guidance](https://www.hse.gov.uk/help/copyright.htm) permits Crown material under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/), with exceptions for credited third-party media and logos. Contains public sector information published by the Health and Safety Executive and licensed under the Open Government Licence. Keep source media external. The authorship of the original examples/programs remains distinct from HSE guidance and does not imply HSE endorsement.
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_005E57B92B1E14D9A4710D1943

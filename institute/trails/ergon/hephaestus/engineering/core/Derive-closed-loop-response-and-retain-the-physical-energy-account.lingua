@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Derive closed loop response and retain the physical energy account (@engineering-feedback-response: 0, is #chapter, #hephaestus-core "Separate-disturbance-rejection-from-sensor-bias-and-identifiable-quantities.lingua#r_0089FCA742A41805791FE10944") { r_0011422B1E2C32896CA06531DB
+Substitute the measurement and proportional rule into the plant balance. With A=u₀+Kr+d−Kb and H=G+K, the equation is Cθ′=A−Hθ. For H>0, equilibrium θ*=A/H and time constant τ=C/H. The earlier integrating-factor proof gives θ(t)=θ*+(θ_i−θ*)exp(−t/τ). Differentiation verifies the equation and initial value; subtracting two solutions proves uniqueness. Initial deviations contract by exp(−t/τ), so this equilibrium is asymptotically stable in the declared continuous model.
+
+For constant r,d,b, the response stays between θ_i and θ* and approaches monotonically. For a changed input, carry the old final state into the next interval. State continuity follows from finite storage and finite input; substituting a new equilibrium as the instantaneous initial state would erase accumulated energy. A time constant is the time to reduce a deviation by exp(−1), not a time of exact arrival.
+
+For C=12 J/K,G=3 W/K,K=6 W/K,r=2 K,u₀=6 W and d=b=0, θ*=2 K and τ=4/3 s. Starting at zero, θ(t)=2(1−exp(−3t/4)) K and u(t)=6+12exp(−3t/4) W. At four seconds θ≈1.900425863 K. The controller initially requests 18 W and tends to 6 W. Faster response comes with a different input history, not free energy.
+
+Keep the actual power boundary: ΔE=C[θ(t)−θ_i], actuator energy E_u=∫u dt, disturbance energy E_d=dt for constant d, and outward heat Q_G=G∫θ dt. The balance is ΔE=E_u+E_d−Q_G. Hθ=(G+K)θ in the reduced equation is not all physical outward heat: the Kθ term represents input modulation. For the example at four seconds, stored change is about 22.805110359 J, actuation 39.203406906 J and outward heat 16.398296547 J. These satisfy the balance. Calling the effective coefficient H a physical conductance would mislabel the transfers.
+
+If H=0 with nonnegative G,K, both vanish. Then θ=θ_i+(u₀+d)t/C. If u₀+d=0 every initial state is an equilibrium; otherwise no finite equilibrium exists. Do not divide by H or assign a unique time constant. The program handles this trajectory separately and rejects a request for a unique equilibrium. With G=0,K>0 the formal unsaturated controller can still give a restoring coefficient, subject to its attainable signed input.
+
+**Read and work:** [Process Dynamics Operations and Control MIT 10 450](../sources/Process-Dynamics-Operations-and-Control-MIT-10-450.lingua#r_003D567CD90DDFE67ADB65399E), selected closed-loop first-order development. Derive the response and actual energy account from the previous shared thermal solution. Compare perturbation stability, bounded response to a bounded input, and an engineering tolerance: a stable equilibrium can lie outside the required range. Explain which results would have to be revisited if sensor lag or another stored state were introduced.
+
+**Continue:** [Separate disturbance rejection from sensor bias and identifiable quantities](Separate-disturbance-rejection-from-sensor-bias-and-identifiable-quantities.lingua#r_0089FCA742A41805791FE10944).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_0011422B1E2C32896CA06531DB

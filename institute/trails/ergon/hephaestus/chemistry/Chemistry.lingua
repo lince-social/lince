@@ -1,4 +1,121 @@
-Chemistry — substances, transformations, and evidence (@chemistry-map: 0, is #chapter, #chemistry "general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #chemistry "../../gaia/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN", #chemistry "industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #chemistry "../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q") { r_2NWJY1HCKPBM4T6YQSDHN8S3S0
+Import "physical-chemistry-and-chemical-physics/Physical-chemistry-and-chemical-physics.lingua"
+Import "organic-chemistry/Organic-chemistry.lingua"
+Import "inorganic-chemistry/Inorganic-chemistry.lingua"
+Import "analytical-chemistry-and-chemical-quality/Analytical-chemistry-and-chemical-quality.lingua"
+Import "biochemistry/Biochemistry.lingua"
+Import "polymer-chemistry/Polymer-chemistry.lingua"
+Import "materials-chemistry/Materials-chemistry.lingua"
+Import "electrochemistry/Electrochemistry.lingua"
+Import "surface-colloid-and-interface-chemistry/Surface-colloid-and-interface-chemistry.lingua"
+Import "theoretical-and-computational-chemistry/Theoretical-and-computational-chemistry.lingua"
+Import "chemical-synthesis/Chemical-synthesis.lingua"
+Import "catalysis-and-reaction-science/Catalysis-and-reaction-science.lingua"
+Import "environmental-chemistry/Environmental-chemistry.lingua"
+Import "food-and-nutritional-chemistry/Food-and-nutritional-chemistry.lingua"
+Import "agricultural-chemistry/Agricultural-chemistry.lingua"
+Import "medicinal-and-pharmaceutical-chemistry/Medicinal-and-pharmaceutical-chemistry.lingua"
+Import "general-chemistry/General-chemistry.lingua"
+Import "industrial-chemistry/Industrial-chemistry.lingua"
+
+Import "core/Describe-phases-components-and-the-constraints-on-a-material-sample.lingua"
+Import "core/Derive-a-pure-substance-coexistence-slope-from-chemical-potentials.lingua"
+Import "core/Reconstruct-a-bounded-vapor-pressure-correlation-and-its-interpretation.lingua"
+Import "core/Determine-phase-amounts-from-composition-balances-and-a-declared-basis.lingua"
+Import "core/Prove-when-a-common-tangent-is-a-global-coexistence-certificate.lingua"
+Import "core/Establish-the-stability-regions-of-a-symmetric-nonideal-mixture.lingua"
+Import "core/Certify-a-phase-split-independently-of-a-floating-point-solver.lingua"
+Import "core/Connect-phase-predictions-to-material-evidence-and-kinetic-limits.lingua"
+Import "core/Investigate-coexistence-phase-amounts-and-nonideal-stability-with-bounded-evidence.lingua"
+Import "core/Review-phase-equilibrium-with-conservation-stability-and-material-evidence.lingua"
+Import "../engineering/materials-engineering/thermodynamics/Common-tangents-and-conservation-across-coexisting-phases.lingua"
+Import "../engineering/materials-engineering/thermodynamics/Regular-solutions-and-local-versus-global-stability.lingua"
+Import "../engineering/materials-engineering/computation/An-inspectable-symmetric-phase-separation-account.lingua"
+Import "../physics/thermodynamics-and-heat-transfer/sources/Thermodynamics-and-Chemistry-DeVoe.lingua"
+Import "general-chemistry/sources/NIST-Chemistry-WebBook.lingua"
+Import "../engineering/materials-engineering/sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua"
+Import "core/Distinguish-composition-connectivity-spatial-structure-and-a-sample.lingua"
+Import "core/Represent-molecular-connectivity-with-labels-and-justified-equivalences.lingua"
+Import "core/Count-small-saturated-carbon-skeletons-without-counting-drawings-twice.lingua"
+Import "core/Separate-a-molecular-conformation-from-a-drawing-and-a-physical-pathway.lingua"
+Import "core/Test-spatial-identity-using-proper-rotations-and-ligand-labels.lingua"
+Import "core/Name-a-configuration-without-mistaking-the-label-for-a-measurement.lingua"
+Import "core/Ask-what-a-structural-observation-distinguishes-and-what-it-leaves-ambiguous.lingua"
+Import "core/Investigate-connectivity-spatial-equivalence-and-structural-evidence.lingua"
+Import "core/Review-molecular-identity-through-representations-transformations-and-evidence.lingua"
+Import "sources/Organic-Chemistry-tenth-edition-by-John-McMurry.lingua"
+Import "core/Choose-chemical-constraints-before-using-a-free-energy-sign.lingua"
+Import "core/Define-chemical-potential-as-a-constrained-change-of-amount.lingua"
+Import "core/Derive-an-ideal-mixture-model-and-keep-its-reference-states-visible.lingua"
+Import "core/Connect-reaction-extent-to-the-derivative-of-Gibbs-energy.lingua"
+Import "core/Prove-an-equilibrium-composition-and-calculate-a-finite-change.lingua"
+Import "core/Connect-reversible-electrical-work-to-a-reaction-quantity.lingua"
+Import "core/Separate-chemical-equilibrium-evidence-from-rates-and-fitted-models.lingua"
+Import "core/Investigate-chemical-direction-finite-Gibbs-changes-and-reversible-work.lingua"
+Import "core/Review-chemical-potentials-equilibrium-and-the-evidence-for-a-direction.lingua"
+Import "../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua"
+Import "general-chemistry/energy/Gibbs-energy-and-chemical-direction.lingua"
+Import "general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua"
+Import "core/Oxidation-accounts-and-actual-charge.lingua"
+Import "core/Half-reactions-and-independent-constraints.lingua"
+Import "core/Electron-amount-reaction-extent-and-charge.lingua"
+Import "core/Cell-boundaries-transport-and-storage.lingua"
+Import "core/Reaction-products-collection-and-evidence.lingua"
+Import "core/Terminal-work-and-chemical-energy-questions.lingua"
+Import "core/Investigate-electron-charge-products-and-work.lingua"
+Import "core/Review-electron-charge-products-and-work.lingua"
+Import "general-chemistry/reactions/Oxidation-states-and-electron-balance.lingua"
+Import "general-chemistry/electrochemistry/Cells-electrodes-and-free-energy.lingua"
+Import "general-chemistry/electrochemistry/Electrolysis-charge-efficiency-and-products.lingua"
+Import "core/Distinguish-a-dissolved-component-from-its-chemical-species.lingua"
+Import "core/Preserve-amount-through-a-solution-volume-and-transfer-account.lingua"
+Import "core/Combine-component-and-charge-constraints-without-discarding-spectators.lingua"
+Import "core/State-the-water-and-activity-conventions-before-using-a-logarithm.lingua"
+Import "core/Derive-one-admissible-acid-water-equilibrium-from-coupled-balances.lingua"
+Import "core/Separate-approximation-error-from-a-precise-solution-of-the-wrong-equations.lingua"
+Import "core/Investigate-an-acid-component-ledger-and-a-water-inclusive-equilibrium.lingua"
+Import "core/Review-solution-species-balances-approximations-and-evidence.lingua"
+Import "general-chemistry/solutions/Solvation-mixing-and-solubility.lingua"
+Import "general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua"
+Import "general-chemistry/reactions/Aqueous-species-and-net-ionic-equations.lingua"
+Import "general-chemistry/aqueous/Acid-base-concepts-and-reactions.lingua"
+Import "general-chemistry/aqueous/pH-activity-and-measurement.lingua"
+Import "general-chemistry/aqueous/Weak-acids-and-valid-approximations.lingua"
+Import "core/Relate-reaction-progress-to-amounts-concentrations-and-observed-rates.lingua"
+Import "core/Construct-a-logarithm-from-accumulated-reciprocal-change.lingua"
+Import "core/Define-exponential-change-by-an-inverse-and-prove-its-rate-law.lingua"
+Import "core/Connect-a-rate-model-with-an-initial-value-and-an-admissible-trajectory.lingua"
+Import "core/Derive-dynamic-balance-and-relaxation-for-a-reversible-model.lingua"
+Import "core/Distinguish-rate-evidence-from-mechanism-transport-and-instrument-response.lingua"
+Import "core/Connect-chemical-composition-to-a-signal-and-expose-missing-information.lingua"
+Import "core/Investigate-reversible-change-and-the-evidence-carried-by-a-chemical-signal.lingua"
+Import "core/Review-chemical-rates-equilibrium-and-the-limits-of-analytical-evidence.lingua"
+Import "general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua"
+Import "general-chemistry/kinetics/Integrated-laws-and-estimation.lingua"
+Import "general-chemistry/equilibrium/Reaction-quotient-and-equilibrium-constant.lingua"
+Import "general-chemistry/equilibrium/Perturbations-and-new-constraints.lingua"
+Import "general-chemistry/kinetics/Catalysis-and-competing-pathways.lingua"
+Import "general-chemistry/measurement/Spectroscopic-evidence-and-calibration.lingua"
+Import "general-chemistry/measurement/Validate-a-chemical-method.lingua"
+Import "industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua"
+Import "general-chemistry/sources/Analytical-Chemistry-Harvey.lingua"
+Import "core/Connect-periodic-signals-and-energy-differences-before-interpreting-spectra.lingua"
+Import "core/Read-electronic-states-and-orbital-pictures-as-models-of-evidence.lingua"
+Import "core/Check-electron-accounts-before-inferring-charge-distribution-and-molecular-shape.lingua"
+Import "core/Define-a-thermal-boundary-before-relating-temperature-heat-and-enthalpy.lingua"
+Import "core/Investigate-chemical-representations-and-a-bounded-phase-energy-account.lingua"
+Import "core/Review-chemical-structure-interactions-and-thermal-evidence.lingua"
+Import "core/Choose-the-entity-basis-and-information-in-a-chemical-quantity.lingua"
+Import "core/Investigate-composition-transfer-and-reaction-as-different-accounts.lingua"
+Import "core/Review-chemical-identity-amounts-and-conservation.lingua"
+Import "general-chemistry/foundations/A-chemical-question.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Substances-particles-and-chemical-accounting.lingua"
+
+Chemistry — substances, transformations, and evidence (@chemistry-map: 0, is #chapter, #chemistry "general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #chemistry "../../gaia/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN", #chemistry "industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #chemistry "../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #hephaestus-core "core/Substances-particles-and-chemical-accounting.lingua#r_06A721F480CCA6DC7EB5D006D8", #contains "physical-chemistry-and-chemical-physics/Physical-chemistry-and-chemical-physics.lingua#r_1ZHYBV5NWN4Y4GV6NWPGEKZ7JC", #contains "organic-chemistry/Organic-chemistry.lingua#r_6HKENEEN1T52PB3XZ1H3FZNTW8", #contains "inorganic-chemistry/Inorganic-chemistry.lingua#r_6TYNMN0ZKYRHV779CHKGYTVB9D", #contains "analytical-chemistry-and-chemical-quality/Analytical-chemistry-and-chemical-quality.lingua#r_3V0905NECJBCEAMDCBNNXF7KK1", #contains "biochemistry/Biochemistry.lingua#r_69JW8BHGEX6WKH8X7FT49H75K1", #contains "polymer-chemistry/Polymer-chemistry.lingua#r_6EXN2GB8J601Q8VD1M8FEWQT1Y", #contains "materials-chemistry/Materials-chemistry.lingua#r_2G5TKKDT0YSYRYEQ62MCTXS6A1", #contains "electrochemistry/Electrochemistry.lingua#r_7AEG85VZY7JMWJZEPMWM8SCNNB", #contains "surface-colloid-and-interface-chemistry/Surface-colloid-and-interface-chemistry.lingua#r_283WEVYXRT7XXK6HGPV7JPN9YX", #contains "theoretical-and-computational-chemistry/Theoretical-and-computational-chemistry.lingua#r_07S85GJHHQKWQXPHM31EA9Z9Q6", #contains "chemical-synthesis/Chemical-synthesis.lingua#r_1S4CW5J8B3T70QVRNPJHD7HR6A", #contains "catalysis-and-reaction-science/Catalysis-and-reaction-science.lingua#r_2BZF4DH3GCJ7M5V29Z3RKE0A0K", #contains "environmental-chemistry/Environmental-chemistry.lingua#r_4EM6Z7FA3FBC03GCVTXW7R3N95", #contains "food-and-nutritional-chemistry/Food-and-nutritional-chemistry.lingua#r_78BKD1J97NYVP5RMP10MNWECTC", #contains "agricultural-chemistry/Agricultural-chemistry.lingua#r_4Z3HRB4QQ6R3KV3CC0MT7GD63X", #contains "medicinal-and-pharmaceutical-chemistry/Medicinal-and-pharmaceutical-chemistry.lingua#r_22JVJTJ7A7PR682QABEE1X42CG", #contains "general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #contains "industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618") { r_2NWJY1HCKPBM4T6YQSDHN8S3S0
+**Begin the shared area core:** [Begin with substances, particles and chemical accounting](core/Substances-particles-and-chemical-accounting.lingua#r_06A721F480CCA6DC7EB5D006D8).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
 Understand substances, structure, transformations, and the evidence supporting chemical claims. [General chemistry](general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V) begins from ordinary materials and chemical language, then develops quantitative reactions, electronic structure, bonding, phases, energy, rates, equilibria, electrochemistry, chemical measurement, laboratory work, and independent research.
 
 Reuse [Inquiry — shared ways to understand and investigate](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) and connect the question with [Ergon — useful labor and productive knowledge](../../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1), [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001), and [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001). Follow the particular chemical problem into its related material, biological, environmental, and production questions.
@@ -9,7 +126,54 @@ Follow chemical transformations from variable feed through specified products, i
 
 Connect manufactured substances with the quality, transfer and continuing supply systems delivering them through [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
 
-[Development scope: Chemistry](../../../lince/Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
+**Developed first common foundation:** material questions, substances and phases, observations and symbols, formulas, atomic evidence and isotopes, quantities, uncertainty boundaries, conservation, reaction extent and limiting amounts. Twelve existing lessons supply the shared formation; three new Records connect the quantity preparation, integrated study and review. Follow the core continuation from the opening above. The study distinguishes component transfer from reaction and an allowed composition from an experimentally established one. Bonding, energy, phases, rates, equilibrium and analytical evidence remain part of the later common formation.
+
+**Developed second common foundation:** spectral quantities, electronic-state models and configurations, periodic comparisons, valence/formal-charge accounts, geometry/polarity, interactions, thermal boundaries, calorimetry and phase descriptions. Six new lessons reuse ten general-chemistry Records in a sixteen-step continuation after the first review. A study distinguishes spectral and structural representations from an invented phase-energy model, with independent exact checks. Full quantum, thermodynamic, kinetic, equilibrium and analytical formation remains unfinished. Continue comparable computing work next.
+
+**Reading:** [Chemistry 2e](general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94) and the other sources assigned in the reused general-chemistry Records. Their original whole-subject continuations remain available.
+
+[Development scope: Chemistry](Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Developed third common foundation:** extent/concentration rates, logarithms and exponentials from the existing calculus foundation, initial-value models, dynamic equilibrium, kinetic evidence and analytical observation. Nine new lessons connect seven shared chemistry Records; an original reversible-model and signal investigation includes two runnable programs and independent rational/numerical checks. Existing source identities, specialist assignments and shared routes remain. No real reaction, calibration or method validation is claimed. Continue computing at comparable depth; the whole chemical core and all sixteen pending subjects remain unfinished.
+
+
+**Developed fourth common foundation:** solution components and actual species, amount/volume/transfer ledgers, component and charge constraints, activity/reference conventions, water-inclusive acid equilibrium and the limits of two common approximations. Eight new lessons connect six preserved shared chemistry Records. An original hypothetical ledger, exact speciation state, dilute-limit failure and equal-pH rival are checked with independent hydrogen/hydroxide brackets. This does not complete aqueous analytical chemistry, operational pH measurement or a laboratory course. Continue computing at comparable depth; the whole chemistry core and its sixteen pending subjects remain unfinished.
+
+
+**Developed fifth common foundation:** oxidation-state versus species-charge accounts, independently balanced half reactions, extent normalization, Faraday electron amount, electrode/ionic/storage boundaries, conversion and collection evidence, signed terminal work and inverse observation limits. Eight new lessons connect three preserved general-chemistry Records. An original iron/copper/zinc ledger and time-varying electrical record have independently checked balances and a constrained inverse family; no apparatus or chemical feasibility is validated. Entropy, chemical potential and reversible-work/voltage preparation remain required subsequent common work. Continue computing at comparable depth; the whole chemistry core and all sixteen pending subjects remain unfinished.
+
+
+**Developed sixth common foundation:** imposed constraints and free-energy criteria, chemical potential and homogeneous scaling, ideal mixtures and reference states, reaction extent and Gibbs derivatives, equilibrium minima and finite changes, reversible electrical work and chemical evidence. Nine new lessons connect three preserved chemical/thermal Records and reuse the new entropy and mathematical preparation. Original ideal-mixture investigations and two bounded published calculations have independent executable checks. No chemical apparatus or actual material model is validated. Continue computing at comparable depth; the chemistry core and its sixteen pending descendant subjects remain unfinished.
+
+
+**Developed seventh common foundation:** molecular identity across composition, connectivity, conformation, spatial equivalence, configuration and observations. Nine new lessons reuse existing bonding, geometry, discrete mathematics, physics and inquiry by reference. An original carbon-tree and tetrahedral investigation passed 6,084 exact checks, with bounded published small-isomer and spectral-feature comparisons. One McMurry organic-chemistry source records actual passages, edition, rights and limits. Chemistry now has seven common blocks; continue computing communication and protocol boundaries. Full chemistry and its sixteen pending subjects remain unfinished.
+
+
+**Developed eighth common foundation:** phases and constraints, coexistence slopes, a bounded property correlation, phase amounts, common tangents and global stability, nonideal mixing, independent numerical certificates and material evidence. Ten new lessons reuse three materials lessons and their unchanged solver, existing chemical/thermal preparation and logarithm bounds. The original investigation keeps hypothetical mixtures distinct from a bounded published water-correlation reconstruction; 2,868 checks pass. Chemistry now has 107 common learning Records. Continue computing at comparable breadth; physical chemistry, interfaces, broader material families and the whole core remain unfinished.
+
+
+**Scope:** Explain composition and reaction; follow a material's transformation; investigate structure, analysis, or synthesis. Introduce chemical entities, amount, and balance before relying on them; deeper physical chemistry or computation is a continuation with explicit preparation.
+
+**Branches:**
+
+- [Physical chemistry and chemical physics](physical-chemistry-and-chemical-physics/Physical-chemistry-and-chemical-physics.lingua#r_1ZHYBV5NWN4Y4GV6NWPGEKZ7JC)
+- [Organic chemistry](organic-chemistry/Organic-chemistry.lingua#r_6HKENEEN1T52PB3XZ1H3FZNTW8)
+- [Inorganic chemistry](inorganic-chemistry/Inorganic-chemistry.lingua#r_6TYNMN0ZKYRHV779CHKGYTVB9D)
+- [Analytical chemistry and chemical quality](analytical-chemistry-and-chemical-quality/Analytical-chemistry-and-chemical-quality.lingua#r_3V0905NECJBCEAMDCBNNXF7KK1)
+- [Biochemistry](biochemistry/Biochemistry.lingua#r_69JW8BHGEX6WKH8X7FT49H75K1)
+- [Polymer chemistry](polymer-chemistry/Polymer-chemistry.lingua#r_6EXN2GB8J601Q8VD1M8FEWQT1Y)
+- [Materials chemistry](materials-chemistry/Materials-chemistry.lingua#r_2G5TKKDT0YSYRYEQ62MCTXS6A1)
+- [Electrochemistry](electrochemistry/Electrochemistry.lingua#r_7AEG85VZY7JMWJZEPMWM8SCNNB)
+- [Surface, colloid, and interface chemistry](surface-colloid-and-interface-chemistry/Surface-colloid-and-interface-chemistry.lingua#r_283WEVYXRT7XXK6HGPV7JPN9YX)
+- [Theoretical and computational chemistry](theoretical-and-computational-chemistry/Theoretical-and-computational-chemistry.lingua#r_07S85GJHHQKWQXPHM31EA9Z9Q6)
+- [Chemical synthesis](chemical-synthesis/Chemical-synthesis.lingua#r_1S4CW5J8B3T70QVRNPJHD7HR6A)
+- [Catalysis and reaction science](catalysis-and-reaction-science/Catalysis-and-reaction-science.lingua#r_2BZF4DH3GCJ7M5V29Z3RKE0A0K)
+- [Environmental chemistry](environmental-chemistry/Environmental-chemistry.lingua#r_4EM6Z7FA3FBC03GCVTXW7R3N95)
+- [Food and nutritional chemistry](food-and-nutritional-chemistry/Food-and-nutritional-chemistry.lingua#r_78BKD1J97NYVP5RMP10MNWECTC)
+- [Agricultural chemistry](agricultural-chemistry/Agricultural-chemistry.lingua#r_4Z3HRB4QQ6R3KV3CC0MT7GD63X)
+- [Medicinal and pharmaceutical chemistry](medicinal-and-pharmaceutical-chemistry/Medicinal-and-pharmaceutical-chemistry.lingua#r_22JVJTJ7A7PR682QABEE1X42CG)
+- [General chemistry](general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V)
+- [Industrial chemistry — chemical transformations, useful products and continuing production](industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618)
 } r_2NWJY1HCKPBM4T6YQSDHN8S3S0
 
 Extension @chemistry-map "lince.vocabulary" {

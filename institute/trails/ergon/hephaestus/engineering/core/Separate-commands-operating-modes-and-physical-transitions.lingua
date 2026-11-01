@@ -1,0 +1,26 @@
+Import "../Engineering.lingua"
+
+Separate commands operating modes and physical transitions (@engineering-operation-state: 0, is #chapter, #hephaestus-core "Choose-actions-from-what-the-observations-actually-distinguish.lingua#r_0045DE4CB159562B73B3AF4365") { r_008C1B131F96EEDA40AFFB9727
+Reuse [Define a feedback boundary before choosing a controller](Define-a-feedback-boundary-before-choosing-a-controller.lingua#r_0059798C63AB0B169306355791) and [Operating states, alarms, interlocks and recovery](../../utilities/water-and-sanitation/operations/Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A) by reference. A command, an actuator response and the resulting physical condition are different events. A controller can acknowledge a command while an actuator is delayed or unavailable. A display that reports the command value as the achieved state collapses that distinction. The paper model now gives exact meanings to the events it uses.
+
+Write state as (I,B,F,P,M): incoming cards, buffered cards, finished cards, pending-request flag and mode. I+B+F=2, B is zero or one, P is Boolean, and M is run or hold. A pending request requires I>0. The starting state is (2,0,0,false,hold). These are stipulated rules, not physical laws beyond the declared card account.
+
+| Event | Preconditions | Result |
+| --- | --- | --- |
+| request | run, I>0, no request pending | P becomes true; no card moves |
+| hold | any modeled state | mode becomes hold; counts and pending work remain |
+| cancel | hold and P true | P becomes false; no card moves |
+| recover | hold and B=1 | return the buffered card to incoming |
+| resume | hold, P false, B=0 | mode becomes run |
+| tick | any state | no change is possible; in run, one enabled physical movement may also occur |
+
+An enabled physical movement is either requested arrival, I→I−1 and B→1 with P cleared when P is true and B=0, or completion, B→0 and F→F+1 when B=1. A tick represents at most one such movement and may do nothing. It supplies no elapsed-time or probability law. A request may be accepted while the buffer is full; it then waits until the buffer is cleared. Request acceptance therefore proves neither immediate movement nor eventual completion.
+
+The resume condition is a deliberate operating rule of this exercise. Another design could permit restarting pending work, but would owe a different intent and recovery contract. Hold suppresses modeled movements, while retaining counts and pending work. It is not a model of electrical isolation, braking, pressure release or removal of stored energy. Real stop commands need their own physical response and residual-state evidence.
+
+**Work:** trace resume, request, tick with no movement, tick with arrival, hold. State the difference between canceling the request and returning a buffered card. Prove conservation for each event. Explain why an infinite sequence of idle ticks is possible: admissible transitions alone do not guarantee progress. Delivery times and human availability need evidence beyond this state table.
+
+**Continue:** [Choose actions from what the observations actually distinguish](Choose-actions-from-what-the-observations-actually-distinguish.lingua#r_0045DE4CB159562B73B3AF4365).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_008C1B131F96EEDA40AFFB9727

@@ -1,0 +1,231 @@
+Import "../Chemistry.lingua"
+
+Investigate an acid component ledger and a water inclusive equilibrium (@chemistry-solution-study: 0, is #chapter, #hephaestus-core "Review-solution-species-balances-approximations-and-evidence.lingua#r_00B5D28110FDFE68CDF2F84B73") { r_006257BCEF8633C87FC3DDB907
+This original paper investigation uses hypothetical constants and an abstract monoprotic species; it is not an actual solution preparation, instrument result or laboratory protocol. Use c°=1 mol/L, C=4.5×10⁻⁷ mol/L, K_a,c=10⁻⁷ mol/L and K_w,c=10⁻¹⁴ (mol/L)². The earlier stock/aliquot ledger gives this C from 4.5×10⁻⁸ mol in a declared final volume of 0.100 L. The solver uses the dimensionless numerical inputs C/c°, K_a,c/c° and K_w,c/(c°)².
+
+An exact solution is h=2×10⁻⁷ mol/L, [OH⁻]=5×10⁻⁸ mol/L, [A⁻]=1.5×10⁻⁷ mol/L and [HA]=3×10⁻⁷ mol/L. Verify the component total, charge, acid and water equations independently. In 0.100 L, HA and A⁻ amounts are 3×10⁻⁸ and 1.5×10⁻⁸ mol, summing to the ledger's amount. H⁺ and OH⁻ participate in solvent proton exchange and do not each count as an added amount of the A component. The ideal pH expression is 7−log₁₀2; no operational pH measurement is claimed.
+
+Compare the two approximations from the preceding lesson against a 1% hydrogen-concentration criterion. Both fail. Then use the low-total case C=10⁻¹⁰ mol/L to expose why water cannot be omitted simply because the acid is dilute. Track the exact root bracket, species intervals and equation residuals separately from uncertainty in real inputs. A dimensionless number in the program must not silently become a mol/m³ value in a report.
+
+A second ambiguity keeps h and the water coefficient fixed but changes the acid coefficient and total: K_a,c'=2×10⁻⁷ mol/L and C'=3×10⁻⁷ mol/L. It has the same OH⁻ and A⁻ as the first model but [HA]'=1.5×10⁻⁷ mol/L. Both satisfy their own component/charge/equilibrium accounts and give the same ideal pH. One hydrogen observation therefore does not determine both acid strength and total concentration. The shared analytical model can distinguish them if an independently calibrated signal has declared response S=[HA]+2[A⁻], expressed here in concentration-equivalent units: the two predictions are 6×10⁻⁷ and 4.5×10⁻⁷ mol/L-equivalent. This response is invented, not an assertion about a real instrument. An independent component assay is another possible discriminator. Connect [Challenge a fitted model with evidence it did not fit](../../inquiry/core/Challenge-a-fitted-model-with-evidence-it-did-not-fit.lingua#r_000F183C16A66438AC6F589418) before interpreting a fitted coefficient as validation.
+
+**Exact computation:** save the named original programs together and run `python3 solution_checks.py`. `solution_study.py` performs rational bisection on the hydrogen charge residual and returns a certified interval, not an unjustified single rounded value. It reconstructs species and propagates the bracket using monotonicity. `solution_checks.py` solves an independent polynomial in hydroxide o, obtained from h=K_w,c/o:
+
+K_w,c²+K_a,c K_w,c o−(K_w,c+C K_a,c)o²−K_a,c o³=0.
+
+In dimensionless form it uses a separate interval and fixed-count bisection, then transforms the hydroxide bracket back to hydrogen. The two intervals must overlap. Cases constructed from known positive h provide an additional exact reference: choose w/h² in {1/4,1/2,1}, positive a and C=(h−w/h)(a+h)/a. This creates admissible cases including C=0 without relying on either solver to define the expected root.
+
+The suite checks conserved totals and equilibrium products exactly, charge residual signs, relative widths, monotonic species bounds, polynomial equivalence, direct/serial dilution accounts, analytical cases, the two ambiguities and invalid inputs/budget exhaustion. Fraction arithmetic removes rounding from these finite calculations; it does not establish the coefficients, completeness of the species list or real equilibrium. No numerical logarithm is needed for the exact pH expression or the concentration-based acceptance question.
+
+**Independent work:** change the analytical total and acid coefficient, state a new accuracy requirement, and decide which approximation is defensible using independent evidence. Add a neutral spectator salt on paper, retaining its ions in the complete species list and explaining why ideal cancellation need not imply nonideal irrelevance. A charged input or additional acid form requires a new model and new proof, not an unexplained parameter in this solver. Preserve an auditable ledger, source boundaries, calculation evidence and remaining empirical questions.
+
+```python file=solution_study.py
+from fractions import Fraction as F
+
+
+def rational(value):
+    if type(value) not in (int,F):
+        raise ValueError('use integers or exact Fraction values')
+    return F(value)
+
+
+def parameters(total, acid, water):
+    c,a,w=map(rational,(total,acid,water))
+    if c<0 or a<=0 or w<=0:
+        raise ValueError('nonnegative total and positive model coefficients required')
+    return c,a,w
+
+
+def species(h,total,acid,water):
+    c,a,w=parameters(total,acid,water)
+    h=rational(h)
+    if h<=0:
+        raise ValueError('positive hydrogen concentration required')
+    return dict(H=h,OH=w/h,A=c*a/(a+h),HA=c*h/(a+h))
+
+
+def residual(h,total,acid,water):
+    s=species(h,total,acid,water)
+    return s['H']-s['OH']-s['A']
+
+
+def solve(total,acid,water,relative=F(1,10**24),budget=512):
+    c,a,w=parameters(total,acid,water)
+    relative=rational(relative)
+    if not 0<relative<1 or type(budget) is not int or budget<1:
+        raise ValueError('relative tolerance in (0,1) and positive integer budget required')
+    high=c+a+w+1
+    low=w/(2*high)
+    for _ in range(budget):
+        if high-low<=relative*low:
+            return low,high
+        mid=(low+high)/2
+        r=residual(mid,c,a,w)
+        if r==0:
+            return mid,mid
+        if r<0:
+            low=mid
+        else:
+            high=mid
+    raise RuntimeError('iteration budget exhausted before certified width')
+
+
+def inventory(stock,aliquot,final_volume):
+    c,v,out=map(rational,(stock,aliquot,final_volume))
+    if c<0 or v<0 or out<=0 or out<v:
+        raise ValueError('nonnegative stock/aliquot and admissible dilution volume required')
+    amount=c*v
+    return amount,amount/out
+
+
+def bounds(low,high,total,acid,water):
+    low,high=map(rational,(low,high))
+    if not 0<low<=high:
+        raise ValueError('positive ordered concentration bracket required')
+    first=species(low,total,acid,water)
+    last=species(high,total,acid,water)
+    return dict(H=(low,high),OH=(last['OH'],first['OH']),
+                A=(last['A'],first['A']),HA=(first['HA'],last['HA']))
+```
+
+```python file=solution_checks.py
+from fractions import Fraction as F
+from itertools import product
+import json
+import solution_study as m
+
+checks=0
+
+def check(value):
+    global checks
+    assert value
+    checks+=1
+
+
+def rejects(call,error=ValueError):
+    global checks
+    try:
+        call()
+    except error:
+        checks+=1
+    else:
+        raise AssertionError('invalid input or exhausted budget accepted')
+
+
+def hydroxide_reference(c,a,w):
+    def polynomial(o):
+        return w*w+a*w*o-(w+c*a)*o*o-a*o**3
+    low,high=F(0),F(1)
+    while polynomial(high)>0:
+        high*=2
+    for _ in range(240):
+        mid=(low+high)/2
+        value=polynomial(mid)
+        if value==0:
+            return w/mid,w/mid
+        if value>0:
+            low=mid
+        else:
+            high=mid
+    assert low>0
+    return w/high,w/low
+
+
+def no_water(c,a):
+    low,high=F(0),c+a
+    for _ in range(150):
+        mid=(low+high)/2
+        if mid*mid+a*mid-a*c<0:
+            low=mid
+        else:
+            high=mid
+    return low,high
+
+
+def validate(c,a,w,known=None):
+    low,high=m.solve(c,a,w)
+    check(0<low<=high)
+    check(m.residual(low,c,a,w)<=0<=m.residual(high,c,a,w))
+    check(high-low<=F(1,10**24)*low)
+    other_low,other_high=hydroxide_reference(c,a,w)
+    check(max(low,other_low)<=min(high,other_high))
+    mid=(low+high)/2
+    s=m.species(mid,c,a,w)
+    check(s['A']+s['HA']==c)
+    check(s['H']*s['OH']==w)
+    check(s['H']*s['A']==a*s['HA'])
+    check(all(value>=0 for value in s.values()))
+    box=m.bounds(low,high,c,a,w)
+    for name,value in s.items():
+        check(box[name][0]<=value<=box[name][1])
+    certificate=abs(s['H']-s['OH']-s['A'])
+    check(mid-certificate<=other_high and other_low<=mid+certificate)
+    poly=mid**3+a*mid**2-(w+c*a)*mid-a*w
+    check(poly==mid*(a+mid)*m.residual(mid,c,a,w))
+    if known is not None:
+        check(low<=known<=high)
+        exact=m.species(known,c,a,w)
+        check(exact['H']==exact['OH']+exact['A'])
+        for name,value in exact.items():
+            check(box[name][0]<=value<=box[name][1])
+    return low,high
+
+grid=0
+for c,a,w in product([F(0),F(1,10**10),F(1,10**7),F(1,10**4),F(1,100)], [F(1,10**8),F(1,10**5),F(1,1000)], [F(1,10**16),F(1,10**14),F(1,10**12)]):
+    validate(c,a,w)
+    grid+=1
+known_cases=0
+for h,ratio,factor in product([F(1,10**j) for j in range(2,10)], [F(1,4),F(1,2),F(1)], [F(1,3),F(1),F(3)]):
+    w=ratio*h*h
+    a=factor*h
+    c=(h-w/h)*(a+h)/a
+    validate(c,a,w,h)
+    known_cases+=1
+c,a,w=F(45,10**8),F(1,10**7),F(1,10**14)
+h=F(2,10**7)
+check(m.species(h,c,a,w)==dict(H=h,OH=F(5,10**8),A=F(15,10**8),HA=F(3,10**7)))
+amount,total=m.inventory(F(9,10**6),F(5,1000),F(1,10))
+check(amount==F(45,10**9))
+check(total==c)
+low,high=no_water(c,a)
+check(F(16794,10**11)<low<high<F(16795,10**11))
+check(F(16,100)<1-high/h<1-low/h<F(161,1000))
+check(a*c/h**2==F(9,8))
+check(F(106,100)**2<F(9,8)<F(107,100)**2)
+low,high=validate(F(1,10**10),a,w)
+check(F(1,10**7)<low<high<F(1001,10**10))
+ql,qh=no_water(F(1,10**10),a)
+check(qh<=F(1,10**10))
+check(a*F(1,10**10)<w)
+rival=m.species(h,F(3,10**7),F(2,10**7),w)
+check(rival['H']==rival['OH']+rival['A'])
+check(rival['A']==F(15,10**8))
+check(rival['HA']==F(15,10**8))
+check(m.species(h,c,a,w)['HA']+2*m.species(h,c,a,w)['A']==F(6,10**7))
+check(rival['HA']+2*rival['A']==F(45,10**8))
+dilutions=0
+for stock,one,two in product([F(1,1000),F(1,100),F(1,10)], [F(1,2),F(1,5),F(1,10)], [F(1,2),F(1,3),F(1,4)]):
+    _,first=m.inventory(stock,one,1)
+    _,second=m.inventory(first,two,1)
+    _,direct=m.inventory(stock,one*two,1)
+    check(second==direct)
+    dilutions+=1
+for c0,a0,w0 in [(-1,1,1),(1,0,1),(1,1,0),(True,1,1),(0.1,1,1)]:
+    rejects(lambda c0=c0,a0=a0,w0=w0:m.solve(c0,a0,w0))
+rejects(lambda:m.species(0,1,1,1))
+rejects(lambda:m.solve(1,1,1,relative=0))
+rejects(lambda:m.solve(1,1,1,relative=1))
+rejects(lambda:m.solve(1,1,1,budget=True))
+rejects(lambda:m.solve(1,1,1,budget=1),RuntimeError)
+rejects(lambda:m.inventory(1,2,1))
+rejects(lambda:m.inventory(1,1,0))
+rejects(lambda:m.bounds(2,1,1,1,1))
+print(json.dumps(dict(checks=checks,parameter_grid=grid,known_root_cases=known_cases,dilution_cases=dilutions,independent_variable='hydroxide')))
+```
+
+**Author verification:** the companion passed 2,139 exact checks through Nix, including 45 parameter-grid cases, 72 constructed known-root cases and 27 direct/serial dilution comparisons. Independent hydroxide-variable brackets check the hydrogen solver. General claims rest on the proofs above; no actual sample or measurement is validated.
+
+**Continue:** [Review solution species balances approximations and evidence](Review-solution-species-balances-approximations-and-evidence.lingua#r_00B5D28110FDFE68CDF2F84B73).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_006257BCEF8633C87FC3DDB907

@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Build modular operations and distinguish algebraic axioms (@math-structures-operations: 0, is #chapter, #math-structures "Prove-what-a-structure-preserving-map-can-transport.lingua#r_00677EDB73DD2464BBA1A56200") { r_00A4387C8D4F6566D2B3E39253
+For an integer n≥1, define a∼b when n divides a−b. Reflexivity, symmetry and transitivity follow from 0=n·0, negating a multiple, and adding multiples. The equivalence class [a] consists of all integers equivalent to a. Define [a]+[b]=[a+b]. This must be independent of representatives: if a′=a+kn and b′=b+ln, then (a′+b′)−(a+b)=(k+l)n. Similarly a′b′−ab=n(kb+la+kln), so [a][b]=[ab] is well-defined.
+
+Integer associativity descends to classes: ([a]+[b])+[c]=[(a+b)+c]=[a+(b+c)]=[a]+([b]+[c]). The class [0] is an additive identity, and [−a] is an additive inverse. These properties make addition a group operation; commutativity additionally makes this group abelian. A group consists of a nonempty set, an associative binary operation, an identity and inverses for every element. A monoid drops the inverse requirement. The natural numbers under addition form a monoid but not a group: no natural number adds to 1 to give 0.
+
+A ring, under the convention used here, has an abelian additive group, associative multiplication with a unit, and both distributive laws. Multiplication need not be commutative unless stated. The integer classes with addition and multiplication satisfy these laws by the same representative and inherited-law arguments. For n=1 the zero and unit classes coincide; this one-element ring is allowed here. A field requires distinct zero and unit and multiplicative inverses for every nonzero element.
+
+In modulus 6, [2][3]=[0], although neither factor is zero. Cancelling [2] from [2][0]=[2][3] would be invalid. Addition still has cancellation: add the additive inverse on both sides and use associativity. Thus a cancellation rule depends on the operation and assumptions, not merely the visual presence of a repeated symbol. General prime-modulus field theory and polynomial constructions remain subsequent branch work.
+
+**Work:** prove additive cancellation from the group axioms without using integer coordinates. Show why x*y=x alone does not establish y=e without an appropriate cancellation property. Build addition modulo 4 and multiplication modulo 6, identifying which axioms you proved and which finite entries you checked. Use [Abstract Algebra Theory and Applications Judson 2011](../sources/Abstract-Algebra-Theory-and-Applications-Judson-2011.lingua#r_0066E963AE44EE421A173499DF) section 3.1 for further examples, keeping its edition explicit.
+
+**Continue:** [Prove what a structure-preserving map can transport](Prove-what-a-structure-preserving-map-can-transport.lingua#r_00677EDB73DD2464BBA1A56200).
+
+**Return:** [Mathematics — quantity, structure, space, change and proof](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00A4387C8D4F6566D2B3E39253

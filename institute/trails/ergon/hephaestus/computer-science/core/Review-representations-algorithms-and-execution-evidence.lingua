@@ -1,0 +1,24 @@
+Import "../Computing.lingua"
+
+Review representations, algorithms and execution evidence (@computing-foundation-review: 0, is #chapter, #hephaestus-core "Choose-collection-meaning-before-its-representation.lingua#r_0DB3963B09301C36C2DB916930") { r_0B2570961958EAF1D0D1911243
+This first computing block connects representations and language values with files, schemas, functions, control, contracts, algorithms, operation counts and execution. It reuses the existing reproducible-computation lessons and their substantial beginner readings. The stock study supplies an original program whose meaning can be traced, argued and independently checked.
+
+**Demonstrate:** distinguish a value from its text or byte representation, a language type from a physical quantity, an input contract from a parser, and an algorithm from one implementation. Translate the stock specification into expected outcomes before running code. Explain why a valid final total does not establish validity of every intermediate state.
+
+**Reason:** state the loop invariant, show initialization and preservation, and explain termination separately. Trace a normal completion and a rejected event. Compare the running calculation with independent prefix sums and account for the different operation counts. State which storage belongs to the returned trace and which arithmetic costs depend on integer magnitude.
+
+**Investigate:** preserve the program, test inputs, runtime version and observed results. Explain why these original exercises need no real inventory or private dataset. Change one requirement, such as day-level atomicity, and revise the specification before altering the code. Compare the old and new outcomes and identify which tests must change for a principled reason.
+
+**Reading:** work [Sundnes](../../inquiry/reproducible-computation/sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB) chapters 1–5 and the relevant shared exercises progressively, using official Python documentation as a reference companion. Its tutorial assumes some programming knowledge; it is not a substitute for the beginner explanations. Continue the remaining book chapters during later data and abstraction work. A link to a book does not demonstrate completed reading or competence.
+
+**Scope:** this block does not complete computing, programming, algorithms or reproducible computation as a broader practice. Data structures, richer algorithms and proofs, machine organization, operating systems, storage, networks, software design, human use, reliability and advanced theoretical/practical formation remain. The first pass is present across all six areas. Continue below into collections and search in the second common pass, then return to comparable engineering and inquiry formation before further computing specialization.
+
+**Reference companion:** [Python documentation, with the version and inspection boundary stated](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ).
+
+**Next broad area:** [Engineering: functions, constraints and evidence](../../engineering/core/Functions-constraints-and-engineering-evidence.lingua#r_0DDBF6CF5E8ADA7D17C17404EA).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the second common pass:** [Choose collection meaning before its representation](Choose-collection-meaning-before-its-representation.lingua#r_0DB3963B09301C36C2DB916930).
+
+} r_0B2570961958EAF1D0D1911243

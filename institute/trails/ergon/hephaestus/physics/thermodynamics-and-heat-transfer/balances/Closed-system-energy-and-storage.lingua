@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Closed-system energy and storage (@th-closed: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Boundary-work-quasistatic-paths-and-irreversibility.lingua#r_3FJYGFE1APRF36P7GC0QZYCW0P") { r_26CN1Z2H23NCXB8W7K74CVW5VN
+Closed-system energy and storage (@th-closed: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Boundary-work-quasistatic-paths-and-irreversibility.lingua#r_3FJYGFE1APRF36P7GC0QZYCW0P", #hephaestus-core "../../core/Connect-boundary-displacement-to-pressure-work-and-path-dependence.lingua#r_0C6366C3DAD812D2A1D81DFDC4") { r_26CN1Z2H23NCXB8W7K74CVW5VN
 **Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 4 in full; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 2 in full; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), the complete first-law development.
 
 For a closed system, E includes internal, macroscopic kinetic and gravitational potential contributions when those are relevant. The first law relates a state change to integrated heat and work transfers. It does not say how fast a transfer occurs or whether a proposed process is possible under the second law.
@@ -12,4 +12,9 @@ Derive a transient balance before making the steady assumption. Reconcile instan
 **Continue:** [Boundary work, quasistatic paths and irreversibility](Boundary-work-quasistatic-paths-and-irreversibility.lingua#r_3FJYGFE1APRF36P7GC0QZYCW0P).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Third physics-block reading:** Use the explicit Q-positive-in and work-positive-out balance, identify every energy/work term and compare state changes with transfers. Yan 4.4 and OpenStax 3.3 were freshly inspected for this account. The original complete first-law books and more general transient/control-volume formation remain available with their prerequisites.
+
+**Continue in the third physics block:** [Connect boundary displacement to pressure work and path dependence](../../core/Connect-boundary-displacement-to-pressure-work-and-path-dependence.lingua#r_0C6366C3DAD812D2A1D81DFDC4).
+
 } r_26CN1Z2H23NCXB8W7K74CVW5VN

@@ -1,0 +1,25 @@
+Import "../Physics.lingua"
+
+Interpret equilibrium solutions through support constraints and evidence (@physics-constraint-evidence: 0, is #chapter, #hephaestus-core "Investigate-a-planar-fixture-through-forces-moments-and-admissible-reactions.lingua#r_0D93C6CD0E976983F989D21D6E") { r_08587ABAC04444B08A9A548CFC
+An equation solver finds values allowed by supplied equations. A physical model must also say which forces its supports can exert and which motions they restrain. Reuse the [shared constraint-independence lesson](../../engineering/mechanical-engineering-and-machine-design/statics/Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX) and the [mathematical system lesson](../../mathematics/core/Solve-simultaneous-constraints-without-losing-their-solution-set.lingua#r_03FC1F97250326F9B36A1B2F6B) to separate inconsistent equations, multiple reaction solutions and a body that can still move.
+
+**Read:** Engineering Statics sections 5.1–5.4 and 5.6, with planar exercises; University Physics Volume 1 section 12.1 supplies the force-and-moment equilibrium conditions and origin argument. Begin with static rest in a chosen inertial frame. A zero resultant force alone does not imply rest, and balancing force and moment at one configuration does not establish stability against disturbances, material failure or contact loss.
+
+Consider a planar rigid fixture with an ideal pin at A=(0,0) m and a roller on a horizontal surface at B=(L,0), L>0. The pin supplies signed components Ax and Ay; the roller supplies an upward normal reaction By≥0. For a force (H,−W) at (a,h) and an applied counterclockwise couple C, equilibrium gives Ax+H=0, Ay+By−W=0, and L By−aW−hH+C=0. Hence By=(aW+hH−C)/L. Dividing a moment by a length gives a force. The pin's negative component may simply reverse its assumed direction; a negative By contradicts this roller contact model.
+
+Take L=2 m, a=0.5 m, h=0.25 m, H=2 N, W=6 N and C=1 N·m. Then Ax=−2 N, By=1.25 N and Ay=4.75 N. If C instead becomes 5 N·m, By=−0.75 N. Do not keep that value as an available downward roller force: the assumed contact state has no static solution. A new contact or motion account is required. At By=0 the contact is at a boundary, not evidence of a robust margin.
+
+Independent constraints require suitable geometry. If B coincides with A, the moment contribution L By vanishes. The original nonzero applied moment cannot be balanced, regardless of how a solver divides vertical reactions. If the applied moment also vanishes, vertical reactions may have multiple solutions while rotation remains unrestrained. Alternatively, two vertical rollers can balance a centered downward load but leave horizontal translation free. Counting equations or unknowns alone misses these distinctions.
+
+Add a third vertical roller at x=1 m to the original fixture. Let its upward reaction be s. The equations give By=(2.5 N−s)/2 and Ay=4.75 N−s/2. For 0 N≤s≤2.5 N, both roller reactions are admissible. Equilibrium alone cannot choose s; stiffness, deformation, geometry, assembly and contact state supply additional information. This redundancy is different from a missing restraint. Do not assume equal sharing just because two supports have the same name.
+
+The source's rigid-support stability language concerns its idealized restraints. Real contact, buckling, compliant supports and load-dependent loss of stability need more physics. State whether the question is kinematic restraint, uniqueness of reactions, response to a small disturbance or failure under load; these are related but distinct claims.
+
+**Work:** solve the original fixture both by substitution and as a coefficient matrix with labeled row units. Inspect what happens as L approaches zero and separate sensitivity from the singular case. Construct a compatible redundant case and an incompatible loading of an underconstrained model. Explain which observation would challenge each support assumption and which measurements would help determine real load sharing.
+
+**Reading companions:** [Engineering Statics — Baker and Haynes](../../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80); [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6). Use the selected passages named above; their broader assignments retain later preparation.
+
+**Continue:** [Investigate a planar fixture through forces moments and admissible reactions](Investigate-a-planar-fixture-through-forces-moments-and-admissible-reactions.lingua#r_0D93C6CD0E976983F989D21D6E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_08587ABAC04444B08A9A548CFC

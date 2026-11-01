@@ -1,0 +1,28 @@
+Import "../Inquiry.lingua"
+
+Present fitted results without changing their meaning (@inquiry-report-presentation: 0, is #chapter, #hephaestus-core "../reproducible-computation/publication/Results-figures-and-explanation.lingua#r_4CYNSA0PMKHVVM82W63AB23VFH") { r_007FB1C73A1E7E95BA1ABE68C8
+The report must make a result understandable without silently upgrading its meaning. Give a table a question-oriented caption, identify units and the construction or observation status, retain the denominator of a rate or average, and distinguish estimates from assumptions. A plot additionally needs labeled axes, scales, displayed domains and a clear account of every band or error bar. Choosing a table is sufficient when the comparison is a few exact values; plotting is not evidence by itself.
+
+For the four original datasets, the exact unweighted affine summaries are:
+
+| Synthetic case | n | Fitted intercept | Fitted slope | SSE | SSE/(n−2) |
+| --- | --- | --- | --- | --- | --- |
+| affine | 5 | 11/5 | 3 | 24/5 | 8/5 |
+| common response offset +2 | 5 | 21/5 | 3 | 24/5 | 8/5 |
+| added curvature x²/2 | 5 | 16/5 | 3 | 123/10 | 41/10 |
+| repeated input levels | 6 | 7/3 | 3 | 17/24 | 17/96 |
+
+Caption: all x and y are dimensionless constructed inputs; all rows are included with equal weight. SSE and SSE/(n−2) are squared response quantities. These are conditional fitted summaries, not experimental estimates of a verified instrument. The final column's variance-estimator interpretation needs the stated error premises. Curvature is intentionally present in one dataset, so its larger residual account cannot automatically be called larger repeatability noise.
+
+The repeated-input example separates SSE=17/24 into within-level pure error 3/8 with three degrees of freedom and lack of fit 1/3 with one degree of freedom. The identity is arithmetic. A formal significance test requires its own sampling distribution and assumptions; no p-value is supplied by this decomposition alone. Refer back to the earlier fitting preparation for the difference between a constructive rival and an inference procedure.
+
+For the symmetric affine inputs, Sxx=10 and x̄=0. Under the additional common-variance error model, Var(β̂)=σ²/10 and Var(α̂)=σ²/5. Substituting s²=8/5 gives estimated variances 4/25 and 8/25. These are not the same as s² itself. At an input x*, estimated variance of the fitted mean is s²(1/5+x*²/10); an independent future response under the same model adds s². Standard deviations require square roots. A multiple of any of these does not become a named coverage interval without the needed distributional argument. Reuse [Report uncertainty with its interpretation and decision boundary](Report-uncertainty-with-its-interpretation-and-decision-boundary.lingua#r_00C8CF675ED315159661399E79) and [Report a result so its uncertainty survives later use](../metrology/uncertainty/Reporting-and-use.lingua#r_1DX8JW7A1K3R87MJ4W9AYVJ52D).
+
+Generate the displayed values from the same checked results rather than retyping them. Round only for a reader's purpose and retain exact values in the evidence artifact. If a physical unit is introduced later, intercept/residual units follow y, slope units follow y/x and variances use squared units; the present dimensionless renderer deliberately rejects an unannounced unit change.
+
+**Work:** critique a caption that labels s² as a 95% error bar. Write corrected short and extended versions. Explain why identical slopes in all four rows do not establish physical linearity. If drawing residuals, plot against input and observation order separately and state what each view can reveal. The program's table is an original report, not a reproduced figure from a source.
+
+**Continue:** [Generate the report from the identified result and explain its limits](../reproducible-computation/publication/Results-figures-and-explanation.lingua#r_4CYNSA0PMKHVVM82W63AB23VFH).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_007FB1C73A1E7E95BA1ABE68C8

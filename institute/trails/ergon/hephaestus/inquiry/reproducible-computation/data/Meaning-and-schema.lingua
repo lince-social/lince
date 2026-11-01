@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Give every input a meaning and a checkable schema (@rc-schema: 0, is #chapter, #part-of @reproducible-computation, #source "../../quantitative-literacy/sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #reproducible-computation "Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM") { r_6R0FJMACN4F6T6R0ETDCQHF6NH
+Give every input a meaning and a checkable schema (@rc-schema: 0, is #chapter, #part-of @reproducible-computation, #source "../../quantitative-literacy/sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #reproducible-computation "Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM", #hephaestus-core "../../../computer-science/core/Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D") { r_6R0FJMACN4F6T6R0ETDCQHF6NH
 **Read:** [Data Organization in Spreadsheets — Broman and Woo](../../quantitative-literacy/sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M), the whole article, applying its organization advice; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), data management and programming sections.
 
 A schema makes assumptions about structure and meaning explicit. For the worked calculation, a row represents one hypothetical nonreacting material lot. Required fields are lot_id, wet_kg, water_fraction, component_fraction_dry, product_kg, and product_component_fraction. Masses are kilograms. Water fraction refers to wet feed mass, while the input component fraction refers to dry feed mass. Product mass and its component fraction use the dry product basis.
@@ -16,4 +16,7 @@ Use [Concentrations, moisture, and changing the basis](../../quantitative-litera
 **Continue:** [Choose a format without losing values or structure](Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in the computing core:** [Specify inputs, results and failure before implementing](../../../computer-science/core/Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D).
+
 } r_6R0FJMACN4F6T6R0ETDCQHF6NH

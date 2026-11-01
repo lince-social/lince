@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Report uncertainty with its interpretation and decision boundary (@inquiry-uncertainty-reporting: 0, is #chapter, #hephaestus-core "Investigate-a-conductance-estimate-from-shared-temperature-evidence.lingua#r_00C193D005D33F686AE905C292") { r_00C8CF675ED315159661399E79
+A report should preserve the measurand, units, model, input evidence, dependencies, computation, output estimate and uncertainty description, and the domain of the conclusion. Specify whether the estimate is f(E(X)) or E(f(X)); a nonlinear model can make them different. Give a standard uncertainty with its unit, not a variance mislabeled as an uncertainty. Retain enough information for another reader to reproduce and challenge the calculation.
+
+For the shared thermal model, the output mean is 3.1 W/K and standard uncertainty √33/10 W/K, approximately 0.574 W/K. Those values summarize the stipulated distribution; reporting the three values and weights gives more information. The interval [2.4,4] W/K contains all probability in that model. It is not a physically guaranteed bound unless the inputs, their support and the model itself justify that guarantee. The independent-offset model has a different output law despite identical individual-reading marginals.
+
+A multiple of a standard deviation does not determine coverage without more distribution information. For an original centered quantity Z, assign weight 1/18 to each of −3 and +3 units and 8/9 to zero. Its variance is one unit², but [−2,+2] units contains only 8/9 of its probability, below 95%. A finite general bound follows directly: on |Z−μ|≥ku, the squared deviation is at least k²u², so averaging gives Pr(|Z−μ|≥ku)≤1/k² for u>0. This conservative bound is not an exact normal-distribution coverage rule. If u=0 the quantity is constant on the model's positive-weight outcomes; model inadequacy can still remain.
+
+Suppose a hypothetical screening rule accepts only when the model assigns at least probability 7/10 to G≥5/2 W/K. This threshold is an invented study rule, not a standard or a generally justified risk policy. The shared-offset model assigns 3/4 and passes; the independent-offset model assigns 5/8 and fails. Neither guarantees G≥5/2: the shared model still assigns 1/4 to G=12/5. The decision therefore depends on the joint model and on what the rule is intended to protect. Do not present a stipulated probability as evidence that a real object is suitable.
+
+Compare with the preceding engineering hard-bound design. There, every allowed input combination had to satisfy requirements. Here, a stated conditional probability criterion tolerates some modeled outcomes outside the limit. Explain which criterion a use actually needs before calculating, who defines it and what remains uncertain about the model. A probability, a worst-case result and a repeated-sampling confidence statement answer different questions.
+
+**Practice:** write a complete short result for each thermal model, then identify the single strongest missing piece of evidence. Include a revision after a critic challenges independence or the sensor response. Read [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../metrology/sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E) section 8 progressively for reporting context; more advanced interval, coverage and inference methods remain later formation.
+
+**Continue:** [Investigate a conductance estimate from shared temperature evidence](Investigate-a-conductance-estimate-from-shared-temperature-evidence.lingua#r_00C193D005D33F686AE905C292).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00C8CF675ED315159661399E79

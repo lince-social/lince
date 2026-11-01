@@ -1,0 +1,25 @@
+Import "../Mathematics.lingua"
+
+Differentiate periodic functions and connect their accumulated values (@math-trig-calculus: 0, is #chapter, #hephaestus-core "Construct-complex-arithmetic-and-identify-its-algebraic-limits.lingua#r_006DD1FF362C1C4973327211C7") { r_00D9B07DB0E8262348D597FDAC
+Use the addition identity to write
+
+[sin(x+h)−sin x]/h=sin x(cos h−1)/h+cos x sin h/h.
+
+The established limits give (sin x)'=cos x. Similarly,
+
+[cos(x+h)−cos x]/h=cos x(cos h−1)/h−sin x sin h/h,
+
+so (cos x)'=−sin x. These proofs hold for every real radian argument. Apply [Derive differentiation rules and preserve composition assumptions](Derive-differentiation-rules-and-preserve-composition-assumptions.lingua#r_0FCCEC518E4158271D78D0E3DA) to obtain the chain-rule factors: d/dt sin(ωt+φ)=ω cos(ωt+φ), and the second derivative is −ω² sin(ωt+φ). Cosine obeys the same second-derivative relation. The second derivative has output/time² units when t is time; it is not the square of the first derivative.
+
+For ω≠0, antiderivatives are −cos(ωt+φ)/ω for sine and sin(ωt+φ)/ω for cosine. Verify by differentiation before using the fundamental theorem on an interval. For ω=0 the integrand is constant, so integrate it separately instead of dividing by zero. Definite integrals retain sign and units. Integrating a whole period of a pure sine or cosine gives zero net accumulation even though the function is usually nonzero.
+
+The double-angle identities give sin²u=(1−cos 2u)/2 and cos²u=(1+cos 2u)/2. Consequently the average of either square over a full cycle is 1/2. The average of sin u cos u is zero because it is one-half sin 2u. These are integral statements over a complete period, not arbitrary finite windows. For a cos u+b sin u, expansion therefore gives mean square (a²+b²)/2 and root mean square √((a²+b²)/2). A constant offset contributes its square to the full-cycle mean square; cross terms with a full-cycle zero-mean sinusoid vanish.
+
+The derivative cycle sin,cos,−sin,−cos repeats. In particular, all derivative magnitudes are at most one for the unit-argument functions. This will justify finite polynomial remainder bounds later, without assuming an infinite expansion as the definition of sine.
+
+**Read and practice:** [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3), Volume 1 section 3.5 and the already prepared integration/fundamental-theorem material. Differentiate a shifted and scaled sinusoid twice with units. Derive the full-cycle mean square of 3cos u+4sin u as 25/2 and give a half-cycle or shorter-window example whose average differs from a chosen full-cycle claim. Explain what additional physical model is needed before a mathematical mean square can be called a power.
+
+**Continue:** [Construct complex arithmetic and identify its algebraic limits](Construct-complex-arithmetic-and-identify-its-algebraic-limits.lingua#r_006DD1FF362C1C4973327211C7).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00D9B07DB0E8262348D597FDAC

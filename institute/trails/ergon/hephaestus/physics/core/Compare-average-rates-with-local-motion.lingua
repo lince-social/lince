@@ -1,0 +1,19 @@
+Import "../Physics.lingua"
+
+Compare average rates with local motion (@physics-average-local: 0, is #chapter, #hephaestus-core "../../inquiry/quantitative-literacy/foundations/Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW") { r_0598CA386CF1E13D8E22743F74
+Average velocity over an interval is displacement divided by elapsed time. For the marker observations −1 m at 2 s, 5 m at 5 s and 2 m at 7 s, the interval averages are +2 m/s and −1.5 m/s. The whole-interval average is +3 m divided by 5 s, or +0.6 m/s. It is also the time-weighted average of the two interval values: (2 × 3 − 1.5 × 2)/5. Taking their unweighted mean would answer a different question.
+
+Under the stated monotonic-between-samples assumption, the average speed is 9 m/5 s = 1.8 m/s. Velocity retains direction; speed measures how rapidly distance is traversed. Equal average speeds do not imply equal displacements. Neither interval average establishes the velocity at every instant inside that interval.
+
+A model can say more than the samples, but its extra information comes from assumptions. For a hypothetical motion whose numerical coordinate is x(t) = t² metres when t is expressed in seconds, the average velocity from t to t + h is 2t + h in m/s. At t = 2 s and h = 1 s it is 5 m/s; with h = 0.5 s it is 4.5 m/s. As positive h becomes smaller, this model approaches a local velocity of 4 m/s. This is a first encounter with a derivative: a limiting rate, not simply any chosen short-interval quotient.
+
+Real observations have finite resolution and timing uncertainty. Shorter intervals reduce some averaging effects but can amplify the influence of position errors after division by a small interval. A smooth model's limiting value therefore is not automatically an experimentally resolved instantaneous velocity. Later calculus and metrology develop these limits precisely.
+
+**Work:** recover both weighted averages from a graph. For the t² model, repeat the quotient calculation with h = 0.25 and 0.1 s. Compare two different continuous trajectories through the same three samples and explain what new observations would distinguish them.
+
+**Check:** separate a definition, an observed interval result, an interpolation and a model-derived local rate. Keep units and time intervals attached to every slope.
+
+**Continue:** [Length, area, volume, density, and scaling a shape](../../inquiry/quantitative-literacy/foundations/Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0598CA386CF1E13D8E22743F74

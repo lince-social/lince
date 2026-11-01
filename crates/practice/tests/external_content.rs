@@ -20,7 +20,7 @@ fn handbook_and_practice_are_external_and_optional() {
         }
         return;
     }
-    let content = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
+    let content = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/lince");
     let configuration =
         std::env::temp_dir().join(format!("lince-content-test-{}", std::process::id()));
     std::fs::create_dir_all(&configuration).unwrap();

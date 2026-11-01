@@ -235,6 +235,7 @@ fn transfer_source_derives_the_occurrence_status_ladder() {
                     let transfer = e
                         .act(
                             Action::CreateTransferDraft {
+                                public_history: None,
                                 request_id: "status:create".into(),
                                 creator: Some(ana.clone()),
                                 slug: Some("status.transfer".into()),

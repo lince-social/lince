@@ -1,0 +1,27 @@
+Import "../Engineering.lingua"
+
+Compare realizations under explicit electrical and component limits (@engineering-electrical-limits: 0, is #chapter, #hephaestus-core "../electrical-power-engineering/foundations/Ratings-operating-states-models-and-evidence.lingua#r_4BA5QEZMPE71TKF40R5EYJ9HMQ") { r_005E639D5F937C2C1C6CEA0834
+Use the same load function and screening requirements for three hypothetical realizations. E is in V and all resistances are in Ω; tuple order is (E,R_s,R_c,r₁,r₂,L₁,L₂).
+
+| Design | Parameter tuple | Load voltages | Source current | Useful fraction of ideal-source power |
+| --- | --- | --- | --- | --- |
+| A | (12,1,1,2,1,10,5) | both 20/3 V | 2 A | 5/9 |
+| B | (12,1/2,1/2,1,1/2,10,5) | both 60/7 V | 18/7 A | 5/7 |
+| C | (12,1/2,1/4,1/2,1/4,10,5) | both 160/17 V | 48/17 A | 40/51 |
+
+These are alternative parameter realizations, not purchased products. A fails the lower voltage requirement. B and C meet the nominal voltage/current requirements and their nominal dissipation limits. C reduces the common and branch connection resistances relative to B while retaining the same source resistance. Its source current rises, so source dissipation can rise even while connection losses fall. Replacing every resistance by a smaller number is not a universal optimization rule.
+
+For A, the ideal source supplies 24 W and the two loads receive 40/3 W. For B, useful power is 1080/49 W and ideal-source power 216/7 W. For C, useful power is 7680/289 W and ideal-source power 576/17 W. Independently check every individual loss before quoting the useful fraction. These are exact consequences of the stipulated resistive models, with no statement about a real source's chemical efficiency, capacity or regulation.
+
+Next admit parameter ranges: E may vary ±5% around its nominal value and every resistance ±10%. The full Cartesian box defines allowed combinations; this is an admissible-set statement, not a statistical independence or uniform-distribution assumption. Correlations may narrow the physically possible set. They must be justified rather than silently assumed favorable.
+
+The requirement is now universal over the permitted set. Passing at the nominal point does not prove passing throughout. Conversely, failure of a conservative upper bound does not by itself prove a physical violation; an actual allowed counterexample or a tighter bound is needed. The next lesson proves which extrema lie at corners and uses conservative bounds for powers that need separate care.
+
+**Realization evidence:** a design decision would additionally require actual connection geometry/material, contact and return paths, environmental/duty limits, component tolerances and thermal behavior, inspection and measurement evidence, and operation/maintenance considerations. The present values do not specify those. Follow [Carry a response requirement through realization and inspection](Carry-a-response-requirement-through-realization-and-inspection.lingua#r_00B6F25CACF583F02249520A8B) for the common chain from requirement through realized artifact, and the next shared Record for the distinction between nominal ratings and operating evidence.
+
+**Work:** reconstruct all table entries and list the requirements not covered by this static model. Explain what evidence would support replacing R_c by a lower modeled value. State what new calculation would be needed if resistance changes substantially with temperature. No component or installation is qualified by this table.
+
+**Continue:** [Ratings, operating states, models and evidence](../electrical-power-engineering/foundations/Ratings-operating-states-models-and-evidence.lingua#r_4BA5QEZMPE71TKF40R5EYJ9HMQ).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_005E639D5F937C2C1C6CEA0834

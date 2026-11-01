@@ -1,0 +1,19 @@
+Import "../Engineering.lingua"
+
+Choose observations that separate source and connection explanations (@engineering-electrical-observation: 0, is #chapter, #hephaestus-core "Investigate-electrical-alternatives-bounds-and-observations.lingua#r_00A42EEA72C24821EBF4557EB7") { r_00EEBD1BA46C0A10C2842CDFF9
+All downstream voltages and currents in this model depend on R_s and R_c only through r=R_s+R_c. Consequently, with every other parameter fixed, replacing (R_s,R_c)=(1/2,1/2) Ω in B by (1/4,3/4) Ω preserves the complete downstream solution. It changes where loss occurs. Infinitely precise downstream readings cannot identify the two resistances separately within this model. This is a structural ambiguity, not merely numerical noise.
+
+The accessible source terminal V_t=E−IR_s provides another equation. If E,I,V_t and v₀ are independently established under the same operating state, then R_s=(E−V_t)/I and R_c=(V_t−v₀)/I for I≠0. At B's nominal state I=18/7 A, v₀=66/7 V and V_t=75/7 V. The rival has V_t=159/14 V, so a suitable terminal observation distinguishes the pair. If E is also unknown, a single such reading does not automatically identify all unknowns. Add the unknown to the observation model before claiming identification.
+
+An observation can itself alter the circuit. Model a finite meter resistance R_m across L₁. Its parallel conductance adds 1/R_m to the second diagonal of G. The effective branch load is L_eff=1/(1/L₁+1/R_m), but useful-load power remains v₁²/L₁; meter power v₁²/R_m is separately accounted for. Calling all dissipation in L_eff useful would change the intended-output definition.
+
+For B and hypothetical R_m=100 Ω, the loaded solution is (v₀,v₁,v₂)=(3663/391,3300/391,3330/391) V and source current 1029/391 A. Both load voltages fall relative to the uninstrumented solution because the meter draws additional current through the common source path. The matrix and independent parallel-load reduction agree. This R_m is an invented teaching value, not a specification of a particular instrument.
+
+[Ask which electrical quantities an observation identifies](../../physics/core/Ask-which-electrical-quantities-an-observation-identifies.lingua#r_00248BCB328E2A41569B7E86C8) supplies the shared distinction between a parameter rival and a changed system under observation. The current example adds a design consequence: identical downstream terminal performance can conceal different source/connection dissipation. A port equivalent likewise does not establish the internal distribution of losses.
+
+**Work:** prove the continuous family of (R_s,R_c) pairs with fixed sum and positive values. Design a table of additional observables and the unknowns they constrain, without prescribing an unverified physical measurement procedure. Include the observation's input resistance, uncertainty and operating-state assumptions. Compare loaded and unloaded power accounts and recover the meter's separate term. Explain how a failed model fit might indicate wrong topology or changing parameters rather than only a bad instrument.
+
+**Continue:** [Investigate electrical alternatives with bounds and independent evidence](Investigate-electrical-alternatives-bounds-and-observations.lingua#r_00A42EEA72C24821EBF4557EB7).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00EEBD1BA46C0A10C2842CDFF9

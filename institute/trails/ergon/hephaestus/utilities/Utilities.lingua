@@ -1,4 +1,11 @@
-Utilities — water, energy and the services that sustain other work (@utilities: 0, is #chapter, #part-of @hephaestus, #making-and-maintenance "water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN", #making-and-maintenance "industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF") { r_23Z5YYXGRA1JDFD4BAM955JMNX
+Import "electricity-infrastructure-and-energy-storage/Electricity-infrastructure-and-energy-storage.lingua"
+Import "fuels-hydrogen-and-thermal-energy-supply/Fuels-hydrogen-and-thermal-energy-supply.lingua"
+Import "water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua"
+Import "industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua"
+
+Import "../engineering/Engineering.lingua"
+
+Utilities — water, energy and the services that sustain other work (@utilities: 0, is #chapter, #part-of "../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #making-and-maintenance "water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN", #making-and-maintenance "industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF", #contains "electricity-infrastructure-and-energy-storage/Electricity-infrastructure-and-energy-storage.lingua#r_5WDHZ2EBHAKP6Y0H4DABH0MC5H", #contains "fuels-hydrogen-and-thermal-energy-supply/Fuels-hydrogen-and-thermal-energy-supply.lingua#r_7SK09P8H8A7Z0J80NTSFQX9H97", #contains "water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN", #contains "industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF") { r_23Z5YYXGRA1JDFD4BAM955JMNX
 Understand the water, energy and supporting services that make households, laboratories and production facilities work over time.
 
 [Water, sanitation and industrial utilities — from sources to continuing service](water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN) follows sources, quality, treatment, delivery, sanitation, industrial use and continuing operation. [Electrical power engineering — sources, networks, machines and continuing service](../engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ) develops electrical service, while [Fluid dynamics — motion, forces, transport and evidence](../physics/fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ) supplies the shared account of fluid motion and physical evidence.
@@ -7,5 +14,14 @@ Understand the water, energy and supporting services that make households, labor
 
 Follow the dependencies, people, measurements, spare parts and maintenance that keep a service available. Related work continues through [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001), [Engineering — systems, design, construction, and operation](../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), [Earth — materials, processes, and geological history](../../gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) and [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001).
 
-[Development scope: Energy and utilities](../../../lince/Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
+[Development scope: Energy and utilities](Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX).
+
+**Scope:** Account for a service's energy or water; follow a supply from source to use; investigate reliability and upkeep. Begin with relevant quantities and balances; operating, designing, and manufacturing utility equipment remain separate goals.
+
+**Branches:**
+
+- [Electricity infrastructure and energy storage](electricity-infrastructure-and-energy-storage/Electricity-infrastructure-and-energy-storage.lingua#r_5WDHZ2EBHAKP6Y0H4DABH0MC5H)
+- [Fuels, hydrogen, and thermal energy supply](fuels-hydrogen-and-thermal-energy-supply/Fuels-hydrogen-and-thermal-energy-supply.lingua#r_7SK09P8H8A7Z0J80NTSFQX9H97)
+- [Water, sanitation and industrial utilities — from sources to continuing service](water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN)
+- [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF)
 } r_23Z5YYXGRA1JDFD4BAM955JMNX

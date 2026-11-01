@@ -1,0 +1,335 @@
+Import "../Mathematics.lingua"
+
+Investigate finite configurations histories and misleading observations (@math-discrete-study: 0, is #chapter, #hephaestus-core "Review-discrete-arguments-counting-and-preserved-structure.lingua#r_002045D0F1E9276EAC8563DADF") { r_002AF0272204D854378B58CA13
+Save discrete_study.py and discrete_checks.py below together and run them with Python 3. They use only the standard library. Earlier arithmetic, proof, function and finite-state material is reused by reference; no previous program is replaced. The pure combinatorial model has exact nonnegative integer counts, labeled boxes, indistinguishable tokens, unit transfers and no capacities or probabilities.
+
+`allocations` recursively enumerates weak compositions; the checker independently places separators in a fixed-length row. `token_graph` constructs all legal successors from supplied loop-free base edges. `reachable` explores a finite closure, while a separate Boolean transitive-closure calculation uses independently reconstructed state differences. `walk_count` applies a final-edge recurrence. Fiber and quotient functions preserve the difference between concrete vertices and their observations. `lift` tries to reconstruct a fixed label history from a specified concrete start; absence of a lift is a concrete counterexample, not a claim that all quotients are invalid.
+
+The suite checks 45 allocation cases,320 directed base-graph/total combinations,56 reversible graph/total combinations,4,917 forward start/target pairs and 17,577 balanced move words. The word oracle independently checks prefix legality, endpoint states and the reflection injection; equality with the target-set count completes its finite bijection check. Recursive and closed-form history counts agree for N=0,…,8. Reversible reachability agrees with the independently found component-count criterion. Symmetry-class counts and local lifting conditions are checked against explicit fibers and successor labels. General claims remain supported by the written proofs, not by extrapolation from the finite range.
+
+The published checkpoint checks all 210 six-element subsets of {0,…,9} against the sum-to-nine claim in Hammack Example 3.24, plus the stated five-element counterexample. It is a bounded mathematical reconstruction. No full textbook exercise set, physical experiment, independently observed transport process or outside learner project is claimed completed. Twelve invalid-input cases check the declared count, edge, endpoint and history contracts.
+
+**Investigation:** derive the state/edge counts, directed cut criterion, termination rank, history formula and reflection-class count before running the program. For N=4 predict 15 states,20 edges,14 complete histories and 9 reflection classes. Explain why these are four different counts. Reconstruct the N=1 observed cycle and show exactly where a proposed concrete lift fails. Compare the reversible and forward reflection cases.
+
+**Independent extension and defense:** alter one premise, such as middle-box capacity, an edge direction or token identity. Define the new objects and equality convention, derive an invariant, and determine whether it is sufficient. Produce a counterexample to an overstrong claim, a constructive reachability argument where possible, and independently check a finite case. Preserve the input/rules, exact results, reasoning and correction history using [Review reporting criticism and the limits of reproduced evidence](../../inquiry/core/Review-reporting-criticism-and-the-limits-of-reproduced-evidence.lingua#r_00938E8A05E83C0B28227241FA). A critic should challenge one quantifier or hidden equal-fiber assumption. Revise the argument and state what still needs proof; passing the existing suite does not establish the changed model.
+
+
+```python file=discrete_study.py
+from collections import deque
+import json
+
+
+def natural(value):
+    if type(value) is not int or value < 0:
+        raise ValueError('an exact nonnegative integer is required')
+    return value
+
+
+def allocations(total, boxes=3):
+    total, boxes = natural(total), natural(boxes)
+    if boxes == 0:
+        raise ValueError('at least one box is required')
+    if boxes == 1:
+        return ((total,),)
+    return tuple((first,)+tail for first in range(total+1)
+                 for tail in allocations(total-first, boxes-1))
+
+
+def token_graph(total, edges, boxes=3):
+    vertices = allocations(total, boxes)
+    edges = tuple(edges)
+    for edge in edges:
+        if len(edge) != 2 or any(type(i) is not int or i < 0 or i >= boxes for i in edge) or edge[0] == edge[1]:
+            raise ValueError('base edges need two distinct valid box indices')
+    result = {}
+    for state in vertices:
+        targets = set()
+        for i, j in edges:
+            if state[i] > 0:
+                changed = list(state)
+                changed[i] -= 1
+                changed[j] += 1
+                targets.add(tuple(changed))
+        result[state] = frozenset(targets)
+    return result
+
+
+def reachable(graph, start):
+    if start not in graph:
+        raise ValueError('start must be a graph vertex')
+    seen, pending = {start}, deque((start,))
+    while pending:
+        state = pending.popleft()
+        for target in graph[state]:
+            if target not in seen:
+                seen.add(target)
+                pending.append(target)
+    return frozenset(seen)
+
+
+def walk_count(graph, start, finish, length):
+    length = natural(length)
+    if start not in graph or finish not in graph:
+        raise ValueError('endpoints must be graph vertices')
+    counts = {start: 1}
+    for _ in range(length):
+        following = {}
+        for state, count in counts.items():
+            for target in graph[state]:
+                following[target] = following.get(target, 0)+count
+        counts = following
+    return counts.get(finish, 0)
+
+
+def fibers(graph, label):
+    groups = {}
+    for state in graph:
+        groups.setdefault(label(state), set()).add(state)
+    return {key: frozenset(value) for key, value in groups.items()}
+
+
+def quotient(graph, label):
+    result = {key: set() for key in fibers(graph, label)}
+    for state, targets in graph.items():
+        result[label(state)].update(label(target) for target in targets)
+    return {key: frozenset(value) for key, value in result.items()}
+
+
+def lift(graph, label, labels, start):
+    labels = tuple(labels)
+    if start not in graph or not labels or label(start) != labels[0]:
+        raise ValueError('a nonempty label trace matching the start is required')
+    paths = {start: (start,)}
+    for wanted in labels[1:]:
+        following = {}
+        for state, path in paths.items():
+            for target in sorted(graph[state]):
+                if label(target) == wanted and target not in following:
+                    following[target] = path+(target,)
+        paths = following
+    return min(paths.values()) if paths else None
+
+
+def reflection(state):
+    return min(state, tuple(reversed(state)))
+
+
+def investigation():
+    forward = ((0, 1), (1, 2))
+    rows = []
+    for total in range(9):
+        graph = token_graph(total, forward)
+        rows.append({'tokens': total, 'states': len(graph),
+                     'edges': sum(map(len, graph.values())),
+                     'complete_histories': walk_count(graph, (total, 0, 0), (0, 0, total), 2*total),
+                     'reflection_classes': len(fibers(graph, reflection))})
+    graph = token_graph(1, forward)
+    observed = quotient(graph, lambda s: s[1])
+    return {'finite_cases': rows, 'observed_edges': sorted((a, b) for a, bs in observed.items() for b in bs),
+            'spurious_trace': (0, 1, 0, 1),
+            'lift': lift(graph, lambda s: s[1], (0, 1, 0, 1), (1, 0, 0))}
+
+
+if __name__ == '__main__':
+    print(json.dumps(investigation(), indent=2))
+```
+
+```python file=discrete_checks.py
+from itertools import combinations, product
+from math import comb
+from discrete_study import allocations, token_graph, reachable, walk_count, fibers, quotient, lift, reflection
+import json
+
+
+checks = 0
+
+
+def require(condition):
+    global checks
+    if not condition:
+        raise AssertionError('discrete evidence check failed')
+    checks += 1
+
+
+def rejects(action):
+    try:
+        action()
+    except ValueError:
+        require(True)
+    else:
+        raise AssertionError('expected rejection')
+
+
+def bar_oracle(total, boxes):
+    result = set()
+    for bars in combinations(range(total+boxes-1), boxes-1):
+        boundaries = (-1,)+bars+(total+boxes-1,)
+        result.add(tuple(b-a-1 for a, b in zip(boundaries, boundaries[1:])))
+    return result
+
+
+def edge_oracle(a, b, edges):
+    delta = tuple(y-x for x, y in zip(a, b))
+    minus = [i for i, d in enumerate(delta) if d == -1]
+    plus = [i for i, d in enumerate(delta) if d == 1]
+    return len(minus) == len(plus) == 1 and all(d in (-1, 0, 1) for d in delta) and (minus[0], plus[0]) in edges
+
+
+def closure_oracle(vertices, edges):
+    n = len(vertices)
+    table = [[i == j or edge_oracle(a, b, edges) for j, b in enumerate(vertices)] for i, a in enumerate(vertices)]
+    for k in range(n):
+        for i in range(n):
+            for j in range(n):
+                table[i][j] = table[i][j] or (table[i][k] and table[k][j])
+    return table
+
+
+def components(edges):
+    groups = [{0}, {1}, {2}]
+    for a, b in edges:
+        joined = set().union(*(g for g in groups if a in g or b in g))
+        groups = [g for g in groups if a not in g and b not in g]+[joined]
+    return groups
+
+
+def words(total):
+    for positions in combinations(range(2*total), total):
+        chosen = set(positions)
+        yield tuple(0 if i in chosen else 1 for i in range(2*total))
+
+
+def legal(word):
+    balance = 0
+    for step in word:
+        balance += 1 if step == 0 else -1
+        if balance < 0:
+            return False
+    return balance == 0
+
+
+allocation_cases = 0
+for total in range(9):
+    for boxes in range(1, 6):
+        states = allocations(total, boxes)
+        require(len(states) == len(set(states)) == comb(total+boxes-1, boxes-1))
+        require(set(states) == bar_oracle(total, boxes))
+        allocation_cases += 1
+directed_cases = 0
+possible_edges = tuple((i, j) for i in range(3) for j in range(3) if i != j)
+for flags in product((False, True), repeat=6):
+    edges = tuple(e for e, flag in zip(possible_edges, flags) if flag)
+    for total in range(5):
+        graph = token_graph(total, edges)
+        vertices = tuple(graph)
+        oracle = closure_oracle(vertices, edges)
+        for i, a in enumerate(vertices):
+            reached = reachable(graph, a)
+            require(reached == frozenset(b for j, b in enumerate(vertices) if oracle[i][j]))
+            require(graph[a] == frozenset(b for b in vertices if edge_oracle(a, b, edges)))
+            require(all(sum(b) == total for b in reached))
+        directed_cases += 1
+undirected_cases = 0
+for flags in product((False, True), repeat=3):
+    pairs = tuple(e for e, flag in zip(((0, 1), (0, 2), (1, 2)), flags) if flag)
+    edges = pairs+tuple((b, a) for a, b in pairs)
+    groups = components(pairs)
+    for total in range(7):
+        graph = token_graph(total, edges)
+        for a in graph:
+            signature = tuple(sum(a[i] for i in g) for g in groups)
+            expected = frozenset(b for b in graph if tuple(sum(b[i] for i in g) for g in groups) == signature)
+            require(reachable(graph, a) == expected)
+        undirected_cases += 1
+forward = ((0, 1), (1, 2))
+path_pairs = 0
+word_cases = 0
+catalan = [1]
+for total in range(9):
+    graph = token_graph(total, forward)
+    require(len(graph) == comb(total+2, 2))
+    require(sum(map(len, graph.values())) == total*(total+1))
+    phi = lambda s: s[1]+2*s[2]
+    for a in graph:
+        reached = reachable(graph, a)
+        for b in graph:
+            predicted = a[0] >= b[0] and a[0]+a[1] >= b[0]+b[1]
+            require((b in reached) == predicted)
+            path_pairs += 1
+        require(all(phi(b) == phi(a)+1 for b in graph[a]))
+    good, reflected = 0, set()
+    for word in words(total):
+        state = (total, 0, 0)
+        executable = True
+        for move in word:
+            changed = list(state)
+            changed[move] -= 1
+            changed[move+1] += 1
+            following = tuple(changed)
+            if following not in graph[state]:
+                executable = False
+                break
+            state = following
+        require(executable == legal(word))
+        if executable:
+            require(state == (0, 0, total))
+            good += 1
+        else:
+            balance = 0
+            for i, step in enumerate(word):
+                balance += 1 if step == 0 else -1
+                if balance == -1:
+                    image = tuple(1-v for v in word[:i+1])+word[i+1:]
+                    require(image.count(0) == total+1)
+                    require(image not in reflected)
+                    reflected.add(image)
+                    break
+        word_cases += 1
+    if total > 0:
+        require(len(reflected) == comb(2*total, total+1))
+        catalan.append(sum(catalan[k]*catalan[total-1-k] for k in range(total)))
+    require(good == catalan[total] == comb(2*total, total)//(total+1))
+    require(walk_count(graph, (total, 0, 0), (0, 0, total), 2*total) == good)
+    require(walk_count(graph, (total, 0, 0), (0, 0, total), 2*total+1) == 0)
+    fixed = sum(a == tuple(reversed(a)) for a in graph)
+    require(fixed == total//2+1)
+    require(len(fibers(graph, reflection)) == (len(graph)+fixed)//2)
+    reversible = token_graph(total, forward+tuple((b, a) for a, b in forward))
+    observed = quotient(reversible, reflection)
+    for a in reversible:
+        require(set(map(reflection, reversible[a])) == set(observed[reflection(a)]))
+graph = token_graph(1, forward)
+observation = lambda s: s[1]
+q = quotient(graph, observation)
+require(q == {0: frozenset((1,)), 1: frozenset((0,))})
+require(lift(graph, observation, (0, 1, 0), (1, 0, 0)) == ((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+require(lift(graph, observation, (0, 1, 0, 1), (1, 0, 0)) is None)
+require(lift(graph, observation, (0, 1), (0, 0, 1)) is None)
+require(lift(graph, observation, (0,), (0, 0, 1)) == ((0, 0, 1),))
+require(len(fibers(token_graph(2, forward), reflection)) == 4)
+published = 0
+for selected in combinations(range(10), 6):
+    require(any(a+b == 9 for a, b in combinations(selected, 2)))
+    published += 1
+require(not any(a+b == 9 for a, b in combinations(range(5), 2)))
+invalid = [lambda: allocations(-1), lambda: allocations(True), lambda: allocations(1.0),
+           lambda: allocations(2, 0), lambda: token_graph(2, ((0, 3),)),
+           lambda: token_graph(2, ((0, 0),)), lambda: token_graph(2, ((True, 1),)),
+           lambda: reachable(graph, (2, 0, 0)), lambda: walk_count(graph, (1, 0, 0), (0, 0, 1), -1),
+           lambda: walk_count(graph, (2, 0, 0), (0, 0, 1), 2),
+           lambda: lift(graph, observation, (), (1, 0, 0)),
+           lambda: lift(graph, observation, (1,), (1, 0, 0))]
+for action in invalid:
+    rejects(action)
+print(json.dumps({'checks': checks, 'allocation_cases': allocation_cases,
+                  'directed_graph_cases': directed_cases, 'undirected_graph_cases': undirected_cases,
+                  'directed_path_pairs': path_pairs, 'balanced_words': word_cases,
+                  'published_subsets': published, 'invalid_inputs': len(invalid)}, indent=2))
+```
+
+**Author verification:** 63,704 checks passed through Nix/Python 3.14.8, covering 45 allocation cases, 320 directed graph/total cases, 56 reversible graph/total cases, 4,917 directed-path endpoint pairs, 17,577 balanced words, 210 published-checkpoint subsets and twelve rejected inputs. Independent separator, state-difference/closure, component-total, prefix/reflection and analytic counts check the original implementation. General claims rely on the written proofs. No physical experiment or completed independent learner project is claimed.
+
+**Continue:** [Review discrete arguments counting and preserved structure](Review-discrete-arguments-counting-and-preserved-structure.lingua#r_002045D0F1E9276EAC8563DADF).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_002AF0272204D854378B58CA13

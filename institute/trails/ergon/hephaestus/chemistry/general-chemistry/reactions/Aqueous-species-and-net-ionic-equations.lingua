@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Identify aqueous species and write a defensible net ionic equation (@gc-ionic: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9") { r_1D7ZRSG6A9TD5G2879FVG4NS89
+Identify aqueous species and write a defensible net ionic equation (@gc-ionic: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9", #hephaestus-core "../../core/Combine-component-and-charge-constraints-without-discarding-spectators.lingua#r_00FBD6BF76E407B3AFCCF72B70") { r_1D7ZRSG6A9TD5G2879FVG4NS89
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s reaction classification and aqueous examples; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete chemical-reactions activity; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), electrolytes and introductory aqueous reactions.
 
 An aqueous label does not mean every formula represents intact dissolved molecules. Strong electrolytes are commonly modelled as separated solvated ions in dilute water; weak electrolytes and equilibrating complexes require a different description. Write the actual species model before cancelling apparent spectators in an equation.
@@ -16,4 +16,9 @@ Read the full reaction-classification material and the laboratory manual's corre
 **Continue:** [Balance redox changes while keeping oxidation state and charge distinct](Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Fourth chemistry-block reading:** Use actual species, element/charge conservation and spectator cancellation. Full reaction classification and laboratory activities remain assignments; the common neutral-acid model does not assume every aqueous formula fully dissociates.
+
+**Continue in the fourth chemistry block:** [Combine component and charge constraints without discarding spectators](../../core/Combine-component-and-charge-constraints-without-discarding-spectators.lingua#r_00FBD6BF76E407B3AFCCF72B70).
+
 } r_1D7ZRSG6A9TD5G2879FVG4NS89

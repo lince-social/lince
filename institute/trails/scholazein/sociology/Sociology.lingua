@@ -1,0 +1,17 @@
+Import "sociological-theory-and-social-explanation/Sociological-theory-and-social-explanation.lingua"
+Import "methods-of-social-investigation/Methods-of-social-investigation.lingua"
+Import "social-structure-institutions-and-inequality/Social-structure-institutions-and-inequality.lingua"
+Import "work-knowledge-and-social-change/Work-knowledge-and-social-change.lingua"
+
+Sociology (@sociology: 0, is #chapter, #outline, #contains "sociological-theory-and-social-explanation/Sociological-theory-and-social-explanation.lingua#r_32N1ZSNH2MVEKZ5C7KQFDGRVQ3", #contains "methods-of-social-investigation/Methods-of-social-investigation.lingua#r_5TVS0KFQ17MB3011FF3CDW3SZ1", #contains "social-structure-institutions-and-inequality/Social-structure-institutions-and-inequality.lingua#r_2BBFB310R6ZW979K8FQKN3M5RE", #contains "work-knowledge-and-social-change/Work-knowledge-and-social-change.lingua#r_2FK3WWYVFYNV84AF1Z8PMWBZHP") { r_2ENBJ86RED2J0TCGJFZARTTNQT
+Explain a social pattern or institution, compare theoretical accounts, and investigate a bounded case through observation, documents, interviews, or data. Introduce the required concepts and research methods before using them, with relevant historical, interpretive, or statistical preparation.
+
+**Parent:** [Scholazein — pursuits of a well-spent life](../Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6).
+
+**Branches:**
+
+- [Sociological theory and social explanation](sociological-theory-and-social-explanation/Sociological-theory-and-social-explanation.lingua#r_32N1ZSNH2MVEKZ5C7KQFDGRVQ3)
+- [Methods of social investigation](methods-of-social-investigation/Methods-of-social-investigation.lingua#r_5TVS0KFQ17MB3011FF3CDW3SZ1)
+- [Social structure, institutions, and inequality](social-structure-institutions-and-inequality/Social-structure-institutions-and-inequality.lingua#r_2BBFB310R6ZW979K8FQKN3M5RE)
+- [Work, knowledge, and social change](work-knowledge-and-social-change/Work-knowledge-and-social-change.lingua#r_2FK3WWYVFYNV84AF1Z8PMWBZHP)
+} r_2ENBJ86RED2J0TCGJFZARTTNQT

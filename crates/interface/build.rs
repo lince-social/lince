@@ -11,13 +11,25 @@ fn main() {
 
 #[cfg(feature = "native-presentation")]
 fn native_assets() {
+    use std::hash::{Hash, Hasher};
+
     #[cfg(feature = "stuff")]
     native_freedoom_build::compile();
     println!("cargo:rerun-if-changed=native_icon_art.rs");
     let height = native_icon_art::COUNT.div_ceil(5) as u32 * 128;
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     let atlas_path = output.join("icons.rgba");
-    let inputs = [include_str!("build.rs"), include_str!("native_icon_art.rs")].join("\0");
+    println!("cargo:rerun-if-changed={}", atlas_path.display());
+    let mut generator = std::collections::hash_map::DefaultHasher::new();
+    std::fs::read(std::env::current_exe().expect("icon generator path"))
+        .expect("icon generator identity")
+        .hash(&mut generator);
+    let inputs = [
+        include_str!("build.rs"),
+        include_str!("native_icon_art.rs"),
+        &generator.finish().to_string(),
+    ]
+    .join("\0");
     let stamp = output.join("icons.inputs");
     if std::fs::read_to_string(&stamp).ok().as_deref() == Some(&inputs)
         && std::fs::metadata(&atlas_path)
@@ -41,6 +53,8 @@ fn native_assets() {
     for pixel in pixels.chunks_exact_mut(4) {
         pixel[..3].fill(255);
     }
-    std::fs::write(atlas_path, pixels).expect("write icon atlas");
+    if std::fs::read(&atlas_path).ok().as_deref() != Some(pixels.as_slice()) {
+        std::fs::write(atlas_path, pixels).expect("write icon atlas");
+    }
     std::fs::write(stamp, inputs).expect("write icon inputs");
 }

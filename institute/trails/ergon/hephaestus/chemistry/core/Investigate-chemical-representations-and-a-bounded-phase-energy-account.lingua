@@ -1,0 +1,39 @@
+Import "../Chemistry.lingua"
+
+Investigate chemical representations and a bounded phase energy account (@chemistry-structure-study: 0, is #chapter, #hephaestus-core "Review-chemical-structure-interactions-and-thermal-evidence.lingua#r_08EE3B7D98E627A9ECA27D9787") { r_009F28218CF2050BCB29C2132E
+Build a connected account of what spectral, structural and thermal descriptions can establish. Reuse the shared electronic, bonding, interaction, phase and calorimetry lessons. The following numerical systems are teaching constructions; they are not measurements, fitted material properties or a laboratory reconstruction.
+
+**Spectral model:** revisit the stipulated levels 0, ε and 3ε with ε=hν₀. List possible downward energy differences and, under the stated allowed-transition assumption, their frequency and vacuum-wavelength ratios. Add a common offset to the levels and derive invariance. Explain why these ratios do not determine populations, line intensities or the identity of a real specimen. Keep photon number, energy per photon and power separate.
+
+**Structural account:** reconstruct the water and carbonate valence/formal-charge accounts from the preceding lesson. Compare them with the distinct oxidation-state convention and the role of a geometry model. Check the two stipulated bond-vector arrangements independently by components and squared magnitudes. Explain why a Lewis diagram, a vector cancellation and an interaction sketch have different explanatory limits. Neither the vector illustration nor the thermal material below is a quantitative model of water.
+
+For the thermal account, stipulate a pure material X with a transition at 0 °C under a fixed pressure. Let its constant solid and liquid specific heat capacities be 2 and 4 J g⁻¹ K⁻¹, and its enthalpy of fusion be 120 J/g. Use 20 g of X and an apparatus with constant heat capacity 10 J/K, initially all at −10 °C. The boundary contains material and apparatus. Assume equilibrium temperature throughout, no mass loss or reaction, only pressure-volume work and externally supplied heat. These are invented values and declared assumptions, not tabulated properties of an identified substance.
+
+The energy stages are:
+
+| Stage | Conditional heat received | Result |
+| --- | --- | --- |
+| Warm solid and apparatus to 0 °C | (20×2+10)×10 J | 500 J |
+| Melt all material at 0 °C | 20×120 J | 2,400 J |
+| Warm liquid and apparatus to 20 °C | (20×4+10)×20 J | 1,800 J |
+
+Total heat received is 4,700 J. Independently choose zero enthalpy for solid X plus apparatus at 0 °C. The initial account is −500 J; the final account is 2,400+1,800=4,200 J. Their difference recovers 4,700 J without adding the three process-stage totals again. This is a reference-state check of the stipulated model, not evidence that its properties describe a real sample.
+
+Let E be cumulative heat actually received from the initial state. For 0≤E<500 J, temperature is −10 °C+E/(50 J/K). For 500≤E≤2,900 J it stays at 0 °C while liquid mass fraction is (E−500 J)/(2,400 J). Above 2,900 J and within the stipulated liquid-property range, temperature is (E−2,900 J)/(90 J/K) above 0 °C. Thus E=1,700 J gives half-melted material at 0 °C, and E=3,800 J gives liquid at 10 °C. Define behavior at both thresholds; a single liquid heat-capacity formula over the entire interval would be wrong.
+
+An external heater delivering 5,000 J does not imply the chosen system receives 5,000 J. If 300 J is diverted to surroundings outside the boundary before reaching it, only 4,700 J enters this account. Conversely, if the heater is inside the boundary, classify its input and losses in a new first-law account. Several combinations of apparatus heat capacity, heat leakage and material properties can fit one temperature change. A precise endpoint temperature cannot identify all of them.
+
+**Independent work:** compare stage accounting with reference-state differences for varied positive masses, heat capacities and fusion enthalpies. Check phase fractions stay between zero and one, continuity of temperature at the thresholds, energy closure and changes of units. Split a within-phase temperature interval into smaller increments and verify additivity under constant properties. Retain exact values before rounding.
+
+**Evidence and revision:** identify observations that would distinguish phase change from a sensor delay, spatial gradient or changing input. Explain which property values, pressure conditions and calibration records would be needed for an actual material. Draw a pure-substance phase path and distinguish its equilibrium information from transition rate or metastability. Defend the account to another reader, let them change one assumption, and revise the model without treating the original numerical agreement as experimental validation.
+
+**Reading companion:** [Chemistry 2e — OpenStax](../general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94). Follow the bounded sections named above and in the reused lessons; the complete textbook and other original assignments retain their broader scope.
+
+**Shared evidence:** [Interpret a temperature change through a calibrated thermal model](../general-chemistry/energy/Calorimetry-and-thermal-models.lingua#r_55B9CZ9RST5E8CANA6GZ0SNPEY); [Interpret vapor pressure, phase change, and a phase diagram](../general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S); [Design comparisons that can distinguish competing explanations](../../inquiry/core/Design-comparisons-that-can-distinguish-competing-explanations.lingua#r_0A7E63167B1C0C05400C73A84E); [Separate observed variation from uncertainty about a result](../../inquiry/core/Separate-observed-variation-from-uncertainty-about-a-result.lingua#r_0A1A2CA3D01039474C1F5678C7).
+
+**Author verification:** 1,747 exact rational comparisons passed, including 384 thermal state cases across 48 property/mass/apparatus combinations, eight shell enumerations, eleven common spectral offsets, electron/formal-charge accounts, vector checks and the shared calorimetry benchmark. Process stages and independent reference-state differences agree, including both phase thresholds. These are checks of stipulated models, not evidence of a laboratory experiment or real-material property validation.
+
+**Continue:** [Review chemical structure interactions and thermal evidence](Review-chemical-structure-interactions-and-thermal-evidence.lingua#r_08EE3B7D98E627A9ECA27D9787).
+
+**Return:** [Chemistry](../Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+} r_009F28218CF2050BCB29C2132E

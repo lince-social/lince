@@ -1,7 +1,156 @@
-Engineering — systems, design, construction, and operation (@engineering-map: 0, is #chapter, #engineering "mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA", #engineering "../materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #engineering "../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #engineering "../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #engineering "../physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #engineering "electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ", #engineering "mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R", #engineering "materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9") { r_5DA6VY09MAD2N8D9SH0FFJVV68
+Import "engineering-design-and-systems-engineering/Engineering-design-and-systems-engineering.lingua"
+Import "civil-and-structural-engineering/Civil-and-structural-engineering.lingua"
+Import "geotechnical-engineering/Geotechnical-engineering.lingua"
+Import "construction-and-building-services-engineering/Construction-and-building-services-engineering.lingua"
+Import "water-and-environmental-engineering/Water-and-environmental-engineering.lingua"
+Import "manufacturing-engineering/Manufacturing-engineering.lingua"
+Import "corrosion-degradation-and-material-protection/Corrosion-degradation-and-material-protection.lingua"
+Import "chemical-and-process-engineering/Chemical-and-process-engineering.lingua"
+Import "thermal-and-energy-engineering/Thermal-and-energy-engineering.lingua"
+Import "refrigeration-cryogenics-and-cold-chains/Refrigeration-cryogenics-and-cold-chains.lingua"
+Import "batteries-and-electrochemical-energy-systems/Batteries-and-electrochemical-energy-systems.lingua"
+Import "control-and-automation-engineering/Control-and-automation-engineering.lingua"
+Import "mechatronics-and-robotics/Mechatronics-and-robotics.lingua"
+Import "electronic-engineering/Electronic-engineering.lingua"
+Import "telecommunications-and-radio-engineering/Telecommunications-and-radio-engineering.lingua"
+Import "optical-and-photonic-engineering/Optical-and-photonic-engineering.lingua"
+Import "computer-engineering-and-architecture/Computer-engineering-and-architecture.lingua"
+Import "acoustical-and-vibration-engineering/Acoustical-and-vibration-engineering.lingua"
+Import "aerospace-engineering/Aerospace-engineering.lingua"
+Import "marine-and-naval-engineering/Marine-and-naval-engineering.lingua"
+Import "transportation-and-railway-engineering/Transportation-and-railway-engineering.lingua"
+Import "automotive-and-vehicle-engineering/Automotive-and-vehicle-engineering.lingua"
+Import "biomedical-engineering/Biomedical-engineering.lingua"
+Import "agricultural-engineering/Agricultural-engineering.lingua"
+Import "petroleum-and-subsurface-engineering/Petroleum-and-subsurface-engineering.lingua"
+Import "nuclear-engineering/Nuclear-engineering.lingua"
+Import "industrial-engineering-and-production-systems/Industrial-engineering-and-production-systems.lingua"
+Import "reliability-maintenance-and-repair-systems/Reliability-maintenance-and-repair-systems.lingua"
+Import "human-factors-and-safety-engineering/Human-factors-and-safety-engineering.lingua"
+Import "logistics-and-exchange/Logistics-and-exchange.lingua"
+Import "facilities-and-maintenance/Facilities-and-maintenance.lingua"
+Import "mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua"
+Import "electrical-power-engineering/Electrical-power-engineering.lingua"
+Import "mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua"
+Import "materials-engineering/Materials-engineering.lingua"
+
+Import "core/Include-people-and-operating-conditions-in-the-engineering-function.lingua"
+Import "core/Separate-commands-operating-modes-and-physical-transitions.lingua"
+Import "core/Choose-actions-from-what-the-observations-actually-distinguish.lingua"
+Import "core/Investigate-error-in-the-task-equipment-and-working-conditions.lingua"
+Import "core/Recover-the-known-condition-rather-than-replaying-the-remembered-steps.lingua"
+Import "core/Hand-over-current-state-pending-work-and-the-evidence-needed-to-continue.lingua"
+Import "core/Connect-operating-evidence-to-the-major-engineering-disciplines.lingua"
+Import "core/Investigate-operating-state-observation-and-handover-on-a-finite-card-board.lingua"
+Import "core/Review-operating-evidence-recovery-handover-and-discipline-entry.lingua"
+Import "sources/HSE-human-failure-procedures-and-shift-handover.lingua"
+Import "core/Define-the-service-window-before-calculating-availability.lingua"
+Import "core/Distinguish-first-failure-from-restored-service.lingua"
+Import "core/Retain-incomplete-lifetimes-and-interpret-zero-observed-failures.lingua"
+Import "core/Calculate-service-from-shared-support-and-component-dependence.lingua"
+Import "core/Derive-the-availability-ratio-from-explicit-operating-and-restoration-cycles.lingua"
+Import "core/Model-finite-service-with-one-repair-crew-and-shared-dependencies.lingua"
+Import "core/Connect-restored-configuration-to-a-defensible-service-claim.lingua"
+Import "core/Investigate-operating-histories-repair-resources-and-service-evidence.lingua"
+Import "core/Review-continuing-service-with-its-observations-resources-and-limits.lingua"
+Import "mechanical-engineering-and-machine-design/service/Maintenance-intervals-access-and-functional-evidence.lingua"
+Import "mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua"
+Import "mechanical-engineering-and-machine-design/service/Failure-investigation-preserves-chronology-and-alternatives.lingua"
+Import "mechanical-engineering-and-machine-design/service/Repair-restoration-and-return-to-service.lingua"
+Import "../inquiry/metrology/sources/Statistical-Handbook.lingua"
+Import "mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua"
+Import "core/Define-useful-production-and-the-boundary-of-its-account.lingua"
+Import "core/Count-repeated-visits-before-bounding-useful-output.lingua"
+Import "core/Declare-slot-timing-and-reserve-finite-waiting-spaces.lingua"
+Import "core/Derive-an-exact-finite-production-schedule-and-its-optimality-boundary.lingua"
+Import "core/Account-for-rework-yield-and-resource-load-without-creating-items.lingua"
+Import "core/Derive-inventory-time-from-individual-residence-intervals.lingua"
+Import "core/Compare-production-designs-with-evidence-and-uncertainty-about-the-future.lingua"
+Import "core/Investigate-production-schedules-rework-and-inventory-time.lingua"
+Import "core/Review-useful-output-resource-visits-and-production-evidence.lingua"
+Import "sources/Manufacturing-Systems-Analysis-MIT-2-852.lingua"
+Import "sources/Manufacturing-foundations-and-the-inventory-time-argument-by-Little.lingua"
+Import "core/Define-a-feedback-boundary-before-choosing-a-controller.lingua"
+Import "core/Derive-closed-loop-response-and-retain-the-physical-energy-account.lingua"
+Import "core/Separate-disturbance-rejection-from-sensor-bias-and-identifiable-quantities.lingua"
+Import "core/Find-attainable-equilibria-when-the-actuator-saturates.lingua"
+Import "core/Derive-sampled-feedback-separately-from-numerical-time-stepping.lingua"
+Import "core/Screen-response-requirements-over-a-declared-uncertainty-box.lingua"
+Import "core/Compare-feedback-predictions-with-published-and-independent-evidence.lingua"
+Import "core/Investigate-feedback-limits-sampling-and-observation-evidence.lingua"
+Import "core/Review-feedback-requirements-dynamics-and-realization-evidence.lingua"
+Import "sources/Process-Dynamics-Operations-and-Control-MIT-10-450.lingua"
+Import "sources/Feedback-Control-Systems-MIT-16-30-digital-control.lingua"
+Import "electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua"
+Import "../utilities/water-and-sanitation/operations/A-tank-balance-explains-control-offset-delay-and-saturation.lingua"
+Import "core/Electrical-function-ports-and-requirements.lingua"
+Import "core/Nodal-equations-and-independent-power-balance.lingua"
+Import "core/Port-equivalents-and-design-objectives.lingua"
+Import "core/Electrical-alternatives-and-component-limits.lingua"
+Import "core/Electrical-parameter-ranges-and-sufficient-bounds.lingua"
+Import "core/Electrical-observation-loading-and-identifiability.lingua"
+Import "core/Investigate-electrical-alternatives-bounds-and-observations.lingua"
+Import "core/Review-electrical-realization-and-evidence.lingua"
+Import "electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua"
+Import "electrical-power-engineering/foundations/Ratings-operating-states-models-and-evidence.lingua"
+Import "core/Connect-material-response-to-geometry-history-and-intended-function.lingua"
+Import "core/Derive-a-uniaxial-response-from-force-geometry-and-an-empirical-law.lingua"
+Import "core/Combine-equilibrium-and-compatible-deformation-before-sharing-a-load.lingua"
+Import "core/Verify-recoverable-work-and-the-energy-already-stored-by-mismatch.lingua"
+Import "core/Separate-specimen-deformation-from-the-movement-of-its-supports.lingua"
+Import "core/Carry-a-response-requirement-through-realization-and-inspection.lingua"
+Import "core/Investigate-compatible-members-stored-energy-and-ambiguous-movement.lingua"
+Import "core/Review-material-response-compatibility-and-realization-evidence.lingua"
+Import "mechanical-engineering-and-machine-design/materials/Stress-strain-measures-and-the-tensile-test.lingua"
+Import "mechanical-engineering-and-machine-design/materials/Load-extension-stiffness-and-recoverable-deformation.lingua"
+Import "mechanical-engineering-and-machine-design/structures/Axial-members-compatibility-and-load-sharing.lingua"
+Import "core/Define-the-boundary-ports-and-stored-quantities-before-a-balance.lingua"
+Import "core/Separate-conservation-from-component-laws-and-boundary-conditions.lingua"
+Import "core/Assemble-oriented-connections-and-cancel-internal-transfers.lingua"
+Import "core/Solve-an-anchored-network-and-interpret-singular-cases.lingua"
+Import "core/Derive-a-stored-energy-response-and-its-limiting-cases.lingua"
+Import "core/Compare-thermal-alternatives-and-the-evidence-needed-to-choose.lingua"
+Import "core/Investigate-balances-network-solutions-and-a-thermal-design-decision.lingua"
+Import "core/Review-conservation-component-behavior-and-engineering-evidence.lingua"
+Import "../physics/fluid-dynamics/balances/Integral-and-local-conservation-of-mass.lingua"
+Import "../physics/thermodynamics-and-heat-transfer/conduction/Fourier-law-conductivity-and-a-local-heat-flux.lingua"
+Import "../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua"
+Import "mechanical-engineering-and-machine-design/measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua"
+Import "mechanical-engineering-and-machine-design/design/Tolerance-stacks-correlation-and-assembly-yield.lingua"
+Import "../inquiry/quantitative-literacy/practice/Dimensions-and-tolerances.lingua"
+Import "../inquiry/quantitative-literacy/practice/Technical-drawings.lingua"
+Import "core/Connect-projections-and-interfaces-to-a-declared-reference-frame.lingua"
+Import "core/Turn-dimensions-into-independent-and-testable-constraints.lingua"
+Import "core/Propagate-dimensional-limits-through-a-signed-assembly-model.lingua"
+Import "core/Preserve-shared-causes-when-comparing-dimensional-alternatives.lingua"
+Import "core/Connect-an-assembly-prediction-to-a-bounded-inspection-decision.lingua"
+Import "core/Investigate-an-assembly-from-views-to-dimensional-evidence.lingua"
+Import "core/Review-dimensional-models-and-the-evidence-for-a-design-decision.lingua"
+Import "core/Turn-an-intended-use-into-requirements-and-observable-evidence.lingua"
+Import "core/Trace-material-energy-and-information-across-interfaces.lingua"
+Import "core/Choose-what-a-model-must-represent-before-calculating.lingua"
+Import "core/Compare-alternatives-under-constraints-and-explicit-tradeoffs.lingua"
+Import "core/Connect-realization-to-verification-and-intended-use.lingua"
+Import "core/Keep-service-evidence-meaningful-through-change-and-recovery.lingua"
+Import "core/Investigate-a-service-from-requirements-to-operating-evidence.lingua"
+Import "core/Review-engineering-claims-from-function-to-continuing-service.lingua"
+Import "mechanical-engineering-and-machine-design/foundations/A-machine-begins-with-a-useful-function.lingua"
+Import "../production/Production.lingua"
+Import "../utilities/Utilities.lingua"
+Import "../materials/Materials.lingua"
+Import "../Hephaestus.lingua"
+Import "core/Functions-constraints-and-engineering-evidence.lingua"
+
+Engineering — systems, design, construction, and operation (@engineering-map: 0, is #chapter, #engineering "mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA", #engineering "../materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #engineering "../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #engineering "../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #engineering "../physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #engineering "electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ", #engineering "mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R", #engineering "materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9", #hephaestus-core "core/Functions-constraints-and-engineering-evidence.lingua#r_0DDBF6CF5E8ADA7D17C17404EA", #engineering "../materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D", #engineering "../utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX", #engineering "../production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4", #contains "engineering-design-and-systems-engineering/Engineering-design-and-systems-engineering.lingua#r_5D5DKFNT3H92YSKQDMK57J8C5R", #contains "civil-and-structural-engineering/Civil-and-structural-engineering.lingua#r_2W2ZDGHB5D1F79MBF1B1QJNCK4", #contains "geotechnical-engineering/Geotechnical-engineering.lingua#r_46GGRBHN61GRGGJGPG6Z0NJC2W", #contains "construction-and-building-services-engineering/Construction-and-building-services-engineering.lingua#r_7B7XA50X22S5KYZTH6GH7Z8MZ3", #contains "water-and-environmental-engineering/Water-and-environmental-engineering.lingua#r_0BZ54TBQY0HJWKEA0WPBZH512Z", #contains "manufacturing-engineering/Manufacturing-engineering.lingua#r_2TZNXHZF699S1XABAMCZHHWSS4", #contains "corrosion-degradation-and-material-protection/Corrosion-degradation-and-material-protection.lingua#r_60HNJRQPCFWC9FMQ7WBR4XM0ZA", #contains "chemical-and-process-engineering/Chemical-and-process-engineering.lingua#r_7JR1TSS73ENXHDTX07BZEZBNVJ", #contains "thermal-and-energy-engineering/Thermal-and-energy-engineering.lingua#r_4NAAQXAJG8KPDKW1PH8696DQ6V", #contains "refrigeration-cryogenics-and-cold-chains/Refrigeration-cryogenics-and-cold-chains.lingua#r_0CBJH3MH2T9K79WWSQ8HKQ8VCS", #contains "batteries-and-electrochemical-energy-systems/Batteries-and-electrochemical-energy-systems.lingua#r_4ZQSGM9SAQTV827SQCE8Q1D419", #contains "control-and-automation-engineering/Control-and-automation-engineering.lingua#r_304XPQZYDDGR9S71QJV6RDTZ1Q", #contains "mechatronics-and-robotics/Mechatronics-and-robotics.lingua#r_6T9Y025RB9J1ASSBA96CA43ZVA", #contains "electronic-engineering/Electronic-engineering.lingua#r_3XDE57GNM183YEXKY3KJ9FDYAM", #contains "telecommunications-and-radio-engineering/Telecommunications-and-radio-engineering.lingua#r_3YMDWQVN875TK5TB6JFFV243D6", #contains "optical-and-photonic-engineering/Optical-and-photonic-engineering.lingua#r_6JMHG14EQCFZYY1C4HTZS0BM99", #contains "computer-engineering-and-architecture/Computer-engineering-and-architecture.lingua#r_63J2PMJE6ZB6G4AC6XFP41TMVB", #contains "acoustical-and-vibration-engineering/Acoustical-and-vibration-engineering.lingua#r_61FFYAAQ8MXSS0HCT5BND5Q491", #contains "aerospace-engineering/Aerospace-engineering.lingua#r_45KE700NMRT9R44R7ZDWQXE6G7", #contains "marine-and-naval-engineering/Marine-and-naval-engineering.lingua#r_4XE2TBQD7WFJH2NZEVDVHH59H9", #contains "transportation-and-railway-engineering/Transportation-and-railway-engineering.lingua#r_1C2KRXY5TSE5HS3EJY5VM0KAG1", #contains "automotive-and-vehicle-engineering/Automotive-and-vehicle-engineering.lingua#r_35TWD4NN42RDSCVRJ1YP0C47YQ", #contains "biomedical-engineering/Biomedical-engineering.lingua#r_0F36JJFT9DZWQ836TZ7SVR8SDK", #contains "agricultural-engineering/Agricultural-engineering.lingua#r_3A4G0ZX7KFBE78766XRXZ8Q7AN", #contains "petroleum-and-subsurface-engineering/Petroleum-and-subsurface-engineering.lingua#r_29TEEP8AT7CQ5Y5X6QM9QGSAKP", #contains "nuclear-engineering/Nuclear-engineering.lingua#r_0MMHP26ZDCD0XRTXNF17H4G20Q", #contains "industrial-engineering-and-production-systems/Industrial-engineering-and-production-systems.lingua#r_5V6WZ1GTB8NKZKB28HBC9AC8P6", #contains "reliability-maintenance-and-repair-systems/Reliability-maintenance-and-repair-systems.lingua#r_58CEA376Z6V57FGDYJHR6N29QS", #contains "human-factors-and-safety-engineering/Human-factors-and-safety-engineering.lingua#r_20YMRH70QKZP2DBCSG4QX28B0J", #contains "../materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D", #contains "../utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX", #contains "../production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4", #contains "logistics-and-exchange/Logistics-and-exchange.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1", #contains "facilities-and-maintenance/Facilities-and-maintenance.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28", #contains "mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA", #contains "electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ", #contains "mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R", #contains "materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9") { r_5DA6VY09MAD2N8D9SH0FFJVV68
+**Begin the shared area core:** [Begin with functions, constraints and engineering evidence](core/Functions-constraints-and-engineering-evidence.lingua#r_0DDBF6CF5E8ADA7D17C17404EA).
+
+The area core is being developed across Hephaestus before further specialist extensions. Existing deeper trails remain available for reference; completing one does not complete this broader area.
+
+**Broader engineering branches:** [Resources and materials](../materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D); [Energy and utilities](../utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX); [Production engineering](../production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4). These branches belong within engineering. Facilities, logistics, reliability and recovery retain their pending scope and will be developed as engineering branches.
+
 Connect physical principles, measured materials, design alternatives, construction, operation, maintenance, and evidence. A useful design must fit its conditions, supporting services, people, and continuing work.
 
-Begin with [Mining and mineral engineering — extraction, processing, and continuing work](mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) for resource evidence, extraction methods, mine planning, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and independent investigation.
+For the existing extraction specialization, follow [Mining and mineral engineering — extraction, processing, and continuing work](mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) for resource evidence, extraction methods, mine planning, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and independent investigation.
 
 Shared foundations are available through [Inquiry — shared ways to understand and investigate](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [Ergon — useful labor and productive knowledge](../../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1), [Earth — materials, processes, and geological history](../../gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH), and [General chemistry](../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V). Follow connected production and upkeep through [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001); questions about evidence, purposes, and assumptions return to [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001).
 
@@ -23,10 +172,81 @@ Develop electrical sources, networks, machines, conversion, protection, stabilit
 
 **Mechanical engineering:** [Mechanical engineering and machine design — useful mechanisms and continuing service](mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R) begins with machine functions, quantities and drawings, then develops statics and dynamics through vibration, rotating machinery and advanced analytical studies. Material and structural studies now continue through strength, damage and numerical/experimental evidence. Machine-element studies continue through mechanisms, transmissions, bearings, joints and actuators. Detailed manufacture, metrology, assembly, commissioning, repair and recovery lead into a worked measuring-carriage account, three further advanced investigations and independent research.
 
-[Development scope: Engineering](../../../lince/Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
+**Developed first foundation block:** functions, requirements and evidence; parts and material/energy/information interfaces; model scope; constrained alternatives; realization, verification and intended use; operation, change and recovery. Eight new lessons reuse three mechanical foundation Records in a twelve-Record route. An original card-service investigation checks quantities and distinguishes aggregate capacity from temporal feasibility. The wider engineering core and its disciplines remain unfinished; continue the comparable inquiry block before specialist extensions.
+
+**Reading companions:** [Systems Engineering Handbook — NASA](mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ) and [FUNdaMENTALS of Design — Alexander Slocum](mechanical-engineering-and-machine-design/sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ). Each lesson bounds the first reading and the preparation for later calculations.
+
+[Development scope: Engineering](Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
 
 **Materials engineering:** [Materials engineering — structure, processing and useful behavior](materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9) begins with material functions, quantities, state/history, bonding, structure and measurement. Equilibrium and kinetics lead into material-family studies and mechanical response: elasticity, viscoelasticity, plasticity, fracture, fatigue and creep. Functional properties connect quantum/statistical foundations with charge, heat, polarization, light and magnetism. Fabrication and state control connect process balances and scale with shaping, cure, consolidation, joining, coatings and thin-film integration. Degradation and environment connect corrosion, oxidation, polymer and mineral-material deterioration, wood decay and wear with accelerated-test criticism and service evidence. Selection connects property evidence and derived indices with constraints, tradeoffs and qualification. Service, repair and recovery lead into functional equivalence, life-cycle accounting and material stocks. Multiscale models, measurement inference, atomistic work, phase-field verification and materials informatics lead into integrated process-to-service investigations. Twenty-four sustained studies, seven original numerical programs and independent research with defense and revision connect derivations with primary evidence.
 
+
+**Developed second common foundation:** coordinate views and reference frames; dimensional closure and constraints; signed interval bounds; shared dimensional causes; a defined measurement and inspection decision; and an original tray/insert investigation and review. Seven new lessons join four reused quantitative/mechanical Records while preserving their original routes. Exact calculations support the hypothetical example; no manufactured object, current-standard conformance or service performance is claimed. Continue inquiry at comparable depth before deeper engineering branches.
+
+
+**Developed third common foundation:** boundary/port balances, conservation versus constitutive and boundary information, oriented networks, anchored steady solutions, storage and transient response, and model-dependent design evidence. Eight new lessons reuse three existing mass/conduction/lumped-response Records. The original thermal investigation includes general derivations, singular cases, exact node/global checks, bounded exponential comparisons and nominal versus hard-bound design decisions. It does not claim a physical experiment or manufactured service. Continue inquiry at comparable depth; the whole engineering core and all forty-six pending descendants remain unfinished.
+
+
+**Developed fourth common foundation:** material versus component response, empirical axial behavior, compatible deformation and load sharing, recoverable work, support/specimen observation ambiguity and realization evidence. Eight new lessons connect three preserved mechanics Records. An original two-member study has independent coupled-equation, energy, parameter-bound and observation-rival checks. No actual material test, structure or production process is claimed validated. Continue inquiry at comparable depth; the whole engineering core and its forty-six pending descendant subjects remain unfinished.
+
+
+**Developed fifth common foundation:** electrical function and source/connection/load requirements, coupled nodal equations and uniqueness, independent power balance, port equivalents, nominal versus bounded component limits, design alternatives and informative/loaded observations. Eight new lessons connect two preserved power-engineering Records and contextual shared physics/mathematics. An original two-load study compares three hypothetical realizations, proves continuous-box voltage/current bounds, uses conservative loss bounds and checks observation ambiguity and meter loading. No apparatus or actual component rating is validated. Continue inquiry at comparable depth; the whole engineering core and all forty-six pending descendant subjects remain unfinished.
+
+
+**Developed sixth common foundation:** feedback boundaries, continuous closed-loop response and physical energy, disturbance/bias sensitivities and observation ambiguity, bounded actuation, exact sampled control and numerical approximation, a clipped two-cycle, and requirements over a parameter box. Nine new lessons reuse two preserved control/tank Records and the unchanged thermal response program. Two MIT source Records support bounded reading and a published model comparison; earlier author-text access limitations remain explicit. Original investigations have independently checked rational and numerical evidence. Continue inquiry at comparable depth; the whole engineering core, major branches and pending subjects remain unfinished.
+
+
+**Developed seventh common foundation:** useful production, repeated resource visits, finite waiting spaces, explicit scheduling, rework and inventory-time evidence. Nine new lessons reuse requirements, balances, earlier production cases, discrete/computing investigations and inquiry by reference. Two original programs passed 129,510 checks, including an independent operation-time assignment oracle and bounded reconstruction of a published inventory-area argument. Two source Records preserve actual inspection, rights and practical limits. Engineering now has 75 common learning Records across seven blocks; continue inquiry teaching and assessment, then review breadth. Full engineering and its forty-six pending subject scopes remain unfinished; clean manufacturing remains below production.
+
+
+**Developed eighth common foundation:** operating histories, first failure and restored service, censored exposure, common support, cycle averages, finite repair resources and evidence for return. Nine new lessons reuse four preserved mechanical service lessons and unchanged production/statistical programs. Original service calculations have conditional derivations and independent event-history checks; a bounded NIST calculation is reconstructed with its sign correction. Engineering now has 88 common learning Records. Continue inquiry causal/observational formation, then review shared preparation across all six cores before opening major branches. Full reliability, maintenance, discipline-specific realization and the engineering core remain unfinished.
+
+
+**Developed common people and operation foundations:** operating tasks and modes, command versus physical effect, observation and admissible decisions, error investigation, recovery, handover and major-discipline entry. Nine original lessons reuse computing/inquiry and existing engineering state, feedback, material and service accounts. A finite two-card investigation derives conservation and observation-sufficiency claims with explicit physical and human-evidence limits. HSE guidance and the preserved NASA source delimit actual reading and rights. Engineering now has 97 common learning Records. Continue oriented-field mathematics, then magnetic, spacetime/gravity and astronomical foundations before reviewing the same coverage map. Whole engineering, human factors and its branches remain unfinished.
+
+
+**Scope:** Compare designs against a need; understand a load-bearing part; diagnose a mechanism; investigate a selected process. Separate understanding, designing, making, inspecting, and maintaining routes. Geometry, CAD, mechanics, chemistry, electronics, and control belong where the chosen task uses them.
+
+**Branches:**
+
+- [Engineering design and systems engineering](engineering-design-and-systems-engineering/Engineering-design-and-systems-engineering.lingua#r_5D5DKFNT3H92YSKQDMK57J8C5R)
+- [Civil and structural engineering](civil-and-structural-engineering/Civil-and-structural-engineering.lingua#r_2W2ZDGHB5D1F79MBF1B1QJNCK4)
+- [Geotechnical engineering](geotechnical-engineering/Geotechnical-engineering.lingua#r_46GGRBHN61GRGGJGPG6Z0NJC2W)
+- [Construction and building services engineering](construction-and-building-services-engineering/Construction-and-building-services-engineering.lingua#r_7B7XA50X22S5KYZTH6GH7Z8MZ3)
+- [Water and environmental engineering](water-and-environmental-engineering/Water-and-environmental-engineering.lingua#r_0BZ54TBQY0HJWKEA0WPBZH512Z)
+- [Manufacturing engineering](manufacturing-engineering/Manufacturing-engineering.lingua#r_2TZNXHZF699S1XABAMCZHHWSS4)
+- [Corrosion, degradation, and material protection](corrosion-degradation-and-material-protection/Corrosion-degradation-and-material-protection.lingua#r_60HNJRQPCFWC9FMQ7WBR4XM0ZA)
+- [Chemical and process engineering](chemical-and-process-engineering/Chemical-and-process-engineering.lingua#r_7JR1TSS73ENXHDTX07BZEZBNVJ)
+- [Thermal and energy engineering](thermal-and-energy-engineering/Thermal-and-energy-engineering.lingua#r_4NAAQXAJG8KPDKW1PH8696DQ6V)
+- [Refrigeration, cryogenics, and cold chains](refrigeration-cryogenics-and-cold-chains/Refrigeration-cryogenics-and-cold-chains.lingua#r_0CBJH3MH2T9K79WWSQ8HKQ8VCS)
+- [Batteries and electrochemical energy systems](batteries-and-electrochemical-energy-systems/Batteries-and-electrochemical-energy-systems.lingua#r_4ZQSGM9SAQTV827SQCE8Q1D419)
+- [Control and automation engineering](control-and-automation-engineering/Control-and-automation-engineering.lingua#r_304XPQZYDDGR9S71QJV6RDTZ1Q)
+- [Mechatronics and robotics](mechatronics-and-robotics/Mechatronics-and-robotics.lingua#r_6T9Y025RB9J1ASSBA96CA43ZVA)
+- [Electronic engineering](electronic-engineering/Electronic-engineering.lingua#r_3XDE57GNM183YEXKY3KJ9FDYAM)
+- [Telecommunications and radio engineering](telecommunications-and-radio-engineering/Telecommunications-and-radio-engineering.lingua#r_3YMDWQVN875TK5TB6JFFV243D6)
+- [Optical and photonic engineering](optical-and-photonic-engineering/Optical-and-photonic-engineering.lingua#r_6JMHG14EQCFZYY1C4HTZS0BM99)
+- [Computer engineering and architecture](computer-engineering-and-architecture/Computer-engineering-and-architecture.lingua#r_63J2PMJE6ZB6G4AC6XFP41TMVB)
+- [Acoustical and vibration engineering](acoustical-and-vibration-engineering/Acoustical-and-vibration-engineering.lingua#r_61FFYAAQ8MXSS0HCT5BND5Q491)
+- [Aerospace engineering](aerospace-engineering/Aerospace-engineering.lingua#r_45KE700NMRT9R44R7ZDWQXE6G7)
+- [Marine and naval engineering](marine-and-naval-engineering/Marine-and-naval-engineering.lingua#r_4XE2TBQD7WFJH2NZEVDVHH59H9)
+- [Transportation and railway engineering](transportation-and-railway-engineering/Transportation-and-railway-engineering.lingua#r_1C2KRXY5TSE5HS3EJY5VM0KAG1)
+- [Automotive and vehicle engineering](automotive-and-vehicle-engineering/Automotive-and-vehicle-engineering.lingua#r_35TWD4NN42RDSCVRJ1YP0C47YQ)
+- [Biomedical engineering](biomedical-engineering/Biomedical-engineering.lingua#r_0F36JJFT9DZWQ836TZ7SVR8SDK)
+- [Agricultural engineering](agricultural-engineering/Agricultural-engineering.lingua#r_3A4G0ZX7KFBE78766XRXZ8Q7AN)
+- [Petroleum and subsurface engineering](petroleum-and-subsurface-engineering/Petroleum-and-subsurface-engineering.lingua#r_29TEEP8AT7CQ5Y5X6QM9QGSAKP)
+- [Nuclear engineering](nuclear-engineering/Nuclear-engineering.lingua#r_0MMHP26ZDCD0XRTXNF17H4G20Q)
+- [Industrial engineering and production systems](industrial-engineering-and-production-systems/Industrial-engineering-and-production-systems.lingua#r_5V6WZ1GTB8NKZKB28HBC9AC8P6)
+- [Reliability, maintenance, and repair systems](reliability-maintenance-and-repair-systems/Reliability-maintenance-and-repair-systems.lingua#r_58CEA376Z6V57FGDYJHR6N29QS)
+- [Human factors and safety engineering](human-factors-and-safety-engineering/Human-factors-and-safety-engineering.lingua#r_20YMRH70QKZP2DBCSG4QX28B0J)
+- [Resources and materials — feedstocks, useful properties, production, and recovery](../materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D)
+- [Utilities — water, energy and the services that sustain other work](../utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX)
+- [Production engineering — processes, flow, quality and continuing operation](../production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4)
+- [Logistics and exchange](logistics-and-exchange/Logistics-and-exchange.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1)
+- [Facilities and maintenance](facilities-and-maintenance/Facilities-and-maintenance.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28)
+- [Mining and mineral engineering — extraction, processing, and continuing work](mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA)
+- [Electrical power engineering — sources, networks, machines and continuing service](electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ)
+- [Mechanical engineering and machine design — useful mechanisms and continuing service](mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R)
+- [Materials engineering — structure, processing and useful behavior](materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9)
 } r_5DA6VY09MAD2N8D9SH0FFJVV68
 
 Extension @engineering-map "lince.vocabulary" {

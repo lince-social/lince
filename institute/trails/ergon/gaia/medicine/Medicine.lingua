@@ -1,3 +1,7 @@
+Import "medical-and-clinical-sciences/Medical-and-clinical-sciences.lingua"
+Import "public-health-and-epidemiology/Public-health-and-epidemiology.lingua"
+Import "pharmacology-and-toxicology/Pharmacology-and-toxicology.lingua"
+
 Import "Sources.lingua"
 Import "foundations/Foundations-review.lingua"
 Import "foundations/Medical-language.lingua"
@@ -10,7 +14,7 @@ Import "orthopedics/shoulder/study/A-rotational-pain-question.lingua"
 Import "sources/Ortopedia-adulto-MS-UFRGS.lingua"
 Import "sources/Shoulder-pain-NHS.lingua"
 
-Medicine — understanding the body and its care (@medicine: 0, is #chapter, #source @med-source-nhs, #source @med-source-ms-ufrgs, #medicine @med-reading-from-zero, #medicine @musculoskeletal-system, #medicine @orthopedics, #medicine @shoulder) { r_6DTDCDP6JQ2AV7S78QPGKM2V65
+Medicine — understanding the body and its care (@medicine: 0, is #chapter, #source @med-source-nhs, #source @med-source-ms-ufrgs, #medicine @med-reading-from-zero, #medicine @musculoskeletal-system, #medicine @orthopedics, #medicine @shoulder, #contains "medical-and-clinical-sciences/Medical-and-clinical-sciences.lingua#r_7HJ8WFCVHVKEB5PT4EWBB8D72E", #contains "public-health-and-epidemiology/Public-health-and-epidemiology.lingua#r_3BSVZ18VDVSAAXGVRS9W9JZDZV", #contains "pharmacology-and-toxicology/Pharmacology-and-toxicology.lingua#r_73GP5E4MJW4TSQ4GZXMKEJ6B7G") { r_6DTDCDP6JQ2AV7S78QPGKM2V65
 Begin with shared medical language, follow how tissues and body systems work, and use that understanding to study movement, injury, and the shoulder. No previous biology course is assumed. English explanations include Portuguese terms used in Brazilian books and consultations.
 
 **Start:** [Begin medicine from zero — a substantial reading progression](foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50), then [Medical language — English and português brasileiro](foundations/Medical-language.lingua#r_0009F6GFVE924WDKJ5J1F996TT). The shared foundation continues through cells, regulation, organ systems, inflammation, pain, clinical investigation, evidence, and decisions about care. [Bring the shared medical foundation together](foundations/Foundations-review.lingua#r_6TDM16JC1FAVSWBVCCD5BJVEZE) brings those ideas together.
@@ -28,6 +32,14 @@ Questions about evidence, uncertainty, consent, and wellbeing also connect with 
 **A focused question to work toward:** [Pain near the end of rotation — understand the possibilities](orthopedics/shoulder/conditions/Pain-near-end-of-rotation.lingua#r_34B2Q55P8Q42JP4DWNE7VQTMT6) explains how to describe pain near the end of internal or external rotation, distinguish possible mechanisms, and choose the relevant deeper reading. [Work through a rotational-pain question with focused readings](orthopedics/shoulder/study/A-rotational-pain-question.lingua#r_5GSTPQ2M46MJAY4PTWARZ8N31S) then connects a precise question to selected anatomy, labrum, imaging, and research passages. The introductory book chapters build the vocabulary needed to understand those passages.
 
 **Continue:** [Begin medicine from zero — a substantial reading progression](foundations/Reading-from-zero.lingua#r_4FA8H4RKD8T52WY2Z1B8S7XQ50) · [The musculoskeletal system — support and movement](musculoskeletal/Musculoskeletal-system.lingua#r_3RYY6F9HPGWK0ADQCFYVD8Y9NN) · [Orthopedics — understanding musculoskeletal problems](orthopedics/Orthopedics.lingua#r_7KBB8KD9NXBCQYGN98RTKAC4SJ) · [The shoulder — structure, movement, and possible problems](orthopedics/shoulder/Shoulder.lingua#r_3FMFP89VW6PWQDNK5ZHP0WX1AG).
+
+**Scope:** Interpret a bounded health claim; understand a bodily process; investigate the organisation of care. Reading and evidence interpretation have their own entries; clinical practice has additional training, evidence, facilities, and professional conditions. Do not treat every reader as an aspiring clinician.
+
+**Branches:**
+
+- [Medical and clinical sciences](medical-and-clinical-sciences/Medical-and-clinical-sciences.lingua#r_7HJ8WFCVHVKEB5PT4EWBB8D72E)
+- [Public health and epidemiology](public-health-and-epidemiology/Public-health-and-epidemiology.lingua#r_3BSVZ18VDVSAAXGVRS9W9JZDZV)
+- [Pharmacology and toxicology](pharmacology-and-toxicology/Pharmacology-and-toxicology.lingua#r_73GP5E4MJW4TSQ4GZXMKEJ6B7G)
 } r_6DTDCDP6JQ2AV7S78QPGKM2V65
 
 Extension @medicine "lince.vocabulary" {

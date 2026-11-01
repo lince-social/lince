@@ -1,0 +1,22 @@
+Import "../Physics.lingua"
+
+Review angular momentum with its geometry constraints and evidence (@physics-rotation-review: 0, is #chapter, #hephaestus-core "Specify-microscopic-states-macroscopic-questions-and-statistical-premises.lingua#r_00CF73DE0F1F6E72DAF547A67B") { r_0026B43764A153597C72C79D2D
+Reconstruct this block from an observable mark on a rotating object. Explain orientation modulo a full turn, unwrapped angular displacement, angular velocity and acceleration; derive tangential and radial acceleration in a fixed frame. State what rigid-body and fixed-axis assumptions made the calculation possible. Use the explicit cross-product components to connect the earlier planar moment with three-dimensional angular momentum.
+
+For a particle and a closed constant-mass system, derive the angular-momentum balance and the required internal-torque cancellation. Change the origin and account for the altered angular momentum and torque. Derive the moving-origin transport term with absolute momenta, then explain why the center of mass is a special case. A moment about an arbitrary moving contact point needs a derivation rather than an appeal to a memorized formula.
+
+Build axial inertia from masses and a simple integral. Prove the rod midpoint approximation, parallel-axis formula and nonnegative tensor quadratic form. Distinguish mass inertia from area moment and recognize the singular ideal line-mass case. Separate kinetic energy into center translation and central rotation. Explain when L is parallel to ω, when only the axial balance reduces to Iα, and what additional derivative term occurs in body components.
+
+Solve the rolling example from translation, moment balance and initial/contact constraints. Explain how the required static force changes sign and why a formally solved acceleration may be physically inadmissible. Reconcile zero ideal contact power with nonzero force and separate translational/rotational energy changes. For the rotor pair, derive conservation, the energy minimum, partial exchange and the overshoot counterexample; state why a constitutive time law is extra information.
+
+The original investigation and bounded published washer calculation provide executable evidence. Their reproducibility does not establish a measured property or claim that the larger source chapters, exercises or independent research assignments have been completed. Present the parameter ambiguity, a discriminating observation and a revised conclusion if assumptions fail. Retain source edition, actual inspected passage and reuse boundaries.
+
+**Completion evidence for this block:** a connected written explanation and independently reconstructed accounts; correctly stated axes, signs, units, force/torque boundaries and assumptions; the supplied program checks plus a substantive extension with a justified convergence or error argument; a critique and revision that separates mathematical consequences from empirical evidence. Completing a file count is insufficient. Return to any shared lesson needed to repair a gap.
+
+Physics still needs further rotational/continuum and gravitational formation, induction and electromagnetic dynamics, statistical and quantum descriptions, relativity and astronomical reasoning, alongside advanced source study and independent practice. The two reused mechanics lessons retain broader engineering and three-dimensional assignments for later work. This common block does not complete mechanics or the physics core. Continue the seventh pass with chemistry molecular connectivity, spatial identity and evidence before extending a specialized rotor, machine or gyroscope trail. [Chemistry — substances, transformations, and evidence](../../chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) supplies the next area entrance; this contextual link does not select its entire specialist corpus.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the eighth common pass:** [Specify microscopic states macroscopic questions and statistical premises](Specify-microscopic-states-macroscopic-questions-and-statistical-premises.lingua#r_00CF73DE0F1F6E72DAF547A67B). Connect microscopic descriptions, constrained ensembles, thermal models, fluctuations and observation before continuing chemistry at comparable breadth.
+
+} r_0026B43764A153597C72C79D2D

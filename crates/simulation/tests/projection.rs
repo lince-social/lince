@@ -37,7 +37,7 @@ async fn clock_ready(engine: &Arc<engine::Engine>, context: &Context, now: i64) 
     engine.request_projection(context.clone()).await.unwrap();
     tokio::time::timeout(std::time::Duration::from_secs(20), async {
         loop {
-            if let Some(cache) = store::projection::read(&engine.store.pool, context, now)
+            if let Some(cache) = store::projection::read(&engine.store, context, now)
                 .await
                 .unwrap()
             {
@@ -146,7 +146,7 @@ fn estimate_edits_refresh_existing_and_future_occurrences_without_replaying_effe
                     let cache = tokio::time::timeout(std::time::Duration::from_secs(20), async {
                         loop {
                             if let Some(cache) =
-                                store::projection::read(&engine.store.pool, &context, now)
+                                store::projection::read(&engine.store, &context, now)
                                     .await
                                     .unwrap()
                             {
@@ -385,10 +385,10 @@ fn concurrent_calendars_share_one_window_without_recomputing_each_other() {
         tokio::time::timeout(std::time::Duration::from_secs(60), async {
             loop {
                 let now = chrono::Utc::now().timestamp_millis();
-                let a = store::projection::read(&engine.store.pool, &first, now)
+                let a = store::projection::read(&engine.store, &first, now)
                     .await
                     .unwrap();
-                let b = store::projection::read(&engine.store.pool, &second, now)
+                let b = store::projection::read(&engine.store, &second, now)
                     .await
                     .unwrap();
                 if let (Some(a), Some(b)) = (a, b) {
@@ -698,7 +698,7 @@ fn calendar_combines_work_and_future_needs_and_reuses_disk_without_execution() {
         assert_eq!(engine.store.state_hash().await.unwrap(), before);
         assert!(
             store::projection::publish_schedule(
-                &engine.store.pool,
+                &engine.store,
                 &context,
                 computed.source_revision,
                 base,
@@ -743,7 +743,7 @@ fn calendar_combines_work_and_future_needs_and_reuses_disk_without_execution() {
         subset.window.from_ms += 86_400_000;
         subset.window.until_ms -= 86_400_000;
         assert!(
-            store::projection::read(&engine.store.pool, &subset, base)
+            store::projection::read(&engine.store, &subset, base)
                 .await
                 .unwrap()
                 .is_some()
@@ -775,7 +775,7 @@ fn calendar_combines_work_and_future_needs_and_reuses_disk_without_execution() {
             0
         );
         assert!(matches!(
-            store::projection::read(&engine.store.pool, &context, base)
+            store::projection::read(&engine.store, &context, base)
                 .await
                 .unwrap()
                 .unwrap()
@@ -784,7 +784,7 @@ fn calendar_combines_work_and_future_needs_and_reuses_disk_without_execution() {
         ));
         let started = std::time::Instant::now();
         for _ in 0..100 {
-            let cached = store::projection::read(&engine.store.pool, &context, base)
+            let cached = store::projection::read(&engine.store, &context, base)
                 .await
                 .unwrap()
                 .unwrap();
@@ -824,14 +824,14 @@ fn calendar_combines_work_and_future_needs_and_reuses_disk_without_execution() {
             .await
             .unwrap();
         assert!(
-            store::projection::read(&engine.store.pool, &context, base)
+            store::projection::read(&engine.store, &context, base)
                 .await
                 .unwrap()
                 .is_none()
         );
         assert!(
             !store::projection::publish(
-                &engine.store.pool,
+                &engine.store,
                 &context,
                 computed.source_revision,
                 base,
@@ -872,7 +872,7 @@ fn restricted_projection_does_not_reveal_private_rules_and_expiry_invalidates_ca
         assert_eq!(metrics.snapshots.load(Ordering::Relaxed), 0);
         assert!(result.incomplete.is_some());
         store::projection::publish(
-            &store.pool,
+            &store,
             &context,
             result.source_revision,
             base,
@@ -883,7 +883,7 @@ fn restricted_projection_does_not_reveal_private_rules_and_expiry_invalidates_ca
         .await
         .unwrap();
         assert!(
-            store::projection::read(&store.pool, &context, result.expires_ms)
+            store::projection::read(&store, &context, result.expires_ms)
                 .await
                 .unwrap()
                 .is_none()
@@ -891,7 +891,7 @@ fn restricted_projection_does_not_reveal_private_rules_and_expiry_invalidates_ca
         let mut another = context;
         another.actor = None;
         assert!(
-            store::projection::read(&store.pool, &another, base)
+            store::projection::read(&store, &another, base)
                 .await
                 .unwrap()
                 .is_none()
@@ -1140,7 +1140,7 @@ fn priority_ranges_compact_into_the_clock_aperture_and_estimate_crud_refreshes_t
                     tokio::time::timeout(std::time::Duration::from_secs(30), async {
                         loop {
                             if let Some(cache) =
-                                store::projection::read(&engine.store.pool, &context, base)
+                                store::projection::read(&engine.store, &context, base)
                                     .await
                                     .unwrap()
                                 && store::projection::revision(&engine.store.pool)

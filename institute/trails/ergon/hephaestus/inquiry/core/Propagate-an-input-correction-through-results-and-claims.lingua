@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+Propagate an input correction through results and claims (@inquiry-report-revision: 0, is #chapter, #hephaestus-core "../reproducible-computation/publication/Archiving-and-restoration.lingua#r_1MKF7WR9CNMVP8WG4EJ5HZ05W7") { r_00C74BD12910BF5B4A3ACDBD21
+A correction should preserve what changed, why it changed and which conclusions it affects. The example first archives revision 0 with only affine-3 set to 4 instead of 3. The other twenty constructed observations are unchanged. Revision 1 restores that value against y=2+3x+e with x=0 and e=1. It retains the original revision and its report so the discrepancy and its consequences can be reconstructed.
+
+For the symmetric inputs, x̄=0, n=5 and Sxx=10. Changing a single response y_j by δ changes the fitted intercept by δ/5 and slope by δx_j/10. This follows directly from the centered-sum formulas. The residual vector changes by δ times the jth coordinate vector minus its projection onto the constant and input columns. Therefore ΔSSE=2δr_j+δ²(1−h_jj), with h_jj=1/5+x_j²/10 and r_j the residual before the change. Orthogonality of the old residual to the fitted subspace supplies the cross term. These are exact sensitivity statements for the declared objective, not uncertain-error propagation laws.
+
+At the center x_j=0, the intentionally erroneous revision has α̂=12/5, β̂=3, SSE=36/5 and s²=12/5. Correcting with δ=−1 gives α̂=11/5, unchanged slope, SSE=24/5 and s²=8/5. Its old residual is 8/5, so ΔSSE=−16/5+4/5=−12/5. A small isolated input correction affects both the coefficient and the residual-based variance estimate; checking only the slope would miss it.
+
+Regenerate results.json, table.csv and report.txt from the corrected input. Each result carries the input digest and revision. Retain the old package as evidence of the correction rather than editing its stored outputs in place. An old table paired with the new input must fail the artifact check. Resealing stale outputs can make the saved digests consistent, but regeneration still detects disagreement with the current methods. A determined alteration of both methods and claims is outside this local change-detection exercise; digests do not supply scientific or authorial authority.
+
+The program distinguishes a missing file, changed input, stale table, altered method bytes, a newly appended unsupported statement and stale result data after resealing. The last two fail because they differ from what the declared renderer regenerates. This is a consistency check, not a general machine judgment of scientific truth. The independent substantive counterexample is the shared-offset argument, which defeats the calibration claim even when every file and computation is internally consistent.
+
+**Work:** derive the response sensitivity for a noncentral row, then predict and check one correction before running the code. Identify which conclusions survive unchanged and which need revision. Explain why silently deleting a troublesome observation or replacing an observed value by a model prediction would need a different justification. Present an actual correction history without implying that a changed report erases the earlier discrepancy.
+
+**Continue:** [Preserve a reconstructible study and test restoration](../reproducible-computation/publication/Archiving-and-restoration.lingua#r_1MKF7WR9CNMVP8WG4EJ5HZ05W7).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_00C74BD12910BF5B4A3ACDBD21

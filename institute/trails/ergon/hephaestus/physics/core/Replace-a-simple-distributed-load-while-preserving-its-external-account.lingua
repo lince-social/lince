@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Replace a simple distributed load while preserving its external account (@physics-load-resultants: 0, is #chapter, #hephaestus-core "../../engineering/mechanical-engineering-and-machine-design/statics/Equilibrium-reactions-and-a-check-from-another-point.lingua#r_39SFWBJ218F97HCA4Z63PF2X5H") { r_0B7F36BD7C53F816B2BD1B63A0
+Real interactions act over regions. A line-load model assigns force per length along an idealized line; it is neither a point force nor a mass density. Its resultant and moment let us simplify a rigid-body equilibrium calculation, while the original distribution remains necessary for internal loading and deformation.
+
+**Read:** Engineering Statics sections 4.6–4.7 on equivalent systems. Reuse the [shared distributed-loading lesson](../../engineering/mechanical-engineering-and-machine-design/statics/Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ) for its general integral formulation and later centroid reading; first establish the finite-sum and uniform-load case below without assuming unfamiliar calculus.
+
+Suppose a uniform downward load has intensity w=8 N/m over a horizontal length L=3 m. Divide it into n equal intervals and place each interval's force at its midpoint. Each force is wL/n, and the midpoint coordinates are (j−1/2)L/n for j=1,…,n. Paired midpoint coordinates add to L, so their average is L/2. The total force is 24 N downward, and the total moment about the left end is −24×1.5=−36 N·m for every positive integer n. This pairing argument explains why the uniform model's resultant acts at its midpoint; a general nonuniform field requires a weighted account and, eventually, integration.
+
+A single downward force of 24 N at 1.5 m has the same external force and moment. It can replace this uniform load when solving reactions for the same rigid body. It does not reproduce the internal shear, bending or contact-pressure distribution. The equivalence states exactly which quantities agree, not that the two physical loadings are identical.
+
+For point forces already represented explicitly, add their signed force components and moments directly. A nonzero vertical resultant permits a location xR=M/Ry when the force lines are vertical and moments are about the origin. If the resultant is zero while the moment is nonzero, division by zero is not a difficult numerical case: the account is a couple and cannot be replaced by a single force. Keep any separate applied couple in the total moment.
+
+**Work:** check the uniform example using 1, 2, 3 and 10 subdivisions and prove the midpoint-pair identity. Change the reference point and confirm the same origin-shift rule as before. Explain what additional information is needed if only total load is known but its distribution is not. Then use the [shared equilibrium lesson](../../engineering/mechanical-engineering-and-machine-design/statics/Equilibrium-reactions-and-a-check-from-another-point.lingua#r_39SFWBJ218F97HCA4Z63PF2X5H): its uniform load now has an explicit resultant/moment justification. Work its planar beam example, solve from a second moment origin and distinguish reactions from claims about strength or deflection.
+
+**Reading companions:** [Engineering Statics — Baker and Haynes](../../engineering/mechanical-engineering-and-machine-design/sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80); [University Physics Volume 1 — OpenStax](../fluid-dynamics/sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6). Use the selected passages named above; their broader assignments retain later preparation.
+
+**Continue:** [Equilibrium, reactions and a check from another point](../../engineering/mechanical-engineering-and-machine-design/statics/Equilibrium-reactions-and-a-check-from-another-point.lingua#r_39SFWBJ218F97HCA4Z63PF2X5H).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0B7F36BD7C53F816B2BD1B63A0

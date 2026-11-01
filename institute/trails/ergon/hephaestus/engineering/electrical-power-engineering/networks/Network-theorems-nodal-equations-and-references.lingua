@@ -1,6 +1,6 @@
 Import "../Electrical-power-engineering.lingua"
 
-Network theorems, nodal equations and references (@pe-circuits: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK") { r_7RGN8XXYAZ6CDM7DMZJCNA19V6
+Network theorems, nodal equations and references (@pe-circuits: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK", #hephaestus-core "../../core/Port-equivalents-and-design-objectives.lingua#r_000EAC2105FC12CF0A41AD15D9") { r_7RGN8XXYAZ6CDM7DMZJCNA19V6
 **Read:** [DC Electrical Circuit Analysis — James M. Fiore](../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV), complete network theorem, nodal and mesh development; [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), complete AC network methods; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 1 in full.
 
 Reconstruct Kirchhoff balances from the relevant field/conservation assumptions, then use nodal or mesh equations with a stated reference. Include sources, dependent elements and the actual return path. A floating ideal network needs a reference constraint; an unmodelled neutral or earth path cannot be repaired simply by choosing a numerical ground.
@@ -12,4 +12,9 @@ Solve the same small network by direct equations, an equivalent and an independe
 **Continue:** [Complex amplitude, frequency and sign conventions](../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK).
 
 **Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+
+**Fifth engineering-block reading:** Use the prepared steady DC node/reference, port-equivalence and independent power-account reasoning. The surrounding common lessons derive a specific positive-resistance network and its uniqueness. Preserve original complete readings and AC/complex/dependent-source continuations for their later prerequisites. A port equivalent preserves the declared terminal relation, not original internal heat distribution; maximum load power and full-system efficiency remain distinct objectives.
+
+**Continue in the fifth engineering block:** [Preserve port behavior while distinguishing power and efficiency objectives](../../core/Port-equivalents-and-design-objectives.lingua#r_000EAC2105FC12CF0A41AD15D9).
+
 } r_7RGN8XXYAZ6CDM7DMZJCNA19V6

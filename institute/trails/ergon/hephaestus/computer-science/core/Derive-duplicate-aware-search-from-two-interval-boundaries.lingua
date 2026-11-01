@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Derive duplicate-aware search from two interval boundaries (@computing-binary-search: 0, is #chapter, #hephaestus-core "Account-for-construction-queries-and-returned-data-together.lingua#r_029F87EE3AF507AEAD87F5CC8D") { r_0F2662B6D0A811736A5817E167
+Ordered keys let a comparison rule out many positions, but equality at one position does not locate every duplicate. Define L as the first index whose key is at least the query; if none exists, L is n. Define R as the first index whose key is greater than the query, also allowing n. Every match lies in the half-open interval [L, R), including an empty interval when the key is absent. Half-open means L is included and R is excluded, matching Python slicing. Sorting must have preserved equal-key arrival order for the returned slice to satisfy our original result contract.
+
+For the lower boundary, maintain 0 ≤ lo ≤ hi ≤ n, every key at an index below lo is less than the query, and every key at or above hi is at least the query. Initially lo=0 and hi=n make both outside regions empty. While lo<hi, choose mid=floor((lo+hi)/2). If key[mid] is less than the query, sortedness proves every index through mid is also below it; set lo=mid+1. Otherwise sortedness proves every index from mid onward is at least the query; set hi=mid. The invariant survives either update. The integer width hi−lo strictly decreases while positive. On exit lo=hi, and the invariant characterizes exactly L.
+
+For the upper boundary replace the two partitions by keys at most the query and keys greater than it. Advance lo past mid when key[mid] ≤ query; otherwise move hi to mid. The same argument yields R. No access occurs when the interval is empty. Neither returned boundary is automatically a valid element index: n is a legitimate position after the last element. A one-match lookup would still need a bounds and equality check; our two-boundary slice handles absence directly.
+
+For ordered keys `a, b, b, c` and query b, the lower search visits intervals [0,4), [0,2), [0,1), then ends at 1. The upper search visits [0,4), [3,4), then ends at 3. The result slice contains positions 1 and 2. With query z both boundaries are 4. With no rows both are 0 and no key is read. Work through an absent key strictly between existing keys as a separate case.
+
+The search implementation promises this result only for the unchanged ordered tuple returned by the builder. It does not recheck sortedness per query. An arbitrary tuple with the same member types can violate the premise and silently produce an incorrect answer. Keep the constructor-to-search connection visible when passing values between functions; later encapsulation can make misuse harder.
+
+**Read and work:** compare our boundary contracts with the official `bisect_left` and `bisect_right` reference through [Python tutorial and standard-library references — Python documentation](../../inquiry/reproducible-computation/sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ). Its insertion positions are not evidence of an equal element, and logarithmic search does not make list insertion logarithmic. Trace every interval for keys `a, a, a, c, c`, searching before, within, between and after groups. Explain why replacing lo=mid+1 with lo=mid can prevent termination. Use [Derive a loop from an invariant and a stopping rule](Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9) to write initialization, preservation, exit meaning and termination separately.
+
+**Continue:** [Account for construction queries and returned data together](Account-for-construction-queries-and-returned-data-together.lingua#r_029F87EE3AF507AEAD87F5CC8D).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_0F2662B6D0A811736A5817E167

@@ -1,0 +1,21 @@
+Import "../Mathematics.lingua"
+
+Construct oriented area from tangent vectors (@math-fields-orientation: 0, is #chapter, #hephaestus-core "Preserve-measure-and-orientation-when-changing-coordinates.lingua#r_00E45129FAAC74DC659292A98B") { r_008F296747E05726CB43E1FA62
+We keep an ordered right-handed orthonormal Cartesian basis (e₁,e₂,e₃). For vectors a,b, define
+
+a×b=(a₂b₃−a₃b₂, a₃b₁−a₁b₃, a₁b₂−a₂b₁).
+
+Expansion gives (a×b)·a=(a×b)·b=0 and |a×b|²=|a|²|b|²−(a·b)². Thus its magnitude is the parallelogram area, using base times perpendicular height; exchanging a,b reverses its direction. The chosen ambient orientation fixes which perpendicular direction is positive. This is additional geometric structure, not a direction recovered from lengths alone.
+
+Define det[a b c]=(a×b)·c, the oriented volume spanned by three ordered column vectors. Expanding the displayed cross product defines the determinant without presupposing a matrix algorithm. Its magnitude is base area times absolute normal height. It vanishes for dependent columns. In two dimensions the corresponding signed area is ad−bc for columns (a,b),(c,d). An invertible linear coordinate map multiplies signed area/volume by this determinant, and unsigned area/volume by its absolute value.
+
+A parameterized surface φ(u,v) has tangent vectors φ_u and φ_v. Assume φ is C¹ on a neighborhood of the parameter region and these vectors are independent. Its small tangent parallelogram has oriented area vector (φ_u×φ_v)du dv. The surface integral definitions use this vector and its magnitude; the general theorem that the magnitude gives geometrical surface area requires the regular-surface area theorem, accepted here. Arbitrary refining polyhedral pictures alone do not prove it.
+
+For φ(u,v)=(u,v,2u−v+uv), tangents are (1,0,2+v) and (0,1,−1+u). Their cross product is (−2−v,1−u,1), never zero. It supplies the upward orientation. The unit normal divides this vector by its length; the area factor multiplies by that same length. Swapping parameters reverses the cross product but not its length. A normal field must vary continuously on each regular piece and agree across patch joins if one global orientation is claimed.
+
+**Work:** compute the normal for the plane φ=(u,v,hu+kv), then derive its area factor √(1+h²+k²). State why using (0,0,1) as its unit normal is wrong unless h=k=0. Check the signed volume of columns (2,1,0),(1,−1,0),(0,0,1): it is −3, with unsigned volume 3. Read [Vector Calculus — David Tong](../../physics/electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), chapter 2 surface and flux sections as further preparation for more general surfaces; no whole-chapter audit is claimed.
+
+**Continue:** [Preserve measure and orientation when changing coordinates](Preserve-measure-and-orientation-when-changing-coordinates.lingua#r_00E45129FAAC74DC659292A98B).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_008F296747E05726CB43E1FA62

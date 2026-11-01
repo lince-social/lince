@@ -1,0 +1,24 @@
+Import "../Physics.lingua"
+
+Begin with systems, change and physical explanations (@physics-core: 0, is #chapter, #hephaestus-core "Choose-a-physical-system-and-a-question.lingua#r_03633FE49B5013971613976F7D") { r_0C0B264F8BB7FF26E566E6B5DB
+Physics seeks explanations of matter, motion and interactions that can be tested against observations. Start by identifying a system: the object or region about which a claim is made. Its surroundings matter through interactions across the chosen boundary. A model keeps features relevant to a question and states which features it leaves out.
+
+A cart changes position from 1 m to 7 m in 3 s along a chosen axis. Its displacement is 6 m and its average velocity is 2 m/s. Neither number establishes the velocity at every moment. If it moves forward and then returns, distance travelled can exceed displacement. Position needs a reference and direction; elapsed time is a difference between two time readings.
+
+For an ideal 2 kg cart with a constant net force of 4 N along that axis, Newton's relation F = ma predicts an acceleration of 2 m/s². Acceleration describes the rate of change of velocity. Starting from rest, this model predicts 6 m/s after 3 s and a displacement of 9 m. These are predictions for the specified constant-force model, not deductions from the earlier two position readings. Friction, changing force and measurement uncertainty can change the comparison with an actual cart.
+
+Conservation laws help connect systems. Energy can cross a boundary by work or heat; accounting for its amount does not by itself determine how rapidly a process occurs or what useful conversion is possible. Momentum, charge and material balances ask related but different questions. Later thermal, electrical, quantum and relativistic theories introduce additional concepts and limits; introductory mechanics is one branch of physics, not its complete explanation.
+
+**Shared preparation:** use [Units and dimensions](../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1) before combining quantities, and [Specify the measurand](../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) before comparing a prediction with an observation. The existing [thermal formation](../thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E) and [electromagnetic formation](../electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY) contain deeper readings and investigations to return to when needed.
+
+**Further shared explanation:** [Work, kinetic energy, potential and mechanical power](../../engineering/mechanical-engineering-and-machine-design/dynamics/Work-kinetic-energy-potential-and-mechanical-power.lingua#r_4VJ79D0Q8KT7CC39Q1GRSDAAZ8) provides the derivation and primary readings to return to after the necessary vector and calculus preparation. The constant-force example above needs only arithmetic.
+
+**Work:** draw a position-time graph consistent with the first cart example and another with the same endpoints but different motion. For the constant-force example, compute the final kinetic energy, mv²/2, and compare it with work F times displacement. Both give 36 J. State the assumptions that make this equality applicable. Explain how a force measurement and a motion measurement could test different parts of the account without treating repeated agreement as proof of universal validity.
+
+**Review:** distinguish observation, definition, model, prediction and conservation. Keep uncertainty and the model's domain visible. The area will develop mechanics, matter and thermal behavior, fields and waves, quantum/statistical reasoning, relativity and cosmic systems before specialist depth is extended.
+
+**Return:** [Physics — matter, motion, fields and physical evidence](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the physics core:** [Choose a physical system and a question](Choose-a-physical-system-and-a-question.lingua#r_03633FE49B5013971613976F7D).
+
+} r_0C0B264F8BB7FF26E566E6B5DB

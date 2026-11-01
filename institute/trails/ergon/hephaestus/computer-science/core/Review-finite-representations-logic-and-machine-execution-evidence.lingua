@@ -1,0 +1,18 @@
+Import "../Computing.lingua"
+
+Review finite representations logic and machine execution evidence (@computing-machine-review: 0, is #chapter, #hephaestus-core "Connect-names-objects-and-addresses-to-a-storage-lifetime.lingua#r_00B53B9599A35F97006225DA42") { r_0FC88E84E9CD09337751DA7A10
+Explain how the same finite word can carry different meanings under different encodings. Prove positional conversion, range and modular addition; distinguish carry from signed overflow with independent examples. Derive the full-adder equations and carry invariant, and explain why a truth table does not establish physical timing. Compare simultaneous state updates with sequential host-language assignments.
+
+**Trace the machine:** decode the original byte sequence, specify pc, accumulator and memory at each kind of instruction, and distinguish address from contents. Defend the sum invariant, unchanged locations, termination variant, modular result and 8n+5 transition count. Explain why a wrong valid data address can violate the program’s contract without producing a machine fault. Distinguish halt, reserved encoding, taken target outside code, next-fetch failure and exhausted execution budget.
+
+**Numerical account:** enumerate the original finite floating set and derive its spacing, two rounding ties and nonassociative example. Explain which real-format features it omits. Run the preserved shared floating example with its version/operation qualifications and compare an exact reference. Separate modular loss, rounding, uncertain measurements and model error; no single tolerance accounts for all four.
+
+**Evidence and practice:** reproduce the original programs, justify the independent check formulas and name the finite domains actually covered. Extend one example with an explicit contract, derivation and counterexample search; defend it using the assigned reading and revise it after criticism. Logical and numerical reproduction does not establish fabricated-device performance or full computer-system competence.
+
+The computing core remains unfinished. Compilation and language implementation, calling conventions, memory hierarchy, operating systems, concurrency, durable storage, communication, system reliability, human use, broader algorithms/theory and advanced scholarly/practical formation still need connected development. Continue the third common pass with engineering’s physical network accounts and inquiry’s sensitivity/uncertainty before deeper specialization. Reuse the new word, state and execution explanations where needed instead of duplicating them.
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+
+**Continue in the fourth common pass:** [Connect names objects and addresses to a storage lifetime](Connect-names-objects-and-addresses-to-a-storage-lifetime.lingua#r_00B53B9599A35F97006225DA42). Develop memory objects, saved process state, translation and controlled services using an explicit new model. The earlier finite-word machine and all prior programs retain their original definitions. Continue engineering and inquiry at comparable depth before specialist extensions.
+
+} r_0FC88E84E9CD09337751DA7A10

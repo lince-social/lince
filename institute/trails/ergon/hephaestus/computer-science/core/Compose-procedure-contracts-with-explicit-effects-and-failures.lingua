@@ -1,0 +1,19 @@
+Import "../Computing.lingua"
+
+Compose procedure contracts with explicit effects and failures (@computing-abstraction-contracts: 0, is #chapter, #hephaestus-core "Specify-an-abstract-slot-value-before-choosing-its-representation.lingua#r_0002C57036D15BA3CE98EC2DED") { r_00AC0C2D678AAF4FEEA2AE3BA5
+Reuse [Specify inputs, results and failure before implementing](Specify-inputs-results-and-failure-before-implementing.lingua#r_0F6547BECCF6CA21F43948497D) and [Derive a loop from an invariant and a stopping rule](Derive-a-loop-from-an-invariant-and-a-stopping-rule.lingua#r_02552612F644E09F0E388FB4B9). A procedure contract states accepted inputs, permitted initial state, result meaning, state changes, failure behavior and any relevant termination assumptions. A type annotation is one part of that account. For example, an integer parameter does not by itself state a valid slot range, and an ordinary Python annotation does not enforce that range at runtime.
+
+For a simple sequential composition, suppose f accepts inputs satisfying P, terminates and establishes Q, and g accepts every Q-state, terminates and establishes R. Calling f then g establishes R from P, provided f's actual effects and g's assumptions agree. The intermediate-state implication is the reason, not the visual similarity of two signatures. If f can fail without producing a Q-state, the caller must handle that branch before calling g. If g relies on an unchanged collection, a hidden mutation by f invalidates the argument.
+
+An effect account includes what remains unchanged. A calculation may return a new proposed configuration while preserving the original, whereas another operation modifies a shared configuration in place. They can return the same number and still implement different contracts. Logging, file writes, callbacks and exceptions can also be observable. A callback accepted by a helper may itself mutate state or fail; a parameter being callable establishes neither its purity nor its postcondition.
+
+Our upcoming slot study uses immutable abstract values and operations that return new values. Ordinary valid operations preserve every earlier value. Malformed scalar/container inputs raise ValueError, with message wording outside the contract; a valid batch with occupied slots produces a distinct conflict result. Normal termination assumes sufficient execution resources and unmodified implementation code. Resource exhaustion and hostile reflective changes are outside the verified interface model. The computation makes proposals and performs no physical reservation, database commit or network action.
+
+Validation order is behavior. A batch containing an occupied valid slot followed by an invalid Boolean must be rejected as malformed before reporting a conflict. This is the same distinction between structural validity and modeled failure established in the earlier stock contract, applied to a new interface. Catching every exception and returning an empty value would erase evidence that the input was invalid or execution failed.
+
+**Work:** write P, Q and R for parsing a valid slot request, checking it against a state and calculating a proposal. Show where each failure is handled. Give a callback that violates an unstated no-mutation premise. Explain which obligations belong to the client and which are enforced by the implementation. Return to [Input, output, and errors are part of the method](../../inquiry/reproducible-computation/foundations/Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8) for the difference between computed results and surrounding input/output.
+
+**Continue:** [Specify an abstract slot value before choosing its representation](Specify-an-abstract-slot-value-before-choosing-its-representation.lingua#r_0002C57036D15BA3CE98EC2DED).
+
+**Return:** [Computing](../Computing.lingua#r_02FE84C805C79A9D396F478641).
+} r_00AC0C2D678AAF4FEEA2AE3BA5

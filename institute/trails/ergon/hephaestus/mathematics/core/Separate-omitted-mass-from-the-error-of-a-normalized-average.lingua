@@ -1,0 +1,27 @@
+Import "../Mathematics.lingua"
+
+Separate omitted mass from the error of a normalized average (@math-series-truncation: 0, is #chapter, #hephaestus-core "Investigate-normalization-truncation-and-the-limits-of-finite-evidence.lingua#r_004A475C6869E7393BE0AECA72") { r_0011B5DB162366534860F2D9BE
+Keep only totals n≤N in the weighted-pair model, where N≥0. Let Z_N=Σ_(n=0 to N)w_n and M_N=Σ_(n=0 to N)n w_n. The conditional finite-support distribution is p_n/(1−τ) for n≤N and zero otherwise, where τ=Σ_(n>N)p_n. Its mean is μ_N=M_N/Z_N. This differs from summing retained contributions n p_n with the original normalizer; the latter is an incomplete expectation, not the conditional mean.
+
+Set m=N+1 and d=1−r. Shifting the missing index n=m+k and expanding finite powers gives
+
+T_0=Σ_(n>N)(n+1)r^n=r^m[(m+1)/d+r/d²],
+
+T_1=Σ_(n>N)n(n+1)r^n=r^m[m(m+1)/d+(2m+1)r/d²+r(1+r)/d³].
+
+The geometric moments already proved justify each convergent sum in this shift. Then Z_N=Z−T_0, M_N=μZ−T_1, τ=T_0/Z and η=T_1/Z. In particular τ=r^m[(m+1)−mr]. Since n=0 is retained with positive weight, τ<1 and division by Z_N is valid.
+
+The exact identity μ=(1−τ)μ_N+η gives μ−μ_N=η−τμ_N. Because 0≤μ_N≤N, we obtain η−Nτ≤μ−μ_N≤η. The lower bound is nonnegative: every omitted n is at least N+1, so η≥(N+1)τ. Thus η is a sufficient absolute-error certificate for the conditional mean. A certificate need not be the tightest error or produce the smallest possible accurate cutoff.
+
+For r=1/2 and N=3, Z_N=13/4, τ=3/16, η=1 and μ_N=16/13; the exact full mean is 2. At N=7, τ=5/256, η=23/128 and μ_N=466/251. For a certificate η≤1/100, the first accepted cutoff is N=13: η=121/16384 and the actual mean error is 105/16376. Every number is an exact rational consequence of the stipulated model, not a statistical confidence statement.
+
+The total-variation distance, defined here as half the sum of absolute probability differences, between the full and conditional distributions is exactly τ. Inside the retained set, the probability increase sums to τ; outside, the removed mass also sums to τ. For any observable g in [0,B], the difference of full and conditional expectations has magnitude at most Bτ: split the full expectation into retained and omitted conditional means, both lying in [0,B]. At r=0 there is no omitted mass and the result is immediate without defining an empty-tail conditional mean.
+
+A small τ alone cannot control an unbounded observable. A distribution with mass 999/1000 at zero and 1/1000 at one million has mean 1000; discarding the rare point changes the mean by 1000 despite removing only 1/1000 of the mass. In our particular geometric model the first-moment tail η supplies the missing control. For any fixed r<1, polynomial-geometric bounds prove η→0, so increasing N eventually meets each positive tolerance; no cutoff independent of all r<1 is promised.
+
+**Work:** derive the two tail formulas by index shifting, verify the example fractions and prove the total-variation result. State which quantity an approximation routine must bound for a bounded indicator, a mean and a second moment. Explain why changing the support and renormalizing changes the model. Generalize the tail account to a different counted family, with a proof of convergence and an explicit failure boundary.
+
+**Continue:** [Investigate normalization truncation and the limits of finite evidence](Investigate-normalization-truncation-and-the-limits-of-finite-evidence.lingua#r_004A475C6869E7393BE0AECA72).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_0011B5DB162366534860F2D9BE

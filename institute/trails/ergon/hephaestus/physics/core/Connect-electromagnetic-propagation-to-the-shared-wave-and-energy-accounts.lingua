@@ -1,0 +1,17 @@
+Import "../Physics.lingua"
+
+Connect electromagnetic propagation to the shared wave and energy accounts (@physics-magnetic-waves: 0, is #chapter, #hephaestus-core "Investigate-magnetic-deflection-induction-and-energy-evidence.lingua#r_005AF08B850568F58BE76E9AF4") { r_004CCBA82FD7003C221B96293D
+In a smooth source-free vacuum region, take curl of curlE=−∂tB and substitute Ampère–Maxwell. The Cartesian identity curl(curlE)=∇(divE)−∇²E follows by expanding mixed derivatives. Since divE=0, obtain ∂t²E=c²∇²E with c²=1/(μ₀ε₀). B satisfies the analogous equation. The full Maxwell equations still impose relations between E and B; separately solving two wave equations can produce a pair that violates those relations. [Review oscillations waves boundaries and physical evidence](Review-oscillations-waves-boundaries-and-physical-evidence.lingua#r_003B1CBD2375314B99BCD448E3) supplies the distinction between traveling profile, point trace and material motion.
+
+For propagation toward +x, choose E=(0,A f(x−ct),0), B=(0,0,A f(x−ct)/c), with differentiable f and enough derivatives for the equations being used. Directly curlE has z-component A f′ and −∂tB also has z-component A f′. CurlB has y-component −A f′/c, matching μ₀ε₀∂tE. The divergence constraints vanish. This verifies the pair, its polarization and its relative sign, not just their individual wave speeds.
+
+The energy density is u=ε₀A²f² and S=(c u,0,0). Thus ∂t u+∂x S_x=0. On a slab of unit cross-sectional area between x=a,b, stored energy changes at S_x(a)−S_x(b). For normalized parameters ε₀=2,c=3,A=1 and profile f(ξ)=ξ, at t=0 on [0,2], energy per area is 16/3 and its rate is −24, balancing outward power per area 24. This polynomial profile is a local analytic model with unbounded global energy, not a finite physical pulse. Positive normalized constants illustrate algebra; they are not numerical values of actual vacuum constants.
+
+For a sinusoidal profile, averaging over one whole period gives mean f²=1/2 for unit amplitude, so mean flux is ε₀cA²/2. Peak amplitude and rms amplitude must be distinguished. A standing wave can store energy while its time-averaged transport vanishes; the earlier string account already showed why zero average transport does not mean zero instantaneous internal exchange. Keep field phase, photon energy and carrier transport distinct; classical wave energy does not itself derive quantization.
+
+**Work:** reverse B alone in the displayed traveling pair and show which Maxwell equation fails. Then construct the correct pair for propagation toward −x. Exhibit a longitudinal E profile that solves the scalar wave equation but violates source-free divE=0. General modes, antennas, radiation, optical matter and full wave solvers belong to branches, after the remaining spacetime and astronomical common preparation.
+
+**Continue:** [Investigate magnetic deflection induction and energy evidence](Investigate-magnetic-deflection-induction-and-energy-evidence.lingua#r_005AF08B850568F58BE76E9AF4).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_004CCBA82FD7003C221B96293D

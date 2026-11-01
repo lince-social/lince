@@ -1,0 +1,20 @@
+Import "../Physics.lingua"
+
+Review process direction without losing boundaries or assumptions (@physics-entropy-review: 0, is #chapter, #hephaestus-core "Describe-orientation-angular-motion-and-the-acceleration-of-a-rotating-point.lingua#r_00A972EA7F9A9AF87E148752A8") { r_007B8D111B5FBE32367C81B1ED
+Explain why energy conservation alone does not decide whether a proposed cycle can occur. State the second-law premise used, define reversibility through the system and surroundings, and distinguish it from slow motion or absence of heat transfer. Identify which bodies are reservoirs and which have changing finite temperatures.
+
+Reconstruct the reversible-cycle argument for an endpoint entropy difference and the actual-plus-reversible-return argument for nonnegative generation. Keep boundary heat-transfer temperatures and open versus closed matter exchange explicit. Explain why a system may lose entropy and why a reversible reference calculation does not establish the actual heat/work history.
+
+Derive the constant-capacity body and fixed-composition ideal-gas state relations. Compare both reference paths and all three expansion accounts. Recover the reservoir work bound and the ideal Carnot volume-ratio construction; identify the missing information needed for a power claim. Derive the finite-body maximum-work bound and its exact square-temperature family from the declared final-state constraints.
+
+Run the original programs with the unchanged shared conversion helper. Explain the finite geometric logarithm remainder and rational square-root bracket, the numerical comparison tolerance and the distinction between exact proofs and finite implementation evidence. Reconstruct the selected published entropy calculation, retaining its units and property assumptions. Source figures, complete problem sets and experiments are not claimed reproduced by this one numerical check.
+
+For independent work, choose a benign state/process comparison with accessible primary references. Separate physical law, constitutive relation, measured input and inferred path; propose a discriminating observation and a rival model. Give an explicit uncertainty/rounding account, receive criticism and revise the claim. A nonnegative calculated generation is a necessary thermodynamic screen, not apparatus validation.
+
+The sixth physics block now prepares chemical free energy and chemical potential using shared mathematics, entropy and process constraints. Continue chemistry at comparable depth. Full statistical and quantum descriptions, relativity, induction and broader fields, continuum/rotational formation, astronomy and advanced experimental/independent work remain in scope. The physics core and its pending descendants remain unfinished; do not divert into a complete engine or thermal-plant specialty.
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Continue in the seventh common pass:** [Describe orientation angular motion and the acceleration of a rotating point](Describe-orientation-angular-motion-and-the-acceleration-of-a-rotating-point.lingua#r_00A972EA7F9A9AF87E148752A8). Develop orientation, angular-momentum boundaries, inertia, work, rolling admissibility and internal exchange before returning to chemistry at comparable breadth.
+
+} r_007B8D111B5FBE32367C81B1ED

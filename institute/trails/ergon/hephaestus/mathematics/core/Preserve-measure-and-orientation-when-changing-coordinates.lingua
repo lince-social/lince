@@ -1,0 +1,17 @@
+Import "../Mathematics.lingua"
+
+Preserve measure and orientation when changing coordinates (@math-fields-coordinates: 0, is #chapter, #hephaestus-core "Integrate-normal-flux-through-an-oriented-surface.lingua#r_00E051A00D25D4243A519862A1") { r_00E45129FAAC74DC659292A98B
+[Compose local maps and derive change along a path](Compose-local-maps-and-derive-change-along-a-path.lingua#r_001110BBF317180AC63FAA5412) develops the derivative matrix as a local linear map. For a C¹ invertible change x=T(u) with C¹ inverse on the relevant open domains, the change-of-variables theorem says ∫_D f(x) dV=∫_U f(T(u))|det DT(u)|du when T maps U one-to-one onto D and the integrals and boundaries satisfy the theorem's regularity conditions. Here use bounded regions with piecewise smooth boundaries and continuous integrands. The determinant comes from the local linear volume calculation in the previous lesson. Passing from local approximation to the whole-domain formula is an accepted theorem here; the linear picture motivates but does not prove that passage.
+
+For x=2u+v,y=u−v, the Jacobian determinant is −3. The image of the unit square is a parallelogram of area 3. Integrating density 1 must give +3. A signed determinant without absolute value gives −3 and fails this quantity interpretation. The negative sign instead records that the ordered coordinate directions reverse orientation. These are distinct statements.
+
+The same map also changes the coordinate representation of the metric. A displacement has squared length (2du+dv)²+(du−dv)²=5du²+2du dv+2dv². Giving u,v the unweighted length du²+dv² would define a different geometry. The metric matrix is [[5,1],[1,2]], whose determinant 9 has square root 3, agreeing with the unsigned area factor. This connects the coordinate issue to [Keep coordinate choices error metrics and sensitivity distinct](Keep coordinate choices error metrics and sensitivity distinct.lingua#r_00BDB35AFC4D0B673CC82739C7); changing numerical labels does not justify discarding the metric.
+
+Polar coordinates x=r cosθ,y=r sinθ give Jacobian r for r>0. The area integral over a disk of radius R is ∫₀²π∫₀ᴿ r dr dθ=πR². The angular seam and origin violate global one-to-one regularity; one handles sectors excluding those boundaries and uses their zero area, rather than claiming the displayed map is a global diffeomorphism. Omitting r gives 2πR, which has the wrong length dimension for area. Cylindrical and spherical factors can be derived similarly when needed.
+
+**Read and work:** [Vector Calculus — David Tong](../../physics/electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), chapter 2 selected area/volume Jacobian passages. Derive the two-dimensional determinant from the two tangent columns and verify the metric calculation above. Map a rectangle with rational bounds and integrate a constant density by both its physical area and transformed coordinates. Explain when multiplicity, singular coordinates or an overlapping parameterization would require a different account.
+
+**Continue:** [Integrate normal flux through an oriented surface](Integrate-normal-flux-through-an-oriented-surface.lingua#r_00E051A00D25D4243A519862A1).
+
+**Return:** [Mathematics](../Mathematics.lingua#r_0BDE857C410434BA79D017008C).
+} r_00E45129FAAC74DC659292A98B

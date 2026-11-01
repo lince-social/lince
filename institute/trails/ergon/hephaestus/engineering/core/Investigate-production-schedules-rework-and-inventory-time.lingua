@@ -1,0 +1,331 @@
+Import "../Engineering.lingua"
+
+Investigate production schedules rework and inventory time (@engineering-production-study: 0, is #chapter, #hephaestus-core "Review-useful-output-resource-visits-and-production-evidence.lingua#r_0020116EB91E4F3F0E82819ED1") { r_00A308F2C75A43925C580DC3C9
+Develop an original investigation of useful output, visits, finite waiting space and time. The example is a simulated paper-card line. No machine trial, factory data collection or physical quality qualification is claimed. Start by reconstructing both four-slot schedules and the six-slot precedence obstruction on paper. State the slot convention and why the known final labels make the optimum a perfect-information benchmark.
+
+Save production_study.py and production_checks.py together and run them through the repository's Nix Python environment. The state solver enumerates feasible joint actions and retains minimum accumulated item-time for each time/phase state. The independent checker assigns increasing operation times to each job, rejects machine/time collisions, and reconstructs every boundary's buffer occupancy directly from those times. It compares the complete endpoint-to-minimum-area map, not only the best final accepted count. Neither reference method calls the other's transition generator.
+
+The checker also replays chosen witness schedules, checks capacity and item/visit invariants at each step, reconstructs residence intervals, and compares the declared lexicographic optimum independently. It explores every length-four availability calendar for two jobs and capacities 0,1,2 in each buffer; additional zero-to-six-slot cases include absent jobs, final rejects and the three-job rework example. These are finite model checks, supported by the written recurrence proof and explicit optimality witness.
+
+**Bounded published reconstruction:** use [Manufacturing foundations and the inventory time argument by Little](../sources/Manufacturing-foundations-and-the-inventory-time-argument-by-Little.lingua#r_0088F3DFCA12E5E80C6DD9E45D)'s area argument with fourteen original empty-to-empty traces of n items, each resident for two time units in sequence. Reconstruct L=1, departure rate 1/2 and mean residence two. The inputs are original examples, not recovered published data. Add the original initially occupied/unfinished-window counterexample, and verify clipped durations against independent constant-count integration. The reconstruction establishes the selected mathematical relation under its stated boundaries; it does not reproduce a complete field study or all queueing theory.
+
+The rework study checks 125 triples of conditional fractions against four independently weighted outcomes. Reconstruct the exact eight-item account and the opposing raw-item versus constrained-visit comparisons. Do not confuse a conditional fraction, expected value, integer batch count or delivery guarantee. The schedule with more activity but less useful completion is a separate original counterexample to a utilization-only choice.
+
+**Independent extension:** choose a shared-operator/setup constraint or a policy with unknown future rework. Define new states and observations, prove the revised item/resource invariants, give an independent enumeration or optimization certificate for a bounded case, and compare at least two designs. Include a failing plausible alternative. Extend the inventory-time account with initial and unfinished items and explain any limiting claim separately. Consult the broader production reading at the level your mathematics supports; retain the distinction between inspected sources, your own derivations and empirical observations.
+
+Deliver source and version provenance, the exact model and inputs, a reproducible result, an evidence-based design decision, and a response to an independent challenge. Revise both the model and the claim if an omitted constraint changes the decision. Author-run checks below do not substitute for the learner's independent investigation, defense or practical validation.
+
+
+```python file=production_study.py
+from fractions import Fraction as F
+from itertools import product
+
+
+def integer(value, low, high):
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError('integer outside model limits')
+    return value
+
+
+def model(jobs, availability, capacities):
+    jobs = tuple(tuple(job) for job in jobs)
+    availability = tuple(tuple(row) for row in availability)
+    capacities = tuple(capacities)
+    integer(len(jobs), 0, 4)
+    integer(len(availability), 0, 8)
+    if len(capacities) != 2:
+        raise ValueError('two waiting-space limits required')
+    for capacity in capacities:
+        integer(capacity, 0, 4)
+    for job in jobs:
+        if len(job) != 2 or type(job[0]) is not int or job[0] not in (2, 4) or type(job[1]) is not bool:
+            raise ValueError('job requires two or four visits and an acceptance label')
+    for row in availability:
+        if len(row) != 2 or any(type(value) is not bool for value in row):
+            raise ValueError('two Boolean availability values per slot required')
+    return jobs, availability, capacities
+
+
+def account(jobs, phases):
+    if len(jobs) != len(phases):
+        raise ValueError('one phase per job required')
+    counts = dict(raw=0, good=0, scrap=0, waiting_a=0, waiting_b=0, visits_a=0, visits_b=0)
+    for (length, accepted), phase in zip(jobs, phases):
+        integer(phase, 0, length)
+        counts['visits_a'] += (phase + 1) // 2
+        counts['visits_b'] += phase // 2
+        if phase == 0:
+            counts['raw'] += 1
+        elif phase == length:
+            counts['good' if accepted else 'scrap'] += 1
+        else:
+            counts['waiting_a' if phase % 2 == 0 else 'waiting_b'] += 1
+    counts['wip'] = counts['waiting_a'] + counts['waiting_b']
+    counts['released'] = len(jobs) - counts['raw']
+    return counts
+
+
+def choices(jobs, phases, available, capacities):
+    eligible = [[-1], [-1]]
+    for job, ((length, _), phase) in enumerate(zip(jobs, phases)):
+        if phase < length and available[phase % 2]:
+            eligible[phase % 2].append(job)
+    before = account(jobs, phases)
+    for action in product(*eligible):
+        following = list(phases)
+        released = 0
+        for job in action:
+            if job >= 0:
+                released += phases[job] == 0
+                following[job] += 1
+        following = tuple(following)
+        after = account(jobs, following)
+        if after['waiting_a'] <= capacities[0] and after['waiting_b'] <= capacities[1]:
+            yield action, following, before['wip'] + released
+
+
+def solve(jobs, availability, capacities):
+    jobs, availability, capacities = model(jobs, availability, capacities)
+    layers = [{(0,) * len(jobs): (0, ())}]
+    for available in availability:
+        following = {}
+        for phases, (area, path) in layers[-1].items():
+            for action, target, occupied in choices(jobs, phases, available, capacities):
+                candidate = (area + occupied, path + (action,))
+                if target not in following or candidate < following[target]:
+                    following[target] = candidate
+        layers.append(following)
+    def score(phases):
+        counts = account(jobs, phases)
+        return counts['good'], -counts['scrap'], -counts['wip'], -layers[-1][phases][0]
+    best = max(layers[-1], key=score)
+    return best, layers[-1][best], layers
+
+
+def window_area(intervals, start, end):
+    start, end = F(start), F(end)
+    if end <= start:
+        raise ValueError('positive observation window required')
+    intervals = tuple((F(a), F(b)) for a, b in intervals)
+    if any(b < a for a, b in intervals):
+        raise ValueError('departure before arrival')
+    clipped = tuple(max(F(0), min(end,b)-max(start,a)) for a,b in intervals)
+    return sum(clipped, F(0)), clipped
+
+
+def rework_account(first, attempt, recovery):
+    first, attempt, recovery = map(F, (first, attempt, recovery))
+    if any(value < 0 or value > 1 for value in (first, attempt, recovery)):
+        raise ValueError('fractions must lie in the unit interval')
+    repeated = (1-first)*attempt
+    good = first + repeated*recovery
+    scrap = (1-first)*(1-attempt) + repeated*(1-recovery)
+    visits = 1+repeated
+    return good, scrap, visits
+
+
+def investigation():
+    jobs = ((4,True),(2,True),(4,False))
+    available = ((True,True),)*4
+    result = {}
+    for capacities in [(0,1),(1,1),(1,2)]:
+        best,(area,path),_ = solve(jobs,available,capacities)
+        result[str(capacities)] = {'phases':best,'area':area,'path':path,'account':account(jobs,best)}
+    return result
+
+
+if __name__ == '__main__':
+    print(investigation())
+```
+
+```python file=production_checks.py
+from fractions import Fraction as F
+from itertools import combinations, product
+import json
+import production_study as m
+
+
+checks = 0
+
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def rejects(action):
+    global checks
+    checks += 1
+    try:
+        action()
+    except ValueError:
+        return
+    raise AssertionError('invalid model accepted')
+
+
+def assignments(jobs, availability):
+    horizon = len(availability)
+    options = []
+    for length,_ in jobs:
+        options.append([slots for count in range(min(length,horizon)+1)
+                        for slots in combinations(range(horizon),count)
+                        if all(availability[slot][visit % 2] for visit,slot in enumerate(slots))])
+    for calendar in product(*options):
+        occupied = [(visit % 2,slot) for slots in calendar for visit,slot in enumerate(slots)]
+        if len(set(occupied)) != len(occupied):
+            continue
+        needed = [0,0]
+        for boundary in range(horizon+1):
+            waiting = [0,0]
+            for (length,_),slots in zip(jobs,calendar):
+                phase = sum(slot < boundary for slot in slots)
+                if 0 < phase < length:
+                    waiting[phase % 2] += 1
+            needed = [max(a,b) for a,b in zip(needed,waiting)]
+        area = sum((slots[-1]+1 if len(slots)==job[0] else horizon)-slots[0]
+                   for job,slots in zip(jobs,calendar) if slots)
+        yield tuple(map(len,calendar)), area, tuple(needed)
+
+
+def oracle(entries, capacities):
+    result = {}
+    for state,area,needed in entries:
+        if all(a<=b for a,b in zip(needed,capacities)):
+            result[state] = min(result.get(state,area),area)
+    return result
+
+
+def check_case(jobs, availability, capacities, entries):
+    best,(area,path),layers = m.solve(jobs,availability,capacities)
+    expected = oracle(entries,capacities)
+    actual = {state:value[0] for state,value in layers[-1].items()}
+    check(actual == expected)
+    check(len(path)==len(availability))
+    phases = (0,)*len(jobs)
+    total_area = 0
+    starts = [None]*len(jobs)
+    ends = [None]*len(jobs)
+    for slot,(action,available) in enumerate(zip(path,availability)):
+        options = {choice:(state,occupied) for choice,state,occupied in m.choices(jobs,phases,available,capacities)}
+        check(action in options)
+        following,occupied = options[action]
+        for job in action:
+            if job>=0:
+                if phases[job]==0:
+                    starts[job]=slot
+                if following[job]==jobs[job][0]:
+                    ends[job]=slot+1
+        total_area += occupied
+        phases = following
+        counts = m.account(jobs,phases)
+        check(counts['released']==counts['wip']+counts['good']+counts['scrap'])
+        check(counts['waiting_a']<=capacities[0] and counts['waiting_b']<=capacities[1])
+        check(counts['visits_a']<=sum(row[0] for row in availability[:slot+1]))
+        check(counts['visits_b']<=sum(row[1] for row in availability[:slot+1]))
+    check(phases==best and total_area==area)
+    if availability:
+        intervals=[(start,end if end is not None else len(availability)) for start,end in zip(starts,ends) if start is not None]
+        check(m.window_area(intervals,0,len(availability))[0]==area)
+    for layer in layers:
+        for state in layer:
+            counts=m.account(jobs,state)
+            check(counts['raw']+counts['wip']+counts['good']+counts['scrap']==len(jobs))
+            check(counts['visits_a']-counts['visits_b']==counts['waiting_b'])
+    def rank(state):
+        complete=[job for job,phase in zip(jobs,state) if phase==job[0]]
+        good=sum(job[1] for job in complete)
+        scrap=len(complete)-good
+        unfinished=sum(0<phase<job[0] for job,phase in zip(jobs,state))
+        return good,-scrap,-unfinished,-expected[state]
+    check(rank(best)==max(map(rank,expected)))
+    return len(expected)
+
+
+cases = endpoints = 0
+jobs = ((4,True),(2,True))
+for bits in product((False,True),repeat=8):
+    availability=tuple(zip(bits[::2],bits[1::2]))
+    entries=tuple(assignments(jobs,availability))
+    good_by_capacity={}
+    for capacities in product(range(3),repeat=2):
+        endpoints+=check_case(jobs,availability,capacities,entries)
+        best,_,_=m.solve(jobs,availability,capacities)
+        good_by_capacity[capacities]=m.account(jobs,best)['good']
+        cases+=1
+    for a,b in product(range(2),repeat=2):
+        check(good_by_capacity[a,b]<=good_by_capacity[a+1,b])
+        check(good_by_capacity[a,b]<=good_by_capacity[a,b+1])
+for jobs in [(),((2,False),),((4,False),(2,True)),((4,True),(2,True),(4,False))]:
+    for horizon in range(7):
+        availability=((True,True),)*horizon
+        entries=tuple(assignments(jobs,availability))
+        for capacities in [(0,0),(0,1),(1,1),(1,2),(2,2)]:
+            endpoints+=check_case(jobs,availability,capacities,entries)
+            cases+=1
+sample=m.investigation()
+check(sample['(0, 1)']['account']['good']==1)
+check(sample['(1, 1)']['account']['good']==2)
+check(sample['(1, 1)']['area']==6)
+check(sample['(1, 1)']['phases']==(4,2,0))
+jobs=((4,True),(2,True),(4,False))
+state=(0,0,0)
+greedy_area=0
+for action in [(0,-1),(1,0),(2,1),(0,2)]:
+    alternatives={a:(s,area) for a,s,area in m.choices(jobs,state,(True,True),(1,1))}
+    check(action in alternatives)
+    state,area=alternatives[action]
+    greedy_area+=area
+check(state==(3,2,2))
+check(m.account(jobs,state)['good']==1 and greedy_area==8)
+check(m.account(jobs,state)['visits_a']+m.account(jobs,state)['visits_b']==7)
+same_slot,_,_=m.solve(((2,True),),((True,True),),(1,1))
+check(m.account(((2,True),),same_slot)['good']==0)
+ordered=((True,False),)*3+((False,True),)*3
+jobs=((4,True),(2,True))
+entries=tuple(assignments(jobs,ordered))
+endpoints+=check_case(jobs,ordered,(2,2),entries)
+cases+=1
+best,_,_=m.solve(jobs,ordered,(2,2))
+check(m.account(jobs,best)['good']==1)
+check(sum(length//2 for length,_ in jobs)==sum(row[0] for row in ordered)==sum(row[1] for row in ordered))
+interval_cases=0
+intervals=[(a,b) for a in range(-2,4) for b in range(a,6)]
+for chosen in combinations(intervals,2):
+    for start,end in [(0,3),(1,5),(-1,2)]:
+        area,clipped=m.window_area(chosen,start,end)
+        direct=sum(sum(a<=F(2*t+1,2)<b for a,b in chosen) for t in range(start,end))
+        check(area==direct==sum(clipped))
+        interval_cases+=1
+window=((-3,1),(0,2),(3,7))
+check(m.window_area(window,0,5)==(F(5),(F(1),F(2),F(2))))
+check(F(2,5)*F(6,2)!=F(5,5))
+fraction_cases=0
+for first,attempt,recovery in product([F(i,4) for i in range(5)],repeat=3):
+    good,scrap,visits=m.rework_account(first,attempt,recovery)
+    probabilities=[first,(1-first)*(1-attempt),(1-first)*attempt*recovery,(1-first)*attempt*(1-recovery)]
+    check(sum(probabilities)==1)
+    check(good==probabilities[0]+probabilities[2])
+    check(scrap==probabilities[1]+probabilities[3])
+    check(visits==sum(p*v for p,v in zip(probabilities,[1,1,2,2])))
+    check(good+scrap==1)
+    fraction_cases+=1
+good,scrap,visits=m.rework_account(F(3,4),1,F(1,2))
+check((8*good,8*scrap,8*visits)==(7,1,10))
+check(good/visits==F(7,10)<F(3,4))
+for n in range(1,15):
+    intervals=tuple((2*j,2*j+2) for j in range(n))
+    area,_=m.window_area(intervals,0,2*n)
+    check(area/F(2*n)==F(n,2*n)*2==1)
+invalid=[lambda:m.solve(((3,True),),(),(1,1)),lambda:m.solve(((2,1),),(),(1,1)),lambda:m.solve(((2,True),),((1,True),),(1,1)),lambda:m.solve((),(),(-1,1)),lambda:m.solve((),(),(1,)),lambda:m.solve(((2,True),)*5,(),(1,1)),lambda:m.solve((),((True,True),)*9,(1,1)),lambda:m.window_area([],1,1),lambda:m.window_area([(2,1)],0,3),lambda:m.rework_account(-1,0,0),lambda:m.rework_account(0,2,0),lambda:m.rework_account(0,0,2)]
+for action in invalid:
+    rejects(action)
+print(json.dumps({'checks':checks,'schedule_cases':cases,'terminal_states_compared':endpoints,'interval_cases':interval_cases,'rework_cases':fraction_cases,'published_area_reconstructions':14,'invalid_inputs':len(invalid),'original_four_slot_case':sample['(1, 1)']}))
+```
+
+**Author verification:** 129,510 checks passed through Nix/Python 3.14.8: 2,445 scheduling cases and 10,772 terminal-state comparisons, 1,584 interval cases, 125 rework-fraction triples, fourteen original reconstructions of the published area relation and twelve rejected inputs. The independent operation-time assignment method checks complete endpoint/minimum-area maps; boundary rectangles independently check residence sums. The written recurrence, balance and limiting arguments state their own assumptions. No operated line or completed independent learner research is claimed.
+
+**Continue:** [Review useful output resource visits and production evidence](Review-useful-output-resource-visits-and-production-evidence.lingua#r_0020116EB91E4F3F0E82819ED1).
+
+**Return:** [Engineering](../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+} r_00A308F2C75A43925C580DC3C9

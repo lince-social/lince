@@ -1,0 +1,21 @@
+Import "../Physics.lingua"
+
+Separate angular momentum exchange from kinetic energy conservation (@physics-rotation-exchange: 0, is #chapter, #hephaestus-core "Connect-rotational-predictions-to-observations-and-distinguishable-parameters.lingua#r_00BCDFEAE214F01DA32AA888E8") { r_00C38A235BF3E5DECE8E4ED34B
+Consider two ideal coaxial rotors with constant positive inertias I₁ and I₂, initially at signed angular velocities ω₁ and ω₂ in one shared convention. Assume no external axial angular impulse and no mass transfer. Let J be the signed internal angular impulse transferred from rotor 1 to rotor 2. Integrating each axial balance gives ω₁′=ω₁−J/I₁ and ω₂′=ω₂+J/I₂. Adding them with their inertia weights proves L′=I₁ω₁′+I₂ω₂′=I₁ω₁+I₂ω₂=L for every J. A conservation equation alone leaves the final relative rotation undetermined.
+
+Define D=ω₁−ω₂, S=1/I₁+1/I₂ and I_red=1/S=I₁I₂/(I₁+I₂). Expanding the two endpoint kinetic energies gives Q=K_before−K_after=JD−SJ²/2. This Q is mechanical energy removed from the two-rotor kinetic account, not automatically heat already exported to an environment. It may become internal energy or other modeled storage. A positive loss requires a physical mechanism; a negative Q would require energy supplied to this account.
+
+Synchronization requires ω₁′−ω₂′=D−SJ=0, hence J*=D/S. The common velocity is ω*=L/(I₁+I₂), and the lost kinetic energy is Q*=I_red D²/2. This is also the minimum-energy endpoint at fixed L: write ω₁=ω*+[I₂/(I₁+I₂)]D and ω₂=ω*−[I₁/(I₁+I₂)]D. Expanding gives K=L²/[2(I₁+I₂)]+I_red D²/2. The second term is nonnegative and vanishes only at equal speeds. This minimum statement needs fixed positive inertias and the stated kinetic-energy model.
+
+For I₁=2 kg·m², I₂=3 kg·m², ω₁=8 rad/s and ω₂=−2 rad/s, L=10 kg·m²/s and K_before=70 J. Complete synchronization has J*=12 kg·m²/s, ω*=2 rad/s, K_after=10 J and Q*=60 J. A partial impulse J=6 gives speeds 5 and 0 rad/s, K_after=25 J and Q=45 J. The same conserved L accompanies different kinetic energies and relative motions.
+
+For D>0, the condition Q≥0 permits 0≤J≤2J*. But passive friction that acts against relative motion until synchronization permits only 0≤J≤J* in this simple monotone coupling account. Continuing the same signed torque beyond zero relative speed would reverse its dissipative role. At J=2J*=24 in the example, the endpoint speeds are −4 and 6 rad/s, K_after=70 J and Q=0; the relative speed has reversed. That endpoint can be compatible with an elastic exchange but does not describe monotone frictional synchronization. For D<0 the corresponding signed intervals reverse their endpoints. If D=0, the passive interval contains only zero.
+
+To specify time, add a constitutive law rather than inferring it from conservation. For a hypothetical linear viscous coupling τ=k(ω₁−ω₂), k>0, the relative speed obeys dD/dt=−kSD. Its solution D(t)=D₀ exp(−kSt) approaches zero asymptotically, and dK/dt=−kD²≤0. A constant-magnitude friction model produces a different time history and requires a switching rule at equal speed. This lesson supplies neither a measured coupling law nor a hardware procedure. Use the earlier exponential mathematics to verify the stated viscous solution; the exact impulse program deliberately does not invent a time law.
+
+**Work:** reconstruct the fixed-L energy decomposition and each numerical endpoint. Explain why conservation, nonincreasing endpoint kinetic energy and monotone passive synchronization are different tests. Propose observations that distinguish an elastic exchange from dissipative synchronization, including where the missing mechanical energy is accounted for. Relate this distinction to the earlier physical entropy block without claiming every loss Q is a reservoir entropy change Q/T.
+
+**Continue:** [Connect rotational predictions to observations and distinguishable parameters](Connect-rotational-predictions-to-observations-and-distinguishable-parameters.lingua#r_00BCDFEAE214F01DA32AA888E8).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00C38A235BF3E5DECE8E4ED34B

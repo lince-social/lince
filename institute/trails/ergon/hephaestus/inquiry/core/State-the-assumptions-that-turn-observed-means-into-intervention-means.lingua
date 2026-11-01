@@ -1,0 +1,19 @@
+Import "../Inquiry.lingua"
+
+State the assumptions that turn observed means into intervention means (@inquiry-causal-identification: 0, is #chapter, #hephaestus-core "Derive-standardization-with-a-common-target-population.lingua#r_004DE1AAF43D50B02CD6B18F9A") { r_0035AEB6229B495C55A10B6651
+Knowing an observed distribution exactly does not automatically reveal a causal effect. Identification asks whether the desired intervention quantity is uniquely determined by that distribution under stated assumptions. Estimation asks how finite observations approximate an identified quantity. A precise estimate can target an unidentified causal claim, while an identified quantity can be estimated imprecisely.
+
+For finite baseline strata L, assume well-defined interventions and consistency, and assume conditional exchangeability: within a stratum, Y(a) is independent of A for a=0,1. In particular E[Y(a)|A=a,L=l]=E[Y(a)|L=l]. For the mean argument, equality of these conditional means is sufficient; full conditional independence is a stronger familiar condition. Require positivity P(A=a|L=l)>0 wherever the target population gives l positive weight. These are assertions about the intervention, assignment and population, not promises supplied by a regression command.
+
+Exchangeability can follow from a correctly implemented random assignment mechanism with the stated adherence, observation and interference conditions. In an observational service, operators may choose a procedure using information absent from L. Conditioning on workload class then need not make the groups exchangeable. A recorded variable being predictive does not establish that it captures all relevant selection. Conversely adding every measured variable can change or damage the comparison; a later lesson gives explicit examples.
+
+Positivity concerns comparisons supported in the target. If a workload class always receives procedure 1, its observed law contains no procedure-0 outcome distribution. A fitted model may extrapolate there, but that uses an additional assumption. A small sample can have an empty cell even when population probability is positive; a populated sample cell does not guarantee useful overlap in a finer target or a different population. Near-zero assignment probabilities can also make a finite estimate unstable.
+
+**Work:** for a proposed study, state why each assumption might hold and one concrete reason it might fail. Separate design evidence, substantive knowledge, diagnostics and assumptions that the observed outcomes alone cannot test. Explain why a good residual plot from [Understand residual constraints and estimated scatter](Understand residual constraints and estimated scatter.lingua#r_007A3A0DF16E49979BF8C6FD9E) or a precise confidence interval cannot establish exchangeability. Keep the measurement model and the causal model distinct: bias in the observed outcome can persist even under randomized assignment.
+
+The following derivations use finite strata and finite outcome means. They do not establish all causal effects, optimal adjustment sets or the validity of any particular real observational study.
+
+**Continue:** [Derive standardization with a common target population](Derive-standardization-with-a-common-target-population.lingua#r_004DE1AAF43D50B02CD6B18F9A).
+
+**Return:** [Scientific inquiry and practice](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+} r_0035AEB6229B495C55A10B6651

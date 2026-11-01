@@ -1,0 +1,216 @@
+Import "../Physics.lingua"
+
+Investigate finite reservoirs fluctuations and distinct relaxation laws (@physics-statistical-study: 0, is #chapter, #hephaestus-core "Review-statistical-descriptions-with-their-constraints-dynamics-and-evidence.lingua#r_0048D075F0EB33EFBEDD46775E") { r_0072F92BB90961036B562C796E
+Investigate whether the same mean excitation can conceal different constraints and different dynamics. Keep three accounts separate: an isolated eight-site system with three excitations, a three-site canonical system with r=3/5, and a single binary process with specified transition probabilities. Their state variables, preparation and observation rules differ. The two-mode energy ladder supplies a fourth account for testing infinite-tail control, reusing the shared mathematical program.
+
+Before running code, derive the isolated macrostate weights (10,30,15,1)/56 and the canonical weights (125,225,135,27)/512. Both means are 9/8, while the variances are 225/448 and 45/64. Explain the conservation-induced covariance and compute the probability of observing three excitations under each model. State what a finite observation could establish and what remains unidentifiable from its mean alone.
+
+Prepare a report with the state definitions, microscopic assumptions, energy units, grouping rule, exact counts, normalized weights, mean and variance derivations, uncertainty about a proposed physical interpretation and a rival preparation. Include the entropy decomposition, the finite-reservoir ratio and the fixed-subsystem limiting argument. Reconstruct the bounded published two-state result identified in [Obtain energy entropy and response from a normalized thermal model](Obtain-energy-entropy-and-response-from-a-normalized-thermal-model.lingua#r_008071436CDCAF56B4074E84AD). Do not claim to have reproduced a measured heat-capacity curve or established the source's whole statistical theory.
+
+For kinetics, compare the two transition pairs from [Separate equilibrium weights from a law of relaxation and sampling](Separate-equilibrium-weights-from-a-law-of-relaxation-and-sampling.lingua#r_00EE492F15A9D8710F97287B36). Predict the third-step probability from an initially excited state and the variance of three stationary samples. Then change to alternating deterministic transitions and explain why a stationary ensemble can coexist with a nonconvergent marginal from a particular preparation. A second observer should reconstruct at least one calculation from the declared model rather than merely rerun the same function.
+
+For the infinite ladder, obtain `series_study.py` unchanged from [Investigate normalization truncation and the limits of finite evidence](../../mathematics/core/Investigate-normalization-truncation-and-the-limits-of-finite-evidence.lingua#r_004A475C6869E7393BE0AECA72). Use r=1/2 and the cutoffs 3 and 13; distinguish conditioning, omitted mass and omitted energy moment. The new checker imports that existing implementation instead of duplicating it. Its finite checks do not replace the mathematical convergence proofs or validate any physical spectrum.
+
+Save the two blocks below alongside that shared file and run `python3 statistical_checks.py` through the repository's Nix Python environment. The implementation uses exact integer/Fraction inputs; the range caps are computational limits, not physical thresholds. The comparison enumerator lists configurations and paths independently of the combination and recurrence formulas. No random sampling, external dataset or performed experiment is concealed in these checks.
+
+**Independent extension and defense:** choose unequal level spacings, a third local state with declared degeneracy, or an interaction energy between neighboring sites. Define the allowed configurations before changing a formula. Derive a bounded exact reference, compare one incorrect factorization or weighting, and choose an observation that could distinguish them. Explain which previous identities survive and which require a new argument. Extend the program with an independent check, state any truncation and measurement limits, receive criticism and revise the report. Quantum spectral derivation, actual material observations and advanced statistical research remain later work.
+
+
+```python file=statistical_study.py
+from fractions import Fraction as F
+from math import comb
+
+
+def integer(value, low, high):
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError('integer outside the stated finite implementation range')
+    return value
+
+
+def rational(value):
+    if type(value) not in (int, F):
+        raise ValueError('an exact integer or Fraction is required')
+    return F(value)
+
+
+def probability(value):
+    value = rational(value)
+    if not 0 <= value <= 1:
+        raise ValueError('probability must lie in [0,1]')
+    return value
+
+
+def moments(distribution):
+    if not distribution:
+        raise ValueError('nonempty probability table required')
+    weights = {rational(x): probability(p) for x, p in distribution.items()}
+    if sum(weights.values()) != 1:
+        raise ValueError('weights must sum to one')
+    mean = sum(x*p for x, p in weights.items())
+    variance = sum((x-mean)**2*p for x, p in weights.items())
+    return mean, variance
+
+
+def isolated(total, excited, observed):
+    total = integer(total, 1, 256)
+    excited = integer(excited, 0, total)
+    observed = integer(observed, 0, total)
+    count = comb(total, excited)
+    return {j: F(comb(observed, j)*comb(total-observed, excited-j), count)
+            for j in range(max(0, excited-total+observed), min(observed, excited)+1)}
+
+
+def canonical(sites, ratio):
+    sites = integer(sites, 0, 256)
+    ratio = rational(ratio)
+    if ratio < 0:
+        raise ValueError('nonnegative relative weight required')
+    z = (1+ratio)**sites
+    return {j: F(comb(sites, j))*ratio**j/z for j in range(sites+1)}
+
+
+def step(occupation, up, down):
+    occupation, up, down = map(probability, (occupation, up, down))
+    return up+(1-up-down)*occupation
+
+
+def relaxation(occupation, up, down, steps):
+    occupation, up, down = map(probability, (occupation, up, down))
+    steps = integer(steps, 0, 4096)
+    if up+down == 0:
+        return occupation
+    stationary = up/(up+down)
+    return stationary+(occupation-stationary)*(1-up-down)**steps
+
+
+def time_mean_variance(up, down, samples):
+    up, down = map(probability, (up, down))
+    samples = integer(samples, 1, 4096)
+    if up+down == 0:
+        raise ValueError('identity transition has no unique stationary distribution')
+    p = up/(up+down)
+    factor = 1-up-down
+    return p*(1-p)*(samples+2*sum((samples-h)*factor**h for h in range(1, samples)))/samples**2
+```
+
+```python file=statistical_checks.py
+from fractions import Fraction as F
+from itertools import product
+from math import comb
+import json
+import statistical_study as m
+from series_study import approximation
+
+checks = 0
+
+def check(condition):
+    global checks
+    checks += 1
+    assert condition
+
+
+def enumerated(total, excited, observed):
+    counts = {}
+    admitted = [s for s in product((0, 1), repeat=total) if sum(s) == excited]
+    for s in admitted:
+        j = sum(s[:observed])
+        counts[j] = counts.get(j, 0)+1
+    return {j: F(c, len(admitted)) for j, c in counts.items()}, admitted
+
+
+finite_cases = 0
+for n in range(1, 10):
+    for q in range(n+1):
+        for a in range(n+1):
+            actual = m.isolated(n, q, a)
+            direct, states = enumerated(n, q, a)
+            check(actual == direct)
+            mean, variance = m.moments(actual)
+            p = F(q, n)
+            check(mean == a*p)
+            check(variance == (a*p*(1-p)*F(n-a, n-1) if n > 1 else 0))
+            if n > 1:
+                joint = F(sum(s[0]*s[1] for s in states), len(states))
+                check(joint-p*p == -p*(1-p)/(n-1))
+            check(sum(comb(a, j)*comb(n-a, q-j) for j in actual) == comb(n, q))
+            finite_cases += 1
+
+canonical_cases = 0
+for a in range(0, 9):
+    for r in [F(0), F(1, 5), F(1, 2), F(3, 5), F(1), F(2)]:
+        actual = m.canonical(a, r)
+        direct = {j: F(0) for j in range(a+1)}
+        normalizer = sum(r**sum(s) for s in product((0, 1), repeat=a))
+        for s in product((0, 1), repeat=a):
+            direct[sum(s)] += r**sum(s)/normalizer
+        check(actual == direct)
+        p = r/(1+r)
+        check(m.moments(actual) == (a*p, a*p*(1-p)))
+        published_mean = F(a, 2)*(1-(1-r)/(1+r))
+        check(m.moments(actual)[0] == published_mean)
+        canonical_cases += 1
+
+check(m.isolated(8, 3, 3) == {j: F(c, 56) for j, c in enumerate([10, 30, 15, 1])})
+check(m.moments(m.isolated(8, 3, 3)) == (F(9, 8), F(225, 448)))
+check(m.canonical(3, F(3, 5)) == {j: F(c, 512) for j, c in enumerate([125, 225, 135, 27])})
+check(m.moments(m.canonical(3, F(3, 5))) == (F(9, 8), F(45, 64)))
+for n in [8, 16, 32, 64, 128, 256]:
+    q = 3*n//8
+    finite = m.isolated(n, q, 3)
+    independent = m.canonical(3, F(3, 5))
+    check(m.moments(finite)[0] == m.moments(independent)[0])
+    check(m.moments(finite)[1]/m.moments(independent)[1] == F(n-3, n-1))
+
+transient_cases = 0
+for up, down in [(F(1, 6), F(1, 3)), (F(1, 12), F(1, 6)), (F(3, 4), F(3, 4)), (F(1), F(1)), (F(0), F(0)), (F(0), F(1, 2))]:
+    for initial in [F(0), F(1, 3), F(1)]:
+        current = initial
+        for t in range(21):
+            check(current == m.relaxation(initial, up, down, t))
+            current = m.step(current, up, down)
+            transient_cases += 1
+
+path_cases = 0
+for up, down in [(F(1, 6), F(1, 3)), (F(1, 12), F(1, 6)), (F(3, 4), F(3, 4)), (F(1), F(1))]:
+    p = up/(up+down)
+    transition = ((1-up, up), (down, 1-down))
+    check((1-p)*up == p*down)
+    for length in range(1, 9):
+        table = {}
+        covariance = F(0)
+        for path in product((0, 1), repeat=length):
+            weight = p if path[0] else 1-p
+            for x, y in zip(path, path[1:]):
+                weight *= transition[x][y]
+            value = F(sum(path), length)
+            table[value] = table.get(value, F(0))+weight
+            covariance += weight*(path[0]-p)*(path[-1]-p)
+        mean, variance = m.moments(table)
+        check(mean == p)
+        check(variance == m.time_mean_variance(up, down, length))
+        check(covariance == p*(1-p)*(1-up-down)**(length-1))
+        path_cases += 1
+
+check(m.relaxation(1, F(1, 6), F(1, 3), 3) == F(5, 12))
+check(m.relaxation(1, F(1, 12), F(1, 6), 3) == F(59, 96))
+check(m.time_mean_variance(F(1, 6), F(1, 3), 3) == F(11, 81))
+check(approximation(F(1, 2), 3)['conditional_mean'] == F(16, 13))
+check(approximation(F(1, 2), 13)['tail_first_moment'] == F(121, 16384))
+rejected = 0
+for call in [lambda: m.isolated(0, 0, 0), lambda: m.isolated(4, 5, 2), lambda: m.isolated(4, 2, 5), lambda: m.isolated(True, 0, 0), lambda: m.canonical(3, -1), lambda: m.canonical(3, 0.5), lambda: m.step(0, 2, 0), lambda: m.relaxation(0, 0, 0, -1), lambda: m.time_mean_variance(0, 0, 2), lambda: m.time_mean_variance(1, 1, 0), lambda: m.moments({0: F(1, 2)}), lambda: m.moments({}), lambda: m.isolated(257, 1, 1)]:
+    try:
+        call()
+    except ValueError:
+        rejected += 1
+    else:
+        raise AssertionError('invalid input accepted')
+check(rejected == 13)
+print(json.dumps({'checks': checks, 'finite_cases': finite_cases, 'canonical_cases': canonical_cases, 'transient_cases': transient_cases, 'path_cases': path_cases, 'rejected_inputs': rejected}, indent=2))
+```
+
+**Author verification:** 2,578 exact checks passed: 384 fixed-total cases, 54 finite canonical cases including limiting/extended weights, 378 transient comparisons, 32 independently enumerated stationary path cases, shared-tail checkpoints and thirteen rejected inputs. This verifies the authored finite accounts and implementations, not a physical ensemble, empirical relaxation law or learner performance.
+
+**Continue:** [Review statistical descriptions with their constraints dynamics and evidence](Review-statistical-descriptions-with-their-constraints-dynamics-and-evidence.lingua#r_0048D075F0EB33EFBEDD46775E).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_0072F92BB90961036B562C796E

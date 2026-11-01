@@ -1,0 +1,23 @@
+Import "../Physics.lingua"
+
+Compare irreversible expansions with the same endpoint entropy (@physics-irreversible-paths: 0, is #chapter, #hephaestus-core "Find-the-work-limit-when-both-source-temperatures-change.lingua#r_00F7CB6DAD84265523DCA3DC68") { r_00A5041778BE47C67FD41DE562
+Take the fixed-amount ideal gas at a constant absolute temperature T, expanding from V₁ to V₂=rV₁ with r≥1. A=nR>0 and constant C_V define the same caloric model as before. Every comparison begins and ends at equilibrium with no change of bulk kinetic or potential energy. Thus ΔU=0 and ΔS=A ln r, independent of the process chosen between those states.
+
+A reversible isothermal expansion has W_rev=AT ln r and Q_rev=W_rev. A reservoir at T loses entropy Q_rev/T=A ln r, balancing the gas increase. The reversible comparison has zero total generation. It is a limiting path with matching conditions, not a statement that any slow expansion is reversible.
+
+For expansion against a constant external resisting pressure p_ext=AT/V₂, suppose the gas returns to temperature T and rest at the final volume, and all relevant mechanical/thermal effects are included in the combined gas, reservoir and work-load account. Declare this constant-pressure work as the only net work and reservoir heat as the only net heat exchange, with auxiliary parts having no net stored-energy or entropy change. The delivered work is W_const=p_ext(V₂−V₁)=AT(1−1/r), and the net heat supplied is Q_const=W_const. Total generation is
+
+S_gen=A[ln r−1+1/r].
+
+The bracket vanishes at r=1 and its derivative is (r−1)/r²≥0 for r≥1, proving nonnegativity on the whole expansion domain. The work difference W_rev−W_const equals T S_gen for this particular isothermal reservoir comparison. Do not extend that equality blindly to the finite-body case or to a changing environment. Where generation occurs among gas, interfaces and damping depends on the chosen physical account.
+
+Insulated free expansion into an initially empty region of a rigid enclosing vessel instead has Q=0,W=0. Under the ideal-gas U(T) model, the equilibrium final temperature remains T, while ΔS=A ln r>0 for r>1. A hypothetical reversible isothermal reference gives the state difference; it does not describe the actual free-expansion heat or work. Real-gas free expansion may have a different temperature change.
+
+For A=2 J/K,T=300 K,r=2, W_rev=600 ln2 J, W_const=300 J, ΔS=2 ln2 J/K, and constant-pressure generation is 2 ln2−1 J/K. Free-expansion generation is 2 ln2 J/K. Compare gas entropy, reservoir entropy and the combined total separately. These are idealized process accounts, not an experimental procedure.
+
+**Work:** derive each first-law and entropy account, including the reservoir. Explain why measuring only endpoint temperature and volume cannot identify which process occurred. State the additional heat/work/history evidence needed and which deviations could invalidate the ideal-gas or constant-temperature model. Reuse [Separate a prediction from a fitted description](Separate-a-prediction-from-a-fitted-description.lingua#r_07A97F390AC6E5D127D08C8E42) and [Use competing explanations to choose informative observations](../../inquiry/core/Use competing explanations to choose informative observations.lingua#r_0077B280D63642B767F8BF007D).
+
+**Continue:** [Find the work limit when both source temperatures change](Find-the-work-limit-when-both-source-temperatures-change.lingua#r_00F7CB6DAD84265523DCA3DC68).
+
+**Return:** [Physics](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_00A5041778BE47C67FD41DE562

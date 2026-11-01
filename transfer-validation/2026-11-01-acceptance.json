@@ -36,6 +36,78 @@
         "Vulkan renderer retained; only x86 debug smoke build disables the faulty emulator debug-utils extension"
       ],
       "artifact_directory": "/tmp/lince-android16-smoke-evidence-41308282330"
+    },
+    "5": {
+      "status": "verified",
+      "phone_apk_source": "c3ded0fe",
+      "device": "Actual Moto g05 near a window; coarse then fine OS permission with explicit new acquisition; no mocks",
+      "audience_ui": "Entered3000m, saved/reloaded, changed to1000m, saved/reloaded through ordinary controls",
+      "wire": {
+        "first_active_ms": 1793551483530,
+        "first_fix_ms": 1793551487118,
+        "last_fix_ms": 1793551541999,
+        "first_stopped_ms": 1793551545396,
+        "start_to_stop_seconds": 61.866,
+        "stopped_watch_seconds": 177.762,
+        "fix_sequences": 16,
+        "C_radii": [
+          1000
+        ],
+        "C_geometry_always_different_when_same_sequence": true,
+        "same_sequence_comparisons": 14,
+        "D_always_forbidden": true,
+        "late_live_after_stop": 0
+      },
+      "saved_and_address_policy": "C retains5000m saved/reference policy and no address text; B exact; D excluded",
+      "evidence": [
+        "/tmp/lince-transfer-corrected-audience-3000-report.json",
+        "/tmp/lince-transfer-corrected-1000-and-expiry-setup-report.json",
+        "/tmp/lince-transfer-1000-expiry-wire.jsonl"
+      ],
+      "scope": "Saved/agreed Transport terms remain untouched; optional Transfer stop condition cleared only for isolated one-minute Record-source expiry case"
+    },
+    "6": {
+      "status": "verified",
+      "measured_session": {
+        "idle_baseline_seconds": 344.032,
+        "active_seconds": 1734.687,
+        "notification_stop_utc": "2026-11-01T16:09:14.495000+00:00",
+        "notification_stop_method": "Actual SystemUI notification expanded and its Stop location action touched",
+        "first_observed_stopped_reply_after_ms": 3716,
+        "in_flight_nonstopped_after_stop_ms": [
+          268
+        ],
+        "stopped_observation_seconds": 386.412,
+        "screen_off_seconds": 318.76,
+        "screen_off_state": "Dozing with application backgrounded; charging stay-awake temporarily disabled",
+        "live_request": "App registered3000ms network requests; Android coarse-permission provider clamps effective request to10min. One matching live listener, service and notification after parser adjustment. No mock provider.",
+        "stop_result": "Matching listeners, service and notification all removed; authenticated replies stayed stopped after one in-flight reply, saved data retained",
+        "battery": "USB charging; baseline42%,25C; end50%,26C; no unplugged drain claim",
+        "cpu": "Observed dumpsys app CPU35\u2013168%; sampling windows include rendering, UI automation and authenticated test polling. These are not isolated CPU benchmarks.",
+        "limitations": "Early active samples incorrectly reported zero listeners because Android uses listeners rather than registrations; disregard those counts before15:44:59UTC. Per-app wakelock attribution is incomplete.",
+        "measurements": "/tmp/lince-transfer-session-resources.jsonl",
+        "redacted_wire": "/tmp/lince-transfer-live-wire.jsonl"
+      },
+      "natural_expiry": {
+        "first_active_ms": 1793551483530,
+        "first_fix_ms": 1793551487118,
+        "last_fix_ms": 1793551541999,
+        "first_stopped_ms": 1793551545396,
+        "start_to_stop_seconds": 61.866,
+        "stopped_watch_seconds": 177.762,
+        "fix_sequences": 16,
+        "C_radii": [
+          1000
+        ],
+        "C_geometry_always_different_when_same_sequence": true,
+        "same_sequence_comparisons": 14,
+        "D_always_forbidden": true,
+        "late_live_after_stop": 0
+      },
+      "fine_source_resources": "One foreground service, one notification, one3000ms listener per network/GPS provider (two distinct providers); expiry removes all",
+      "resource_evidence": "/tmp/lince-transfer-expiry-resources.jsonl",
+      "late_callbacks": "No new live publications after natural expiry during over60s observed; stale epoch rejection also covered by native/backend regressions",
+      "limitations": "Early active samples incorrectly reported zero listeners because Android uses listeners rather than registrations; disregard those counts before15:44:59UTC. Per-app wakelock attribution is incomplete."
     }
   },
   "phone_evidence": {
@@ -54,7 +126,7 @@
     "initial_settings": "/tmp/lince-transfer-original-settings.json",
     "resource_samples": "/tmp/lince-transfer-session-resources.jsonl",
     "release_and_smoketest_apps": "Preserved",
-    "location_acceptance": "Not yet exercised",
+    "location_acceptance": "Real coarse/fine callbacks, UI-entered3000m/1000m audience privacy, background delivery, notificationStop and natural expiry verified",
     "idle_baseline_seconds": 344.032,
     "current_apk": {
       "source": "add79d1cf94c956e1bf2b9539c43af6b11b6dfc4",
@@ -70,8 +142,62 @@
     },
     "settings_changes_pending_restore": [
       "Location enabled through Android cmd location",
-      "Disposable debug app coarse location and notification permissions granted; precise permission remains denied"
-    ]
+      "Disposable debug app coarse location and notification permissions granted; precise permission remains denied",
+      "Charging stay-awake temporarily changed15\u21920; restore15",
+      "Fine location granted for the explicitly restarted expiry session; restoredenied"
+    ],
+    "real_location": {
+      "publisher": "Actual Moto g05, near a window, coarse OS location permission, no mock provider",
+      "acquisition_start_utc": "2026-11-01T15:40:19.808000+00:00",
+      "fresh_fix_observations": 44,
+      "fresh_sequences": [
+        1,
+        2,
+        3
+      ],
+      "publisher_capture_age_ms": [
+        735,
+        801,
+        949
+      ],
+      "b": "Authenticated permitted OS point; no added radius",
+      "c": "Authenticated 3000m generalized geometry differs from B for the same sequence; exact point and address text withheld",
+      "d": "Explicit authenticated Forbidden despite matching inclusion",
+      "saved_and_named_address": "B exact; C5000m and no address text; D Forbidden, unchanged after Stop",
+      "geometry_and_coordinates": "No coordinates or address strings retained in this report"
+    },
+    "resource_session": {
+      "idle_baseline_seconds": 344.032,
+      "active_seconds": 1734.687,
+      "notification_stop_utc": "2026-11-01T16:09:14.495000+00:00",
+      "notification_stop_method": "Actual SystemUI notification expanded and its Stop location action touched",
+      "first_observed_stopped_reply_after_ms": 3716,
+      "in_flight_nonstopped_after_stop_ms": [
+        268
+      ],
+      "stopped_observation_seconds": 386.412,
+      "screen_off_seconds": 318.76,
+      "screen_off_state": "Dozing with application backgrounded; charging stay-awake temporarily disabled",
+      "live_request": "App registered3000ms network requests; Android coarse-permission provider clamps effective request to10min. One matching live listener, service and notification after parser adjustment. No mock provider.",
+      "stop_result": "Matching listeners, service and notification all removed; authenticated replies stayed stopped after one in-flight reply, saved data retained",
+      "battery": "USB charging; baseline42%,25C; end50%,26C; no unplugged drain claim",
+      "cpu": "Observed dumpsys app CPU35\u2013168%; sampling windows include rendering, UI automation and authenticated test polling. These are not isolated CPU benchmarks.",
+      "limitations": "Early active samples incorrectly reported zero listeners because Android uses listeners rather than registrations; disregard those counts before15:44:59UTC. Per-app wakelock attribution is incomplete.",
+      "measurements": "/tmp/lince-transfer-session-resources.jsonl",
+      "redacted_wire": "/tmp/lince-transfer-live-wire.jsonl"
+    },
+    "observed_layout_fixes": {
+      "safe_system_insets": {
+        "source": "dbdb1d72",
+        "local_tests": "2/2 passed",
+        "phone_recheck": "Pending corrected APK"
+      },
+      "audience_scroll_extent": {
+        "source": "c3ded0fe",
+        "local_tests": "Existing shared mobile visibility workflow passed",
+        "phone_recheck": "Pending corrected APK; previous build could not reach C radius or Save"
+      }
+    }
   },
   "prior_regression_evidence": {
     "run": 41305358636,
@@ -107,6 +233,24 @@
       "android_tools_seconds": 0.57,
       "artifact_directory": "/tmp/lince-transfer-bac01f78-ui-tools"
     },
-    "actual_phone": "Navigation and native editing exercised. Captured and fixed missing shell TTY XML capture; uppercase Android dialog labels observed and supported. Driver sign-in verified through normal UI. No business action replay."
+    "actual_phone": "Navigation and native editing exercised. Captured and fixed missing shell TTY XML capture; uppercase Android dialog labels observed and supported. Driver sign-in verified through normal UI. No business action replay.",
+    "latest_host_source": "484a87ea",
+    "local_android_tools_latest": {
+      "passed": 14,
+      "seconds": 1.58,
+      "includes": "bounded reveal with unchanged-viewport stop and eight-scroll cap"
+    }
+  },
+  "latest_full_source_evidence": {
+    "source": "bac01f78",
+    "run": 41321315594,
+    "native_passed": 113,
+    "mobile_passed": 11,
+    "migration_guard_passed": 7,
+    "backend_passed": 2,
+    "laboratory_passed": 2,
+    "tools_passed": 15,
+    "arm_apk": "Verified/downloaded; signature and16KB alignment passed",
+    "remaining": "Original host smoke queued duplicate snapshots; fixed-host run verified setup, Unicode and persistence, then exposed intentional profile restart observation race; corrected host retry pending"
   }
 }

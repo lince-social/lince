@@ -233,6 +233,9 @@ pub(crate) fn render(world: &mut World, parent: Entity) {
         row.as_ref().map(Workspace::records).unwrap_or_default(),
     );
     crate::map::render(world, parent);
+    if workspace.panel == Panel::Map {
+        return;
+    }
     let header = controls::row(world, parent);
     world.entity_mut(header).insert((
         Node {
@@ -253,9 +256,6 @@ pub(crate) fn render(world: &mut World, parent: Entity) {
         "Transport options",
         Intent::Panel(Panel::Options),
     );
-    if workspace.panel == Panel::Map {
-        return;
-    }
     let editor = world.resource::<crate::workflows::State>().form.is_some();
     let panel = controls::column(world, parent);
     world.entity_mut(panel).insert((
@@ -416,12 +416,7 @@ pub(crate) fn render(world: &mut World, parent: Entity) {
         }
         Panel::Map => {}
     }
-    app::label(
-        world,
-        panel,
-        crate::map::ATTRIBUTION,
-        11.0,
-    );
+    app::label(world, panel, crate::map::ATTRIBUTION, 11.0);
 }
 
 fn new(world: &mut World, parent: Entity, preset: &str) {

@@ -1,5 +1,13 @@
 use bevy::prelude::*;
 
+pub(super) fn modal(world: &mut World) -> Option<Entity> {
+    world
+        .query_filtered::<(Entity, Option<&GlobalZIndex>), With<crate::app::Modal>>()
+        .iter(world)
+        .max_by_key(|(entity, z)| (z.map_or(0, |z| z.0), entity.to_bits()))
+        .map(|(entity, _)| entity)
+}
+
 pub(super) fn clipped(world: &World, entity: Entity, screen: Vec2) -> Option<Rect> {
     let node = world.get::<ComputedNode>(entity)?;
     let transform = world.get::<UiGlobalTransform>(entity)?;
@@ -27,6 +35,18 @@ pub(super) fn clipped(world: &World, entity: Entity, screen: Vec2) -> Option<Rec
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn foreground_modal_keeps_accessibility_scope_above_the_retained_map() {
+        let mut world = World::new();
+        let panel = world.spawn((crate::app::Modal, GlobalZIndex(100))).id();
+        let map = world.spawn((crate::app::Modal, GlobalZIndex(50))).id();
+        assert_eq!(modal(&mut world), Some(panel));
+        world.despawn(panel);
+        assert_eq!(modal(&mut world), Some(map));
+        world.despawn(map);
+        assert_eq!(modal(&mut world), None);
+    }
 
     fn node(world: &mut World, center: Vec2, size: Vec2, overflow: Overflow) -> Entity {
         world

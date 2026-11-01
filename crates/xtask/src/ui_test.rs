@@ -66,6 +66,7 @@ struct PlanStep {
     value: Option<Value>,
     key: Option<String>,
     direction: Option<String>,
+    scroll_bounds: Option<[u32; 4]>,
     expect: Expect,
     fallback_name: Option<String>,
     #[serde(default, alias = "fail_if")]
@@ -319,6 +320,7 @@ struct Action {
     value: Option<String>,
     key: Option<String>,
     direction: Option<String>,
+    scroll_bounds: Option<[u32; 4]>,
     fallback: Option<String>,
     target_value: Option<String>,
 }
@@ -327,6 +329,27 @@ struct Action {
 struct Snapshot {
     owner: String,
     nodes: Vec<Node>,
+}
+
+fn scroll_region(nodes: &[Node], requested: [u32; 4]) -> Result<[u32; 4]> {
+    let [left, top, right, bottom] = requested;
+    if left >= right || top >= bottom || requested.iter().any(|value| *value > 32767) {
+        return Err("Scroll region must have positive bounded dimensions".into());
+    }
+    let mut roots = nodes
+        .iter()
+        .filter(|node| node.role == "ScrollView" && node.enabled && node.bounds.is_some());
+    let root = roots
+        .next()
+        .ok_or("Scroll region requires a visible enabled ScrollView")?;
+    if roots.next().is_some() {
+        return Err("Scroll region owner is ambiguous".into());
+    }
+    let [x1, y1, x2, y2] = root.bounds.unwrap();
+    if left < x1 || top < y1 || right > x2 || bottom > y2 {
+        return Err("Scroll region is outside its visible ScrollView".into());
+    }
+    Ok(requested)
 }
 
 fn summary(snapshot: &Snapshot) -> String {
@@ -392,7 +415,10 @@ impl Android {
                 if scrolls.next().is_some() {
                     return Err("Reveal ScrollView is ambiguous".into());
                 }
-                let [left, top, right, bottom] = scroll.bounds.unwrap();
+                let [left, top, right, bottom] = match action.scroll_bounds {
+                    Some(region) => scroll_region(&snapshot.nodes, region)?,
+                    None => scroll.bounds.unwrap(),
+                };
                 let (from, to) = match action.direction.as_deref().unwrap_or("down") {
                     "down" => (top + (bottom - top) * 3 / 4, top + (bottom - top) / 4),
                     "up" => (top + (bottom - top) / 4, top + (bottom - top) * 3 / 4),
@@ -516,6 +542,16 @@ impl Backend for Android {
         if self.terminal {
             return Dispatch::Rejected("Input acknowledgement is uncertain".into());
         }
+        if let Some(region) = action.scroll_bounds {
+            if !matches!(action.kind.as_str(), "scroll" | "reveal") {
+                return Dispatch::Rejected(
+                    "Scroll regions require scroll or reveal actions".into(),
+                );
+            }
+            if let Err(error) = scroll_region(&snapshot.nodes, region) {
+                return Dispatch::Rejected(error);
+            }
+        }
         if action.kind == "reveal" {
             return self.reveal(snapshot, selector, action, remaining);
         }
@@ -543,7 +579,7 @@ impl Backend for Android {
                 Ok(target) => target,
                 Err(error) => return Dispatch::Rejected(error),
             };
-        let [left, top, right, bottom] = target.bounds.unwrap();
+        let [left, top, right, bottom] = action.scroll_bounds.unwrap_or(target.bounds.unwrap());
         let center = ((left + right) / 2, (top + bottom) / 2);
         let command = if focused_enter {
             if !target.focused {
@@ -692,7 +728,7 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
             r#"{{"device":"SERIAL","report":"results.json","timeout_ms":6000,"max_polls":8,"steps":[{{"name":"Open navigation","target":{{"name":"Pages","role":"Button"}},"action":"tap","expect":{{"visible":"Organ"}}}}]}}"#
         );
         println!(
-            "Actions: tap, text, key, scroll, reveal, observe. Reveal scrolls down (or direction up) to an exact target, stopping on an unchanged viewport or after eight scrolls. Each step requires one visible, absent or value postcondition. Explicit fallback_name runs only before accepted input. Failed plans stop the disposable debug app unless keep_open_on_failure is true. Private text values may use {{\"fixture\":\"/json/pointer\"}} with a plan fixture path."
+            "Actions: tap, text, key, scroll, reveal, observe. Scroll/reveal accept optional scroll_bounds [left,top,right,bottom] contained in the visible ScrollView. Reveal scrolls down (or direction up) to an exact target, stopping on an unchanged viewport or after eight scrolls. Each step requires one visible, absent or value postcondition. Explicit fallback_name runs only before accepted input. Failed plans stop the disposable debug app unless keep_open_on_failure is true. Private text values may use {{\"fixture\":\"/json/pointer\"}} with a plan fixture path."
         );
         return Ok(());
     }
@@ -715,6 +751,8 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
                 || step.action == "reveal"
                     && (step.fallback_name.is_some()
                         || !matches!(step.direction.as_deref(), None | Some("up" | "down")))
+                || step.scroll_bounds.is_some()
+                    && !matches!(step.action.as_str(), "scroll" | "reveal")
                 || !matches!(
                     step.action.as_str(),
                     "tap" | "text" | "key" | "scroll" | "reveal" | "observe"
@@ -787,6 +825,7 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
             value: resolve(&item.value, &fixture)?,
             key: item.key,
             direction: item.direction,
+            scroll_bounds: item.scroll_bounds,
             fallback: item.fallback_name,
         };
         let mut step = if item.action == "observe" {
@@ -1011,6 +1050,55 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn invalid_scroll_regions_are_rejected_before_any_adb_command() {
+        let snapshot = Snapshot {
+            owner: PACKAGE.into(),
+            nodes: parse(&xml(
+                r#"<node class="android.widget.ScrollView" bounds="[10,20][400,800]"/>"#,
+            ))
+            .unwrap(),
+        };
+        let mut backend = Android {
+            adb: PathBuf::from("must-not-run-adb"),
+            device: "test".into(),
+            allowed: vec![PACKAGE.into()],
+            cached: None,
+            diagnostics: String::new(),
+            terminal: false,
+            reject: vec![],
+        };
+        for region in [
+            [0, 20, 400, 800],
+            [10, 20, 401, 800],
+            [10, 20, 400, 801],
+            [10, 20, 10, 80],
+        ] {
+            for kind in ["scroll", "reveal"] {
+                let result = backend.dispatch(
+                    &snapshot,
+                    &Selector::new("Save"),
+                    &Action {
+                        kind: kind.into(),
+                        value: None,
+                        key: None,
+                        direction: None,
+                        scroll_bounds: Some(region),
+                        fallback: None,
+                        target_value: None,
+                    },
+                    Route::Primary,
+                    Duration::from_secs(1),
+                );
+                assert!(
+                    matches!(result, Dispatch::Rejected(error) if error.starts_with("Scroll region"))
+                );
+                assert!(!backend.terminal);
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn reveal_is_bounded_skips_visible_targets_and_stops_on_unchanged_viewports() {
         use std::os::unix::fs::PermissionsExt;
         let scroll = r#"<node package="social.lince.mobile.debug" class="android.widget.ScrollView" bounds="[0,0][400,800]"/>"#;
@@ -1040,7 +1128,7 @@ mod tests {
                 "budget" => "printf '<node package=\"social.lince.mobile.debug\" class=\"android.widget.TextView\" text=\"%s\" bounds=\"[0,0][50,50]\"/>' \"$(wc -l < \"$counter\")\";".into(),
                 _ => String::new(),
             };
-            fs::write(&adb, format!("#!/bin/sh\ncounter={}\ncase \"$4\" in\n'dumpsys activity activities') printf '%s\\n' 'mResumedActivity: ActivityRecord{{a u0 social.lince.mobile.debug/.MainActivity t1}}';;\nlince_ui_dump=*) printf '%s' {}; {extra} printf '%s' '</hierarchy>';;\n'input swipe '*) printf 'x\\n' >> \"$counter\";;\n*) exit 1;;\nesac\n", quote(counter.to_str().unwrap()), quote(&format!("<hierarchy>{scroll}")))).unwrap();
+            fs::write(&adb, format!("#!/bin/sh\ncounter={}\ncase \"$4\" in\n'dumpsys activity activities') printf '%s\\n' 'mResumedActivity: ActivityRecord{{a u0 social.lince.mobile.debug/.MainActivity t1}}';;\nlince_ui_dump=*) printf '%s' {}; {extra} printf '%s' '</hierarchy>';;\n'input swipe '*) printf '%s\\n' \"$4\" >> \"$counter\";;\n*) exit 1;;\nesac\n", quote(counter.to_str().unwrap()), quote(&format!("<hierarchy>{scroll}")))).unwrap();
             fs::set_permissions(&adb, fs::Permissions::from_mode(0o700)).unwrap();
             let mut backend = Android {
                 adb,
@@ -1059,6 +1147,7 @@ mod tests {
                     value: None,
                     key: None,
                     direction: None,
+                    scroll_bounds: (mode == "one").then_some([10, 100, 300, 500]),
                     fallback: None,
                     target_value: None,
                 },
@@ -1072,6 +1161,12 @@ mod tests {
                 expected_scrolls,
                 "{mode}"
             );
+            if mode == "one" {
+                assert_eq!(
+                    fs::read_to_string(&counter).unwrap().trim(),
+                    "input swipe 155 400 155 200 100"
+                );
+            }
             assert!(!backend.diagnostics.contains("Save"));
             fs::remove_dir_all(directory).unwrap();
         }
@@ -1106,6 +1201,7 @@ mod tests {
                 value: None,
                 key: None,
                 direction: None,
+                scroll_bounds: None,
                 fallback: Some("Confirm".into()),
                 target_value: None,
             },

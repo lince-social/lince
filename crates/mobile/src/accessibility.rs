@@ -8,10 +8,7 @@ pub static ENABLED: AtomicBool = AtomicBool::new(false);
 pub struct Snapshot(String);
 
 fn modal(world: &mut World) -> Option<Entity> {
-    world
-        .query_filtered::<Entity, With<crate::app::Modal>>()
-        .iter(world)
-        .next()
+    crate::accessibility_bounds::modal(world)
 }
 
 fn within_modal(world: &World, entity: Entity, modal: Option<Entity>) -> bool {

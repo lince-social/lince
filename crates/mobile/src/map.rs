@@ -1033,28 +1033,25 @@ pub fn render(world: &mut World, _parent: Entity) {
     let modal = world.resource::<State>().sources_open
         || world.resource::<State>().credits_open
         || world.resource::<State>().list_open;
+    let (modal_marker, inset_marker, mut node) = crate::safe_area::modal(world);
+    node.padding = UiRect::all(px(8));
+    node.row_gap = px(6);
+    node.overflow = if modal {
+        Overflow::scroll_y()
+    } else {
+        Overflow::clip()
+    };
     let owner = world
         .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                left: px(0),
-                right: px(0),
-                top: px(0),
-                bottom: px(0),
-                flex_direction: FlexDirection::Column,
-                padding: UiRect::all(px(8)),
-                row_gap: px(6),
-                overflow: if modal {
-                    Overflow::scroll_y()
-                } else {
-                    Overflow::clip()
-                },
-                ..default()
-            },
+            inset_marker,
+            node,
             GlobalZIndex(50),
             lince_interface::style::background(lince_interface::tokens::Token::Surface),
         ))
         .id();
+    if !compact {
+        world.entity_mut(owner).insert(modal_marker);
+    }
     let controls = lince_interface::controls::row(world, owner);
     if compact {
         world.get_mut::<Node>(controls).unwrap().display = Display::None;
@@ -1238,12 +1235,7 @@ pub fn render(world: &mut World, _parent: Entity) {
         map_button(world, controls, "Save point on Record", Intent::SavePoint);
     }
     let status = app::label(world, owner, "Offline world overview", 14.0);
-    let attribution = app::label(
-        world,
-        owner,
-        ATTRIBUTION,
-        11.0,
-    );
+    let attribution = app::label(world, owner, ATTRIBUTION, 11.0);
     if compact {
         world.get_mut::<Node>(status).unwrap().display = Display::None;
         world.get_mut::<Node>(attribution).unwrap().display = Display::None;

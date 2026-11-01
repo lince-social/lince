@@ -19,6 +19,23 @@
       "signing_certificate_sha256": "920ee5a7cf05bf6a2b6491c14506773c0186e8aecdf35678cf00a0f44551802d",
       "native_elf_alignment": "All 28 PT_LOAD segments in seven libraries use 0x4000",
       "artifact_directory": "/tmp/lince-transfer-final-apk-fe3eca02"
+    },
+    "2": {
+      "status": "verified",
+      "source": "fe3eca02c9ec28389b11508f83eb76c9a845e122",
+      "actions_run": 41308282330,
+      "x86_64_job": 124853124451,
+      "android_version": 16,
+      "target_sdk": 36,
+      "page_size": 16384,
+      "evidence": [
+        "Existing cargo xtask android-smoke journey passed",
+        "Organ creation completed with ready=true and setup=false",
+        "Unicode Record editing, restart persistence and profile isolation passed",
+        "Pending confirmation regression tests passed in the earlier Transfer regression run",
+        "Vulkan renderer retained; only x86 debug smoke build disables the faulty emulator debug-utils extension"
+      ],
+      "artifact_directory": "/tmp/lince-android16-smoke-evidence-41308282330"
     }
   },
   "phone_evidence": {

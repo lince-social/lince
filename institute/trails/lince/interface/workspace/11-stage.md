@@ -34,7 +34,7 @@ Finish able to assemble reused parts into a designed room/building system, inspe
 
 - [ ] For the articulated tasks, recover [stage 05's controller/presence summary](05-stage.md#completion-summary), [stage 08's simplification summary](08-stage.md#completion-summary) or [stage 04's structured-context contract](04-stage.md#structured-context-for-workspace-actors) only when the selected task needs that interface. Keep the new rig/anatomy detail here; earlier core stages do not implement it in advance.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/workspace_model/ (proposed)`; `crates/interface/src/native/`; `selected CAD/exchange adapter or bounded worker`; `crates/nucleus/src/record.rs`.
 
@@ -146,6 +146,9 @@ Finish able to assemble reused parts into a designed room/building system, inspe
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 device handoff, 11.T01–11.T11 / 11.W01–11.W05 as applicable.** Assembly structure, external ports and selected behavior remain independent. An encapsulated device retains its internal definition and stable exposed terminals while a functional model controls its outputs. Reuse stage 07's policy/controls for authored actuator/rig behavior; do not create separate character or electronics fidelity systems. A kinematic controller is an imposed motion model, not evidence of physical force balance. Stage 18 adds its supported physical transitions.
+- [ ] Supply stage 11a with board/enclosure/connector mounting relationships and revisioned component counts through the existing takeoff path. Switching runtime models must not remove hidden components from manufacturing quantities. Structural coverage for display or computation differs from the authored bill of materials. The next registry stage is 11a, then 12; all existing stage 11 requirements remain required.
 
 ### Domain workflows as implementations of the primitives
 

@@ -95,6 +95,8 @@ Finish able to record a selected activity for a bounded interval and inspect it 
 
 ## Architecture and task requirements
 
+- [ ] **2026-11-01 mixed-model capture, 20.T01–20.T05 / 20.W01–20.W03.** Extend capture to stage 15a circuit/functional and stage 18/19 model changes. A captured interval identifies the actual active model, source revision, imposed inputs, transition/discontinuity, initialized state and output coverage. Interpolate only where the model/observation contract permits it; never blend across a restart or display coarse output as detailed simulation. Essential run/transition provenance already exists in 15a/17 and does not wait for this optional recording stage. Playback remains inert and cannot switch a live device's model or emit sensor/equipment events.
+
 ### Proposed defaults for refinement
 
 - [ ] **R0067.** Recording calculated behavior — **Proposed default:** Deferred [stage 20](20-stage.md): optional Record for selected objects/activities/fields, a bounded interval and visible storage budget; checkpoints/events and selected observations, dense capture only by explicit choice — **When it may change:** Saving/undo/receipts and current live state remain distinct; mandatory scientific evidence is retained without automatic whole-workspace recording

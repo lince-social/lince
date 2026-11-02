@@ -16,7 +16,7 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 
 - [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
-- [ ] Confirm the preceding [stage 15](15-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
+- [ ] Confirm the preceding [stage 15a](15a-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending. The core stage 15 gate remains required. Reuse 15a's numerical lifecycle/model contracts without making direct material assignment depend on any electronic source model.
 
 - [ ] Recover only the needed completed context from [stage 15 summary](15-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary); [stage 11 summary](11-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
@@ -134,6 +134,8 @@ After core stabilization, finish able to change a rod/pillar from steel to wood 
 - [ ] **R0338.** Composition is typed: chemical identity, isotope identity where needed, species fractions with a mass/mole/volume basis, phase fractions, lattice/crystal orientation, molecular conformers, microstructure descriptors and processing conditions. Validate normalization and charge/mass assumptions where the selected profile requires them. Defects, grain boundaries, porosity, moisture, fabrication, texture and interfaces can change behavior. Composition and folding alone cannot supply every bulk property. [NIST's structure–property research](https://www.nist.gov/programs-projects/structure-property-links-deformation-materials) supports retaining those intermediate descriptions.
 
 ### Property model contract
+
+- [ ] **2026-11-01 shared model contract, 16.T01–16.T04 / 16.W01–16.W03.** Material candidates implement the same revisioned applicability/provenance/required-output envelope used by functional and circuit models. Consumers may choose a documented constant, table or constitutive law when that candidate meets their question and conditions; these are domain-specific alternatives, not scalar fidelity ranks. Expose selection through the shared inspector and retain unused microscopic/source detail. Changing an active physical binding invokes the supported 15a transition machinery extended for the actual material state; no generic mapping of plastic history, charge or temperature is assumed.
 
 - [ ] **R0339.** A property candidate includes quantity kind/unit, scalar/vector/tensor/table/law, support/sample, material orientation, phase, conditions, method and uncertainty. Conditions can include temperature, pressure, strain/rate, frequency, wavelength, moisture and history. The exact dimensions depend on the physical question.
 

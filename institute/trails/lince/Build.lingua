@@ -8,13 +8,13 @@ The remaining user-selected tasks are in [Build.md](../../anicca/Build.md). This
 ## Current working defaults
 
 - Use one `nix develop .#interface` shell for a work session; run `cargo xtask` inside it and use `cargo check` for checks. Warnings are errors. Preserve caches and actual source/tool/feature invalidation.
-- Keep pinned Rust 1.96/LLVM, local Linux Clang/Wild 0.9, automatic Cargo jobs, incremental dev compilation, line tables and Interface 256 codegen units. Shipping settings are separate.
-- GitHub Actions has two platform workflows: Linux Lince with Park, and Android Lince. Automated Actions use compilation checks and requested optimized packages, without test suites. Local tests and performance experiments remain allowed. Linux Actions retains mold until the optimized Wild comparison qualifies a change; Android keeps its NDK linker and 16 KB alignment.
+- Read the exact stable Rust pin from `rust-toolchain.toml`, shared by local shells, Actions and Nix source packages. Task 6 below records the 1.99.1/LLVM 23.1.1 qualification. The existing Linux workflow checks daily for stable releases and automatically advances this pin after Linux/Android compilation checks pass. Re-enter the shell after pulling a compiler update. A manual update is available through `nix develop .#interface -c python3 -B institute/scripts/update-rust-toolchain.py`. Keep local Linux Clang/Wild 0.9, automatic Cargo jobs, incremental dev-profile compilation, line tables and Interface 256 codegen units. Shipping settings are separate.
+- GitHub Actions has two platform workflows: Linux Lince with Park, and Android Lince. Automated Actions use compilation checks and requested optimized packages, without test suites. Local tests and performance experiments remain allowed. Linux Actions uses mold; x86-64 Linux Nix source packages use Clang/Wild. The decisions and measurement limits are below. Android keeps its NDK linker and 16 KB alignment.
 - Actions restores compatible Cargo libraries/metadata, registry archives and Git dependencies, then restores timestamps only for unchanged source bytes and permissions. Cache identity includes compiler, native libraries/tools, Rust flags, lockfile and build recipes. Application edits share the dependency cache rather than creating a large archive per commit; changed inputs still recompile. APKs, signing material and final executables are excluded. Android also caches cargo-ndk and Gradle dependencies.
 - For Park protocol changes use `cargo xtask park protocol-check`. It currently passes 185 tests with two existing ignored cases. Native graphics, physical input and recovery need their relevant Park probes and acceptance checks; protocol tests do not replace them.
 - For the four Store transaction targets use `cargo xtask test-store-transactions`: account, assertion, record and standing transactions; scoped SQLite optimization level 2 and four test threads. All 74 current cases pass. Native/shipping SQLite settings are unchanged.
 - Keep scoped Store/Fiote/authoring dependencies, content-aware Anicca/native/icon caching and recovery, scanner pruning, PATH normalization and repository-root content discovery. Freedoom generation remains optional under `stuff`.
-- Keep Engine-bound typed execution identity, pure Nucleus types, Store's fail-closed behavior and simulation's own-input guard. Complete effective-input provenance is still unfinished.
+- Keep Engine-bound typed execution identity, pure Nucleus types, Store's fail-closed behavior and simulation's own-input guard.
 - Socket caching and nextest remain scoped options, not universal defaults. Nextest was validated for seven Store cases; its combination with the optimized four-target recipe is untested. Normal commands must not depend on missing scripts under `target`.
 - `cargo xtask dev` uses release; Park session/protocol commands use development/test profiles. Do not infer release gains from dev-only timings or add independent percentages.
 
@@ -88,11 +88,134 @@ Sources: [2026-10-31 Park check](https://github.com/lince-social/lince/actions/r
 | Android checks versus packages | Automated ARM64 Rust checks; manual ARM64/x86_64/both packages. Install Java/Gradle only for packaging and skip the duplicate preliminary check when building a package. Signed release APK/Play bundle choices retain main/ARM64 restrictions and signature/alignment verification. NDK/release settings remain unchanged. |
 | Scoped compiled-input caches | Implement compatible Linux check/release and Android ABI/mode caches with content-aware timestamps. Stable dependency keys avoid per-commit archive churn. Native installer and Android Gradle flags are fingerprinted; first use of the new namespace is cold. Final executables and signing outputs are excluded. |
 | Local invalidation tests | All 18 pass in 8.055 s, including real Cargo unchanged-source reuse and recompilation after changed/new/deleted inputs, permissions, compiler flags, lockfile, native tools and build recipes. This validates reuse correctness, not hosted transfer savings. |
-| Workflow validation | Actionlint, ShellCheck and diff checks pass; 16 event/platform combinations and signing guards pass. Exactly two workflows remain, with no suite/emulator commands. No remote workflow dispatch or publishing was performed. |
+| Workflow validation | Actionlint, ShellCheck and diff checks pass; 16 event/platform combinations and signing guards pass. Exactly two workflows remain, with no suite/emulator commands. Hosted validation is in progress on the owner's published commit `2b988884`; manual validation uses a separate remote branch with publication disabled. |
+| Local preparation constraint | The existing shared sccache process had inherited an earlier Cargo jobserver; several requests queued while only one compiler ran on eight available CPUs. Interrupted only this experiment's Cargo process, preserved logs/artifacts and restarted with an isolated cache process started outside Cargo. Parallel compilers resumed. This is a setup diagnosis, not a controlled elapsed-time gain or a new socket default; task 1 now targets the normal workflow comparison. |
 
-Receipts: `target/build-iteration/actions-consolidation/`. Hosted cold/warm/source-edit timings and cache sizes remain unmeasured until these files run remotely. The old 71m26s Park step included test compilation; it is not a like-for-like baseline for the new check-only workflow. No hosted percentage improvement is claimed.
+Receipts: `target/build-iteration/actions-consolidation/`. Hosted cold/warm/source-edit timings and cache sizes await completed samples. First runs: Linux release `41344381907`, Android ARM64 check `41344381851` and Linux checks `41344936524`. The owner's main push started the first two; manual checks use `codex/build-speed-validation-2026-11-01`, pointing to the same already-published commit without changing the local branch. The old 71m26s Park step included test compilation; it is not a like-for-like baseline for the new check-only workflow. No hosted percentage improvement is claimed.
 
-## Promising result awaiting adoption checks
+## 2026-11-01 — Completed current experiments
+
+Closeout at 20:57 UTC, following the owner's instruction to finish current tests and report. No additional experiments were scheduled. Main-branch implementation remains at the owner's `2b988884`; the parser/cache-key proposal below is preserved separately, with no new production-code default promoted.
+
+### Hosted check measurements
+
+| Scenario | Whole job | Cargo steps | Cache details and decision |
+| --- | --- | --- | --- |
+| 5.1: Linux cold checks | 10m17s | 6m39s native/tools + 2m41s headless | Compilation-cache miss; source timestamps 0/4,500 restored. Archive 1.65 GB; save 12s. Measurement complete. |
+| 5.2: Linux unchanged warm checks | 8m41s | 3m58s native/tools + 2m55s headless | Exact cache hit; 4,500/4,500 timestamps restored. Composite restore/validation 38s; save skipped. Retain existing dependency reuse, with the generated-output limitation below. Measurement complete. |
+| Android checks completed before Linux-only steering | Cold 8m18s; warm 3m41s and 3m45s | First cold Cargo step 6m46s; first warm 2m36s | Cache 1.06 GB; first save 11s. All passed. No further Android experiments were started after the scope change. |
+
+These are observed job samples, not a controlled percentage speedup or a comparison with the old test-compilation workflow. Source-edit and release-cache scenarios remain unmeasured. The cache inventory snapshot contained 12 entries totaling 12.33 GB; configured quota and eviction effects remain unverified. No shared cache was deleted.
+
+Runs: [Linux cold checks](https://github.com/lince-social/lince/actions/runs/41344936524), [Linux warm checks](https://github.com/lince-social/lince/actions/runs/41346365822), [Android cold checks](https://github.com/lince-social/lince/actions/runs/41344381851), [Android warm 1](https://github.com/lince-social/lince/actions/runs/41345270975), [Android warm 2](https://github.com/lince-social/lince/actions/runs/41346367163). The owner's automatic [Linux release run](https://github.com/lince-social/lince/actions/runs/41344381907) was still compiling at closeout; it was left running.
+
+### Parser-cache diagnosis and tested proposal
+
+Cargo's diagnostic log identified generated `parser.c` as newer than its build-script output checkpoint. Restoring that first-build cache repeatedly reruns Anicca and dependent core checks. The cause is generated-output timestamp ordering, not a changed project source file. Temporary diagnostic branch removed after its completed run/log capture; the normal validation branch remains for its scoped cache.
+
+| Experiment | Result and decision |
+| --- | --- |
+| Actual Anicca first-build cache restored three times | All three checks rebuild Anicca; false invalidation reproduced locally on Linux. |
+| Stamp only freshly written parser C/header/native archives with a stable timestamp | All three restored checks stay fresh. Parser C, header and native archive SHA-256 values are byte-identical to baseline. Local correctness gate passes; whole-workflow timing of this proposal remains untested. |
+| Missing parser C, header and archive | Each regenerates correctly; the next unchanged check stays fresh. Recovery is retained. |
+| Real grammar token mutation and restoration | Changing `for` to `foreach` changes accepted syntax; restoring the source restores the original syntax. Real input changes still invalidate. |
+| Native compiler wrapper mutation and restoration | Tool change is detected and recompiles; the next check stays fresh. Original compiler selection restored. |
+| Cache generation includes build helpers | Proposed key refreshes for build-script/helper changes while ordinary application edits retain the dependency bucket. All 19 local cache tests pass in 12.828s. This extension is part of the saved proposal, not the current main default. |
+| Actual copied Interface icon-generator probe | All three first-cache restores already stay fresh. No icon-generator change is justified. |
+
+Decision: preserve the parser/cache-key proposal for review; do not claim a qualified whole-job gain or promote it without that measurement. Candidate: `target/build-iteration/actions-consolidation/parser-cache-candidate.patch`; isolated checkout: `target/build-iteration/actions-consolidation/parser-worktree/`. Grammar and compiler probes were restored, and the temporary example was moved to the receipts directory. Main production files are unchanged by this proposal.
+
+### Optimized native linker comparison
+
+Full local Lince preparation completed with `--release --features instinct,park --target x86_64-unknown-linux-gnu`, warnings denied, portable Rust CPU settings and incrementality off. It retained maximum optimization and unwind recovery. The private-daemon restart took 49m30s after the interrupted shared-daemon preparation; these setup durations are not linker timings. The saved binary reports UI/Instinct/Park enabled and revision `unknown`; this is a local optimized comparison artifact, not a published release.
+
+Compared Ubuntu24.04 mold 2.30.0 (matching the Actions version) with verified official Wild 0.9.0 on identical saved objects/libraries, after one warm-up per linker. Balanced order: A1/B1/B2/A2/A3/B3. Input SHA-256 values remained unchanged.
+
+| Check | mold 2.30 | Wild 0.9 | Result |
+| --- | --- | --- | --- |
+| Final optimized link, three samples | Median 2.327s; range 2.322–2.336s | Median 1.389s; range 1.288–1.483s | 0.938s saved, 40.30% of the final link stage. Link gate passes; this is not a whole-build percentage. |
+| Read-only arithmetic CLI workload | Median of group medians 104.60ms | 98.93ms | Correct output; no measured slowdown. |
+| Read-only branching CLI workload | 64.52ms | 60.78ms | Correct output; no measured slowdown. |
+| Packaging with the normal Linux script | 320.46 MB archive | 314.76 MB archive | Both pass checksums, metadata, licenses and exact packaged-binary checks. Packaging timings were validation only. |
+
+Runtime order matches the linker order, with three groups of 20 invocations per workload per linker. Build-info/help outputs and shared-library requirements match. Both retain x86-64 PIE, RELRO/BIND_NOW, non-executable stack and unwind sections. No GUI/frame-time performance claim is made. Initial replay preflight encountered a response-file argument list; the harness was corrected before timed linking, with the original captured inputs unchanged.
+
+Decision: the linker component passes its local link/runtime/package gates. Keep Actions on mold while actual hosted job gains remain unqualified; local development remains on Wild. No Actions default or release optimization/CPU/hardening flag was changed. Task 3.1 subsequently completed its Actions qualification; see the hosted result below. The separate Nix source-package dry-run uses Rust 1.95 rather than repository/Actions 1.96 and lists 1,793 derivations; no source-package linker comparison was started, so task 3.2 remains open.
+
+Receipts for all current experiments: `target/build-iteration/actions-consolidation/`. Existing Actionlint/ShellCheck and workflow condition checks passed; the applicable-rule search found no pipe-prefixed build requirement in Lince.lingua. No pre-existing product defect was repaired. The fixed task IDs/count in Build.md were preserved.
+
+## 2026-11-01 — Task 3.1: hosted Actions linker qualification
+
+Decision: **retain mold as the Linux Actions default; defer Wild adoption**. Wild builds and passes the measured runtime/correctness gates, but no useful whole-job gain was qualified. Task 3.1 is complete with this decision; no additional task or default change was introduced.
+
+Resumed the existing local link/runtime/package evidence rather than rebuilding that experiment. Added one actual Wild Actions release run against the completed mold control: Ubuntu24.04/Rust1.96, identical application source at `2b988884`, maximum release optimization, portable CPU requirement, unwind and hardening retained. Candidate `85e9e924` changes only `LINCE_CI_LINKER: mold` to `wild` in the workflow, selecting the existing verified Wild0.9.0 installer and Clang linker driver; baseline mold is Ubuntu2.30.0. Both runner images are `20261025.353.1`, and normalized native APT download/version lists match. Candidate publication was disabled; no test suite ran in Actions.
+
+| Cold release measurement | mold | Wild |
+| --- | --- | --- |
+| Whole Linux release job | 83m03s | 82m25s |
+| Native build step, including helper | 81m21s | 80m05s |
+| Cargo-reported optimized release preparation | 79m45s | 78m28s |
+| Compiler/library setup | 28s | 61s |
+| Compilation-cache save | 34s; 2.439 GB | 36s; 2.439 GB |
+| Normal packaging | 13s | 12s |
+
+Both compilation caches missed. These are one cold sample per configuration, not a repeatable speedup claim; initial compilation is separate from repeated-build feedback. The observed whole-job difference is 38s, below the 5%/10s initial screen recorded before the candidate finished. Additional expensive CI repetitions were therefore not started. CPU model was not captured; setup/network/runner variation was not attributed to the linker.
+
+Downloaded both actual Actions packages and verified their SHA-256 sidecars. Build-info matches except the expected workflow-commit revision; help, shared-library requirements, packaged licenses/session launcher and CPU-baseline/ABI notes match. Both retain x86-64 PIE, RELRO/BIND_NOW, non-executable stack and unwind sections. Both normal CI packaging checks passed.
+
+Local runtime admission used those unmodified Actions ELFs with the same pinned Nix glibc loader/libraries, representative of the prebuilt Nix deployment environment. After warm-ups, balanced A1/B1/B2/A2/A3/B3 groups each ran 20 invocations per workload. Outputs were correct; no data directory was created. Median group results: arithmetic 91.15ms mold / 88.31ms Wild; branching 54.38ms / 54.12ms. Both pass the existing no-slowdown gate. This does not establish GUI/frame-time performance or a general runtime speedup.
+
+The earlier same-input final-link gain remains 2.327s → 1.389s (0.938s saved), not a whole-build gain. Current evidence does not justify changing the Actions default. No compiler/profile/CPU/security tradeoff, product repair, parser-cache change, compiler update or Nix source-package experiment was made in this task.
+
+Sources: [mold control](https://github.com/lince-social/lince/actions/runs/41344381907), [Wild candidate](https://github.com/lince-social/lince/actions/runs/41350963404). Exact protocol, timings, logs, native-package comparison, artifact inspection, runtime samples and decision: `target/build-iteration/task-3-1/`. Experimental branch retained for reproducibility; its selector change was not merged into the working branch. No applicable pipe-prefixed build requirement was found in Lince.lingua.
+
+## 2026-11-01 — Cached release follow-up and final linker choice
+
+Defaults: **Wild 0.9 for local Linux development; mold for Linux Actions; the existing NDK linker for Android**. Wild won the measured local final-link comparison by 0.938s (2.327s → 1.389s). Actions showed no qualified whole-job advantage over mold, so keep its existing default. No further Actions linker runs are queued. This is a practical choice from available evidence, not proof that mold is the fastest warm Actions linker. Nix source-package task 3.2 is a separate scope.
+
+Repeated the unchanged Wild candidate `85e9e924` with publication disabled. The runner image and normalized native-package download/version lists match the cold run. Build-info verification, packaging and artifact upload passed; no Actions test suite ran.
+
+| Same Wild release recipe | Cold | Cached repeat |
+| --- | --- | --- |
+| Whole Linux release job | 82m25s | 40m10s |
+| Native build step, including helper | 80m05s | 38m11s |
+| Cargo-reported optimized release | 78m28s | 37m55s |
+| Helper compilation | 1m33s | 14.82s |
+| Compilation cache | Miss; saved 2.439 GB | Exact hit; restore/validation 55s; save skipped |
+
+Observed saving: 42m15s, or 51.3% less whole-job time in this pair. All 4,500 unchanged source timestamps restored. External dependencies were reused, but five helper crates and 17 release project crates still rebuilt. The largest release units were Interface 15m21s, Engine 11m51s, Cell 11m43s and Transport 10m27s; their execution overlaps. Anicca rebuilt too, consistent with the previously reproduced generated-parser timestamp problem; this run did not independently trace that cause. The saved parser/cache-key proposal remains unapplied.
+
+Two builds total establish this cache observation: the first saves inputs and the second restores them. The exact-hit archive is immutable and was not replaced, so another run does not automatically repair its generated-output invalidation. Pinned [Wild 0.9 does not implement incremental linking](https://github.com/wild-linker/wild/blob/0.9.0/README.md). These savings come from Cargo artifact reuse, not binary surgery. Actions excludes final executables and linker state, and disables Rust incremental compilation. Local unchanged builds can retain the executable and skip linking; local dev-profile checks enable Rust incrementality, while `cargo xtask dev` runs the release profile. No warm mold control was run, so this follow-up does not rank warm linkers.
+
+Source: [cached Wild release](https://github.com/lince-social/lince/actions/runs/41359225160). Receipts: `target/build-iteration/task-3-1/warm-result.json`, `wild-warm.log`, `wild-warm-status.json` and `wild-warm-timings/`. No production code, release flags or linker configuration changed in this follow-up.
+
+## 2026-11-01 — Task 6: shared stable Rust updates
+
+Use one exact version in `rust-toolchain.toml`: upgraded 1.96.0 → 1.99.1, the official stable manifest dated 2026-10-15. Removed duplicate Actions/Android versions and the script's hard-coded `stable` fallback. Native/default/Android Nix shells read this pin; Nix source packages now use the same compiler through pinned rust-overlay metadata instead of the older nixpkgs compiler. Prebuilt Nix flakes include the toolchain file too. Specialized ESP firmware toolchains remain independent.
+
+Automatic updates run daily at 06:17 UTC inside the existing Linux workflow, with a separate concurrency group. When the official stable version changes, the updater refreshes only rust-overlay metadata, checks Nix availability, installs/verifies the exact rustup compiler, and finally changes the shared pin. A temporary branch runs the existing Linux checks and both Android architecture checks, without tests or packages. The automation advances main only after both workflows pass and main still equals the tested base; it then removes the temporary branch. Failed validation or a concurrent main update preserves main. Only the toolchain pin and flake.lock may be committed. The bot's commit does not publish or deploy binaries; subsequent normal release runs use the new compiler. No third workflow, approval bot, external credential or repository-setting change was added. The schedule activates after the workflow reaches the default branch.
+
+Manual alternative: `nix develop .#interface -c python3 -B institute/scripts/update-rust-toolchain.py`; add `--check` to report availability without changing files or installing tools. Failed preflight/install preserves the existing pin; detected pin edits during preflight are left intact. Existing Cargo dependencies and other Nix input pins stay unchanged. An already-current update changes no files or cache inputs. Re-enter the shell after an update. Normal build commands do not perform network updates.
+
+The first warnings-denied Linux check found Rust 1.99's new `fetch_update` deprecation in vendored Smithay. Replaced its call and six Park calls with `try_update`. Rust 1.99.1's standard-library implementation defines the old method as a direct call to the new one; source guards confirm the seven files differ only by that method name. Closures, memory orderings, overflow/error handling and behavior are retained; no warning was suppressed or pre-existing product defect repaired.
+
+Validation completed: 11 updater/reader tests, seven automatic-update fixture tests, seven existing cache-identity tests, real isolated Nix/rustup update plus unchanged repeat, Actionlint and ShellCheck. Automatic-update fixtures cover successful checks, failure on either platform, skipped compilation jobs, concurrent main changes, unexpected source edits, unchanged updates and branch cleanup. Required-job predicates also pass actual Actions metadata and wrong-commit/skipped-job probes. Actual Nix and rustup compilers report identical version/commit/LLVM; all four supported Nix platform toolchains evaluate to 1.99.1. Native/Android shell selection, both source-package compiler recipes and the packaged-flake toolchain evaluate correctly. Full Linux native/Park/tools and headless warnings-denied Cargo checks pass. Shared i18n Rust code passes the same checks for both Android architectures; this is not a full mobile/NDK/APK check.
+
+Release optimization, CPU, hardening/unwind settings, linker defaults and Actions test coverage were unchanged by task 6. Compiler changes require an initial dependency recompilation; no compilation-speed or optimized-runtime improvement is claimed. No optimized Lince rebuild, hosted Actions run or task 3.2 linker experiment was started in task 6. No applicable pipe-prefixed requirement was found. Receipts: `target/build-iteration/task-6/`.
+
+Sources: [official stable manifest](https://static.rust-lang.org/dist/channel-rust-stable.toml), [Rust 1.99.1 atomic implementation](https://github.com/rust-lang/rust/blob/1.99.1/library/core/src/sync/atomic.rs), [rust-overlay toolchain-file support](https://github.com/oxalica/rust-overlay#cheat-sheet-common-usage-of-rust-bin).
+
+## 2026-11-01 — Task 3.2: Nix source-package linker choice
+
+Owner-directed choice without new testing: use pinned Wild 0.9 through the Clang driver for x86-64 Linux headless and UI source packages. Existing same-input optimized links favored Wild (2.327s mold → 1.389s Wild), with prior correctness/runtime/package gates passing; that evidence informed the choice but does not qualify this Nix recipe or Rust 1.99.1 artifact. Other platform linkers remain unchanged. Release optimization, CPU, unwind/hardening and package behavior settings are retained. No Nix source-package benchmark, build or runtime test was run for this selection. Task 3.2 is closed by the owner's explicit instruction to choose without testing.
+
+## 2026-11-01 — Task 1.1: Park compiler-cache process
+
+Decision: retain the existing cache-process default for Park protocol iteration. In balanced A1/B1/B2/A2/A3/B3 blocks, normal shared-process totals were 13.25/7.34/6.94s; independently started private TCP-process totals were 8.49/7.19/7.24s. Medians 7.34 → 7.24s save only 0.10s, below the predeclared 0.5s/5% gate; the candidate is not consistently faster. No useful speedup is claimed. The first control also rebuilt Anicca/helper units during local settling, which favored the candidate comparison; it still failed the gate.
+
+Each complete block includes Nix shell/cache startup, an equivalent production input-duration edit, Cargo check and the normal `cargo xtask park protocol-check`, then restoration/check/protocol restart and owned-cache shutdown. All 185 protocol cases pass each time; two pre-existing ignored cases remain. The private process uses the same disk cache, compiler, flags and Cargo jobs, starts outside Cargo and is the only process stopped. Existing shared processes and caches are preserved. Its final sample received four Rust requests, all non-cacheable because Rust incrementality was active: moving this work to a separate cache process did not remove the editing bottleneck. Initial helper/test preparation (2m27s/1m37s) and check preparation (1m09s) are separate setup measurements, not iteration gains. The earlier one-compiler/queued-request observation remains setup evidence only. Probe bytes were restored exactly. This covers protocol editing, not native compositor acceptance. Receipts: `target/build-iteration/task-1-1/`.
+
+## Earlier development-codegen qualification
 
 Earlier R59: native Interface512 shared edit/restoration cycles improved 105.549 → 79.254 s (24.91%); setup cost 214.60 s. Native control recorded 450 passes/10 failures and a 600 s timeout. Four failures were corrected socket-path fixture errors; six behavior cases and the post-catalogue timeout remained unresolved in that run. Keep Interface256 until a valid runtime comparison passes. These are validation blockers for this candidate, not independent build optimizations. The prior failures involved two customization fixtures and Practice rows, mail permissions, vocabulary confirmation and shader completion; reproduce/report any remaining blocker without expanding this plan into product repairs. This is distinct from the rejected Park test-only 512 setting.
 

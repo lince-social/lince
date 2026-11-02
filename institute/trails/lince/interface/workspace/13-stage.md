@@ -22,7 +22,7 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
 
 - [ ] Recover only the needed completed context from [stage 02 summary](02-stage.md#completion-summary); [stage 04 summary](04-stage.md#completion-summary); [stage 11 summary](11-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/nucleus/src/`; `crates/engine/src/`; `crates/store/`; `crates/simulation/src/`; `crates/interface/src/native/`.
 
@@ -144,6 +144,8 @@ Finish able to coordinate a bounded supplier-to-stock-to-production-to-delivery 
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 electronic and functional integration, 13.T01–13.T06 / 13.W01–13.W03.** Consume stage 11a's revisioned component/BOM/placement references through existing takeoff/procurement/assembly recipes. Simplifying a board's runtime or hiding its internals cannot change accepted stock or its authored manufacturing quantities. Functional/simulated sensor events remain scenario inputs; they do not emit live Transfers, Actions or equipment commands without an explicitly authorized operational binding. An approximate production scenario declares its assumptions independently of exact accepted inventory accounting. Preserve manual overrides and reconcile accepted work after real source edits, not after a visual or runtime-model change alone.
 
 ### Source baseline and shared families
 

@@ -14,7 +14,7 @@ jq -e --arg version "$version" --arg revision "$GITHUB_SHA" '.version == $versio
 digest=$(sha256sum "$asset" | cut -d ' ' -f1)
 checksum=$(printf '%b' "$(printf '%s' "$digest" | sed 's/../\\x&/g')" | base64 -w0)
 jq --arg url "https://github.com/$GITHUB_REPOSITORY/releases/download/main-binary/$(basename "$asset")" --arg hash "sha256-$checksum" '{features,target,version,revision} + {url:$url,hash:$hash}' "$temporary/build-info.json" > "$root/binary.json"
-cp flake.nix flake.lock Cargo.toml LICENSE "$root/"
+cp flake.nix flake.lock Cargo.toml rust-toolchain.toml LICENSE "$root/"
 cp institute/server/configuration.nix "$root/institute/server/"
 cp -R institute/trails "$root/institute/"
 cp -R institute/packaging "$root/institute/"

@@ -22,7 +22,7 @@ Finish able to design a precise bracket or mounting part for an authored place, 
 
 - [ ] Recover only the needed completed context from [stage 07 summary](07-stage.md#completion-summary); [stage 09 summary](09-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/workspace_model/ (proposed)`; `crates/interface/src/native/`; `selected bounded CAD adapter/worker (not preselected)`; `crates/xtask/`.
 
@@ -93,6 +93,8 @@ Finish able to design a precise bracket or mounting part for an authored place, 
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 electronics handoff, 10.T05 / 10.W01–10.W03.** Preserve exact board/enclosure geometry, local units, mounting-hole/connector selections and source-to-display correspondence for stage 11a. Do not infer electrical nets, conductive contact or a numerical mesh from visual touching. CAD edits invalidate the affected dimension/clearance/derived geometry; electrical/material implications require their declared dependency/model. Stage 11a owns circuit/footprint/routing UI and checks, so this stage does not prebuild ECAD while proving mechanical geometry.
 
 ### Proposed defaults for refinement
 

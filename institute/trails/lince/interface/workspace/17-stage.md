@@ -125,6 +125,8 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ### Shared draft → model → application contract
 
+- [ ] **2026-11-01 first-consumer reconciliation.** Stages 02/07 already deliver the minimum model descriptor and functional adoption path; stage 15a first delivers numerical run/transition/authority services. This stage extends them with micro-derived material and independent laboratory use, rather than creating a new model registry/runtime. Derived microscopic models use the same external consumer requirements, provenance, source invalidation and supported state-transfer contract. Reduced material models remain alternatives only within their declared conditions; missing microscopic history cannot be reconstructed by restoring stored geometry.
+
 - [ ] **R0037.** **Create draft.** Capture the source revision, selected objects/regions, editing scope and affected consumers. Draft edits have normal preview/cancel/undo. Save an invalid/incomplete draft with diagnostics without changing the accepted model used by other objects.
 
 - [ ] **R0038.** **Declare outputs.** Operators expose typed output slots and their purpose: reusable model, geometry, observation/measurement, result field, trajectory or report. A model output has an applicability/units/state contract. A laboratory result set is already a valid endpoint and does not need to become a material value.
@@ -167,7 +169,7 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 
 ### H7. Shared runs and execution authority
 
-- [ ] **R0275.** This is the retained contract for deferred stages [17](17-stage.md)–[21](21-stage.md) numerical profiles. Core hosting stages [02](02-stage.md)–[15](15-stage.md) needs accepted edits, geometry/asset jobs, existing supported behavior and bounded presence; it does not implement a new scientific runtime or require a remote solver to join. Reuse current activity ownership/lifetime where applicable; add each scientific run/epoch/observation capability only at its deferred stage.
+- [ ] **R0275.** This contract is first exercised for bounded numerical circuits in [stage 15a](15a-stage.md), then extended for the profiles in stages [17](17-stage.md)–[21](21-stage.md). Core through stage 15 includes stage 07 functional activities and stage 11a electronic design, but no new scientific runtime or remote solver requirement. Reuse current activity ownership/lifetime and the delivered 15a services; add only each selected profile's missing run/state/observation capability. H7's location in this file does not make microscopic experiments a circuit prerequisite.
 
 - [ ] **R0276.** Start with one designated execution authority per active domain/run. Its admitted local or explicitly configured worker advances that run's clock/state; participants request permitted inputs and observe bounded results. A weak visitor computer can inspect a run without the solver or original microscopic payload when the published output contract permits it. Visual detail does not select a different physical state, and joining a workspace does not start dormant simulations. Forking a study creates an independently admitted run with its own inputs/state, even when its authored definitions are shared. Changes to a material/force/collider follow the existing safe domain-adoption policy and record the applied run revision.
 
@@ -184,6 +186,8 @@ Finish with both paths working on one implementation: edit a bounded microscopic
 - [ ] **R0376.** A laboratory document can start with a specimen/protocol and end with analysis, using C03 and W03 without material slots or a macro world. Material-control views can instead export applicable models through W02. Both reuse the same editor, job, result, provenance and adoption contracts; model export is an optional extra operation after an experiment.
 
 ### Solver job contract
+
+- [ ] Stage 15a implements the bounded numerical subset of R0515–R0518 first and records its actual APIs/limits in its handoff. Reuse those services here. Model substitutions and imposed inputs form part of captured conditions/results; preserve interval-specific models and essential transition evidence without depending on stage 20 recording.
 
 - [ ] **R0515.** A physical job has immutable inputs, adapter/build/profile, selected supports/materials, physical equations, boundary/initial conditions, nondimensionalization/unit maps, mesh/discretization, time/solver settings, stopping criteria and limits. Its output contains status, actual covered time/space, residuals/convergence, balance diagnostics, uncertainties, result fields, checkpoint compatibility and logs.
 

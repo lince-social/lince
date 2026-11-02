@@ -16,6 +16,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 - [ ] **18.M06.** Configure a bounded articulated mechanism/body from B41 with explicit dynamic joint/contact/mass data and compare it with its authored kinematic pose. Keep one authority for the physical pose, preserve separate visual detail and safely enter/leave the supported physical mode. A visible participant avatar remains nonphysical unless separately admitted; muscle activation and tissue/cloth/hair laws are not implied.
 
+- [ ] **18.M07.** Reuse the shared model inspector/transition path on a mechanical assembly: choose authored kinematic control or admitted dynamics with explicit changed assumptions, and compare a supported rigid aggregate against its fixed-joint detailed assembly. Preserve the declared pose/mass/inertia/momentum contract, reject an unlocked-joint reduction and retain internal design independently of runtime bodies.
+
 ## Entry and scope
 
 - [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
@@ -46,6 +48,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 - [ ] Recover [stage 11's articulation handoff](11-stage.md#completion-summary) for 18.T06 and open only its required rig/pose/control mapping details. A physical adapter extends the existing authored model instead of replacing its editor or creating a second joint definition.
 
+- [ ] **18.T07.** Extend 15a's transition services with the bounded mechanical pair in M07, without a second model-selection or run-authority system. Define the aggregate's mass/inertia and compatible pose/velocity projection, external contact coverage and validity while joints remain fixed. Validate both direct authored-to-dynamic initialization and a genuine detailed-to-equivalent reduction; label imposed kinematic motion separately from a conservation-preserving equivalent. Complete the B42/B44 cross-domain reuse proof and record measured body/constraint/runtime reduction.
+
 ## Delivery cycles and retained workflows
 
 - [ ] **Cycle A — Admit a single physical domain.** Select supported body modes, mass/inertia evidence, contacts, joints/forces and fixed-step clock controls for a real authored assembly. Separate canonical/render/physical poses, record writer epoch and expose pause/reset/step without changing existing Sand/Area semantics.
@@ -61,6 +65,7 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 | **18.W01 — Operate a physical assembly and compare settings** | Built-in dynamics/domain/clock tools plus room assembly recipe; 18.M01/18.M02. Pause/step a hinge or rolling part, compare force settings and observe sleep/wake. | Physical mode, active domain, clock and overload/paused state are understandable. | Chosen reference/constraint/contact checks pass; independent states do not leak; count bodies/contacts/substeps/wake-ups and measure step/input/idle/peak costs within admitted limits. |
 | **18.W02 — Edit or import without corrupting evolving state** | Built-in state-transfer/environment binding; 18.M03/18.M05. Change a collider/material, import definitions and continue or explicitly restart affected evolution. | Transfer support, retained results and refresh/restart scope are clear. | Last usable source survives unsupported transfer; gravity binds once; intrinsic definitions and velocity/temperature/damage stay distinct; measure safe-boundary replacement, interruption and staging peaks. |
 | **18.W03 — Share authoritative articulated interaction** | Built-in participation/pose authority plus B41 recipe; 18.M04/18.M06. Observer watches, permitted participant interacts and an authored mechanism enters/leaves physical mode. | Authored versus dynamic control, observation-only access and visual detail are distinguishable. | One accepted writer/epoch and one root-motion owner; stale/denied inputs = 0; display LOD/presence cannot alter dynamics; measure observation bytes, admitted solver work and core responsiveness. |
+| **18.W04 — Select mechanical models** | Built-in shared transitions plus bounded assembly recipe; 18.M07/18.T07, replay 18.P04. | Imposed kinematics, detailed dynamics and valid aggregate use are distinguishable. | Independent mass/inertia/contact/momentum evidence, invalidation on unlocked joints, state-transfer errors and measured work reduction. |
 
 - [ ] **Checks to select.** Unit/reference tests verify supported integration/joint/force cases, units, destination binding and sleep/wake conditions. Integration/fault tests cover edit transfer, epoch loss, delayed input, unsupported handoff, contact overload and separate clocks. Native replay configures the authored assembly, steps/edits it and switches articulated control while a low-budget visitor observes; benchmark active and settled work separately.
 
@@ -73,6 +78,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 - [ ] **18.P02 — Editing an evolving body has a declared outcome; 18.T04/18.T05 / 18.W02.** Edit/import a supported collider/material/shape while active, exercise valid transfer at the boundary and an unsupported continuation requiring affected pause/refresh. Check the fixture's source/state mapping, retained last usable version, destination gravity applied once and explicit override behavior. Measure interruption, state-transfer/replacement latency and old-new peaks; review the accepted/pending/restart distinction. Preserve 16.W01 material scope and 17.W01 captured adoption without resetting unrelated evolution or accepted history.
 
 - [ ] **18.P03 — Articulation and multiplayer have one writer; 18.T05/18.T06 / 18.W03.** Map the authored B41 mechanism to admitted physical bodies, switch supported control mode and let a permitted participant interact while a weak viewer uses coarser visuals. Inject stale input/epochs, authority restart, denied camera-bound influence and delayed observations. Verify one pose/root authority, no double root motion and no physics/payer grant from mere presence or observation. Record step/observation bytes, constraints and mixed input/frame/peak costs; review actual mode transitions while retaining 11.W03 authored posing and 17.W03 lifetime rules.
+
+- [ ] **18.P04 / 18.W04 — Reuse model substitution in mechanics; 18.M07/18.T07.** Select the fixed-joint assembly, compare its admitted rigid aggregate with the detailed dynamics reference, change modes at a known nonzero motion state, and restore through the supported map. Verify mass/inertia, external contact behavior, momentum/pose/velocity error and measured work within the pair's declared limits. Unlock a joint or change its source and require invalidation/refusal. Switch to an explicitly authored kinematic path and expose its imposed-motion assumption rather than claiming equivalent forces. Retain this built-in cross-domain workflow separately in the handoff.
 
 ## Worked contract example
 
@@ -116,7 +123,7 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 ### Proposed defaults for refinement
 
-- [ ] **R0061.** Scientific runtime — **Proposed default:** Deferred stages [17](17-stage.md)–[21](21-stage.md): explicit bounded jobs, installed/versioned adapters and one admitted physical domain first — **When it may change:** Core geometry/streaming uses only its needed bounded jobs; multiple scientific domains require later isolation/resource tests
+- [ ] **R0061.** Scientific runtime — **Proposed default:** Deferred [stage 15a](15a-stage.md) first supplies bounded numerical jobs, installed/versioned adapters and a circuit domain; stages [17](17-stage.md)–[21](21-stage.md) extend those shared services with their own mathematical profiles — **When it may change:** Core geometry/streaming/functional activities use only their needed bounded jobs; additional scientific domains require their own isolation/resource tests
 
 ### Capability coverage and reusable workflow recipes
 
@@ -124,7 +131,7 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 
 ### K8. Domains, state, observations and scenarios
 
-- [ ] **R0192.** Core delivery uses existing activity/state behavior and only the inert clock/revision/status fields exercised by its geometry/streaming/operational fixture. Additional physical-domain ownership, material/thermal history, scientific scenarios and numerical state transfer below are deferred stages [17](17-stage.md)–[21](21-stage.md); optional calculated-state recording is [stage 20](20-stage.md). These future contracts must not turn into a new runtime prerequisite for core authoring or hosted entry.
+- [ ] **R0192.** Core delivery adds stage 07's bounded functional state/timers/model selection to existing geometry/streaming/operational activities. Numerical domain ownership, clocks, scenarios and state transfer first serve circuits in deferred [stage 15a](15a-stage.md); stages [17](17-stage.md)–[21](21-stage.md) extend them for their actual material/thermal/mechanical history. Optional calculated-state recording is [stage 20](20-stage.md). Numerical contracts do not become a prerequisite for core functional use, authoring or hosted entry.
 
 - [ ] **R0193.** A **domain** owns the active simulation support, units, clock, boundary conditions, state variables, constitutive models, stepping policy and authority/capabilities. An occurrence may participate in different domains through explicit maps. Shared authored definitions do not imply shared mutable velocities, temperatures, random generators or solver buffers.
 
@@ -153,6 +160,8 @@ Finish with a bounded hinged/rolling assembly and loose/mounted Sands governed b
 - [ ] **R0509.** **Existing behavior now; additional simulation deferred.** Before [stage 15](15-stage.md), reuse and stabilize implemented gravity, motion cooling/sleep, terrain support and Areas, plus the bounded Walk/support and geometry replacement needed by the core. The new mass/inertia/material laws, joints/body modes, thermodynamic state/heating, flexible/continuum equations, scientific clocks/transfer and coupling below are stages [16](16-stage.md)–[21](21-stage.md) requirements. This descriptive section is not an instruction to build them during the foundations or stabilize them before they exist.
 
 ### Interactive dynamics
+
+- [ ] Reuse 15a's captured transition/epoch/ownership machinery, but supply independent mechanical state maps and validation. A reduced electrical model provides no proof for a rigid aggregate or kinematic transition. Existing visual rig/source identity and stage 07 authored actuator controls survive unavailable/paused physical models; automatic fallback only follows the saved supported policy. An authored controller can impose motion, while a physical actuator consumes modeled effort/energy only where that domain is implemented.
 
 - [ ] **R0510.** Reuse existing gravity, terrain support and cooling for ordinary unmounted Sands. Extend through explicit body modes: layout-only, static, kinematic, rigid and supported deformable. Layout attraction is an interaction rule; scientific forces have physical units and a named model. Default UI mass/drag can be practical without being reported as measured material physics.
 

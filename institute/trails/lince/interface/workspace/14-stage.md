@@ -20,7 +20,7 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 - [ ] Recover only the needed completed context from [stage 06 summary](06-stage.md#completion-summary); [stage 09 summary](09-stage.md#completion-summary); [stage 13 summary](13-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/engine/src/workspace_sync.rs`; `crates/transport/`; `crates/interface/src/native/protein_area/`; `crates/interface/src/native/`; `crates/simulation/src/`.
 
@@ -90,6 +90,8 @@ Finish with a useful local infrastructure workspace composed from independently 
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 mixed-device integration, 14.T01–14.T03 / 14.W01–14.W03.** Compose permitted functional devices and outputs across Organ boundaries using existing source/rights/activity policy. Sharing a coarse device or observation grants neither private PCB/internal data nor control of the authoritative model or compute budget. Carry imposed/approximate/physical-result provenance through composed views and scenarios. Bind any external observation to its actual source rather than relabeling a simulated camera/sensor as a live physical observation; inter-Organ references do not create automatic distributed solver coupling.
 
 ### Source baseline and shared families
 

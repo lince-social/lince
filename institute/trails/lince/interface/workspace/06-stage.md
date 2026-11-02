@@ -20,7 +20,7 @@ Finish with an offline personal locality: coarse global context, navigable selec
 
 - [ ] Recover only the needed completed context from [stage 05 summary](05-stage.md#completion-summary); [stage 04 summary](04-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/map/`; `crates/interface/src/native/map_castle/`; `crates/engine/src/blob_sync/`; `crates/transport/`; `crates/xtask/`.
 
@@ -93,6 +93,8 @@ Finish with an offline personal locality: coarse global context, navigable selec
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 integration, 06.T07 / 06.W01–06.W03.** Extend the selected offline profile to name its intended capabilities: view a device, edit its internal structure, run its functional model or, after 15a, execute its circuit. Closure includes required port/model definitions, parameters, mappings, permitted data and trusted installed evaluator requirements for that purpose. Do not package every alternative model or internal geometry automatically. Missing optional internals permits supported functional use; missing required behavior input yields incomplete/paused capability rather than invented state. Later B42/B43/B44 replays exercise this same loader and closure validator, including offline switching to an unavailable alternative.
 
 ### Confirmed intent and context recovery
 

@@ -12,6 +12,8 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 - [ ] **04.M04.** Mount a Sand to a verified wall frame, move/rotate its containing space and remove the supporting face. Content retains identity/last pose and has a usable repair path; ordinary unmounted Sands keep existing gravity.
 
+- [ ] **04.M05.** Author a device's named external ports and map them to supported internal targets. Inspect signal versus physical connection kinds, reject incompatible units/directions/coverage, and preserve mappings across a supported source edit without starting a circuit solver.
+
 ## Entry and scope
 
 - [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
@@ -20,7 +22,7 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 - [ ] Recover only the needed completed context from [stage 02 summary](02-stage.md#completion-summary); [stage 03 summary](03-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/workspace_model/ (proposed)`; `crates/interface/src/native/area.rs`; `crates/interface/src/native/area_target.rs`; `crates/interface/src/native/topology/influence.rs`.
 
@@ -39,6 +41,8 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 
 - [ ] **04.T06.** Build the bounded structured context needed by an authorized Actor: selected subject/occurrence/subelement IDs, captured model or projection base, local frame/units, supported fields/relationships/operations and explicitly requested nearby semantic/spatial results. Reuse E4/I3 queries and existing policy rather than a Fiote scene mirror. Return source/coverage/unsupported status and continuation handles for admitted pages; resolve edits by stable identity and captured context. Acquire context for an explicit task or admitted subscription/automation; camera motion or hover does not request model inference by itself.
 
+- [ ] **04.T07.** Extend K5 with the bounded B42 device interface and model-to-interface mapping below. Deliver native port/connection selection and diagnostics through the existing relation/command path. Stage 07 executes functional signal connections; 11a extends electrical topology and 15a supplies numerical meaning.
+
 ## Delivery cycles and retained workflows
 
 - [ ] **Cycle A — Unify selection and spatial queries.** Return occurrence/subelement, representation revision, frame and permission-aware metadata through one shared selection path. Use explicit support capabilities and indexed candidates followed by the appropriate narrow query; preserve unknown/unsupported answers rather than forcing every support into a solid.
@@ -54,6 +58,7 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 | **04.W01 — Independent target and moving influence** | Built-in region/target/binding tools exercised by Area/topology recipes; 04.M01/04.M02. Move a target inside a rotated region, offset-bind an effect and move its anchor. | Region boundary, target location, falloff and immunity are understandable while navigating. | Moving only the target preserves region placement; 2D/3D membership agrees with declared policy; equal/opposite additive effects cancel within the selected numeric tolerance; record candidate counts/query latency at fixed active set and larger empty extent. |
 | **04.W02 — Select and act on the same thing** | Built-in scene/tree/numeric/Agent selection; 04.M03. Capture matching copies, inspect structured context and issue a scoped edit. | Selection highlights, partial metadata and denied/stale targets provide clear feedback. | Cross-view target IDs agree; unauthorized/obsolete retargets = 0; per-principal filtering precedes disclosure; measure bounded context bytes and query/edit work. |
 | **04.W03 — Mount, move and repair content** | Built-in attachment tools; 04.M04. Attach a Sand to a wall, move/rotate the room, delete support and repair. | Content remains usable, last pose is visible and repair can be completed without losing it. | Content identity/accepted data survive; only verified correspondence follows; unmounted Sands retain existing gravity; measure affected mapping/rebuild work and mount/query latency. |
+| **04.W04 — Author compatible device interfaces** | Built-in ports/mappings/diagnostics; 04.M05/04.T07, replay 04.P04. | Signal versus physical connections and repair targets are clear. | Units/coverage/ownership checked; no guessed conversions, recursive loops or solver starts; bounded query/save costs. |
 
 - [ ] **Checks to select.** Property tests cover rotated region membership, frame covariance, off-center targets, immunity and additive cancellation. Integration/fault cases cover deleted/split/denied supports, stale picks, changed captured selection and source generations. Native replay draws/resizes a region, moves its target separately, binds/unbinds an offset and repairs a mounted Sand through actual controls.
 
@@ -66,6 +71,8 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 - [ ] **04.P02 — Captured identity across clients; 04.T04–04.T06 / 04.W02.** Select matching occurrences from scene/tree/numeric controls, obtain bounded Fiote context, then reorder, delete or revoke one captured target before acceptance. Assert consistent target IDs, explicit partial/denied fields and refusal of stale retargeting. Count index candidates, authorized context bytes/pages and changed occurrences; compare with the fixture's permitted selection. Preserve 03.W01 exact units/frames and 02.W02 accepted authority while selections change.
 
 - [ ] **04.P03 — Attachment failure is repairable; 04.T03/04.T04 / 04.W03.** Mount a usable Sand on a wall, rotate/move its room, remove/split the supporting face and repair through native controls. Verify content identity, last accepted pose, verified-only correspondence, undo/reopen and independent ordinary Sand gravity. Measure affected mappings/rebuilds rather than a whole-scene refresh. Review actual reading/input, the unresolved state and a successful repair; retain 03.W03 spatial/flat content identity during the same sequence.
+
+- [ ] **04.P04 / 04.W04 — Connect compatible models; 04.M05/04.T07.** Create a typed device interface, map two alternative models, save/reopen and cross-select its ports. Exercise an incompatible unit, missing required output, repeated writer, deleted internal terminal and unsupported mapping. Assert exact diagnostic targets and no guessed conversion or solver start. Retain this built-in interface workflow with bounded native/query/save measurements in the handoff.
 
 ## Worked contract example
 
@@ -138,6 +145,13 @@ Finish with one shared selection/region system across spatial and flat views. Dr
 - [ ] **R0170.** Transforming a constrained object supplies a solver target or explicitly changes/detaches a constraint; it cannot silently overwrite an incompatible pose. Report which definition, occurrence override or constraint would change before commit.
 
 - [ ] **R0171.** Constraint satisfaction, material/valence validation and legal/operational policy are different checks. An invalid creative design can be saved as a draft with diagnostics; it cannot be represented as a passed solver result or an accepted prohibited operation.
+
+### Device interfaces and model boundaries
+
+- [ ] Ports have stable identity independent of schematic symbols or mesh vertices, quantity/data type, unit/frame where applicable, sign/reference convention, required/optional status and supported connection semantics. Signal input/output, electrical terminal, thermal exchange, mechanical interface and image/data stream are distinct kinds. Implement only this stage's used signal descriptors and inert physical references; later domains own their validators/equations.
+- [ ] A device boundary maps its external ports to a selected model or internal subsystem. Mapping records source/target revisions, coverage, conversions and any supported adapters. Adapters are explicit versioned operators with state/timing/validity where needed; missing signals do not become zero and a Boolean supply flag does not become an electrical source.
+- [ ] Assembly containment, external connection topology, derivation dependencies and runtime solve groups remain distinct graphs. A model can replace a subsystem only at a declared compatible boundary. Signal feedback requires supported scheduling/delay; physical algebraic loops require their domain solver. Reject unsupported cycles rather than treating all connection graphs as DAGs or recursively evaluating forever.
+- [ ] Validate one active owner for each governed output/state within the selected execution composition. Multiple independent domains may act on different state or exchange explicitly, but a fine subsystem and its equivalent cannot both write the same terminals. Stage 07 proves functional ownership; 15a adds grouped electrical solve/transition ownership.
 
 ### H5. Sparse subscriptions and independent delivery policies
 

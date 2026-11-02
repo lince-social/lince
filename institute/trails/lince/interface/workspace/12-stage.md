@@ -16,11 +16,11 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
 
 - [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
 
-- [ ] Confirm the preceding [stage 11](11-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending.
+- [ ] Confirm the preceding [stage 11a](11a-stage.md#completion-summary) passed its workflow gate. Read its short completion summary and the [general stage registry](00-General.md#stage-registry); unresolved predecessor blockers keep this stage pending. Reuse stage 11 geometry/assembly and 02/07 model-selection handoffs where needed; electronic internals are not mandatory content for an independent molecular root.
 
 - [ ] Recover only the needed completed context from [stage 03 summary](03-stage.md#completion-summary); [stage 04 summary](04-stage.md#completion-summary); [stage 02 summary](02-stage.md#completion-summary). Open an older contract section only if the handoff cannot answer the current task; do not reload every past stage or future scientific catalogue.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](00-General.md#deferred-simulation). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/workspace_model/ (proposed)`; `selected bounded structure parsers/profiles`; `crates/interface/src/native/`.
 
@@ -92,6 +92,8 @@ Finish able to open a molecule, periodic crystal or protein as its own workspace
   ```
 
 ## Architecture and task requirements
+
+- [ ] **2026-11-01 model-spectrum integration, 12.T01–12.T04 / 12.W01–12.W03.** Apply shared independent appearance/structure/behavior choices to molecules/crystals/proteins. Structural source remains editable when only a coarse display or an independently provided material/behavior model is selected elsewhere. A molecule cannot acquire an atomistic evaluator or a bulk-property prediction by increasing visual detail. Preserve amount, represented structure, numerical sample and replication independently; stages 17/21 supply actual derived/physical models and validated mappings. Structural edits invalidate dependent derived claims through the same dependency machinery as an edited PCB.
 
 ### Confirmed intent and context recovery
 

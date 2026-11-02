@@ -12,6 +12,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 - [ ] **19.M04.** Reopen captured inputs/results offline and share only permitted outputs with a weak visitor. Solver/run costs remain independently admitted and do not starve ordinary workspace navigation/editing.
 
+- [ ] **19.M05.** For a declared nearly uniform-temperature case, compare a lumped thermal model with the supported spatial model, choose either through the shared inspector and transfer supported thermal state at a safe boundary. Expose the lumped approximation's validity/error and reject it when the selected gradients or requested outputs require spatial resolution.
+
 ## Entry and scope
 
 - [ ] Follow the general [sequential delivery and repair cycles](00-General.md#sequential-delivery-and-repair-cycles), [balanced acceptance](00-General.md#workflow-contracts-and-balanced-acceptance) and [completion compression](00-General.md#completion-compression-and-retained-capability-memory). Read this stage's [delivery cycles and retained workflows](#delivery-cycles-and-retained-workflows), keep pending design detail, and repair a required earlier workflow before advancing dependent work.
@@ -36,6 +38,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 
 - [ ] **19.T04.** Verify a patch/uniaxial case, slender cantilever in its applicable regime and an analytic slab heat-flow case; perform mesh/time refinement and balance checks. Keep approximate interactive flexibility labeled separately from these checked continuum models.
 
+- [ ] **19.T05.** Deliver M05 through 15a's shared model/transition contract and this stage's thermal laws. Specify the representative temperature, stored energy/capacity mapping, boundary/source assumptions, admissible gradient/regime and independent transient reference. Coarsening preserves supported integrated energy; refinement initializes a declared field with uncertainty rather than recovering discarded gradients. Benchmark the pair and retain nonlinear/phase-change and electrothermal feedback as unsupported until their later models pass.
+
 ## Delivery cycles and retained workflows
 
 - [ ] **Cycle A — Validate elasticity on captured source.** Bind named regions/materials/loads/supports to a selected admissible discretization and solve the patch/bar/cantilever references. Report units, assumptions, mapping, convergence and invalid constraints before presenting deformation as a current result.
@@ -51,6 +55,7 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 | **19.W01 — Inspect a verified elastic result** | Built-in supported elasticity study; 19.M01. Assign regions/loads, solve references and inspect mapped deformation/fields. | Units, deformation display scale, constraints, convergence and excluded regions are understandable. | Reference error and mapping validity meet adopted bounds; compare patch/bar/cantilever quantities under refinement; record DOFs, residuals, time and peak solver/display bytes. |
 | **19.W02 — Inspect verified heat flow and transient heating** | Built-in supported thermal study; 19.M02. Set initial/boundary/source data and compare steady/transient results. | Source power, time, temperature versus motion cooling and incomplete results remain clear. | Unit/sign/energy/time-refinement/reference checks pass chosen bounds; report error versus discretization/time step and worker cost, not color smoothness alone. |
 | **19.W03 — Fail safely, reopen and share results** | Built-in job/status/offline/participation; 19.M03/19.M04. Cancel, invalidate, reopen offline and let a weak visitor inspect allowed fields. | Current/stale/failed/partial status and missing coverage support a safe next action. | Invalid/stale results accepted as current = 0; sources/rights survive; record quota/cancel/seek/transfer peaks and unchanged native interaction under admitted jobs. |
+| **19.W04 — Select a thermal approximation** | Shared model transition plus lumped/spatial recipe; 19.M05/19.T05, replay 19.P04. | Validity, initialized gradients and missing local-output coverage are clear. | Independent transient/energy/transition checks, out-of-range refusal and measured numerical cost/peaks. |
 
 - [ ] **Checks to select.** Independent analytic/reference and unit/property tests cover rigid modes, load/boundary maps, energy and time/mesh convergence in supported regimes. Integration/fault tests cover singular models, missing properties, expired maps, cancellation, quota exhaustion and denied outputs. Native replay authors boundary conditions, runs/inspects both studies and reopens offline; numerical pass evidence accompanies the actual result UI.
 
@@ -63,6 +68,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 - [ ] **19.P02 — Heating is different from steady conduction; 19.T02–19.T04 / 19.W02.** Set conductivity/capacity/density, initial temperature, source power and supported boundaries. Compare steady slab heat flow, the uniform insulated energy reference and a spatially varying transient reference with separate mesh/time refinement. Check temperature/flux/power kinds, source/boundary signs and accumulated energy balance against adopted tolerances. Record time steps, cells/DOFs, numerical error, solve/output peaks and native setup/result cost. Review time/temperature versus existing Sand motion cooling without changing its semantics.
 
 - [ ] **19.P03 — Failed studies remain inspectable, not current; 19.T01/19.T03/19.T04 / 19.W03.** Cancel/exhaust a quota, supply singular supports or missing material data, then change a boundary/source while the old job finishes. Assert explicit failed/partial/stale states and no invalid current-result adoption. Reopen permitted inputs/results offline and share a bounded output with a weak visitor denied raw private inputs. Measure cancellation, transfer/decode/release and mixed native response; inspect understandable recovery. Preserve 17.W03 job authority, 18.W02 source/state handling and affected 15.W01–15.W05 stable work.
+
+- [ ] **19.P04 / 19.W04 — Select a thermal approximation; 19.M05/19.T05.** Run the bounded spatial and lumped cases against the independent reference, switch after a nonzero heating interval and compare stored energy, required output and transition error. Request a local hotspot outside the lumped model's coverage and require a supported upgrade or clear refusal. Measure numerical cost and initialization peaks, preserve source/provenance and keep appearance unchanged. Retain this workflow with its actual validity bounds in the handoff.
 
 ## Worked contract example
 
@@ -105,6 +112,8 @@ Finish able to configure and inspect a bounded verified elastic study, steady he
 - [ ] **R0520.** Compare mesh/time refinement against quantities of interest, not just an attractive stress heatmap. Check rigid-body modes, singular supports, near-incompressibility/locking where relevant, linear/nonlinear applicability, and energy/mass balance within declared tolerance. Flexible interactive previews may use approximate methods, but a fast spring mesh is not automatically a validated engineering solid. [NIST's verification/validation guidance](https://www.nist.gov/publications/summary-industrial-verification-validation-and-uncertainty-quantification-procedures) informs the evidence discipline; each domain still needs its own tests.
 
 ### Verification obligations
+
+- [ ] R0819 also applies to the first numerical circuit slice in 15a. Every reduced/aggregate model has its own reference/validity/error evidence; adopting the shared model envelope does not inherit another domain's validation. Results show which physical/functional/imposed inputs contributed and which model was active over each interval.
 
 - [ ] **R0819.** **Deferred scientific verification, stages [16](16-stage.md)–[21](21-stage.md).** Scientific evidence distinguishes code verification, numerical convergence, parameter calibration, validation against measurements and uncertainty. A successful solver exit satisfies none of the others automatically. Capture reference inputs/expected results, tolerances, build/platform/settings, observed outputs and applicability. Avoid calling an unvalidated approximation physical truth. These obligations do not require constructing or certifying new scientific capabilities before [stage 15](15-stage.md).
 

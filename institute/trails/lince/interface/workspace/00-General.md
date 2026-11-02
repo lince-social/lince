@@ -1,6 +1,6 @@
 # Workspace — stage guide
 
-Build a useful native workspace from precise model editing through sparse world navigation and collaboration, stabilize it, then add physical-material and scientific simulation. Each numbered file owns its implementation tasks, required workflows and evidence; the stage registry below is the single delivery order.
+Build a useful native workspace from precise model editing through sparse world navigation, functional behavior, electronics authoring and collaboration, stabilize it, then add circuit, physical-material and scientific simulation. The same object retains its identity and authored detail while supported behavior models change independently of its appearance. Each stage file owns its implementation tasks, required workflows and evidence; the stage registry below is the single delivery order.
 
 ## Next action and context budget
 
@@ -51,7 +51,7 @@ Build a useful native workspace from precise model editing through sparse world 
 
 ## Sequential delivery and repair cycles
 
-- [ ] Complete stages in registry order and tasks in their written order, using small working cycles within the current stage. Finish earlier required outcomes before advancing; later-stage scaffolding cannot substitute for missing earlier behavior. Stage-local Cycle A/B/C descriptions are integration checkpoints for those ordered tasks, not a second task order; revisit a checkpoint only for a newly scheduled extension, changed behavior or unresolved evidence. Stages 16–21 retain their deferred authorization boundary.
+- [ ] Complete stages in registry order and tasks in their written order, using small working cycles within the current stage. Finish earlier required outcomes before advancing; later-stage scaffolding cannot substitute for missing earlier behavior. Stage-local Cycle A/B/C descriptions are integration checkpoints for those ordered tasks, not a second task order; revisit a checkpoint only for a newly scheduled extension, changed behavior or unresolved evidence. Stage 15a and stages 16–21 retain their deferred authorization boundary.
 
 - [ ] Begin each cycle with one existing milestone, the earliest incomplete task that serves it, its retained workflow IDs and only the predecessor handoffs/contracts needed to implement it. Inspect the actual code before choosing reuse or replacement; keep architecture, native interaction, persistence, authority and measurement in the same useful slice.
 
@@ -172,25 +172,27 @@ Build a useful native workspace from precise model editing through sparse world 
 
 ## Stage registry
 
-- [ ] Follow the numbered files in order; the Outcome column states the user-visible gate. Each completion link contains the factual handoff or, until implementation begins, a pending template; an in-progress handoff never implies a passed gate.
+- [ ] Follow registry order, including inserted stages **11a after 11** and **15a after 15**. Existing stage and requirement IDs remain stable. The Outcome column states the user-visible gate. Each completion link contains the factual handoff or, until implementation begins, a pending template; an in-progress handoff never implies a passed gate.
 
 | Stage | Required outcome before advancing | Status | Past-context summary |
 | --- | --- | --- | --- |
 | [01 — Fixtures, budgets and delivery contracts](01-stage.md) | Freeze actual baseline, bounded fixture/replay data and budgets. | Verified historically; isolated resumption check pending | [Summary](01-stage.md#completion-summary) |
-| [02 — Durable models, accepted edits and basic workspace entry](02-stage.md) | Create/edit/undo/save reused objects via native/Agent commands; scoped visits. | Pending | [Summary](02-stage.md#completion-summary) |
+| [02 — Durable models, accepted edits and basic workspace entry](02-stage.md) | Create/edit/undo/save reused objects and inert behavior selections via native/Agent commands; scoped visits. | Pending | [Summary](02-stage.md#completion-summary) |
 | [03 — Frames, local precision and independent views](03-stage.md) | Edit tiny/distant objects precisely across spatial/flat/HUD views. | Pending | [Summary](03-stage.md#completion-summary) |
-| [04 — Selections, shared regions, mounts and Areas](04-stage.md) | Use shared selection, 3D Areas/targets, bindings, immunity and mounts. | Pending | [Summary](04-stage.md#completion-summary) |
+| [04 — Selections, shared regions, mounts and Areas](04-stage.md) | Use shared selection, Areas/targets, mounts and typed device interfaces with explicit compatible mappings. | Pending | [Summary](04-stage.md#completion-summary) |
 | [05 — Continuous sparse scale, navigation and hosted places](05-stage.md) | Ball ↔ building ↔ street ↔ globe/outer context; navigate in first/third person and host it. | Pending | [Summary](05-stage.md#completion-summary) |
 | [06 — Offline city coverage, package closure and bounded streaming](06-stage.md) | Save/search/revisit a bounded offline city and favorite places. | Pending | [Summary](06-stage.md#completion-summary) |
-| [07 — Native room authoring, multi-copy editing and mounted applications](07-stage.md) | Author/furnish a room/castle, customize a supplied character, batch-edit and mount apps. | Pending | [Summary](07-stage.md#completion-summary) |
+| [07 — Native room authoring, multi-copy editing and mounted applications](07-stage.md) | Author/furnish rooms, customize characters, mount apps and operate mixed functional devices with independent detail/model controls. | Pending | [Summary](07-stage.md#completion-summary) |
 | [08 — Caves, selective low-poly optimization and safe support](08-stage.md) | Navigate and simplify room/cave geometry without losing source/support. | Pending | [Summary](08-stage.md#completion-summary) |
 | [09 — Imported bases, authored overlays and physical comparison](09-stage.md) | Compare authored overlays and reimport sources at declared 1:1 scale. | Pending | [Summary](09-stage.md#completion-summary) |
 | [10 — Dimensioned sketches and exact CAD](10-stage.md) | Design/revise a dimensioned CAD part with honest exactness/history. | Pending | [Summary](10-stage.md#completion-summary) |
 | [11 — Assemblies, articulated models, building systems, drawings and fabrication data](11-stage.md) | Reuse buildings/parts; pose/customize characters and anatomy; drawings, takeoff and linked work. | Pending | [Summary](11-stage.md#completion-summary) |
+| [11a — Electronic systems, schematics and PCB authoring](11a-stage.md) | Design a connected board in schematic/layout/3D views and use its functional device model with detailed internals inactive. | Pending | [Summary](11a-stage.md#completion-summary) |
 | [12 — Structural molecule, crystal and protein editing](12-stage.md) | Author molecules/crystals/proteins as independent structural roots. | Pending | [Summary](12-stage.md#completion-summary) |
 | [13 — Production, stock, procurement and civic workflows](13-stage.md) | Receive/reserve/produce/deliver, review civic work and refresh linked drafts. | Pending | [Summary](13-stage.md#completion-summary) |
 | [14 — Independently governed infrastructure and composed workflows](14-stage.md) | Compose sites/operations/public views across independent Organs. | Pending | [Summary](14-stage.md#completion-summary) |
 | [15 — Core stabilization and workflow acceptance gate](15-stage.md) | Pass the complete personal/offline/hosted workflow stabilization gate. | Pending | [Summary](15-stage.md#completion-summary) |
+| [15a — Circuit execution and mixed behavior models — deferred](15a-stage.md) | Run a bounded circuit, replace its internals with a compatible cheaper model, and preserve declared behavior/state in a mixed scene. | Deferred | [Summary](15a-stage.md#completion-summary) |
 | [16 — Material properties, conditions and offline knowledge — deferred](16-stage.md) | Choose physical materials and inspect applicable evidence offline. | Deferred | [Summary](16-stage.md#completion-summary) |
 | [17 — Micro-derived models and independent laboratory experiments — deferred](17-stage.md) | Adopt a checked micro-derived model and run an independent protein study. | Deferred | [Summary](17-stage.md#completion-summary) |
 | [18 — Additional rigid dynamics, joints and authored forces — deferred](18-stage.md) | Interact with admitted rigid/joint/force domains with one writer. | Deferred | [Summary](18-stage.md#completion-summary) |
@@ -210,7 +212,7 @@ Build a useful native workspace from precise model editing through sparse world 
 
 - [ ] Derive linked work from explicit model selections, revisioned quantities and declared recipes. Update unaccepted derived drafts live while preserving manual overrides; reconcile accepted assignments, commitments and Transfers through their authoritative operations. [Stage 11](11-stage.md#revisioned-takeoff-for-linked-work) supplies inputs and [stage 13](13-stage.md#live-derived-work-and-reconciliation) owns this workflow.
 
-- [ ] Choose architecture for the concrete software capabilities in this sequence. Hardware and Geist/world-model research add zero deliverables, dependencies or acceptance gates to Workspace. Reuse the already needed model/view/input/observation/artifact boundaries where useful; add no speculative adapter framework, reserved schema or test obligation solely for those future directions. Native operations, reusable assets and imports provide Fiote's initial authoring path. Real equipment validation remains in Ailuros; preserve the software's existing calibration/output behavior where touched.
+- [ ] Choose architecture for the concrete software capabilities in this sequence. Physical equipment integration, Dynamicware and Geist/world-model research add zero deliverables, dependencies or acceptance gates to Workspace. Electronic design and software simulation are explicit Workspace deliverables in stages 07/11a/15a/21. Reuse the needed model/view/input/observation/artifact boundaries; add no speculative adapter framework solely for future equipment. Real equipment validation remains in Ailuros; preserve existing calibration/output behavior where touched.
 
 - [ ] Make scale scene-independent. The ball/Earth/solar route and independent invented scene are required examples, never fixed engine endpoints/hierarchy/zoom bands. Preserve local physical dimensions, exact authored distinctions, navigation up distinct from gravity, and sparse active cost independent of empty extent.
 
@@ -224,17 +226,37 @@ Build a useful native workspace from precise model editing through sparse world 
 
 - [ ] Keep permitted cached viewing and drafts after host loss; revalidate/reconcile with the same authority and recorded request outcomes. Do not automatically replay mutations, elect a physics writer or donate participant compute. Distinguish accepted geometry, observations, operational facts and conditional results.
 
-- [ ] Preserve direct empirical material choice without microscopic setup, independent specimen/laboratory roots and amount-versus-sample separation. Structural editing is stage 12; new property derivation, experiments and physical behavior wait for the deferred tail. Atoms/proteins do not replicate by moles to simulate a bulk object.
+- [ ] Preserve direct empirical material choice without microscopic setup, independent specimen/laboratory roots and amount-versus-sample separation. Structural editing is stage 12; new property derivation and numerical physical prediction wait for the deferred tail beginning at 15a. Stage 07 functional behavior is core and does not claim circuit/material physics. Atoms/proteins do not replicate by moles to simulate a bulk object.
 
 - [ ] Model characters, animals, robots and mechanisms through the same articulated relations, reference configurations, pose coordinates, deformation bindings, attachments and motion/controller operators. Stage 05 supplies lightweight first/third-person navigation, stage 07 customizes supplied appearance, and [stage 11](11-stage.md#articulated-models-rigs-and-anatomy) delivers shared rig/pose/motion authoring and optional anatomical references. Preserve one model/command/save/query/undo path; do not make a humanoid skeleton or anatomy pack a kernel requirement.
 
 - [ ] Control structural coverage, visible detail and calculated behavior independently. Detailed anatomical structures can unload after editing while a simpler surface, rig and support proxy retain authored behavior. Pose/animation authoring is core; additional force-driven joints, physical cloth/hair, active muscles, tissue mechanics and biomechanical predictions remain deferred. Fiote receives permitted named structures, captured poses and attributed annotations; clinical diagnosis is not a core capability or acceptance gate.
 
+## Interchangeable behavior and electronics delivery
+
+- [ ] **Owner refinement, 2026-11-01.** Deliver mixed authored, functional and physical behavior in the same workspace, with model choice per occurrence, assembly or explicitly selected domain. These planning changes authorize no implementation or completion claim. Preserve the earlier workflows and implementation review boundary.
+
+- [ ] Keep five independent choices: **appearance**, **structural coverage/residency**, **behavior model per domain**, **numerical/temporal settings within that model**, and **active scope/resource policy**. There is no universal scalar fidelity ladder. A detailed PCB may use functional behavior; a box may run a circuit. Each domain supplies only its implemented models and transitions; an empty model slot is not a capability.
+
+- [ ] Use one logical object with revisioned internal definitions, external ports and alternative behavior models. Start abstract and add internals later, or retain detailed internals and select an authored/imported/derived approximation. Each model declares supported inputs/outputs, state, purpose, conditions, provenance, dependencies and cost. Preserve requested observables and any established error bounds; a name such as camera or motion sensor cannot invent behavior. An authored fictional model is useful without claiming physical validation.
+
+- [ ] Treat assembly replacement as an explicit execution boundary: retain the internal design, map the external interface, and stop the superseded evaluators. One active owner writes each governed output/state; multiple domains can coexist through declared exchanges. Physical connections can require a group solve or grouped model change. No solver/world per component, atom, pin or bone; no automatic duplicate power draw or parallel fine/coarse output writers.
+
+- [ ] Allow imposed light, authored motion and other invented effects alongside physical models. Bind their influence on cameras, electrical detectors, contact or heat explicitly through supported adapters. A decorative light may illuminate a rendered image without entering a thermal balance. A physical study using imposed input retains that assumption in its results. Rendering, physical exchange, measurement and accepted operational facts remain distinct.
+
+- [ ] Preserve the authored source when reducing work. Live transition declares carried/discarded state, mappings, initialization error, synchronization instant and continuation/restart behavior. A frozen state is not a cheaper evolving model; restored fine structure cannot recover untracked history. Source edits invalidate affected derived approximations unless an explicit retained approximation is selected with its limitations. Optional recording is not required to retain essential transition provenance.
+
+- [ ] Scene defaults, assembly overrides and occurrence overrides resolve deterministically, with explicit domain/group constraints and an inspector showing the effective source of each setting. Automatic budget policy can choose only approved models that meet required outputs, validity and minimum accuracy; use measured cost, hysteresis and bounded switching overhead. A pinned scientific model is never silently downgraded. Offscreen causal dependencies remain active or follow an explicit approximation/pause policy. Viewer appearance choices never change shared authoritative behavior.
+
+- [ ] Delivery order is concrete: stage 02 stores the minimum model contracts; 04 supplies typed ports and mappings; 05/06 select and package independent detail; 07 executes native functional devices; 10/11 supply geometry/assemblies; 11a authors electronic structure and PCB realization; 15 stabilizes their composition; 15a first executes circuits and numerical substitution. Stages 16–21 extend the same contracts with material, microscopic, rigid, thermal and specialist models. The first circuit uses declared compact parameters and does not depend on molecular, continuum or fabrication simulation.
+
+- [ ] Retain these cross-stage proofs: **B42** mixed lamp/sensor/camera/kinematic device, **B43** schematic/PCB/3D design, **B44** circuit-to-functional substitution. Their canonical specifications are owned by 07, 11a and 15a respectively. Later stages extend them without redefining their earlier acceptance. Freeze actual measured workload/error/resource limits before implementing each slice; plan edits do not retroactively change Stage 01 evidence.
+
 ## Deferred simulation
 
-- [ ] Keep stages 16–21 deferred until stage 15 stabilization passes and the relevant numerical slice is authorized. Retain all material-property resolution, thermal/heating/thermodynamic cooling, additional rigid/joint/flexible/continuum behavior, laboratory experiments, optional scoped recording and specialist science requirements. Physical secondary motion and musculoskeletal studies are separately scoped slices in stages 18–21; authored clips and posed anatomy do not require those solvers.
+- [ ] Keep stage 15a and stages 16–21 deferred until stage 15 stabilization passes and the relevant numerical slice is authorized. Stage 15a owns the first bounded circuit and physical model substitution. Retain all material-property resolution, thermal/heating/thermodynamic cooling, additional rigid/joint/flexible/continuum behavior, laboratory experiments, optional scoped recording and specialist science requirements. Physical secondary motion and musculoskeletal studies remain separately scoped slices in stages 18–21.
 
-- [ ] Integrate and stabilize existing Areas/influence, Sand gravity, motion cooling/sleep and support throughout stages 01–15. Existing motion cooling reduces dynamics work; it does not calculate temperature. Core geometry/CAD constraints, visual appearance, passive definitions, Walk support and safe existing collider replacement remain core modeling/navigation work.
+- [ ] Integrate and stabilize existing Areas/influence, Sand gravity, motion cooling/sleep and support throughout the core registry through stage 15, including 11a. Add bounded functional/device behavior in 07 and electronic authoring/checks in 11a. A functional supply-available signal is not a solved electrical network. Existing motion cooling does not calculate temperature; geometry, CAD constraints and electrical design checks do not certify physical performance.
 
 - [ ] Do not prebuild scientific datasets/workers/schema families because an earlier contract mentions future properties. Recorded/imported definitions and evidence remain usable with honest unsupported status. A mole never allocates an atom population; new numerical fidelity and sample/replica/output counts are separately admitted.
 
@@ -251,17 +273,20 @@ Build a useful native workspace from precise model editing through sparse world 
 | K7/I6/E6/E8, H3/H4/H8, scale/globe/controllers/demand and hosted starter budgets | [05 requirements](05-stage.md#architecture-and-task-requirements) |
 | City coverage/offline packs/portable encoding and F9 | [06 requirements](06-stage.md#architecture-and-task-requirements) |
 | I2, T1/T2, previews, batch variants and Park adapters | [07 requirements](07-stage.md#architecture-and-task-requirements) |
+| Functional devices, native model controls, policy resolution and B42 | [07 behavior contract](07-stage.md#functional-devices-and-model-selection) |
 | T3, cave/simplification and safe derived support | [08 requirements](08-stage.md#architecture-and-task-requirements) |
 | Reimport, authored placement and measured registration | [09 requirements](09-stage.md#architecture-and-task-requirements) |
 | Exact CAD, Rust-first/kernel decision and CADCraft/microCAD/SolidCraft research | [10 requirements](10-stage.md#architecture-and-task-requirements) |
 | Assemblies/building/fabrication geometry, IFC/BCF and shared articulation | [11 requirements](11-stage.md#architecture-and-task-requirements) |
 | Character rigs, poses, deformation, clothing/hair authoring, locomotion profiles and anatomy | [11 articulated models](11-stage.md#articulated-models-rigs-and-anatomy) |
+| Electronic definitions, schematic/PCB/3D correspondence, checks and B43 | [11a requirements](11a-stage.md#architecture-and-task-requirements) |
 | Molecule/crystal/protein structural representation/editing | [12 requirements](12-stage.md#architecture-and-task-requirements) |
 | F1–F7, live derived work/reconciliation, operational accounting/evidence/processes and civic forms | [13 requirements](13-stage.md#architecture-and-task-requirements) |
 | F8/F10, independent infrastructure/observations/public governance | [14 requirements](14-stage.md#architecture-and-task-requirements) |
 | Core/deferred phase boundary and mixed workflow gate | [15 gate](15-stage.md#advance-gate) |
+| First numerical runtime, circuit solving, mixed models, transition contract and B44 | [15a requirements](15a-stage.md#architecture-and-task-requirements) |
 | Physical-material properties/knowledge/applicability | [16 requirements](16-stage.md#architecture-and-task-requirements) |
-| Model adoption, protocol/job/results, H7 and independent experiments | [17 requirements](17-stage.md#architecture-and-task-requirements) |
+| Material/laboratory adoption and H7/job contracts first consumed by 15a, then extended here | [17 requirements](17-stage.md#architecture-and-task-requirements) |
 | K8/E5, additional rigid domains/authority/state transition | [18 requirements](18-stage.md#architecture-and-task-requirements) |
 | Elastic/thermal discretization, reference equations and validation | [19 requirements](19-stage.md#architecture-and-task-requirements) |
 | Optional capture/retention/playback policy | [20 tasks](20-stage.md#ordered-implementation-tasks) |
@@ -279,12 +304,15 @@ Build a useful native workspace from precise model editing through sparse world 
 | B25, B26, B27, B28, B30, B33, B38 | [05](05-stage.md#fixture-specifications-owned-here) |
 | B02 | [06](06-stage.md#fixture-specifications-owned-here) |
 | B03, B31, B40 | [07](07-stage.md#fixture-specifications-owned-here) |
+| B42 — mixed functional devices; phased cross-domain extensions | [07](07-stage.md#functional-devices-and-model-selection) |
 | B04 | [08](08-stage.md#fixture-specifications-owned-here) |
 | B06 | [09](09-stage.md#fixture-specifications-owned-here) |
 | B10, B29, B32 | [10](10-stage.md#fixture-specifications-owned-here) |
 | B41 — articulated character, anatomy and mechanism; phased subsets | [11](11-stage.md#fixture-specifications-owned-here) |
+| B43 — electronic design, PCB and reusable device boundary | [11a](11a-stage.md#fixture-specifications-owned-here) |
 | B08 | [12](12-stage.md#fixture-specifications-owned-here) |
 | B14 | [13](13-stage.md#fixture-specifications-owned-here) |
+| B44 — powered circuit, mixed models and runtime substitution | [15a](15a-stage.md#fixture-specifications-owned-here) |
 | B07, B16 | [16](16-stage.md#fixture-specifications-owned-here) |
 | B09, B17, B18, B37 | [17](17-stage.md#fixture-specifications-owned-here) |
 | B11, B21 | [18](18-stage.md#fixture-specifications-owned-here) |

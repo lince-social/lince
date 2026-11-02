@@ -41,13 +41,15 @@ pub fn probe() -> Result<()> {
     renderer.retain(event);
     let released = Arc::new(AtomicBool::new(false));
     renderer.retain(Retained(released.clone()));
+    let exported = renderer.export_copy(&image.texture)?;
     let output = renderer.clear(image, wgpu::Color::RED)?;
     let elapsed = started.elapsed();
-    let premature = released.load(Ordering::Acquire) || output.ready()?;
+    let premature = released.load(Ordering::Acquire) || output.ready()? || exported.ready()?;
     let _ = release.send(());
     signal.join().map_err(|_| ProbeFailure::at("synchronization_signal", "Signal thread panicked"))?
         .map_err(|error| ProbeFailure::at("synchronization_signal", error))?;
     output.wait_for_probe()?;
+    exported.wait_for_probe()?;
     if elapsed >= Duration::from_secs(1) {
         return Err(ProbeFailure::at("synchronization_nonblocking", "Rendering waited for the deliberately stalled GPU"));
     }

@@ -160,6 +160,11 @@ struct SharedImage {
     allocation: Arc<Allocation>,
 }
 
+struct SharedAllocation {
+    dmabuf: Dmabuf,
+    allocation: Arc<Allocation>,
+}
+
 impl VulkanRenderer {
     #[cfg(feature = "native-presentation")]
     pub(crate) fn client_import_formats(&self) -> Vec<smithay::backend::allocator::Fourcc> {
@@ -300,7 +305,21 @@ impl VulkanRenderer {
     }
 
     fn create_shared_image_format(&self, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<SharedImage> {
-        let (format, vk_format, fourcc) = shared_format(format)?;
+        let SharedAllocation { dmabuf, allocation } = self.allocate_shared_image(width, height, format)?;
+        let (format, _, _) = shared_format(format)?;
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        self.initialize(allocation.clone())?;
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("shared-image-initialize", started);
+        let size = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
+        self.register_shared_image(SharedAllocation { dmabuf, allocation }, size, format)
+    }
+
+    fn allocate_shared_image(&self, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<SharedAllocation> {
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        let (_, vk_format, fourcc) = shared_format(format)?;
         if width == 0 || height == 0 || width > 16384 || height > 16384 {
             return Err(ProbeFailure::at(
                 "image_dimensions",
@@ -373,7 +392,10 @@ impl VulkanRenderer {
         });
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("bind_image_memory", error))?;
-        self.initialize(allocation.clone())?;
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("shared-image-memory", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let memory_fd = khr::external_memory_fd::Device::new(&self.raw_instance, &self.raw_device);
         let fd = unsafe {
             memory_fd.get_memory_fd(
@@ -410,11 +432,16 @@ impl VulkanRenderer {
         let dmabuf = builder
             .build()
             .ok_or_else(|| ProbeFailure::at("dmabuf_plane", "could not build shared image"))?;
-        let size = wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        };
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("shared-image-export-fd", started);
+        Ok(SharedAllocation { dmabuf, allocation })
+    }
+
+    fn register_shared_image(&self, shared: SharedAllocation, size: wgpu::Extent3d, format: wgpu::TextureFormat) -> Result<SharedImage> {
+        let SharedAllocation { dmabuf, allocation } = shared;
+        let image = allocation.image;
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let hal_device = unsafe { self.device.as_hal::<Vulkan>() }
             .ok_or_else(|| ProbeFailure::at("wgpu_texture", "Vulkan HAL unavailable"))?;
         let retained = allocation.clone();
@@ -457,6 +484,8 @@ impl VulkanRenderer {
                 },
             )
         };
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("shared-image-register", started);
         Ok(SharedImage {
             texture,
             dmabuf,

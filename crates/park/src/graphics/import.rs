@@ -315,6 +315,13 @@ impl VulkanRenderer {
     }
 
     pub(crate) fn export_copy(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
+        if source.usage().contains(wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT)
+            && source.dimension() == wgpu::TextureDimension::D2
+            && source.depth_or_array_layers() == 1
+            && source.sample_count() == 1
+        {
+            return self.export_render_target(source);
+        }
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let target = self.create_shared_image_format(source.width(), source.height(), source.format())?;
@@ -342,6 +349,81 @@ impl VulkanRenderer {
         self.retain((source.clone(), target.texture.clone()));
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-release", started);
+        Ok(ExportedImage {
+            completion: self.completion.track(submission)?,
+            dmabuf: target.dmabuf,
+            _allocation: target.allocation,
+        })
+    }
+
+    fn export_render_target(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        let target = self.allocate_shared_image(source.width(), source.height(), source.format())?;
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-allocation", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        let view = source.create_view(&wgpu::TextureViewDescriptor {
+            mip_level_count: Some(1),
+            ..Default::default()
+        });
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        {
+            let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                })],
+                ..Default::default()
+            });
+        }
+        encoder.transition_resources(std::iter::empty(), std::iter::once(wgpu::TextureTransition {
+            texture: source,
+            selector: None,
+            state: wgpu::TextureUses::COPY_SRC,
+        }));
+        let prepare = encoder.finish();
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        let source_image = {
+            let source = unsafe { source.as_hal::<Vulkan>() }
+                .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
+            unsafe { source.raw_handle() }
+        };
+        unsafe {
+            encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
+                let encoder = encoder.ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
+                let command = encoder.raw_handle();
+                let range = vk::ImageSubresourceRange::default()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR).level_count(1).layer_count(1);
+                let initialize = vk::ImageMemoryBarrier::default()
+                    .image(target.allocation.image).subresource_range(range)
+                    .old_layout(vk::ImageLayout::UNDEFINED).new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                    .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED).dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                    .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE);
+                self.raw_device.cmd_pipeline_barrier(command, vk::PipelineStageFlags::TOP_OF_PIPE,
+                    vk::PipelineStageFlags::TRANSFER, vk::DependencyFlags::empty(), &[], &[], &[initialize]);
+                let layers = vk::ImageSubresourceLayers::default().aspect_mask(vk::ImageAspectFlags::COLOR).layer_count(1);
+                self.raw_device.cmd_copy_image(command, source_image, vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    target.allocation.image, vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &[vk::ImageCopy::default().src_subresource(layers).dst_subresource(layers)
+                        .extent(vk::Extent3D { width: source.width(), height: source.height(), depth: 1 })]);
+                let release = vk::ImageMemoryBarrier::default()
+                    .image(target.allocation.image).subresource_range(range)
+                    .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL).new_layout(vk::ImageLayout::GENERAL)
+                    .src_queue_family_index(self.queue_family).dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
+                    .src_access_mask(vk::AccessFlags::TRANSFER_WRITE);
+                self.raw_device.cmd_pipeline_barrier(command, vk::PipelineStageFlags::TRANSFER,
+                    vk::PipelineStageFlags::BOTTOM_OF_PIPE, vk::DependencyFlags::empty(), &[], &[], &[release]);
+                Ok::<_, ProbeFailure>(())
+            })?;
+        }
+        let submission = self.queue.submit([prepare, encoder.finish()]);
+        self.retain((source.clone(), target.allocation.clone()));
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-copy", started);
         Ok(ExportedImage {
             completion: self.completion.track(submission)?,
             dmabuf: target.dmabuf,
@@ -416,6 +498,61 @@ mod tests {
             assert!(validate_plane(64, 32, stride, offset, length, 8).is_err());
         }
         assert!(validate_plane(1, 1, 8, 0, 8, 3).is_err());
+    }
+
+    #[cfg(feature = "native-presentation")]
+    #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn exported_frames_preserve_pixels_after_source_reuse() {
+        let renderer = VulkanRenderer::new().unwrap();
+        let size = wgpu::Extent3d { width: 1920, height: 1080, depth_or_array_layers: 1 };
+        let source = renderer.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("park_export_retention"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        let mut frames = Vec::new();
+        for value in [17, 43, 79, 113, 151, 181, 211, 239] {
+            renderer.queue.write_texture(
+                source.as_image_copy(),
+                &[value, value, value, 255].repeat((size.width * size.height) as usize),
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(size.width * 4), rows_per_image: Some(size.height) },
+                size,
+            );
+            frames.push((value, renderer.export_copy(&source).unwrap()));
+        }
+        drop(source);
+        for (value, frame) in frames {
+            frame.wait_for_probe().unwrap();
+            let pixels = crate::presentation::probe_pixels(&frame.dmabuf).unwrap();
+            assert_eq!(pixels.len(), (size.width * size.height * 4) as usize);
+            assert!(pixels.chunks_exact(4).all(|pixel| pixel == [value, value, value, 255]));
+        }
+    }
+
+    #[cfg(feature = "native-presentation")]
+    #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn exporting_an_uninitialized_render_target_clears_private_memory() {
+        let renderer = VulkanRenderer::new().unwrap();
+        let source = renderer.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("park_export_uninitialized"),
+            size: wgpu::Extent3d { width: 33, height: 17, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        let frame = renderer.export_copy(&source).unwrap();
+        frame.wait_for_probe().unwrap();
+        assert_eq!(crate::presentation::probe_pixels(&frame.dmabuf).unwrap(), vec![0; 33 * 17 * 4]);
     }
 
     #[cfg(feature = "native-presentation")]

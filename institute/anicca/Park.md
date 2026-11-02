@@ -50,7 +50,7 @@
 
 - [ ] **Niri X02 — Fix renderer allocation errors on the corrected build.** Diagnose and eliminate Bevy slab allocator errors during physical Park startup and application opening. **Why:** invalid rendering-resource references can leave native content missing or unstable.
 
-    Reopened: optimized revision 046d54b4391e02ca194b9968cff2264eee7b98e4 passed the isolated nested startup/terminal check, but physical session PID 19886 logged five “Use-after-free: attempted to copy element data for an unallocated key” errors after relogin. Saved corrected-session-startup.log; the isolated pass did not cover this physical behavior.
+    Reopened: optimized revision 046d54b4391e02ca194b9968cff2264eee7b98e4 passed the isolated nested startup/terminal check, but physical session PID 19886 logged five “Use-after-free: attempted to copy element data for an unallocated key” errors after relogin. Saved corrected-session-startup.log; the isolated pass did not cover this physical behavior. Added a shared upload guard for empty clipped meshes: retire their prepared GPU assets and buffers while preserving their main-world identity for later visible updates. GPU regressions passed for repeated empty/visible transitions and workspace clipping pixels/input. Physical startup and application-opening logs still need checking on the new binary; empty geometry has not yet been proven to explain every reported error.
 
 - [ ] **X03 — Test corrected Noctalia lock rendering.** After installing the corrected build, confirm both lock screens and the authentication bar remain stable. **Why:** authentication controls must remain stable and usable.
 

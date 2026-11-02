@@ -16,6 +16,7 @@ pub mod groups;
 pub(crate) mod holes;
 pub mod influence;
 pub mod input;
+mod mesh_upload;
 pub mod output_views;
 pub mod physics;
 pub mod presentation;
@@ -34,6 +35,7 @@ pub struct TopologyPlugin;
 
 impl Plugin for TopologyPlugin {
     fn build(&self, app: &mut App) {
+        mesh_upload::install(app);
         if !app.is_plugin_added::<surface_budget::BudgetPlugin>() {
             app.add_plugins(surface_budget::BudgetPlugin);
         }

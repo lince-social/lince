@@ -496,3 +496,45 @@ fn scaled_and_narrow_monitor_keyboard_controls_preserve_a_failed_save_and_revert
         restarted.desktop.worker.stop().unwrap();
     }
 }
+
+#[test]
+#[ignore = "requires hardware Vulkan and EGL"]
+fn rendering_another_locked_output_preserves_the_ready_authentication_surface() {
+    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let mut fixture = create(&runtime, directory.path());
+    let qh = fixture.queue.handle();
+    let lock = fixture.client.lock_manager.as_ref().unwrap().lock(&qh, ());
+    fixture.exchange();
+    let surface = fixture.client.compositor.as_ref().unwrap().create_surface(&qh, ());
+    let role = lock.get_lock_surface(&surface, fixture.client.output.as_ref().unwrap(), &qh, ());
+    fixture.exchange();
+    let size = *fixture.client.lock_sizes.last().unwrap();
+    let buffer = privacy::buffer(&fixture, size, [160, 160, 160, 255]);
+    surface.attach(Some(&buffer), 0, 0);
+    surface.damage_buffer(0, 0, size[0] as i32, size[1] as i32);
+    surface.commit();
+    fixture.exchange();
+    let output = fixture.desktop.server.lock_surfaces()[0].0;
+    let other = if output == A { B } else { A };
+    let visible = |pixels: &[u8]| pixels.chunks_exact(4).all(|pixel| pixel[..3].iter().all(|channel| channel.abs_diff(160) <= 1) && pixel[3] == 255);
+    let mut ready = false;
+    for _ in 0..10 {
+        if visible(&fixture.output_pixels(output).1) { ready = true; break; }
+    }
+    assert!(ready, "The authentication surface never became visible");
+    for _ in 0..6 {
+        let blank = fixture.output_pixels(other).1;
+        assert!(blank.chunks_exact(4).all(|pixel| pixel[..3] == [0, 0, 0]), "An output without a lock surface exposed desktop pixels");
+        assert!(visible(&fixture.output_pixels(output).1), "Rendering another output discarded the ready authentication surface");
+    }
+    fixture.desktop.server.lock_presented();
+    fixture.exchange();
+    assert_eq!(fixture.client.lock_replies.last(), Some(&true));
+    lock.unlock_and_destroy();
+    fixture.exchange();
+    role.destroy(); surface.destroy(); buffer.destroy();
+    fixture.exchange();
+    fixture.desktop.worker.stop().unwrap();
+}

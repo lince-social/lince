@@ -942,6 +942,9 @@ impl Composition {
     ) -> io::Result<Presented> {
         let mapping = view.map_or_else(RasterMapping::default, |view| view.raster_mapping());
         let surfaces = server.lock_surfaces();
+        self.touched.extend(surfaces.iter().flat_map(|(_, _, nodes)| {
+            nodes.iter().map(|node| (node.surface.clone(), node.content.version))
+        }));
         let mut ready = Vec::new();
         for (id, origin, nodes) in surfaces
             .into_iter()

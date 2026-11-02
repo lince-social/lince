@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 #[serde(into = "String", try_from = "String")]
 pub enum Shortcut {
     Overview,
+    TiledView,
     PointerMove,
     PointerResize,
     RecentNext,
@@ -166,8 +167,9 @@ impl ModKey {
 }
 
 impl Shortcut {
-    pub const ALL: [Self; 118] = [
+    pub const ALL: [Self; 119] = [
         Self::Overview,
+        Self::TiledView,
         Self::PointerMove,
         Self::PointerResize,
         Self::RecentNext,
@@ -290,6 +292,7 @@ impl Shortcut {
     pub fn id(self) -> &'static str {
         match self {
             Self::Overview => "view.overview",
+            Self::TiledView => "view.tiled",
             Self::PointerMove => "pointer.move",
             Self::PointerResize => "pointer.resize",
             Self::RecentNext => "focus.recent",
@@ -464,6 +467,7 @@ impl Shortcut {
         use crate::i18n::Token;
         match self {
             Self::Overview => Token::ShortcutOverview.text(),
+            Self::TiledView => Token::ShortcutTiledView.text(),
             Self::PointerMove => Token::ShortcutPointerMove.text(),
             Self::PointerResize => Token::ShortcutPointerResize.text(),
             Self::RecentNext => Token::ShortcutRecentNext.text(),
@@ -573,7 +577,8 @@ impl Shortcut {
 
     pub fn default_binding(self) -> &'static str {
         match self {
-            Self::Overview => "Mod+Space",
+            Self::Overview => "Mod+Shift+Space",
+            Self::TiledView => "Mod+Space",
             Self::PointerMove => "Mod+MouseLeft",
             Self::PointerResize => "Mod+MouseRight",
             Self::RecentNext => "Alt+Tab",

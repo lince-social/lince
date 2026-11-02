@@ -244,6 +244,7 @@ impl Shortcut {
         use crate::host::{DesktopAction as A, Direction as D};
         Some(match self {
             Self::Overview => A::ToggleOverview,
+            Self::TiledView => A::ToggleTiledView,
             Self::DesktopEdit => A::ToggleEdit,
             Self::Unfocus => A::ToggleFocus,
             Self::RecentNext => A::RecentNext,

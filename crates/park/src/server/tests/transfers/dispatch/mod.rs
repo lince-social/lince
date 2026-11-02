@@ -18,6 +18,7 @@ use smithay::{
 };
 
 mod ready;
+mod tiling;
 mod control;
 mod privacy;
 mod hover_lifetime;

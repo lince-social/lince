@@ -1,5 +1,35 @@
 use super::*;
 
+#[derive(Resource, Default)]
+struct TiledViews(BTreeMap<(Entity, u64), (WorkspaceLayout, CanvasView)>);
+
+pub(super) fn toggle_view(world: &mut World, root: Entity) {
+    if crate::native::shortcuts::keyboard_owned(world) { return; }
+    let Some((workspace, mode)) = world.get::<Workspaces>(root).and_then(|spaces|
+        spaces.entries.iter().find(|space| space.id == spaces.active).map(|space| (space.id, space.desktop.mode())))
+    else { return; };
+    let Some(canvas) = world.get::<CanvasView>(root).copied() else { return; };
+    world.init_resource::<TiledViews>();
+    let saved = world.resource_mut::<TiledViews>().0.remove(&(root, workspace));
+    if let Some((previous_mode, mut previous_canvas)) = saved {
+        use crate::native::actions::Action;
+        if previous_mode == mode { previous_canvas.center = canvas.center; }
+        DesktopAction::SetLayout(previous_mode).apply(world, root);
+        *world.get_mut::<CanvasView>(root).unwrap() = previous_canvas;
+        if let Some(bounds) = viewport(world, root) {
+            let scroll = world.get::<Workspaces>(root).unwrap().entries.iter()
+                .find(|space| space.id == workspace).unwrap().desktop.scroll();
+            world.init_resource::<Runtime>();
+            world.resource_mut::<Runtime>().views.insert((root, workspace), (previous_mode, scroll, bounds.size()));
+        }
+    } else {
+        world.resource_mut::<TiledViews>().0.insert((root, workspace), (mode, canvas));
+        transition(world, root, DesktopAction::SetLayout(WorkspaceLayout::Tiled));
+        world.get_mut::<CanvasView>(root).unwrap().set_zoom(0.5);
+    }
+    if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() { wake.ring(); }
+}
+
 pub(super) struct InitialFocus {
     focused: Option<PlacementId>,
     selected: Option<Entity>,
@@ -132,6 +162,9 @@ pub(super) fn transition(world: &mut World, root: Entity, action: DesktopAction)
                 .remember_free_view(free_canvas.center.to_array(), free_canvas.zoom);
         }
         workspace.desktop.set_mode(next);
+    }
+    if next == WorkspaceLayout::Tiled {
+        if let Some(mut canvas) = world.get_mut::<CanvasView>(root) { canvas.set_zoom(1.0); }
     }
     world.init_resource::<Runtime>();
     let mut runtime = world.resource_mut::<Runtime>();

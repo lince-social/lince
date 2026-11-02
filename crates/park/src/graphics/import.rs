@@ -21,6 +21,8 @@ impl VulkanRenderer {
         target: Option<&wgpu::Texture>,
         damage: Option<&[smithay::utils::Rectangle<i32, smithay::utils::Buffer>]>,
     ) -> Result<wgpu::Texture> {
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         for fd in buffer.handles() {
             let mut poll = [rustix::event::PollFd::new(
                 &fd,
@@ -80,6 +82,26 @@ impl VulkanRenderer {
             buffer_size,
             bytes_per_pixel,
         )?;
+        let usage = wgpu::TextureUsages::RENDER_ATTACHMENT
+            | wgpu::TextureUsages::COPY_DST
+            | wgpu::TextureUsages::COPY_SRC
+            | wgpu::TextureUsages::TEXTURE_BINDING;
+        let previous = target.filter(|_| damage.is_some())
+            .filter(|texture| {
+                texture.width() == size.w as u32
+                    && texture.height() == size.h as u32
+                    && texture.format() == texture_format
+                    && texture.usage().contains(usage)
+            });
+        let bounds = smithay::utils::Rectangle::from_size((size.w, size.h).into());
+        let regions = previous.map_or_else(|| vec![bounds], |_| damage.unwrap_or(&[]).iter()
+            .filter_map(|region| region.intersection(bounds)).collect::<Vec<_>>());
+        if let Some(previous) = previous.filter(|_| regions.is_empty()) {
+            #[cfg(feature = "native-presentation")]
+            crate::runtime::trace_frame("dmabuf-import-retained", started);
+            return Ok(previous.clone());
+        }
+        let previous = previous.filter(|_| !regions.contains(&bounds));
         let layouts = [layout];
         let mut modifier = vk::ImageDrmFormatModifierExplicitCreateInfoEXT::default()
             .drm_format_modifier(0)
@@ -158,17 +180,10 @@ impl VulkanRenderer {
         };
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("vulkan_import_bind", error))?;
-        let usage = wgpu::TextureUsages::RENDER_ATTACHMENT
-            | wgpu::TextureUsages::COPY_DST
-            | wgpu::TextureUsages::COPY_SRC
-            | wgpu::TextureUsages::TEXTURE_BINDING;
-        let previous = target.filter(|_| damage.is_some())
-            .filter(|texture| {
-                texture.width() == size.w as u32
-                    && texture.height() == size.h as u32
-                    && texture.format() == texture_format
-                    && texture.usage().contains(usage)
-            });
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-import-allocation", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some("park_client_content"),
                     size: wgpu::Extent3d {
@@ -203,6 +218,10 @@ impl VulkanRenderer {
             });
         }
         self.queue.submit([encoder.finish()]);
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-import-preserve", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let destination = {
             let destination = unsafe { texture.as_hal::<Vulkan>() }
                 .ok_or_else(|| ProbeFailure::at("vulkan_import_copy", "Vulkan HAL unavailable"))?;
@@ -233,9 +252,7 @@ impl VulkanRenderer {
             let layers = vk::ImageSubresourceLayers::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .layer_count(1);
-            let bounds = smithay::utils::Rectangle::from_size((size.w, size.h).into());
-            let changed = if previous.is_some() { damage.unwrap_or(&[]) } else { std::slice::from_ref(&bounds) };
-            let regions: Vec<_> = changed.iter().filter_map(|region| region.intersection(bounds)).map(|region| vk::ImageCopy::default()
+            let regions: Vec<_> = regions.iter().map(|region| vk::ImageCopy::default()
                 .src_subresource(layers)
                 .dst_subresource(layers)
                 .src_offset(vk::Offset3D { x: region.loc.x, y: region.loc.y, z: 0 })
@@ -292,11 +309,19 @@ impl VulkanRenderer {
             }
         })?;
         self.retain((allocation, texture.clone()));
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-import-copy", started);
         Ok(texture)
     }
 
     pub(crate) fn export_copy(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let target = self.create_shared_image_format(source.width(), source.height(), source.format())?;
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-allocation", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let mut encoder = self.device.create_command_encoder(&Default::default());
         encoder.copy_texture_to_texture(
             source.as_image_copy(),
@@ -304,6 +329,10 @@ impl VulkanRenderer {
             source.size(),
         );
         self.queue.submit([encoder.finish()]);
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-copy", started);
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
         let submission = self.release(
             target.allocation.clone(),
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
@@ -311,6 +340,8 @@ impl VulkanRenderer {
             vk::PipelineStageFlags::TRANSFER,
         )?;
         self.retain((source.clone(), target.texture.clone()));
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-release", started);
         Ok(ExportedImage {
             completion: self.completion.track(submission)?,
             dmabuf: target.dmabuf,
@@ -385,6 +416,50 @@ mod tests {
             assert!(validate_plane(64, 32, stride, offset, length, 8).is_err());
         }
         assert!(validate_plane(1, 1, 8, 0, 8, 3).is_err());
+    }
+
+    #[cfg(feature = "native-presentation")]
+    #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn dmabuf_damage_retains_empty_frames_and_preserves_partial_full_and_resized_pixels() {
+        let renderer = VulkanRenderer::new().unwrap();
+        let source = |size: [u32; 2], value: u8| {
+            let image = renderer.create_shared_image_format(size[0], size[1], wgpu::TextureFormat::Bgra8Unorm).unwrap();
+            let channel = f64::from(value) / 255.0;
+            let image = renderer.clear(image, wgpu::Color { r: channel, g: channel, b: channel, a: 1.0 }).unwrap();
+            image.wait_for_probe().unwrap();
+            image
+        };
+        let read = |texture: &wgpu::Texture| {
+            let image = renderer.export_copy(texture).unwrap();
+            image.wait_for_probe().unwrap();
+            crate::presentation::probe_pixels(&image.dmabuf).unwrap()
+        };
+        let original = source([32, 16], 17);
+        let before = renderer.import_dmabuf(&original.dmabuf).unwrap();
+        let incoming = source([32, 16], 119);
+        let damage = [smithay::utils::Rectangle::new((4, 2).into(), (8, 3).into())];
+        let after = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&before), Some(&damage)).unwrap();
+        let pixels = read(&after);
+        for y in 0..16 {
+            for x in 0..32 {
+                let value = if (4..12).contains(&x) && (2..5).contains(&y) { 119 } else { 17 };
+                assert_eq!(&pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &[value, value, value, 255]);
+            }
+        }
+        let retained = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&[])).unwrap();
+        assert_eq!(retained, after);
+        let outside = [smithay::utils::Rectangle::new((100, 100).into(), (8, 3).into())];
+        assert_eq!(renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&outside)).unwrap(), after);
+        let full = [smithay::utils::Rectangle::from_size((32, 16).into())];
+        let replaced = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&full)).unwrap();
+        assert_eq!(read(&replaced), [119, 119, 119, 255].repeat(32 * 16));
+        let smaller = source([16, 8], 231);
+        let partial = [smithay::utils::Rectangle::from_size((1, 1).into())];
+        let resized = renderer.import_dmabuf_regions(&smaller.dmabuf, Some(&after), Some(&partial)).unwrap();
+        assert_eq!(read(&resized), [231, 231, 231, 255].repeat(16 * 8));
+        assert_eq!(read(&after), pixels);
+        assert_eq!(read(&before), [17, 17, 17, 255].repeat(32 * 16));
     }
 
     #[test]

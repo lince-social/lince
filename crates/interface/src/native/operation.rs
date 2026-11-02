@@ -27,7 +27,7 @@ const COMMANDS: &[(&str, &str, EditAction)] = &[
     ),
     ("/store", "Open the Sand store", EditAction::Store),
     ("/workspaces", "Open workspaces", EditAction::Workspaces),
-    ("/park", "Open Park settings", EditAction::Park),
+    ("/park", "Open Park status and controls", EditAction::Park),
 ];
 
 #[derive(Resource, Default)]

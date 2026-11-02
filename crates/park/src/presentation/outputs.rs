@@ -308,10 +308,24 @@ impl Presentation {
     }
 
     pub fn focus_output(&mut self, output: OutputId) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() || !self.output_state.assignments.outputs().iter().any(|current| current.id == output) { return Ok(()); }
         if self.output_state.assignments.focused() == Some(output) {
             return Ok(());
         }
+        let modal_focus = {
+            let world = self.app.world();
+            world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get()).and_then(|focus| {
+                let mut current = Some(focus);
+                for _ in 0..native::layout::MAX_DEPTH {
+                    let entity = current?;
+                    if world.get::<bevy::input_focus::tab_navigation::TabGroup>(entity).is_some_and(|group| group.modal) {
+                        return Some((focus, entity));
+                    }
+                    current = world.get::<ChildOf>(entity).map(ChildOf::parent);
+                }
+                None
+            })
+        };
         self.application_focus = None;
         self.focus(false)?;
         self.output_state
@@ -320,7 +334,16 @@ impl Presentation {
             .map_err(|_| input_failure("the selected output is unavailable"))?;
         self.select_output_workspace()?;
         self.refresh_outputs()?;
-        self.focus(true)
+        self.focus(true)?;
+        if let Some((focus, modal)) = modal_focus {
+            let world = self.app.world_mut();
+            if world.get_entity(focus).is_ok()
+                && world.get::<bevy::input_focus::tab_navigation::TabGroup>(modal).is_some_and(|group| group.modal)
+                && native::accessibility::owner_context(world, focus, true).is_some_and(|context| context.output() == Some(output)) {
+                world.resource_mut::<bevy::input_focus::InputFocus>().set(focus, bevy::input_focus::FocusCause::Navigated);
+            }
+        }
+        Ok(())
     }
 
     pub fn move_workspace_to_output(

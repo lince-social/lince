@@ -47,7 +47,7 @@ impl Default for LayoutSettings {
             default_width: [1, 2],
             move_step: 64,
             resize_step: 64,
-            gaps: 8,
+            gaps: 0,
             application_opening: ApplicationOpening::Normal,
             workspace_back_and_forth: false,
             focus: Default::default(),
@@ -493,7 +493,7 @@ mod tests {
             )
             .is_err()
         );
-        assert_eq!(LayoutSettings::default().gaps, 8);
+        assert_eq!(LayoutSettings::default().gaps, 0);
         for step in [0, 10_001, u32::MAX] {
             assert!(
                 LayoutSettings {

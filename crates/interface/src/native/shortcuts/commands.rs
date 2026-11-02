@@ -5,6 +5,7 @@ impl Shortcut {
     pub(crate) fn operation_path(self) -> Option<&'static str> {
         Some(match self {
             Self::Overview => "/view/overview",
+            Self::TiledView => "/view/tiled",
             Self::RecentNext => "/focus/recent",
             Self::RecentPrevious => "/focus/recent-previous",
             Self::DesktopEdit => "/edit",
@@ -255,7 +256,7 @@ mod tests {
                 );
                 assert_eq!(
                     shortcut.scope() == super::super::Scope::Park,
-                    action.requires_host()
+                    action.requires_host() || shortcut == Shortcut::WindowedFullscreen
                 );
             }
         }
@@ -264,7 +265,7 @@ mod tests {
     #[test]
     fn desktop_scope_parsing_covers_width_commands_without_a_separate_key_allowlist() {
         let mut settings = Settings::default();
-        settings.set(Shortcut::Overview, "Unbound").unwrap();
+        settings.set(Shortcut::TiledView, "Unbound").unwrap();
         settings.set(Shortcut::CycleWidth, "Mod+Space").unwrap();
         assert_eq!(
             settings.chord(Shortcut::CycleWidth).unwrap().key,

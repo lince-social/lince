@@ -37,6 +37,7 @@ mod tiling;
 pub mod transfers;
 mod transients;
 mod ui;
+pub(crate) use ui::overview_sand;
 mod widths;
 pub(crate) mod windowed_fullscreen;
 pub(crate) use commands::CommandContext;
@@ -495,7 +496,7 @@ pub(crate) fn resolve(world: &mut World) {
             };
             std::mem::take(&mut workspace.desktop)
         };
-        let rows: Vec<_> = world
+        let mut rows: Vec<_> = world
             .query::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember)>()
             .iter(world)
             .filter(|(entity, _, parent, member)| {
@@ -503,6 +504,15 @@ pub(crate) fn resolve(world: &mut World) {
             })
             .map(|(entity, item, _, _)| (entity, *item))
             .collect();
+        rows.sort_by(|(a, first), (b, second)| {
+            let first_window = world.get::<ApplicationWindow>(*a).map(|window| window.surface);
+            let second_window = world.get::<ApplicationWindow>(*b).map(|window| window.surface);
+            first.position.x.total_cmp(&second.position.x)
+                .then_with(|| first.position.y.total_cmp(&second.position.y))
+                .then_with(|| first_window.is_some().cmp(&second_window.is_some()))
+                .then_with(|| first_window.cmp(&second_window))
+                .then_with(|| a.index_u32().cmp(&b.index_u32()))
+        });
         let mut entities = BTreeMap::new();
         let mut inserted = false;
         let previous = world.resource_mut::<Runtime>().seen.remove(&(root, active));
@@ -774,12 +784,14 @@ pub(crate) fn resolve(world: &mut World) {
                             .iter()
                             .any(|item| model.maximized(item.id) && !model.minimized(item.id));
                 let mut restored_view_changed = false;
+                let mut entered_normalized = false;
                 if normalized {
                     if !world
                         .resource::<Runtime>()
                         .fullscreen_views
                         .contains_key(&(root, active))
                     {
+                        entered_normalized = true;
                         world.resource_mut::<Runtime>().fullscreen_views.insert(
                             (root, active),
                             FullscreenView {
@@ -801,13 +813,13 @@ pub(crate) fn resolve(world: &mut World) {
                         || saved.size != bounds.size();
                 }
                 let previous_center = canvas.center;
-                if normalized
+                if entered_normalized
                     || (changed_view || restored_view_changed) && mode != WorkspaceLayout::Free
                 {
                     canvas.center = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
                         bounds.size()[axis] * 0.5 + solution.scroll[axis]
                     }));
-                    canvas.zoom = 1.0;
+                    if entered_normalized { canvas.zoom = 1.0; }
                     world
                         .resource_mut::<Runtime>()
                         .views
@@ -1097,6 +1109,10 @@ impl crate::native::actions::Action for DesktopAction {
             } else {
                 recent::activate(world, root, request);
             }
+            return;
+        }
+        if matches!(self, Self::ToggleTiledView) {
+            tiling::toggle_view(world, root);
             return;
         }
         if matches!(self, Self::ToggleOverview) {
@@ -1702,6 +1718,10 @@ pub(crate) mod tests {
 
     pub(crate) fn fixture() -> (World, Entity, Entity, Entity) {
         let mut world = World::new();
+        world.insert_resource(crate::native::shortcuts::configuration::LayoutSettings { gaps: 8, ..Default::default() });
+        world.init_resource::<Assets<Font>>();
+        world.init_resource::<crate::native::theme::Typography>();
+        world.init_resource::<bevy::input_focus::InputFocus>();
         let mut spaces = Workspaces::default();
         spaces.entries[0]
             .desktop

@@ -1,3 +1,6 @@
+mod programs;
+pub use programs::{Program, Programs, ProgramsSnapshot, Request as ProgramsRequest};
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 

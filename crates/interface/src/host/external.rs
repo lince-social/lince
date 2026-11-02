@@ -210,7 +210,7 @@ impl Settings {
         let command = self
             .0
             .get(&action)
-            .ok_or("Configure this external command in Park settings.")?;
+            .ok_or("Configure this external command in Customization → Park desktop.")?;
         command.validate(action)?;
         if locked && (!action.lockable() || !command.allow_when_locked) {
             return Err("This command is not permitted while locked.".into());

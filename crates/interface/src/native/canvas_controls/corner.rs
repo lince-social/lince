@@ -30,7 +30,7 @@ impl FromWorld for CornerImage {
     fn from_world(world: &mut World) -> Self {
         let pixels = (0..36)
             .flat_map(|y| {
-                (0..36).flat_map(move |x| [255, 255, 255, if x + y >= 35 { 255 } else { 0 }])
+                (0..36).flat_map(move |x| [255, 255, 255, if y >= x { 255 } else { 0 }])
             })
             .collect();
         Self(world.resource_mut::<Assets<Image>>().add(Image::new(
@@ -92,7 +92,7 @@ fn update_at(world: &mut World, now: std::time::Instant) {
                     Hovered::default(),
                     Node {
                         position_type: PositionType::Absolute,
-                        right: px(0),
+                        left: px(0),
                         bottom: px(0),
                         width: px(22),
                         height: px(22),
@@ -107,7 +107,7 @@ fn update_at(world: &mut World, now: std::time::Instant) {
                 ImageNode::new(image),
                 Node {
                     position_type: PositionType::Absolute,
-                    right: px(0),
+                    left: px(0),
                     bottom: px(0),
                     width: px(18),
                     height: px(18),
@@ -209,6 +209,11 @@ pub(crate) mod tests {
             .single(&world)
             .unwrap();
         let glyph = world.get::<Children>(corner).unwrap()[0];
+        for entity in [bar, corner, glyph] {
+            let node = world.get::<Node>(entity).unwrap();
+            assert_eq!(node.left, px(0));
+            assert_eq!(node.right, Val::Auto);
+        }
         assert_eq!(*world.get::<Visibility>(bar).unwrap(), Visibility::Hidden);
         assert_eq!(world.get::<Children>(root).unwrap()[0], corner);
         world.entity_mut(corner).insert(Hovered(true));

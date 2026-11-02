@@ -35,7 +35,7 @@ impl Lock {
 }
 
 impl Server {
-    #[cfg(feature = "session")]
+    #[cfg(feature = "nested")]
     pub(crate) fn lock_stamp(&self) -> u64 {
         self.state.lock.revision
     }

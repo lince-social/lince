@@ -21,6 +21,7 @@ fn explicitly_replacing_a_free_fraction_keeps_the_new_intent_through_mode_round_
 
 fn tiled(count: u8) -> Workspace {
     let mut workspace = Workspace::new(WorkspaceLayout::Tiled);
+    workspace.set_gap(8.0).unwrap();
     for index in 1..=count {
         workspace.insert(item(index)).unwrap();
     }

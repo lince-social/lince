@@ -182,8 +182,21 @@ impl Desktop {
     pub(crate) fn replaying_absolute(&self) -> bool { self.absolute.replaying }
 
     pub(crate) fn defer_absolute(&mut self, event: input::Deferred) -> io::Result<()> {
-        if self.absolute.queue.len() >= 128 { self.recover_input_pressure(); return Ok(()); }
         let receipt = self.absolute.latest_focus.as_ref().map(|(_, receipt)| receipt.clone());
+        if let Some(Queued { delivery: Delivery::Deferred(previous, previous_receipt), .. }) = self.absolute.queue.back_mut()
+            && match (&receipt, previous_receipt) {
+                (Some(current), Some(previous)) => Arc::ptr_eq(current, previous),
+                (None, None) => true,
+                _ => false,
+            }
+            && previous.merge_axis(&event) {
+                return Ok(());
+            }
+        if self.absolute.queue.len() >= 128 {
+            if matches!(event, input::Deferred::Axis(..)) { self.scroll_pressure(); }
+            else { self.recover_input_pressure(); }
+            return Ok(());
+        }
         self.absolute.queue.push_back(Queued { source: Source::Deferred, delivery: Delivery::Deferred(event, receipt), layer: None });
         Ok(())
     }

@@ -113,6 +113,7 @@ messages! {
     ShortcutDeleteSand => ("Delete selected Sands or Castles", "Excluir Sands ou Castles selecionados", None),
     ShortcutToggleEdit => ("Toggle edit mode", "Alternar modo de edição", None),
     ShortcutOverview => ("Overview", "Visão geral", None),
+    ShortcutTiledView => ("Tiled view", "Visão em mosaico", None),
     OverviewMonitor => ("Monitor", "Monitor", None),
     OverviewCurrent => ("Current", "Atual", None),
     OverviewKeys => ("Arrow keys: choose · Enter: open · Escape: back", "Setas: escolher · Enter: abrir · Escape: voltar", None),

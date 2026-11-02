@@ -111,6 +111,7 @@ pub enum DesktopAction {
     Unfocus,
     ToggleFocus,
     ToggleOverview,
+    ToggleTiledView,
     RecentNext,
     RecentPrevious,
     CommitRecent {
@@ -515,6 +516,8 @@ pub enum HostRequest {
     Absolute(input::AbsoluteRequest),
     AbsoluteReload(input::AbsoluteReload),
     External(external::Request),
+    Programs(launch::ProgramsRequest),
+    ProgramsReload(u64),
     Magnification(magnification::Request),
     MagnificationReload(magnification::Reload),
     ExternalReload,

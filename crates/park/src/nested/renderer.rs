@@ -107,6 +107,7 @@ pub(crate) struct Composition {
     views: HashMap<(WlSurface, u64), View>,
     touched: HashSet<(WlSurface, u64)>,
     layers: HashMap<WlSurface, LayerSnapshot>,
+    lock_frames: HashMap<OutputId, (u64, Vec<SurfaceNode>)>,
     popups: HashMap<(WlSurface, OutputId), PopupScene>,
 }
 
@@ -560,6 +561,7 @@ impl Composition {
         if server.locked() {
             return self.render_lock(renderer, target, size, transform, server, canvas.map(|canvas| &canvas.frame), view);
         }
+        self.lock_frames.clear();
         self.views.retain(|(surface, _), _| surface.is_alive());
         let layers = server.layers();
         let native_popups = server.native_popups();
@@ -942,6 +944,11 @@ impl Composition {
     ) -> io::Result<Presented> {
         let mapping = view.map_or_else(RasterMapping::default, |view| view.raster_mapping());
         let surfaces = server.lock_surfaces();
+        let revision = server.lock_stamp();
+        self.lock_frames.retain(|id, (stamp, previous)| {
+            *stamp == revision && previous.iter().all(|node| node.surface.is_alive())
+                && surfaces.iter().any(|(current, _, nodes)| current == id && !nodes.is_empty())
+        });
         self.touched.extend(surfaces.iter().flat_map(|(_, _, nodes)| {
             nodes.iter().map(|node| (node.surface.clone(), node.content.version))
         }));
@@ -955,7 +962,10 @@ impl Composition {
                 complete &= self.import(renderer, node).unwrap_or(false);
             }
             if complete {
-                ready.push((id, origin, nodes));
+                self.lock_frames.insert(id, (revision, nodes));
+            }
+            if let Some((_, nodes)) = self.lock_frames.get(&id) {
+                ready.push((id, origin, nodes.clone()));
             }
         }
         let damage = Rect::from_size(size);
@@ -1011,6 +1021,7 @@ impl Composition {
             .values()
             .flat_map(|layer| &layer.nodes)
             .chain(self.popups.values().flat_map(|popup| &popup.nodes))
+            .chain(self.lock_frames.values().flat_map(|(_, nodes)| nodes))
         {
             retained.insert((node.surface.clone(), node.content.version));
         }

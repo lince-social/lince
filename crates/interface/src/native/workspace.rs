@@ -786,6 +786,9 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Operation {
                         content = Some(crate::native::operation::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Overview {
+                        content = Some(crate::native::layout::desktop::overview_sand(world, root, entity));
+                    }
                     if sand.kind == SandKind::AccessControl {
                         content =
                             Some(crate::native::access_control::populate(world, root, entity));
@@ -1902,6 +1905,22 @@ pub(crate) mod tests {
             .single(app.world())
             .unwrap();
         assert_eq!(restored_settings.0, settings);
+    }
+
+    #[test]
+    fn overview_sand_survives_workspace_restart_with_its_live_action_target() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        crate::native::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::Overview, "", DVec2::new(90.0, 120.0));
+        flush(&mut app);
+        drop(app);
+        let (mut app, root) = fixture(Some(path));
+        let (entity, content) = app.world_mut().query::<(Entity, &StoredSand)>().iter(app.world())
+            .find(|(_, sand)| sand.kind == SandKind::Overview).map(|(entity, sand)| (entity, sand.content.unwrap())).unwrap();
+        assert_eq!(app.world().get::<CanvasItem>(entity).unwrap().position, DVec2::new(90.0, 120.0));
+        assert_eq!(app.world().get::<crate::native::actions::ActionButton>(content).unwrap().target, root);
+        assert_eq!(app.world().get::<ChildOf>(content).unwrap().parent(), entity);
     }
 
     #[test]

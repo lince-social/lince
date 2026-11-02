@@ -108,6 +108,8 @@ impl Plugin for TopologyPlugin {
     }
 }
 
+pub const DEFAULT_DEPTH: f64 = 10.0;
+
 #[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Spatial {
     pub elevation: f64,
@@ -121,7 +123,7 @@ impl Default for Spatial {
         Self {
             elevation: 0.0,
             rotation: DQuat::IDENTITY.to_array(),
-            depth: None,
+            depth: Some(DEFAULT_DEPTH),
             world_pinned: false,
         }
     }
@@ -137,8 +139,8 @@ impl Spatial {
                 .is_none_or(|depth| depth.is_finite() && depth > 0.0 && depth <= 100_000.0)
     }
 
-    pub fn depth(&self, size: Vec2) -> f64 {
-        self.depth.unwrap_or(f64::from(size.min_element()))
+    pub fn depth(&self, _size: Vec2) -> f64 {
+        self.depth.unwrap_or(DEFAULT_DEPTH)
     }
 
     pub fn position(&self, point: DVec2) -> DVec3 {
@@ -236,16 +238,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn depth_follows_resizing_until_overridden() {
+    fn default_and_explicit_depth_stay_fixed_across_resizing_and_serialization() {
         let mut placement = Spatial::default();
-        assert_eq!(placement.depth(Vec2::new(300.0, 100.0)), 100.0);
-        assert_eq!(placement.depth(Vec2::new(80.0, 200.0)), 80.0);
+        assert_eq!(placement.depth, Some(DEFAULT_DEPTH));
+        assert_eq!(placement.depth(Vec2::new(300.0, 100.0)), DEFAULT_DEPTH);
+        assert_eq!(placement.depth(Vec2::new(80.0, 200.0)), DEFAULT_DEPTH);
         placement.depth = Some(45.0);
         assert_eq!(placement.depth(Vec2::new(80.0, 200.0)), 45.0);
         let saved = serde_json::to_string(&placement).unwrap();
         assert_eq!(serde_json::from_str::<Spatial>(&saved).unwrap(), placement);
-        placement.depth = None;
-        assert_eq!(placement.depth(Vec2::new(80.0, 200.0)), 80.0);
+        assert_eq!(placement.depth(Vec2::new(1000.0, 5.0)), 45.0);
+        placement = Spatial::default();
+        assert_eq!(placement.depth(Vec2::new(80.0, 200.0)), DEFAULT_DEPTH);
+        let restored: Spatial = serde_json::from_str(&serde_json::to_string(&placement).unwrap()).unwrap();
+        assert_eq!(restored.depth(Vec2::new(5.0, 1000.0)), DEFAULT_DEPTH);
     }
 
     #[test]

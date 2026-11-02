@@ -104,6 +104,7 @@ impl Action for Change {
 }
 
 fn panel(world: &mut World, parent: Entity, root: Entity, target: Target) {
+    world.init_resource::<Windows>();
     let Some(spaces) = world.get::<Workspaces>(root) else { return; };
     let canvas = spaces.canvas_id.clone();
     let workspace = spaces.active;

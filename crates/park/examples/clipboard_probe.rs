@@ -1,6 +1,6 @@
 #[cfg(target_os = "linux")]
 fn main() -> std::io::Result<()> {
-    if std::env::args().any(|argument| argument == "--check-untrusted") {
+    if std::env::args().any(|argument| argument == "--check-external") {
         return lince_park::clipboard::check_external_client();
     }
     if !lince_park::environment::environment_ready() {

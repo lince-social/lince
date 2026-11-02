@@ -16,6 +16,7 @@ pub enum SandKind {
     Text,
     EditableText,
     Operation,
+    Overview,
     WorkTimer,
     AccessControl,
     Visibility,
@@ -33,11 +34,12 @@ pub enum SandKind {
 }
 
 impl SandKind {
-    pub const ALL: [Self; 16 + cfg!(feature = "stuff") as usize] = [
+    pub const ALL: [Self; 17 + cfg!(feature = "stuff") as usize] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
         Self::Operation,
+        Self::Overview,
         Self::WorkTimer,
         Self::AccessControl,
         Self::Visibility,
@@ -59,6 +61,7 @@ impl SandKind {
             Self::Text => Tr::PlainText.text(),
             Self::EditableText => Tr::EditableText.text(),
             Self::Operation => Tr::Operation.text(),
+            Self::Overview => Tr::ShortcutOverview.text(),
             Self::WorkTimer => Tr::TimeCastle.text(),
             Self::AccessControl => Tr::AccessControl.text(),
             Self::Visibility => Tr::Visibility.text(),
@@ -81,6 +84,7 @@ impl SandKind {
             Self::Text => Tr::PlainTextHelp.text(),
             Self::EditableText => Tr::EditableTextHelp.text(),
             Self::Operation => Tr::OperationHelp.text(),
+            Self::Overview => "Open the workspace and window overview.",
             Self::WorkTimer => Tr::TimeCastleHelp.text(),
             Self::AccessControl => Tr::AccessControlHelp.text(),
             Self::Visibility => Tr::VisibilityHelp.text(),
@@ -209,6 +213,7 @@ pub(crate) fn entry(
         #[cfg(feature = "stuff")]
         SandKind::Freedoom => crate::native::tokens::SandStyleKind::Square,
         SandKind::Square
+        | SandKind::Overview
         | SandKind::Operation
         | SandKind::AccessControl
         | SandKind::Visibility
@@ -615,6 +620,7 @@ fn spawn_with_source(
     }
     let content = match kind {
         SandKind::Operation => Some(crate::native::operation::populate(world, root, sand)),
+        SandKind::Overview => Some(crate::native::layout::desktop::overview_sand(world, root, sand)),
         SandKind::AccessControl => Some(crate::native::access_control::populate(world, root, sand)),
         SandKind::Trust => Some(crate::native::trust_castle::populate(world, root, sand)),
         SandKind::Visibility => Some(crate::native::visibility_castle::populate(
@@ -644,7 +650,7 @@ fn spawn_with_source(
     if !kind.is_panel()
         && !matches!(
             kind,
-            SandKind::Square | SandKind::Operation | SandKind::WorkTimer
+            SandKind::Square | SandKind::Operation | SandKind::Overview | SandKind::WorkTimer
         )
     {
         world.entity_mut(sand).remove::<(Square, Outline)>();

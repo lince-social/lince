@@ -6,7 +6,7 @@ use bevy::prelude::*;
 pub enum TopologyAction {
     ToggleView,
     Pin,
-    AutoDepth,
+    ResetDepth,
     SetDepth,
     Move(usize, f64),
     Rotate(usize, f64),
@@ -204,15 +204,11 @@ impl Action for TopologyAction {
                     }
                 }
             }
-            Self::AutoDepth => {
-                placement.depth = None;
-                let size = world
-                    .get::<crate::native::canvas::CanvasItem>(entity)
-                    .unwrap()
-                    .size;
+            Self::ResetDepth => {
+                placement.depth = Some(super::DEFAULT_DEPTH);
                 if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(entity)
                 {
-                    area.depth = f64::from(size.min_element());
+                    area.depth = super::DEFAULT_DEPTH;
                 }
             }
             Self::ResizeDepth(delta) => {
@@ -406,10 +402,8 @@ pub fn update(world: &mut World) {
                 "Visual bounds"
             } else if imported.is_some() {
                 "Mesh"
-            } else if placement.depth.is_some() {
-                "Manual"
             } else {
-                "Automatic"
+                "Fixed"
             }
         );
         if let Some(mut text) = world.get_mut::<Text>(label)
@@ -532,7 +526,7 @@ pub fn update(world: &mut World) {
             let controls = row(world, panel);
             for (name, action) in [
                 ("World pin", TopologyAction::Pin),
-                ("Automatic depth", TopologyAction::AutoDepth),
+                ("Reset depth", TopologyAction::ResetDepth),
                 ("Width −", TopologyAction::Resize(0, -10.0)),
                 ("Width +", TopologyAction::Resize(0, 10.0)),
                 ("Height −", TopologyAction::Resize(1, -10.0)),
@@ -569,7 +563,7 @@ pub fn update(world: &mut World) {
                 if imported
                     && matches!(
                         action,
-                        TopologyAction::AutoDepth
+                        TopologyAction::ResetDepth
                             | TopologyAction::ResizeDepth(_)
                             | TopologyAction::Resize(1, _)
                     )

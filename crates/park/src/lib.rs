@@ -38,6 +38,9 @@ mod commands;
 mod external_commands;
 
 #[cfg(all(target_os = "linux", feature = "nested"))]
+mod launch_programs;
+
+#[cfg(all(target_os = "linux", feature = "nested"))]
 mod magnification;
 
 #[cfg(all(target_os = "linux", feature = "nested", any(feature = "session", test)))]

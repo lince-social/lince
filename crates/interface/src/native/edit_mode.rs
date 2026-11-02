@@ -189,7 +189,8 @@ impl Plugin for EditModePlugin {
         if !app.is_plugin_added::<crate::native::shortcuts::EditorPlugin>() {
             app.add_plugins(crate::native::shortcuts::EditorPlugin);
         }
-        app.init_resource::<crate::native::tokens::ThemeSettings>()
+        app.init_resource::<crate::host::launch::ProgramsSnapshot>()
+            .init_resource::<crate::native::tokens::ThemeSettings>()
             .init_resource::<crate::native::shortcuts::Settings>()
             .add_observer(crate::native::customization::toggle)
             .add_systems(
@@ -223,6 +224,7 @@ impl Plugin for EditModePlugin {
                     autosave_name,
                     filter_store,
                     crate::native::customization::autosave,
+                    crate::native::customization::programs::refresh,
                     crate::native::canvas_colors::autosave,
                     crate::native::sand_text_editor::autosave,
                     crate::native::canvas_colors::preview,
@@ -540,8 +542,8 @@ fn panel_horizontal(root: f32, width: f32, anchor: f32, usable: [f32; 2]) -> (f3
     let margin = 12.0_f32.min((end - left) * 0.03);
     let maximum = (end - left - margin * 2.0).max(1.0);
     let width = width.clamp(1.0, maximum);
-    let low = root - end + margin;
-    let high = (root - left - margin - width).max(low);
+    let low = left + margin;
+    let high = (end - margin - width).max(low);
     (anchor.clamp(low, high), maximum)
 }
 
@@ -568,7 +570,7 @@ fn anchor_panel(
         }
         let scale = root_node.inverse_scale_factor();
         let position = transform.translation - root_transform.translation + root_node.size() * 0.5;
-        let anchor = ((root_node.size().x - position.x - button.size().x * 0.5) * scale).max(12.0);
+        let anchor = ((position.x - button.size().x * 0.5) * scale).max(12.0);
         let bottom = px((root_node.size().y - position.y + button.size().y * 0.5) * scale + 8.0);
         if let Ok(mut node) = nodes.get_mut(mode.panel) {
             let root_width = root_node.size().x * scale;
@@ -597,9 +599,10 @@ fn anchor_panel(
                         root_width
                     }
                 });
-            let (right, maximum) = panel_horizontal(root_width, width, anchor, usable);
-            if node.right != px(right) || node.bottom != bottom || node.max_width != px(maximum) {
-                node.right = px(right);
+            let (left, maximum) = panel_horizontal(root_width, width, anchor, usable);
+            if node.left != px(left) || node.right != Val::Auto || node.bottom != bottom || node.max_width != px(maximum) {
+                node.left = px(left);
+                node.right = Val::Auto;
                 node.bottom = bottom;
                 node.max_width = px(maximum);
                 if let Some(wake) = &wake {
@@ -654,7 +657,7 @@ pub(crate) fn setup(world: &mut World) {
                 Node {
                     display: Display::None,
                     position_type: PositionType::Absolute,
-                    right: px(16),
+                    left: px(16),
                     top: px(12),
                     bottom: px(64),
                     width: px(376),
@@ -1204,8 +1207,9 @@ pub(crate) fn control(
         EditAction::RestoreWorkspace(_) => Some(Icon::Reset),
         EditAction::SetTrashRetention(_) => None,
         EditAction::Credits => Some(Icon::Credits),
-        EditAction::Information | EditAction::Shortcuts => Some(Icon::Info),
-        EditAction::Park => Some(Icon::General),
+        EditAction::Information => Some(Icon::Info),
+        EditAction::Shortcuts => Some(Icon::Keyboard),
+        EditAction::Park => Some(Icon::Park),
         EditAction::General => Some(Icon::General),
         EditAction::Workspaces => Some(Icon::Workspaces),
         EditAction::Store => Some(Icon::Store),
@@ -1261,6 +1265,7 @@ pub(crate) fn control(
             SandKind::Text => Icon::Text,
             SandKind::EditableText => Icon::EditableText,
             SandKind::Operation => Icon::Forward,
+            SandKind::Overview => Icon::General,
             SandKind::WorkTimer => Icon::Play,
             SandKind::AccessControl => Icon::Person,
             SandKind::Visibility => Icon::Person,
@@ -1395,6 +1400,12 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
     ));
 }
 
+pub(crate) fn controls_settings(world: &mut World, root: Entity, panel: Entity) {
+    let always_show = world.get_resource::<crate::native::canvas_controls::ControlsSettings>().is_some_and(|settings| settings.always_show);
+    control(world, root, panel, EditAction::ToggleAlwaysShowControls,
+        if always_show { Tr::AlwaysControlsOn.text() } else { Tr::AlwaysControlsOff.text() });
+}
+
 fn render_panel_content(world: &mut World, root: Entity) {
     let mode = world.get::<EditMode>(root).unwrap();
     let panel = mode.panel;
@@ -1503,19 +1514,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
     }
     if park {
         label(world, panel, "Park", 22.0);
-        label(world, panel, Tr::ParkSettingsDescription.text(), 14.0);
-        crate::native::layout::desktop::monitors::panel(world, root, panel);
-        crate::native::layout::desktop::magnification::panel(world, root, panel);
-        crate::native::shortcuts::width_settings(world, root, panel);
+        label(world, panel, "Session status, sharing and desktop automation. Desktop settings are in Customization.", 14.0);
         crate::native::topology::surface_budget::panel(world, root, panel);
-        crate::native::layout::desktop::input_settings::panel(world, panel);
-        crate::native::layout::desktop::pointer_settings::panel(world, panel);
-        crate::native::layout::desktop::absolute_settings::panel(world, panel);
-        crate::native::layout::desktop::focus::settings::panel(world, panel);
-        crate::native::layout::desktop::opening::ui::panel(world, root, panel);
-        crate::native::layout::desktop::gestures::panel(world, panel);
-        crate::native::layout::desktop::overview::settings::panel(world, panel);
-        crate::native::layout::desktop::external_settings::panel(world, root, panel);
+        crate::native::sand_panel::button(world, panel, root, "Configure Park in Customization", crate::native::customization::OpenPark);
         crate::native::layout::desktop::control::panel(world, panel);
         crate::native::capture::status_panel(world, panel);
         crate::native::shortcuts::panel(world, panel);
@@ -1930,10 +1931,9 @@ pub(crate) mod tests {
             (360.0, 376.0, 320.0, [80.0, 340.0]),
             (640.0, 720.0, 600.0, [20.0, 620.0]),
         ] {
-            let (right, maximum) = super::panel_horizontal(root, width, anchor, usable);
-            let left = root - right - width.min(maximum);
+            let (left, maximum) = super::panel_horizontal(root, width, anchor, usable);
             assert!(left >= usable[0] - 0.001, "{left} {usable:?}");
-            assert!(root - right <= usable[1] + 0.001);
+            assert!(left + width.min(maximum) <= usable[1] + 0.001);
             assert!(maximum <= usable[1] - usable[0]);
         }
         assert_eq!(
@@ -1971,13 +1971,14 @@ pub(crate) mod tests {
                 });
                 app.update();
                 let node = app.world().get::<Node>(panel).unwrap();
-                let Val::Px(right) = node.right else {
+                let Val::Px(left) = node.left else {
                     panic!("pixel anchor")
                 };
                 let Val::Px(maximum) = node.max_width else {
                     panic!("pixel width")
                 };
-                assert!((right - 10.8 * scale).abs() < 0.001);
+                assert!((left - 10.8 * scale).abs() < 0.001);
+                assert_eq!(node.right, Val::Auto);
                 assert!((maximum - 338.4 * scale).abs() < 0.001);
             }
         }
@@ -2264,6 +2265,9 @@ pub(crate) mod tests {
             (EditAction::Credits, "Licenses and credits"),
         ];
         assert_eq!(controls.len(), expected.len());
+        let icons = controls.iter().map(|(entity, _)| app.world().get::<crate::native::icons::IconButton>(*entity).unwrap().icon as usize)
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(icons.len(), controls.len(), "Each Edit tab needs a distinct icon");
         for _ in 0..2 {
             for ((entity, action), (expected_action, heading)) in controls.iter().zip(expected) {
                 assert_eq!(*action, expected_action);
@@ -2531,6 +2535,27 @@ pub(crate) mod tests {
                 .collect::<Vec<_>>(),
             children
         );
+    }
+
+    #[test]
+    fn park_customization_link_keeps_keyboard_focus_inside_the_rebuilt_panel() {
+        let (mut app, root) = fixture();
+        activate(&mut app, root, EditAction::Toggle);
+        activate(&mut app, root, EditAction::Park);
+        let link = app.world_mut().query::<(Entity, &AccessibilityNode)>().iter(app.world())
+            .find(|(_, node)| node.label() == Some("Configure Park in Customization")).unwrap().0;
+        app.world_mut().resource_mut::<InputFocus>().set(link, FocusCause::Navigated);
+        crate::native::customization::OpenPark.apply(app.world_mut(), root);
+        app.update();
+        assert!(app.world().get::<EditMode>(root).unwrap().enabled);
+        assert!(app.world().get::<EditMode>(root).unwrap().customization);
+        assert!(app.world().get_entity(link).is_err());
+        let focused = app.world().resource::<InputFocus>().get().unwrap();
+        let control = app.world().get::<EditControl>(focused).unwrap();
+        assert_eq!(control.root, root);
+        assert!(matches!(control.action, EditAction::Customization));
+        crate::native::customization::OpenPark.apply(app.world_mut(), root);
+        assert!(app.world().get::<EditMode>(root).unwrap().enabled);
     }
 
     #[cfg_attr(test, test)]

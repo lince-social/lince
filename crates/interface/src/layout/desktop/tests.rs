@@ -221,6 +221,7 @@ fn explicit_application_state_requests_do_not_toggle_or_steal_focus() {
 
 fn workspace(count: u8) -> Workspace {
     let mut workspace = Workspace::new(WorkspaceLayout::ScrollingColumns);
+    workspace.set_gap(8.0).unwrap();
     for value in 1..=count {
         workspace.insert(item(value)).unwrap();
     }

@@ -89,9 +89,10 @@ pub(crate) fn pointer(
         Query<(), With<crate::native::time_castle::TimeSettings>>,
         Query<(), With<crate::native::time_castle::AttachedCard>>,
     ),
-    (owners, order): (
+    (owners, order, members): (
         Query<(&VisualOwner, &GlobalTransform)>,
         Query<(&super::stacking::Order, &super::stacking::Plane)>,
+        Query<&crate::native::workspace::WorkspaceMember>,
     ),
     parents: Query<&ChildOf>,
     assets: Query<
@@ -225,7 +226,11 @@ pub(crate) fn pointer(
         }
         let filter = |entity| {
             owners.get(entity).is_ok_and(|(owner, _)| {
-                !areas.contains(owner.0)
+                parents.get(owner.0).is_ok_and(|parent| parent.parent() == root)
+                    && members.get(owner.0).is_ok_and(|member| layers.map_or(member.0 == spaces.active, |layers| {
+                        layers.0.iter().any(|layer| layer.workspace == member.0)
+                    }))
+                    && !areas.contains(owner.0)
                     && !excluded.contains(owner.0)
                     && !arrows.contains(owner.0)
                     && (!clocks.contains(owner.0)

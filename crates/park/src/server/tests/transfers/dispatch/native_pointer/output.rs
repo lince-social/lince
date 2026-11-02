@@ -13,17 +13,6 @@ fn note(world: &mut World, root: Entity, workspace: u64, text: &'static str) -> 
     (world.get::<native::layout::LayoutBox>(note).unwrap().id, note, field.to_bits())
 }
 
-fn point(fixture: &mut Fixture, id: [u8; 16]) -> [f64; 2] {
-    fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|current| current.frame.geometry.as_ref()
-        .is_some_and(|geometry| geometry.items.iter().any(|item| item.id == ItemId::Native(id) && item.output == OutputId(2)))));
-    let frame = &fixture.desktop.current.as_ref().unwrap().frame;
-    let item = frame.geometry.as_ref().unwrap().items.iter().find(|item| item.id == ItemId::Native(id)).unwrap();
-    let source = std::array::from_fn(|axis| item.mapping.surface.origin()[axis] + item.mapping.surface.size()[axis] * 0.5);
-    let point = item.mapping.canvas_point(source).unwrap();
-    assert!(frame.input.native_pointer.target(point).is_some());
-    point
-}
-
 fn click(fixture: &mut Fixture, point: [f64; 2]) {
     fixture.desktop.move_pointer(point, 20).unwrap();
     fixture.tick();
@@ -46,7 +35,8 @@ fn field_point(fixture: &mut Fixture, field: u64) -> [f64; 2] {
     loop {
         if let Some((output, points)) = fixture.inspect(move |canvas| canvas.native_test_points(Entity::from_bits(field))) {
             let point = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
-            if output == OutputId(2) && fixture.desktop.current.as_ref().unwrap().frame.input.native_pointer.target(point).is_some() { return point; }
+            if output == OutputId(2) && fixture.desktop.current.as_ref().unwrap().frame.input.native_pointer.target(point)
+                .is_some_and(|target| target.contains(Entity::from_bits(field))) { return point; }
         }
         assert!(Instant::now() < deadline, "The actual companion editor did not publish an eligible field target");
         std::thread::sleep(Duration::from_millis(2));
@@ -177,17 +167,17 @@ fn actual_output_handoff_replays_a_valid_native_click_and_refuses_a_replacement_
         let mut fixture = Fixture::new(harness, &runtime, &profile);
         fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.geometry.as_ref().is_some_and(|geometry| geometry.outputs.len() == 2)));
         let workspace = fixture.desktop.current.as_ref().unwrap().frame.geometry.as_ref().unwrap().outputs.iter().find(|output| output.id == OutputId(2)).unwrap().workspace;
-        let (root, id, old_note, old_field) = fixture.inspect(move |canvas| {
+        let (root, old_note, old_field) = fixture.inspect(move |canvas| {
             let world = canvas.world_mut();
             let root = world.query_filtered::<Entity, With<native::workspace::Workspaces>>().single(world).unwrap();
             let workspaces = world.get::<native::workspace::Workspaces>(root).unwrap().entries.iter().map(|workspace| workspace.id).collect::<Vec<_>>();
             for workspace in workspaces { native::workspace_config::set_physics(world, root, workspace, false); }
-            let (id, note, field) = note(world, root, workspace, "Original editor");
-            (root, id, note, field)
+            let (_, note, field) = note(world, root, workspace, "Original editor");
+            (root, note, field)
         });
         let serial = fixture.desktop.worker.input(Input::Output(OutputId(1))).unwrap();
         fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.input_serial >= serial && frame.frame.output == Some(OutputId(1))));
-        let destination = point(&mut fixture, id);
+        let destination = field_point(&mut fixture, old_field);
         fixture.desktop.move_pointer(destination, 23).unwrap();
         fixture.tick();
         let (_, release) = fixture.pause();
@@ -206,11 +196,11 @@ fn actual_output_handoff_replays_a_valid_native_click_and_refuses_a_replacement_
         fixture.until(|fixture| fixture.desktop.pending_output.is_none() && fixture.desktop.deferred.is_empty()
             && fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.output == Some(OutputId(2))));
         let expected = if replace {
-            let (replacement_id, _, field) = observed.recv_timeout(Duration::from_secs(1)).unwrap();
+            let (_, _, field) = observed.recv_timeout(Duration::from_secs(1)).unwrap();
             assert_ne!(field, old_field);
             assert!(fixture.desktop.current.as_ref().unwrap().frame.input.editor.as_ref().is_none_or(|editor| editor.owner != field));
             assert_eq!(fixture.inspect(move |canvas| canvas.world_mut().get::<EditableText>(Entity::from_bits(field)).unwrap().value().to_string()), "Replacement editor");
-            let fresh = point(&mut fixture, replacement_id);
+            let fresh = field_point(&mut fixture, field);
             click(&mut fixture, fresh);
             field
         } else { old_field };

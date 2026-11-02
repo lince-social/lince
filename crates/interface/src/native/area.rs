@@ -129,7 +129,7 @@ impl InfluenceArea {
             opacity: 0.5,
             center: center.to_array(),
             size: size.to_array(),
-            depth: size.min_element(),
+            depth: crate::native::topology::DEFAULT_DEPTH,
             target: AttractionTarget::Center,
             shape,
             direction: Direction::Attract,
@@ -493,7 +493,7 @@ pub fn spawn_area(
     let elevation = world
         .get::<crate::native::topology::view::View>(root)
         .map_or(0.0, |view| view.plane);
-    let depth = (area.depth != area.size[0].min(area.size[1])).then_some(area.depth);
+    let depth = Some(area.depth);
     let pickable = crate::native::canvas_item::area_pickable(world, root);
     Some(
         world
@@ -577,7 +577,7 @@ fn sync_geometry(
         let size = DVec2::from_array(area.size).as_vec2();
         let depth = placement
             .and_then(|placement| placement.depth)
-            .unwrap_or_else(|| area.size[0].min(area.size[1]));
+            .unwrap_or(crate::native::topology::DEFAULT_DEPTH);
         if area.depth != depth {
             area.depth = depth;
         }
@@ -598,7 +598,7 @@ pub(crate) mod tests {
     use serde_json::json;
 
     #[cfg_attr(test, test)]
-    fn area_depth_tracks_resizing_until_manually_fixed_and_can_return_to_automatic() {
+    fn area_depth_defaults_and_manual_values_survive_resize_and_reset() {
         let mut world = World::new();
         let root = world
             .spawn(crate::native::workspace::Workspaces::default())
@@ -612,7 +612,7 @@ pub(crate) mod tests {
         .unwrap();
         world.get_mut::<InfluenceArea>(owner).unwrap().size = [200.0; 2];
         world.run_system_cached(sync_geometry).unwrap();
-        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 200.0);
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, crate::native::topology::DEFAULT_DEPTH);
         world
             .get_mut::<crate::native::topology::Spatial>(owner)
             .unwrap()
@@ -624,9 +624,9 @@ pub(crate) mod tests {
         world
             .get_mut::<crate::native::topology::Spatial>(owner)
             .unwrap()
-            .depth = None;
+            .depth = Some(crate::native::topology::DEFAULT_DEPTH);
         world.run_system_cached(sync_geometry).unwrap();
-        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 300.0);
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, crate::native::topology::DEFAULT_DEPTH);
         let snapshot = SavedArea {
             placement: crate::native::sand_placement::Placement::capture(&world, owner),
             workspace: 1,
@@ -634,9 +634,35 @@ pub(crate) mod tests {
         };
         let snapshot: SavedArea =
             serde_json::from_value(serde_json::to_value(snapshot).unwrap()).unwrap();
-        assert_eq!(snapshot.area.depth, 300.0);
-        assert_eq!(snapshot.placement.spatial.depth, None);
+        assert_eq!(snapshot.area.depth, crate::native::topology::DEFAULT_DEPTH);
+        assert_eq!(snapshot.placement.spatial.depth, Some(crate::native::topology::DEFAULT_DEPTH));
     }
+    #[cfg_attr(test, test)]
+    fn explicit_depth_equal_to_initial_width_is_preserved_after_resize_and_restore() {
+        let mut world = World::new();
+        let root = world.spawn(Workspaces::default()).id();
+        let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));
+        area.depth = 100.0;
+        let owner = spawn_area(&mut world, root, 1, area).unwrap();
+        world.get_mut::<InfluenceArea>(owner).unwrap().size = [300.0; 2];
+        world.run_system_cached(sync_geometry).unwrap();
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 100.0);
+        let saved = SavedArea {
+            placement: crate::native::sand_placement::Placement::capture(&world, owner),
+            workspace: 1,
+            area: world.get::<InfluenceArea>(owner).unwrap().clone(),
+        };
+        let restored: SavedArea = serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
+        assert_eq!(restored.placement.spatial.depth, Some(100.0));
+        let mut world = World::new();
+        let root = world.spawn(Workspaces::default()).id();
+        let copy = spawn_area(&mut world, root, 1, restored.area).unwrap();
+        world.get_mut::<InfluenceArea>(copy).unwrap().size = [50.0; 2];
+        world.run_system_cached(sync_geometry).unwrap();
+        assert_eq!(world.get::<InfluenceArea>(copy).unwrap().depth, 100.0);
+        assert_eq!(world.get::<crate::native::topology::Spatial>(copy).unwrap().depth, Some(100.0));
+    }
+
     fn area() -> InfluenceArea {
         let mut area = InfluenceArea::new(AreaShape::Circle, DVec2::ZERO, DVec2::splat(200.0));
         area.strength = 100.0;
@@ -1016,7 +1042,8 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
-        area_depth_tracks_resizing_until_manually_fixed_and_can_return_to_automatic,
+        area_depth_defaults_and_manual_values_survive_resize_and_reset,
+        explicit_depth_equal_to_initial_width_is_preserved_after_resize_and_restore,
         targets_stay_separate_from_boundaries_and_depth_survives_shape_edits,
         reach_expands_the_perimeter_without_changing_local_membership,
         follow_shape_preserves_concavities_and_radius_when_moved_or_resized,
@@ -1039,7 +1066,7 @@ pub(crate) mod tests {
             DVec2::new(0.0, 100.0),
         ])
         .unwrap();
-        assert_eq!(area.depth, 100.0);
+        assert_eq!(area.depth, crate::native::topology::DEFAULT_DEPTH);
         assert!(!area.contains(DVec2::from_array(area.center)));
         assert!(area.contains(area.target_position()));
         let boundary = area.outline();
@@ -1067,7 +1094,7 @@ pub(crate) mod tests {
         area.center[0] += 25.0;
         assert_eq!(area.target_position(), before + DVec2::new(25.0, 0.0));
         area.size = [400.0, 200.0];
-        assert_eq!(area.depth, 100.0);
+        assert_eq!(area.depth, crate::native::topology::DEFAULT_DEPTH);
         assert_eq!(area.target_position(), before + DVec2::new(25.0, 0.0));
         area.target = AttractionTarget::Center;
         assert!(area.contains(area.target_position()));

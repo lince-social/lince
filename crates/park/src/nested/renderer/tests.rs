@@ -1,5 +1,47 @@
 use super::*;
 
+#[cfg(feature = "server-tests")]
+pub(crate) struct PendingImport(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+#[cfg(feature = "server-tests")]
+impl Drop for PendingImport {
+    fn drop(&mut self) {
+        self.0.store(true, std::sync::atomic::Ordering::Release);
+    }
+}
+
+#[cfg(feature = "server-tests")]
+pub(crate) fn hold_import(composition: &mut Composition, renderer: &mut GlesRenderer, node: &SurfaceNode) -> PendingImport {
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    use smithay::backend::renderer::sync::{Fence, Interrupted, SyncPoint};
+    #[derive(Debug)]
+    struct PendingFence(Arc<AtomicBool>);
+    impl Fence for PendingFence {
+        fn is_signaled(&self) -> bool { self.0.load(Ordering::Acquire) }
+        fn wait(&self) -> Result<(), Interrupted> {
+            while !self.is_signaled() { std::thread::sleep(Duration::from_millis(1)); }
+            Ok(())
+        }
+        fn is_exportable(&self) -> bool { false }
+        fn export(&self) -> Option<std::os::fd::OwnedFd> { None }
+    }
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !composition.import(renderer, node).unwrap() {
+        assert!(Instant::now() < deadline, "The replacement lock image did not import");
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    let key = (node.surface.clone(), node.content.version);
+    let view = composition.views.remove(&key).unwrap();
+    let pending = PendingImport(Arc::new(AtomicBool::new(false)));
+    let fence = SyncPoint::from(PendingFence(pending.0.clone()));
+    let watch = composition.watch(fence.clone()).unwrap();
+    composition.copies.insert(key, Copy {
+        _source: view.texture.clone(), view, _retained: None,
+        buffer: node.content.clone(), fence, _watch: watch,
+    });
+    pending
+}
+
 #[test]
 fn texture_damage_uses_destination_coordinates_after_output_and_control_clipping() {
     let rectangle = |x, y, w, h| Rect::new((x, y).into(), (w, h).into());

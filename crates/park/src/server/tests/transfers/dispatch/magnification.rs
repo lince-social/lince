@@ -105,6 +105,11 @@ pub(super) fn open(fixture: &mut Fixture) {
     settle(fixture);
     fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.input.modal));
     activate(fixture, "Park");
+    activate(fixture, "Configure Park in Customization");
+    let displays = entity(fixture, "Displays and magnification");
+    if fixture.inspect(move |canvas| canvas.world_mut().get::<bevy::a11y::AccessibilityNode>(displays).unwrap().is_expanded()) != Some(true) {
+        activate(fixture, "Displays and magnification");
+    }
     activate(fixture, "Edit display magnification");
 }
 

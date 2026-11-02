@@ -45,6 +45,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
             #[cfg(feature = "stuff")]
             SandKind::Freedoom => SandStyleKind::Square,
             SandKind::Square
+            | SandKind::Overview
             | SandKind::Operation
             | SandKind::AccessControl
             | SandKind::Visibility

@@ -71,6 +71,9 @@ mod popups;
 mod positioner;
 pub use popups::PopupSnapshot;
 mod activation;
+mod security;
+#[cfg(all(test, feature = "server-tests"))]
+mod clipboard_tests;
 mod foreign;
 mod management;
 pub(crate) mod control;
@@ -337,7 +340,7 @@ struct ClientState {
     connected: Arc<AtomicBool>,
     native_canvas: bool,
     compositor: CompositorClientState,
-    native_clipboard: bool,
+    unrestricted_clipboard: bool,
     capabilities: Vec<crate::launch::Capability>,
     count: Arc<AtomicUsize>,
     counted: AtomicBool,
@@ -424,6 +427,8 @@ struct State {
     drag_origin: Option<smithay::reexports::wayland_server::Weak<WlSurface>>,
     dragging: bool,
     data_control: smithay::wayland::selection::wlr_data_control::DataControlState,
+    ext_data_control: smithay::wayland::selection::ext_data_control::DataControlState,
+    security_contexts: Vec<smithay::wayland::security_context::SecurityContextListenerSource>,
     foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState,
     foreign_handles: BTreeMap<SurfaceId, smithay::wayland::foreign_toplevel_list::ForeignToplevelHandle>,
     _relative_pointer: smithay::wayland::relative_pointer::RelativePointerManagerState,
@@ -443,6 +448,7 @@ pub struct Server {
     display: Display<State>,
     state: State,
     listener: Option<ListeningSocket>,
+    security: security::Listeners,
     clients: Arc<AtomicUsize>,
     started: Instant,
 }
@@ -451,7 +457,7 @@ impl Server {
     #[cfg(feature = "nested")]
     pub(crate) fn event_fds(&mut self) -> io::Result<Vec<OwnedFd>> {
         use std::os::fd::AsFd;
-        let mut fds = vec![self.display.backend().poll_fd().try_clone_to_owned()?];
+        let mut fds = vec![self.display.backend().poll_fd().try_clone_to_owned()?, self.security.event_fd()?];
         if let Some(listener) = &self.listener {
             fds.push(listener.as_fd().try_clone_to_owned()?);
         }
@@ -477,8 +483,13 @@ impl Server {
         >(&handle, None, |client| {
             client
                 .get_data::<ClientState>()
-                .is_some_and(|data| data.native_clipboard || data.capabilities.contains(&crate::launch::Capability::Clipboard))
+                .is_some_and(|data| data.unrestricted_clipboard || data.capabilities.contains(&crate::launch::Capability::Clipboard))
         });
+        let ext_data_control = smithay::wayland::selection::ext_data_control::DataControlState::new::<State, _>(
+            &handle, None, |client| client.get_data::<ClientState>().is_some_and(|data|
+                data.unrestricted_clipboard || data.capabilities.contains(&crate::launch::Capability::Clipboard)));
+        smithay::wayland::security_context::SecurityContextState::new::<State, _>(&handle,
+            |client| client.get_data::<ClientState>().is_some_and(|data| data.unrestricted_clipboard));
         let mut seats = SeatState::new();
         let mut seat = seats.new_wl_seat(&handle, "park");
         seat.add_keyboard(Default::default(), 25, 500)
@@ -575,6 +586,8 @@ impl Server {
             drag_origin: None,
             dragging: false,
             data_control,
+            ext_data_control,
+            security_contexts: Vec::new(),
             foreign: smithay::wayland::foreign_toplevel_list::ForeignToplevelListState::new_with_filter::<State>(
                 &display.handle(),
                 |client| client.get_data::<ClientState>().is_some_and(|data| data.capabilities.contains(&crate::launch::Capability::WindowList)),
@@ -599,6 +612,7 @@ impl Server {
             display,
             state,
             listener: None,
+            security: security::Listeners::new()?,
             clients: Arc::new(AtomicUsize::new(0)),
             started: Instant::now(),
         };
@@ -608,7 +622,7 @@ impl Server {
             let (stream, client) = UnixStream::pair()?;
             server.display.handle().insert_client(stream, Arc::new(ClientState {
                 connected: Arc::new(AtomicBool::new(true)),
-                native_canvas: true, native_clipboard: false, capabilities: Vec::new(),
+                native_canvas: true, unrestricted_clipboard: false, capabilities: Vec::new(),
                 compositor: CompositorClientState::default(), count: server.clients.clone(),
                 counted: AtomicBool::new(false),
             }))?;
@@ -674,17 +688,14 @@ impl Server {
     }
 
     pub fn insert_client(&mut self, stream: UnixStream) -> io::Result<Client> {
-        let native_clipboard = rustix::net::sockopt::socket_peercred(&stream).is_ok_and(
-            |credentials| credentials.pid.as_raw_nonzero().get() == std::process::id() as i32,
-        );
-        self.insert_authorized_client(stream, Vec::new(), native_clipboard)
+        self.insert_authorized_client(stream, Vec::new(), true)
     }
 
     fn insert_authorized_client(
         &mut self,
         stream: UnixStream,
         capabilities: Vec<crate::launch::Capability>,
-        native_clipboard: bool,
+        unrestricted_clipboard: bool,
     ) -> io::Result<Client> {
         if self.clients.load(Ordering::Acquire) >= MAX_CLIENTS {
             return Err(io::Error::other("Park client limit reached"));
@@ -694,7 +705,7 @@ impl Server {
             connected: Arc::new(AtomicBool::new(true)),
             native_canvas: false,
             compositor: CompositorClientState::default(),
-            native_clipboard,
+            unrestricted_clipboard,
             capabilities,
             count: self.clients.clone(),
             counted: AtomicBool::new(true),
@@ -780,6 +791,12 @@ impl Server {
             }
         }
         self.display.dispatch_clients(&mut self.state)?;
+        let contexts = std::mem::take(&mut self.state.security_contexts);
+        for stream in self.security.dispatch(contexts)? {
+            if self.clients.load(Ordering::Acquire) < MAX_CLIENTS {
+                self.insert_authorized_client(stream, Vec::new(), false)?;
+            }
+        }
         self.state.finish_color_information();
         self.state.sync_foreign();
         self.state.refresh_capture();
@@ -1661,6 +1678,12 @@ impl smithay::wayland::selection::wlr_data_control::DataControlHandler for State
     }
 }
 smithay::delegate_data_control!(State);
+impl smithay::wayland::selection::ext_data_control::DataControlHandler for State {
+    fn data_control_state(&self) -> &smithay::wayland::selection::ext_data_control::DataControlState {
+        &self.ext_data_control
+    }
+}
+smithay::delegate_ext_data_control!(State);
 impl ClientDndGrabHandler for State {
     fn started(
         &mut self,

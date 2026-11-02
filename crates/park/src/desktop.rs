@@ -102,6 +102,7 @@ pub(crate) struct Desktop {
     pub(crate) pending_focus: Option<(u64, Option<lince_interface::host::SurfaceId>)>,
     pub(crate) pending_output: Option<(u64, Option<OutputId>)>,
     pub(crate) deferred: std::collections::VecDeque<input::Deferred>,
+    pub(crate) scroll_saturated: bool,
     pub(crate) scene_revision: u64,
     pub(crate) server_revision: u64,
     pub(crate) viewports: Vec<OutputViewport>,
@@ -120,6 +121,7 @@ pub(crate) struct Desktop {
     capture_demand: Option<lince_interface::host::capture::Demand>,
     logout_pending: bool,
     external: crate::external_commands::ExternalCommands,
+    programs: crate::launch_programs::LaunchPrograms,
     magnification: crate::magnification::State,
     magnification_sent: Option<lince_interface::host::magnification::Snapshot>,
     magnification_caret: Option<lince_interface::host::magnification::Caret>,
@@ -402,6 +404,7 @@ impl Desktop {
             pending_focus: None,
             pending_output: None,
             deferred: Default::default(),
+            scroll_saturated: false,
             scene_revision: 0,
             server_revision: 0,
             viewports: Vec::new(),
@@ -420,6 +423,7 @@ impl Desktop {
             capture_demand: None,
             logout_pending: false,
             external: Default::default(),
+            programs: Default::default(),
             magnification: Default::default(),
             magnification_sent: None,
             magnification_caret: None,
@@ -595,6 +599,31 @@ impl Desktop {
                     self.send(Input::ExternalSettings(self.external.snapshot.clone()))?;
                 }
                 HostRequest::ExternalReload => self.reload_external()?,
+                HostRequest::Programs(request) => {
+                    let path = self.command_file.clone();
+                    self.programs.request(request, self.server.locked(), |settings, expected| {
+                        let path = path.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+                        crate::commands::Commands::save_programs(path, settings, expected)
+                    });
+                    self.send(Input::Programs(self.programs.snapshot.clone()))?;
+                }
+                HostRequest::ProgramsReload(request) => {
+                    let result = (|| {
+                        if self.server.locked() { return Err(io::Error::other("Unlock Park before reloading session programs.")); }
+                        let path = self.command_file.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+                        crate::commands::Commands::load(path)
+                    })();
+                    let outcome = match result {
+                        Ok(commands) => {
+                            self.programs.configure(commands.programs());
+                            lince_interface::host::input::InputOutcome::Saved { warning: None }
+                        }
+                        Err(error) => lince_interface::host::input::InputOutcome::Failed(error.to_string()),
+                    };
+                    self.programs.snapshot.last_request = self.programs.snapshot.last_request.max(request);
+                    self.programs.snapshot.response = Some(lince_interface::host::input::InputResponse { request, outcome });
+                    self.send(Input::Programs(self.programs.snapshot.clone()))?;
+                }
                 HostRequest::Magnification(request) => self.magnification_request(request)?,
                 HostRequest::MagnificationReload(request) => self.magnification_reload(request)?,
                 HostRequest::Absolute(request) => {
@@ -793,6 +822,7 @@ impl Desktop {
         renderer: &mut GlesRenderer,
     ) -> io::Result<bool> {
         if let Some(completed) = self.worker.frame() {
+            self.scroll_saturated = false;
             if completed.scene_revision != self.scene_serial {
                 return Ok(false);
             }
@@ -1056,6 +1086,7 @@ impl Desktop {
                     let _ = self.send(Input::Feedback(message));
                 }
                 self.magnification.configure(commands.outputs.iter().map(|(name, output)| (name.clone(), output.magnification)).collect());
+                self.programs.configure(commands.programs());
                 self.external.configure(commands.external);
                 self.server.configure_keyboard(commands.keyboard.clone())?;
                 #[cfg(feature = "session")]
@@ -1075,6 +1106,7 @@ impl Desktop {
         self.magnification.reconcile(&self.server.display_snapshot(), self.command_file.is_some());
         let _ = self.flush_magnification();
         let _ = self.send(Input::ExternalSettings(self.external.snapshot.clone()));
+        let _ = self.send(Input::Programs(self.programs.snapshot.clone()));
     }
 
     fn command(&mut self, action: DesktopAction, repeating: bool) {
@@ -1159,7 +1191,9 @@ impl Desktop {
                 self.flush_magnification()?;
                 if self.external.configure(commands.external) { self.stop_external_repeats(); }
             }
-            Err(error) => self.external.snapshot.message = Some(error.to_string()),
+            Err(error) => {
+                self.external.snapshot.message = Some(error.to_string());
+            }
         }
         self.send(Input::ExternalSettings(self.external.snapshot.clone()))
     }
@@ -1344,6 +1378,11 @@ impl Desktop {
                 |(_, application)| application.is_none(),
             );
         if native != self.native_keyboard {
+            if native && !self.worker.can_input(1) {
+                let serial = self.current.as_ref().map_or(0, |current| current.input_serial);
+                self.pending_output.get_or_insert((serial, None));
+                return Ok(());
+            }
             self.compose.reset();
             if native { self.worker.focus_native(true); } else { self.blur_native()?; }
             self.native_keyboard = native;

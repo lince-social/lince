@@ -13,8 +13,8 @@ fn marking_does_not_move_or_hide_and_twenty_reveals_keep_one_item_and_restore_it
     for mode in [WorkspaceLayout::Free, WorkspaceLayout::Tiled] {
         for floating in [false, true] {
             let mut home = workspace(mode);
-            if floating { home.toggle_floating(id(1), viewport()).unwrap(); }
             home.set_item_width(id(1), Width::Third).unwrap();
+            if floating { home.toggle_floating(id(1), viewport()).unwrap(); }
             let original = home.items().iter().find(|item| item.id == id(1)).unwrap().clone();
             let original_width = home.item_width(id(1));
             let before = home.solve(viewport(), viewport()).unwrap();

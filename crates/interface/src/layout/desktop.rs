@@ -195,7 +195,7 @@ impl Workspace {
             maximized: BTreeSet::new(),
             influences: BTreeMap::new(),
             mode,
-            gap: 8.0,
+            gap: 0.0,
             items: Vec::new(),
             columns: Vec::new(),
             rows: rows::Rows::default(),
@@ -906,6 +906,7 @@ impl Workspace {
                     &entries,
                     &hidden,
                     &self.influences,
+                    &self.maximized,
                 );
                 solved = items;
                 extent = size;
@@ -1057,7 +1058,7 @@ impl Workspace {
         }
         for item in &mut solved {
             if self.maximized(item.id)
-                && (self.mode != WorkspaceLayout::ScrollingColumns || item.floating)
+                && (!matches!(self.mode, WorkspaceLayout::Tiled | WorkspaceLayout::ScrollingColumns) || item.floating)
             {
                 let rules = entries[&item.id].rules;
                 let header = if self.mode == WorkspaceLayout::Tiled && self.compact_group(item.id).is_some() { COMPACT_HEADER_HEIGHT } else { 0.0 };

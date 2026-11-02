@@ -30,6 +30,8 @@ use std::{
 
 static NEXT_FRAME_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
+mod input_queue;
+
 pub(crate) fn tracing_frames() -> bool {
     static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *ENABLED.get_or_init(|| std::env::var_os("LINCE_PARK_TRACE_FRAMES").is_some())
@@ -114,6 +116,7 @@ pub enum Input {
     CursorWarpSupport(bool),
     PointerFocus(lince_interface::host::input::FocusTarget, u64),
     ExternalSettings(lince_interface::host::external::Snapshot),
+    Programs(lince_interface::host::launch::ProgramsSnapshot),
     Magnification(lince_interface::host::magnification::Snapshot),
     MagnificationCaret(Option<lince_interface::host::magnification::Caret>),
     Application(SurfaceId),
@@ -154,7 +157,7 @@ impl InputProgress {
 
 pub struct CanvasWorker {
     scene: LatestSender<Scene>,
-    inputs: SyncSender<(u64, Input)>,
+    inputs: input_queue::Sender,
     next_input: AtomicU64,
     progress: InputProgress,
     pointer: LatestSender<(u64, [f32; 2], u64)>,
@@ -230,7 +233,6 @@ impl CanvasWorker {
         let (scene, scenes) = latest_channel();
         let (images, frames) = latest_channel();
         let (starting, started) = latest_channel();
-        let (inputs, events) = sync_channel(128);
         let (pointer, motion) = latest_channel();
         let (commands, requests) = sync_channel(64);
         let (failed, failures) = sync_channel(1);
@@ -243,6 +245,7 @@ impl CanvasWorker {
         let native_focus = lince_interface::host::input::InputActivity::default();
         let worker_focus = native_focus.clone();
         let retired_input = Arc::new(AtomicU64::new(0));
+        let (inputs, events) = input_queue::channel(retired_input.clone());
         let worker_retired = retired_input.clone();
         let progress = InputProgress::default();
         let worker_progress = progress.clone();
@@ -322,6 +325,11 @@ impl CanvasWorker {
             .map_err(|_| std::io::Error::other("the Park canvas has stopped"))?;
         self.wake();
         Ok(())
+    }
+
+    #[cfg(feature = "nested")]
+    pub(crate) fn can_input(&self, count: usize) -> bool {
+        self.inputs.can_send_controls(count)
     }
 
     pub fn input(&self, input: Input) -> Result<u64, TrySendError<Input>> {
@@ -438,7 +446,7 @@ fn run(
     configuration: Configuration,
     linear_color: bool,
     scenes: LatestReceiver<Scene>,
-    events: Receiver<(u64, Input)>,
+    events: input_queue::Receiver,
     motion: LatestReceiver<(u64, [f32; 2], u64)>,
     images: LatestSender<Completed>,
     starting: LatestSender<Started>,
@@ -543,7 +551,7 @@ fn run(
         }
         let mut pointer_stamp = None;
         while !button_pending {
-            let Some((serial, event)) = queued_event.take().or_else(|| events.try_recv().ok()) else {
+            let Some((serial, event)) = queued_event.take().or_else(|| events.pop()) else {
                 break;
             };
             let absolute_focus = {
@@ -662,11 +670,10 @@ fn run(
                     pointer_stamp = Some(stamp);
                 }
                 Input::CapturedScroll(delta, unit, phase, position, stamp, target) => {
-                    if canvas.native_pointer_current(&target) {
-                        canvas.pointer(position)?;
-                        canvas.scroll(delta, unit, phase)?;
-                    }
                     pointer_stamp = Some(stamp);
+                    if !canvas.native_pointer_current(&target) { continue; }
+                    canvas.pointer(position)?;
+                    canvas.scroll(delta, unit, phase)?;
                 }
                 Input::Focus(focused) => canvas.focus(focused)?,
                 Input::Modifiers(pressed) => canvas.modifiers(&pressed)?,
@@ -710,6 +717,7 @@ fn run(
                 },
                 Input::Keyboard(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
                 Input::ExternalSettings(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
+                Input::Programs(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
                 Input::Magnification(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
                 Input::MagnificationCaret(caret) => { canvas.magnification_caret(caret); }
                 Input::PointerSettings(snapshot) => { canvas.world_mut().insert_resource(snapshot); }

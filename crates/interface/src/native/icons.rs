@@ -63,6 +63,8 @@ pub enum Icon {
     Detach,
     EventsLocal,
     EventsShared,
+    Park,
+    Keyboard,
 }
 
 #[derive(Component, Clone)]
@@ -115,6 +117,9 @@ impl Default for IconStyle {
 #[derive(Component)]
 pub(crate) struct InlineTooltip;
 
+#[derive(Component)]
+pub(crate) struct AnchoredTooltip;
+
 #[derive(Component, Default, Clone)]
 #[require(Node, TooltipDuration)]
 pub struct Tooltip(pub String);
@@ -158,7 +163,7 @@ pub(crate) fn image(world: &World, icon: Icon) -> Option<ImageNode> {
 
 impl FromWorld for IconAtlas {
     fn from_world(world: &mut World) -> Self {
-        let rows = (Icon::EventsShared as u32 + 1).div_ceil(5);
+        let rows = (Icon::Keyboard as u32 + 1).div_ceil(5);
         let image = world.resource_mut::<Assets<Image>>().add(Image::new(
             Extent3d {
                 width: 640,
@@ -264,6 +269,13 @@ impl Plugin for IconPlugin {
             .add_observer(|event: On<FocusLost>, mut hints: ResMut<Hints>| {
                 if hints.keyboard == Some(event.entity) {
                     hints.keyboard = None;
+                    hints.generation = hints.generation.wrapping_add(1);
+                }
+            })
+            .add_observer(|event: On<bevy::ui_widgets::Activate>, anchors: Query<(), With<AnchoredTooltip>>, mut hints: ResMut<Hints>| {
+                if anchors.contains(event.entity) {
+                    if hints.hovered == Some(event.entity) { hints.hovered = None; }
+                    if hints.keyboard == Some(event.entity) { hints.keyboard = None; }
                     hints.generation = hints.generation.wrapping_add(1);
                 }
             });
@@ -374,6 +386,10 @@ fn hints(world: &mut World) {
         let transform = world.get::<UiGlobalTransform>(target)?;
         let a = transform.transform_point2(-node.size() * 0.5);
         let b = transform.transform_point2(node.size() * 0.5);
+        if world.get::<AnchoredTooltip>(target).is_some()
+            && world.get::<bevy::ui::CalculatedClip>(target).is_some_and(|clip| {
+                Rect::from_corners(a, b).intersect(clip.clip).size().min_element() <= 0.0
+            }) { return None; }
         let mut root = target;
         loop {
             if world.get::<Visibility>(root) == Some(&Visibility::Hidden)
@@ -494,8 +510,11 @@ fn hints(world: &mut World) {
         .filter(|size| size.min_element() > 0.0)
         .unwrap_or(Vec2::new(200.0, 36.0));
     let left = px((point.x - bounds.x * 0.5).clamp(4.0, (viewport.x - bounds.x - 4.0).max(4.0)));
-    let top = px(if point.y - size.y * 0.5 - bounds.y - 8.0 >= 4.0 {
-        point.y - size.y * 0.5 - bounds.y - 8.0
+    let above = point.y - size.y * 0.5 - bounds.y - 8.0;
+    let top = px(if world.get::<AnchoredTooltip>(target).is_some() {
+        above.clamp(4.0, (viewport.y - bounds.y - 4.0).max(4.0))
+    } else if above >= 4.0 {
+        above
     } else {
         (point.y + size.y * 0.5 + 8.0).min((viewport.y - bounds.y - 4.0).max(4.0))
     });
@@ -525,9 +544,12 @@ fn hints(world: &mut World) {
             .and_then(|icon| world.get::<TooltipDuration>(icon.source))
             .copied()
             .unwrap_or_default();
-        world
-            .entity_mut(tip)
-            .insert((Visibility::Inherited, TimeLimit(duration.0)));
+        world.entity_mut(tip).insert(Visibility::Inherited);
+        if world.get::<AnchoredTooltip>(target).is_some() {
+            world.entity_mut(tip).remove::<TimeLimit>();
+        } else {
+            world.entity_mut(tip).insert(TimeLimit(duration.0));
+        }
         world.resource_mut::<Hints>().positioning = false;
         ring(world);
     }
@@ -641,7 +663,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn atlas_contains_every_icon_and_straight_alpha_for_tinting() {
         let pixels = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
-        for index in 0..=Icon::EventsShared as usize {
+        for index in 0..=Icon::Keyboard as usize {
             let mut ink = false;
             for y in index / 5 * 128..(index / 5 + 1) * 128 {
                 for x in index % 5 * 128..(index % 5 + 1) * 128 {
@@ -651,6 +673,21 @@ pub(crate) mod tests {
                 }
             }
             assert!(ink, "empty icon tile {index}");
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn edit_tab_icons_have_distinct_visible_glyphs() {
+        let atlas = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
+        let mut glyphs = std::collections::BTreeSet::new();
+        for icon in [Icon::General, Icon::Store, Icon::Palette, Icon::Workspaces, Icon::Info,
+            Icon::Keyboard, Icon::Park, Icon::Circle, Icon::Credits] {
+            let index = icon as usize;
+            let mut alpha = Vec::with_capacity(128 * 128);
+            for y in index / 5 * 128..(index / 5 + 1) * 128 {
+                for x in index % 5 * 128..(index % 5 + 1) * 128 { alpha.push(atlas[(y * 640 + x) * 4 + 3]); }
+            }
+            assert!(glyphs.insert(alpha), "Duplicate visible Edit tab icon: {icon:?}");
         }
     }
 
@@ -920,6 +957,7 @@ pub(crate) mod tests {
     crate::native::laboratory_cases! {
         icons_share_one_atlas_and_style_changes_reuse_the_glyph,
         atlas_contains_every_icon_and_straight_alpha_for_tinting,
+        edit_tab_icons_have_distinct_visible_glyphs,
         keyboard_labels_show_and_hide_without_intercepting_pointer_input,
         hover_events_show_a_square_timeout_without_reopening_and_reenter_reuses_it,
         info_icons_preserve_duplicate_labels_and_follow_dynamic_help,
@@ -1027,6 +1065,83 @@ pub(crate) mod tests {
         let node = app.world().get::<Node>(tip).unwrap();
         assert_eq!(node.left, px(560));
         assert_eq!(node.top, px(490));
+    }
+
+    #[test]
+    fn adopting_inline_button_help_removes_the_old_info_icon_and_reserved_space() {
+        let mut app = app();
+        let button = app.world_mut().spawn((
+            IconButton::new(Icon::Plus, "Add"),
+            ComputedNode { size: Vec2::splat(40.0), ..default() },
+        )).id();
+        app.update();
+        let icon = info(&mut app, button);
+        assert_eq!(app.world().get::<Node>(button).unwrap().margin.right, px(20));
+        app.world_mut().entity_mut(button).insert((InlineTooltip, AnchoredTooltip, TooltipIcon { source: button }));
+        app.update();
+        assert!(app.world().get_entity(icon).is_err());
+        assert_eq!(app.world().get::<Node>(button).unwrap().margin.right, px(0));
+        assert_eq!(app.world().get::<TooltipIcon>(button).unwrap().source, button);
+    }
+
+    #[test]
+    fn anchored_control_hints_follow_owner_scale_and_visibility_without_automatic_help_icons() {
+        for scale in [1.0, 0.5] {
+            let mut app = app();
+            app.world_mut().resource_mut::<TooltipSettings>().enabled = false;
+            let root = app.world_mut().spawn((
+                BoxRoot,
+                ComputedNode { size: Vec2::new(800.0, 600.0) / scale, inverse_scale_factor: scale, ..default() },
+                UiGlobalTransform::from_xy(400.0 / scale, 300.0 / scale),
+            )).id();
+            let button = app.world_mut().spawn((
+                Tooltip("Edit this workspace".into()), InlineTooltip, AnchoredTooltip,
+                ComputedNode { size: Vec2::splat(40.0) / scale, inverse_scale_factor: scale, ..default() },
+                UiGlobalTransform::from_xy(24.0 / scale, 570.0 / scale),
+                ChildOf(root),
+            )).id();
+            app.world_mut().entity_mut(button).insert(TooltipIcon { source: button });
+            app.update();
+            app.world_mut().trigger(SandHoveredOn { entity: button });
+            app.update();
+            let tip = app.world().resource::<Hints>().tip.unwrap().1;
+            app.world_mut().entity_mut(tip).insert(ComputedNode {
+                size: Vec2::new(160.0, 32.0) / scale, inverse_scale_factor: scale, ..default()
+            });
+            app.update();
+            app.update();
+            assert_eq!(*app.world().get::<Visibility>(tip).unwrap(), Visibility::Inherited);
+            assert_eq!(app.world().get::<Node>(tip).unwrap().left, px(4));
+            assert_eq!(app.world().get::<Node>(tip).unwrap().top, px(510));
+            assert!(app.world().get::<TimeLimit>(tip).is_none());
+            assert_eq!(app.world().get::<ChildOf>(tip).unwrap().parent(), root);
+            app.world_mut().entity_mut(button).insert(UiGlobalTransform::from_xy(500.0 / scale, 570.0 / scale));
+            app.update();
+            app.update();
+            assert_eq!(app.world().get::<Node>(tip).unwrap().left, px(420));
+            app.world_mut().trigger(SandHoveredOff { entity: button });
+            app.update();
+            assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
+            app.world_mut().trigger(FocusGained { entity: button, cause: FocusCause::Navigated });
+            app.update();
+            app.update();
+            assert_eq!(*app.world().get::<Visibility>(tip).unwrap(), Visibility::Inherited);
+            app.world_mut().entity_mut(button).insert(bevy::ui::CalculatedClip { clip: Rect::from_corners(Vec2::ZERO, Vec2::splat(10.0)) });
+            app.update();
+            assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
+            app.world_mut().entity_mut(button).remove::<bevy::ui::CalculatedClip>();
+            app.update();
+            app.update();
+            app.world_mut().trigger(bevy::ui_widgets::Activate { entity: button });
+            app.update();
+            assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
+            app.world_mut().trigger(SandHoveredOn { entity: button });
+            app.update();
+            app.update();
+            app.world_mut().entity_mut(root).insert(Visibility::Hidden);
+            app.update();
+            assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
+        }
     }
 
     #[cfg_attr(test, test)]

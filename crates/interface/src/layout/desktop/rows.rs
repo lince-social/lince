@@ -421,6 +421,7 @@ impl Rows {
         entries: &BTreeMap<PlacementId, &Item>,
         minimized: &BTreeSet<PlacementId>,
         influences: &BTreeMap<PlacementId, Influence>,
+        maximized: &BTreeSet<PlacementId>,
     ) -> (Vec<SolvedItem>, [f64; 2]) {
         let mut solved = Vec::with_capacity(entries.len());
         let mut extent = inner;
@@ -438,15 +439,15 @@ impl Rows {
                 .iter()
                 .filter(|item| !self.compact.iter().any(|group| group.active == item.id))
                 .map(|item| f64::from(entries[&item.id].rules.axes[1].min))
-                .fold(row.height.spaced(inner[1], gap), f64::max)
+                .fold(if visible.iter().any(|item| maximized.contains(&item.id)) { inner[1] } else { row.height.spaced(inner[1], gap) }, f64::max)
                 .max(if visible.iter().any(|item| self.compact.iter().any(|group| group.active == item.id)) { COMPACT_HEADER_HEIGHT + 1.0 } else { 1.0 });
             let mut row_height = height;
             let mut x = gap;
             for item in visible {
                 let compact = self.compact.iter().any(|group| group.active == item.id);
                 let rules = entries[&item.id].rules;
-                let scale = influences.get(&item.id).copied().unwrap_or_default().scale;
-                let requested_width = item.width.spaced(inner[0], gap);
+                let scale = if maximized.contains(&item.id) { 1.0 } else { influences.get(&item.id).copied().unwrap_or_default().scale };
+                let requested_width = if maximized.contains(&item.id) { inner[0] } else { item.width.spaced(inner[0], gap) };
                 let width = (requested_width * scale)
                     .clamp(f64::from(rules.axes[0].min), f64::from(rules.axes[0].max));
                 let size = [

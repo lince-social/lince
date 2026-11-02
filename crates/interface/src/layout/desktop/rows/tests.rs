@@ -3,6 +3,7 @@ use super::*;
 
 fn tiled(count: u8) -> Workspace {
     let mut workspace = Workspace::new(WorkspaceLayout::Tiled);
+    workspace.set_gap(8.0).unwrap();
     for value in 1..=count {
         workspace.insert(item(value)).unwrap();
     }
@@ -302,4 +303,51 @@ fn free_focus_never_applies_tiled_scroll_to_authored_or_floating_positions() {
         solved(&mut workspace)[&id(2)],
         geometry.rectangle().unwrap()
     );
+}
+
+#[test]
+fn maximized_row_items_reserve_their_full_extent_before_new_windows_are_placed() {
+    let mut model = tiled(1);
+    model.toggle_maximized();
+    let first = solved(&mut model)[&id(1)];
+    assert_eq!(first.size()[0], 984.0);
+    for value in 2..=3 {
+        let mut window = item(value);
+        window.kind = ItemKind::Application;
+        model.insert(window).unwrap();
+        model.focus(id(value), viewport()).unwrap();
+        let rectangles = solved(&mut model);
+        assert_eq!(rectangles[&id(1)].size(), first.size());
+        for previous in 1..value {
+            let left = rectangles[&id(previous)];
+            let right = rectangles[&id(previous + 1)];
+            assert_eq!(left.origin()[0] + left.size()[0] + 8.0, right.origin()[0]);
+        }
+        assert_eq!(model.focused(), Some(id(value)));
+    }
+    model.focus(id(1), viewport()).unwrap();
+    for value in 2..=3 {
+        assert!(model.focus_direction(Direction::Right, viewport()).unwrap());
+        assert_eq!(model.focused(), Some(id(value)));
+    }
+    model.toggle_maximized();
+    let after = solved(&mut model);
+    assert_eq!(after[&id(3)].size()[0], 984.0);
+    assert!(after[&id(2)].origin()[0] + after[&id(2)].size()[0] < after[&id(3)].origin()[0]);
+}
+
+#[test]
+fn default_zero_gap_places_full_width_and_new_windows_edge_to_edge() {
+    let mut model = Workspace::new(WorkspaceLayout::Tiled);
+    assert_eq!(model.gap(), 0.0);
+    model.insert(item(1)).unwrap();
+    model.toggle_maximized();
+    for value in 2..=3 { model.insert(item(value)).unwrap(); }
+    let solved = solved(&mut model);
+    assert_eq!(solved[&id(1)].size()[0], viewport().size()[0]);
+    for value in 1..3 {
+        let a = solved[&id(value)];
+        let b = solved[&id(value + 1)];
+        assert_eq!(a.origin()[0] + a.size()[0], b.origin()[0]);
+    }
 }

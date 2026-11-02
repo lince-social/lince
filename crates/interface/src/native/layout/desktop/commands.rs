@@ -316,7 +316,7 @@ impl CommandContext {
                     .external
                     .is_some_and(|mask| mask & (1 << external.index()) == 0) =>
             {
-                Some("Configure this external command in Park settings.")
+                Some("Configure this external command in Customization → Park desktop.")
             }
             DesktopAction::Focus(_) | DesktopAction::ToggleFocus if !self.candidates => {
                 Some("No eligible item is available in this workspace.")

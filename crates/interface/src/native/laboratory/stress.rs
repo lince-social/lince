@@ -213,6 +213,7 @@ impl StressRun {
                     #[cfg(feature = "stuff")]
                     SandKind::Freedoom => Vec2::new(520.0, 540.0),
                     SandKind::Square => Vec2::splat(12.0),
+                    SandKind::Overview => Vec2::new(248.0, 184.0),
                     SandKind::Operation
                     | SandKind::AccessControl
                     | SandKind::Visibility

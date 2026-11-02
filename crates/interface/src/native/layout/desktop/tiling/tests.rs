@@ -173,7 +173,7 @@ fn entering_tiling_from_free_fullscreen_keeps_the_authored_camera_for_later_rest
     resolve(&mut world);
     DesktopAction::ToggleFullscreen.apply(&mut world, root);
     resolve(&mut world);
-    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 1.0);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.6);
     DesktopAction::ToggleTiling.apply(&mut world, root);
     resolve(&mut world);
     assert_eq!(
@@ -181,4 +181,47 @@ fn entering_tiling_from_free_fullscreen_keeps_the_authored_camera_for_later_rest
         bevy::math::DVec2::new(1200.0, -450.0)
     );
     assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.6);
+}
+
+#[test]
+fn tiled_zoom_survives_navigation_insertion_and_output_resize() {
+    let (mut world, root, native, application) = fixture();
+    DesktopAction::ToggleTiling.apply(&mut world, root);
+    resolve(&mut world);
+    let id = world.get::<Managed>(native).unwrap().id;
+    let bounds = usable(&world, root).unwrap();
+    world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.focus(id, bounds).unwrap();
+    world.get_mut::<CanvasView>(root).unwrap().set_zoom(0.37);
+    DesktopAction::Focus(crate::host::Direction::Right).apply(&mut world, root);
+    resolve(&mut world);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.37);
+    assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.focused(), Some(world.get::<Managed>(application).unwrap().id));
+    world.get_mut::<ComputedNode>(root).unwrap().size = Vec2::new(800.0, 600.0);
+    resolve(&mut world);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.37);
+    let added = world.spawn((CanvasItem { position: bevy::math::DVec2::ZERO, size: Vec2::new(300.0, 200.0) },
+        LayoutBox::new(Vec2::new(300.0, 200.0)), WorkspaceMember(1), ChildOf(root))).id();
+    resolve(&mut world);
+    assert!(world.get::<Managed>(added).is_some());
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.37);
+}
+
+#[test]
+fn tiled_view_enters_current_workspace_at_half_zoom_without_an_overview_overlay_and_restores_the_prior_mode() {
+    let (mut world, root, _, _) = fixture();
+    let original = *world.get::<CanvasView>(root).unwrap();
+    DesktopAction::ToggleTiledView.apply(&mut world, root);
+    resolve(&mut world);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.5);
+    assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.mode(), WorkspaceLayout::Tiled);
+    assert!(!super::super::overview::active(&world));
+    assert!(!crate::native::shortcuts::keyboard_owned(&world));
+    world.get_mut::<CanvasView>(root).unwrap().set_zoom(0.28);
+    resolve(&mut world);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.28);
+    DesktopAction::ToggleTiledView.apply(&mut world, root);
+    resolve(&mut world);
+    assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.mode(), WorkspaceLayout::Free);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, original.zoom);
+    assert_eq!(world.get::<CanvasView>(root).unwrap().center, original.center);
 }

@@ -28,12 +28,12 @@ pub fn probe() -> io::Result<()> {
                 ));
             }
             if !std::process::Command::new(std::env::current_exe()?)
-                .arg("--check-untrusted")
+                .arg("--check-external")
                 .status()?
                 .success()
             {
                 return Err(io::Error::other(
-                    "External clipboard access was not isolated",
+                    "External clipboard access did not match the desktop policy",
                 ));
             }
             Ok(())
@@ -91,13 +91,13 @@ pub fn check_external_client() -> io::Result<()> {
     let mut state = Registry::default();
     queue.roundtrip(&mut state).map_err(error)?;
     if !state.0.iter().any(|interface| interface == "wl_compositor")
-        || state
-            .0
-            .iter()
-            .any(|interface| interface == "zwlr_data_control_manager_v1")
+        || !state.0.iter().any(|interface| interface == "zwlr_data_control_manager_v1")
+        || !state.0.iter().any(|interface| interface == "ext_data_control_manager_v1")
+        || state.0.iter().any(|interface| matches!(interface.as_str(),
+            "zwlr_output_power_manager_v1" | "zwlr_foreign_toplevel_manager_v1" | "zwlr_screencopy_manager_v1"))
     {
         return Err(io::Error::other(
-            "An external client received private clipboard-manager access",
+            "An external client did not receive only the expected desktop clipboard access",
         ));
     }
     Ok(())

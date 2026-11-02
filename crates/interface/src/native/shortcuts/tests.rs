@@ -730,3 +730,24 @@ crate::native::laboratory_cases! {
     movement_bindings_match_modifiers_and_ignore_old_keys,
     remapped_monitor_workspace_and_record_shortcuts_reach_the_host,
 }
+
+#[test]
+fn space_opens_the_current_tiled_view_while_the_separate_overview_remains_available() {
+    let mut world = World::new();
+    world.init_resource::<Settings>();
+    world.resource::<Settings>().validate().unwrap();
+    let bindings = desktop_bindings(&world);
+    let view = bindings.iter().find(|binding| binding.action == crate::host::DesktopAction::ToggleTiledView).unwrap();
+    assert_eq!(view.key, KeyCode::Space);
+    assert!(view.modifiers.super_key);
+    assert!(!view.modifiers.shift);
+    assert!(!view.repeat);
+    let overview = bindings.iter().find(|binding| binding.action == crate::host::DesktopAction::ToggleOverview).unwrap();
+    assert_eq!(overview.key, KeyCode::Space);
+    assert!(overview.modifiers.super_key && overview.modifiers.shift);
+    for (key, direction) in [(KeyCode::KeyH, crate::host::Direction::Left), (KeyCode::KeyJ, crate::host::Direction::Down),
+        (KeyCode::KeyK, crate::host::Direction::Up), (KeyCode::KeyL, crate::host::Direction::Right)] {
+        assert!(bindings.iter().any(|binding| binding.key == key && binding.modifiers.super_key
+            && !binding.modifiers.shift && binding.action == crate::host::DesktopAction::Focus(direction)));
+    }
+}

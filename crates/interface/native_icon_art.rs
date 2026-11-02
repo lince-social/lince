@@ -1,4 +1,4 @@
-pub const COUNT: usize = 43;
+pub const COUNT: usize = 45;
 
 pub fn source(index: usize) -> &'static str {
     match index {
@@ -45,6 +45,8 @@ pub fn source(index: usize) -> &'static str {
         40 => detach(),
         41 => events_local(),
         42 => events_shared(),
+        43 => park(),
+        44 => keyboard(),
         _ => panic!("unknown icon index {index}"),
     }
 }
@@ -236,4 +238,12 @@ fn events_local() -> &'static str {
 
 fn events_shared() -> &'static str {
     r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5H3v16h10M7 3v4m5-4v4M3 10h10m-7 4h4m-4 3h2m7-3h7m-3-3 3 3-3 3"/></svg>"##
+}
+
+fn park() -> &'static str {
+    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="3" width="18" height="13" rx="1"/><path d="M8 21h8M12 16v5M6 12h4V7h8M14 7v5h4M6 6h3"/></svg>"##
+}
+
+fn keyboard() -> &'static str {
+    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M5 9h1m3 0h1m3 0h1m3 0h2M5 12h1m3 0h1m3 0h1m3 0h2M7 16h10"/></svg>"##
 }

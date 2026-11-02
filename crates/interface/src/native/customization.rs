@@ -10,6 +10,23 @@ use crate::native::{
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
 
 mod export;
+mod sections;
+mod layout;
+pub(crate) mod programs;
+pub(crate) use sections::OpenPark;
+
+#[derive(Component)]
+struct Appearance(Entity);
+
+fn refresh_appearance(world: &mut World, root: Entity) {
+    let parent = world.query::<(Entity, &Appearance)>().iter(world).find(|(_, appearance)| appearance.0 == root).map(|(entity, _)| entity);
+    if let Some(parent) = parent {
+        let children = world.get::<Children>(parent).map(|children| children.iter().collect::<Vec<_>>()).unwrap_or_default();
+        for child in children { world.despawn(child); }
+        render_theme(world, root, parent);
+    } else { crate::native::edit_mode::render_panel(world, root); }
+    sections::synchronize_keyboard(world);
+}
 
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Scope {
@@ -112,7 +129,7 @@ impl Action for CustomizationAction {
                 return;
             }
         }
-        crate::native::edit_mode::render_panel(world, root);
+        refresh_appearance(world, root);
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
             wake.ring();
         }
@@ -452,6 +469,10 @@ fn pattern_control(world: &mut World, root: Entity, panel: Entity) {
 }
 
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
+    sections::render(world, root, panel);
+}
+
+fn render_theme(world: &mut World, root: Entity, panel: Entity) {
     let mut scope = world.get::<Scope>(root).copied().unwrap_or_default();
     if let Scope::Sand(entity) = scope
         && token_style::kind(world, entity).is_none()
@@ -468,7 +489,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         node.width = percent(100);
         node.justify_content = JustifyContent::SpaceBetween;
     }
-    label(world, heading, "Customization", 22.0);
+    label(world, heading, "Appearance", 20.0);
     control(
         world,
         root,
@@ -661,6 +682,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     if scope == Scope::All {
         pattern_control(world, root, panel);
     }
+    let groups = [
+        sections::accordion(world, root, panel, "colors", "Colors"),
+        sections::accordion(world, root, panel, "spacing", "Spacing"),
+        sections::accordion(world, root, panel, "dimensions", "Dimensions and shapes"),
+        sections::accordion(world, root, panel, "typography", "Text and icons"),
+    ];
     for definition in TOKENS {
         let token = definition.token;
         if token == Token::CanvasPattern {
@@ -690,7 +717,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
                     flex_shrink: 0.0,
                     ..default()
                 },
-                ChildOf(panel),
+                ChildOf(groups[match token {
+                    Token::Spacing | Token::Padding | Token::ClockLabelGap | Token::GridSpacing => 1,
+                    Token::FontSize | Token::IconSize | Token::IconPadding => 3,
+                    _ if matches!(token.default_value(ColorScheme::Dark), TokenValue::Color(_)) => 0,
+                    _ => 2,
+                }]),
             ))
             .id();
         label(world, group, definition.name, 16.0);
@@ -775,6 +807,16 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             status,
             preview,
         });
+        if let (TokenValue::Number(value), Some((start, end))) = (current, definition.range)
+            && let Some(slider) = crate::native::slider::spawn(world, group, definition.name,
+                crate::native::slider::SliderSand { start, end, step: if token == Token::GridThickness { 0.5 } else { 1.0 }, decimals: 1 }, value, "") {
+            world.entity_mut(slider).observe(move |event: On<crate::native::slider::SliderChanged>, mut commands: Commands| {
+                let value = event.value.to_string();
+                commands.queue(move |world: &mut World| {
+                    if let Some(mut text) = world.get_mut::<EditableText>(editor) { text.editor.set_text(&value); }
+                });
+            });
+        }
     }
 }
 
@@ -1173,7 +1215,7 @@ pub(crate) mod tests {
             .world_mut()
             .query::<(&Text, &ChildOf)>()
             .iter(app.world())
-            .find(|(text, _)| text.0 == "Customization")
+            .find(|(text, _)| text.0 == "Appearance")
             .unwrap()
             .1
             .parent();

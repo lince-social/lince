@@ -99,7 +99,7 @@ fn toolbar_bundle(view: Entity) -> impl Bundle {
         crate::native::castle::Castle,
         Node {
             position_type: PositionType::Absolute,
-            right: px(0),
+            left: px(0),
             bottom: px(0),
             max_width: Val::Vw(96.0),
             flex_wrap: FlexWrap::NoWrap,
@@ -225,6 +225,13 @@ fn order_controls(world: &mut World) {
             } else {
                 ordered.push(child);
             }
+        }
+        for control in pinned.iter().chain(&ordered).copied() {
+            world.entity_mut(control).insert((
+                crate::native::icons::InlineTooltip,
+                crate::native::icons::AnchoredTooltip,
+                crate::native::icons::TooltipIcon { source: control },
+            ));
         }
         ordered.sort_by_key(|entity| {
             world

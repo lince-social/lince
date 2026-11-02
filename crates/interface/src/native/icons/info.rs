@@ -38,7 +38,7 @@ pub(super) fn sync(world: &mut World) {
         return;
     }
     let removed: Vec<_> = world
-        .query_filtered::<(Entity, &Attachment), Without<Tooltip>>()
+        .query_filtered::<(Entity, &Attachment), Or<(Without<Tooltip>, With<InlineTooltip>)>>()
         .iter(world)
         .map(|(entity, attachment)| (entity, attachment.clone()))
         .collect();

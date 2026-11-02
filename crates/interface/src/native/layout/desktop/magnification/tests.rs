@@ -33,9 +33,9 @@ fn fixture(available: bool) -> (App, Entity, std::sync::mpsc::Receiver<HostReque
 fn settle(app: &mut App) {
     let nodes = app.world_mut().query_filtered::<Entity, With<Node>>().iter(app.world()).collect::<Vec<_>>();
     for node in nodes { app.world_mut().entity_mut(node).insert(InheritedVisibility::VISIBLE); }
+    app.update();
     let mut fields = app.world_mut().query::<&mut EditableText>();
     for mut field in fields.iter_mut(app.world_mut()) { field.pending_edits.clear(); }
-    app.update();
 }
 
 fn value(app: &mut App, field: Entity, value: &str) {

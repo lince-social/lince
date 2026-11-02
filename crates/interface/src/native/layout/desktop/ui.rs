@@ -19,6 +19,26 @@ struct OverviewControl {
     root: Entity,
 }
 
+pub(crate) fn overview_sand(world: &mut World, root: Entity, parent: Entity) -> Entity {
+    let control = world.spawn((
+        crate::native::sand::button(0),
+        crate::native::actions::ActionButton::new(root, crate::native::actions![DesktopAction::ToggleOverview]),
+        crate::native::shortcuts::KeyboardModalTrigger,
+        OverviewControl { root },
+        Node {
+            width: percent(100),
+            height: percent(100),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        crate::native::token_style::background(crate::native::tokens::Token::Surface),
+        ChildOf(parent),
+    )).id();
+    crate::native::edit_mode::label(world, control, Token::ShortcutOverview.text(), 14.0);
+    control
+}
+
 fn focus_button(world: &mut World, root: Entity, parent: Entity) {
     let entity = world
         .spawn((
@@ -108,35 +128,6 @@ pub(crate) fn create_controls(world: &mut World) {
         .collect();
     for root in roots {
         if !world
-            .query::<&OverviewControl>()
-            .iter(world)
-            .any(|control| control.root == root)
-        {
-            let toolbar = crate::native::canvas_controls::toolbar(world, root);
-            let entity = world
-                .spawn((
-                    crate::native::sand::button(0),
-                    crate::native::actions::ActionButton::new(
-                        root,
-                        crate::native::actions![DesktopAction::ToggleOverview],
-                    ),
-                    crate::native::shortcuts::KeyboardModalTrigger,
-                    crate::native::canvas_controls::ToolbarOrder(3),
-                    OverviewControl { root },
-                    Node {
-                        height: px(40),
-                        padding: UiRect::axes(px(10), px(8)),
-                        align_items: AlignItems::Center,
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    crate::native::token_style::background(crate::native::tokens::Token::Surface),
-                    ChildOf(toolbar),
-                ))
-                .id();
-            crate::native::edit_mode::label(world, entity, Token::ShortcutOverview.text(), 14.0);
-        }
-        if !world
             .query::<&FocusControl>()
             .iter(world)
             .any(|control| control.root == root)
@@ -158,8 +149,10 @@ pub(crate) fn create_controls(world: &mut World) {
 
 pub(crate) fn label_controls(world: &mut World) {
     let controls: Vec<_> = world
-        .query_filtered::<Entity, With<OverviewControl>>()
+        .query::<(Entity, &OverviewControl)>()
         .iter(world)
+        .filter(|(_, control)| world.get_entity(control.root).is_ok())
+        .map(|(entity, _)| entity)
         .collect();
     let chord = world
         .get_resource::<crate::native::shortcuts::Settings>()
@@ -267,6 +260,24 @@ pub(crate) fn panel(world: &mut World, root: Entity, panel: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn overview_is_placeable_without_being_recreated_in_the_canvas_toolbar() {
+        let (mut app, root) = crate::native::edit_mode::tests::fixture();
+        create_controls(app.world_mut());
+        create_controls(app.world_mut());
+        assert_eq!(app.world_mut().query::<&OverviewControl>().iter(app.world()).count(), 0);
+        let sand = crate::native::sand_store::spawn_sand(app.world_mut(), root, 1,
+            crate::native::sand_store::SandKind::Overview, "", bevy::math::DVec2::ZERO);
+        let content = app.world().get::<crate::native::sand_store::StoredSand>(sand).unwrap().content.unwrap();
+        assert!(app.world().get::<OverviewControl>(content).is_some());
+        assert_eq!(app.world().get::<crate::native::actions::ActionButton>(content).unwrap().target, root);
+        create_controls(app.world_mut());
+        label_controls(app.world_mut());
+        assert_eq!(app.world_mut().query::<&OverviewControl>().iter(app.world()).count(), 1);
+        assert_eq!(app.world().get::<ChildOf>(content).unwrap().parent(), sand);
+        assert!(app.world().get::<crate::native::icons::Tooltip>(content).unwrap().0.contains(Token::ShortcutOverview.text()));
+    }
 
     #[test]
     fn focus_button_retains_its_selected_target_when_the_toolbar_takes_keyboard_focus() {

@@ -10,8 +10,10 @@ mod settings;
 
 fn chord(canvas: &mut Presentation, physical: KeyCode) {
     key(canvas, KeyCode::SuperLeft, true);
+    if physical == KeyCode::Space { key(canvas, KeyCode::ShiftLeft, true); }
     key(canvas, physical, true);
     key(canvas, physical, false);
+    if physical == KeyCode::Space { key(canvas, KeyCode::ShiftLeft, false); }
     key(canvas, KeyCode::SuperLeft, false);
 }
 

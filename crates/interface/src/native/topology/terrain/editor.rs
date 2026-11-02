@@ -1010,7 +1010,10 @@ pub fn update(world: &mut World) {
         }
         if world.get::<Toolbar>(root).is_none() {
             let toolbar = crate::native::canvas_controls::toolbar(world, root);
-            button(world, toolbar, root, "Floor", Control::Open);
+            let floor = button(world, toolbar, root, "Floor", Control::Open);
+            world.entity_mut(floor).insert(crate::native::icons::Tooltip(
+                "Edit floor topology: hills, valleys, slopes and other ground-height effects.".into(),
+            ));
             world.entity_mut(root).insert(Toolbar);
         }
         let editing = world

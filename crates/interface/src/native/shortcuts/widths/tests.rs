@@ -312,7 +312,7 @@ fn pending_layout_text_cannot_commit_an_older_field_value() {
             .0
             .contains("Finish typing")
     );
-    assert_eq!(app.world().resource::<LayoutSettings>().gaps, 8);
+    assert_eq!(app.world().resource::<LayoutSettings>().gaps, 0);
     assert!(!directory.path().join("interface.lingua").exists());
 }
 

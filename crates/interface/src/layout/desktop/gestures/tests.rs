@@ -3,6 +3,7 @@ use super::*;
 
 fn fixture(mode: WorkspaceLayout) -> Workspace {
     let mut model = Workspace::new(mode);
+    model.set_gap(8.0).unwrap();
     for value in 1..=3 {
         model.insert(item(value)).unwrap();
     }

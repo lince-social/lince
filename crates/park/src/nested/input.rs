@@ -26,6 +26,7 @@ pub(crate) enum Target {
     Layer(WlSurface, WlSurface),
 }
 
+#[derive(PartialEq)]
 pub(crate) struct DeferredPointer {
     point: [f64; 2],
     mapping: Option<(OutputId, u64)>,
@@ -37,6 +38,35 @@ pub(crate) enum Deferred {
     Button(u32, bool, u32, DeferredPointer),
     Key(u32, bool, u32),
     Axis([f64; 2], AxisFrame, DeferredPointer),
+}
+
+impl Deferred {
+    pub(crate) fn merge_axis(&mut self, next: &Self) -> bool {
+        let (Self::Axis(delta, frame, point), Self::Axis(incoming, next_frame, next_point)) = (self, next) else { return false; };
+        if point != next_point || frame.source != next_frame.source || frame.relative_direction != next_frame.relative_direction
+            || frame.stop != (false, false) || next_frame.stop != (false, false) {
+            return false;
+        }
+        let sum = std::array::from_fn::<_, 2, _>(|axis| delta[axis] + incoming[axis]);
+        let axes = (frame.axis.0 + next_frame.axis.0, frame.axis.1 + next_frame.axis.1);
+        if !axes.0.is_finite() || !axes.1.is_finite() || (0..2).any(|axis| !sum[axis].is_finite()
+            || delta[axis] != 0.0 && incoming[axis] != 0.0 && delta[axis].is_sign_positive() != incoming[axis].is_sign_positive()) {
+            return false;
+        }
+        let v120 = match (frame.v120, next_frame.v120) {
+            (Some(a), Some(b)) => {
+                let (Some(x), Some(y)) = (a.0.checked_add(b.0), a.1.checked_add(b.1)) else { return false; };
+                Some((x, y))
+            },
+            (None, None) => None,
+            _ => return false,
+        };
+        *delta = sum;
+        frame.axis = axes;
+        frame.v120 = v120;
+        frame.time = next_frame.time;
+        true
+    }
 }
 
 impl Desktop {
@@ -869,7 +899,11 @@ impl Desktop {
     }
 
     fn defer(&mut self, event: Deferred) -> io::Result<()> {
+        if self.deferred.back_mut().is_some_and(|previous| previous.merge_axis(&event)) {
+            return Ok(());
+        }
         if self.deferred.len() >= 128 {
+            if matches!(event, Deferred::Axis(..)) { self.scroll_pressure(); return Ok(()); }
             #[cfg(feature = "session")]
             { self.recover_input_pressure(); return Ok(()); }
             #[cfg(not(feature = "session"))]
@@ -877,6 +911,13 @@ impl Desktop {
         }
         self.deferred.push_back(event);
         Ok(())
+    }
+
+    pub(crate) fn scroll_pressure(&mut self) {
+        if !self.scroll_saturated {
+            eprintln!("Park scroll input is saturated; pending input is retained while the canvas catches up.");
+        }
+        self.scroll_saturated = true;
     }
 
     fn deferred_pointer(&self) -> DeferredPointer {
@@ -940,7 +981,15 @@ impl Desktop {
                 let delta = delta.map(|value| -value as f32);
                 let target = native.or_else(|| self.frame_at(self.pointer)?.frame.input.native_pointer.target(self.pointer));
                 if let Some(target) = target {
-                    self.send(Input::CapturedScroll(delta, MouseScrollUnit::Pixel, TouchPhase::Moved, position, self.pointer_stamp, target))?;
+                    match self.worker.input(Input::CapturedScroll(delta, MouseScrollUnit::Pixel, TouchPhase::Moved, position, self.pointer_stamp, target)) {
+                        Ok(_) => {},
+                        Err(std::sync::mpsc::TrySendError::Full(_)) => {
+                            self.scroll_pressure();
+                        }
+                        Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                            return Err(io::Error::other("The Park canvas disconnected during scroll delivery."));
+                        }
+                    }
                 }
             },
             Target::Application(..) | Target::Layer(..) | Target::Popup(..) => self.server.pointer_axis(frame),
@@ -975,16 +1024,20 @@ impl Desktop {
                     && output.is_none_or(|output| current.frame.output == Some(output))
             })
         });
-        if !ready {
+        if !ready || !self.worker.can_input(4) {
             return Ok(());
         }
-        self.pending_output = None;
+        let pending = self.pending_output.take();
         self.pointer_sent = None;
         #[cfg(feature = "session")]
         self.absolute_replaying(true);
         let result = (|| {
             self.focus()?;
             while self.pending_output.is_none() {
+                if !self.worker.can_input(4) {
+                    self.pending_output = pending;
+                    break;
+                }
                 let Some(event) = self.deferred.pop_front() else {
                     break;
                 };
@@ -1066,6 +1119,33 @@ pub(super) fn logical(label: Option<&lince_interface::host::input::KeyLabel>, te
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn deferred_axis(delta: f64, source: AxisSource, stop: bool, point: f64) -> Deferred {
+        let mut frame = AxisFrame::new(1).source(source).value(Axis::Vertical, delta);
+        if source == AxisSource::Wheel { frame = frame.v120(Axis::Vertical, 120); }
+        if stop { frame = frame.stop(Axis::Vertical); }
+        Deferred::Axis([0.0, delta], frame, DeferredPointer {
+            point: [point, 10.0], mapping: Some((OutputId(1), 1)), target: Target::Native, native: None,
+        })
+    }
+
+    #[test]
+    fn deferred_scroll_batches_preserve_discrete_values_targets_and_touchpad_stop_boundaries() {
+        let mut event = deferred_axis(3.0, AxisSource::Wheel, false, 10.0);
+        for _ in 0..1000 { assert!(event.merge_axis(&deferred_axis(3.0, AxisSource::Wheel, false, 10.0))); }
+        let Deferred::Axis(delta, frame, _) = &event else { panic!("Missing deferred axis"); };
+        assert_eq!(*delta, [0.0, 3003.0]);
+        assert_eq!(frame.axis, (0.0, 3003.0));
+        assert_eq!(frame.v120, Some((0, 120120)));
+        assert!(!event.merge_axis(&deferred_axis(-3.0, AxisSource::Wheel, false, 10.0)));
+        assert!(!event.merge_axis(&deferred_axis(3.0, AxisSource::Wheel, false, 11.0)));
+        assert!(!event.merge_axis(&deferred_axis(3.0, AxisSource::Finger, false, 10.0)));
+        let mut touchpad = deferred_axis(0.5, AxisSource::Finger, false, 10.0);
+        assert!(touchpad.merge_axis(&deferred_axis(0.5, AxisSource::Finger, false, 10.0)));
+        assert!(!touchpad.merge_axis(&deferred_axis(0.0, AxisSource::Finger, true, 10.0)));
+        assert!(!touchpad.merge_axis(&Deferred::Key(30, true, 1)));
+    }
+
 
     #[test]
     fn command_character_identity_does_not_commit_composition_text() {

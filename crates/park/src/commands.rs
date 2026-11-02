@@ -213,6 +213,25 @@ impl Commands {
         )
     }
 
+    pub fn programs(&self) -> lince_interface::host::launch::Programs {
+        lince_interface::host::launch::Programs { terminal: self.terminal.clone(), launcher: self.launcher.clone(), lock: self.lock.clone(), ready: self.ready.clone() }
+    }
+
+    pub fn save_programs(path: &Path, settings: &lince_interface::host::launch::Programs, expected: &lince_interface::host::launch::Programs) -> io::Result<Option<String>> {
+        settings.validate().map_err(io::Error::other)?;
+        Self::update(path, "Session programs", |parent| std::fs::File::open(parent)?.sync_all(), |document| {
+            let current = Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
+            if &current.programs() != expected { return Err(io::Error::other("Session programs changed outside Park; reload before saving.")); }
+            let document = document.as_object_mut().ok_or_else(|| io::Error::other("Park settings must be an object"))?;
+            for program in lince_interface::host::launch::Program::ALL {
+                if let Some(description) = settings.get(program) {
+                    document.insert(program.key().into(), serde_json::to_value(description).map_err(io::Error::other)?);
+                } else { document.remove(program.key()); }
+            }
+            Ok(())
+        })
+    }
+
     pub fn save_external(
         path: &Path,
         settings: &lince_interface::host::external::Settings,
@@ -401,6 +420,23 @@ impl Commands {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn session_program_updates_preserve_other_settings_and_reject_concurrent_file_edits() {
+        use lince_interface::host::launch::{Description, Programs};
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("park.json");
+        std::fs::write(&path, br#"{"keyboard":{"layout":"us"},"terminal":{"program":"old-terminal"},"ready":{"program":"startup","arguments":["literal\nscript"]}}"#).unwrap();
+        let original = Commands::load(&path).unwrap();
+        let expected = original.programs();
+        let settings = Programs { terminal: Some(Description { program: "new-terminal".into(), arguments: vec!["$(literal)".into()], directory: None, capabilities: vec![] }), ..expected.clone() };
+        Commands::save_programs(&path, &settings, &expected).unwrap();
+        let saved = Commands::load(&path).unwrap();
+        assert_eq!(saved.programs(), settings);
+        assert_eq!(saved.keyboard, original.keyboard);
+        assert!(Commands::save_programs(&path, &expected, &expected).is_err());
+        assert_eq!(Commands::load(&path).unwrap().programs(), settings);
+    }
 
     #[test]
     fn initialization_creates_private_settings_and_preserves_existing_configuration() {

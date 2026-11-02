@@ -12,13 +12,14 @@ impl Drop for Blob {
     fn drop(&mut self) { let _ = self.device.destroy_property_blob(self.id); }
 }
 
+#[derive(Clone)]
 pub(in super::super) struct Pipeline {
     pub output: OutputColor,
     mode: control::Mode,
     format: Fourcc,
     modifiers: Vec<Modifier>,
     properties: Vec<(connector::Handle, &'static str, u64)>,
-    _blob: Option<Blob>,
+    _blob: Option<Arc<Blob>>,
     reported: bool,
 }
 
@@ -37,7 +38,7 @@ pub(in super::super) struct Submitted {
 #[derive(Default)]
 pub(in super::super) struct State {
     pub status: ColorStatus,
-    baseline: Option<(Fourcc, Vec<(connector::Handle, &'static str, u64)>)>,
+    baseline: Option<(Fourcc, Vec<Modifier>, Vec<(connector::Handle, &'static str, u64)>)>,
     pub prepared: Option<Arc<Pipeline>>,
     active: Option<Arc<Pipeline>>,
     hdr: Option<Arc<Pipeline>>,
@@ -168,6 +169,27 @@ fn modifiers(renderer: &GlesRenderer, format: Fourcc) -> Vec<Modifier> {
         .filter(|candidate| candidate.code == format).map(|candidate| candidate.modifier).collect()
 }
 
+fn select_modifiers(
+    preferred: &[Modifier],
+    available: &[Modifier],
+    mut test: impl FnMut(&[Modifier]) -> io::Result<()>,
+) -> io::Result<Vec<Modifier>> {
+    let mut candidates = Vec::new();
+    for candidate in [preferred.to_vec(), available.to_vec()].into_iter()
+        .chain(available.iter().map(|modifier| vec![*modifier])) {
+        if !candidate.is_empty() && !candidates.contains(&candidate) { candidates.push(candidate); }
+    }
+    let mut failure = io::Error::other("No common output buffer modifiers are available.");
+    for candidate in candidates {
+        match test(&candidate) {
+            Ok(()) => return Ok(candidate),
+            Err(error) if matches!(error.kind(), io::ErrorKind::PermissionDenied | io::ErrorKind::NotFound) => return Err(error),
+            Err(error) => failure = error,
+        }
+    }
+    Err(failure)
+}
+
 fn candidate_hdr(
     outputs: &Outputs,
     renderer: &mut GlesRenderer,
@@ -211,7 +233,7 @@ fn candidate_hdr(
         })();
         match test {
             Ok(()) => return Ok(Arc::new(Pipeline { output, mode: planned.mode, format, modifiers,
-                properties, _blob: Some(blob), reported: hdr.reported })),
+                properties, _blob: Some(Arc::new(blob)), reported: hdr.reported })),
             Err(error) => failure = error.to_string(),
         }
     }
@@ -222,7 +244,7 @@ pub(super) fn prepare(outputs: &Outputs, renderer: &mut GlesRenderer, screen: &m
     if strict && planned.color == ColorMode::Srgb { screen.color.failure = None; }
     let connector = connector_state(outputs.device(), planned.connector)?;
     if screen.color.baseline.is_none() {
-        screen.color.baseline = Some((screen.output.format(), connector.sdr.clone()));
+        screen.color.baseline = Some((screen.output.format(), screen.output.with_compositor(|compositor| compositor.modifiers().to_vec()), connector.sdr.clone()));
     }
     let hdr = candidate_hdr(outputs, renderer, screen, planned, &connector, ready);
     let (supported, reason) = match &hdr { Ok(_) => (true, None), Err(failure) => (false, Some(failure.to_string())) };
@@ -231,9 +253,9 @@ pub(super) fn prepare(outputs: &Outputs, renderer: &mut GlesRenderer, screen: &m
     let mut prepared = if let Some(restore) = &planned.color_restore { restore.clone() }
         else if planned.color == ColorMode::Hdr10 && supported { screen.color.hdr.as_ref().unwrap().clone() }
         else {
-            let (format, properties) = screen.color.baseline.as_ref().unwrap();
+            let (format, modifiers, properties) = screen.color.baseline.as_ref().unwrap();
             Arc::new(Pipeline { output: Default::default(), mode: planned.mode, format: *format,
-                modifiers: modifiers(renderer, *format), properties: properties.clone(), _blob: None, reported: false })
+                modifiers: modifiers.clone(), properties: properties.clone(), _blob: None, reported: false })
         };
     let changed = screen.color.prepared.as_ref().is_none_or(|previous| {
         previous.output != prepared.output || previous.mode != prepared.mode || previous.format != prepared.format || previous.properties != prepared.properties
@@ -247,14 +269,23 @@ pub(super) fn prepare(outputs: &Outputs, renderer: &mut GlesRenderer, screen: &m
     });
     if changed || screen.color.status.effective.is_none() || !pending_matches {
         let revision = screen.color.status.revision.checked_add(1).ok_or_else(|| io::Error::other("Output color revision exhausted."))?;
-        let result = screen.output.with_compositor(|compositor| compositor.use_color_format(outputs.allocator().clone(), planned.mode,
-            prepared.format, prepared.modifiers.clone(), &prepared.properties, vrr)).map_err(error);
-        if let Err(failure) = result {
-            if strict || !vrr { return Err(failure); }
+        let available = modifiers(renderer, prepared.format);
+        let apply = |vrr| select_modifiers(&prepared.modifiers, &available, |modifiers| {
             screen.output.with_compositor(|compositor| compositor.use_color_format(outputs.allocator().clone(), planned.mode,
-                prepared.format, prepared.modifiers.clone(), &prepared.properties, false)).map_err(error)?;
-            screen.adaptive_sync.prepared = Some(false);
-            screen.adaptive_sync.reason = Some(format!("The combined output candidate refused adaptive sync; fixed refresh was retained: {failure}"));
+                prepared.format, modifiers.iter().copied(), &prepared.properties, vrr)).map_err(error)
+        });
+        let selected = match apply(vrr) {
+            Ok(selected) => selected,
+            Err(failure) => {
+                if strict || !vrr { return Err(failure); }
+                let selected = apply(false)?;
+                screen.adaptive_sync.prepared = Some(false);
+                screen.adaptive_sync.reason = Some(format!("The combined output candidate refused adaptive sync; fixed refresh was retained: {failure}"));
+                selected
+            }
+        };
+        if selected != prepared.modifiers {
+            Arc::make_mut(&mut prepared).modifiers = selected;
         }
         screen.color.status.revision = revision;
         screen.color.status.pending = true;
@@ -319,13 +350,17 @@ impl Hardware {
                 screen.color.hdr.as_ref().filter(|_| screen.color.status.hdr10)
             } else { screen.color.prepared.as_ref().filter(|pipeline| pipeline.output.mode == ColorMode::Srgb) };
             if let Some(pipeline) = pipeline {
-                screen.output.with_compositor(|compositor| compositor.test_color_format(self.outputs.allocator().clone(), planned.mode,
-                    pipeline.format, pipeline.modifiers.clone(), &pipeline.properties, planned.adaptive_sync)).map_err(error)?;
+                select_modifiers(&pipeline.modifiers, &modifiers(&self.renderer, pipeline.format), |modifiers| {
+                    screen.output.with_compositor(|compositor| compositor.test_color_format(self.outputs.allocator().clone(), planned.mode,
+                        pipeline.format, modifiers.iter().copied(), &pipeline.properties, planned.adaptive_sync)).map_err(error)
+                })?;
             } else if planned.color == ColorMode::Hdr10 {
                 return Err(io::Error::other(screen.color.status.reason.clone().unwrap_or_else(|| "HDR10 is unavailable on this output.".into())));
-            } else if let Some((format, properties)) = &screen.color.baseline {
-                screen.output.with_compositor(|compositor| compositor.test_color_format(self.outputs.allocator().clone(), planned.mode,
-                    *format, modifiers(&self.renderer, *format), properties, planned.adaptive_sync)).map_err(error)?;
+            } else if let Some((format, preferred, properties)) = &screen.color.baseline {
+                select_modifiers(preferred, &modifiers(&self.renderer, *format), |modifiers| {
+                    screen.output.with_compositor(|compositor| compositor.test_color_format(self.outputs.allocator().clone(), planned.mode,
+                        *format, modifiers.iter().copied(), properties, planned.adaptive_sync)).map_err(error)
+                })?;
             }
         }
         Ok(())
@@ -335,6 +370,48 @@ impl Hardware {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn output_modifier_selection_preserves_tested_buffers_and_recovers_from_rejected_allocations() {
+        let available = [Modifier::from(72057594037927944), Modifier::Linear, Modifier::Invalid];
+        let mut attempts = Vec::new();
+        let selected = select_modifiers(&[Modifier::Invalid], &available, |candidate| {
+            attempts.push(candidate.to_vec());
+            Ok(())
+        }).unwrap();
+        assert_eq!(selected, [Modifier::Invalid]);
+        assert_eq!(attempts, [vec![Modifier::Invalid]]);
+        attempts.clear();
+        let selected = select_modifiers(&available, &available, |candidate| {
+            attempts.push(candidate.to_vec());
+            if candidate == [Modifier::Linear] { Ok(()) } else { Err(io::Error::from_raw_os_error(22)) }
+        }).unwrap();
+        assert_eq!(selected, [Modifier::Linear]);
+        assert_eq!(attempts, [available.to_vec(), vec![available[0]], vec![Modifier::Linear]]);
+        let restored = select_modifiers(&selected, &available, |candidate| {
+            assert_eq!(candidate, [Modifier::Linear]);
+            Ok(())
+        }).unwrap();
+        assert_eq!(restored, selected);
+    }
+
+    #[test]
+    fn output_modifier_selection_propagates_device_loss_and_exhausted_candidates() {
+        let available = [Modifier::Linear, Modifier::Invalid];
+        let mut attempts = 0;
+        let failure = select_modifiers(&available, &available, |_| {
+            attempts += 1;
+            Err(io::Error::from(io::ErrorKind::PermissionDenied))
+        }).unwrap_err();
+        assert_eq!(failure.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(attempts, 1);
+        attempts = 0;
+        assert!(select_modifiers(&available, &available, |_| {
+            attempts += 1;
+            Err(io::Error::from_raw_os_error(22))
+        }).is_err());
+        assert_eq!(attempts, 3);
+    }
 
     #[test]
     fn hdr_output_metadata_uses_the_declared_target_volume_and_no_client_light_claim() {

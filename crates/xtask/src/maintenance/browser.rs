@@ -727,6 +727,7 @@ fn live_work(
         .ok_or("Missing WebDriver session ID")?
         .into();
     driver.video_ready()?;
+    result["renderer"] = driver.js("const c=document.createElement('canvas'),g=c.getContext('webgl');if(!g)return {available:false};const e=g.getExtension('WEBGL_debug_renderer_info');const r={available:true,vendor:e?g.getParameter(e.UNMASKED_VENDOR_WEBGL):g.getParameter(g.VENDOR),renderer:e?g.getParameter(e.UNMASKED_RENDERER_WEBGL):g.getParameter(g.RENDERER)};g.getExtension('WEBGL_lose_context')?.loseContext();return r")?;
     if options.flag("--terminal-check") {
         let terminal_arguments: Vec<String> = options.values.get("--terminal-arguments").map(|value| serde_json::from_str(value)).transpose().map_err(err)?.unwrap_or_default();
         ensure(terminal_arguments.len() <= 128 && terminal_arguments.iter().all(|value| value.len() <= 8192 && !value.contains('\0')), "Invalid literal terminal arguments")?;

@@ -110,6 +110,9 @@ fn authority(grants: &[Capability], action: DesktopAction) -> Result<(), Failure
     if matches!(action, DesktopAction::External(crate::host::external::Action::ScreenshotScreen | crate::host::external::Action::ScreenshotRegion)) {
         need(grants, Capability::Capture)?;
     }
+    if matches!(action, DesktopAction::External(crate::host::external::Action::DisplayOff | crate::host::external::Action::DisplayOn)) {
+        need(grants, Capability::OutputControl)?;
+    }
     Ok(())
 }
 

@@ -1122,6 +1122,9 @@ impl Desktop {
                 if !grants.contains(&crate::launch::Capability::DesktopControl) || !grants.contains(&crate::launch::Capability::Launch)
                     || description.capabilities.iter().any(|capability| !grants.contains(capability))
                 { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection cannot grant this configured helper's privileges")); }
+                if matches!(action, DesktopAction::External(lince_interface::host::external::Action::DisplayOff | lince_interface::host::external::Action::DisplayOn))
+                    && !grants.contains(&crate::launch::Capability::OutputControl)
+                { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection lacks output-control permission")); }
                 if matches!(action, DesktopAction::External(lince_interface::host::external::Action::ScreenshotScreen | lince_interface::host::external::Action::ScreenshotRegion))
                     && !grants.contains(&crate::launch::Capability::Capture)
                 { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection lacks capture permission")); }

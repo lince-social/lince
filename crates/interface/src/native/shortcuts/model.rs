@@ -166,7 +166,7 @@ impl ModKey {
 }
 
 impl Shortcut {
-    pub const ALL: [Self; 116] = [
+    pub const ALL: [Self; 118] = [
         Self::Overview,
         Self::PointerMove,
         Self::PointerResize,
@@ -283,6 +283,8 @@ impl Shortcut {
         Self::External(ExternalAction::ScreenshotScreen),
         Self::External(ExternalAction::ScreenshotRegion),
         Self::External(ExternalAction::Editor),
+        Self::External(ExternalAction::DisplayOff),
+        Self::External(ExternalAction::DisplayOn),
     ];
 
     pub fn id(self) -> &'static str {

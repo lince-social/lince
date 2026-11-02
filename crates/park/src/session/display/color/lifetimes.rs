@@ -21,7 +21,7 @@ fn twenty_real_kernel_blob_lifetimes_retain_submitted_formats_and_reject_old_wak
         let id = property.as_blob().expect("The kernel did not return a property blob");
         assert_eq!(device.get_property_blob(id).unwrap(), bytes);
         let pipeline = Arc::new(Pipeline { output, mode, format: Fourcc::Abgr2101010, modifiers: Vec::new(),
-            properties: vec![(connector, "HDR_OUTPUT_METADATA", id)], _blob: Some(Blob { device: device.clone(), id }), reported: false });
+            properties: vec![(connector, "HDR_OUTPUT_METADATA", id)], _blob: Some(Arc::new(Blob { device: device.clone(), id })), reported: false });
         let weak = Arc::downgrade(&pipeline);
         let mut state = State { prepared: Some(pipeline.clone()), status: ColorStatus { hdr10: true, prepared: Some(output),
             effective: Some(OutputColor::default()), revision: cycle * 4 + 1, pending: true, ..Default::default() }, ..Default::default() };

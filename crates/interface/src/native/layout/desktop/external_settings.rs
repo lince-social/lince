@@ -7,7 +7,7 @@ use crate::{
         HostRequest,
         external::{Action as ExternalAction, Command, Request, Settings, Snapshot},
         input::InputOutcome,
-        launch::{Capability, Description},
+        launch::Description,
     },
     native::{actions::Action, edit_mode::label, shortcuts::Shortcut},
 };
@@ -72,14 +72,7 @@ fn empty(action: ExternalAction) -> Command {
             program: String::new(),
             arguments: Vec::new(),
             directory: None,
-            capabilities: if matches!(
-                action,
-                ExternalAction::ScreenshotScreen | ExternalAction::ScreenshotRegion
-            ) {
-                vec![Capability::Capture]
-            } else {
-                Vec::new()
-            },
+            capabilities: action.capability().into_iter().collect(),
         },
         allow_when_locked: false,
     }

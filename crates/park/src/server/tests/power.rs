@@ -60,6 +60,75 @@ fn output_power_requires_its_own_connection_authority_and_nested_outputs_report_
 }
 
 #[test]
+#[ignore = "spawns a bounded helper on a private simulated output, not physical DPMS"]
+fn external_power_helper_uses_its_inherited_authority_and_public_clients_remain_denied() {
+    use std::process::Stdio;
+    let mut server = Server::new([640, 480]).unwrap();
+    server.output_power_backend(true);
+    server.output_power_state(OutputId(1), Some(true));
+    let socket = server.listen().unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    for (index, on, authorized, confirm) in [(0, false, true, true), (1, true, true, true), (2, false, false, false), (3, false, true, false)] {
+        let path = directory.path().join(format!("power-{index}.log"));
+        let report = directory.path().join(format!("power-{index}.result"));
+        let mut arguments = vec![format!("LINCE_PARK_POWER_MODE={}", if on { "on" } else { "off" }),
+            format!("LINCE_PARK_POWER_REPORT={}", report.display())];
+        if let Ok(libraries) = std::env::var("LD_LIBRARY_PATH") { arguments.push(format!("LD_LIBRARY_PATH={libraries}")); }
+        arguments.extend([std::env::current_exe().unwrap().to_string_lossy().into_owned(), "--exact".into(),
+            "server::tests::power_tests::external_power_helper_child".into(), "--ignored".into(), "--test-threads=1".into()]);
+        let description = crate::launch::Description {
+            program: "env".into(), arguments,
+            directory: None, capabilities: if authorized { vec![crate::launch::Capability::OutputControl] } else { Vec::new() },
+        };
+        let mut application = crate::launch::Application::from_description(&description).unwrap().command(&socket).unwrap();
+        application.stdout(std::fs::File::create(&path).unwrap()).stderr(Stdio::from(std::fs::OpenOptions::new().append(true).open(&path).unwrap()));
+        let mut child = if authorized { server.spawn_helper(&description, &socket).unwrap() } else { application.spawn().unwrap() };
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut count = 0;
+        let mut pending = None;
+        loop {
+            server.dispatch().unwrap();
+            for request in server.output_power_requests() {
+                assert!(authorized);
+                assert_eq!(request.output, OutputId(1));
+                assert_eq!(request.on, on);
+                assert!(server.output_power_current(&request));
+                assert!(request.deadline <= Instant::now() + Duration::from_secs(2));
+                count += 1;
+                pending = Some((Instant::now() + Duration::from_millis(100), request));
+            }
+            if confirm && pending.as_ref().is_some_and(|(after, _)| Instant::now() >= *after) {
+                let (_, request) = pending.take().unwrap();
+                assert!(server.output_power_current(&request), "The power helper disconnected before backend confirmation");
+                server.output_power_state(request.output, Some(request.on));
+            }
+            if let Some(status) = child.try_wait().unwrap() {
+                if confirm { assert!(pending.is_none(), "The power helper exited before backend confirmation"); }
+                assert_eq!(status.success(), authorized && confirm, "{}", std::fs::read_to_string(&path).unwrap());
+                break;
+            }
+            if Instant::now() >= deadline {
+                child.kill().unwrap(); child.wait().unwrap();
+                panic!("The external power helper did not finish");
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        assert_eq!(count, usize::from(authorized));
+        assert_eq!(std::fs::read_to_string(report).unwrap(), if confirm { "ok" } else if authorized { "TimedOut" } else { "PermissionDenied" });
+        assert_eq!(server.output_powered(OutputId(1)), if authorized && confirm { on } else { true });
+    }
+}
+
+#[test]
+#[ignore = "invoked by the private helper fixture with an inherited connection"]
+fn external_power_helper_child() -> std::io::Result<()> {
+    let result = crate::power_client::run(std::env::var("LINCE_PARK_POWER_MODE").unwrap() == "on");
+    let report = result.as_ref().err().map(|error| format!("{:?}", error.kind())).unwrap_or_else(|| "ok".into());
+    std::fs::write(std::env::var("LINCE_PARK_POWER_REPORT").unwrap(), report)?;
+    result
+}
+
+#[test]
 fn output_power_reports_only_backend_observations_and_keeps_windows_and_output_configuration() {
     let mut harness = harness(true);
     let window = harness.window();

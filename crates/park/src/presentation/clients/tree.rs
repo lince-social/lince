@@ -240,11 +240,10 @@ impl Presentation {
                         *world
                             .resource_mut::<Assets<Image>>()
                             .get_mut(&view.image)
-                            .unwrap() = Image::new_target_texture(
+                            .unwrap() = imported_image(
                             texture.width(),
                             texture.height(),
                             texture.format(),
-                            None,
                         );
                         view.texture = Some(texture);
                         world.resource_mut::<Assets<ClientMaterial>>()
@@ -273,11 +272,10 @@ impl Presentation {
 fn create(world: &mut World, parent: Entity) -> SurfaceView {
     let image = world
         .resource_mut::<Assets<Image>>()
-        .add(Image::new_target_texture(
+        .add(imported_image(
             1,
             1,
             wgpu::TextureFormat::Bgra8Unorm,
-            None,
         ));
     let material = world
         .resource_mut::<Assets<ClientMaterial>>()

@@ -58,6 +58,12 @@ impl UiMaterial for ClientMaterial {
 #[derive(Resource, ExtractResource, Clone, Default)]
 struct Textures(HashMap<AssetId<Image>, wgpu::Texture>);
 
+fn imported_image(width: u32, height: u32, format: wgpu::TextureFormat) -> Image {
+    let mut image = Image::new_target_texture(width, height, format, None);
+    image.asset_usage = bevy::asset::RenderAssetUsages::MAIN_WORLD;
+    image
+}
+
 pub(super) struct Window {
     pub(super) entity: Entity,
     pub(super) parent: Option<SurfaceId>,
@@ -180,11 +186,10 @@ impl Presentation {
             );
         let image = world
             .resource_mut::<Assets<Image>>()
-            .add(Image::new_target_texture(
+            .add(imported_image(
                 1,
                 1,
                 wgpu::TextureFormat::Bgra8Unorm,
-                None,
             ));
         let material = world
             .resource_mut::<Assets<ClientMaterial>>()
@@ -382,7 +387,7 @@ impl Presentation {
                 .resource_mut::<Assets<Image>>()
                 .get_mut(&window.image)
                 .unwrap() =
-                Image::new_target_texture(source.width(), source.height(), source.format(), None);
+                imported_image(source.width(), source.height(), source.format());
             world
                 .resource_mut::<Assets<ClientMaterial>>()
                 .get_mut(&window.material)

@@ -1,5 +1,6 @@
 use super::*;
 use crate::host::input::InputResponse;
+use crate::host::launch::Capability;
 
 fn fixture(available: bool) -> (App, Entity, std::sync::mpsc::Receiver<HostRequest>) {
     let mut app = App::new();
@@ -219,4 +220,21 @@ fn sandbox_and_pending_text_cannot_submit_or_enable_privileged_lock_actions() {
     let command = &request.settings.0[&ExternalAction::ScreenshotScreen];
     assert!(!command.allow_when_locked);
     assert_eq!(command.command.capabilities, [Capability::Capture]);
+}
+
+#[test]
+fn display_power_commands_save_only_output_control_authority_without_executing() {
+    for action in [ExternalAction::DisplayOff, ExternalAction::DisplayOn] {
+        let (mut app, page, receiver) = fixture(true);
+        Change::Select(action).apply(app.world_mut(), page);
+        settle(&mut app);
+        let program = app.world().get::<Page>(page).unwrap().program;
+        write(&mut app, program, "power-tool");
+        Change::Locked.apply(app.world_mut(), page);
+        Change::Save.apply(app.world_mut(), page);
+        let HostRequest::External(request) = receiver.try_recv().unwrap() else { panic!("request"); };
+        let command = &request.settings.0[&action];
+        assert_eq!(command.command.capabilities, [Capability::OutputControl]);
+        assert!(command.allow_when_locked);
+    }
 }

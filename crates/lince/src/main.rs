@@ -29,6 +29,15 @@ fn main() -> Result<(), Error> {
     if has_arg(&args, "--build-info") {
         return build_info::print();
     }
+    if has_arg(&args, "--park-power") {
+        if args.len() != 3 || args[1] != "--park-power" || !matches!(args[2].as_str(), "on" | "off") {
+            return Err(Error::other("Use lince --park-power on|off through an authorized Park helper"));
+        }
+        #[cfg(all(target_os = "linux", feature = "park"))]
+        return lince_park::power_client::run(args[2] == "on");
+        #[cfg(not(all(target_os = "linux", feature = "park")))]
+        return Err(Error::other("Display-power helpers require Linux and the park feature"));
+    }
     if args.get(1).is_some_and(|argument| argument == "lingua") {
         if let Err(error) = lingua::dispatch(&args[2..]) {
             eprintln!("{error}");
@@ -470,6 +479,7 @@ fn print_help() {
     println!("      --directory <path> Override the Lince data directory");
     println!("      --language <en|pt-BR|art-x-ithkuil> Choose the interface language at startup");
     println!("      --park           Run the native Wayland desktop (Linux, park feature)");
+    println!("      --park-power on|off  Confirm display power through an authorized helper connection");
     println!(
         "      --park-nested    Run the same Cell-backed compositor inside the current desktop"
     );

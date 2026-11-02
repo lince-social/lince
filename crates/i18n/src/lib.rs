@@ -211,6 +211,8 @@ messages! {
     ExternalScreenshotScreen => ("Capture the screen", "Capturar a tela", None),
     ExternalScreenshotRegion => ("Capture a region", "Capturar uma região", None),
     ExternalEditor => ("Open the chosen editor", "Abrir o editor escolhido", None),
+    ExternalDisplayOff => ("Turn displays off", "Desligar telas", None),
+    ExternalDisplayOn => ("Turn displays on", "Ligar telas", None),
     ShortcutLock => ("Request the chosen screen locker", "Solicitar o bloqueador de tela escolhido", None),
     ShortcutLogout => ("Log out of Park", "Sair do Park", None),
     ShortcutRecentNext => ("Next recent window", "Próxima janela recente", None),

@@ -1,6 +1,9 @@
 #[cfg(target_os = "linux")]
 pub mod launch;
 
+#[cfg(all(target_os = "linux", any(feature = "nested", feature = "server-tests")))]
+pub mod power_client;
+
 #[cfg(all(
     target_os = "linux",
     any(feature = "session", feature = "clipboard-gate")

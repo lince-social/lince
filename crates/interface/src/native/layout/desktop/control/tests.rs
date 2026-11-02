@@ -30,6 +30,10 @@ fn dispatcher_access_cannot_grant_window_output_launch_or_capture_permissions() 
         assert_eq!(prepare(&world, root, &call, &[Capability::WindowList]).unwrap_err().code, Error::Denied);
     }
     assert!(authority(&[Capability::DesktopControl, Capability::Launch], DesktopAction::External(crate::host::external::Action::ScreenshotScreen)).is_err());
+    for action in [crate::host::external::Action::DisplayOff, crate::host::external::Action::DisplayOn] {
+        assert!(authority(&[Capability::DesktopControl, Capability::Launch], DesktopAction::External(action)).is_err());
+        assert!(authority(&[Capability::DesktopControl, Capability::Launch, Capability::OutputControl], DesktopAction::External(action)).is_ok());
+    }
 }
 
 #[test]

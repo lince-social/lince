@@ -20,10 +20,12 @@ pub enum Action {
     ScreenshotScreen,
     ScreenshotRegion,
     Editor,
+    DisplayOff,
+    DisplayOn,
 }
 
 impl Action {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 14] = [
         Self::BrightnessDown,
         Self::BrightnessUp,
         Self::VolumeDown,
@@ -36,6 +38,8 @@ impl Action {
         Self::ScreenshotScreen,
         Self::ScreenshotRegion,
         Self::Editor,
+        Self::DisplayOff,
+        Self::DisplayOn,
     ];
 
     pub fn id(self) -> &'static str {
@@ -52,6 +56,8 @@ impl Action {
             Self::ScreenshotScreen => "capture.screen",
             Self::ScreenshotRegion => "capture.region",
             Self::Editor => "launch.editor",
+            Self::DisplayOff => "hardware.display-off",
+            Self::DisplayOn => "hardware.display-on",
         }
     }
 
@@ -69,6 +75,8 @@ impl Action {
             Self::ScreenshotScreen => "/capture/screen",
             Self::ScreenshotRegion => "/capture/region",
             Self::Editor => "/launch/editor",
+            Self::DisplayOff => "/hardware/display-off",
+            Self::DisplayOn => "/hardware/display-on",
         }
     }
 
@@ -87,6 +95,8 @@ impl Action {
             Self::ScreenshotScreen => Token::ExternalScreenshotScreen,
             Self::ScreenshotRegion => Token::ExternalScreenshotRegion,
             Self::Editor => Token::ExternalEditor,
+            Self::DisplayOff => Token::ExternalDisplayOff,
+            Self::DisplayOn => Token::ExternalDisplayOn,
         }
         .text()
     }
@@ -104,7 +114,7 @@ impl Action {
             Self::MediaPrevious => "XF86AudioPrev",
             Self::ScreenshotScreen => "Print",
             Self::ScreenshotRegion => "Ctrl+Print",
-            Self::Editor => "Unbound",
+            Self::Editor | Self::DisplayOff | Self::DisplayOn => "Unbound",
         }
     }
 
@@ -127,11 +137,21 @@ impl Action {
                 | Self::MediaPlayPause
                 | Self::MediaNext
                 | Self::MediaPrevious
+                | Self::DisplayOff
+                | Self::DisplayOn
         )
     }
 
     pub fn index(self) -> usize {
         Self::ALL.iter().position(|action| *action == self).unwrap()
+    }
+
+    pub fn capability(self) -> Option<Capability> {
+        match self {
+            Self::ScreenshotScreen | Self::ScreenshotRegion => Some(Capability::Capture),
+            Self::DisplayOff | Self::DisplayOn => Some(Capability::OutputControl),
+            _ => None,
+        }
     }
 }
 
@@ -161,13 +181,12 @@ impl Command {
             return Err("Use an executable, up to 64 literal arguments of at most 4096 bytes, and an absolute working directory.".into());
         }
         if self.allow_when_locked && !action.lockable() {
-            return Err("Only hardware and media controls can be allowed while locked.".into());
+            return Err("Only hardware, display-power and media controls can be allowed while locked.".into());
         }
         if self.command.capabilities.iter().any(|capability| {
-            !matches!(action, Action::ScreenshotScreen | Action::ScreenshotRegion)
-                || *capability != Capability::Capture
+            Some(*capability) != action.capability()
         }) {
-            return Err("Only screenshot commands may request screen-capture access; other privileged capabilities are not available to these commands.".into());
+            return Err("Only screenshot commands may request capture access, and only display-power commands may request output-control access.".into());
         }
         Ok(())
     }
@@ -284,6 +303,8 @@ mod tests {
                     candidate.validate(action).is_ok(),
                     matches!(action, Action::ScreenshotScreen | Action::ScreenshotRegion)
                         && capability == Capability::Capture
+                        || matches!(action, Action::DisplayOff | Action::DisplayOn)
+                            && capability == Capability::OutputControl
                 );
             }
         }

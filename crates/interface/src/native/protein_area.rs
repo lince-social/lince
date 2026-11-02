@@ -1339,6 +1339,9 @@ pub(crate) fn editor_sender(
     {
         return None;
     }
+    if crate::native::time_castle::editable_record(world, binding) {
+        return auxiliary_sender(world, &binding.source);
+    }
     match &binding.source {
         Source::Local => {
             if world

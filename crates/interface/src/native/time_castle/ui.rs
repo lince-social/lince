@@ -164,7 +164,7 @@ pub(super) fn populate(
 struct ViewportOwner(Entity);
 
 #[derive(Component)]
-struct UpcomingRow(String);
+pub(super) struct UpcomingRow(pub String);
 
 #[derive(Component)]
 struct UpcomingReady;
@@ -279,6 +279,7 @@ pub(super) fn upcoming(
     visible: bool,
     palette: &palette::Palette,
 ) {
+    timing::refresh(world, owner, now);
     let view = world.get::<View>(owner).unwrap();
     let panel = view.upcoming;
     let size = render::size(world, view.viewport);
@@ -309,7 +310,7 @@ pub(super) fn upcoming(
                 let entry = &view.entries[index];
                 let timing = format!(
                     "{} · {}",
-                    entry.time_label(settings, now),
+                    timing::label(world, owner, entry),
                     model::countdown(remaining)
                 );
                 let fit = |text: &str| {
@@ -403,11 +404,12 @@ pub(super) fn upcoming(
     world.entity_mut(panel).despawn_children();
     world.entity_mut(panel).insert(UpcomingReady);
     for (id, text) in &rows {
-        let button = chrome::button(world, panel, owner, text, Select(vec![id.clone()]));
+        let button = chrome::button(world, panel, owner, text, keyboard::Activate(id.clone()));
         world
             .entity_mut(button)
             .remove::<crate::native::token_style::BackgroundToken>()
             .insert((UpcomingRow(id.clone()), BackgroundColor(Color::NONE)));
+        keyboard::marker(world, button);
         let mut node = world.get_mut::<Node>(button).unwrap();
         node.width = percent(100);
         node.min_width = px(0);
@@ -973,6 +975,7 @@ mod tests {
             "time": {"from_ms": 10_000}, "origin": {"kind": "manual"}, "preview": false
         })).unwrap();
         world.get_mut::<View>(owner).unwrap().entries = vec![entry];
+        world.get_mut::<View>(owner).unwrap().revision += 1;
         upcoming(&mut world, owner, 1000, true, &palette);
         let rows = &world.get::<View>(owner).unwrap().upcoming_rows;
         assert!(rows[0].1.contains('…'));

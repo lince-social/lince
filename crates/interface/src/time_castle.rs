@@ -5,7 +5,7 @@ use serde_json::Value;
 mod layout;
 pub use layout::{
     BandLevel, Label, LabelMetrics, Occurrence, clock_occurrences, labels, labels_with_metrics,
-    lane_offset, occurrences,
+    lane_offset, occurrences, wrap_label,
 };
 
 pub const RECORD_SELECTED: &str = "Record selected";

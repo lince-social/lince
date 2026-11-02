@@ -43,6 +43,7 @@ pub(super) fn update(
     changed: bool,
     palette: &palette::Palette,
 ) -> Vec<model::Label> {
+    timing::refresh(world, owner, now);
     let previous: Vec<_> = world
         .get::<Annotations>(owner)
         .map(|annotations| annotations.0.clone())
@@ -304,6 +305,32 @@ pub(super) fn update(
             .is_some_and(|entity| is_held(world, *entity))
     });
     for label in &mut labels {
+        if let Some(entry) = world
+            .get::<View>(owner)
+            .unwrap()
+            .entries
+            .iter()
+            .find(|entry| entry.id == label.id)
+        {
+            let mut time = timing::label(world, owner, entry).to_owned();
+            if entry.preview {
+                time.push_str(" · projected");
+            }
+            if label.occurrence.historical && !entry.outstanding_at(now, &settings.timezone) {
+                time.push_str(" · past");
+            }
+            if label.time.split_whitespace().ne(time.split_whitespace()) {
+                label.time = timing::wrap(world, &time, font, label.rect[2] - 16.0);
+                if let Some(mut layout) = world.get_mut::<Layout>(owner)
+                    && let Some(cached) = layout
+                        .labels
+                        .iter_mut()
+                        .find(|cached| cached.id == label.id)
+                {
+                    cached.time.clone_from(&label.time);
+                }
+            }
+        }
         let cursor_attached = label.occurrence.historical
             || world
                 .get::<View>(owner)
@@ -1190,6 +1217,31 @@ mod tests {
                     true,
                     true,
                     &palette,
+                );
+            }
+            if allocated {
+                ui::upcoming(&mut world, owner, now + 71_900, true, &palette);
+                let entry = &world.get::<View>(owner).unwrap().entries[0];
+                let expected =
+                    entry.time_label(&world.get::<TimeSettings>(owner).unwrap().0, now + 71_900);
+                assert_ne!(
+                    expected,
+                    entry.time_label(&world.get::<TimeSettings>(owner).unwrap().0, now)
+                );
+                let text = world.get::<Annotation>(card).unwrap().time;
+                assert_eq!(
+                    world
+                        .get::<Text>(text)
+                        .unwrap()
+                        .0
+                        .split_whitespace()
+                        .collect::<Vec<_>>(),
+                    expected.split_whitespace().collect::<Vec<_>>()
+                );
+                assert!(
+                    world.get::<View>(owner).unwrap().upcoming_rows[0]
+                        .1
+                        .contains(&expected)
                 );
             }
             let next_anchor = world.get::<Annotation>(card).unwrap().label.anchor;

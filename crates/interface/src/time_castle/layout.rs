@@ -222,7 +222,7 @@ fn overlap(a: [f32; 4], b: [f32; 4], gap: f32) -> bool {
         && a[1] + a[3] + gap > b[1]
 }
 
-fn wrap(title: &str, width: f32, advance: &dyn Fn(char) -> f32) -> Vec<String> {
+pub fn wrap_label(title: &str, width: f32, advance: &dyn Fn(char) -> f32) -> Vec<String> {
     let mut lines = Vec::new();
     let mut line = String::new();
     let mut occupied = 0.0;
@@ -307,7 +307,7 @@ pub fn labels_with_metrics(
             .map(str::trim)
             .find(|line| !line.is_empty())
             .unwrap_or("Untitled event");
-        let lines = wrap(title, maximum_width - 16.0, metrics.advance);
+        let lines = wrap_label(title, maximum_width - 16.0, metrics.advance);
         let mut time = entry.time_label(settings, now);
         if entry.preview {
             time.push_str(" · projected");
@@ -315,7 +315,7 @@ pub fn labels_with_metrics(
         if occurrence.historical && !entry.outstanding_at(now, &settings.timezone) {
             time.push_str(" · past");
         }
-        let time = wrap(&time, maximum_width - 16.0, metrics.advance);
+        let time = wrap_label(&time, maximum_width - 16.0, metrics.advance);
         let width = lines
             .iter()
             .chain(&time)

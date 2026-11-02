@@ -4,10 +4,12 @@ mod audio;
 mod chrome;
 mod events;
 mod face;
+mod keyboard;
 mod motion;
 mod palette;
 mod render;
 mod scene;
+mod timing;
 pub use scene::SchedulePick;
 pub(crate) mod source;
 mod ui;
@@ -23,6 +25,26 @@ use std::collections::HashMap;
 
 #[derive(Component)]
 pub(crate) struct AttachedCard;
+
+pub(crate) fn editable_record(
+    world: &World,
+    binding: &crate::native::protein_area::RecordBinding,
+) -> bool {
+    let matches = |owner| {
+        world.get::<View>(owner).is_some_and(|view| {
+            view.source == binding.source
+                && view
+                    .entries
+                    .iter()
+                    .any(|entry| entry.record_uid == binding.uid && !entry.preview)
+        })
+    };
+    matches(binding.area)
+        || (binding.area == Entity::PLACEHOLDER
+            && world
+                .get_resource::<Feeds>()
+                .is_some_and(|feeds| feeds.active.keys().copied().any(matches)))
+}
 
 #[derive(Component, Clone)]
 pub struct TimeSettings(pub Settings);
@@ -40,6 +62,8 @@ struct View {
     entries: Vec<Entry>,
     upcoming: Entity,
     upcoming_rows: Vec<(String, String)>,
+    active_row: Option<String>,
+    reveal_row: bool,
     upcoming_stamp: Option<(u64, i64, i64, String, u32)>,
     hovered: Option<String>,
     hover_point: Option<Vec3>,
@@ -140,6 +164,7 @@ pub fn populate(world: &mut World, owner: Entity) {
     let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
     let (viewport, status, present, details, fields) = ui::populate(world, owner, &settings);
     let upcoming = ui::upcoming_panel(world, owner);
+    keyboard::attach(world, owner);
     world.entity_mut(owner).insert(View {
         viewport,
         status,
@@ -149,6 +174,8 @@ pub fn populate(world: &mut World, owner: Entity) {
         entries: Vec::new(),
         upcoming,
         upcoming_rows: Vec::new(),
+        active_row: None,
+        reveal_row: false,
         upcoming_stamp: None,
         hovered: None,
         hover_point: None,

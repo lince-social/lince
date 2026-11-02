@@ -477,6 +477,7 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
                 .is_some();
         chrome::presentation(world, owner, !spatial && settings.mode == Mode::Coiled);
         ui::upcoming(world, owner, now, !spatial && unwind < 0.001, &palette);
+        keyboard::update(world, owner, &palette);
         let source = settings
             .source
             .as_ref()

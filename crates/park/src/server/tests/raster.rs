@@ -99,6 +99,50 @@ fn capture(name: &str, size: [u32; 2], pixels: &[u8]) {
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
+fn shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_resized_content() {
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let renderer = crate::graphics::VulkanRenderer::new().unwrap();
+    let first_buffer = pixel_buffer(&harness, [32, 16], &[17, 17, 17, 255].repeat(32 * 16));
+    window.surface.attach(Some(&first_buffer), 0, 0);
+    window.surface.damage_buffer(0, 0, 32, 16);
+    window.surface.commit();
+    harness.sync();
+    let first = harness.server.windows()[0].nodes[0].clone();
+    let (before, _) = renderer.import_surface(&first, None).unwrap().unwrap();
+    let second_buffer = pixel_buffer(&harness, [32, 16], &[119, 119, 119, 255].repeat(32 * 16));
+    window.surface.attach(Some(&second_buffer), 0, 0);
+    window.surface.damage_buffer(4, 2, 8, 3);
+    window.surface.commit();
+    harness.sync();
+    let second = harness.server.windows()[0].nodes[0].clone();
+    let (after, _) = renderer.import_surface(&second, Some((&before, first.damage.current_commit()))).unwrap().unwrap();
+    let read = |texture: &wgpu::Texture| {
+        let exported = renderer.export_copy(texture).unwrap();
+        exported.wait_for_probe().unwrap();
+        crate::presentation::probe_pixels(&exported.dmabuf).unwrap()
+    };
+    assert_eq!(read(&before), [17, 17, 17, 255].repeat(32 * 16));
+    let pixels = read(&after);
+    for y in 0..16 {
+        for x in 0..32 {
+            let value = if (4..12).contains(&x) && (2..5).contains(&y) { 119 } else { 17 };
+            assert_eq!(&pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &[value, value, value, 255]);
+        }
+    }
+    let resized_buffer = pixel_buffer(&harness, [16, 8], &[231, 231, 231, 255].repeat(16 * 8));
+    window.surface.attach(Some(&resized_buffer), 0, 0);
+    window.surface.damage_buffer(0, 0, 1, 1);
+    window.surface.commit();
+    harness.sync();
+    let resized = harness.server.windows()[0].nodes[0].clone();
+    let (texture, _) = renderer.import_surface(&resized, Some((&after, second.damage.current_commit()))).unwrap().unwrap();
+    assert_eq!(read(&texture), [231, 231, 231, 255].repeat(16 * 8));
+    assert_eq!(read(&after), pixels);
+}
+
+#[test]
+#[ignore = "requires hardware Vulkan and EGL"]
 fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_input_through_final_composition()
  {
     let runtime = tokio::runtime::Builder::new_multi_thread()

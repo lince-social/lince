@@ -154,7 +154,8 @@ impl VulkanRenderer {
             });
             return Ok(Some((texture, false)));
         }
-        let (pixels, size, opaque) =
+        let started = std::time::Instant::now();
+        let (uploads, size, opaque, preserve) =
             with_buffer_contents(buffer.buffer(), |pointer, length, data| {
                 if data.width <= 0
                     || data.height <= 0
@@ -187,30 +188,48 @@ impl VulkanRenderer {
                         "SHM contents exceed their pool",
                     ));
                 }
-                let mut pixels = vec![0; bytes];
-                for y in 0..data.height as usize {
-                    unsafe {
-                        std::ptr::copy_nonoverlapping(
-                            pointer.add(data.offset as usize + y * data.stride as usize),
-                            pixels.as_mut_ptr().add(y * row),
-                            row,
-                        )
-                    };
+                let bounds = smithay::utils::Rectangle::from_size((data.width, data.height).into());
+                let previous = target.filter(|texture| texture.width() == data.width as u32
+                    && texture.height() == data.height as u32 && texture.format() == wgpu::TextureFormat::Bgra8Unorm
+                    && texture.usage().contains(wgpu::TextureUsages::COPY_SRC));
+                let mut regions = if previous.is_some() {
+                    damage.iter().filter_map(|damage| damage.intersection(bounds)).collect::<Vec<_>>()
+                } else { vec![bounds] };
+                let total = regions.iter().try_fold(0_usize, |total, region| {
+                    total.checked_add(region.size.w as usize * region.size.h as usize * 4)
+                });
+                if total.is_none_or(|total| total > bytes) || regions.contains(&bounds) { regions = vec![bounds]; }
+                let preserve = previous.is_some() && regions != [bounds];
+                let mut uploads = Vec::with_capacity(regions.len());
+                for region in regions {
+                    let row = region.size.w as usize * 4;
+                    let mut pixels = vec![0; row * region.size.h as usize];
+                    for y in 0..region.size.h as usize {
+                        unsafe {
+                            std::ptr::copy_nonoverlapping(
+                                pointer.add(data.offset as usize + (region.loc.y as usize + y) * data.stride as usize + region.loc.x as usize * 4),
+                                pixels.as_mut_ptr().add(y * row),
+                                row,
+                            )
+                        };
+                    }
+                    uploads.push((region, pixels));
                 }
                 Ok((
-                    pixels,
+                    uploads,
                     [data.width as u32, data.height as u32],
                     data.format == Format::Xrgb8888,
+                    preserve,
                 ))
             })
             .map_err(|error| ProbeFailure::at("client_shm", error))??;
-        let previous = target
-            .filter(|texture| {
-                texture.width() == size[0]
-                    && texture.height() == size[1]
-                    && texture.format() == wgpu::TextureFormat::Bgra8Unorm
-                    && texture.usage().contains(wgpu::TextureUsages::COPY_SRC)
-            });
+        crate::runtime::trace_frame("shm-read", started);
+        let started = std::time::Instant::now();
+        let previous = target.filter(|_| preserve);
+        if uploads.is_empty() && let Some(previous) = previous {
+            buffer.cache(Content { device: self.device.clone(), texture: previous.clone(), opaque, capture: Default::default() });
+            return Ok(Some((previous.clone(), opaque)));
+        }
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
                     label: Some("park_client_upload"),
                     size: wgpu::Extent3d {
@@ -228,19 +247,16 @@ impl VulkanRenderer {
                         | wgpu::TextureUsages::RENDER_ATTACHMENT,
                     view_formats: &[],
                 });
-        let bounds = smithay::utils::Rectangle::from_size((size[0] as i32, size[1] as i32).into());
-        let regions = if let Some(previous) = previous {
+        if let Some(previous) = previous {
             let mut encoder = self.device.create_command_encoder(&Default::default());
             encoder.copy_texture_to_texture(previous.as_image_copy(), texture.as_image_copy(), texture.size());
             self.queue.submit([encoder.finish()]);
-            damage.into_iter().filter_map(|damage| damage.intersection(bounds)).collect::<Vec<_>>()
-        } else { vec![bounds] };
-        for region in regions {
-            let offset = (region.loc.y as usize * size[0] as usize + region.loc.x as usize) * 4;
+        }
+        for (region, pixels) in uploads {
             self.queue.write_texture(
                 wgpu::TexelCopyTextureInfo { origin: wgpu::Origin3d { x: region.loc.x as u32, y: region.loc.y as u32, z: 0 }, ..texture.as_image_copy() },
-                &pixels[offset..],
-                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(size[0] * 4), rows_per_image: Some(size[1]) },
+                &pixels,
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(region.size.w as u32 * 4), rows_per_image: Some(region.size.h as u32) },
                 wgpu::Extent3d { width: region.size.w as u32, height: region.size.h as u32, depth_or_array_layers: 1 },
             );
         }
@@ -250,6 +266,7 @@ impl VulkanRenderer {
             opaque,
             capture: Default::default(),
         });
+        crate::runtime::trace_frame("shm-upload", started);
         Ok(Some((texture, opaque)))
     }
 }

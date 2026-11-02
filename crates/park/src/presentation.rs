@@ -1115,8 +1115,14 @@ impl Presentation {
             .texture
             .clone();
         let geometry = self.frame_geometry().map(Arc::new);
+        crate::runtime::trace_frame("frame-geometry", started);
+        let detail = std::time::Instant::now();
         let input = self.finish_input(geometry.as_deref())?;
+        crate::runtime::trace_frame("frame-input", detail);
+        let detail = std::time::Instant::now();
         let windows = self.window_configurations();
+        crate::runtime::trace_frame("frame-window-configurations", detail);
+        let detail = std::time::Instant::now();
         let mut outputs = Vec::new();
         for (id, target) in &self.output_state.targets {
             if Some(*id) == self.output_state.assignments.focused() {
@@ -1154,6 +1160,7 @@ impl Presentation {
         };
         frame.capture = self.capture_frame();
         self.release_capture_uploads();
+        crate::runtime::trace_frame("frame-image-export", detail);
         crate::runtime::trace_frame("export", started);
         Ok(frame)
     }

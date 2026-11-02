@@ -1,0 +1,53 @@
+Numerical equivalents and stateful model transitions (@ws-numerical-transitions: 0, is #chapter, #part-of @workspace-development, #requires @ws-powered-circuit) { r_5GMR6H4FMM7BVF9B2647X6EJQR
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Powered circuit and mixed functional signals](Powered-Circuit.lingua)
+
+Dependency reason: Generic state transfer is admitted only after a real detailed/equivalent pair and its external contract exist. Other domains cannot infer their state maps from this proof.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Shared captured transition transaction, one-writer activation and validated circuit equivalent with retained timer/capacitor state and explicit unsupported restart.
+
+## Ownership and possible overlap
+
+Shared numerical transition/adoption services; a single owner stabilizes them before mechanical/thermal consumers extend domain mappings.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 15a.T05
+
+- [ ] **15a.T05.** Publish at least one cheaper equivalent model for a specified detailed subsystem. Expose matching external terminals, preserve the required loading/output behavior and define validity by supply/load/stimulus/time range. An explicit authored functional alternative may omit electrical loading, but cannot replace a load-preserving model where downstream requirements demand it. Validate the claimed approximation against independent references and the detailed model across the declared range; quantify error and measured work saved.
+
+### Task 15a.T06
+
+- [ ] **15a.T06.** Implement the transition transaction below for one genuinely stateful pair, including a continuing timer and a retained capacitor/equivalent state. Demonstrate supported fine→coarse→fine continuation and an unsupported mapping requiring explicit restart. Exercise source edits, stale candidates, cancellation, authority loss and resource exhaustion at each transition boundary; no double solver/output activation or stale-state restoration.
+
+## Required contracts and proof
+
+[Circuit-and-transition-contracts](../contracts/Circuit-and-transition-contracts.lingua)
+
+15a.W02/B44 approximation/reference ranges, transfer errors, stale/cancel/epoch failures, no double power draw or lost history.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Adaptive circuit policy and shared/offline acceptance](Circuit-Policy.lingua); [Derived-model adoption and shared laboratory integration](Scientific-Adoption.lingua); [Mechanical substitution and shared interaction](Mechanical-Transitions.lingua); [Verified elasticity and thermal models](Continuum.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_5GMR6H4FMM7BVF9B2647X6EJQR

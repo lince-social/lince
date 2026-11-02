@@ -1,0 +1,65 @@
+Offline city and local place coverage (@ws-offline-city: 0, is #chapter, #part-of @workspace-development, #requires @ws-geography, #requires @ws-shared-presence) { r_54XJBCBKFM4SZY0QPFJRP1BRD3
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Globe, sparse scale and geographic layers](Geography.lingua); [Shared presence and scoped queries](Shared-Presence.lingua)
+
+Dependency reason: Real city coverage consumes proven geographic/refinement and projection services. Portable package machinery is already shared, not reimplemented.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Selected city/route/place packs, search/bookmarks, bounded query deltas and measured long-duration offline navigation.
+
+## Ownership and possible overlap
+
+Map source adapters, place index and package content; shared loader/subscription changes serialized with their owners.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 06.T01
+
+- [ ] **06.T01.** Extend [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s shared map/archive provider, source/coverage and residency path to selected real city data and a larger offline profile. Keep default coarse Earth available and elevation, imagery, routes, supplied 3D models and authored places separate. Add declared elevation/building/3D source adapters that preserve supported height/geometry and report losses; do not route required shape data through the current basemap normalization that drops buildings. Preserve flat ground/footprints where geometry is absent; no procedural relief or building extrusion is inferred from a place name.
+
+### Task 06.T02
+
+- [ ] **06.T02.** Extend region/layer budgets, cost preview, offline pins, partial coverage and progress/cancel/resume. Online on-demand fetching is allowed only through configured sources and budgets; explicit offline mode prevents new network work. Include styles/labels/transforms/available shape data required by the chosen package. Reuse [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s loader/query/demand implementation instead of a second map cache/runtime.
+
+### Task 06.T03
+
+- [ ] **06.T03.** Implement paged spatial/semantic indexes, coarse-parent fallback, permitted dedupe and bounded decode/upload/request queues. Add local place search/bookmarks and saved-route inspection; route solving remains a separately tested subset when selected.
+
+### Task 06.T04
+
+- [ ] **06.T04.** Reuse the E4 coherent query/projection cache and I6 demand leases for the selected map/table subset: initial snapshot, atomic revision deltas, overlap/refcounts, grant changes and reconnect/resnapshot. Prove B19 before widening predicates; do not introduce another general database or per-feature polling loop.
+
+### Task 06.T06
+
+- [ ] **06.T06.** Prove 30-minute navigation under the default working-set cap, rapid request cancellation, offline closure, missing-tile fallback, disk-full behavior and resource release. Do not claim building/terrain detail from current normalized basemap tiles.
+
+## Required contracts and proof
+
+[Offline-coverage-contracts](../contracts/Offline-coverage-contracts.lingua)
+
+06.W01–06.W03 local portions and B02; 30-minute budgets, missing coverage, disk failure and no unsupported geometry invention.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Hosted world and offline publication joins](Hosted-World.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_54XJBCBKFM4SZY0QPFJRP1BRD3

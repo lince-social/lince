@@ -1,0 +1,57 @@
+Hosted world and offline publication joins (@ws-hosted-world: 0, is #chapter, #part-of @workspace-development, #requires @ws-offline-city, #requires @ws-shared-presence, #requires @ws-character-starter) { r_50TATVD32MJNTH0CWCQ3TVSC1R
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Offline city and local place coverage](Offline-City.lingua); [Shared presence and scoped queries](Shared-Presence.lingua); [Supplied character appearance and navigation](Character-Starter.lingua)
+
+Dependency reason: The complete hosted route needs actual world data and supported starter presence; it does not gate standalone character or CAD implementation.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Native full cost/entry controls, hosted sparse journey and scoped offline publication under host-wide caps.
+
+## Ownership and possible overlap
+
+Host cost/publication integration and timed network fixtures; allocate exclusive measured runs.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 05.T11
+
+- [ ] **05.T11.** Complete the H3/H4 native entry card and host resource controls on the same scale fixture: known/unknown published and additional-download sizes, peak disk/RAM/GPU, continuing traffic/activity owner, supported profiles and external sign-in status. Add default cheap checks, an optional bounded trusted benchmark, explicit ready/adjusted/partial/refused states and continuing device/host/participant admission. Include changed manifests, inaccurate sizes, data/decode peaks, cancellation and persisted download counters. Use the existing sparse loader and configured network/offline policy; no second visitor cache or automatic provider/code installation.
+
+### Task 05.T12
+
+- [ ] **05.T12.** Complete the B33–B36 hosted route: an identified remote editor and restricted public visitor share this same supplied street/house/ball/Sands with independent views/detail budgets; an accepted local customization arrives through a scoped delta/asset change. Reuse verified asset transport behind workspace-principal authorization and bounded control/asset/presence streams. Include a Sand using a separate Organ's public data and another requiring the visitor's own login; missing optional access stays localized. Exercise cap reached, slow reader, frame-origin changes, host disconnect/restart, cached viewing/local drafts, reconnect reconciliation, revoke and last-lease release. Record host and client results against the hosted starter subprofile; this proves hosting/navigation, not shared rigid-body science.
+
+### Task 06.T07
+
+- [ ] **06.T07.** Extend B33–B36/H3–H5 to selected-profile offline publication and hosted packed/chunk delivery. Verify access-compatible payload partitioning/projections, mandatory/optional closure, transfer/artifact hash binding, finite versus unknown external totals, actual/estimated accounting and persistent caps through 30-minute reconnect/slow-reader sessions. Expand participant load only against measured host-wide budgets and existing admission guards. A pack mixing denied data cannot be served whole to satisfy a partial view.
+
+## Required contracts and proof
+
+[Scale-navigation-and-hosting-contracts](../contracts/Scale-navigation-and-hosting-contracts.lingua); [Offline-coverage-contracts](../contracts/Offline-coverage-contracts.lingua)
+
+Full B33–B36 geographic/offline cases, independent display budgets, source-login separation, deny/revoke and reconnect without replay.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Independent infrastructure and composed workflows](Federation.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_50TATVD32MJNTH0CWCQ3TVSC1R

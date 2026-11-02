@@ -1,0 +1,71 @@
+Globe, sparse scale and geographic layers (@ws-geography: 0, is #chapter, #part-of @workspace-development, #requires @ws-geometry) { r_6QBBWFZABXSWEMD23R3B013H61
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Native mesh and room authoring](Geometry.lingua)
+
+Dependency reason: Geographic frames/providers and the complete ball-to-world route require the stable local asset/navigation path, not character rig/anatomy or exact CAD.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Globe/horizon, optional outer context, geographic surface adapters, authored visibility and generic sparse-scale route including a nongeographic control case.
+
+## Ownership and possible overlap
+
+Geographic renderer/provider adapters and geographic source conversion; shared cache/render types remain with assets/frames owners.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 05.T01
+
+- [ ] **05.T01.** Complete B25's tiny reproducible dataset: a default available coarse Earth ellipsoid/context, optional sparse solar-system package at a declared epoch, a bounded geographic test street, a supplied low-poly house with a passable doorway/interior, a 40 mm ball and mounted Sands. Keep real context, synthetic authored content and missing coverage distinguishable. The house/ball are supplied fixture assets through existing import/simple source operations; a full room/CAD editor is not a prerequisite.
+
+### Task 05.T02
+
+- [ ] **05.T02.** Implement the body/context → globe → local-frame presentation bridge with source CRS/vertical metadata, explicit local units and unchanged object dimensions/identity. Prove default Earth remains useful when the solar package is added/removed, flat workspace/protein roots require neither, and adding an outer context does not rewrite site/ball data. Test known moving-frame transforms without claiming a live orbital model; optional scientific ephemerides/time/dynamics retain [stage 21](../contracts/Specialist-science-contracts.lingua) requirements.
+
+### Task 05.T03
+
+- [ ] **05.T03.** Render a true globe/horizon with global coverage including dateline/poles, and keep the current flat map as an optional view. Default local ground has zero added relief and missing building/terrain/interior geometry stays absent. Reuse map stores/provider contracts for contextual layers; do not make the current Mercator latitude clamp, zoom-14 source cap or screen camera the spatial model's limit. Validate the selected globe hierarchy, curvature/seams and declared reference conversions on small fixtures.
+
+### Task 05.T04b
+
+- [ ] **05.T04b.** Apply the verified source/layer interface to the geographic and independent green-mountain cases. Preserve geographic anchors, base/custom separation, masks/replacements and B26 save/undo/support semantics. Complete all geographic obligations of 05.T04 without duplicating the shared provider/asset path.
+
+This owns the declared clause of **05.T04**. The full original requirement and complementary owner remain in the linked source contract.
+
+### Task 05.T09
+
+- [ ] **05.T09.** Replay B13/B23/B25–B28 inward and outward, cold/warm/offline, with rapid reversal, two views, custom bounds changes, poles/dateline, an oblique horizon view and the close-up ball. Record actual extent versus active bytes/work, queue/upload/decode counts, projected error/shape seams, input/frame percentiles, source accuracy, local dimensional error and release latency. Exercise sparse observable-universe-sized addresses without populated content, and prove measured costs track active data rather than address range.
+
+### Task 05.T13
+
+- [ ] **05.T13.** Prove B38 through the same frame/query/refinement/navigation/loader implementation as B25, with the geographic/astronomical profile absent. Parameterize hierarchy bounds, object identities, local units, error and outer context; test forward/reverse navigation, independent view origins, exact local dimension preservation, source/summary changes and last-demand release. Keep the synthetic scene within the same admitted small-fixture budgets, reusing source assets. No name-based dispatch, fixed Earth-relative zoom thresholds, compulsory parent world, global fixed geometric epsilon or hidden provider request may make the test pass.
+
+## Required contracts and proof
+
+[Scale-navigation-and-hosting-contracts](../contracts/Scale-navigation-and-hosting-contracts.lingua)
+
+B25–B28/B38, units, horizon/poles/dateline, active-cost versus extent, cold/offline route and source placement.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Offline city and local place coverage](Offline-City.lingua); [Manufacturing and civil geometry profiles](Manufacturing-Civil.lingua); [Astronomical dynamics and scientific time](Astronomy.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_6QBBWFZABXSWEMD23R3B013H61

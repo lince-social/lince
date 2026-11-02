@@ -346,7 +346,7 @@ impl Desktop {
 
     pub(crate) fn cancel_touch(&mut self) {
         self.cancel_absolute_focus(Source::Touch);
-        let _ = self.absolute.lifetime.fetch_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1));
+        let _ = self.absolute.lifetime.try_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1));
         let active = !self.absolute.contacts.is_empty() || self.absolute.queue.iter().any(|entry| entry.source == Source::Touch);
         self.absolute.contacts.clear();
         self.absolute.devices.clear();

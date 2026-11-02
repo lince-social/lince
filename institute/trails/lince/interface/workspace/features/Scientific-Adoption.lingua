@@ -1,0 +1,69 @@
+Derived-model adoption and shared laboratory integration (@ws-scientific-adoption: 0, is #chapter, #part-of @workspace-development, #requires @ws-micro-properties, #requires @ws-laboratory, #requires @ws-numerical-transitions) { r_6EKR5CHBEV4BJ27NFZQ1HBESRM
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Microscopic property derivation](Micro-Properties.lingua); [Independent microscopic laboratory](Laboratory.lingua); [Numerical equivalents and stateful model transitions](Numerical-Transitions.lingua)
+
+Dependency reason: The paired micro-to-consumer and standalone-study workflow joins real derivations, experiments and tested numerical adoption; it cannot be closed by either alone.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Shared derivation/experiment inspector, captured automatic local adoption, sample/amount checks and permitted remote result observation.
+
+## Ownership and possible overlap
+
+Scientific adoption/inspector integration; extend the existing numerical transition owner with domain-specific mappings.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 17.T03
+
+- [ ] **17.T03.** Complete W02/B17 through the shared draft/output/applicability/adoption contract: inspect consumers, edit a bounded source, leave/apply under the selected policy, validate a candidate, update selected bindings and report a receipt. Handle pending/invalid output, cancellation, a newer draft, changed grants/base and unsupported running-state transfer.
+
+### Task 17.T05
+
+- [ ] **17.T05.** Provide one derivation/experiment inspector shared by both endpoints. Editing the source invalidates relevant outputs; users can recompute, choose another candidate or retain a labeled approximation. Material pickers and microscope-derived outputs converge on the same binding code.
+
+### Task 17.T06
+
+- [ ] **17.T06.** Verify amount/sample/replica distinctions: the chosen representative calculation remains bounded as represented bulk quantity changes; only explicit solver sample/replica requests allocate corresponding numerical populations. Record adopted-model cost separately from experiment and render costs.
+
+### Task 17.T07
+
+- [ ] **17.T07.** Prove the existing shared command/job/artifact/dependency implementation for W01–W03, with a bounded coherent inspector/plot projection and demand lease. Reuse the E4/I6 implementation already exercised by [stage 06](../contracts/Offline-coverage-contracts.lingua) locality rather than establishing another query/runtime service. Extend the relevant B19/B22/B24 subset for actual numerical inputs. Cache applicability/results with exact typed input, adapter and purpose keys. Display-detail changes cannot invalidate applicable density or change the represented sample.
+
+### Task 17.T08
+
+- [ ] **17.T08.** Complete the first paired native acceptance replay: direct steel/wood assignment, supported microscopic density edit automatically adopted into the selected local variant, and independent protein result/comparison/export. Test ready/pending/invalid exit, shared-definition isolation, undo/reload and late completion under B20. Keep running-state adoption explicitly pending until the relevant [stage 18](../contracts/Rigid-and-articulated-physics-contracts.lingua)/[stage 19](../contracts/Continuum-and-thermal-contracts.lingua) domain supports it.
+
+### Task 17.T09
+
+- [ ] **17.T09.** Start B37 with the actual bounded protocol/result from this stage: one designated execution authority, visible requester/worker/resource payer, permitted observation in another participant's view without its solver, separate start/cancel/spending grants, epoch-tagged results and source-specific disclosure. A disconnected observer does not restart or duplicate the job; current source/adoption changes use the same result-generation checks. Reuse H7 job/observation channels; fresh shared dynamics remains [stage 18](../contracts/Rigid-and-articulated-physics-contracts.lingua)/[stage 21](../contracts/Specialist-science-contracts.lingua) work. Verify Q16's last-owner-view pause/checkpoint and explicit Keep running lifetime/resource behavior, retaining other participants' leases and honest nonrestartable status. Q20/A06 now agrees optional scoped Record in [stage 20](../contracts/Recording-contracts.lingua); retain protocol inputs, actual sample/conditions, essential outputs and minimal reproducibility evidence here, without automatic dense recording or a mandatory replay frontend.
+
+## Required contracts and proof
+
+[Laboratory-and-adoption-contracts](../contracts/Laboratory-and-adoption-contracts.lingua)
+
+17.W01–17.W03/B17/B18/B37 including source invalidation, pending/ready/cancelled exit and no unsupported live material-state transfer.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Molecular and protein physical studies](Molecular-Dynamics.lingua); [Chemical multiphase and living-system studies](Chemical-Living.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_6EKR5CHBEV4BJ27NFZQ1HBESRM

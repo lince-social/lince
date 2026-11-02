@@ -56,7 +56,7 @@ impl VulkanRenderer {
         }
         let bytes_per_pixel = if content.texture.format() == wgpu::TextureFormat::Rgba16Float { 8 } else { 4 };
         let bytes = u64::from(content.texture.width()) * u64::from(content.texture.height()) * bytes_per_pixel;
-        if self.capture_bytes.fetch_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire,
+        if self.capture_bytes.try_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire,
             |used| used.checked_add(bytes).filter(|total| *total <= 256 * 1024 * 1024)).is_err() { return false; }
         let budget = CaptureBudget { used: self.capture_bytes.clone(), bytes };
         let image = if content.device != self.device {

@@ -26,6 +26,31 @@ def stable_version(value):
     return tuple(map(int, value.split('.')))
 
 
+def replace_channel(original, latest):
+    current = tomllib.loads(original)['toolchain']['channel']
+    if stable_version(current) > stable_version(latest):
+        raise ValueError(f'Refusing to downgrade Rust {current} to {latest}')
+    updated, count = re.subn(
+        r'''(?m)^(\s*channel\s*=\s*)(["'])''' + re.escape(current) + r'\2',
+        lambda match: match[1] + match[2] + latest + match[2], original, count=1,
+    )
+    if count != 1 or tomllib.loads(updated)['toolchain']['channel'] != latest:
+        raise ValueError('Could not update the Rust channel without changing other settings')
+    return updated
+
+
+def candidate(root, version):
+    if any(os.environ.get(name) != value for name, value in (
+        ('GITHUB_ACTIONS', 'true'), ('GITHUB_EVENT_NAME', 'workflow_dispatch'), ('GITHUB_REF', 'refs/heads/main'),
+    )):
+        raise ValueError('Candidate Rust selection is only available to dispatched checks on main')
+    path = root / 'rust-toolchain.toml'
+    original = path.read_text()
+    path.write_text(replace_channel(original, version))
+    print(f'Checking Rust {version} without committing the shared pin.')
+    return 0
+
+
 def update(root, latest, check=False):
     path = root / 'rust-toolchain.toml'
     original = path.read_text()
@@ -60,13 +85,7 @@ def update(root, latest, check=False):
         raise ValueError(f'Rustup installed Rust {installed!r} instead of {latest}')
     if path.read_text() != original:
         raise ValueError('rust-toolchain.toml changed during the update; leaving its current contents intact')
-    updated, count = re.subn(
-        r'''(?m)^(\s*channel\s*=\s*)(["'])''' + re.escape(current) + r'\2',
-        lambda match: match[1] + match[2] + latest + match[2], original, count=1,
-    )
-    if count != 1 or tomllib.loads(updated)['toolchain']['channel'] != latest:
-        raise ValueError('Could not update the Rust channel without changing other settings')
-    path.write_text(updated)
+    path.write_text(replace_channel(original, latest))
     print(f'Updated shared Rust pin: {current} -> {latest}. Re-enter the Nix shell before compiling.')
     return 0
 
@@ -76,7 +95,10 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--check', action='store_true', help='Report an available update without changing files or installing tools.')
     mode.add_argument('--latest', action='store_true', help='Print the official latest stable version without changing files or installing tools.')
+    mode.add_argument('--candidate', metavar='VERSION', help='Select a compiler in dispatched CI checks without committing or updating Nix inputs.')
     args = parser.parse_args()
+    if args.candidate is not None:
+        return candidate(ROOT, args.candidate)
     with urllib.request.urlopen(MANIFEST, timeout=30) as response:
         manifest = tomllib.loads(response.read().decode())
     latest = manifest['pkg']['rust']['version'].split()[0]

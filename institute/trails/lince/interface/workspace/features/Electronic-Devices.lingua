@@ -1,0 +1,53 @@
+Reusable electronic device integration (@ws-electronic-devices: 0, is #chapter, #part-of @workspace-development, #requires @ws-pcb, #requires @ws-functional) { r_5817VCSXFFZ643TAG3FXBZH4AC
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [PCB layout, checks and fabrication data](Pcb.lingua); [Functional devices and model policy](Functional.lingua)
+
+Dependency reason: Detailed-first and abstract-first device reuse is a join of real authored boards and actual functional behavior.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+External device mappings, source/model invalidation, local variants, offline/hosted device use and retained internal design.
+
+## Ownership and possible overlap
+
+Electronic behavior integration and acceptance fixtures; shared policy remains with functional.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 11a.T07
+
+- [ ] **11a.T07.** Bind the module to stage 07 functional models through validated external ports and an explicit association to its internal implementation. Support both abstract-first and detailed-first authoring. Editing the circuit or board invalidates only dependent checks/exports/derived behavior; an independently authored behavior specification retains its identity, while its claim to describe this implementation requires renewed evidence. Functional execution never activates dormant circuit/component evaluators.
+
+### Task 11a.T08
+
+- [ ] **11a.T08.** Complete native cross-view, offline, hosted, denied-edit, stale-result and source-conflict replays. Integrate revisioned component quantities with stage 11 takeoff for stage 13 procurement; preserve operational authority. Add the stage 15 regression contract and leave circuit solving pending for 15a.
+
+## Required contracts and proof
+
+[Electronic-design-contracts](../contracts/Electronic-design-contracts.lingua)
+
+11a.W03/B42/B43 with two occurrences, unloaded internals, source edits, restricted visitor and no dormant circuit execution.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Powered circuit and mixed functional signals](Powered-Circuit.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_5817VCSXFFZ643TAG3FXBZH4AC

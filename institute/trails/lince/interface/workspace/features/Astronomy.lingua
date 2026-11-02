@@ -1,0 +1,49 @@
+Astronomical dynamics and scientific time (@ws-astronomy: 0, is #chapter, #part-of @workspace-development, #requires @ws-geography, #requires @ws-numerical-runtime) { r_2J0VF6FBTFDYJVE5TVWMMVWJPW
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Globe, sparse scale and geographic layers](Geography.lingua); [First bounded numerical jobs and circuit references](Numerical-Runtime.lingua)
+
+Dependency reason: Scale/frame/epoch and numerical jobs are real inputs; nuclear, living or molecular methods are not.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Optional ephemerides, moving-frame physical interpretation and named astronomical/dynamical/cosmological studies.
+
+## Ownership and possible overlap
+
+Astronomical data/time/model adapter; preserve the generic scale engine.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 21.T08
+
+- [ ] **21.T08.** Supported astronomical/dynamical/cosmological studies beyond [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s sparse scale visualization: versioned optional ephemerides, supported epoch/time conversions and moving-frame physical interpretation; named dynamics/cosmological models, reference comparisons and bounded local/aggregate fidelity. [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua) already tests sparse observable-universe-sized addresses, distant simultaneous views and depth/resource behavior; extending actual scientific content must preserve those proofs.
+
+## Required contracts and proof
+
+[Specialist-science-contracts](../contracts/Specialist-science-contracts.lingua)
+
+21.W04/B25/B38 scientific extension, independent epoch/frame/trajectory references and active-cost limits.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_2J0VF6FBTFDYJVE5TVWMMVWJPW

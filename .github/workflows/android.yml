@@ -8,6 +8,10 @@ on:
     paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
   workflow_dispatch:
     inputs:
+      rust_version:
+        description: Automatic Rust update candidate; checks on main only
+        type: string
+        default: ''
       build_packages:
         description: Build requested packages; otherwise check the Rust library only
         type: boolean
@@ -30,7 +34,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: android-${{ inputs.rust_version && format('rust-validation-{0}', inputs.rust_version) || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,7 +48,6 @@ jobs:
         include: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.abi == 'all' && '[{"abi":"arm64-v8a","target":"aarch64-linux-android"},{"abi":"x86_64","target":"x86_64-linux-android"}]' || github.event_name == 'workflow_dispatch' && inputs.abi == 'x86_64' && '[{"abi":"x86_64","target":"x86_64-linux-android"}]' || '[{"abi":"arm64-v8a","target":"aarch64-linux-android"}]') }}
     env:
       CARGO_INCREMENTAL: '0'
-      RUSTUP_TOOLCHAIN: '1.96.0'
       RUSTFLAGS: '-D warnings -C link-arg=-Wl,-z,max-page-size=16384'
     steps:
       - name: Restrict signing to main and ARM64
@@ -57,6 +60,14 @@ jobs:
             exit 1
           fi
       - uses: actions/checkout@v4
+      - name: Select Rust update candidate for checks
+        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
+        env:
+          RUST_CANDIDATE: ${{ inputs.rust_version }}
+          BUILD_PACKAGES: ${{ inputs.build_packages }}
+        run: |
+          [[ "$BUILD_PACKAGES" == false ]]
+          python3 -B institute/scripts/update-rust-toolchain.py --candidate "$RUST_CANDIDATE"
       - name: Read pinned Rust version
         id: toolchain
         run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"

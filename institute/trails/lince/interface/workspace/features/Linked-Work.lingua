@@ -1,0 +1,53 @@
+Model-derived work and reconciliation (@ws-linked-work: 0, is #chapter, #part-of @workspace-development, #requires @ws-operations, #requires @ws-takeoff, #requires @ws-agent-context) { r_7VDBK0P18KC43DA4KBSABFED5V
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Stock production and operational scenarios](Operations.lingua); [Revisioned model quantities and takeoff](Takeoff.lingua); [Structured workspace context](Agent-Context.lingua)
+
+Dependency reason: Live derived drafts need actual quantity outputs and operational acceptance, but do not need a globe or advanced manufacturing profile.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Revision-linked draft Needs/tasks, manual overrides and explicit reconciliation for accepted assignments/transfers.
+
+## Ownership and possible overlap
+
+Takeoff-to-operational binding and reconciliation commands; no direct accepted-state writes from model evaluators.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 13.T05
+
+- [ ] **13.T05.** Implement the model-to-draft-work binding using stage 11's typed source/selection/takeoff outputs and the existing dependency/job/query services. Capture source, recipe, draft-base and override revisions; refresh affected unaccepted derived fields under explicit view/activity demand with visible pending/invalid status. Preserve authored/manual fields and mark conflicts/missing inputs. A cancelled/superseded computation cannot overwrite a newer draft or create duplicate Needs/tasks.
+
+### Task 13.T06
+
+- [ ] **13.T06.** Reconcile changes affecting accepted work through an inspectable source-linked delta and the responsible existing operation/authority. Preserve accepted assignments, commitments, reservations, stock and Transfers until their explicit acceptance/reconciliation path succeeds. Keep partial/cross-Organ outcomes and adjustment receipts visible; deleting source geometry does not delete accepted history. Allow Fiote, as an Agent Actor, to execute only the currently delegated supported operations and retain requester/executor attribution.
+
+## Required contracts and proof
+
+[Operational-workflow-contracts](../contracts/Operational-workflow-contracts.lingua)
+
+13.M05/13.W03 linkage subset, cancelled/late output, changed scope, cross-authority partial outcome and native/Agent parity.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Independent infrastructure and composed workflows](Federation.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_7VDBK0P18KC43DA4KBSABFED5V

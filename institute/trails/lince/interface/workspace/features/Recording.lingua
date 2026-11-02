@@ -1,0 +1,65 @@
+Optional scoped recording and playback (@ws-recording: 0, is #chapter, #part-of @workspace-development, #requires @ws-mechanical-transitions, #requires @ws-character-motion) { r_656QB31D10STC4DTXZF8HWCKA8
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Mechanical substitution and shared interaction](Mechanical-Transitions.lingua); [Authored motion and body controllers](Character-Motion.lingua)
+
+Dependency reason: One real retained activity and its clock/provenance suffice; recording does not need every continuum or specialist solver. All participating adapters must expose the tested stream contract.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Bounded selected capture, checkpoints/observations, native scrub/compare/export and inert replay, including articulated activity.
+
+## Ownership and possible overlap
+
+Shared observation capture/index/playback and storage lifecycle; other domains add only proven adapters.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 20.T01
+
+- [ ] **20.T01.** Provide an optional native Record action for selected objects/activities/fields with a named clock/time interval, input/source/run identity, capture cadence/coverage, output/sample/window limits and a visible storage estimate/actual counter. Default to admitted checkpoints/events plus selected observations; dense state/trajectory capture is a separate explicit selection. Never record the whole workspace automatically.
+
+### Task 20.T02
+
+- [ ] **20.T02.** Retain immutable chunked/indexed observations and compatible checkpoints under existing artifact/demand/authority contracts. Bound seek/decode/retention/scratch, distinguish missing intervals and interpolation from actual samples, and retain exact units/frame/clock/source identities. Checkpoints claim only the adapter's supported restore; event logs do not imply deterministic or bitwise scientific recomputation.
+
+### Task 20.T03
+
+- [ ] **20.T03.** Add native scrub/play/pause/compare/export for the recorded subset. Replay is read-only presentation with no live Area crossings, operational Actions or altered current simulation. To rerun a changed model, request a separate admitted calculation with captured inputs; do not relabel replay as a counterfactual prediction. Keep local playback independent of shared run authority.
+
+### Task 20.T04
+
+- [ ] **20.T04.** Extend B18/B21/B37 only for the supported capture scope: bounded retention/seek, owner close/Keep running, cancelled/partial capture, changed grants, host loss, offline inspection and explicit publication. Private/unrecorded fields remain unavailable. Record actual storage/throughput/latency and prove capture cannot starve core editing/navigation or leave an unauthorized background lease.
+
+### Task 20.T05
+
+- [ ] **20.T05.** Extend the existing optional capture/result viewer to selected articulated pose/joint/region observations with source/rig/bind/run/clock identity and declared sampling/coverage. Reuse stage 11's semantic/pose selections and applicable annotation policy, keeping authored animation source usable before recording exists. Bound storage/seek/retention, preserve missing intervals and source changes, test revoked/partial/offline viewing and ensure playback emits no current controller/Area/operational command.
+
+## Required contracts and proof
+
+[Recording-contracts](../contracts/Recording-contracts.lingua)
+
+20.W01–20.W03, gaps/model transitions, revoke/partial/offline capture and zero current Actions/controller effects from replay.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_656QB31D10STC4DTXZF8HWCKA8

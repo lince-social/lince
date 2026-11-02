@@ -206,7 +206,7 @@ where
             if !Arc::ptr_eq(other_slot, &slot.0) && other_slot.buffer.is_some() {
                 let res = other_slot
                     .age
-                    .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |age| {
+                    .try_update(Ordering::SeqCst, Ordering::SeqCst, |age| {
                         if age > 0 {
                             age.checked_add(1)
                         } else {

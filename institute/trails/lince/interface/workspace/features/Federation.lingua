@@ -1,0 +1,57 @@
+Independent infrastructure and composed workflows (@ws-federation: 0, is #chapter, #part-of @workspace-development, #requires @ws-civic, #requires @ws-linked-work, #requires @ws-hosted-world, #requires @ws-agent-authoring, #requires @ws-functional) { r_2RXCCJTTJYK6KNT9C2S6GYCCYC
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Civic and civil operational workflows](Civic.lingua); [Model-derived work and reconciliation](Linked-Work.lingua); [Hosted world and offline publication joins](Hosted-World.lingua); [Agent authoring and native continuation](Agent-Authoring.lingua); [Functional devices and model policy](Functional.lingua)
+
+Dependency reason: This is an explicit cross-Organ composition join; meaningful source/login/operation/scene integration needs the implemented contributing branches.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Permitted infrastructure/site views, public/private workflows and two concrete shared-primitive reuse proofs.
+
+## Ownership and possible overlap
+
+Cross-Organ integration and acceptance, not a new shared kernel.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 14.T01
+
+- [ ] **14.T01.** Assemble independently governed site/city layers, core F1–F10 operations, observations, queries and existing scoped behaviors into one useful infrastructure workspace. Inspect retained/imported specialist evidence only where available, with its source/revision/status and without starting new science. Verify partial coverage, source ages, denied fields, disconnected work and independent authorities. Exercise H1–H10 core hosting with independent Protein access and separately budgeted existing activities from more than one Organ; no workspace lends private authority or becomes a distributed transaction coordinator. Deferred scientific profiles later regress this same composition.
+
+### Task 14.T02
+
+- [ ] **14.T02.** Prove core domain/asset/Record reuse in at least two distinct workflows without duplicated invariants. Tighten/simplify shared primitives from that evidence before widening a profile. Do not require B21/B37 new scientific domains or coupled solver results to complete this core composition.
+
+### Task 14.T03
+
+- [ ] **14.T03.** Compose the earlier Agent, presentation and linked-work contracts across the current permitted Organ/source boundaries. Verify that native and Fiote requests address the same authorized subjects/results and that delegation never widens source access, publication or accepted operational authority. Keep public-location granularity independent of private precise model anchors through existing publication projections; a coarse public Need does not disclose a private home/room position. Reuse the current policies/query/candidate services and retain partial/offline states.
+
+## Required contracts and proof
+
+[Infrastructure-composition-contracts](../contracts/Infrastructure-composition-contracts.lingua)
+
+14.W01–14.W03/F8/F10 with independent source credentials, offline partiality and native/Agent provenance.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_2RXCCJTTJYK6KNT9C2S6GYCCYC

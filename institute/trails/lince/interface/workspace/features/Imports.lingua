@@ -1,0 +1,57 @@
+Imported bases, splats and authored overlays (@ws-imports: 0, is #chapter, #part-of @workspace-development, #requires @ws-simplification) { r_09MGTW5FC1W5VBTP9R0S6NPXPX
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Simplification and safe support products](Simplification.lingua)
+
+Dependency reason: Captured appearance, registration and reimport use stable local source/correspondence services. Geography supplies an additional later composition case.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Pinned base/overlay sources, supported imported mesh/splat appearance, measured/estimated registration and three-way source repair.
+
+## Ownership and possible overlap
+
+Import/reimport/registration adapters; shared source model and renderer services remain owned by their foundations.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 09.T01
+
+- [ ] **09.T01.** Implement pinned source/base layers, sparse typed overrides, hide/replace versus additive composition, independent instance runtime and edit-target inspection. Support overlay and side-by-side views with shared or independent cameras.
+
+### Task 09.T02
+
+- [ ] **09.T02.** Add manual measured registration from declared frames/control points with known scale, residuals and withheld checks; allow explicit estimated alignment. Store model-to-physical association separately from projector/camera calibration.
+
+### Task 09.T03
+
+- [ ] **09.T03.** Implement source re-import three-way conflict/mapping review, split/deletion repair and preserved last poses. Test that a source rename/reorder does not erase authored work or Record bindings. Verify Q17's default preservation of authored/measured placement under changed terrain/scan sources and explicit verified surface-follow exceptions, with native mismatch/reconcile controls; deliberate parent movement and existing mounted attachments still behave normally.
+
+## Required contracts and proof
+
+[Imported-base-contracts](../contracts/Imported-base-contracts.lingua)
+
+09.W01–09.W03/B06 on captured local data; appearance is not a collider, no authored-placement loss, source rename/reorder and missing support.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_09MGTW5FC1W5VBTP9R0S6NPXPX

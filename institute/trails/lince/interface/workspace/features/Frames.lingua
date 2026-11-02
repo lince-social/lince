@@ -1,0 +1,69 @@
+Frames and independent local views (@ws-frames: 0, is #chapter, #part-of @workspace-development, #requires @ws-model) { r_11PKA05WNT4AF06ER3NWBWHMKE
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Durable model and accepted-change foundation](Model.lingua)
+
+Dependency reason: Local frames, source/view identity and input ownership must be stable before render/editor branches; Earth data is not needed.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Unit/frame transforms, distant close-up precision, flat/spatial/HUD views and demand/focus ownership demonstrated on standalone roots.
+
+## Ownership and possible overlap
+
+Shared frame types, renderer origin handling and content/presentation plumbing.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 03.T01
+
+- [ ] **03.T01.** Implement frame/unit descriptors, high-precision cell/residual placement, relative transforms and explicit canvas-to-model unit calibration. Persist magnification separately from physical placement. Add the precise-authoring contract's numeric absolute/relative position, distance/angle and parameter controls through I4/E2; prove supported unit conversions and source-preserving display precision in the bounded B23 subset.
+
+### Task 03.T02
+
+- [ ] **03.T02.** Spike `big_space` against the pinned Bevy/Avian setup with origin shifts, nested moving frames and two distant close-up views. Select it or record a bounded replacement using the same durable contract.
+
+### Task 03.T03
+
+- [ ] **03.T03.** Add perspective and orthographic views onto the same model/selection and keep existing flat content usable through I1/I2/I5. A root specimen view requires no Earth/building. Prove that render-origin shifts never change canonical pose, physical units, velocities or physical-workstation calibration.
+
+### Task 03.T04
+
+- [ ] **03.T04.** Prove the same exact authored coordinate/dimension changes retain distinct canonical/derivation identities below 1 nm in a suitable local frame, through unit display, undo and save/reload. Numerical method tolerance may be coarser only when explicitly requested and reported; display rounding or a cache quantum cannot merge the sources. Add this bounded B23/B24 subset without requiring a microscopic solver.
+
+### Task 03.T06
+
+- [ ] **03.T06.** Separate content/source identity from a presentation's view binding, frame/anchor, layout and tool state. Support model-space attachment and view-local flat/HUD placement through I1/I2/I5 without rewriting canonical pose or physical dimensions. Use existing logical layout/DPI rules for readable screen content and the declared model-unit map for spatial content. Preserve the existing flat workspace as a full interaction path.
+
+### Task 03.T07
+
+- [ ] **03.T07.** Reuse the same source/Record state across supported presentations, with explicit focus/input ownership and bounded demand. Persist user presentation/anchor choices separately from source data; opening another view does not create another model, Record, body or independent accepted state. Closing/hiding a view releases its presentation demand while retaining demand owned by other active views. Later stage 05 streaming and stage 07 application mounts extend this same contract.
+
+## Required contracts and proof
+
+[Frames-and-views-contracts](../contracts/Frames-and-views-contracts.lingua)
+
+03.W01 and local 03.W03, B13/B23/B24; origin shifts cannot change dimensions, canonical state or content identity.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Selections, correspondence and typed ports](Selection.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_11PKA05WNT4AF06ER3NWBWHMKE

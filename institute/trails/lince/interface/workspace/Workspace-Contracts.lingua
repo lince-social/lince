@@ -1,0 +1,33 @@
+Workspace contracts and acceptance (@workspace-contracts: 0, is #chapter, #part-of @workspace-development) { r_4MD1EBB8N5BM32HGQ7KBE1PFE6
+[Workspace development](Workspace-Development.lingua) owns scheduling. These Records preserve the former plans as detailed contracts and whole-workflow acceptance joins. They are not a serial implementation backlog. Each Record links its contributing feature packages; their full task text and real prerequisite graph live there.
+
+## Contract Records
+
+- [01: Baseline-evidence](contracts/Baseline-evidence.lingua) — required contributors: @ws-baseline.
+- [02: Durable-model-contracts](contracts/Durable-model-contracts.lingua) — required contributors: @ws-agent, @ws-hosting, @ws-model.
+- [03: Frames-and-views-contracts](contracts/Frames-and-views-contracts.lingua) — required contributors: @ws-frames, @ws-shared-presence.
+- [04: Selection-and-interface-contracts](contracts/Selection-and-interface-contracts.lingua) — required contributors: @ws-agent-context, @ws-areas-mounts, @ws-selection, @ws-shared-presence.
+- [05: Scale-navigation-and-hosting-contracts](contracts/Scale-navigation-and-hosting-contracts.lingua) — required contributors: @ws-assets, @ws-character-starter, @ws-geography, @ws-hosted-world, @ws-navigation.
+- [06: Offline-coverage-contracts](contracts/Offline-coverage-contracts.lingua) — required contributors: @ws-assets, @ws-hosted-world, @ws-offline-city.
+- [07: Native-authoring-and-behavior-contracts](contracts/Native-authoring-and-behavior-contracts.lingua) — required contributors: @ws-agent-authoring, @ws-character-starter, @ws-functional, @ws-geometry, @ws-mounted-apps.
+- [08: Cave-and-simplification-contracts](contracts/Cave-and-simplification-contracts.lingua) — required contributors: @ws-caves, @ws-simplification.
+- [09: Imported-base-contracts](contracts/Imported-base-contracts.lingua) — required contributors: @ws-imports.
+- [10: Exact-CAD-contracts](contracts/Exact-CAD-contracts.lingua) — required contributors: @ws-cad.
+- [11: Assembly-and-character-contracts](contracts/Assembly-and-character-contracts.lingua) — required contributors: @ws-anatomy, @ws-building, @ws-character-integration, @ws-character-motion, @ws-character-rig, @ws-exact-assemblies, @ws-manufacturing-civil, @ws-relations, @ws-takeoff.
+- [11a: Electronic-design-contracts](contracts/Electronic-design-contracts.lingua) — required contributors: @ws-electronic-devices, @ws-pcb, @ws-schematics.
+- [12: Molecular-structure-contracts](contracts/Molecular-structure-contracts.lingua) — required contributors: @ws-molecules.
+- [13: Operational-workflow-contracts](contracts/Operational-workflow-contracts.lingua) — required contributors: @ws-civic, @ws-linked-work, @ws-operations.
+- [14: Infrastructure-composition-contracts](contracts/Infrastructure-composition-contracts.lingua) — required contributors: @ws-federation.
+- [15: Core-acceptance-contracts](contracts/Core-acceptance-contracts.lingua) — required contributors: @ws-core-acceptance.
+- [15a: Circuit-and-transition-contracts](contracts/Circuit-and-transition-contracts.lingua) — required contributors: @ws-circuit-policy, @ws-numerical-runtime, @ws-numerical-transitions, @ws-powered-circuit.
+- [16: Material-property-contracts](contracts/Material-property-contracts.lingua) — required contributors: @ws-materials.
+- [17: Laboratory-and-adoption-contracts](contracts/Laboratory-and-adoption-contracts.lingua) — required contributors: @ws-laboratory, @ws-micro-properties, @ws-scientific-adoption.
+- [18: Rigid-and-articulated-physics-contracts](contracts/Rigid-and-articulated-physics-contracts.lingua) — required contributors: @ws-mechanical-transitions, @ws-physical-articulation, @ws-rigid.
+- [19: Continuum-and-thermal-contracts](contracts/Continuum-and-thermal-contracts.lingua) — required contributors: @ws-continuum.
+- [20: Recording-contracts](contracts/Recording-contracts.lingua) — required contributors: @ws-recording.
+- [21: Specialist-science-contracts](contracts/Specialist-science-contracts.lingua) — required contributors: @ws-astronomy, @ws-biomechanics, @ws-chemical-living, @ws-cloth, @ws-coupled-physics, @ws-device-physics, @ws-molecular-dynamics, @ws-nonlinear, @ws-nuclear, @ws-process-physics.
+
+## Conversion coverage
+
+All original task and requirement identifiers are retained. 05.T04 is partitioned into shared source/layer delivery and its geographic application; 11.T01 is partitioned into generic joint/assembly relations and exact-solid operations. The full parent text remains in its contract, and both clauses must pass before the parent closes. No other task has multiple implementation owners. Historical fixture evidence is preserved, with links corrected for the moved directory. A missing original supporting document remains explicitly unavailable rather than silently invented.
+} r_4MD1EBB8N5BM32HGQ7KBE1PFE6

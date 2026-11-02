@@ -801,7 +801,7 @@ fn run(
         let frame = canvas.frame()?;
         active.progress.applied.fetch_max(input_serial, Ordering::Release);
         canvas.accessibility_input_completed();
-        let frame_sequence = NEXT_FRAME_SEQUENCE.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| sequence.checked_add(1))
+        let frame_sequence = NEXT_FRAME_SEQUENCE.try_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| sequence.checked_add(1))
             .map_err(|_| failure("The completed frame sequence is exhausted.".into()))?;
         button_pending = false;
         keyboard_pending = false;

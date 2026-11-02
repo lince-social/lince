@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import subprocess
+import shutil
+import sys
 import tempfile
 import unittest
 
@@ -24,14 +26,18 @@ class AutomaticRustUpdateTests(unittest.TestCase):
         (self.work / 'rust-toolchain.toml').write_text('[toolchain]\nchannel = "1.98.0"\n')
         (self.work / 'flake.lock').write_text('old metadata\n')
         (self.work / 'product.rs').write_text('existing feature\n')
+        reader = self.work / 'institute/scripts/rust-channel.sh'
+        reader.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / 'institute/scripts/rust-channel.sh', reader)
         self.git('add', '.')
         self.git('commit', '--no-gpg-sign', '-qm', 'Baseline')
         self.baseline = self.git('rev-parse', 'HEAD')
         self.git('remote', 'add', 'origin', str(self.origin))
         self.git('push', '-q', 'origin', 'main')
-        self.environment = dict(os.environ, PATH=f'{self.bin}:{os.environ["PATH"]}', GITHUB_RUN_ID='123', GITHUB_RUN_ATTEMPT='1', FIXTURE_ORIGIN=str(self.origin))
+        self.environment = dict(os.environ, PATH=f'{self.bin}:{os.environ["PATH"]}', GITHUB_REPOSITORY='fixture/lince', GITHUB_ACTIONS='true', GITHUB_EVENT_NAME='schedule', GITHUB_REF='refs/heads/main', FIXTURE_ORIGIN=str(self.origin), FIXTURE_REAL_PYTHON=sys.executable, FIXTURE_GH_LOG=str(self.base / 'gh.log'))
         self.executable('python3', '''#!/usr/bin/env bash
 set -eu
+if [[ $1 == -c ]]; then exec "$FIXTURE_REAL_PYTHON" "$@"; fi
 if [[ ${FIXTURE_NO_UPDATE:-0} == 1 ]]; then exit 0; fi
 printf '[toolchain]\\nchannel = "1.99.1"\\n' > rust-toolchain.toml
 printf 'new metadata\\n' > flake.lock
@@ -39,8 +45,10 @@ if [[ ${FIXTURE_EXTRA_EDIT:-0} == 1 ]]; then printf changed > product.rs; fi
 ''')
         self.executable('gh', '''#!/usr/bin/env bash
 set -eu
-if [[ $1 == run && $2 == list ]]; then
-  if [[ $* == *build.yml* ]]; then echo 101; else echo 102; fi
+printf '%s\\n' "$*" >> "$FIXTURE_GH_LOG"
+if [[ $1 == api ]]; then
+  if [[ ${FIXTURE_NO_RUN_ID:-0} == 1 ]]; then echo null
+  elif [[ $* == *build.yml* ]]; then echo 101; else echo 102; fi
 fi
 if [[ $1 == run && $2 == watch ]]; then
   if [[ ${FIXTURE_CI_FAIL:-0} == "$3" ]]; then exit 1; fi
@@ -75,8 +83,17 @@ fi
         self.assertNotEqual(self.main_revision(), self.baseline)
         self.assertEqual(self.git('diff', '--name-only', self.baseline, self.main_revision()), 'flake.lock\nrust-toolchain.toml')
         self.assert_branch_removed()
+        dispatches = [line for line in (self.base / 'gh.log').read_text().splitlines() if line.startswith('api ')]
+        self.assertEqual(len(dispatches), 2)
+        self.assertTrue(all('ref=main' in line and 'inputs[rust_version]=1.99.1' in line and 'return_run_details=true' in line for line in dispatches))
 
-    def test_failed_checks_preserve_main_and_remove_temporary_branch(self):
+    def test_missing_dispatch_run_id_preserves_main(self):
+        result = self.run_update(FIXTURE_NO_RUN_ID='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.main_revision(), self.baseline)
+        self.assertIn('did not return both validation run IDs', result.stderr)
+
+    def test_failed_checks_preserve_main_without_committing(self):
         result = self.run_update(FIXTURE_CI_FAIL='101')
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.main_revision(), self.baseline)
@@ -117,6 +134,15 @@ fi
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.main_revision(), self.baseline)
         self.assert_branch_removed()
+
+    def test_wrong_execution_context_is_rejected_before_mutation(self):
+        for environment in ({'GITHUB_ACTIONS': 'false'}, {'GITHUB_EVENT_NAME': 'pull_request'}, {'GITHUB_REF': 'refs/heads/dev'}):
+            with self.subTest(environment=environment):
+                result = self.run_update(**environment)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.git('rev-parse', 'HEAD'), self.baseline)
+                self.assertEqual(self.main_revision(), self.baseline)
+                self.assertIn('1.98.0', (self.work / 'rust-toolchain.toml').read_text())
 
 
 if __name__ == '__main__':

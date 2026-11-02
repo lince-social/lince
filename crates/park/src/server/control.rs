@@ -198,7 +198,7 @@ impl Control {
     }
 
     fn advance(&mut self) {
-        if self.epoch.fetch_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1)).is_err() {
+        if self.epoch.try_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1)).is_err() {
             for binding in &self.bindings { binding.fatal("Management context identifiers are exhausted"); }
         }
     }

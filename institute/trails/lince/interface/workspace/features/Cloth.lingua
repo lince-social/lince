@@ -1,0 +1,49 @@
+Physical cloth hair and secondary motion (@ws-cloth: 0, is #chapter, #part-of @workspace-development, #requires @ws-physical-articulation, #requires @ws-nonlinear) { r_6YJK89C6YRTZH9AP0EY5E3WJA9
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Physical articulated bodies](Physical-Articulation.lingua); [Nonlinear materials and failure](Nonlinear.lingua)
+
+Dependency reason: Physical attachment/contact and appropriate material discretization are needed. Anatomical datasets and clinical interpretation are not universal prerequisites.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Individually scoped shell/rod/strand/contact secondary-motion models attached to the existing character source.
+
+## Ownership and possible overlap
+
+Selected secondary-motion solver and body/deformation adapter.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 21.T09
+
+- [ ] **21.T09.** Physical cloth/hair and other secondary motion: select shell/rod/strand/contact models and reduced descriptions separately, with material units/parameters, thickness/rest state, attachments, collision/self-contact policy, time-step/integration settings, sources/rights and bounded admitted samples. Validate an independently specified drape/bending/oscillation/contact case as applicable, including refinement/energy/stability, constraint error and source-edit transfer. Reuse the existing body/deformation/job/result interfaces; visual skinning or a procedural sway control does not complete this physical slice.
+
+## Required contracts and proof
+
+[Specialist-science-contracts](../contracts/Specialist-science-contracts.lingua)
+
+21.W05 per-model drape/bending/oscillation/contact reference, stability/refinement and source-edit transfer.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_6YJK89C6YRTZH9AP0EY5E3WJA9

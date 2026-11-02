@@ -1,0 +1,71 @@
+Baseline and isolated resumption (@ws-baseline: 0, is #chapter, #part-of @workspace-development) { r_1XVD7J300DVRQT7MWK2WHF3NPP
+Status: Pending isolated resumption; existing checked items below are historical evidence, not a passed current baseline.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: No development predecessor; this is the resumption gate.
+
+Dependency reason: Historical Stage 01 evidence exists, but intervening changes and the recorded contention require isolated revalidation before dependent implementation.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Current verified native baseline, fixture rights/counts, measured device budgets, known defects and first-consumer contract decisions. Historical completion is retained separately from this pending recheck.
+
+## Ownership and possible overlap
+
+Exclusive timed benchmark and native acceptance sessions; no other build/development workload during baseline sampling.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+- [ ] Revalidate the historical baseline under the isolated-resumption procedure before publishing a current handoff. Do not stop or modify other agents to obtain exclusivity.
+
+### Task 01.T01
+
+- [x] **01.T01.** Current units, canvas/Area/physics, persistence, accepted revisions, authority and isolation audited; [source reuse](../../../../../fixtures/workspace/stage01/source-audit.json) and native/test evidence retained.
+
+### Task 01.T02
+
+- [x] **01.T02.** Public/synthetic B25–B28/B38 data, coarse context, budgets and actual device selected; [sources](../../../../../fixtures/workspace/stage01/sources.json), profile and machine record retained.
+
+### Task 01.T03
+
+- [x] **01.T03.** C/K/I/E first-consumer contracts, minimum directory/ID/scalar/frame encoding and native/Agent/edit/import/save/shared-view/linked-work cases specified in contracts.json.
+
+### Task 01.T04
+
+- [x] **01.T04.** H1–H10/B33–B36 staged host/editor/guest/source/revoke/restart/cost/fairness cases and deferred B37 specified in hosting.json.
+
+### Task 01.T05
+
+- [x] **01.T05.** B38 independent room, unrelated sparse extent and rename/unit/outer-frame metamorphic cases supplied alongside B25 without geographic engine assumptions.
+
+### Task 01.T06
+
+- [x] **01.T06.** Original character source audited; selected starter skin/clip samples preserved and counted; phased B41 and later anatomical selection recorded without loading a complete atlas.
+
+## Required contracts and proof
+
+[Baseline-evidence](../contracts/Baseline-evidence.lingua)
+
+01.W01–01.W03 and the root isolated-resumption gate, with each historical finding classified and actual counters retained.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Durable model and accepted-change foundation](Model.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_1XVD7J300DVRQT7MWK2WHF3NPP

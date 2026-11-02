@@ -1,0 +1,51 @@
+Geometric assembly and joint relations (@ws-relations: 0, is #chapter, #part-of @workspace-development, #requires @ws-geometry) { r_598T9RM0QNZAWEDXF3QQZWV8WH
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Native mesh and room authoring](Geometry.lingua)
+
+Dependency reason: Articulation needs typed links, local joint frames and bounded geometric constraints, but not exact-solid sweep/fillet or manufacturing export.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Reusable assembly relation/constraint service on explicit links and supplied geometry, with limits/DOF diagnostics, pose ownership and native relation editing.
+
+## Ownership and possible overlap
+
+Shared constraint/pose/assembly schema. Stabilize this with a simple mechanism before rig and exact-assembly consumers work independently.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 11.T01a
+
+- [ ] **11.T01a.** Deliver domain-neutral assembly links, localized ports, typed geometric joint coordinates/limits, local frames, bounded constraint/pose solving and unsupported-loop/DOF diagnostics on supplied/simple mesh geometry. Expose native relation editing and verify a small nonhuman chain. Preserve one shared constraint/pose owner; exact-solid operations and physical dynamics are not prerequisites.
+
+This owns the declared clause of **11.T01**. The full original requirement and complementary owner remain in the linked source contract.
+
+## Required contracts and proof
+
+[Assembly-and-character-contracts](../contracts/Assembly-and-character-contracts.lingua)
+
+Geometric subset of 11.W01 and B41 nonhuman chain: limits, unsupported loops, singular/unreachable targets and retained accepted pose.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Articulated models and editable deformation](Character-Rig.lingua); [Exact assembly geometry and interference](Exact-Assemblies.lingua); [Rigid bodies joints and authored forces](Rigid.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_598T9RM0QNZAWEDXF3QQZWV8WH

@@ -1,0 +1,73 @@
+Complete core workspace acceptance (@ws-core-acceptance: 0, is #chapter, #part-of @workspace-development, #requires @ws-contract-01, #requires @ws-contract-02, #requires @ws-contract-03, #requires @ws-contract-04, #requires @ws-contract-05, #requires @ws-contract-06, #requires @ws-contract-07, #requires @ws-contract-08, #requires @ws-contract-09, #requires @ws-contract-10, #requires @ws-contract-11, #requires @ws-contract-11a, #requires @ws-contract-12, #requires @ws-contract-13, #requires @ws-contract-14) { r_3JHQAAN5FYFWYRNVA36409ZFP3
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Contract 01 acceptance](../contracts/Baseline-evidence.lingua); [Contract 02 acceptance](../contracts/Durable-model-contracts.lingua); [Contract 03 acceptance](../contracts/Frames-and-views-contracts.lingua); [Contract 04 acceptance](../contracts/Selection-and-interface-contracts.lingua); [Contract 05 acceptance](../contracts/Scale-navigation-and-hosting-contracts.lingua); [Contract 06 acceptance](../contracts/Offline-coverage-contracts.lingua); [Contract 07 acceptance](../contracts/Native-authoring-and-behavior-contracts.lingua); [Contract 08 acceptance](../contracts/Cave-and-simplification-contracts.lingua); [Contract 09 acceptance](../contracts/Imported-base-contracts.lingua); [Contract 10 acceptance](../contracts/Exact-CAD-contracts.lingua); [Contract 11 acceptance](../contracts/Assembly-and-character-contracts.lingua); [Contract 11a acceptance](../contracts/Electronic-design-contracts.lingua); [Contract 12 acceptance](../contracts/Molecular-structure-contracts.lingua); [Contract 13 acceptance](../contracts/Operational-workflow-contracts.lingua); [Contract 14 acceptance](../contracts/Infrastructure-composition-contracts.lingua)
+
+Dependency reason: A full product claim waits for every core contract and composed workflow, although independent branch implementation does not.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Verified personal/offline/hosted complete core capability matrix and actual mixed-workload evidence.
+
+## Ownership and possible overlap
+
+Exclusive integrated acceptance and benchmark lane; fix only proven affected contracts.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 15.T01
+
+- [ ] **15.T01.** Run the applicable earlier native/backend checks on the unchanged named fixture/profile, correcting failures before proceeding: accepted geometry/identity, undo/reload/import variants, precise multi-scale navigation, low-poly room/cave appearance, working mounted input, existing Areas/independent targets/immunity, current Sand gravity/motion cooling and supported support replacement. Exercise B38 without geography and B40 selected-copy editing. Verify core use needs no property database, force field, thermodynamic state or new scientific worker.
+
+### Task 15.T02
+
+- [ ] **15.T02.** Replay offline city/place use and the bounded hosted route with independent views, editor/public visitor, other-Organ Protein data, a denied source, changed permission, slow transfer, cap reached, disconnect/reconnect and host restart. Preserve receipts/drafts/last valid sources, honest partial states, no mutation replay and no implicit participant execution/control grant. Check existing operational scenarios remain isolated from accepted stock and live Actions.
+
+### Task 15.T03
+
+- [ ] **15.T03.** Measure the mixed core workload against its stage-specific and host/device budgets, including cold/warm open, input/frame percentiles, queries/edits, transient old/new staging, disk/CPU/GPU/queue peaks, cancellation and last-demand release. Compare idle wake-ups and repeated travel history with the baseline. Fix regressions or record a specifically reviewed profile change with measured causes; no speculative simulation benchmark is an early gate.
+
+### Task 15.T04
+
+- [ ] **15.T04.** Record the core capability/evidence matrix, remaining core blockers and the exact boundary for stage [15a](../contracts/Circuit-and-transition-contracts.lingua) and stages [16](../contracts/Material-property-contracts.lingua)–[21](../contracts/Specialist-science-contracts.lingua). Keep every incomplete requirement in this document. Distinguish existing supported physics from the newly deferred behavior in native capability/status labels and profile manifests; do not advertise physical accuracy from an appearance/geometry check. Freeze the stable contracts supported by evidence while allowing later compatible architectural refinement under the repository's no-backward-compatibility policy.
+
+### Task 15.T05
+
+- [ ] **15.T05.** Replay stages 02/03/04/07/11/13/14 integration evidence together: executing Agent/delegator scope and receipts, semantic context, coherent spatial/flat/HUD presentation, native continuation, live unaccepted drafts/manual overrides and accepted-work reconciliation. Include provider absence, cancelled/late jobs and existing source/authority recovery. Verify unchanged native input/frame/resource limits while admitted Agent work runs or waits; add no equipment or generative-research gate.
+
+### Task 15.T06
+
+- [ ] **15.T06.** Replay B41's stage 05/07/11 core subsets beside the established scale, hosted, operational and Fiote workflows. Verify independent body/camera/controller state, ordinary customization/posing/clip edits, optional anatomical coverage and queries, private annotations, low-poly transitions and offline reuse under unchanged aggregate budgets. Preserve source/rig/bind/pose generation checks and manual use without a provider; list physical secondary motion, active tissues, biomechanics and optional runtime capture in the deferred capability matrix.
+
+### Task 15.T07
+
+- [ ] **15.T07.** Replay 07.W05/07.W06 and 11a.W01–11a.W03 beside the earlier core workflows. Verify independent appearance/structure/behavior settings, schematic/PCB/3D mapping, design-check/export limits, continued offscreen activity and source invalidation. Include supplied versus abstract-first device construction, power-aware functional rules versus unconditional light, stateful functional transition, weak visitor and interrupted offline restore. Record exact unresolved physical capabilities; no numerical circuit, thermal or microscopic execution is needed to pass this core gate.
+
+## Required contracts and proof
+
+[Core-acceptance-contracts](../contracts/Core-acceptance-contracts.lingua)
+
+15.W01–15.W06/B25/B38/B41/B42/B43, all core limits, failure/recovery and source/privacy checks.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_3JHQAAN5FYFWYRNVA36409ZFP3

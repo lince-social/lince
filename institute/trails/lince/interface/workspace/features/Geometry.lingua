@@ -1,0 +1,65 @@
+Native mesh and room authoring (@ws-geometry: 0, is #chapter, #part-of @workspace-development, #requires @ws-navigation) { r_3HDT211N8VM4JN6Y07G2XKRT7W
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Local Orbit Fly Walk and content use](Navigation.lingua)
+
+Dependency reason: A usable local editor needs stable representations, selection, input and support; it need not await geographic or splat adapters.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Planar/mesh editing, openings, numeric preview/commit, multi-copy variants, surface generation and source-preserving undo on local scenes.
+
+## Ownership and possible overlap
+
+Shared mesh authoring commands, native tools, preview/final acceptance and geometry products.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 07.T01
+
+- [ ] **07.T01.** Extend [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s bounded source/placement tools to the broader T1–T2 geometry operations: analytic planar patches and polygon mesh source, vertex/edge/face selection, numeric/snapped move, extrusion, opening and edit preview/cancel/commit.
+
+### Task 07.T02
+
+- [ ] **07.T02.** Add purposeful flat/sharp/smooth appearance, readable content placement and native Room/building-element presets. Keep measurement source and render triangulation distinct.
+
+### Task 07.T04
+
+- [ ] **07.T04.** Apply the shared I4 preview protocol to topology/room edits: current requested handles, compatible intermediate geometry, bounded/coalesced work, exact final target, one accepted edit/undo and invalidated-source recovery. Complete the native B31 room/formula subset before CAD extends it.
+
+### Task 07.T05
+
+- [ ] **07.T05.** Implement the minimal B30 surface-display subset for planar polygons/openings: one accepted boundary/source mapping, consistent shared edge nodes and separate crease normals, bounded triangulation and explicit fallback/error. Reuse existing CPU meshing where sufficient; optional structured/trimmed CAD planning and GPU evaluation remain gated extensions.
+
+### Task 07.T07
+
+- [ ] **07.T07.** Complete B40 through the ordinary native editing family: select multiple matching supplied/baked meshes, edit shape/visual appearance once, retain a concise selected/shared scope, prepare compatible editable variants when required, and commit/undo as one supported batch. Preserve original source branches, occurrence transforms/overrides/state and unselected copies; cancel/stale/denied cases leave accepted state honest. Report source geometry reuse and work versus unique groups and occurrences, without a mandatory conversion wizard or domain-specific editor flow.
+
+## Required contracts and proof
+
+[Native-authoring-and-behavior-contracts](../contracts/Native-authoring-and-behavior-contracts.lingua)
+
+Local 07.W01/07.W02, B03/B30/B31/B40; final requested target and protected openings survive save/reload.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Simplification and safe support products](Simplification.lingua); [Geometric assembly and joint relations](Relations.lingua); [Globe, sparse scale and geographic layers](Geography.lingua); [Agent authoring and native continuation](Agent-Authoring.lingua); [Supplied character appearance and navigation](Character-Starter.lingua); [Functional devices and model policy](Functional.lingua); [Exact CAD and dimensioned sketches](Cad.lingua); [Electronic definitions and schematics](Schematics.lingua); [Material properties and offline evidence](Materials.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_3HDT211N8VM4JN6Y07G2XKRT7W

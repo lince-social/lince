@@ -1,9 +1,11 @@
 import contextlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -126,6 +128,44 @@ class RustChannelTests(unittest.TestCase):
                 else:
                     self.assertNotEqual(result.returncode, 0)
                     self.assertEqual(result.stdout, '')
+
+
+class RustCandidateTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.path = self.root / 'rust-toolchain.toml'
+        self.original = '[toolchain]\nchannel = "1.96.0"\nprofile = "minimal"\ncomponents = ["rustfmt", "clippy"]\n'
+        self.path.write_text(self.original)
+        environment = mock.patch.dict(os.environ, GITHUB_ACTIONS='true', GITHUB_EVENT_NAME='workflow_dispatch', GITHUB_REF='refs/heads/main')
+        environment.start()
+        self.addCleanup(environment.stop)
+
+    def test_candidate_patch_matches_committed_pin_without_installing(self):
+        with mock.patch.object(UPDATE.subprocess, 'run') as run, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(UPDATE.candidate(self.root, '1.99.1'), 0)
+        run.assert_not_called()
+        self.assertEqual(self.path.read_text(), self.original.replace('1.96.0', '1.99.1'))
+
+    def test_candidate_requires_trusted_dispatched_checks(self):
+        for environment in ({'GITHUB_ACTIONS': 'false'}, {'GITHUB_EVENT_NAME': 'pull_request'}, {'GITHUB_REF': 'refs/heads/dev'}):
+            with self.subTest(environment=environment), mock.patch.dict(os.environ, environment), self.assertRaises(ValueError):
+                UPDATE.candidate(self.root, '1.99.1')
+            self.assertEqual(self.path.read_text(), self.original)
+
+    def test_invalid_or_older_candidates_leave_pin_unchanged(self):
+        for version in ('', 'nightly', '1.99.1-beta.1', '1.95.0'):
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                UPDATE.candidate(self.root, version)
+            self.assertEqual(self.path.read_text(), self.original)
+
+    def test_empty_candidate_cannot_fall_through_to_a_real_update(self):
+        with mock.patch.object(UPDATE, 'ROOT', self.root), mock.patch.object(sys, 'argv', ['update', '--candidate', '']), mock.patch.dict(os.environ, GITHUB_ACTIONS='false'), mock.patch.object(UPDATE.urllib.request, 'urlopen') as fetch:
+            with self.assertRaises(ValueError):
+                UPDATE.main()
+        fetch.assert_not_called()
+        self.assertEqual(self.path.read_text(), self.original)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,53 @@
+Tiny-document hosting and access (@ws-hosting: 0, is #chapter, #part-of @workspace-development, #requires @ws-model) { r_5B6R24VZR6SFZK9KG116Y89N9H
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Durable model and accepted-change foundation](Model.lingua)
+
+Dependency reason: Hosted authority can proceed beside local frame work once accepted document/command ownership is stable.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Identified editor and restricted guest admission, tiny-document projections, receipts, caps and reconnect/revoke handling.
+
+## Ownership and possible overlap
+
+Engine/store workspace policy and transport admission; shared model changes stay with the model owner.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 02.T06
+
+- [ ] **02.T06.** Extend the existing workspace identity/policy/typed command path to reference the tiny model document without embedding its graph in the live layout. Implement explicit identified and restricted-public principal handling, current viewer/editor/manager/ceiling checks and original-author revalidation. Reuse host configuration and native create/publish/invite/redeem/revoke controls; private hosting and optional public publication are explicit choices. Prove no guest route reaches trusted-local `None` authority and no failed/expired invitation widens access.
+
+### Task 02.T07
+
+- [ ] **02.T07.** Add the minimal bounded entry/profile description, finite tiny-document size/required capability inspection, local cost/status view and reservation needed by B33. Capture authorized projection/manifest generation and actor/device admission in requests/cursors; retain receipts and host/workspace/base in local drafts. Exercise same-identity reconnect, lost replies and revoked-then-regranted admission with B34/B35. [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua) extends this same path to sparse geographic assets and richer resource estimates.
+
+## Required contracts and proof
+
+[Durable-model-contracts](../contracts/Durable-model-contracts.lingua)
+
+Remote portions of 02.W02, B33–B35, no trusted-local bypass or mutation replay.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Shared presence and scoped queries](Shared-Presence.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_5B6R24VZR6SFZK9KG116Y89N9H

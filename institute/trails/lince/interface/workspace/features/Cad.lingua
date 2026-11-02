@@ -1,0 +1,65 @@
+Exact CAD and dimensioned sketches (@ws-cad: 0, is #chapter, #part-of @workspace-development, #requires @ws-geometry, #requires @ws-shared-presence) { r_2E87RY7102SP683C7THS0RGG17
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Native mesh and room authoring](Geometry.lingua); [Shared presence and scoped queries](Shared-Presence.lingua)
+
+Dependency reason: Exact CAD consumes the stable source/selection/preview and editing authority contracts; no imported globe/splat or molecular result is required.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Selected exact kernel, typed sketch constraints and feature history, robust correspondence, bounded native tools and declared exchange.
+
+## Ownership and possible overlap
+
+CAD kernel adapter, feature solver and CAD UI; shared command/history extensions negotiated through the base owner.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 10.T01
+
+- [ ] **10.T01.** Resolve the CAD reconciliation decisions above. Prove the small native sketch/constraint → extrusion → Boolean workflow through the kernel-neutral adapter, evaluating ezpz and one mesh CSG candidate first as recommended by the Record. Persist source intent, exercise an authorized dimension change and label approximation/unsupported operations; this prototype alone does not complete exact CAD.
+
+### Task 10.T02
+
+- [ ] **10.T02.** Run the recorded OCCT/Rust-kernel bake-off, adding SolidCraft 0.16.0's kernel facade and required vendored `truck` changes as a Rust candidate beside direct `truck`/the retained Rust choices. Choose one buildable, licensed exact-CAD adapter with a maintainable patch boundary and the agreed packaging/execution/failure/cancellation behavior. Keep its dependencies outside the common viewer; source inspection does not preselect the result.
+
+### Task 10.T03
+
+- [ ] **10.T03.** Implement sketch constraints/DOF diagnostics and the initial extrude/revolve/hole/Boolean feature set, native parameter/feature tools, dimension units, failed-feature recovery and incremental recompute. Complete the precise-authoring contract for this supported sketch/curve subset, including normalized residuals, bounded component solves and explicit unresolved geometry. Compare the retained ezpz-first solver, useful CADCraft algorithms and SolidCraft's constructive propagation/rigid-cluster reduction plus bounded residual solve on B10/B23/B29. Preserve branch continuity, distinguish proved elimination from an initial guess, verify all constraints and restore physical free DOF after any numerical gauge removal. Bound construction work, matrix/row/unknown bytes and iterations; do not silently substitute a solver or reuse fixed CAD millimeter tolerances at all scales. Preserve invalid features and expose repair instead of deleting later history.
+
+### Task 10.T04
+
+- [ ] **10.T04.** Add stable semantic feature/face references, validated operation-origin history and explicit ambiguous remapping repair for material regions, mounts and downstream features. Implement complete-boundary/profile selectors with hole/orientation semantics and refusal of partial/duplicate matches; prove the supported B29 subset. Extend B30 surface planning only for selected analytic/trimmed forms, with bounded shared-edge sampling, measured error and CPU fallback. Evaluate GPU execution only on an actual measured gap through the existing Bevy device. Prove the named STEP/render exchange subset and retain original source/feature data with honest loss reports.
+
+### Task 10.T05
+
+- [ ] **10.T05.** Add declared replay/reference outputs, kernel crash/cancel/restart, malicious geometry limits and same-input operation benchmarks for the selected adapters. Include the new manifold-rust candidate only through the bounded mesh comparison; test B24 touching/coplanar/thin-wall/self-difference cases, achieved metric error and topology/correspondence separately. Use B32 to compare analytic/prismatic reductions and general routes against independent references, with units/tolerance/history and whole-operation work recorded. Complete B31 CAD drag previews/final-target acceptance and B24 incremental-versus-from-source checks. Separate exact supported reductions, estimated freeform fitting, unknown correspondence and sampled plausibility. Record actual guarantee levels instead of asserting every kernel is bitwise deterministic. Include required licenses/credits in the CAD Sand. Use H6/B35/B36 with two CAD editors, superseded source/selection, local preview privacy, retained conflicting feature drafts, scoped undo and no automatic stale edit after reconnect; no CAD-specific collaboration server. Extend B40 to supported CAD-derived mesh editing using the same native selected/shared scope, source-variant preparation, provenance and undo, with no false claim that arbitrary sculpting preserves exact constraints.
+
+## Required contracts and proof
+
+[Exact-CAD-contracts](../contracts/Exact-CAD-contracts.lingua)
+
+10.W01–10.W03/B10/B23/B24/B29/B31/B32 with independent dimensions/topology, cancellation and two-editor conflicts.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Exact assembly geometry and interference](Exact-Assemblies.lingua); [Verified elasticity and thermal models](Continuum.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_2E87RY7102SP683C7THS0RGG17

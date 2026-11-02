@@ -1,0 +1,53 @@
+Native and Park application panels (@ws-mounted-apps: 0, is #chapter, #part-of @workspace-development, #requires @ws-areas-mounts, #requires @ws-shared-presence) { r_6SW704KWHBFZ663BD29TVRNFBD
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Areas, influence and local mounts](Areas-Mounts.lingua); [Shared presence and scoped queries](Shared-Presence.lingua)
+
+Dependency reason: Planar application mounting uses local verified surfaces and existing compositor adapters. A furnished globe/city is not an input.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Sandbox/Park content mounts, focus/popups, mapped input, separately granted pixel/media publication and revoke/lock recovery.
+
+## Ownership and possible overlap
+
+Park capture/focus/input adapter and native panel surface controls.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 07.T03
+
+- [ ] **07.T03.** Mount Sands, Record views and supported assigned content/windows through existing lifecycle/input/output paths; preserve explicit gravity/body policy for unmounted content. Verify save/reload and moving the containing space. Reuse stage 03 content/presentation identity when focusing spatial content into flat/HUD controls; retain its source, mount and existing application input owner.
+
+### Task 07.T06
+
+- [ ] **07.T06.** Complete the ordered Park spatial application adapter tasks above through the shared workspace surface/input/mount implementation. Apply H9 to permissioned pixel publication and any supported remote input separately from shared placement, with actual participant authority, focused input ownership, revoke/lock handling and admitted capture/egress. Extend B34/B36 for local/remote room editing, optional shared previews and retained exact final commits; ordinary hosted native Sands already work from [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua).
+
+## Required contracts and proof
+
+[Native-authoring-and-behavior-contracts](../contracts/Native-authoring-and-behavior-contracts.lingua)
+
+07.W03 application subset, local rotated mount and remote denial; no implicit desktop or remote input grant.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_6SW704KWHBFZ663BD29TVRNFBD

@@ -1,0 +1,51 @@
+Exact assembly geometry and interference (@ws-exact-assemblies: 0, is #chapter, #part-of @workspace-development, #requires @ws-cad, #requires @ws-relations) { r_7MJCZSGBVZXCXZN2SQ4K0HP3H7
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Exact CAD and dimensioned sketches](Cad.lingua); [Geometric assembly and joint relations](Relations.lingua)
+
+Dependency reason: Exact sweeps/fillets and interference need the chosen CAD kernel; the reusable joint relation service is already independent.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Bounded sweep/loft/fillet/shell/pattern operations and exact assembly clearance/interference linked to the shared geometric relation model.
+
+## Ownership and possible overlap
+
+Exact CAD/assembly evaluator extensions; joint schema remains with relations.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 11.T01b
+
+- [ ] **11.T01b.** After the selected exact CAD adapter and shared geometric relations pass, implement the bounded sweep/loft, fillet/chamfer, shell/offset and pattern subsets with precision/failure fixtures. Extend exact assembly interference/clearance and geometric constraints through those same relation/pose contracts. Do not infer stress, forces or material inertia from geometric solving.
+
+This owns the declared clause of **11.T01**. The full original requirement and complementary owner remain in the linked source contract.
+
+## Required contracts and proof
+
+[Assembly-and-character-contracts](../contracts/Assembly-and-character-contracts.lingua)
+
+Exact portions of 11.W01/B10, numeric precision/failure fixtures and no physical force claim from geometric solving.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Building systems, drawings and exchange](Building.lingua); [Revisioned model quantities and takeoff](Takeoff.lingua); [PCB layout, checks and fabrication data](Pcb.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_7MJCZSGBVZXCXZN2SQ4K0HP3H7

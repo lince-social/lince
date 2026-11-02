@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     lince-binary = {
       url = "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz";
       flake = false;
@@ -16,6 +20,7 @@
       self,
       nixpkgs,
       flake-utils,
+      rust-overlay,
       esp-dev,
       lince-binary,
     }:
@@ -909,15 +914,24 @@
       eachSystem = flake-utils.lib.eachSystem supportedSystems (
         system:
         let
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
+          };
           lib = pkgs.lib;
+          rustChannel = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel;
+          rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rustToolchain;
+            rustc = rustToolchain;
+          };
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
           localBuildHook = ''
             read -r -d "" PATH < <(${pkgs.python3}/bin/python3 -c 'import os, sys; sys.stdout.buffer.write(b":".join(dict.fromkeys(os.environb[b"PATH"].split(b":"))) + b"\0")')
             export PATH
             export LINCE_BUILD_ENVIRONMENT=1
-            export RUSTUP_TOOLCHAIN="''${RUSTUP_TOOLCHAIN:-${(builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel}}"
+            export RUSTUP_TOOLCHAIN="${rustChannel}"
             export RUSTC_WRAPPER="''${RUSTC_WRAPPER-${pkgs.sccache}/bin/sccache}"
             export SCCACHE_CACHE_SIZE="''${SCCACHE_CACHE_SIZE:-100G}"
             export SCCACHE_IDLE_TIMEOUT="''${SCCACHE_IDLE_TIMEOUT:-0}"
@@ -965,7 +979,7 @@
               features = [ "instinct" ] ++ lib.optional withPark "park";
               cargoFlags = [ "--package" "lince" "--features" (lib.concatStringsSep "," features) ]
                 ++ lib.optional (!ui) "--no-default-features";
-            in pkgs.rustPlatform.buildRustPackage {
+            in rustPlatform.buildRustPackage {
               inherit pname version;
               src = cleanSrc;
 
@@ -980,7 +994,8 @@
 
               LINCE_REVISION = self.rev or self.dirtyRev or "unknown";
 
-              RUSTFLAGS = "-D warnings";
+              RUSTFLAGS = "-D warnings" + lib.optionalString (system == "x86_64-linux")
+                " -C linker=${pkgs.clang}/bin/clang -C link-arg=-fuse-ld=${pkgs.wild-unwrapped}/bin/wild";
               LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
 
               dontUseNinjaBuild = ui;
@@ -1104,6 +1119,7 @@
         in
         {
           packages = {
+            rust-toolchain = rustToolchain;
             lince-content = contentPackage;
             default = lince-ui;
             inherit lince lince-ui;
@@ -1401,6 +1417,7 @@
                 libclang
                 python3
                 sccache
+                rustup
               ])
               ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.mold ]
               ++ interfaceLinuxNativeBuildInputs
@@ -1427,7 +1444,7 @@
             inputsFrom = [ self.devShells.${system}.interface ];
             packages = [ pkgs.jdk17 ];
             JAVA_HOME = "${pkgs.jdk17}";
-            RUSTUP_TOOLCHAIN = "1.96.0";
+            RUSTUP_TOOLCHAIN = rustChannel;
             HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
             HOST_CXX = "${pkgs.stdenv.cc}/bin/c++";
             HOST_AR = "${pkgs.stdenv.cc.bintools}/bin/ar";
@@ -1496,6 +1513,7 @@
                   libclang
                   python3
                   sccache
+                  rustup
                   ffmpeg
                   (pdfiumPackage pkgs)
                 ]

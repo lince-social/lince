@@ -16,7 +16,7 @@ const MAX_NODES: usize = 262_144;
 static NEXT_NODE: AtomicU64 = AtomicU64::new(2);
 
 fn node_id() -> NodeId {
-    NodeId(NEXT_NODE.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| value.checked_add(1)).expect("accessibility node identity"))
+    NodeId(NEXT_NODE.try_update(Ordering::Relaxed, Ordering::Relaxed, |value| value.checked_add(1)).expect("accessibility node identity"))
 }
 
 #[derive(Clone, PartialEq)]

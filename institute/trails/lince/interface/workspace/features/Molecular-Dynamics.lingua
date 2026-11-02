@@ -1,0 +1,49 @@
+Molecular and protein physical studies (@ws-molecular-dynamics: 0, is #chapter, #part-of @workspace-development, #requires @ws-scientific-adoption) { r_4J5F25SCHNP905BYAWJG3BQQCY
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Derived-model adoption and shared laboratory integration](Scientific-Adoption.lingua)
+
+Dependency reason: Preparation/parameter coverage and standalone laboratory jobs are real prerequisites; unrelated nonlinear mechanics or recording are not.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Separately selected minimization/dynamics then individually validated electronic/reaction/folding methods; each remains pending until its own evidence exists.
+
+## Ownership and possible overlap
+
+Selected molecular method/data adapter; no parallel ownership of one shared kernel inside this package without further evidence.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 21.T01
+
+- [ ] **21.T01.** Molecular/protein dynamics/minimization and a selected fresh microscopic study, supporting an independent laboratory result endpoint and optional explicit reusable-model export. Require full parameter coverage, ensemble/step/sample/replica/sampling/convergence evidence and a reference comparison. Add electronic structure, reaction and folding methods as distinct supported calculations, not side effects of a molecule edit. Use the same protocol/job/result services proved in [stage 17](../contracts/Laboratory-and-adoption-contracts.lingua), rather than another laboratory engine.
+
+## Required contracts and proof
+
+[Specialist-science-contracts](../contracts/Specialist-science-contracts.lingua)
+
+21.W01/21.P01, ensemble/sampling/convergence/reference and explicit unavailable methods.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: Its contributing contract acceptance and the published capability matrix.
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_4J5F25SCHNP905BYAWJG3BQQCY

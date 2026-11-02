@@ -1,0 +1,57 @@
+PCB layout, checks and fabrication data (@ws-pcb: 0, is #chapter, #part-of @workspace-development, #requires @ws-schematics, #requires @ws-exact-assemblies, #requires @ws-takeoff) { r_0T34SKQJJDKK5A7A5XBNXAMDSQ
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Electronic definitions and schematics](Schematics.lingua); [Exact assembly geometry and interference](Exact-Assemblies.lingua); [Revisioned model quantities and takeoff](Takeoff.lingua)
+
+Dependency reason: Board realization needs electronic topology plus geometry/clearance and quantity outputs. It can proceed beside functional-device implementation.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Two-layer placement/routing/vias, electrical/board checks, enclosure comparison and versioned BOM/artwork/drill/placement exports.
+
+## Ownership and possible overlap
+
+PCB geometry/check/export adapters and layout UI; no separate save or net identity system.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 11a.T04
+
+- [ ] **11a.T04.** Deliver footprint assignment, board outline/stackup, placement/rotation, keepouts, trace routing and through-via editing. Derive copper connectivity and geometric checks through bounded jobs keyed to the accepted revision. Show unrouted connections and conflicts; integrate board/enclosure clearance through existing CAD/assembly selections. Do not require the electrical graph to be a tree.
+
+### Task 11a.T05
+
+- [ ] **11a.T05.** Implement the supported electrical-rule checks for pin roles, missing required supply/reference connections, unconnected required pins and conflicting declared drivers. Implement board checks for net shorts, opens, minimum clearance, width, drill/pad bounds and board-edge clearance within B43's geometry subset. Preserve waived diagnostics with reason and source revision; stale or incomplete analysis is not a pass. These are declared design-rule checks, not general electrical correctness certification.
+
+### Task 11a.T06
+
+- [ ] **11a.T06.** Export a revision-pinned bill of materials, machine-readable connectivity, placement data, supported copper/mask/outline artwork and drill data. Choose and document the exact Gerber/drill/placement subsets against independent readers and a reviewed fixture; preserve units, origin, rotations and top/bottom conventions. Unsupported manufacturing outputs remain unavailable rather than plausible approximations. Imports preserve lineage, mapping conflicts and permitted library dependencies without fetching or executing arbitrary referenced content.
+
+## Required contracts and proof
+
+[Electronic-design-contracts](../contracts/Electronic-design-contracts.lingua)
+
+11a.W01/11a.W02/B43 open/short/clearance/mapping fixtures and independent exported-layer/unit inspection.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Reusable electronic device integration](Electronic-Devices.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_0T34SKQJJDKK5A7A5XBNXAMDSQ

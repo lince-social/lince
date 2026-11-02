@@ -56,6 +56,19 @@
         "type": "github"
       }
     },
+    "lince-binary": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792502011,
+        "narHash": "sha256-bWxy4gI7jpm7f9r8hD6Bta/j6b9pZr2hOqPpNo+wDDk=",
+        "type": "tarball",
+        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1767799921,
@@ -92,8 +105,29 @@
       "inputs": {
         "esp-dev": "esp-dev",
         "flake-utils": "flake-utils_2",
+        "lince-binary": "lince-binary",
         "nixpkgs": "nixpkgs_2",
-        "lince-binary": "lince-binary"
+        "rust-overlay": "rust-overlay"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793523538,
+        "narHash": "sha256-vHPjEGxtV+StSLW9DJpa3c3gt0UD0s1q4nC98AZ0N0c=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "c85ccd343087c57da6021cafa1647142ad03e32e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
       }
     },
     "systems": {
@@ -124,19 +158,6 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
-      }
-    },
-    "lince-binary": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792502011,
-        "narHash": "sha256-bWxy4gI7jpm7f9r8hD6Bta/j6b9pZr2hOqPpNo+wDDk=",
-        "type": "tarball",
-        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://github.com/lince-social/lince/releases/download/main-binary/lince-x86_64-unknown-linux-gnu.tar.gz"
       }
     }
   },

@@ -1,0 +1,53 @@
+Articulated models and editable deformation (@ws-character-rig: 0, is #chapter, #part-of @workspace-development, #requires @ws-relations, #requires @ws-simplification, #requires @ws-character-starter) { r_4P3BH2G82DM6TW6ZCXGQGSG1TG
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Geometric assembly and joint relations](Relations.lingua); [Simplification and safe support products](Simplification.lingua); [Supplied character appearance and navigation](Character-Starter.lingua)
+
+Dependency reason: Editable rigs require shared geometric relations and source/LOD correspondence first. Exact CAD and geography remain separate consumers.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Rig/link/control editing, forward/limited inverse posing, source-to-bind repair, skins/morphs/attachments and native undo/export.
+
+## Ownership and possible overlap
+
+Rig/deformation evaluator and character-native tools; no independent relation/save/query system.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 11.T06
+
+- [ ] **11.T06.** Extend the shared assembly/constraint model with stable articulated links/ports, reference configurations, typed joint coordinates/limits/couplings and rig/control-to-source maps. Provide joint/control creation, numeric forward posing, bounded endpoint/constraint solving, reference/pose editing and supported rest/bind updates through the same commands/history/undo/selection. Solve dirty connected regions with explicit residual/limit/unreachable/ambiguous status; a cyclic mechanism is not silently forced into a human bone tree. Preserve source frames/units, occurrence-local state and a recoverable accepted pose on failed/stale/cancelled solving.
+
+### Task 11.T07
+
+- [ ] **11.T07.** Implement the selected skinning, authored morph/corrective and attachment subsets with versioned source bindings, ordinary weight/region/parameter tools and native previews. Validate joint indices, finite/nonnegative normalized weights, bind transforms, topology revision, transform conventions and admitted influence counts. Shape edits invalidate/rebuild only affected bindings/products; retain the old valid result until replacement or explicit repair. Extend the declared import/export subset for rig/skin/morph/clip data and semantic maps, preserving source/licensing/unsupported fields. Reuse stage 08's simplification and source/correspondence lifecycle for pose-tested low-poly variants.
+
+## Required contracts and proof
+
+[Assembly-and-character-contracts](../contracts/Assembly-and-character-contracts.lingua)
+
+11.M06 and rig parts of 11.W03, B41 human/nonhuman controls, index/weight validity, failed rebind and pose-tested simplified meshes.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Authored motion and body controllers](Character-Motion.lingua); [Anatomical reference and annotation tools](Anatomy.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_4P3BH2G82DM6TW6ZCXGQGSG1TG

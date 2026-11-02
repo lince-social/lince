@@ -1,6 +1,8 @@
 name: Linux Lince and Park
 
 on:
+  schedule:
+    - cron: '17 6 * * *'
   push:
     branches:
       - main
@@ -19,6 +21,10 @@ on:
       - 'institute/packaging/**'
   workflow_dispatch:
     inputs:
+      rust_version:
+        description: Automatic Rust update candidate; checks on main only
+        type: string
+        default: ''
       build_release:
         description: Build the optimized Linux binary instead of checks only
         type: boolean
@@ -32,12 +38,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: lince-build-release-deploy-${{ github.ref }}
+  group: lince-build-release-deploy-${{ github.event_name == 'schedule' && 'rust-update' || inputs.rust_version && format('rust-validation-{0}', inputs.rust_version) || github.ref }}
   cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  RUSTUP_TOOLCHAIN: 1.96.0
   RUSTFLAGS: "-D warnings"
   CARGO_INCREMENTAL: "0"
   CARGO_TERM_COLOR: always
@@ -45,6 +50,33 @@ env:
   LINCE_BUILD_ENVIRONMENT: "1"
 
 jobs:
+  rust-update:
+    if: github.event_name == 'schedule'
+    name: Update stable Rust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 130
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Discover latest stable Rust
+        id: stable
+        run: |
+          latest=$(python3 -B institute/scripts/update-rust-toolchain.py --latest)
+          current=$(bash institute/scripts/rust-channel.sh)
+          if [[ "$current" == "version=$latest" ]]; then
+            echo 'update=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'update=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: cachix/install-nix-action@v31.11.3
+        if: steps.stable.outputs.update == 'true'
+      - name: Validate and apply shared Rust update
+        if: steps.stable.outputs.update == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash institute/scripts/ci-update-rust.sh
   checks:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && !inputs.build_release)
     name: Linux compile checks
@@ -52,6 +84,14 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: Select Rust update candidate for checks
+        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
+        env:
+          RUST_CANDIDATE: ${{ inputs.rust_version }}
+          BUILD_RELEASE: ${{ inputs.build_release }}
+        run: |
+          [[ "$BUILD_RELEASE" == false ]]
+          python3 -B institute/scripts/update-rust-toolchain.py --candidate "$RUST_CANDIDATE"
       - name: Read pinned Rust version
         id: toolchain
         run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
@@ -84,7 +124,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
   binary:
-    if: github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
+    if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
     name: Linux release
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -93,6 +133,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restrict compiler candidates to checks
+        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
+        run: exit 1
 
       - name: Read pinned Rust version
         id: toolchain

@@ -1,0 +1,49 @@
+Independent microscopic laboratory (@ws-laboratory: 0, is #chapter, #part-of @workspace-development, #requires @ws-molecules, #requires @ws-numerical-runtime) { r_14BW9NC8WBSS44N5T0KWS7499E
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Structural molecules crystals and proteins](Molecules.lingua); [First bounded numerical jobs and circuit references](Numerical-Runtime.lingua)
+
+Dependency reason: A standalone structure/conformation experiment needs specimen and proven run/result services, not a macro material consumer or full crystal-property bridge.
+
+This is a numerical or specialist work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Native specimen/protocol/run/result comparison and evidence export on an independent root.
+
+## Ownership and possible overlap
+
+Laboratory protocol/results UI and bounded method adapter.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 17.T04
+
+- [ ] **17.T04.** Complete the first W03/B18 experiment as an independent root: specimen/protocol/conditions/observables, admitted run, retained evidence and native result/plot/comparison/export views. A bounded structure-measurement or conformation-comparison protocol can be first; state its actual result and reference. Fresh physical dynamics/prediction needs its own [stage 21](../contracts/Specialist-science-contracts.lingua) model/data/validation gate.
+
+## Required contracts and proof
+
+[Laboratory-and-adoption-contracts](../contracts/Laboratory-and-adoption-contracts.lingua)
+
+17.M03/B18 structural-measurement/conformation reference; no folding or fresh dynamics claim.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Derived-model adoption and shared laboratory integration](Scientific-Adoption.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_14BW9NC8WBSS44N5T0KWS7499E

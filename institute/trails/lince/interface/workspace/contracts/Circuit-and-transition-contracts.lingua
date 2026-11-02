@@ -1,0 +1,101 @@
+15a — Circuit execution and mixed behavior models — deferred contracts (@ws-contract-15a: 0, is #chapter, #part-of @workspace-contracts, #requires @ws-circuit-policy, #requires @ws-numerical-runtime, #requires @ws-numerical-transitions, #requires @ws-powered-circuit) { r_3P6J8N7YKZQP9Z7K28R244TEJB
+Contract and acceptance Record; original stage label **15a** is retained only for requirement/task/workflow IDs. [Development graph](../Workspace-Development.lingua) is the execution authority.
+
+Contributing packages: [Adaptive circuit policy and shared/offline acceptance](../features/Circuit-Policy.lingua); [First bounded numerical jobs and circuit references](../features/Numerical-Runtime.lingua); [Numerical equivalents and stateful model transitions](../features/Numerical-Transitions.lingua); [Powered circuit and mixed functional signals](../features/Powered-Circuit.lingua)
+
+## Scheduling interpretation
+
+The linked packages own implementation and its task order. This Record preserves the full source requirements, interface details, examples, research, milestones, fixtures, failure cases and completion evidence. Its `#requires` edges mean all contributors are needed to close this whole contract, not that every consumer waits for this join. Former references to earlier/later stages, delivery cycles or deferred tails describe the appropriate capability subset and composed proofs; they do not restore the removed global sequence. Incomplete unrelated siblings are not regression failures. All already verified affected capabilities must continue working.
+
+For a mixed milestone, each contributor records its verified subset, then this join runs the actual composed workflow when all contributors exist. Do not mark the full milestone done from a local helper or silently drop geographic/hosted/numerical portions. Published exports remain usable without reopening their implementation solely to await this join; fixes to real interface defects remain mandatory.
+
+
+After provider verification and implementation authorization, finish with a powered lamp and sensor circuit sharing a scene with an unconditional light and functional devices. Replace a supported circuit subsystem with a cheaper compatible model, preserve its declared external behavior, and return through a supported state transition while its authored internals remain intact.
+
+## Required workflow milestones
+
+- [ ] **15a.M01.** Configure and run the bounded B43/B44 circuit with explicit supply/reference, component parameters and initial conditions; inspect source-mapped voltage/current/time results. Removing the electrical supply or opening the return path changes the powered lamp; the unconditional light continues.
+- [ ] **15a.M02.** Combine an idealized functional sensor with a numerical driver/load network using explicit signal/physical adapters, then replace the selected detailed subsystem with a compatible functional/equivalent model. Preserve required output timing and electrical loading within declared limits and measure the cost difference.
+- [ ] **15a.M03.** Switch supported models at a synchronized boundary, preserve carried state, expose discarded/initialized state and error, and handle unsupported continuation without inventing history. Editing a detailed source invalidates its derived model; one active writer remains for each output.
+- [ ] **15a.M04.** Apply a bounded automatic policy among approved alternatives, exercise validity/budget failure, and keep an offscreen causal dependency active. A pinned study never silently changes equations, and a weak visitor changes appearance without changing authoritative simulation.
+- [ ] **15a.M05.** Save source/model bindings and essential run/transition evidence, reopen offline, recover interrupted execution honestly and share permitted observations without giving the visitor execution or private-source access. Preserve core responsiveness and functional behavior when a numerical activity is unavailable.
+
+## Entry and scope
+
+- [ ] Follow the [general delivery and acceptance rules](../Workspace-Development.lingua#dependency-driven-delivery-and-repair). Require the selected numerical package’s verified provider exports and scoped implementation authorization. Full-core acceptance and a complete material-property branch are not prerequisites for the first circuit reference. Recover 02/04/07/11a/15 handoffs; materials derivation, molecular dynamics, continuum heating and stage 20 recording are not prerequisites.
+- [ ] This stage is the first consumer of the numerical run/state/authority subset documented in [stage 17 H7](Laboratory-and-adoption-contracts.lingua#h7-shared-runs-and-execution-authority), [its solver job contract](Laboratory-and-adoption-contracts.lingua#solver-job-contract), and [stage 18 K8/E5](Rigid-and-articulated-physics-contracts.lingua#k8-domains-state-observations-and-scenarios). Read those contracts as requirements, not as delivered APIs or dependencies on those stages' domain features. Implement the smallest shared services needed here; later stages extend the same services and retain their own verification obligations.
+- [ ] First numerical scope: bounded DC operating points and transient resistor/capacitor/diode/switch networks with documented compact parameters, an explicit electrical reference, source/load models and a small event/threshold adapter. No transistor fabrication, field extraction, firmware/CPU emulation, arbitrary HDL execution, quantum calculation or thermal solve is implied. Extend supported models only with separate reference cases.
+
+## Task ownership
+
+- [ ] [15a.T01 — First bounded numerical jobs and circuit references](../features/Numerical-Runtime.lingua#task-15at01). Full task text and execution order live with that owner.
+- [ ] [15a.T02 — First bounded numerical jobs and circuit references](../features/Numerical-Runtime.lingua#task-15at02). Full task text and execution order live with that owner.
+- [ ] [15a.T03 — First bounded numerical jobs and circuit references](../features/Numerical-Runtime.lingua#task-15at03). Full task text and execution order live with that owner.
+- [ ] [15a.T04 — Powered circuit and mixed functional signals](../features/Powered-Circuit.lingua#task-15at04). Full task text and execution order live with that owner.
+- [ ] [15a.T05 — Numerical equivalents and stateful model transitions](../features/Numerical-Transitions.lingua#task-15at05). Full task text and execution order live with that owner.
+- [ ] [15a.T06 — Numerical equivalents and stateful model transitions](../features/Numerical-Transitions.lingua#task-15at06). Full task text and execution order live with that owner.
+- [ ] [15a.T07 — Adaptive circuit policy and shared/offline acceptance](../features/Circuit-Policy.lingua#task-15at07). Full task text and execution order live with that owner.
+- [ ] [15a.T08 — Adaptive circuit policy and shared/offline acceptance](../features/Circuit-Policy.lingua#task-15at08). Full task text and execution order live with that owner.
+
+## Architecture and task requirements
+
+### Numerical and mixed-model boundaries
+
+- [ ] Compile connected electrical equations into a bounded solve group where required; a component need not own a process or independent clock. A subsystem replacement names the affected group and its external boundary. Strong algebraic coupling must be solved together or through a separately validated iterative exchange; a generic event queue cannot resolve arbitrary continuous feedback.
+- [ ] Separate external signal direction from physical terminals. Electrical terminals expose supported potential/current relations and signs; thermal and mechanical ports use their own quantity/flow contracts when implemented. Validate reference conventions, loading, initialization and consumer requirements before accepting a substitution. Missing required ports cannot silently become zero, open-circuit or ideal sources.
+- [ ] Schedule solver steps, discrete events and observations on explicit clocks with deterministic ordering for the selected evaluator contract. Define threshold crossing, same-time events, bounded event iteration, numerical tolerances and discontinuity handling. Keep render interpolation outside solver state. Reject unsupported zero-delay loops; do not hide instability with dropped events or an enlarged time step.
+- [ ] Track imposed inputs and approximations through result provenance. A functional motion sensor observes the declared geometric stimulus; this is not a prediction of infrared/radar electronics. An unconditional light may appear in camera output, while heating or photoelectric coupling remains absent unless an implemented adapter is bound. A run's output states which of these assumptions influenced it.
+- [ ] Domain model descriptors name retained state, outputs, validity, purpose, source/calibration evidence and cost. Model error, parameter uncertainty and solver numerical error remain distinct. More internal components or smaller steps do not automatically establish accuracy. Test the observables promised to consumers, including supply loading and event timing, rather than only matching screenshots.
+
+### Live model transition transaction
+
+- [ ] Capture occurrence/assembly scope, source and current model revisions, active run epoch, effective policy, required outputs and external connections. Validate the target model, dependencies, grants and declared transition before reserving peak old/new resources. An ordinary supported user selection proceeds through the existing command path without an extra permission wizard.
+- [ ] Prepare the target without publishing its outputs. Synchronize the affected solve group at a supported instant; snapshot required state and project it using the named transition. Report carried, discarded and initialized variables, assumptions/error and conservation checks appropriate to the pair. Keep event queues/timers consistent; pending events cannot be delivered twice or vanish silently.
+- [ ] Initialize and check the candidate, then atomically transfer ownership at the authority boundary and publish the new model/clock/epoch marker. Release old execution resources after dependent work/fences complete. On candidate failure retain the prior usable run where safe; otherwise pause only the dependent affected activity with a clear recovery action.
+- [ ] Fine→coarse projection may discard information. Coarse→fine uses supported lifting/initialization and a new uncertainty statement; it cannot restore untracked states from an obsolete checkpoint. Preserve battery charge, capacitor voltage/charge, delays or other quantities only when the pair's contract supplies a justified mapping. Unsupported continuation offers restart from declared initial conditions or continued pinned use, not fabricated conservation.
+- [ ] Changing representation or unloading internal display data requires no physical state projection. Changing behavior does. A paused circuit is not a running equivalent model. Undo of an authored model selection does not rewind physical time; continuing back follows the reverse transition or an explicit supported restart.
+- [ ] Transition history is essential provenance: retain source/target revisions, effective time, policy reason, mapping version, initialization/error and outcome. It is bounded by the run evidence policy and is separate from stage 20's optional trajectory playback. A result spanning several models exposes those intervals and cannot be labeled wholly solved at the most detailed model.
+
+### Resource, authority and recovery contract
+
+- [ ] Defaults resolve scene → assembly → occurrence, with explicit policy overrides and required solve-group compatibility. Inspector controls show requested/effective model, required behavior, measured cost, supported alternatives and transition outcome. Grouped consequences are visible before a user change; unrelated occurrences retain their configuration.
+- [ ] Automatic reduction is permitted only within the saved allowed set and valid consumer contract. Include transition/setup cost, minimum dwell and hysteresis to prevent thrashing. If no approved model fits, throttle simulation time, pause or reject according to policy; never silently weaken the required behavior. Do not allow a slower sample rate to miss a promised detection event.
+- [ ] Causal dependencies, subscriptions and explicit activities retain demand even outside the camera frustum. Unloading detailed internals releases their runtime payload only after replacement succeeds; durable source remains available from its permitted local/offline closure. Transitive dependencies and cycles have bounded discovery and execution limits.
+- [ ] One authority accepts numerical inputs/model changes and publishes permitted observations. Visual-only participants need no evaluator and cannot change the shared model by reducing their display budget. Host loss does not elect another writer. Scope start/steer/change-model/cancel/spending separately from view access and recheck them at adoption. Functional fallback after failure must be authorized by the saved policy and compatible initialization; it is never an invisible change of a pinned experiment.
+- [ ] Use isolated trusted installed evaluators, bounded input/output and no unrequested network or equipment access. Record executable/model versions, grants and payer. Imported model definitions do not authorize scripts/plugins. Licenses/credits accompany embedded dependencies and native Sands as required.
+
+## Fixture specifications owned here
+
+- [ ] **B44 — Powered mixed scene.** Reuse B42/B43 identities and room. Include an unconditional light, a separately powered indicator/lamp, declared supply and return, a functional sensor stimulus, switch/driver, resistive load and stateful RC/timer subsystem. Include two occurrences so local policy does not modify the other. Use authored geometric stimulus first; physical transducer/optical/thermal accuracy is outside this slice.
+- [ ] Reference checks include a hand-specified resistive divider/current balance and capacitor charging/discharging trajectory under stated initial conditions, plus independently specified trigger/timeout and supply-removal events. Select nonlinear-device references separately. Use at least nominal and boundary supply/load cases, near-threshold stimuli and an out-of-range case that must refuse/upgrade. Do not validate the circuit solely against another export of itself.
+- [ ] Define the pair's observables before implementation: terminal voltage/current and loading where required, detection/turn-off timing, light output mapping, retained state and acceptable transition discontinuity. Adopt explicit numerical tolerances, maximum event/timing error and approximation bounds per observable. Count components/nets/events/steps, active versus stored bytes and output samples; measure steady CPU, peak transition RAM, native response, setup/switch latency and release. Set bounded workloads and pass thresholds on named hardware before claiming speedup.
+
+## Delivery cycles and retained workflows
+
+- [ ] **Cycle A:** T01–T03 establishes a verified circuit and source-mapped native results before mixed feedback.
+- [ ] **Cycle B:** T04–T06 establishes explicit coupling, a useful approximation and safe stateful transitions.
+- [ ] **Cycle C:** T07–T08 establishes approved adaptive policy, authority/offline recovery and measured coexistence with core tools.
+
+| Retained workflow | Coverage | Required evidence |
+| --- | --- | --- |
+| **15a.W01 — Operate a powered circuit** | M01, T01–T04; built-in circuit adapter and B44 recipe. | Independent DC/transient references, real supply/return effects, probe mappings, clear invalid/nonconverged status. |
+| **15a.W02 — Replace internals while preserving purpose** | M02/M03, T04–T06; shared model switching and validated equivalent model. | External behavior/loading bounds, retained source, measured reduction, stateful round trip, unsupported restart and single-writer checks. |
+| **15a.W03 — Adapt within an explicit contract** | M04, T07. | Validity and minimum accuracy maintained, no camera-triggered lost behavior, no policy oscillation, honest pause/refusal and measured peaks. |
+| **15a.W04 — Reopen and share a mixed scene** | M05, T08. | Offline dependencies/provenance, weak-viewer independence, grants/epoch recovery, no duplicated side effects, core responsiveness. |
+
+## Concrete acceptance replay
+
+- [ ] **15a.P01 / W01.** Configure the real circuit through native controls, inspect probes, trigger the lamp, remove supply, open the return and compare the reference trajectories. The unconditional light continues. Include malformed/model-missing/singular/nonconverged cases and preserve the last usable identified result.
+- [ ] **15a.P02 / W02.** At a specified nonzero capacitor state and pending sensor timeout, replace the selected detailed subsystem, continue triggering and restore its detailed model through the supported map. Compare carried state and interface/timing errors, then try an intentionally unsupported pair. Edit a parameter while a candidate is preparing and inject cancellation/epoch loss; no stale activation, double power draw or duplicated timer event is allowed.
+- [ ] **15a.P03 / W03.** Lower an admitted compute budget, exercise an approved downgrade and restore it after hysteresis. Move the camera away while the sensor must still turn the lamp on. Change the load beyond the reduced model's validity; upgrade or pause/refuse according to policy. Keep a pinned comparison run unchanged and measure solver work separately from rendering.
+- [ ] **15a.P04 / W04.** Save and reopen the selected models/source and essential run evidence offline. Observe from a weak restricted client, deny a model-change request, interrupt the authority and recover without replaying commands or inventing a new writer. Continue ordinary editing/navigation alongside execution and release closed demand within its declared bound.
+
+## Advance gate
+
+- [ ] Pass M01–M05 and W01–W04, including independent reference/error, native usability, stateful transition, resource/authority/failure and affected core regressions. Retain exact input/model/build revisions, limits, observed measurements and reproducible commands. A faster approximate run with weaker unannounced output requirements is a failed comparison.
+- [ ] Keep unimplemented electrical models and all electrothermal/field/device/fabrication claims pending. Use cargo xtask/Nix and `cargo check`, warnings as errors, during implementation. Update shared handoffs after actual delivery; planning does not certify any numerical method or authorize implementation.
+
+## Completion summary
+
+Deferred and unbuilt. After verified delivery, retain source/API ownership, selected evaluator and reasons, exact B44 references/tolerances, performance measurements, supported transition pairs and limits, and separate W01–W04 capability paragraphs. Hand off the shared job/clock/model/transition/authority services to stage 16 and later numerical stages without deleting their unfinished scientific requirements.
+} r_3P6J8N7YKZQP9Z7K28R244TEJB

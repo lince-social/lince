@@ -1,0 +1,53 @@
+Shared presence and scoped queries (@ws-shared-presence: 0, is #chapter, #part-of @workspace-development, #requires @ws-hosting, #requires @ws-selection) { r_0YMV1TFAQ27TM6FCEZSKF4GC8W
+Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
+
+[Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Tiny-document hosting and access](Hosting.lingua); [Selections, correspondence and typed ports](Selection.lingua)
+
+Dependency reason: Remote pose and selection disclosure require verified local frames and projection policy, but no geographic renderer.
+
+This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+## Delivered boundary
+
+Bounded nonphysical presence, authorized spatial/semantic queries and captured multi-selection with per-source grants.
+
+## Ownership and possible overlap
+
+Shared subscription/query transport, view/presence codecs and permission projection.
+
+Independent ready packages may proceed together only after file/service ownership is reserved. Use separate leaf modules or isolated checkouts; shared migrations, command schemas, source/selection types, renderer lifetimes, runtime scheduling and performance sessions have one owner at a time. If actual code inspection finds an unproved shared boundary, add a dependency or serialize that work before coding. No promised worker count follows from the graph.
+
+## Ordered work
+
+Follow this package's task order. Original identifiers remain traceable; a reference to another former stage means its needed published contract, not an implicit global sequence. All native interaction, backend/persistence, authority, correctness and applicable resource obligations remain included.
+
+### Task 03.T05
+
+- [ ] **03.T05.** Carry canonical/local-frame identity through the participant view/presence envelope. Implement optional bounded cursor/selection and lightweight-avatar presentation state using I2/I5/I6, with session sequence/expiry and visible opt-out/follow behavior. Reuse view-local origins and keep shared camera bindings explicit; B36 first proves independent views, correct pose/selection mapping, release and no accepted geometry/physical-body mutation.
+
+### Task 04.T05
+
+- [ ] **04.T05.** Extend existing policy and E4 queries to the model/occurrence/property scopes needed here and authorized spatial/semantic interests. Prove B34/B36 server-side denial for metadata, selection, bounds and partial asset/source references before delivery, including a public guest and a narrower identified viewer. Reuse the same query/anchor path for hosted mounted Sands and Areas; shared visibility never lends operational/host authority. Prepare B40's captured multi-selection/scope and authorized matching-copy queries without a full-world scan. Preserve per-occurrence state and distinguish a selected-set edit from a deliberate shared-definition update.
+
+## Required contracts and proof
+
+[Frames-and-views-contracts](../contracts/Frames-and-views-contracts.lingua); [Selection-and-interface-contracts](../contracts/Selection-and-interface-contracts.lingua)
+
+03.W02 and hosted 04.W03 portions, B34/B36; no source disclosure or physical/control authority from presence.
+
+Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
+
+## Completion and handoff
+
+Publish the actual API/source owners, supported schemas/units, captured revisions, native command path, result/authority/lifetime semantics, measured budgets, required tests and one usable example before a consumer starts. Keep non-goals and unsupported variants explicit. Freeze this boundary for downstream use; extend it through an owned change with affected-consumer checks. Avoid speculative extension hooks and duplicate save/query/runtime systems.
+
+Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
+
+Consumers: [Offline city and local place coverage](Offline-City.lingua); [Hosted world and offline publication joins](Hosted-World.lingua); [Native and Park application panels](Mounted-Apps.lingua); [Supplied character appearance and navigation](Character-Starter.lingua); [Character detail policy and composed acceptance](Character-Integration.lingua); [Functional devices and model policy](Functional.lingua); [Exact CAD and dimensioned sketches](Cad.lingua); [Stock production and operational scenarios](Operations.lingua)
+
+Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+} r_0YMV1TFAQ27TM6FCEZSKF4GC8W

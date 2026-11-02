@@ -218,7 +218,7 @@ impl Desktop {
     }
 
     fn cancel_tablets(&mut self) {
-        let _ = self.tablets.scope.fetch_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1));
+        let _ = self.tablets.scope.try_update(Ordering::AcqRel, Ordering::Acquire, |epoch| epoch.checked_add(1));
         for tool in std::mem::take(&mut self.tablets.tools).into_values() { tool.lifetime.store(1, Ordering::Release); }
         for retired in self.tablets.retired.drain(..) {
             if let Some(lifetime) = retired.lifetime.upgrade() { lifetime.store(1, Ordering::Release); }

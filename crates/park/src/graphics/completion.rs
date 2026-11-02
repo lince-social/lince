@@ -80,7 +80,7 @@ impl Driver {
                 jobs.retain(|job| {
                     let result = if let Some(error) = &failure { Some(Err(error.clone())) } else {
                         match device.poll(wgpu::PollType::Wait {
-                            submission_index: Some(job.submission.clone()), timeout: Some(Duration::from_millis(2)),
+                            submission_index: Some(job.submission.clone()), timeout: Some(Duration::ZERO),
                         }) {
                             Ok(_) => Some(Ok(())),
                             Err(wgpu::PollError::Timeout) if job.started.elapsed() < Duration::from_secs(5) => None,
@@ -95,6 +95,7 @@ impl Driver {
                     } else { true }
                 });
                 if disconnected && jobs.is_empty() { break; }
+                if !jobs.is_empty() { std::thread::park_timeout(Duration::from_millis(1)); }
             }
         }).map_err(|error| ProbeFailure::at("gpu_completion", error))?;
         Ok(Self { count: Arc::new(AtomicUsize::new(0)), sender: Some(sender), worker: Some(worker) })

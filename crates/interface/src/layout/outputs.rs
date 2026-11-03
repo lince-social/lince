@@ -26,6 +26,7 @@ pub struct Assignments {
     current: BTreeMap<u64, OutputId>,
     focused: Option<OutputId>,
     pending: BTreeMap<OutputId, u64>,
+    displaced: BTreeMap<String, (OutputId, u64, u64)>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -64,6 +65,7 @@ impl Assignments {
         self.current
             .retain(|workspace, _| workspaces.contains(workspace));
         self.pending.retain(|_, workspace| workspaces.contains(workspace));
+        self.displaced.retain(|_, (_, moved, previous)| workspaces.contains(moved) && workspaces.contains(previous));
         let mut visible: BTreeSet<_> = self
             .outputs
             .iter()
@@ -198,6 +200,18 @@ impl Assignments {
         } else {
             trial.remember_active(id);
         }
+        if let Some((fallback, moved, previous)) = trial.displaced.remove(&name)
+            && trial.focused == Some(fallback)
+            && trial.outputs.iter().any(|output| output.id == fallback && output.active == moved)
+            && !trial.outputs.iter().any(|output| output.id != id && output.active == previous)
+            && trial.preferences.iter().any(|preference| preference.workspace == moved && preference.output == name)
+        {
+            let preferences = trial.preferences.clone();
+            trial.move_workspace(previous, id)?;
+            trial.move_workspace(moved, id)?;
+            trial.preferences = preferences;
+            trial.pending.remove(&id);
+        }
         *self = trial;
         Ok(())
     }
@@ -222,11 +236,12 @@ impl Assignments {
             }
             if self.focused == Some(id) {
                 self.focused = Some(replacement);
-                self.outputs
+                let fallback = self.outputs
                     .iter_mut()
                     .find(|output| output.id == replacement)
-                    .unwrap()
-                    .active = removed.active;
+                    .unwrap();
+                self.displaced.insert(removed.name, (replacement, removed.active, fallback.active));
+                fallback.active = removed.active;
             }
         } else {
             self.current.clear();
@@ -637,15 +652,15 @@ mod tests {
     }
 
     #[test]
-    fn returning_head_waits_for_the_input_workspace_then_restores_without_stealing_focus() {
+    fn returning_head_restores_the_displaced_workspace_and_its_focus() {
         let mut assignments = setup();
         assignments.focus(OutputId(2)).unwrap();
         assignments.disconnect(OutputId(2));
         assignments.connect(OutputId(3), "DP-1".into(), bounds(1000.0)).unwrap();
-        assert_eq!(assignments.focused(), Some(OutputId(1)));
-        assert_eq!(assignments.outputs[0].active, 2);
-        assert_eq!(assignments.outputs[1].active, 3);
-        assert_eq!(assignments.pending_restorations().count(), 1);
+        assert_eq!(assignments.focused(), Some(OutputId(3)));
+        assert_eq!(assignments.outputs[0].active, 1);
+        assert_eq!(assignments.outputs[1].active, 2);
+        assert_eq!(assignments.pending_restorations().count(), 0);
         assignments.select(OutputId(1), 1).unwrap();
         assert_eq!(assignments.outputs[0].active, 1);
         assert_eq!(assignments.outputs[1].active, 2);
@@ -675,7 +690,7 @@ mod tests {
         assignments.focus(OutputId(2)).unwrap();
         assignments.disconnect(OutputId(2));
         assignments.connect(OutputId(3), "DP-1".into(), bounds(1000.0)).unwrap();
-        assert_eq!(assignments.pending_restorations().count(), 1);
+        assert_eq!(assignments.pending_restorations().count(), 0);
         assignments.move_workspace(2, OutputId(1)).unwrap();
         assert_eq!(assignments.pending_restorations().count(), 0);
         assignments.disconnect(OutputId(3));

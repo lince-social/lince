@@ -115,9 +115,11 @@ impl Plugin for SurfaceRenderPlugin {
         render_app
             .insert_resource(completed)
             .init_resource::<CaptureCache>()
+            .init_resource::<origins::UiOrigins>()
             .init_resource::<crate::native::capture::render::aliases::PreparedAliases>()
             .add_systems(ExtractSchedule, origins::extract.after(extract_cameras))
             .add_systems(Render, crate::native::capture::render::aliases::prepare.in_set(RenderSystems::Prepare).ambiguous_with_all())
+            .add_systems(Render, origins::prepare_ui.in_set(RenderSystems::PrepareBindGroups).before(prepare_uinodes))
             .add_systems(Render, origins::begin.after(RenderSystems::Prepare).before(RenderSystems::Render))
             .add_systems(Render, origins::finish.after(RenderSystems::Render).before(RenderSystems::Cleanup))
             .add_systems(bevy::core_pipeline::schedule::Core2d, origins::record_view.after(bevy::core_pipeline::upscaling::upscaling))

@@ -77,6 +77,7 @@ fn a_real_size_transition_alias_keeps_its_owner_pixels_and_gets_fresh_public_cap
     let root = canvas.canvas_root().unwrap();
     native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
     canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     let (item, child) = card(&mut canvas, root, 1, Vec2::new(480.0, 300.0));
     let frame = super::super::shortcuts::settle(&mut canvas);
     assert!(magenta(&probe_pixels(frame.dmabuf().unwrap()).unwrap()) > 200);
@@ -109,6 +110,7 @@ fn a_real_size_transition_alias_keeps_its_owner_pixels_and_gets_fresh_public_cap
     canvas.world_mut().despawn(item);
     let (replacement, private) = card(&mut canvas, root, 1, Vec2::new(480.0, 300.0));
     canvas.world_mut().despawn(private);
+    super::super::shortcuts::settle(&mut canvas);
     let frame = filtered(&mut canvas, &[OutputId(1)]);
     assert_ne!(canvas.app.world().get::<Surface>(replacement).unwrap().camera, camera);
     assert!(green(&probe_pixels(frame.dmabuf().unwrap()).unwrap()) > 200);
@@ -125,6 +127,7 @@ fn inactive_overview_nested_preview_and_companion_output_follow_the_real_retaine
     super::super::shortcuts::settle(&mut canvas);
     let root = canvas.canvas_root().unwrap();
     canvas.world_mut().remove_resource::<native::layout::desktop::DefaultLayout>();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     native::workspace::create(canvas.world_mut(), root);
     let workspace = canvas.app.world().get::<native::workspace::Workspaces>(root).unwrap().active;
     for id in [1, workspace] {
@@ -145,6 +148,7 @@ fn inactive_overview_nested_preview_and_companion_output_follow_the_real_retaine
     native::workspace::switch_output(canvas.world_mut(), root, 1);
     canvas.outputs(outputs(workspace, false)).unwrap();
     canvas.desktop_action(DesktopAction::ToggleOverview).unwrap();
+    super::super::shortcuts::settle(&mut canvas);
     let gate = PolicyGate::default();
     gate.invalidate();
     canvas.world_mut().insert_resource(gate);
@@ -187,9 +191,13 @@ fn inactive_overview_nested_preview_and_companion_output_follow_the_real_retaine
     canvas.desktop_action(DesktopAction::ToggleOverview).unwrap();
     canvas.world_mut().resource_mut::<PausedSurface>().0 = None;
     canvas.activate_workspace(root.to_bits(), workspace).unwrap();
-    let frame = filtered(&mut canvas, &[OutputId(1), OutputId(2)]);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let frame = loop {
+        let frame = filtered(&mut canvas, &[OutputId(1), OutputId(2)]);
+        if displayed(&canvas, item) != alias { break frame; }
+        assert!(Instant::now() < deadline, "The refreshed owner image never replaced the retained alias");
+    };
     assert!(!frame.input.keyboard_modal);
-    assert_ne!(displayed(&canvas, item), alias);
     let current = displayed(&canvas, item);
     canvas.world_mut().get_mut::<ImageNode>(nested_image).unwrap().image = current;
     canvas.world_mut().despawn(item);

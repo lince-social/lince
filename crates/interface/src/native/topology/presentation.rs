@@ -656,10 +656,9 @@ pub fn synchronize(world: &mut World) {
         if world
             .get::<DisplayedImage>(entity)
             .is_some_and(|displayed| displayed.0 != image_handle)
-            && (!visible
-                || world
-                    .get_resource::<super::surface_render::CompletedCaptures>()
-                    .is_some_and(|completed| completed.contains(&image_handle)))
+            && world
+                .get_resource::<super::surface_render::CompletedCaptures>()
+                .is_none_or(|completed| completed.contains(&image_handle))
         {
             world
                 .resource_mut::<Assets<StandardMaterial>>()

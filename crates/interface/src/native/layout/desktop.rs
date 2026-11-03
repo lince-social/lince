@@ -355,6 +355,8 @@ pub(crate) fn root(world: &World, mut entity: Entity) -> Option<Entity> {
 
 fn candidate(world: &World, entity: Entity) -> bool {
     !crate::native::inspection::excluded(world, entity)
+        && (world.get::<ApplicationWindow>(entity).is_none()
+            || world.get::<crate::native::castle::Pending>(entity).is_none())
         && world
             .get::<crate::native::area::InfluenceArea>(entity)
             .is_none()

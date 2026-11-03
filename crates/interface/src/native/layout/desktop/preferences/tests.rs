@@ -23,6 +23,32 @@ fn resolve(world: &mut World) {
 }
 
 #[test]
+fn application_opening_waits_for_first_content_before_consuming_placement() {
+    for mode in [WorkspaceLayout::Free, WorkspaceLayout::Tiled] {
+        let (mut world, root, _, application) = fixture(mode);
+        world.entity_mut(application).insert(crate::native::castle::Pending);
+        for _ in 0..3 {
+            resolve(&mut world);
+            assert!(world.get::<ApplicationOpeningPending>(application).is_some());
+            assert!(world.get::<Managed>(application).is_none());
+            let id = PlacementId(world.get::<LayoutBox>(application).unwrap().id);
+            assert!(!world.get::<Workspaces>(root).unwrap().entries[0].desktop.items().iter().any(|item| item.id == id));
+        }
+        let center = crate::native::output_views::canvas(&world, root, 1).center;
+        world.get_mut::<CanvasItem>(application).unwrap().position = center;
+        world.entity_mut(application).remove::<crate::native::castle::Pending>();
+        resolve(&mut world);
+        assert!(world.get::<ApplicationOpeningPending>(application).is_none());
+        let managed = world.get::<Managed>(application).unwrap();
+        let model = &world.get::<Workspaces>(root).unwrap().entries[0].desktop;
+        assert!(model.items().iter().any(|item| item.id == managed.id));
+        if mode == WorkspaceLayout::Free {
+            assert_eq!(world.get::<CanvasItem>(application).unwrap().position, center);
+        }
+    }
+}
+
+#[test]
 fn gaps_apply_to_live_and_restored_models_without_resetting_width_intent_or_identity() {
     let (mut world, root, native, application) = fixture(WorkspaceLayout::Tiled);
     let mut inactive = world.get::<Workspaces>(root).unwrap().entries[0].clone();

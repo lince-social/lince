@@ -45,6 +45,7 @@ impl Plugin for TopologyPlugin {
             .init_resource::<physics::Runtime>()
             .init_resource::<input::PointerState>()
             .add_systems(Last, font_cache::trim)
+            .add_systems(PostUpdate, detach_removed_ui_nodes.after(bevy::ui::UiSystems::Prepare).before(bevy::ui::UiSystems::Layout))
             .add_systems(Startup, |mut commands: Commands| {
                 commands.spawn(input::CONTENT_POINTER);
             })
@@ -108,6 +109,21 @@ impl Plugin for TopologyPlugin {
                 .after(crate::native::workspace::PrepareWorkspaces),
         );
     }
+}
+
+fn detach_removed_ui_nodes(
+    mut removed: RemovedComponents<Node>,
+    mut queries: ParamSet<(Query<(), Added<Node>>, Query<&mut Node>)>,
+    mut children: Query<&mut Children>,
+    surface: Option<ResMut<bevy::ui::ui_surface::UiSurface>>,
+) {
+    let Some(mut surface) = surface else { return; };
+    let added = !queries.p0().is_empty();
+    let removed_nodes: Vec<_> = removed.read().collect();
+    if !added || !removed_nodes.into_iter().any(|entity| !queries.p1().contains(entity)) { return; }
+    *surface = Default::default();
+    for mut node in &mut queries.p1() { node.set_changed(); }
+    for mut children in &mut children { children.set_changed(); }
 }
 
 pub const DEFAULT_DEPTH: f64 = 10.0;

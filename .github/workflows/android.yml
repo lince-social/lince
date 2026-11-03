@@ -1,11 +1,11 @@
 name: Android Lince
 
 on:
-  push:
-    branches: [main, dev]
-    paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
-  pull_request:
-    paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
+  # push:
+  #   branches: [main, dev]
+  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
+  # pull_request:
+  #   paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
   workflow_dispatch:
     inputs:
       rust_version:

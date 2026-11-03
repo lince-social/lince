@@ -5,8 +5,10 @@ use nucleus::shader_effect::{Effect, spatial::{GeneratedGeometry, MeshSettings, 
 fn effect(private: bool) -> Effect {
     let program = if private { "fn shade_mesh(point: MeshPoint, inputs: ShaderInputs) -> vec4<f32> { return vec4<f32>(1.0, 0.0, 0.7, 1.0); }" }
         else { "fn shade_mesh(point: MeshPoint, inputs: ShaderInputs) -> vec4<f32> { return vec4<f32>(0.0, 1.0, 0.0, 1.0); }" };
-    Effect { mode:Mode::Mesh(MeshSettings { geometry:Some(GeneratedGeometry { source:nucleus::shader_effect::spatial::GENERATED_SPHERE.into(), vertices:32 * 20 * 6 }), ..default() }),
-        programs:std::collections::BTreeMap::from([("capture".into(), program.into())]), fallback:"capture".into(), ..default() }
+    let effect = Effect { mode:Mode::Mesh(MeshSettings { geometry:Some(GeneratedGeometry { source:nucleus::shader_effect::spatial::GENERATED_SPHERE.into(), vertices:32 * 20 * 6 }), ..default() }),
+        programs:std::collections::BTreeMap::from([("capture".into(), program.into())]), fallback:"capture".into(), rules:Vec::new(), ..default() };
+    effect.validate().unwrap();
+    effect
 }
 
 fn shader(canvas: &mut Presentation, root: Entity, position: [f64; 2], private_color: bool) -> Entity {
@@ -49,12 +51,13 @@ fn imported_glb_and_generated_wgsl_meshes_follow_their_real_sources_in_capture_a
     let root = canvas.canvas_root().unwrap();
     native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
     canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     let path = directory.path().join("private-source.glb");
     std::fs::write(&path, native::laboratory::showoff::MODEL).unwrap();
     let assets = canvas.app.world().resource::<native::topology::assets::AssetDirectory>().0.clone();
     let asset = native::topology::assets::copy_import(&path, &assets).unwrap();
     let model = native::topology::assets::spawn(canvas.world_mut(), root, 1, bevy::math::DVec2::new(-240.0, 120.0), asset);
-    canvas.world_mut().entity_mut(model).insert(native::topology::assets::CenteredAsset);
+    canvas.world_mut().entity_mut(model).insert((native::topology::assets::CenteredAsset, LayoutBox::new(Vec2::splat(100.0))));
     let mesh = shader(&mut canvas, root, [-240.0, -160.0], true);
     let public = super::super::appearance::item(&mut canvas, root, Vec2::new(240.0, 320.0), [230.0, 0.0], Color::srgb(0.0, 1.0, 0.0), 0, false);
     let deadline = Instant::now() + Duration::from_secs(60);
@@ -62,7 +65,12 @@ fn imported_glb_and_generated_wgsl_meshes_follow_their_real_sources_in_capture_a
         canvas.probe_frame().unwrap();
         if canvas.app.world().get::<native::topology::assets::Ready>(model).is_some()
             && native::shader_effects::surface_reading(canvas.app.world(), mesh).is_some_and(|reading| reading.ready && reading.image_available && reading.error.is_empty()) { break; }
-        assert!(Instant::now() < deadline, "The real GLB or generated WGSL mesh did not become ready");
+        assert!(Instant::now() < deadline, "The real GLB or generated WGSL mesh did not become ready: model={}, shader={:?}, visible={:?}, size={:?}, view={:?}",
+            canvas.app.world().get::<native::topology::assets::Ready>(model).is_some(),
+            native::shader_effects::surface_reading(canvas.app.world(), mesh),
+            canvas.app.world().get::<native::topology::presentation::Surface>(mesh).map(|surface| surface.visible),
+            canvas.app.world().get::<ComputedNode>(mesh).map(ComputedNode::size),
+            canvas.app.world().get::<native::canvas::CanvasView>(root).map(|view| (view.center, view.zoom)));
     }
     let (camera, _) = shader_target(&mut canvas, mesh).expect("The generated WGSL preview must declare its semantic source");
     let world = canvas.world_mut();
@@ -93,23 +101,35 @@ fn imported_glb_and_generated_wgsl_meshes_follow_their_real_sources_in_capture_a
         for mode in [WorkspaceLayout::Free, WorkspaceLayout::Tiled] {
             canvas.desktop_action(DesktopAction::SetLayout(mode)).unwrap();
             for (target, other) in [(model, mesh), (mesh, model)] {
-                canvas.world_mut().get_mut::<Node>(other).unwrap().display = Display::None;
-                canvas.world_mut().get_mut::<Node>(target).unwrap().display = Display::Flex;
+                canvas.world_mut().get_mut::<WorkspaceMember>(other).unwrap().0 = 2;
+                canvas.world_mut().get_mut::<WorkspaceMember>(target).unwrap().0 = 1;
                 canvas.world_mut().get_mut::<LayoutBox>(target).unwrap().capture_excluded = false;
                 gate.invalidate();
                 let (before, output) = frame(&mut canvas);
-                assert!(magenta(&probe_pixels(before.dmabuf().unwrap()).unwrap()) > 100, "The actual {target:?} model had no distinctive owner pixels in {mode:?}/{spatial}");
-                assert!(magenta(&output) > 100, "An explicitly public imported/WGSL source was blanket-redacted");
+                let label = format!("x10-{}-{mode:?}-{spatial}", if target == model { "model" } else { "mesh" });
+                super::super::layers::capture(&format!("{label}-public-owner"), [1000, 720], &probe_pixels(before.dmabuf().unwrap()).unwrap());
+                eprintln!("{label}: public owner={}, capture={}", shader_magenta(&probe_pixels(before.dmabuf().unwrap()).unwrap()), shader_magenta(&output));
+                assert!(shader_magenta(&probe_pixels(before.dmabuf().unwrap()).unwrap()) > 100, "The actual {target:?} model had no distinctive owner pixels in {mode:?}/{spatial}");
+                assert!(shader_magenta(&output) > 100, "An explicitly public imported/WGSL source was blanket-redacted");
                 canvas.world_mut().get_mut::<LayoutBox>(target).unwrap().capture_excluded = true;
                 gate.invalidate();
                 let (after, output) = frame(&mut canvas);
-                assert!(magenta(&probe_pixels(after.dmabuf().unwrap()).unwrap()) > 100, "Exclusion removed the local owner source");
-                assert_eq!(magenta(&output), 0, "Detached imported/WGSL pixels leaked in {mode:?}/{spatial}");
-                assert!(green(&output) > 100, "The public control disappeared with its unrelated private source");
+                super::super::layers::capture(&format!("{label}-private-owner"), [1000, 720], &probe_pixels(after.dmabuf().unwrap()).unwrap());
+                super::super::layers::capture(&format!("{label}-private-capture"), [1000, 720], &output);
+                eprintln!("{label}: private owner={}, capture={}", shader_magenta(&probe_pixels(after.dmabuf().unwrap()).unwrap()), shader_magenta(&output));
+                if shader_magenta(&probe_pixels(after.dmabuf().unwrap()).unwrap()) == 0 {
+                    let world = canvas.world_mut();
+                    for mut visible in world.query_filtered::<&mut ViewVisibility, With<Mesh3d>>().iter_mut(world) { visible.set_changed(); }
+                    let (retry, _) = frame(&mut canvas);
+                    eprintln!("{label}: reextracted owner={}", shader_magenta(&probe_pixels(retry.dmabuf().unwrap()).unwrap()));
+                }
+                assert!(shader_magenta(&probe_pixels(after.dmabuf().unwrap()).unwrap()) > 100, "Exclusion removed the local owner source in {label}");
+                assert_eq!(shader_magenta(&output), 0, "Detached imported/WGSL pixels leaked in {mode:?}/{spatial}");
+                assert!(shader_green(&output) > 100, "The public control disappeared with its unrelated private source");
             }
         }
     }
-    canvas.world_mut().get_mut::<Node>(model).unwrap().display = Display::Flex;
+    canvas.world_mut().get_mut::<WorkspaceMember>(model).unwrap().0 = 1;
     canvas.world_mut().get_mut::<LayoutBox>(model).unwrap().capture_excluded = true;
     canvas.world_mut().get_mut::<Node>(public).unwrap().display = Display::None;
     assert!(canvas.world_mut().despawn(mesh));
@@ -119,9 +139,9 @@ fn imported_glb_and_generated_wgsl_meshes_follow_their_real_sources_in_capture_a
     loop {
         let (owner, output) = frame(&mut canvas);
         if native::shader_effects::surface_reading(canvas.app.world(), replacement).is_some_and(|reading| reading.ready && reading.image_available) {
-            assert!(magenta(&probe_pixels(owner.dmabuf().unwrap()).unwrap()) > 100);
-            assert_eq!(magenta(&output), 0);
-            assert!(green(&output) > 100, "A replacement with a new semantic source retained private history or lost its public pixels");
+            assert!(shader_magenta(&probe_pixels(owner.dmabuf().unwrap()).unwrap()) > 100);
+            assert_eq!(shader_magenta(&output), 0);
+            assert!(shader_green(&output) > 100, "A replacement with a new semantic source retained private history or lost its public pixels");
             break;
         }
         assert!(Instant::now() < deadline, "The real replacement shader never became capture-ready");

@@ -1366,6 +1366,67 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires hardware Vulkan and EGL"]
+    fn reconnect_restores_workspaces_and_preserves_window_state() {
+        use lince_interface::host::{Rectangle, raster::RasterMapping};
+        let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap();
+        let _entered = runtime.enter();
+        let directory = tempfile::tempdir().unwrap();
+        let output = |id, name: &str, x| {
+            let bounds = Rectangle::new([x, 0.0], [800.0, 600.0]).unwrap();
+            Output { name: name.into(), viewport: OutputViewport {
+                id: OutputId(id), bounds, usable: Some(bounds), physical_size: [800, 600],
+                raster: RasterMapping { origin: bounds.origin(), scale: [1.0; 2] },
+                workspace: 1, rotation: Default::default(),
+            }}
+        };
+        for mode in 0..3 {
+            let mut canvas = Presentation::new([800, 600], directory.path().join("assets"), WakeSignal::new(|| {})).unwrap();
+            for _ in 0..3 { canvas.probe_frame().unwrap(); }
+            let first = output(1, "eDP-1", 0.0);
+            let second = output(2, "DP-1", 800.0);
+            canvas.outputs(vec![first.clone(), second]).unwrap();
+            canvas.focus_output(OutputId(2)).unwrap();
+            let root = canvas.canvas_root().unwrap();
+            let workspace = canvas.app.world().get::<native::workspace::Workspaces>(root).unwrap().active;
+            let layout = native::layout::LayoutBox::new(Vec2::new(320.0, 240.0));
+            let id = lince_interface::layout::desktop::PlacementId(layout.id);
+            let entity = canvas.app.world_mut().spawn((native::canvas::CanvasItem { position: bevy::math::DVec2::ZERO, size: Vec2::new(320.0, 240.0) },
+                layout, native::workspace::WorkspaceMember(workspace), ChildOf(root),
+                native::layout::desktop::ApplicationWindow { surface: lince_interface::host::SurfaceId(42), content_size: [320, 240] })).id();
+            for _ in 0..4 { canvas.probe_frame().unwrap(); }
+            let mut spaces = canvas.app.world_mut().get_mut::<native::workspace::Workspaces>(root).unwrap();
+            let model = &mut spaces.entries.iter_mut().find(|entry| entry.id == workspace).unwrap().desktop;
+            if mode == 1 { model.set_windowed_fullscreen(id, true).unwrap(); }
+            else if mode == 2 { model.request_state(id, lince_interface::host::WindowRequest { maximized: Some(true), ..Default::default() }); }
+            else { model.request_state(id, lince_interface::host::WindowRequest { fullscreen: Some(true), ..Default::default() }); }
+            drop(spaces);
+            for _ in 0..3 { canvas.probe_frame().unwrap(); }
+            let original = canvas.output_state.assignments.outputs().iter().map(|output| (output.name.clone(), output.active)).collect::<std::collections::BTreeMap<_, _>>();
+            canvas.outputs(vec![first.clone()]).unwrap();
+            for _ in 0..3 { canvas.probe_frame().unwrap(); }
+            let spaces = canvas.app.world().get::<native::workspace::Workspaces>(root).unwrap();
+            let model = &spaces.entries.iter().find(|entry| entry.id == workspace).unwrap().desktop;
+            assert!(if mode == 2 { model.maximized(id) } else { model.protocol_fullscreen(id) });
+            if mode == 2 { assert_eq!(canvas.app.world().get::<native::canvas::CanvasItem>(entity).unwrap().size, Vec2::new(800.0, 600.0)); }
+            for output_id in [3, 4] {
+                canvas.outputs(vec![output(1, "eDP-1", 0.0), output(output_id, "DP-1", 800.0)]).unwrap();
+                for _ in 0..3 { canvas.probe_frame().unwrap(); }
+                let restored = canvas.output_state.assignments.outputs().iter().map(|output| (output.name.clone(), output.active)).collect::<std::collections::BTreeMap<_, _>>();
+                assert_eq!(restored, original);
+                let spaces = canvas.app.world().get::<native::workspace::Workspaces>(root).unwrap();
+                let model = &spaces.entries.iter().find(|entry| entry.id == workspace).unwrap().desktop;
+                assert!(if mode == 2 { model.maximized(id) } else { model.protocol_fullscreen(id) });
+                if mode == 2 { assert_eq!(canvas.app.world().get::<native::canvas::CanvasItem>(entity).unwrap().size, Vec2::new(800.0, 600.0)); }
+                if output_id == 3 {
+                    canvas.outputs(vec![output(1, "eDP-1", 0.0)]).unwrap();
+                    for _ in 0..3 { canvas.probe_frame().unwrap(); }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn hand_control_defaults_to_builtin_then_leftmost_output() {
         use lince_interface::host::{Rectangle, raster::RasterMapping};
         let output = |id, name: &str, x| {

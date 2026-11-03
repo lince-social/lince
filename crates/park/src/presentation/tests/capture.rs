@@ -28,6 +28,14 @@ fn green(pixels: &[u8]) -> usize {
     pixels.chunks_exact(4).filter(|pixel| pixel[0] < 40 && pixel[1] > 220 && pixel[2] < 40).count()
 }
 
+fn shader_magenta(pixels: &[u8]) -> usize {
+    pixels.chunks_exact(4).filter(|pixel| pixel[0] > 180 && pixel[1] < 100 && pixel[2] > 140).count()
+}
+
+fn shader_green(pixels: &[u8]) -> usize {
+    pixels.chunks_exact(4).filter(|pixel| pixel[0] < 80 && pixel[1] > 180 && pixel[2] < 140).count()
+}
+
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
 fn native_capture_omits_private_pixels_preserves_public_updates_and_runs_one_main_update() {
@@ -39,6 +47,7 @@ fn native_capture_omits_private_pixels_preserves_public_updates_and_runs_one_mai
     let root = canvas.canvas_root().unwrap();
     native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
     canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     let dimensions = Vec2::new(260.0, 180.0);
     let mut items = Vec::new();
     for (position, color, private) in [([-170.0, 0.0], Color::srgb(1.0, 0.0, 0.7), true), ([170.0, 0.0], Color::srgb(0.0, 1.0, 0.0), false)] {
@@ -86,11 +95,14 @@ fn cached_shader(private: bool) -> nucleus::shader_effect::Effect {
     } else {
         "fn shade(uv: vec2<f32>, inputs: ShaderInputs) -> vec4<f32> { return vec4<f32>(0.0, 1.0, 0.0, 1.0); }"
     };
-    nucleus::shader_effect::Effect {
+    let effect = nucleus::shader_effect::Effect {
         programs: [("solid".into(), source.into())].into(),
         fallback: "solid".into(),
+        rules: Vec::new(),
         ..default()
-    }
+    };
+    effect.validate().unwrap();
+    effect
 }
 
 fn shader_target(canvas: &mut Presentation, sand: Entity) -> Option<(Entity, bevy::asset::AssetId<Image>)> {
@@ -119,6 +131,7 @@ fn capture_retains_public_frozen_shader_pixels_and_restores_private_targets_with
     let root = canvas.canvas_root().unwrap();
     native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
     canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     let dimensions = Vec2::new(280.0, 200.0);
     let sands: Vec<_> = [true, false].into_iter().enumerate().map(|(index, private)| {
         let mut layout = LayoutBox::new(dimensions);
@@ -138,12 +151,13 @@ fn capture_retains_public_frozen_shader_pixels_and_restores_private_targets_with
                 .is_some_and(|reading| reading.ready && reading.image_available && reading.error.is_empty()))
             && targets.iter().all(|(camera, _)| !canvas.app.world().get::<Camera>(*camera).unwrap().is_active)
         { break targets; }
-        assert!(Instant::now() < deadline, "The private/public shader targets never reached their frozen cached state");
+        assert!(Instant::now() < deadline, "The private/public shader targets never reached their frozen cached state: {:?}",
+            sands.iter().map(|sand| native::shader_effects::surface_reading(canvas.app.world(), *sand)).collect::<Vec<_>>());
         std::thread::sleep(Duration::from_millis(2));
     };
     let before: Vec<_> = targets.iter().map(|(_, image)| super::layers::image_pixels(&canvas, *image)).collect();
-    assert!(magenta(&before[0].1) > 200);
-    assert!(green(&before[1].1) > 200);
+    assert!(shader_magenta(&before[0].1) > 200);
+    assert!(shader_green(&before[1].1) > 200);
     let gate = PolicyGate::default();
     gate.invalidate();
     canvas.world_mut().insert_resource(gate);
@@ -154,11 +168,11 @@ fn capture_retains_public_frozen_shader_pixels_and_restores_private_targets_with
         let frame = canvas.probe_frame().unwrap();
         assert_eq!(canvas.app.world().resource::<Updates>().0, updates + 1);
         let captured = pixels(&frame, OutputId(1));
-        assert_eq!(magenta(&captured), 0);
-        assert!(green(&captured) > 200, "A public frozen preview disappeared from external capture");
+        assert_eq!(shader_magenta(&captured), 0);
+        assert!(shader_green(&captured) > 200, "A public frozen preview disappeared from external capture");
         let owner = probe_pixels(frame.dmabuf().unwrap()).unwrap();
-        assert!(magenta(&owner) > 200);
-        assert!(green(&owner) > 200);
+        assert!(shader_magenta(&owner) > 200);
+        assert!(shader_green(&owner) > 200);
         for ((camera, image), expected) in targets.iter().zip(&before) {
             assert!(!canvas.app.world().get::<Camera>(*camera).unwrap().is_active);
             assert_eq!(&super::layers::image_pixels(&canvas, *image), expected);
@@ -166,7 +180,7 @@ fn capture_retains_public_frozen_shader_pixels_and_restores_private_targets_with
     }
     canvas.world_mut().insert_resource(Demand::default());
     let frame = super::shortcuts::settle(&mut canvas);
-    assert!(magenta(&probe_pixels(frame.dmabuf().unwrap()).unwrap()) > 200);
+    assert!(shader_magenta(&probe_pixels(frame.dmabuf().unwrap()).unwrap()) > 200);
     canvas.finish().unwrap();
 }
 
@@ -188,6 +202,7 @@ fn removed_private_child_in_a_paused_cached_surface_is_refreshed_only_for_extern
     let root = canvas.canvas_root().unwrap();
     native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
     canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
+    canvas.world_mut().entity_mut(root).insert((native::canvas::CanvasView::default(), native::topology::view::View::default()));
     let dimensions = Vec2::new(480.0, 300.0);
     let card = canvas.world_mut().spawn((
         CanvasItem { position: bevy::math::DVec2::ZERO, size: dimensions }, LayoutBox::new(dimensions),

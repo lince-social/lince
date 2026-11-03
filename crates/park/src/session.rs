@@ -572,7 +572,7 @@ impl Hardware {
 
     fn resume(&mut self, desktop: &mut Desktop, libinput: &mut Libinput) -> io::Result<()> {
         if self.active { return Ok(()); }
-        self.outputs.activate(false).map_err(error)?;
+        self.outputs.activate(true).map_err(error)?;
         libinput.resume().map_err(|_| io::Error::other("Could not resume input"))?;
         self.active = true;
         self.devices.active(true);

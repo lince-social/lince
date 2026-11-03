@@ -203,6 +203,19 @@ pub(super) fn extract(
     commands.insert_resource(MaterialInputs(material_images, targets, scopes));
 }
 
+#[derive(Resource, Default)]
+pub(super) struct UiOrigins(BTreeMap<Entity, CaptureOrigins>);
+
+pub(super) fn prepare_ui(nodes: Res<ExtractedUiNodes>, materials: Res<MaterialInputs>, mut saved: ResMut<UiOrigins>) {
+    saved.0.clear();
+    for node in &nodes.uinodes {
+        let origins = saved.0.entry(node.extracted_camera_entity).or_insert_with(CaptureOrigins::empty);
+        origins.contributors.insert(node.main_entity.id());
+        if materials.1.contains(&node.image) { origins.images.insert(node.image); }
+        origins.bound();
+    }
+}
+
 pub(super) fn surface(
     world: &World,
     camera: Entity,
@@ -211,12 +224,7 @@ pub(super) fn surface(
     let mut origins = world.get::<Inputs>(camera).map_or_else(CaptureOrigins::default, |inputs| inputs.0.clone());
     let Some(materials) = world.get_resource::<MaterialInputs>() else { origins.complete = false; return origins; };
     for item in phase.items.values().take(MAX_LINKS + 1) { origins.contributors.insert(item.entity.1.id()); }
-    if let Some(nodes) = world.get_resource::<ExtractedUiNodes>() {
-        for node in nodes.uinodes.iter().filter(|node| node.extracted_camera_entity == camera).take(MAX_LINKS + 1) {
-            origins.contributors.insert(node.main_entity.id());
-            if materials.1.contains(&node.image) { origins.images.insert(node.image); }
-        }
-    }
+    if let Some(ui) = world.get_resource::<UiOrigins>().and_then(|ui| ui.0.get(&camera)) { origins.extend(ui); }
     origins.images.retain(|image| materials.1.contains(image));
     origins.normalize(&materials.2);
     origins
@@ -224,7 +232,7 @@ pub(super) fn surface(
 
 pub(super) fn record_view(
     view: ViewQuery<(Entity, &ExtractedCamera, &ViewTarget, Option<&RenderVisibleEntities>, Option<&Inputs>, &ViewUpscalingPipeline, Option<&UiCameraView>)>,
-    nodes: Res<ExtractedUiNodes>,
+    ui: Res<UiOrigins>,
     phases: Res<ViewSortedRenderPhases<TransparentUi>>,
     views: Query<&ExtractedView>,
     materials: Res<MaterialInputs>,
@@ -247,10 +255,7 @@ pub(super) fn record_view(
             if let Some(images) = materials.0.get(&main.id()) { origins.images.extend(images.iter().copied()); }
         }
     }
-    for node in nodes.uinodes.iter().filter(|node| node.extracted_camera_entity == entity).take(MAX_LINKS + 1) {
-        origins.contributors.insert(node.main_entity.id());
-        if materials.1.contains(&node.image) { origins.images.insert(node.image); }
-    }
+    if let Some(ui) = ui.0.get(&entity) { origins.extend(ui); }
     if let Ok(view) = views.get(ui_view.map_or(entity, |view| view.0))
         && let Some(phase) = phases.get(&view.retained_view_entity)
     {

@@ -4,10 +4,10 @@ pub(super) fn synchronize(world: &mut World, root: Entity, physical_size: UVec2)
     if world.get::<Disabled>(root).is_some() {
         return;
     }
+    world.entity_mut(root).remove::<(Node, BackgroundColor)>();
     if world.get::<SpatialRoot>(root).is_none() {
         world
             .entity_mut(root)
-            .remove::<(Node, BackgroundColor)>()
             .insert((
                 GhostNode,
                 SpatialRoot,

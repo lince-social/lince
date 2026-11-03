@@ -608,8 +608,6 @@ pub(crate) fn output(world: &World, entity: Entity) -> Entity {
 pub(crate) fn background_output(world: &mut World, entity: Entity) -> Entity {
     let preview = world.get::<Preview>(entity).unwrap();
     let (surface, label) = (preview.surface, preview.label);
-    let content = world.get::<crate::native::embedded_media::Media>(entity).unwrap().content;
-    world.get_mut::<Node>(content).unwrap().height = percent(100);
     world.get_mut::<Node>(label).unwrap().display = Display::None;
     surface
 }

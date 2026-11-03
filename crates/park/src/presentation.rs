@@ -1737,6 +1737,7 @@ mod tests {
     mod manipulation;
     mod keyboard;
     mod focus_handoff;
+    mod ui_lifecycle;
     use bevy::{
         ecs::message::{MessageCursor, Messages},
         input::{

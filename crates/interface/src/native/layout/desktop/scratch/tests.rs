@@ -20,6 +20,37 @@ fn other(world: &mut World, root: Entity) {
 }
 
 #[test]
+fn scratch_availability_follows_live_memberships_across_inactive_workspaces_and_replacements() {
+    let (mut world, root, native, _) = fixture();
+    assert!(!has_items(&world, root));
+    assert!(candidates(&world, root).is_empty());
+    checked(&mut world, root, DesktopAction::MarkScratch).unwrap();
+    other(&mut world, root);
+    crate::native::workspace::switch_output(&mut world, root, 2);
+    assert!(has_items(&world, root));
+    assert_eq!(candidates(&world, root).iter().map(|target| target.entity).collect::<Vec<_>>(), vec![native]);
+    world.entity_mut(native).insert(bevy::ecs::entity_disabling::Disabled);
+    assert!(!has_items(&world, root));
+    assert!(candidates(&world, root).is_empty());
+    world.entity_mut(native).remove::<bevy::ecs::entity_disabling::Disabled>();
+    assert!(has_items(&world, root));
+    world.entity_mut(native).insert(WorkspaceMember(2));
+    assert!(!has_items(&world, root));
+    assert!(candidates(&world, root).is_empty());
+    world.entity_mut(native).insert(WorkspaceMember(1));
+    let original = *world.get::<LayoutBox>(native).unwrap();
+    let mut replacement = original;
+    replacement.id[0] ^= 1;
+    world.entity_mut(native).insert(replacement);
+    assert!(!has_items(&world, root));
+    world.entity_mut(native).insert(original);
+    assert!(has_items(&world, root));
+    world.despawn(native);
+    assert!(!has_items(&world, root));
+    assert!(candidates(&world, root).is_empty());
+}
+
+#[test]
 fn scratch_commands_move_one_live_item_and_hide_its_family_without_client_minimization() {
     let (mut world, root, native, application) = fixture();
     let original = capture(&world, root, native).unwrap();

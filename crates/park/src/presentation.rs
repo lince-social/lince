@@ -1432,13 +1432,21 @@ impl Presentation {
         let input_view = self.native_input_view(geometry);
         let pointer_views = self.accessibility_views(geometry);
         let world = self.app.world_mut();
-        crate::native_input::projection::prepare(world, input_view);
-        let native_pointer = crate::native_input::pointer::capture(world, &pointer_views, geometry);
+        {
+            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputProjection);
+            crate::native_input::projection::prepare(world, input_view);
+        }
+        let native_pointer = {
+            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativePointerCapture);
+            crate::native_input::pointer::capture(world, &pointer_views, geometry)
+        };
         let output = self.target.id();
         let window = world.query_filtered::<Entity, With<PrimaryWindow>>().iter(world).next();
         let output_id = self.output_view.as_ref().map_or(lince_interface::host::OutputId(1), |output| output.id);
         let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, &native_pointer, output_id, mapping));
-        let nodes: Vec<_> = world
+        let nodes: Vec<_> = {
+            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputControls);
+            world
             .query::<(
                 Entity,
                 &ComputedNode,
@@ -1503,7 +1511,8 @@ impl Presentation {
                 }
                 Some((rectangle, modal.is_some_and(|group| group.modal), world.get::<native::shortcuts::KeyboardModalTrigger>(entity).is_some(), focus_block))
             })
-            .collect();
+            .collect()
+        };
         let keyboard_modal = native::shortcuts::keyboard_owned(world);
         let modal = nodes.iter().any(|(_, modal, _, _)| *modal)
             || world
@@ -1526,10 +1535,16 @@ impl Presentation {
         InputSnapshot {
             accessibility: None,
             mappings: Default::default(),
-            control: self.canonical_root.map(|root| native::layout::desktop::control::catalog(world, root)).unwrap_or_default(),
+            control: {
+                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputCatalog);
+                self.canonical_root.map(|root| native::layout::desktop::control::catalog(world, root)).unwrap_or_default()
+            },
             workspaces,
             drop_target,
-            editor: crate::native_input::capture(world, geometry),
+            editor: {
+                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputEditor);
+                crate::native_input::capture(world, geometry)
+            },
             native_pointer,
             controls: nodes
                 .iter()

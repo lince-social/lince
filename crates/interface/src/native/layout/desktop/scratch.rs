@@ -147,12 +147,23 @@ pub(super) fn marked(world: &World, root: Entity) -> bool {
 }
 
 pub(super) fn has_items(world: &World, root: Entity) -> bool {
-    world.get::<Children>(root).is_some_and(|children| children.iter().any(|entity| capture(world, root, entity).ok().is_some_and(|target|
-        model(world, &target).is_ok_and(|model| model.scratch(target.placement).is_some()))))
+    associated_items(world, root).any(|entity| capture(world, root, entity).ok().is_some_and(|target|
+        model(world, &target).is_ok_and(|model| model.scratch(target.placement).is_some())))
+}
+
+fn associated_items(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
+    let spaces = world.get::<Workspaces>(root);
+    let children = spaces.filter(|spaces| spaces.entries.iter().any(|space| space.desktop.scratch_items().next().is_some()))
+        .and_then(|_| world.get::<Children>(root));
+    children.into_iter().flat_map(|children| children.iter()).filter(move |entity| {
+        let (Some(spaces), Some(member), Some(layout)) = (spaces, world.get::<WorkspaceMember>(*entity), world.get::<LayoutBox>(*entity)) else { return false; };
+        spaces.entries.iter().find(|space| space.id == member.0)
+            .is_some_and(|space| space.desktop.scratch(PlacementId(layout.id)).is_some())
+    })
 }
 
 fn candidates(world: &World, root: Entity) -> Vec<Target> {
-    let mut choices = world.get::<Children>(root).into_iter().flat_map(|children| children.iter())
+    let mut choices = associated_items(world, root)
         .filter_map(|entity| capture(world, root, entity).ok())
         .filter(|target| model(world, target).is_ok_and(|model| model.scratch(target.placement).is_some())).collect::<Vec<_>>();
     choices.sort_by_key(|target| (target.workspace, target.placement));

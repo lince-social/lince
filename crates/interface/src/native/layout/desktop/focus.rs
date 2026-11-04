@@ -217,19 +217,19 @@ pub(super) fn eligible(world: &World, root: Entity, workspace: u64, entity: Enti
 }
 
 fn candidates(world: &World, root: Entity, workspace: u64) -> Vec<Entity> {
+    candidate_entities(world, root, workspace).collect()
+}
+
+fn candidate_entities(world: &World, root: Entity, workspace: u64) -> impl Iterator<Item = Entity> + '_ {
     world
         .get::<Children>(root)
-        .map_or_else(Vec::new, |children| {
-            children
-                .iter()
-                .filter(|entity| eligible(world, root, workspace, *entity))
-                .collect()
-        })
+        .into_iter()
+        .flat_map(|children| children.iter())
+        .filter(move |entity| eligible(world, root, workspace, *entity))
 }
 
 fn entity(world: &World, root: Entity, workspace: u64, id: PlacementId) -> Option<Entity> {
-    candidates(world, root, workspace)
-        .into_iter()
+    candidate_entities(world, root, workspace)
         .find(|entity| {
             world
                 .get::<Managed>(*entity)
@@ -405,7 +405,7 @@ pub(super) fn status(world: &World, root: Entity) -> (bool, bool) {
                 .is_some_and(|state| state.active == id));
     (
         selected,
-        selected || !candidates(world, root, workspace).is_empty(),
+        selected || candidate_entities(world, root, workspace).next().is_some(),
     )
 }
 

@@ -41,6 +41,12 @@ impl Geometry {
             }
     }
 
+    fn same_hit(&self, other: &Self) -> bool {
+        self.same_owner(other) && self.owner == other.owner && self.bounds == other.bounds
+            && self.image == other.image && self.blocks == other.blocks && self.node == other.node
+            && self.transform == other.transform && self.projection == other.projection
+    }
+
     fn point(&self, point: [f64; 2]) -> Option<Vec2> {
         if self.bounds.is_some_and(|bounds| !bounds.contains(point)) { return None; }
         let point = match &self.projection {
@@ -77,6 +83,12 @@ pub struct Target {
 }
 
 impl Target {
+    fn same_hit(&self, other: &Self) -> bool {
+        self.point == other.point && self.background == other.background
+            && self.geometry.len() == other.geometry.len()
+            && self.geometry.iter().zip(&other.geometry).all(|(original, current)| original.same_hit(current))
+    }
+
     #[cfg(all(test, feature = "server-tests"))]
     pub(crate) fn contains(&self, entity: Entity) -> bool {
         self.geometry.iter().any(|geometry| geometry.lineage.contains(&entity))
@@ -239,7 +251,7 @@ pub(crate) fn current(world: &World, views: &[View], geometry: Option<&GeometryS
     let Some(view) = views.iter().find(|view| view.output == output) else { return false; };
     let current = capture(world, std::slice::from_ref(view), geometry).target(captured.point);
     #[cfg(test)]
-    if current.as_ref() != Some(captured) {
+    if current.as_ref().is_none_or(|current| !captured.same_hit(current)) {
         let describe = |target: &Target| target.geometry.iter().map(|item| (item.entity, item.output, item.modal,
             item.eligible, item.image, item.bounds, item.node.size(), item.owner.as_ref().map(|owner| (owner.root, owner.output())),
             format!("{:?}", item.projection))).collect::<Vec<_>>();
@@ -271,7 +283,7 @@ pub(crate) fn current(world: &World, views: &[View], geometry: Option<&GeometryS
                     (current.hit(captured.point), current.eligible, current.node.size(), current.transform, current.clip, format!("{:?}", current.projection))));
         }
     }
-    current.as_ref() == Some(captured)
+    current.as_ref().is_some_and(|current| captured.same_hit(current))
 }
 
 pub(crate) fn location(world: &mut World, views: &[View], geometry: Option<&GeometrySnapshot>, captured: &Target, point: [f64; 2]) -> Option<Location> {

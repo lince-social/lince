@@ -52,6 +52,31 @@ fn held_guards_allow_geometry_motion_but_retire_replaced_actions_and_terminate_c
 }
 
 #[test]
+fn queued_hits_survive_clip_changes_only_while_the_original_recipient_and_mapping_stay_current() {
+    let mut world = World::new();
+    let entity = world.spawn_empty().id();
+    let behind = world.spawn_empty().id();
+    let mut snapshot = Snapshot { targets: vec![node(entity, true), node(behind, true)], ..default() };
+    let original = snapshot.target([50.0; 2]).unwrap();
+    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0)));
+    assert!(original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
+    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::ZERO, Vec2::splat(40.0)));
+    assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
+    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0)));
+    snapshot.targets[0].actions.push((entity, entity, 1));
+    assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
+    snapshot.targets[0].actions.clear();
+    snapshot.targets[0].transform = UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(51.0)));
+    assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
+    snapshot.targets[0].transform = original.geometry[0].transform;
+    snapshot.targets[0].eligible = false;
+    assert!(snapshot.target([50.0; 2]).is_none());
+    snapshot.targets[0].eligible = true;
+    snapshot.targets[0].blocks = false;
+    assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
+}
+
+#[test]
 fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source_geometry() {
     let entity = World::new().spawn_empty().id();
     let mut target = node(entity, true);

@@ -64,6 +64,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::native::topology::input::tests::laboratory_cases(&mut cases);
     crate::native::token_metrics::tests::laboratory_cases(&mut cases);
     crate::native::token_style::tests::laboratory_cases(&mut cases);
+    crate::native::token_style::resolver::tests::laboratory_cases(&mut cases);
     crate::native::tokens::tests::laboratory_cases(&mut cases);
     crate::native::tray::tests::laboratory_cases(&mut cases);
     crate::native::workspace::storage::tests::laboratory_cases(&mut cases);

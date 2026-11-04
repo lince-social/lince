@@ -1,5 +1,5 @@
-use crate::native::{token_style::resolve, tokens::Token};
-use bevy::prelude::*;
+use crate::native::{token_style::Tokens, tokens::Token};
+use bevy::{ecs::query::QueryData, prelude::*};
 
 #[derive(Component, Clone, Copy)]
 pub(crate) struct WidthToken(pub Token, pub bool);
@@ -7,7 +7,7 @@ pub(crate) struct WidthToken(pub Token, pub bool);
 #[derive(Component, Clone, Copy)]
 pub(crate) struct RadiusToken(pub Token);
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 struct Metric {
     base: f32,
     applied: f32,
@@ -32,130 +32,93 @@ impl Metric {
     }
 }
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, Clone, Copy, Default, PartialEq)]
 struct Metrics {
     spacing: [Metric; 2],
     padding: [Metric; 4],
     font: Metric,
 }
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, Clone, Copy, Default, PartialEq)]
 struct IconMetrics([Metric; 2]);
 
-pub(crate) fn icons(world: &mut World) {
-    let entities: Vec<_> = world
-        .query_filtered::<Entity, With<crate::native::icons::IconStyle>>()
-        .iter(world)
-        .collect();
-    for entity in entities {
-        let mut metrics = world
-            .get::<IconMetrics>(entity)
-            .cloned()
-            .unwrap_or_default();
-        let ratios = [
-            (
-                crate::native::canvas_host::authoring::metric_token(
-                    world,
-                    entity,
-                    "icon-size",
-                    Token::IconSize,
-                ),
-                Token::IconSize,
-            ),
-            (
-                crate::native::canvas_host::authoring::metric_token(
-                    world,
-                    entity,
-                    "icon-padding",
-                    Token::IconPadding,
-                ),
-                Token::IconPadding,
-            ),
-        ]
-        .map(|(token, fallback)| {
-            resolve(world, entity, token).0.number()
-                / fallback.default_value(Default::default()).number()
-        });
-        let style = *world
-            .get::<crate::native::icons::IconStyle>(entity)
-            .unwrap();
-        let size = metrics.0[0].scale(style.size, ratios[0]);
-        let padding = metrics.0[1].scale(style.padding, ratios[1]);
+pub(crate) fn install(app: &mut App) {
+    app.register_required_components::<Node, Metrics>()
+        .register_required_components::<crate::native::icons::IconStyle, IconMetrics>();
+}
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub(crate) struct IconData {
+    entity: Entity,
+    style: &'static mut crate::native::icons::IconStyle,
+    metrics: &'static mut IconMetrics,
+}
+
+pub(crate) fn icons(tokens: Tokens, mut icons: Query<IconData>) {
+    let apply = |IconDataItem {
+                     entity,
+                     mut style,
+                     mut metrics,
+                 }: IconDataItem| {
+        let mut next = *metrics;
+        let size_ratio = tokens.metric(entity, "icon-size", Token::IconSize).number()
+            / Token::IconSize.default_value(Default::default()).number();
+        let padding_ratio = tokens
+            .metric(entity, "icon-padding", Token::IconPadding)
+            .number()
+            / Token::IconPadding
+                .default_value(Default::default())
+                .number();
+        let size = next.0[0].scale(style.size, size_ratio);
+        let padding = next.0[1].scale(style.padding, padding_ratio);
         if (size, padding) != (style.size, style.padding) {
-            let mut style = world
-                .get_mut::<crate::native::icons::IconStyle>(entity)
-                .unwrap();
             style.size = size;
             style.padding = padding;
         }
-        world.entity_mut(entity).insert(metrics);
+        metrics.set_if_neq(next);
+    };
+    if icons.iter().len() >= 1024 {
+        icons.par_iter_mut().for_each(apply);
+    } else {
+        icons.iter_mut().for_each(apply);
     }
 }
 
-pub(crate) fn layout(world: &mut World) {
-    let entities: Vec<_> = world
-        .query_filtered::<Entity, With<Node>>()
-        .iter(world)
-        .collect();
-    for entity in entities {
-        let mut metrics = world.get::<Metrics>(entity).cloned().unwrap_or_default();
-        let gap = resolve(
-            world,
-            entity,
-            crate::native::canvas_host::authoring::metric_token(
-                world,
-                entity,
-                "spacing",
-                Token::Spacing,
-            ),
-        )
-        .0
-        .number()
-            / 8.0;
-        let padding = resolve(
-            world,
-            entity,
-            crate::native::canvas_host::authoring::metric_token(
-                world,
-                entity,
-                "padding",
-                Token::Padding,
-            ),
-        )
-        .0
-        .number()
-            / 8.0;
-        let font = resolve(
-            world,
-            entity,
-            crate::native::canvas_host::authoring::metric_token(
-                world,
-                entity,
-                "font-size",
-                Token::FontSize,
-            ),
-        )
-        .0
-        .number()
-            / 16.0;
-        let width = world
-            .get::<WidthToken>(entity)
-            .map(|binding| (resolve(world, entity, binding.0).0.number(), binding.1));
-        let radius = world
-            .get::<RadiusToken>(entity)
-            .map(|binding| resolve(world, entity, binding.0).0.number());
-        if world
-            .get::<crate::native::icons::IconButton>(entity)
-            .is_none()
-        {
-            let mut node = world.get_mut::<Node>(entity).unwrap();
-            let column_gap = metrics.spacing[0].length(node.column_gap, gap);
-            let row_gap = metrics.spacing[1].length(node.row_gap, gap);
-            let next = UiRect {
-                left: metrics.padding[0].length(node.padding.left, padding),
-                right: metrics.padding[1].length(node.padding.right, padding),
-                top: metrics.padding[2].length(node.padding.top, padding),
-                bottom: metrics.padding[3].length(node.padding.bottom, padding),
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub(crate) struct LayoutData {
+    entity: Entity,
+    node: &'static mut Node,
+    font: Option<&'static mut TextFont>,
+    metrics: &'static mut Metrics,
+    width: Option<&'static WidthToken>,
+    radius: Option<&'static RadiusToken>,
+    icon: Has<crate::native::icons::IconButton>,
+}
+
+pub(crate) fn layout(tokens: Tokens, mut nodes: Query<LayoutData>) {
+    let apply = |LayoutDataItem {
+                     entity,
+                     mut node,
+                     font,
+                     mut metrics,
+                     width,
+                     radius,
+                     icon,
+                 }: LayoutDataItem| {
+        let mut next = *metrics;
+        let gap = tokens.metric(entity, "spacing", Token::Spacing).number() / 8.0;
+        let padding = tokens.metric(entity, "padding", Token::Padding).number() / 8.0;
+        let font_ratio = tokens.metric(entity, "font-size", Token::FontSize).number() / 16.0;
+        if !icon {
+            let column_gap = next.spacing[0].length(node.column_gap, gap);
+            let row_gap = next.spacing[1].length(node.row_gap, gap);
+            let padding = UiRect {
+                left: next.padding[0].length(node.padding.left, padding),
+                right: next.padding[1].length(node.padding.right, padding),
+                top: next.padding[2].length(node.padding.top, padding),
+                bottom: next.padding[3].length(node.padding.bottom, padding),
             };
             if node.column_gap != column_gap {
                 node.column_gap = column_gap;
@@ -163,37 +126,41 @@ pub(crate) fn layout(world: &mut World) {
             if node.row_gap != row_gap {
                 node.row_gap = row_gap;
             }
-            if node.padding != next {
-                node.padding = next;
+            if node.padding != padding {
+                node.padding = padding;
             }
         }
-        if let Some((value, maximum)) = width {
-            let mut node = world.get_mut::<Node>(entity).unwrap();
-            let property = if maximum {
-                &mut node.max_width
-            } else {
-                &mut node.width
-            };
-            if *property != px(value) {
-                *property = px(value);
+        if let Some(width) = width {
+            let value = px(tokens.resolve(entity, width.0).0.number());
+            let current = if width.1 { node.max_width } else { node.width };
+            if current != value {
+                if width.1 {
+                    node.max_width = value;
+                } else {
+                    node.width = value;
+                }
             }
         }
-        if let Some(value) = radius {
-            let mut node = world.get_mut::<Node>(entity).unwrap();
-            let radius = BorderRadius::all(px(value));
-            if node.border_radius != radius {
-                node.border_radius = radius;
+        if let Some(radius) = radius {
+            let value = BorderRadius::all(px(tokens.resolve(entity, radius.0).0.number()));
+            if node.border_radius != value {
+                node.border_radius = value;
             }
         }
-        if let Some(mut text) = world.get_mut::<TextFont>(entity)
-            && let FontSize::Px(value) = text.font_size
+        if let Some(mut font) = font
+            && let FontSize::Px(value) = font.font_size
         {
-            let next = metrics.font.scale(value, font);
-            if next != value {
-                text.font_size = FontSize::Px(next);
+            let size = next.font.scale(value, font_ratio);
+            if size != value {
+                font.font_size = FontSize::Px(size);
             }
         }
-        world.entity_mut(entity).insert(metrics);
+        metrics.set_if_neq(next);
+    };
+    if nodes.iter().len() >= 1024 {
+        nodes.par_iter_mut().for_each(apply);
+    } else {
+        nodes.iter_mut().for_each(apply);
     }
 }
 
@@ -206,6 +173,7 @@ pub(crate) mod tests {
         let mut world = World::new();
         crate::native::laboratory::isolate(&mut world);
         world.init_resource::<ThemeSettings>();
+        world.register_required_components::<Node, Metrics>();
         let entity = world
             .spawn((
                 Node {
@@ -219,7 +187,7 @@ pub(crate) mod tests {
                 },
             ))
             .id();
-        layout(&mut world);
+        world.run_system_cached(layout).unwrap();
         for token in [Token::Spacing, Token::Padding, Token::FontSize] {
             world.resource_mut::<ThemeSettings>().global.set(
                 token,
@@ -227,7 +195,7 @@ pub(crate) mod tests {
             );
         }
         for _ in 0..20 {
-            layout(&mut world);
+            world.run_system_cached(layout).unwrap();
         }
         assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(8));
         assert_eq!(
@@ -239,10 +207,10 @@ pub(crate) mod tests {
             FontSize::Px(40.0)
         );
         world.get_mut::<Node>(entity).unwrap().column_gap = px(6);
-        layout(&mut world);
+        world.run_system_cached(layout).unwrap();
         assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(12));
         world.resource_mut::<ThemeSettings>().global.0.clear();
-        layout(&mut world);
+        world.run_system_cached(layout).unwrap();
         assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(6));
         assert_eq!(
             world.get::<Node>(entity).unwrap().padding,
@@ -250,7 +218,163 @@ pub(crate) mod tests {
         );
     }
 
+    #[cfg_attr(test, test)]
+    fn metrics_follow_reparenting_authored_bindings_and_late_nodes_without_dirtying_steady_state() {
+        let mut world = World::new();
+        world.init_resource::<ThemeSettings>();
+        world.register_required_components::<Node, Metrics>();
+        let mut values = crate::native::tokens::TokenOverrides::default();
+        values.set(Token::FontSize, TokenValue::Number(24.0));
+        values.set(Token::Padding, TokenValue::Number(16.0));
+        let parent = world.spawn(values).id();
+        let other = world.spawn_empty().id();
+        let entity = world
+            .spawn((
+                Node {
+                    padding: UiRect::all(px(12)),
+                    ..default()
+                },
+                TextFont {
+                    font_size: FontSize::Px(20.0),
+                    ..default()
+                },
+                WidthToken(Token::Width, false),
+                ChildOf(parent),
+            ))
+            .id();
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(24))
+        );
+        assert_eq!(world.get::<Node>(entity).unwrap().width, px(248));
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(30.0)
+        );
+        world.clear_trackers();
+        world.run_system_cached(layout).unwrap();
+        assert!(!world.entity(entity).get_ref::<Node>().unwrap().is_changed());
+        assert!(
+            !world
+                .entity(entity)
+                .get_ref::<TextFont>()
+                .unwrap()
+                .is_changed()
+        );
+        assert!(
+            !world
+                .entity(entity)
+                .get_ref::<Metrics>()
+                .unwrap()
+                .is_changed()
+        );
+        world.entity_mut(entity).insert(ChildOf(other));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(12))
+        );
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(20.0)
+        );
+        world
+            .entity_mut(entity)
+            .insert(crate::native::canvas_host::authoring::AuthoredTokenUses(
+                std::collections::BTreeMap::from([("font-size".into(), Token::Spacing)]),
+            ));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(10.0)
+        );
+        world
+            .entity_mut(entity)
+            .remove::<crate::native::canvas_host::authoring::AuthoredTokenUses>();
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(20.0)
+        );
+        let late = world
+            .spawn((
+                Node {
+                    column_gap: px(7),
+                    ..default()
+                },
+                ChildOf(parent),
+            ))
+            .id();
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Spacing, TokenValue::Number(16.0));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(world.get::<Node>(late).unwrap().column_gap, px(14));
+    }
+
+    #[cfg_attr(test, test)]
+    fn icon_metrics_retain_state_and_follow_theme_and_authored_edits() {
+        let mut world = World::new();
+        world.init_resource::<ThemeSettings>();
+        world.register_required_components::<crate::native::icons::IconStyle, IconMetrics>();
+        let entity = world.spawn(crate::native::icons::IconStyle::default()).id();
+        world.run_system_cached(icons).unwrap();
+        world.clear_trackers();
+        world.run_system_cached(icons).unwrap();
+        assert!(
+            !world
+                .entity(entity)
+                .get_ref::<IconMetrics>()
+                .unwrap()
+                .is_changed()
+        );
+        assert!(
+            !world
+                .entity(entity)
+                .get_ref::<crate::native::icons::IconStyle>()
+                .unwrap()
+                .is_changed()
+        );
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::IconSize, TokenValue::Number(48.0));
+        world.run_system_cached(icons).unwrap();
+        assert_eq!(
+            world
+                .get::<crate::native::icons::IconStyle>(entity)
+                .unwrap()
+                .size,
+            48.0
+        );
+        world
+            .get_mut::<crate::native::icons::IconStyle>(entity)
+            .unwrap()
+            .size = 30.0;
+        world.run_system_cached(icons).unwrap();
+        assert_eq!(
+            world
+                .get::<crate::native::icons::IconStyle>(entity)
+                .unwrap()
+                .size,
+            60.0
+        );
+        world.resource_mut::<ThemeSettings>().global.0.clear();
+        world.run_system_cached(icons).unwrap();
+        assert_eq!(
+            world
+                .get::<crate::native::icons::IconStyle>(entity)
+                .unwrap()
+                .size,
+            30.0
+        );
+    }
+
     crate::native::laboratory_cases! {
         spacing_padding_and_type_scale_without_compounding_or_losing_authored_changes,
+        metrics_follow_reparenting_authored_bindings_and_late_nodes_without_dirtying_steady_state,
+        icon_metrics_retain_state_and_follow_theme_and_authored_edits,
     }
 }

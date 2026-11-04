@@ -16,7 +16,7 @@ pub(crate) struct PartName(pub String);
 struct PartIdentity(BTreeMap<Entity, String>);
 
 #[derive(Component)]
-struct AuthoredTokenUses(BTreeMap<String, Token>);
+pub(crate) struct AuthoredTokenUses(pub(crate) BTreeMap<String, Token>);
 
 pub(crate) fn token_use_override(world: &World, entity: Entity, usage: &str) -> bool {
     world

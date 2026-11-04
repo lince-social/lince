@@ -11,6 +11,9 @@ pub use lince_interface::style::{
     BackgroundToken, BorderToken, CursorToken, OutlineToken, TextToken, background, border, text,
 };
 
+pub(crate) mod resolver;
+pub(crate) use resolver::Tokens;
+
 #[derive(Component, Clone, Copy)]
 pub(crate) struct AppliedSize(pub Vec2);
 
@@ -41,27 +44,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
         });
     }
     if let Some(sand) = world.get::<StoredSand>(entity) {
-        return Some(match sand.kind {
-            #[cfg(feature = "stuff")]
-            SandKind::Freedoom => SandStyleKind::Square,
-            SandKind::Square
-            | SandKind::Overview
-            | SandKind::Operation
-            | SandKind::AccessControl
-            | SandKind::Visibility
-            | SandKind::Trust
-            | SandKind::HandCamera
-            | SandKind::Video
-            | SandKind::Sync
-            | SandKind::Terminal
-            | SandKind::Organ
-            | SandKind::Configuration
-            | SandKind::Ontology
-            | SandKind::Todo => SandStyleKind::Square,
-            SandKind::WorkTimer => SandStyleKind::TimeCastle,
-            SandKind::Text => SandStyleKind::Text,
-            SandKind::EditableText => SandStyleKind::EditableText,
-        });
+        return Some(stored_kind(sand.kind));
     }
     world
         .get::<RecordPlacement>(entity)
@@ -79,6 +62,30 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
                 },
             )
         })
+}
+
+fn stored_kind(kind: SandKind) -> SandStyleKind {
+    match kind {
+        #[cfg(feature = "stuff")]
+        SandKind::Freedoom => SandStyleKind::Square,
+        SandKind::Square
+        | SandKind::Overview
+        | SandKind::Operation
+        | SandKind::AccessControl
+        | SandKind::Visibility
+        | SandKind::Trust
+        | SandKind::HandCamera
+        | SandKind::Video
+        | SandKind::Sync
+        | SandKind::Terminal
+        | SandKind::Organ
+        | SandKind::Configuration
+        | SandKind::Ontology
+        | SandKind::Todo => SandStyleKind::Square,
+        SandKind::WorkTimer => SandStyleKind::TimeCastle,
+        SandKind::Text => SandStyleKind::Text,
+        SandKind::EditableText => SandStyleKind::EditableText,
+    }
 }
 
 pub fn overrides(world: &World, entity: Entity) -> TokenOverrides {
@@ -165,6 +172,7 @@ pub struct TokenStylePlugin;
 
 impl Plugin for TokenStylePlugin {
     fn build(&self, app: &mut App) {
+        crate::native::token_metrics::install(app);
         app.init_resource::<ThemeSettings>()
             .add_systems(
                 PostUpdate,

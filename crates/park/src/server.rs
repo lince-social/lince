@@ -98,6 +98,8 @@ mod extensions;
 mod constraints;
 mod damage;
 mod commits;
+#[cfg(feature = "nested")]
+mod latency;
 mod idle;
 mod ime;
 mod color;
@@ -107,6 +109,8 @@ pub struct ClientBuffer {
     released: AtomicBool,
     pub version: u64,
     pub size: [i32; 2],
+    #[cfg(feature = "nested")]
+    latency: Option<Box<crate::runtime::latency::Buffer>>,
     #[cfg(feature = "native-presentation")]
     cache: Mutex<Option<Arc<dyn std::any::Any + Send + Sync>>>,
 }
@@ -369,6 +373,8 @@ impl Drop for ClientState {
 }
 
 struct State {
+    #[cfg(feature = "nested")]
+    latency: latency::Applications,
     color: color::Color,
     control: control::Control,
     capture: capture::Capture,
@@ -525,6 +531,8 @@ impl Server {
             },
         )]);
         let state = State {
+            #[cfg(feature = "nested")]
+            latency: Default::default(),
             color: color::Color::default(),
             control: control::Control::new(&display.handle()),
             capture: capture::Capture::new(&display.handle()),
@@ -1381,6 +1389,8 @@ impl CompositorHandler for State {
                             released: AtomicBool::new(false),
                             version: self.revision,
                             size: [size.w, size.h],
+                            #[cfg(feature = "nested")]
+                            latency: crate::runtime::latency::Buffer::new(),
                             #[cfg(feature = "native-presentation")]
                             cache: Mutex::new(None),
                         }),
@@ -1493,6 +1503,8 @@ impl CompositorHandler for State {
     }
 
     fn destroyed(&mut self, surface: &WlSurface) {
+        #[cfg(feature = "nested")]
+        self.latency.retire(surface);
         if self.native_surface.as_ref() == Some(surface) { self.native_surface = None; }
         self.ime.popups.retain(|popup| popup.wl_surface() != surface && popup.alive());
         self.dismiss_children(surface);

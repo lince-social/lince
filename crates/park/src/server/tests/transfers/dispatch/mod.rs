@@ -218,7 +218,7 @@ impl Fixture {
             (Arc::new(presented), pixels)
         };
         let protected = presented.locked;
-        self.desktop.output_presented(output.id, frame.clone(), presented, renderer::capture::monotonic(), 0).unwrap();
+        self.desktop.output_presented(output.id, frame.clone(), presented, renderer::capture::monotonic(), 0, false).unwrap();
         (pixels, protected)
     }
 

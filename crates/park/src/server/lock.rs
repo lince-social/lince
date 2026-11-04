@@ -134,6 +134,8 @@ impl SessionLockHandler for State {
         }
         self.lock.revision = self.lock.revision.checked_add(1).expect("session lock generation exhausted");
         self.lock.owner = Some(confirmation.ext_session_lock().clone());
+        #[cfg(feature = "nested")]
+        self.latency.clear();
         self.control.locked(true);
         self.lock.confirmation = Some(confirmation);
         self.stop_capture();

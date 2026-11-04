@@ -91,7 +91,7 @@ fn real_output_handoff_keeps_deferred_wheel_with_its_presented_editor_and_retire
         fixture.desktop.button(272, true, 31).unwrap(); fixture.desktop.button(272, false, 32).unwrap();
         assert!(fixture.desktop.pending_output.is_some());
         fixture.desktop.axis([0.0, 48.0], AxisFrame::new(33).value(Axis::Vertical, 48.0)).unwrap();
-        assert!(fixture.desktop.deferred.iter().any(|event| matches!(event, crate::desktop::input::Deferred::Axis(..))));
+        assert!(fixture.desktop.deferred.iter().any(|event| matches!(event.event, crate::desktop::input::Deferred::Axis(..))));
         let mut lock = None;
         if matches!(retirement, ScrollRetire::Output) {
             fixture.desktop.server.configure_outputs(&monitors[..1]).unwrap(); fixture.desktop.server.registered_output_catalog().unwrap();

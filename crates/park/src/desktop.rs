@@ -101,7 +101,7 @@ pub(crate) struct Desktop {
     pub(crate) layer_focus: Option<WlSurface>,
     pub(crate) pending_focus: Option<(u64, Option<lince_interface::host::SurfaceId>)>,
     pub(crate) pending_output: Option<(u64, Option<OutputId>)>,
-    pub(crate) deferred: std::collections::VecDeque<input::Deferred>,
+    pub(crate) deferred: std::collections::VecDeque<input::DeferredInput>,
     pub(crate) scroll_saturated: bool,
     pub(crate) scene_revision: u64,
     pub(crate) server_revision: u64,
@@ -906,6 +906,7 @@ impl Desktop {
         self.output_frames.retain(|id, _| ids.contains(id));
         self.capture_times.retain(|id, _| ids.contains(id));
         for id in ids {
+            self.observe_input_latency(id, &frame, &presented, renderer::capture::monotonic(), false);
             if !presented.locked && frame.frame.has_output_image(id) {
                 self.server.presented_output_mapping(id, frame.frame.input.mappings.get(id));
             }
@@ -930,11 +931,13 @@ impl Desktop {
         presented: Arc<renderer::Presented>,
         presentation_time: Duration,
         time: u32,
+        hardware_clock: bool,
     ) -> io::Result<()> {
         if !self.server.has_output(id) || frame.sequence <= self.retired_sequence
             || self.output_frames.get(&id).is_some_and(|(latest, _)| latest.sequence > frame.sequence)
             || self.capture_times.get(&id).is_some_and(|latest| presentation_time < *latest)
         { return Ok(()); }
+        self.observe_input_latency(id, &frame, &presented, presentation_time, hardware_clock);
         self.server.presented_groups(presented.callbacks.iter()
             .filter(|(output, _)| output.is_none_or(|output| output == id))
             .map(|(_, nodes)| nodes.as_slice()));
@@ -951,6 +954,17 @@ impl Desktop {
             self.adopt(frame);
         }
         self.refresh_presented(time)
+    }
+
+    fn observe_input_latency(&mut self, id: OutputId, frame: &Completed, presented: &renderer::Presented, time: Duration, hardware: bool) {
+        if !lince_interface::host::performance::enabled() || presented.locked || self.server.locked() { return; }
+        if frame.frame.has_output_image(id) && let Some(timing) = frame.latency {
+            let previous = self.output_frames.get(&id).and_then(|(previous, _)| previous.latency);
+            timing.presented(id, previous, time, hardware);
+        }
+        for (output, nodes) in &presented.callbacks {
+            if output.is_none_or(|output| output == id) { self.server.observe_input_presentation(id, nodes, time, hardware); }
+        }
     }
 
     pub(crate) fn adopt(&mut self, frame: Arc<Completed>) {

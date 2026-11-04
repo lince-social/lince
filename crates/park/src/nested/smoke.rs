@@ -185,8 +185,8 @@ impl Check {
                     old_item.mapping.canvas.origin()[axis]
                         + old_item.mapping.canvas.size()[axis] * 0.5
                 });
-                desktop.output_presented(OutputId(1), previous.0, previous.1, renderer::capture::monotonic(), 0)?;
-                desktop.output_presented(item_output, latest.0.clone(), latest.1.clone(), renderer::capture::monotonic(), 0)?;
+                desktop.output_presented(OutputId(1), previous.0, previous.1, renderer::capture::monotonic(), 0, false)?;
+                desktop.output_presented(item_output, latest.0.clone(), latest.1.clone(), renderer::capture::monotonic(), 0, false)?;
                 desktop.pointer = old_center;
                 if !matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
                 {
@@ -201,7 +201,7 @@ impl Check {
                         "The output that presented first did not adopt its new input snapshot",
                     ));
                 }
-                desktop.output_presented(OutputId(1), latest.0, latest.1, renderer::capture::monotonic(), 0)?;
+                desktop.output_presented(OutputId(1), latest.0, latest.1, renderer::capture::monotonic(), 0, false)?;
                 desktop.pointer = old_center;
                 if matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
                 {

@@ -40,6 +40,24 @@ pub(crate) enum Deferred {
     Axis([f64; 2], AxisFrame, DeferredPointer),
 }
 
+pub(crate) struct DeferredInput {
+    pub(crate) event: Deferred,
+    stamp: Option<crate::runtime::latency::Stamp>,
+    enqueued: Option<Instant>,
+}
+
+impl DeferredInput {
+    pub(crate) fn new(event: Deferred) -> Self {
+        Self { event, stamp: crate::runtime::latency::Stamp::current(), enqueued: lince_interface::host::performance::start() }
+    }
+
+    pub(crate) fn merge(&mut self, event: &Deferred) -> bool {
+        if !self.event.merge_axis(event) { return false; }
+        self.stamp = crate::runtime::latency::Stamp::earliest(self.stamp, crate::runtime::latency::Stamp::current());
+        true
+    }
+}
+
 impl Deferred {
     pub(crate) fn merge_axis(&mut self, next: &Self) -> bool {
         let (Self::Axis(delta, frame, point), Self::Axis(incoming, next_frame, next_point)) = (self, next) else { return false; };
@@ -78,6 +96,7 @@ impl Desktop {
     }
 
     pub(crate) fn move_pointer(&mut self, proposed: [f64; 2], time: u32) -> io::Result<()> {
+        let _timing = crate::runtime::latency::Dispatch::new();
         if proposed.iter().any(|value| !value.is_finite()) { return Err(io::Error::other("Pointer coordinates must be finite.")); }
         let previous = self.displayed_pointer();
         let proposed = self.logical_point(proposed);
@@ -475,6 +494,7 @@ impl Desktop {
     }
 
     fn button_captured(&mut self, button: u32, pressed: bool, time: u32, native: Option<crate::native_input::PointerTarget>) -> io::Result<()> {
+        let _timing = crate::runtime::latency::Dispatch::new();
         #[cfg(feature = "session")]
         if !self.server.locked() && self.absolute_waiting() {
             return self.defer_absolute(Deferred::Button(button, pressed, time, self.deferred_pointer()));
@@ -627,6 +647,7 @@ impl Desktop {
     }
 
     pub(crate) fn key(&mut self, code: u32, pressed: bool, time: u32) -> io::Result<()> {
+        let _timing = crate::runtime::latency::Dispatch::new();
         #[cfg(feature = "session")]
         self.cancel_desktop_gesture()?;
         if self.server.locked() {
@@ -899,7 +920,7 @@ impl Desktop {
     }
 
     fn defer(&mut self, event: Deferred) -> io::Result<()> {
-        if self.deferred.back_mut().is_some_and(|previous| previous.merge_axis(&event)) {
+        if self.deferred.back_mut().is_some_and(|previous| previous.merge(&event)) {
             return Ok(());
         }
         if self.deferred.len() >= 128 {
@@ -909,7 +930,7 @@ impl Desktop {
             #[cfg(not(feature = "session"))]
             return Err(io::Error::other("the Park deferred input queue is full"));
         }
-        self.deferred.push_back(event);
+        self.deferred.push_back(DeferredInput::new(event));
         Ok(())
     }
 
@@ -959,6 +980,7 @@ impl Desktop {
     }
 
     fn axis_captured(&mut self, delta: [f64; 2], frame: AxisFrame, native: Option<crate::native_input::PointerTarget>) -> io::Result<()> {
+        let _timing = crate::runtime::latency::Dispatch::new();
         #[cfg(feature = "session")]
         if !self.server.locked() && self.absolute_waiting() {
             return self.defer_absolute(Deferred::Axis(delta, frame, self.deferred_pointer()));
@@ -998,9 +1020,11 @@ impl Desktop {
         Ok(())
     }
 
-    pub(crate) fn replay_event(&mut self, event: Deferred) -> io::Result<()> {
+    pub(crate) fn replay_event(&mut self, event: DeferredInput) -> io::Result<()> {
+        lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::DeferredInputWait, event.enqueued);
+        let _timing = crate::runtime::latency::Dispatch::resume(event.stamp);
         let position = self.pointer;
-        let result = match event {
+        let result = match event.event {
             Deferred::Button(button, pressed, time, point) => {
                 self.pointer = point.point;
                 if self.deferred_pointer_current(&point) || !pressed && self.buttons.contains(&button) {
@@ -1127,6 +1151,30 @@ mod tests {
         Deferred::Axis([0.0, delta], frame, DeferredPointer {
             point: [point, 10.0], mapping: Some((OutputId(1), 1)), target: Target::Native, native: None,
         })
+    }
+
+    #[test]
+    #[ignore = "requires LINCE_TRACE_PERFORMANCE=1 to enable deferred input timing"]
+    fn deferred_timing_keeps_oldest_accepted_origin_and_first_enqueue_time() {
+        use crate::runtime::latency::{Dispatch, stamp_at};
+        assert!(lince_interface::host::performance::enabled());
+        let mut event = {
+            let _scope = Dispatch::resume(Some(stamp_at(Duration::from_millis(100))));
+            DeferredInput::new(deferred_axis(3.0, AxisSource::Wheel, false, 10.0))
+        };
+        let enqueued = event.enqueued;
+        {
+            let _scope = Dispatch::resume(Some(stamp_at(Duration::from_millis(50))));
+            assert!(event.merge(&deferred_axis(3.0, AxisSource::Wheel, false, 10.0)));
+        }
+        {
+            let _scope = Dispatch::resume(Some(stamp_at(Duration::from_millis(10))));
+            assert!(!event.merge(&deferred_axis(-3.0, AxisSource::Wheel, false, 10.0)));
+        }
+        assert_eq!(event.enqueued, enqueued);
+        assert_eq!(event.stamp.unwrap().age(Duration::from_millis(100)), Some(Duration::from_millis(50)));
+        let Deferred::Axis(delta, _, _) = event.event else { panic!("Missing deferred scroll"); };
+        assert_eq!(delta, [0.0, 6.0]);
     }
 
     #[test]

@@ -153,6 +153,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
         windows: Arc::new(canvas.painted_windows()),
         rejected: Vec::new(),
         input_serial: 0,
+        latency: None,
     };
     let device = EGLDevice::enumerate()
         .unwrap()

@@ -543,6 +543,7 @@ impl Fixture {
                     Arc::new(presented),
                     crate::desktop::renderer::capture::monotonic(),
                     10,
+                    false,
                 )
                 .unwrap();
         } else {

@@ -85,7 +85,7 @@ struct Pending {
 
 enum Delivery {
     Worker(Input),
-    Deferred(input::Deferred, Option<Arc<FocusReceipt>>),
+    Deferred(input::DeferredInput, Option<Arc<FocusReceipt>>),
 }
 
 struct Queued { source: Source, delivery: Delivery, layer: Option<WlSurface> }
@@ -189,7 +189,7 @@ impl Desktop {
                 (None, None) => true,
                 _ => false,
             }
-            && previous.merge_axis(&event) {
+            && previous.merge(&event) {
                 return Ok(());
             }
         if self.absolute.queue.len() >= 128 {
@@ -197,7 +197,7 @@ impl Desktop {
             else { self.recover_input_pressure(); }
             return Ok(());
         }
-        self.absolute.queue.push_back(Queued { source: Source::Deferred, delivery: Delivery::Deferred(event, receipt), layer: None });
+        self.absolute.queue.push_back(Queued { source: Source::Deferred, delivery: Delivery::Deferred(input::DeferredInput::new(event), receipt), layer: None });
         Ok(())
     }
 
@@ -440,8 +440,8 @@ impl Desktop {
             match delivery {
                 Delivery::Deferred(event, receipt) => {
                     if receipt.as_ref().is_some_and(|receipt| !receipt.accepted()) {
-                        if matches!(&event, input::Deferred::Key(code, false, _) if self.keys.contains_key(code)) { self.reset_absolute_keyboard(); }
-                        if !matches!(&event, input::Deferred::Button(button, false, _, _) if self.buttons.contains(button)) { continue; }
+                        if matches!(&event.event, input::Deferred::Key(code, false, _) if self.keys.contains_key(code)) { self.reset_absolute_keyboard(); }
+                        if !matches!(&event.event, input::Deferred::Button(button, false, _, _) if self.buttons.contains(button)) { continue; }
                     }
                     self.absolute.replaying = true;
                     let result = self.replay_event(event);

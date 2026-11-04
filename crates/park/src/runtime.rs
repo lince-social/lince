@@ -31,6 +31,7 @@ use std::{
 static NEXT_FRAME_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
 mod input_queue;
+pub(crate) mod latency;
 
 pub(crate) fn tracing_frames() -> bool {
     static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
@@ -141,6 +142,7 @@ pub struct Completed {
     pub windows: Arc<Vec<WindowSnapshot>>,
     pub rejected: Vec<SurfaceId>,
     pub input_serial: u64,
+    pub(crate) latency: Option<latency::Frame>,
 }
 
 pub struct Started {
@@ -165,7 +167,7 @@ pub struct CanvasWorker {
     inputs: input_queue::Sender,
     next_input: AtomicU64,
     progress: InputProgress,
-    pointer: LatestSender<(u64, [f32; 2], u64)>,
+    pointer: LatestSender<(u64, [f32; 2], u64, Option<latency::Stamp>)>,
     next_pointer: AtomicU64,
     frames: LatestReceiver<Completed>,
     started: LatestReceiver<Started>,
@@ -402,7 +404,7 @@ impl CanvasWorker {
             })
             .map_err(|_| std::io::Error::other("Park pointer serials exhausted"))?;
         self.pointer
-            .publish((serial, position, epoch.unwrap_or(serial)))
+            .publish((serial, position, epoch.unwrap_or(serial), latency::Stamp::current()))
             .map_err(|_| std::io::Error::other("the Park pointer receiver is unavailable"))?;
         self.wake();
         Ok(serial)
@@ -452,7 +454,7 @@ fn run(
     linear_color: bool,
     scenes: LatestReceiver<Scene>,
     events: input_queue::Receiver,
-    motion: LatestReceiver<(u64, [f32; 2], u64)>,
+    motion: LatestReceiver<(u64, [f32; 2], u64, Option<latency::Stamp>)>,
     images: LatestSender<Completed>,
     starting: LatestSender<Started>,
     commands: SyncSender<HostRequest>,
@@ -514,6 +516,8 @@ fn run(
     let mut keyboard_pending = false;
     let mut queued_event = None;
     let mut focus_revision = None;
+    let mut timing = latency::Batch::default();
+    let mut last_sample = None;
     let synchronize_focus = |canvas: &mut Presentation, revision: &mut Option<(u64, u64)>| -> Result<(), ProbeFailure> {
         canvas.synchronize_input_activity()?;
         let current = (active.input_activity.revision(), active.native_focus.revision());
@@ -550,14 +554,16 @@ fn run(
         }
         let mut input = false;
         let pointer = if button_pending { None } else { motion.take() };
-        if let Some((_, point, epoch)) = pointer && active.input_activity.active() {
+        let pointer_applied = pointer.is_some() && active.input_activity.active();
+        if let Some((serial, point, epoch, stamp)) = pointer && active.input_activity.active() {
             lince_interface::native::layout::desktop::focus::pointer_epoch(canvas.world_mut(), epoch);
             canvas.pointer(point)?;
+            timing.accept(stamp, 0, serial);
             input = true;
         }
         let mut pointer_stamp = None;
         while !button_pending {
-            let Some((serial, event)) = queued_event.take().or_else(|| events.pop()) else {
+            let Some((serial, event, stamp)) = queued_event.take().or_else(|| events.pop_timed()) else {
                 break;
             };
             let absolute_focus = {
@@ -573,14 +579,14 @@ fn run(
                 { false }
             };
             if keyboard_pending && (absolute_focus || inspecting || matches!(&event, Input::Control(_))) {
-                queued_event = Some((serial, event));
+                queued_event = Some((serial, event, stamp));
                 break;
             }
             #[cfg(feature = "session")]
             if let Input::AbsoluteFocus(request) = &event
                 && canvas.prepare_absolute_focus(request)?
             {
-                queued_event = Some((serial, event));
+                queued_event = Some((serial, event, stamp));
                 button_pending = true;
                 input = true;
                 break;
@@ -591,10 +597,14 @@ fn run(
             if serial <= active.retired_input.load(Ordering::Acquire)
                 && matches!(&event, Input::Pointer(_) | Input::Button(..) | Input::CapturedButton(..) | Input::Key { .. } | Input::Scroll(..) | Input::CapturedScroll(..) | Input::NativeEdit(_))
             {
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeInputRetired);
                 #[cfg(test)]
                 if matches!(&event, Input::Key { .. }) { eprintln!("Native key retired before delivery: serial={serial}, retired={}", active.retired_input.load(Ordering::Acquire)); }
                 continue;
             }
+            let mut interactive = matches!(&event, Input::Manipulation(..) | Input::Pointer(_) | Input::Button(..)
+                | Input::CapturedButton(..) | Input::Key { .. } | Input::Scroll(..) | Input::CapturedScroll(..)
+                | Input::NativeEdit(_) | Input::Touch(_) | Input::Tablet(_) | Input::Action(_) | Input::Gesture(_));
             keyboard_pending |= matches!(&event, Input::Key { .. } | Input::NativeEdit(_));
             let button_edge = absolute_focus || inspecting
                 || matches!(&event, Input::Action(_) | Input::Control(_) | Input::Inspect(_) | Input::Application(_)
@@ -660,7 +670,7 @@ fn run(
                     if canvas.native_pointer_current(&target) {
                         canvas.pointer(position)?;
                         canvas.button(button, pressed)?;
-                    }
+                    } else { interactive = false; }
                     pointer_stamp = Some(stamp);
                 }
                 Input::Key {
@@ -764,15 +774,17 @@ fn run(
                 Input::Window(surface, request) => canvas.window_request(surface, request),
                 Input::Output(output) => canvas.focus_output(output)?,
             }
+            if interactive { timing.accept(stamp, serial, 0); }
             if button_edge {
                 button_pending = true;
             }
         }
-        if let Some((serial, point, epoch)) = pointer
+        if let Some((serial, point, epoch, stamp)) = pointer
             && pointer_stamp.is_some_and(|stamp| stamp < serial)
         {
             lince_interface::native::layout::desktop::focus::pointer_epoch(canvas.world_mut(), epoch);
             canvas.pointer(point)?;
+            if !pointer_applied { timing.accept(stamp, 0, serial); }
         }
         if stopping {
             break;
@@ -788,7 +800,10 @@ fn run(
                 std::thread::park();
                 continue;
             }
-            if images.publish(awaiting.take().unwrap()).is_err() { return canvas.finish(); }
+            let completed = awaiting.take().unwrap();
+            let timing = completed.latency;
+            if images.publish(completed).is_err() { return canvas.finish(); }
+            if let Some(timing) = timing { timing.published(); }
             #[cfg(test)]
             active.publications.fetch_add(1, Ordering::Release);
             if let Some(notify) = notify { notify.ring(); }
@@ -810,6 +825,8 @@ fn run(
         canvas.accessibility_input_completed();
         let frame_sequence = NEXT_FRAME_SEQUENCE.try_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| sequence.checked_add(1))
             .map_err(|_| failure("The completed frame sequence is exhausted.".into()))?;
+        if let Some(sample) = timing.finish(frame_sequence) { last_sample = Some(sample); }
+        if last_sample.is_some_and(|sample| sample.pointer_serial == 0 && sample.input_serial <= active.retired_input.load(Ordering::Acquire)) { last_sample = None; }
         button_pending = false;
         keyboard_pending = false;
         awaiting = Some(Completed {
@@ -819,6 +836,7 @@ fn run(
                 windows: Arc::new(canvas.painted_windows()),
                 rejected: canvas.rejected_windows(),
                 input_serial,
+                latency: latency::Frame::new(frame_sequence, last_sample),
             });
         settle -= 1;
     }

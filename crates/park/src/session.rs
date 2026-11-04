@@ -403,6 +403,7 @@ pub fn run(
                                     queued.scene,
                                     presentation_time,
                                     started.elapsed().as_millis() as u32,
+                                    hardware_clock,
                                 )?;
                                 desktop.redraw |= stale;
                             }
@@ -847,7 +848,7 @@ impl Hardware {
                 screen.pending = true;
             } else {
                 screen.protected = presented.locked;
-                desktop.output_presented(screen.id, completed.clone(), presented.clone(), crate::desktop::renderer::capture::monotonic(), time)?;
+                desktop.output_presented(screen.id, completed.clone(), presented.clone(), crate::desktop::renderer::capture::monotonic(), time, false)?;
             }
         }
         desktop.redraw = false;
@@ -1009,9 +1010,11 @@ impl Hardware {
                         return Ok(());
                     }
                 }
+                let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 desktop.key(code, pressed, event.time_msec())?;
             }
             InputEvent::PointerMotion { event } => {
+                let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 let delta = event.delta();
                 let unaccelerated = event.delta_unaccel();
                 desktop.relative_motion([delta.x, delta.y], [unaccelerated.x, unaccelerated.y], event.time());
@@ -1022,6 +1025,7 @@ impl Hardware {
                 desktop.redraw = true;
             }
             InputEvent::PointerMotionAbsolute { event } => {
+                let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 let point =
                     event.position_transformed((self.size[0] as i32, self.size[1] as i32).into());
                 let mut proposed = [point.x, point.y];
@@ -1029,12 +1033,16 @@ impl Hardware {
                 desktop.move_pointer(proposed, event.time_msec())?;
                 desktop.redraw = true;
             }
-            InputEvent::PointerButton { event } => desktop.button(
-                event.button_code(),
-                event.state() == ButtonState::Pressed,
-                event.time_msec(),
-            )?,
+            InputEvent::PointerButton { event } => {
+                let _timing = crate::runtime::latency::Dispatch::device(event.time());
+                desktop.button(
+                    event.button_code(),
+                    event.state() == ButtonState::Pressed,
+                    event.time_msec(),
+                )?;
+            },
             InputEvent::PointerAxis { event } => {
+                let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 let mut delta = [0.0; 2];
                 let mut frame = AxisFrame::new(event.time_msec()).source(event.source());
                 for (index, axis) in [Axis::Horizontal, Axis::Vertical].into_iter().enumerate() {

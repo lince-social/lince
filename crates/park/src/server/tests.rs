@@ -66,6 +66,9 @@ mod manipulation_tests;
 #[path = "tests/keyboard.rs"]
 mod keyboard_tests;
 #[cfg(feature = "nested")]
+#[path = "tests/latency.rs"]
+mod latency_tests;
+#[cfg(feature = "nested")]
 #[path = "tests/native_ime.rs"]
 mod native_ime_tests;
 #[cfg(feature = "nested")]

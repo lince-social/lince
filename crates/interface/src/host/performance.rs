@@ -104,6 +104,43 @@ stages! {
     GpuSubmissionToCompletion => "gpu-submission-to-completion",
     GpuCompletionFailure => "gpu-completion-failure",
     InputQueueWait => "input-queue-wait",
+    DeferredInputWait => "deferred-input-wait",
+    DeviceToDispatch => "device-to-dispatch",
+    NativeInputToFrame => "native-input-to-frame",
+    NativeInputToPublication => "native-input-to-publication",
+    NativeFrameToPublication => "native-frame-to-publication",
+    NativeInputToDrm => "native-input-to-drm-presentation",
+    NativeInputToObserved => "native-input-to-observed-presentation",
+    NativeFrameToDrm => "native-frame-to-drm-presentation",
+    NativeFrameToObserved => "native-frame-to-observed-presentation",
+    ClientInputToForward => "client-input-to-forward",
+    ClientInputToDrmBuffer => "client-input-to-newer-buffer-drm-proxy",
+    ClientInputToObservedBuffer => "client-input-to-newer-buffer-observed-proxy",
+    ClientBufferToDrm => "client-buffer-attach-to-drm-presentation",
+    ClientBufferToObserved => "client-buffer-attach-to-observed-presentation",
+}
+
+macro_rules! counts {
+    ($($name:ident => $label:literal),* $(,)?) => {
+        #[derive(Clone, Copy)]
+        #[repr(usize)]
+        pub enum Count { $($name,)* }
+        impl Count {
+            pub const ALL: &'static [Self] = &[$(Self::$name,)*];
+            fn label(self) -> &'static str { match self { $(Self::$name => $label,)* } }
+        }
+    };
+}
+
+counts! {
+    NativeInputApplied => "native-input-applied",
+    NativeInputRetired => "native-input-retired",
+    NativeInputBatches => "native-input-frame-batches",
+    NativeInputPresented => "native-input-batches-presented-per-output",
+    ClientInputForwarded => "client-input-forwarded",
+    ClientInputProxyPresented => "client-input-buffer-proxies-presented-per-output",
+    TimingRejected => "timing-timestamps-rejected",
+    TimingCapacity => "timing-capacity-exceeded",
 }
 
 #[derive(Default)]
@@ -167,6 +204,7 @@ struct Output {
     previous: Option<Duration>,
     hardware_clock: Option<bool>,
     intervals: Distribution,
+    stages: BTreeMap<usize, Distribution>,
 }
 
 #[derive(Serialize)]
@@ -174,6 +212,7 @@ pub struct OutputReading {
     pub output: u64,
     pub clock: &'static str,
     pub interval: Reading,
+    pub stages: Vec<Reading>,
 }
 
 #[derive(Serialize)]
@@ -182,6 +221,13 @@ pub struct Report {
     pub dropped_reports: u64,
     pub stages: Vec<Reading>,
     pub outputs: Vec<OutputReading>,
+    pub counters: Vec<CountReading>,
+}
+
+#[derive(Serialize)]
+pub struct CountReading {
+    pub counter: &'static str,
+    pub count: u64,
 }
 
 struct Monitor {
@@ -191,6 +237,7 @@ struct Monitor {
     reported_at_us: AtomicU64,
     dropped_reports: AtomicU64,
     sender: Option<SyncSender<Report>>,
+    counters: Vec<AtomicU64>,
 }
 
 impl Monitor {
@@ -205,6 +252,7 @@ impl Monitor {
             reported_at_us: AtomicU64::new(0),
             dropped_reports: AtomicU64::new(0),
             sender,
+            counters: Count::ALL.iter().map(|_| AtomicU64::new(0)).collect(),
         }
     }
 
@@ -212,6 +260,25 @@ impl Monitor {
         self.stages[stage as usize]
             .lock()
             .unwrap_or_else(|error| error.into_inner())
+            .record(duration);
+    }
+
+    fn record_output(&self, stage: Stage, output: u64, duration: Duration) {
+        self.record(stage, duration);
+        let mut outputs = self
+            .outputs
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if outputs.len() >= 16 && !outputs.contains_key(&output) {
+            self.counters[Count::TimingCapacity as usize].fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+        outputs
+            .entry(output)
+            .or_default()
+            .stages
+            .entry(stage as usize)
+            .or_default()
             .record(duration);
     }
 
@@ -254,14 +321,24 @@ impl Monitor {
             .unwrap_or_else(|error| error.into_inner())
             .iter_mut()
             .filter_map(|(id, output)| {
-                (output.intervals.count != 0).then(|| OutputReading {
+                (output.intervals.count != 0
+                    || output.stages.values().any(|stage| stage.count != 0))
+                .then(|| OutputReading {
                     output: *id,
-                    clock: if output.hardware_clock == Some(true) {
-                        "drm"
-                    } else {
-                        "dispatch"
+                    clock: match output.hardware_clock {
+                        Some(true) => "drm",
+                        Some(false) => "dispatch",
+                        None => "unobserved",
                     },
                     interval: std::mem::take(&mut output.intervals).report("presentation-interval"),
+                    stages: output
+                        .stages
+                        .iter_mut()
+                        .filter_map(|(stage, values)| {
+                            (values.count != 0)
+                                .then(|| std::mem::take(values).report(Stage::ALL[*stage].label()))
+                        })
+                        .collect(),
                 })
             })
             .collect();
@@ -270,6 +347,16 @@ impl Monitor {
             dropped_reports: self.dropped_reports.load(Ordering::Relaxed),
             stages,
             outputs,
+            counters: Count::ALL
+                .iter()
+                .filter_map(|counter| {
+                    let count = self.counters[*counter as usize].swap(0, Ordering::Relaxed);
+                    (count != 0).then_some(CountReading {
+                        counter: counter.label(),
+                        count,
+                    })
+                })
+                .collect(),
         }
     }
 
@@ -340,6 +427,18 @@ pub fn record(stage: Stage, duration: Duration) {
     }
 }
 
+pub fn record_output(stage: Stage, output: super::OutputId, duration: Duration) {
+    if let Some(monitor) = monitor() {
+        monitor.record_output(stage, output.0, duration);
+    }
+}
+
+pub fn count(counter: Count) {
+    if let Some(monitor) = monitor() {
+        monitor.counters[counter as usize].fetch_add(1, Ordering::Relaxed);
+    }
+}
+
 pub fn record_since(stage: Stage, started: Option<Instant>) {
     if let Some(started) = started {
         record(stage, started.elapsed());
@@ -401,6 +500,8 @@ pub mod checks {
                 std::thread::spawn(move || {
                     for _ in 0..1000 {
                         monitor.record(Stage::NativeStyles, Duration::from_micros(10));
+                        monitor.counters[Count::NativeInputApplied as usize]
+                            .fetch_add(1, Ordering::Relaxed);
                     }
                 })
             })
@@ -417,7 +518,11 @@ pub mod checks {
         assert_eq!(reading.maximum_us, 2_000_000);
         assert_eq!(reading.p50_upper_us, 10);
         assert_eq!(reading.p99_upper_us, 10);
+        assert_eq!(report.counters.len(), 1);
+        assert_eq!(report.counters[0].counter, "native-input-applied");
+        assert_eq!(report.counters[0].count, 4000);
         assert!(monitor.snapshot().stages.is_empty());
+        assert!(monitor.snapshot().counters.is_empty());
     }
 
     #[cfg_attr(test, test)]
@@ -428,11 +533,15 @@ pub mod checks {
             monitor.presented(2, Duration::from_micros(tick * 33_334), true);
         }
         monitor.presented(1, Duration::from_micros(1), true);
+        monitor.record_output(Stage::NativeInputToDrm, 1, Duration::from_millis(5));
+        monitor.record_output(Stage::NativeInputToDrm, 2, Duration::from_millis(50));
         let report = monitor.snapshot();
         assert_eq!(report.outputs.len(), 2);
         assert_eq!(report.outputs[0].interval.count, 4);
         assert_eq!(report.outputs[0].interval.maximum_us, 16_667);
         assert_eq!(report.outputs[1].interval.maximum_us, 33_334);
+        assert_eq!(report.outputs[0].stages[0].maximum_us, 5_000);
+        assert_eq!(report.outputs[1].stages[0].maximum_us, 50_000);
         monitor.presented(1, Duration::from_micros(120_000), false);
         monitor.presented(1, Duration::from_micros(136_667), false);
         let fallback = monitor.snapshot();

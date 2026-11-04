@@ -113,7 +113,7 @@ impl Fixture {
     }
 
     fn present_output(&mut self, id: lince_interface::host::OutputId, frame: std::sync::Arc<crate::runtime::Completed>, presented: std::sync::Arc<renderer::Presented>, time: Duration) {
-        self.desktop.output_presented(id, frame, presented, time, 0).unwrap();
+        self.desktop.output_presented(id, frame, presented, time, 0, false).unwrap();
     }
 
     fn read<T: Send + 'static>(&mut self, read: impl FnOnce(&mut Presentation) -> T + Send + 'static) -> T {

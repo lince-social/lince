@@ -284,6 +284,8 @@ impl Server {
             }
         }
         if forwarded && let Some(surface) = focused {
+            #[cfg(feature = "nested")]
+            self.state.input_forwarded(&surface);
             if pressed {
                 self.state.remember_input(serial, surface, trigger);
             } else if paired {
@@ -353,6 +355,8 @@ impl Server {
         };
         if let Some(pointer) = self.state.seat.get_pointer() {
             let serial = SERIAL_COUNTER.next_serial();
+            #[cfg(feature = "nested")]
+            let delivered = lince_interface::host::performance::enabled().then(|| pointer.current_focus()).flatten();
             if let Some(surface) = pointer.current_focus() {
                 if pressed {
                     self.state.remember_input(serial, surface, trigger);
@@ -377,6 +381,8 @@ impl Server {
                 },
             );
             pointer.frame(&mut self.state);
+            #[cfg(feature = "nested")]
+            if let Some(surface) = delivered { self.state.input_forwarded(&surface); }
             return Some(serial);
         }
         if !pressed {
@@ -389,6 +395,8 @@ impl Server {
         if let Some(pointer) = self.state.seat.get_pointer() {
             pointer.axis(&mut self.state, frame);
             pointer.frame(&mut self.state);
+            #[cfg(feature = "nested")]
+            if let Some(surface) = pointer.current_focus() { self.state.input_forwarded(&surface); }
         }
     }
 

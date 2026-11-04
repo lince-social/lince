@@ -28,7 +28,7 @@ GPU rasterization is appropriate; moving small dependency walks to the GPU may c
 
 The stage profiler is opt-in with LINCE_TRACE_PERFORMANCE=1 and emits bounded JSON reports. Spans measure elapsed wall time, can overlap, and must not be summed as CPU time. Submission-to-completion measures observed queue/completion age, not hardware GPU execution. Per-output intervals identify DRM or dispatch fallback clocks; static content need not submit every refresh. Reports retain quantile upper bounds and lost-report counts. Local validation: target/park-validation/performance-20261104/profiler-receipt.json.
 
-- [ ] **P35 — Trace input age through presentation.** Follow existing serials and ownership for typing, clicks, scrolling and dragging without recording text or clipboard contents. Include application delivery and displayed-state age. **Why:** input can stall before rendering, and FPS does not reveal that delay.
+Input timing is enabled by the same profiler flag. It retains oldest native batch origins and queued/pointer serial watermarks through frame preparation, publication and per-output presentation. Device, dispatch and DRM clocks stay distinct; native frame age measures prepared-frame delivery. Application timings pair the latest forwarded input with a newer attached buffer of its surface tree, which does not establish visible text, event causation or damage-only updates. Match controlled interactions with the affected output for P65; neither buffer proxies nor FPS prove semantic response. A clock marked unobserved has no interval samples. No text or clipboard contents are recorded. Local validation: target/park-validation/performance-20261104/latency-receipt.json.
 
 - [ ] **P36 — Measure native scene wake causes.** Count buffer-only commits, geometry/style changes, Record messages, timers and self-wakes in the daily workspace. **Why:** a quiet laptop workspace shares work with the other output and the rest of Lince.
 
@@ -114,6 +114,7 @@ Run existing regressions appropriate to each changed family: retained text throu
 
 ## Research behind the experiments
 
+- [libinput timestamps](https://wayland.freedesktop.org/libinput/doc/latest/timestamps.html): physical event timestamps use CLOCK_MONOTONIC and may arrive out of timestamp order; nested Wayland timestamps have a different origin.
 - [Niri redraw loop](https://github.com/niri-wm/niri/wiki/Development:-Redraw-Loop): per-output state, damage and paced callbacks.
 - [Qt Quick scene graph](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html) and [renderer](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph-renderer.html): retained state, changed-item synchronization, geometry reuse and batching.
 - [Chromium RenderingNG](https://developer.chrome.com/docs/chromium/renderingng-architecture): distinct pipeline stages and isolation of input/compositing from expensive main-thread work.

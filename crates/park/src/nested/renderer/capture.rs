@@ -14,13 +14,7 @@ fn capture_transform(rotation: lince_interface::host::mapping::QuarterTurn) -> T
         QuarterTurn::UpsideDown => Transform::Flipped, QuarterTurn::Clockwise270 => Transform::Flipped270 }
 }
 
-pub(crate) fn monotonic() -> Duration {
-    let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
-    Duration::new(
-        time.tv_sec.max(0) as u64,
-        time.tv_nsec.clamp(0, 999_999_999) as u32,
-    )
-}
+pub(crate) use crate::runtime::latency::monotonic;
 
 #[derive(Clone)]
 pub(crate) struct Cursor {

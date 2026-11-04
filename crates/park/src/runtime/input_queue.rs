@@ -8,6 +8,7 @@ struct Queued {
     serial: u64,
     input: Input,
     started: Option<std::time::Instant>,
+    latency: Option<super::latency::Stamp>,
 }
 
 #[derive(Default)]
@@ -55,28 +56,35 @@ impl Sender {
 
     pub(super) fn try_send(&self, (serial, input): (u64, Input)) -> Result<(), TrySendError<(u64, Input)>> {
         let started = lince_interface::host::performance::start();
+        let latency = super::latency::Stamp::current();
         let mut state = self.0.lock().unwrap();
         if state.closed { return Err(TrySendError::Disconnected((serial, input))); }
         let retired = state.retired.load(Ordering::Acquire);
         if let Some(previous) = state.events.back_mut()
             && previous.serial > retired && combine(&mut previous.input, &input) {
                 previous.serial = serial;
+                previous.latency = super::latency::Stamp::earliest(previous.latency, latency);
                 return Ok(());
             }
         let scrolling = scroll(&input);
         if state.events.iter().filter(|event| scroll(&event.input) == scrolling).count() >= CAPACITY {
             return Err(TrySendError::Full((serial, input)));
         }
-        state.events.push_back(Queued { serial, input, started });
+        state.events.push_back(Queued { serial, input, started, latency });
         Ok(())
     }
 }
 
 impl Receiver {
+    #[cfg(test)]
     pub(super) fn pop(&self) -> Option<(u64, Input)> {
+        self.pop_timed().map(|(serial, input, _)| (serial, input))
+    }
+
+    pub(super) fn pop_timed(&self) -> Option<(u64, Input, Option<super::latency::Stamp>)> {
         let event = self.0.lock().unwrap().events.pop_front()?;
         lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::InputQueueWait, event.started);
-        Some((event.serial, event.input))
+        Some((event.serial, event.input, event.latency))
     }
 }
 

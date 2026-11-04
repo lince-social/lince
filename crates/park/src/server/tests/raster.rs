@@ -392,6 +392,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
                 windows: Arc::new(canvas.painted_windows()),
                 rejected: Vec::new(),
                 input_serial: 0,
+                latency: None,
             };
             composition.canvas(&mut renderer, &completed.frame).unwrap();
             let mut texture: GlesTexture = renderer
@@ -814,6 +815,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
         windows: Arc::new(canvas.painted_windows()),
         rejected: Vec::new(),
         input_serial: 0,
+        latency: None,
     };
     let _owner = harness.client.lock_manager.as_ref().unwrap().lock(&qh, ());
     harness.sync();

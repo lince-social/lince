@@ -147,6 +147,16 @@ pub fn excluded_with(world: &World, entity: Entity, additional: &BTreeSet<Entity
                 if visit(world, owner, additional, path, budget) { return true; }
             }
         }
+        if let Some(source) = world.get::<crate::native::full_record::window::CaptureSource>(current) {
+            if world.get::<crate::native::full_record::window::Metadata>(source.owner)
+                .is_none_or(|metadata| metadata.uid != source.uid || metadata.placement != source.placement)
+                || world.get::<crate::native::protein_area::RecordBinding>(current).is_some_and(|binding|
+                    binding.area != source.owner || binding.uid != source.uid || binding.source != crate::native::protein_area::Source::Local)
+                || world.get::<crate::native::full_record::window::WindowRecord>(current).is_some_and(|record|
+                    record.uid != source.uid || record.placement != source.placement)
+                || visit(world, source.owner, additional, path, budget)
+            { return true; }
+        }
         if let Some(owner) = world.get::<crate::native::topology::presentation::VisualOwner>(current) {
             if visit(world, owner.0, additional, path, budget) { return true; }
         }

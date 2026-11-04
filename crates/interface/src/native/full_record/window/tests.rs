@@ -38,6 +38,11 @@ fn metadata_updates_and_closure_preserve_the_actual_record_editor_draft_and_bind
         })
         .unwrap()
         .0;
+    let row = app.world().get::<ChildOf>(header).unwrap().parent();
+    let captured = app.world().get::<CaptureSource>(row).unwrap();
+    assert_eq!(captured.owner, owner);
+    assert_eq!(captured.uid, uid);
+    assert_eq!(captured.placement, [9; 16]);
     app.world_mut()
         .get_mut::<EditableText>(editor)
         .unwrap()
@@ -83,7 +88,33 @@ fn metadata_updates_and_closure_preserve_the_actual_record_editor_draft_and_bind
                 .get::<crate::native::actions::ActionButton>(header)
                 .is_none()
         );
+        assert!(crate::native::capture::excluded_with(
+            app.world(),
+            editor,
+            &std::collections::BTreeSet::from([owner])
+        ));
     }
+    app.world_mut().get_mut::<Metadata>(owner).unwrap().uid = nucleus::new_uid("r");
+    assert!(crate::native::capture::excluded(app.world(), editor));
+    populate(
+        app.world_mut(),
+        row,
+        &RecordBinding {
+            area: owner,
+            uid,
+            source: Source::Local,
+        },
+    );
+    assert!(app.world().get::<CaptureSource>(row).is_some());
+    assert!(crate::native::capture::excluded(app.world(), editor));
+    let binding = RecordBinding {
+        area: owner,
+        uid: nucleus::new_uid("r"),
+        source: Source::Local,
+    };
+    app.world_mut().entity_mut(row).insert(binding.clone());
+    populate(app.world_mut(), row, &binding);
+    assert!(app.world().get::<CaptureSource>(row).is_none());
 }
 
 #[test]
@@ -105,7 +136,14 @@ fn unrelated_or_remote_records_cannot_receive_a_local_application_metadata_heade
         (nucleus::new_uid("r"), Source::Local),
         (uid, Source::Organ("https://remote.example".into())),
     ] {
+        let original_uid = world.get::<Metadata>(area).unwrap().uid.clone();
+        world.entity_mut(row).insert(CaptureSource {
+            owner: area,
+            placement: [1; 16],
+            uid: original_uid,
+        });
         populate(&mut world, row, &RecordBinding { area, uid, source });
+        assert!(world.get::<CaptureSource>(row).is_none());
     }
     assert_eq!(world.query::<&Header>().iter(&world).count(), 0);
 }

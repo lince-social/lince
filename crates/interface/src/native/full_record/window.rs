@@ -14,6 +14,13 @@ pub struct Metadata {
     pub state: String,
 }
 
+#[derive(Component, Clone, PartialEq, Eq)]
+pub(crate) struct CaptureSource {
+    pub owner: Entity,
+    pub placement: [u8; 16],
+    pub uid: String,
+}
+
 impl Metadata {
     fn caption(&self) -> String {
         format!(
@@ -33,13 +40,47 @@ impl Metadata {
 pub(crate) struct Header(Entity);
 
 pub(crate) fn populate(world: &mut World, row: Entity, binding: &RecordBinding) {
-    let Some(metadata) = world
+    let metadata = world
         .get::<Metadata>(binding.area)
-        .filter(|metadata| metadata.uid == binding.uid && binding.source == Source::Local)
-    else {
+        .filter(|metadata| metadata.uid == binding.uid && binding.source == Source::Local);
+    let source = if binding.source == Source::Local {
+        world
+            .get::<CaptureSource>(row)
+            .filter(|source| source.owner == binding.area && source.uid == binding.uid)
+            .cloned()
+            .or_else(|| {
+                world
+                    .get::<crate::native::area::InfluenceArea>(binding.area)
+                    .and_then(|area| area.protein.as_ref())
+                    .and_then(|config| config.window_record.as_ref())
+                    .filter(|window| window.uid == binding.uid)
+                    .map(|window| CaptureSource {
+                        owner: binding.area,
+                        placement: window.placement,
+                        uid: window.uid.clone(),
+                    })
+            })
+            .or_else(|| {
+                metadata.map(|metadata| CaptureSource {
+                    owner: binding.area,
+                    placement: metadata.placement,
+                    uid: metadata.uid.clone(),
+                })
+            })
+    } else {
+        None
+    };
+    let caption = metadata.map(Metadata::caption);
+    if world.get::<CaptureSource>(row) != source.as_ref() {
+        if let Some(source) = source {
+            world.entity_mut(row).insert(source);
+        } else {
+            world.entity_mut(row).remove::<CaptureSource>();
+        }
+    }
+    let Some(caption) = caption else {
         return;
     };
-    let caption = metadata.caption();
     let entity = crate::native::edit_mode::label(world, row, &caption, 14.0);
     world.entity_mut(entity).insert((
         Header(binding.area),

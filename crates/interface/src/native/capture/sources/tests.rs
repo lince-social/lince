@@ -24,6 +24,78 @@ fn equivalent(world: &World, state: &mut SystemState<Sources>, entities: &[Entit
 }
 
 #[test]
+fn window_record_cards_keep_their_captured_source_through_aliases_and_refuse_changed_identities() {
+    use crate::native::full_record::window::{CaptureSource, Metadata};
+    use crate::native::protein_area::{RecordBinding, Source};
+    let mut world = World::new();
+    let uid = nucleus::new_uid("r");
+    let owner = world
+        .spawn(Metadata {
+            placement: [1; 16],
+            uid: uid.clone(),
+            title: String::new(),
+            app_id: String::new(),
+            live: true,
+            state: String::new(),
+        })
+        .id();
+    let row = world
+        .spawn((
+            LayoutBox::new(Vec2::ONE),
+            CaptureSource {
+                owner,
+                placement: [1; 16],
+                uid: uid.clone(),
+            },
+            RecordBinding {
+                area: owner,
+                uid: uid.clone(),
+                source: Source::Local,
+            },
+        ))
+        .id();
+    let child = world.spawn(ChildOf(row)).id();
+    let image = world.spawn(render::TargetSource(child)).id();
+    let mesh = world
+        .spawn(crate::native::shader_effects::RecordMesh(child))
+        .id();
+    let public = world.spawn(LayoutBox::new(Vec2::ONE)).id();
+    let entities = [owner, row, child, image, mesh, public];
+    let mut state = SystemState::<Sources>::new(&mut world);
+    equivalent(&world, &mut state, &entities);
+    for entity in [row, child, image, mesh] {
+        assert_eq!(
+            semantic_sources(&world, entity),
+            BTreeSet::from([row, owner])
+        );
+        assert!(excluded_with(&world, entity, &BTreeSet::from([owner])));
+        assert!(!excluded(&world, entity));
+    }
+    assert!(!excluded_with(&world, public, &BTreeSet::from([owner])));
+    world.get_mut::<Metadata>(owner).unwrap().live = false;
+    assert!(excluded_with(&world, image, &BTreeSet::from([owner])));
+    world.get_mut::<Metadata>(owner).unwrap().uid = nucleus::new_uid("r");
+    for entity in [row, child, image, mesh] {
+        assert!(excluded(&world, entity));
+    }
+    world.get_mut::<Metadata>(owner).unwrap().uid = uid.clone();
+    world.get_mut::<RecordBinding>(row).unwrap().uid = nucleus::new_uid("r");
+    assert!(excluded(&world, image));
+    world.get_mut::<RecordBinding>(row).unwrap().uid = uid;
+    world.get_mut::<RecordBinding>(row).unwrap().source = Source::Organ("fixture".into());
+    assert!(excluded(&world, image));
+    world.get_mut::<RecordBinding>(row).unwrap().source = Source::Local;
+    world.get_mut::<Metadata>(owner).unwrap().placement = [2; 16];
+    assert!(excluded(&world, image));
+    world.entity_mut(owner).remove::<Metadata>();
+    assert!(excluded(&world, image));
+    world.despawn(owner);
+    assert!(excluded(&world, image));
+    equivalent(&world, &mut state, &[row, child, image, mesh, public]);
+    assert!(!excluded(&world, public));
+}
+
+#[test]
 fn immutable_source_snapshots_keep_extracted_values_and_decline_truncated_roots() {
     let mut world = World::new();
     let first = world.spawn(LayoutBox::new(Vec2::ONE)).id();

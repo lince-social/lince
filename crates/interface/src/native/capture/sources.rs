@@ -14,7 +14,7 @@ pub(crate) use storage::Scope;
 #[derive(Clone, Copy)]
 struct Links {
     boundary: bool,
-    owners: [Option<Entity>; 5],
+    owners: [Option<Entity>; 6],
     parent: Option<Entity>,
 }
 
@@ -28,6 +28,7 @@ struct Nodes {
     application: Has<crate::native::layout::desktop::ApplicationWindow>,
     visual: Option<&'static crate::native::topology::presentation::VisualOwner>,
     target: Option<&'static render::TargetSource>,
+    window_record: Option<&'static crate::native::full_record::window::CaptureSource>,
     shader: crate::native::shader_effects::CaptureOwners,
     parent: Option<&'static ChildOf>,
 }
@@ -40,10 +41,12 @@ impl NodesItem<'_, '_> {
                 || self.workspace
                 || self.windows
                 || self.metadata
+                || self.window_record.is_some()
                 || self.application,
             owners: [
                 self.visual.map(|owner| owner.0),
                 self.target.map(|owner| owner.0),
+                self.window_record.map(|source| source.owner),
                 floating,
                 mesh,
                 sphere,
@@ -121,6 +124,9 @@ pub fn semantic_sources(world: &World, entity: Entity) -> BTreeSet<Entity> {
                 .get::<crate::native::full_record::window::Metadata>(entity)
                 .is_some()
             || world
+                .get::<crate::native::full_record::window::CaptureSource>(entity)
+                .is_some()
+            || world
                 .get::<crate::native::layout::desktop::ApplicationWindow>(entity)
                 .is_some();
         let mut owners = [
@@ -130,6 +136,9 @@ pub fn semantic_sources(world: &World, entity: Entity) -> BTreeSet<Entity> {
             world
                 .get::<render::TargetSource>(entity)
                 .map(|owner| owner.0),
+            world
+                .get::<crate::native::full_record::window::CaptureSource>(entity)
+                .map(|source| source.owner),
             None,
             None,
             None,
@@ -137,7 +146,7 @@ pub fn semantic_sources(world: &World, entity: Entity) -> BTreeSet<Entity> {
         for (slot, owner) in
             owners
                 .iter_mut()
-                .skip(2)
+                .skip(3)
                 .zip(crate::native::shader_effects::capture_sources(
                     world, entity,
                 ))

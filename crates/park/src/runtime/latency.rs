@@ -407,6 +407,33 @@ mod tests {
         assert_eq!(outputs.0.iter().flatten().count(), 16);
     }
 
+    #[test]
+    fn reasoned_wakes_and_deadlines_preserve_exact_callback_delivery() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let (sent, received) = tokio::sync::oneshot::channel();
+        let sent = std::sync::Mutex::new(Some(sent));
+        let signal = lince_interface::host::WakeSignal::new(move || {
+            sent.lock().unwrap().take().unwrap().send(()).unwrap();
+        });
+        runtime.block_on(async {
+            signal.after(Duration::from_millis(2));
+            tokio::time::timeout(Duration::from_secs(1), received)
+                .await
+                .unwrap()
+                .unwrap();
+        });
+        let observed = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let received = observed.clone();
+        let signal = lince_interface::host::WakeSignal::new(move || {
+            received.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        });
+        signal.ring_reason(Count::CellMessageWake);
+        assert_eq!(observed.load(std::sync::atomic::Ordering::Relaxed), 1);
+    }
+
     #[cfg(feature = "nested")]
     #[test]
     fn an_invalid_presentation_clock_does_not_consume_a_buffer_receipt() {

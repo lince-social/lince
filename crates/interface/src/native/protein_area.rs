@@ -806,6 +806,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
             if state.subscription.as_ref() == Some(&id) && !state.login =>
         {
+            crate::host::performance::count(crate::host::performance::Count::RecordRowsReceived);
             state.refreshing = false;
             if snapshot {
                 state.thread_requests = state.thread_requests.saturating_sub(1);

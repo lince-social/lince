@@ -32,6 +32,7 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 
 impl Presentation {
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::ClientSync);
         let started = std::time::Instant::now();
         self.renderer.retain_imports(windows);
         let live: HashSet<_> = windows.iter().map(|window| window.id).collect();

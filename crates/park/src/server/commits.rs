@@ -20,6 +20,15 @@ struct Node {
 }
 
 impl Visual {
+    pub(super) fn same_semantics(&self, other: &Self) -> bool {
+        self.geometry == other.geometry && self.minimum == other.minimum && self.maximum == other.maximum
+            && self.nodes.len() == other.nodes.len()
+            && self.nodes.iter().zip(&other.nodes).all(|(left, right)| {
+                left.surface == right.surface && left.origin == right.origin && left.layout == right.layout
+                    && left.input == right.input && left.opaque == right.opaque && left.color == right.color
+            })
+    }
+
     fn new(
         geometry: Option<Rectangle<i32, Logical>>,
         minimum: [i32; 2],

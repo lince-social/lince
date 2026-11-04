@@ -32,13 +32,19 @@ impl WakeSignal {
         (self.0)();
     }
 
+    pub fn ring_reason(&self, reason: performance::Count) {
+        performance::count(reason);
+        self.ring();
+    }
+
     #[cfg(any(feature = "ui", feature = "activation"))]
     pub fn after(&self, delay: std::time::Duration) {
         if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            performance::count(performance::Count::TimerScheduled);
             let wake = self.clone();
             runtime.spawn(async move {
                 tokio::time::sleep(delay).await;
-                wake.ring();
+                wake.ring_reason(performance::Count::TimerFired);
             });
         }
     }

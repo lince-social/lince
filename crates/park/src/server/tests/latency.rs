@@ -2,6 +2,43 @@ use super::*;
 use crate::runtime::latency::monotonic;
 
 #[test]
+fn pixel_only_classification_preserves_layout_limits_and_input_regions() {
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let _first = harness.attach(&window, [400, 300]);
+    let root = harness.server.windows()[0].surface.clone();
+    let initial = harness.server.state.visual(&root);
+    let _second = harness.attach(&window, [400, 300]);
+    let pixels = harness.server.state.visual(&root);
+    assert!(initial != pixels);
+    assert!(initial.same_semantics(&pixels));
+    window.surface.commit();
+    harness.sync();
+    let callbacks = harness.server.state.visual(&root);
+    assert!(pixels == callbacks);
+    let _resized = harness.attach(&window, [450, 300]);
+    let resized = harness.server.state.visual(&root);
+    assert!(!callbacks.same_semantics(&resized));
+    window.role.set_min_size(160, 90);
+    window.surface.commit();
+    harness.sync();
+    let limits = harness.server.state.visual(&root);
+    assert!(!resized.same_semantics(&limits));
+    let region = harness
+        .client
+        .compositor
+        .as_ref()
+        .unwrap()
+        .create_region(&harness.queue.handle(), ());
+    region.add(10, 10, 90, 90);
+    window.surface.set_input_region(Some(&region));
+    window.surface.commit();
+    harness.sync();
+    let input = harness.server.state.visual(&root);
+    assert!(!limits.same_semantics(&input));
+}
+
+#[test]
 #[ignore = "requires LINCE_TRACE_PERFORMANCE=1 to enable input timing"]
 fn input_proxy_requires_the_forwarded_surface_and_a_newer_attached_buffer_per_output() {
     assert!(lince_interface::host::performance::enabled());

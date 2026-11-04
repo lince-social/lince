@@ -136,6 +136,7 @@ impl Tokens<'_, '_> {
     pub(crate) fn refresh(&mut self) {
         let removed = self.removed.changed();
         if removed || self.theme.is_changed() || !self.changed.is_empty() {
+            crate::host::performance::count(crate::host::performance::Count::StyleInvalidated);
             self.cache.values.clear();
             self.cache.kinds.clear();
         }

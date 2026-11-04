@@ -1452,6 +1452,11 @@ impl CompositorHandler for State {
             let visual = self.visual(&root);
             let unchanged = !pixels_changed && self.windows[&id].mapped
                 && self.visuals.get(&root) == Some(&visual);
+            if lince_interface::host::performance::enabled() {
+                use lince_interface::host::performance::{count, Count};
+                let pixels_only = pixels_changed && self.visuals.get(&root).is_some_and(|previous| previous.same_semantics(&visual));
+                count(if unchanged { Count::WindowCallbackCommit } else if pixels_only { Count::WindowPixelsCommit } else { Count::WindowSemanticCommit });
+            }
             self.visuals.insert(root.clone(), visual);
             unchanged
         } else { false };
@@ -1607,9 +1612,11 @@ impl XdgShellHandler for State {
     }
 
     fn app_id_changed(&mut self, _: ToplevelSurface) {
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::WindowMetadataChange);
         self.changed();
     }
     fn title_changed(&mut self, _: ToplevelSurface) {
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::WindowMetadataChange);
         self.changed();
     }
     fn parent_changed(&mut self, surface: ToplevelSurface) {

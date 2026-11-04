@@ -64,6 +64,8 @@ impl Sender {
             && previous.serial > retired && combine(&mut previous.input, &input) {
                 previous.serial = serial;
                 previous.latency = super::latency::Stamp::earliest(previous.latency, latency);
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::InputAccepted);
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::ScrollCombined);
                 return Ok(());
             }
         let scrolling = scroll(&input);
@@ -71,6 +73,7 @@ impl Sender {
             return Err(TrySendError::Full((serial, input)));
         }
         state.events.push_back(Queued { serial, input, started, latency });
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::InputAccepted);
         Ok(())
     }
 }

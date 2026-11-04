@@ -330,6 +330,7 @@ impl CanvasWorker {
         self.scene
             .publish(scene)
             .map_err(|_| std::io::Error::other("the Park canvas has stopped"))?;
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::ScenePublished);
         self.wake();
         Ok(())
     }
@@ -406,6 +407,7 @@ impl CanvasWorker {
         self.pointer
             .publish((serial, position, epoch.unwrap_or(serial), latency::Stamp::current()))
             .map_err(|_| std::io::Error::other("the Park pointer receiver is unavailable"))?;
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::PointerPublished);
         self.wake();
         Ok(serial)
     }
@@ -423,6 +425,7 @@ impl CanvasWorker {
     pub(crate) fn test_activity(&self) -> (bool, u64) { (self.idle.load(Ordering::Acquire), self.publications.load(Ordering::Acquire)) }
 
     pub fn wake(&self) {
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::CanvasExplicitWake);
         #[cfg(test)]
         self.idle.store(false, Ordering::Release);
         self.dirty.store(true, Ordering::Release);
@@ -476,6 +479,12 @@ fn run(
     #[cfg(test)]
     let idle = active.idle.clone();
     let wake = WakeSignal::new(move || {
+        if lince_interface::host::performance::enabled() {
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeWake);
+            if std::thread::current().id() == thread.id() {
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeInlineWake);
+            }
+        }
         #[cfg(test)]
         idle.store(false, Ordering::Release);
         changed.store(true, Ordering::Release);
@@ -535,9 +544,11 @@ fn run(
         synchronize_focus(&mut canvas, &mut focus_revision)?;
         if !started {
             canvas.frame()?;
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
             started = true;
         }
         if let Some(scene) = scenes.take() {
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::SceneReceived);
             let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::SceneSync);
             scene_revision = scene.revision;
             if let Some(display) = scene.display {
@@ -797,12 +808,14 @@ fn run(
         if pending && canvas.imports_ready() { settle = settle.max(1); }
         if let Some(completed) = awaiting.as_ref() {
             if !completed.frame.ready()? {
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::GpuPark);
                 std::thread::park();
                 continue;
             }
             let completed = awaiting.take().unwrap();
             let timing = completed.latency;
             if images.publish(completed).is_err() { return canvas.finish(); }
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePublished);
             if let Some(timing) = timing { timing.published(); }
             #[cfg(test)]
             active.publications.fetch_add(1, Ordering::Release);
@@ -810,17 +823,22 @@ fn run(
             lince_interface::host::performance::flush_if_due();
         }
         if settle == 0 {
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::IdlePark);
             #[cfg(test)]
             active.idle.store(true, Ordering::Release);
             std::thread::park();
             continue;
         }
+        let settling = !input && !changed && !pending;
         if pending {
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
             pending = canvas.sync_windows(&windows)?;
         }
         if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
         if let Some(notify) = notify { notify.ring(); }
+        if settling { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
         let frame = canvas.frame()?;
+        lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
         active.progress.applied.fetch_max(input_serial, Ordering::Release);
         canvas.accessibility_input_completed();
         let frame_sequence = NEXT_FRAME_SEQUENCE.try_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| sequence.checked_add(1))

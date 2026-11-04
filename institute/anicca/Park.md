@@ -18,7 +18,7 @@ The real session's park-canvas thread used about 80% of one CPU core with Firefo
 
 ## Execution and shared families
 
-Keep three tracks: correct CPU/GPU placement, useful parallelism, and less work during activity and idle. Execute numbered work in order. Each experiment needs a baseline, an isolated change, correctness checks and an after measurement. Keep only measured improvements; reject complexity without a benefit. Remove completed tasks. Push locally validated changes that need a new installed binary, and continue independent local work while the user sleeps; do not wait for Actions or restart the user's session. Leave physical acceptance open for the new binary.
+Keep three tracks: correct CPU/GPU placement, useful parallelism, and less work during activity and idle. Follow the list order for locally executable work. Leave tests requiring a new installed binary open and continue with the next independent local task. Each experiment needs a baseline, an isolated change, correctness checks and an after measurement. Keep only measured improvements; reject complexity without a benefit. Remove completed tasks. Push locally validated changes that need a new installed binary, and continue independent local work while the user sleeps; do not wait for Actions or restart the user's session. Leave physical acceptance open for the new binary.
 
 Use shared native presentation and derived state in interface/native; input and scene delivery in park/runtime, park/desktop and park/native_input; and output rendering, imports and completion in park/session, park/graphics and park/nested/renderer. Preserve editing, inherited appearance, focus, input ordering, IME, lock privacy, capture exclusion, color precision and GPU resource lifetimes. Reuse the regression against missing text and flashing controls.
 
@@ -31,6 +31,14 @@ The stage profiler is opt-in with LINCE_TRACE_PERFORMANCE=1 and emits bounded JS
 Input timing is enabled by the same profiler flag. It retains oldest native batch origins and queued/pointer serial watermarks through frame preparation, publication and per-output presentation. Device, dispatch and DRM clocks stay distinct; native frame age measures prepared-frame delivery. Application timings pair the latest forwarded input with a newer attached buffer of its surface tree, which does not establish visible text, event causation or damage-only updates. Match controlled interactions with the affected output for P65; neither buffer proxies nor FPS prove semantic response. A clock marked unobserved has no interval samples. No text or clipboard contents are recorded. Local validation: target/park-validation/performance-20261104/latency-receipt.json.
 
 - [ ] **P36 — Measure native scene wake causes.** Count buffer-only commits, geometry/style changes, Record messages, timers and self-wakes in the daily workspace. **Why:** a quiet laptop workspace shares work with the other output and the rest of Lince.
+
+    Source counters pass local checks (15 unit/behavior cases and five enabled private cases). Receipt: target/park-validation/performance-20261104/wake-receipt.json. After installing the new binary with LINCE_TRACE_PERFORMANCE=1, record 30 seconds of the daily workspace and compare pixel/semantic commits, native scene delivery, accepted/superseded frames, settling, timer and Cell activity. Counters measure requests and processing steps; they can overlap and do not equal OS wakeups. Style invalidations count each resolver cache, not unique edits. No daily-workspace measurement has passed yet.
+
+## Client pixels and semantic state
+
+- [ ] **P44 — Separate client pixels from semantic scene updates.** Retain native geometry, focus and hit-test state when only an application buffer changes. **Why:** client animation should not rebuild the rest of Lince. Preserve resize, popup, capture and ownership revisions.
+
+    Desktop already preserves its scene barrier for ordinary pixel commits; do not replace that behavior based on the server's broader window revision. Each new window payload still runs native output/window synchronization, resets settling and goes through the full native app update. Reproduce a continuous buffer stream, retain semantic state, and measure native updates avoided. Preserve geometry, focus, popup, capture, color, import-failure and buffer/GPU ownership, including damage without a new attachment. Compare accepted/published/superseded counters without interpreting every superseded frame as a pixel-induced rejection.
 
 ## Less work on each core
 
@@ -47,8 +55,6 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
 ## Interaction latency
 
 - [ ] **P43 — Prevent input backlog behind scene work.** Shorten measured exclusive sections and batch compatible input, preserving keyboard transitions, clicks, IME and scroll target/order. **Why:** a frame-sized delay per queued event compounds into visible lag; increasing capacity alone worsens age.
-
-- [ ] **P44 — Separate client pixels from semantic scene updates.** Retain native geometry, focus and hit-test state when only an application buffer changes. **Why:** Firefox animation should not rebuild the rest of Lince. Preserve resize, popup, capture and ownership revisions.
 
 - [ ] **P45 — Remove unnecessary settling frames.** Request follow-up updates only for actual pending layout, animation, import or input work. **Why:** blanket settling multiplies the cost of every interaction; required settling needs an explicit owner.
 

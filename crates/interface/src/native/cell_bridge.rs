@@ -346,7 +346,7 @@ async fn deliver(
         if out.send(message).await.is_err() {
             return false;
         }
-        wake.ring();
+        wake.ring_reason(crate::host::performance::Count::CellMessageWake);
     }
     true
 }
@@ -385,9 +385,10 @@ fn drain(
                 return;
             }
         };
+        crate::host::performance::count(crate::host::performance::Count::CellMessageDrained);
         messages.write(CellMessage(message));
     }
-    wake.ring();
+    wake.ring_reason(crate::host::performance::Count::CellDrainContinuation);
 }
 
 fn start(world: &mut World) {

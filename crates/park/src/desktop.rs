@@ -825,6 +825,7 @@ impl Desktop {
         if let Some(completed) = self.worker.frame() {
             self.scroll_saturated = false;
             if completed.scene_revision != self.scene_serial {
+                lince_interface::host::performance::count(lince_interface::host::performance::Count::SupersededFrame);
                 return Ok(false);
             }
             for id in &completed.rejected {
@@ -847,6 +848,7 @@ impl Desktop {
                 }
             }
             composition.canvas(renderer, &completed.frame)?;
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::FrameAccepted);
             if completed.frame.dmabuf().is_none() {
                 self.pending = None;
                 self.output_frames.clear();

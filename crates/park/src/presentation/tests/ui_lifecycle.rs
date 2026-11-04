@@ -192,7 +192,11 @@ fn unrelated_ui_replacements_and_ghost_transitions_preserve_static_text_and_intr
     });
     assert_eq!(expected[2], Vec2::new(96.0, 24.0));
     for refresh in 1..=8 {
-        let view = *canvas.app.world().get::<native::canvas::CanvasView>(root).unwrap();
+        let view = *canvas
+            .app
+            .world()
+            .get::<native::canvas::CanvasView>(root)
+            .unwrap();
         canvas.world_mut().entity_mut(root).insert(view);
         canvas.world_mut().despawn(changing);
         changing = card(&mut canvas, root, 230.0);
@@ -226,5 +230,149 @@ fn unrelated_ui_replacements_and_ghost_transitions_preserve_static_text_and_intr
             .insert(Node::default());
         assert_content(&mut canvas, entities, expected);
     }
+    canvas.finish().unwrap();
+}
+
+fn retained_text(canvas: &Presentation, entity: Entity) -> (u32, u32, usize, Vec2) {
+    let entity = canvas.app.world().entity(entity);
+    let layout = entity.get_ref::<bevy::text::TextLayoutInfo>().unwrap();
+    let measure = entity.get_ref::<ContentSize>().unwrap();
+    (
+        layout.last_changed().get(),
+        measure.last_changed().get(),
+        layout.glyphs.as_ptr() as usize,
+        layout.size,
+    )
+}
+
+fn advance_with_retained_text(
+    canvas: &mut Presentation,
+    stable: Entity,
+    expected: (u32, u32, usize, Vec2),
+) {
+    for _ in 0..4 {
+        drop(canvas.probe_frame().unwrap());
+        assert_eq!(
+            retained_text(canvas, stable),
+            expected,
+            "An unrelated text change rebuilt the stable glyph layout or intrinsic measurement"
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires hardware Vulkan and EGL"]
+fn selective_text_edits_inherited_fonts_and_wrap_constraints_preserve_unrelated_layout() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(32 * 1024 * 1024)
+        .build()
+        .unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let mut canvas = Presentation::new(
+        [1000, 720],
+        directory.path().join("assets"),
+        WakeSignal::new(|| {}),
+    )
+    .unwrap();
+    super::shortcuts::settle(&mut canvas);
+    let root = canvas.canvas_root().unwrap();
+    native::workspace_config::set_physics(canvas.world_mut(), root, 1, false);
+    canvas
+        .desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free))
+        .unwrap();
+    canvas.world_mut().entity_mut(root).insert((
+        native::canvas::CanvasView::default(),
+        native::topology::view::View::default(),
+    ));
+    let stable_card = card(&mut canvas, root, -230.0);
+    let stable = label(
+        &mut canvas,
+        stable_card,
+        "Unchanged text",
+        Color::srgb(0.0, 1.0, 0.0),
+    );
+    let edited_card = card(&mut canvas, root, 230.0);
+    let edited = label(
+        &mut canvas,
+        edited_card,
+        "Initial text",
+        Color::srgb(0.0, 1.0, 1.0),
+    );
+    canvas.world_mut().get_mut::<Node>(edited).unwrap().width = px(300);
+    for _ in 0..12 {
+        drop(canvas.probe_frame().unwrap());
+    }
+    let baseline = retained_text(&canvas, stable);
+    assert!(
+        !canvas
+            .app
+            .world()
+            .get::<bevy::text::TextLayoutInfo>(stable)
+            .unwrap()
+            .glyphs
+            .is_empty()
+    );
+    advance_with_retained_text(&mut canvas, stable, baseline);
+
+    let before = retained_text(&canvas, edited);
+    canvas.world_mut().get_mut::<Text>(edited).unwrap().0 =
+        "one two three four five six seven eight".into();
+    advance_with_retained_text(&mut canvas, stable, baseline);
+    let after_edit = retained_text(&canvas, edited);
+    assert_ne!(after_edit.0, before.0);
+    assert!(after_edit.3.x > before.3.x);
+
+    let mut overrides = native::tokens::TokenOverrides::default();
+    overrides.set(
+        native::tokens::Token::FontSize,
+        native::tokens::TokenValue::Number(32.0),
+    );
+    canvas.world_mut().entity_mut(edited_card).insert(overrides);
+    advance_with_retained_text(&mut canvas, stable, baseline);
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .get::<TextFont>(edited)
+            .unwrap()
+            .font_size,
+        bevy::text::FontSize::Px(48.0)
+    );
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .get::<TextFont>(stable)
+            .unwrap()
+            .font_size,
+        bevy::text::FontSize::Px(24.0)
+    );
+    let after_font = retained_text(&canvas, edited);
+    assert_ne!(after_font.0, after_edit.0);
+    assert!(after_font.3.y > after_edit.3.y);
+
+    canvas.world_mut().get_mut::<Node>(edited).unwrap().width = px(140);
+    canvas
+        .world_mut()
+        .get_mut::<TextLayout>(edited)
+        .unwrap()
+        .linebreak = bevy::text::LineBreak::WordOrCharacter;
+    advance_with_retained_text(&mut canvas, stable, baseline);
+    let after_wrap = retained_text(&canvas, edited);
+    assert_ne!(after_wrap.0, after_font.0);
+    assert!(after_wrap.3.y > after_font.3.y);
+    assert!(after_wrap.3.x <= 140.0);
+    for _ in 0..4 {
+        advance_with_retained_text(&mut canvas, stable, baseline);
+        assert_eq!(retained_text(&canvas, edited), after_wrap);
+    }
+    let frame = canvas.probe_frame().unwrap();
+    assert!(
+        ink(&probe_pixels(frame.dmabuf().unwrap()).unwrap())
+            .iter()
+            .all(|pixels| *pixels > 100)
+    );
     canvas.finish().unwrap();
 }

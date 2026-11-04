@@ -1,6 +1,7 @@
 use crate::graphics::{ExportedImage, ProbeFailure, VulkanRenderer};
 use bevy::{
     camera::RenderTarget,
+    ecs::query::QueryState,
     prelude::*,
     render::{
         RenderApp, RenderPlugin,
@@ -48,6 +49,7 @@ pub use outputs::Output;
 
 pub struct Presentation {
     app: App,
+    primary_windows: QueryState<Entity, With<PrimaryWindow>>,
     renderer: Rc<VulkanRenderer>,
     client_formats: Arc<Vec<smithay::backend::allocator::Fourcc>>,
     target: Handle<Image>,
@@ -689,8 +691,10 @@ impl Presentation {
             .resource_mut::<Assets<Image>>()
             .add(output_image(size));
         app.insert_resource(OutputTarget(RenderTarget::Image(target.clone().into())));
+        let primary_windows = app.world_mut().query_filtered();
         Ok(Self {
             app,
+            primary_windows,
             renderer,
             client_formats,
             target,
@@ -1003,10 +1007,8 @@ impl Presentation {
     }
 
     fn input_window(&mut self) -> Result<Entity, ProbeFailure> {
-        let world = self.app.world_mut();
-        world
-            .query_filtered::<Entity, With<PrimaryWindow>>()
-            .iter(world)
+        self.primary_windows
+            .iter(self.app.world())
             .next()
             .ok_or_else(|| input_failure("the canvas input viewport is unavailable"))
     }
@@ -1441,7 +1443,7 @@ impl Presentation {
             crate::native_input::pointer::capture(world, &pointer_views, geometry)
         };
         let output = self.target.id();
-        let window = world.query_filtered::<Entity, With<PrimaryWindow>>().iter(world).next();
+        let window = self.primary_windows.iter(world).next();
         let output_id = self.output_view.as_ref().map_or(lince_interface::host::OutputId(1), |output| output.id);
         let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, &native_pointer, output_id, mapping));
         let nodes: Vec<_> = {
@@ -1785,6 +1787,7 @@ mod tests {
     mod focus_handoff;
     mod ui_lifecycle;
     mod performance;
+    mod window_lookup;
     use bevy::{
         ecs::message::{MessageCursor, Messages},
         input::{

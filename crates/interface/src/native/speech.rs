@@ -95,6 +95,9 @@ struct Composer {
     cancellation: Option<crate::native::cell_bridge::SpeechCancellation>,
 }
 
+#[derive(Resource, Default)]
+struct Cadence(crate::host::WakeDeadline);
+
 impl Drop for Composer {
     fn drop(&mut self) {
         if let (Some(job), Some(cancellation)) = (&self.job, &self.cancellation) {
@@ -1060,6 +1063,7 @@ pub(crate) fn update(
         .query_filtered::<Entity, With<Composer>>()
         .iter(world)
         .collect();
+    let mut next_wake: Option<Instant> = None;
     for owner in owners {
         if world.get::<Composer>(owner).is_some_and(|composer| {
             (composer.pending.is_some() || composer.job.is_some())
@@ -1167,17 +1171,85 @@ pub(crate) fn update(
                 Instant::now() + Duration::from_millis(250);
             let _ = send(world, owner, Request::Inspect);
         }
-        if active(world, owner)
-            && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
-        {
-            wake.after(Duration::from_millis(250));
+        if active(world, owner) {
+            let now = Instant::now();
+            let composer = world.get::<Composer>(owner).unwrap();
+            let mut due = now + Duration::from_millis(250);
+            if composer.pending.is_none() && composer.next > now
+                && (composer.job.is_some() || composer.saved.as_ref().and_then(|saved| saved.local.as_ref()).is_some_and(|local| local.busy))
+            {
+                due = due.min(composer.next);
+            }
+            next_wake = Some(next_wake.map_or(due, |previous| previous.min(due)));
         }
+    }
+    let wake = world.get_resource::<crate::native::wake::WakeSignal>().cloned();
+    world.init_resource::<Cadence>();
+    let mut cadence = world.resource_mut::<Cadence>();
+    if let (Some(due), Some(wake)) = (next_wake, wake) {
+        cadence.0.at(&wake, due);
+    } else {
+        cadence.0.cancel();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn dictation_preserves_another_views_earlier_poll_deadline_after_a_wake() {
+        let ready = Arc::new(tokio::sync::Notify::new());
+        let observed = ready.clone();
+        let mut app = App::new();
+        app.add_message::<crate::native::cell_bridge::CellMessage>()
+            .insert_resource(crate::native::wake::WakeSignal::new(move || observed.notify_one()))
+            .add_systems(Update, update);
+        waiting(app.world_mut(), "request-a", "job-a", "First unchanged draft");
+        let (second, _) = waiting(app.world_mut(), "request-b", "job-b", "Second unchanged draft");
+        app.update();
+        tokio::time::timeout(Duration::from_secs(2), ready.notified()).await.unwrap();
+        let due = Instant::now() + Duration::from_millis(100);
+        let mut composer = app.world_mut().get_mut::<Composer>(second).unwrap();
+        composer.pending = None;
+        composer.next = due;
+        drop(composer);
+        app.update();
+        assert_eq!(app.world().resource::<Cadence>().0.due(), Some(due));
+    }
+
+    #[tokio::test]
+    async fn unrelated_updates_do_not_multiply_dictation_deadlines() {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        let wakes = Arc::new(AtomicU64::new(0));
+        let observed = wakes.clone();
+        let mut app = App::new();
+        app.add_message::<crate::native::cell_bridge::CellMessage>()
+            .insert_resource(crate::native::wake::WakeSignal::new(move || {
+                observed.fetch_add(1, Ordering::Relaxed);
+            }))
+            .add_systems(Update, update);
+        let mut owners = Vec::new();
+        for index in 0..4 {
+            owners.push(waiting(app.world_mut(), &format!("request-{index}"), &format!("job-{index}"), "Unchanged draft").0);
+        }
+        for _ in 0..32 { app.update(); }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let active_wakes = wakes.swap(0, Ordering::Relaxed);
+        for _ in 0..32 { app.update(); }
+        for owner in owners { app.world_mut().despawn(owner); }
+        app.update();
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let retired_wakes = wakes.load(Ordering::Relaxed);
+        let report = serde_json::json!({"source":"dictation", "owners":4, "unrelated_updates":32, "active_wakes":active_wakes, "retired_wakes":retired_wakes, "scope":"CPU-only real native speech update, no microphone, renderer or physical acceptance"});
+        println!("Wake cadence {report}");
+        if let Ok(path) = std::env::var("LINCE_PARK_TEST_ARTIFACTS") {
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(std::path::Path::new(&path).join("dictation-wakes.json"), serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+        }
+        assert_eq!(active_wakes, 1);
+        assert_eq!(retired_wakes, 0);
+    }
 
     #[test]
     #[ignore = "Records two seconds from the actual default microphone"]

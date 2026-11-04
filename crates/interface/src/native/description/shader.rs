@@ -346,6 +346,7 @@ struct PipelineRequests(Vec<Handle<Shader>>);
 #[derive(Resource, Default)]
 struct EffectAssets {
     frame: u64,
+    preparation_wake: crate::host::WakeDeadline,
     shaders: HashMap<String, Handle<Shader>>,
     available: Vec<Handle<Shader>>,
     owned: HashMap<
@@ -1109,8 +1110,12 @@ pub(crate) fn update_effects(world: &mut World) {
                 || !preview.candidates.is_empty()
                 || preview.working.is_some() && preview.painted < 3)
     });
-    if preparing && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-        wake.after(Duration::from_millis(30));
+    let wake = world.get_resource::<crate::native::wake::WakeSignal>().cloned();
+    let mut assets = world.resource_mut::<EffectAssets>();
+    if preparing && let Some(wake) = wake {
+        assets.preparation_wake.after(&wake, Duration::from_millis(30));
+    } else {
+        assets.preparation_wake.cancel();
     }
 }
 
@@ -2568,6 +2573,37 @@ mod tests {
             world.init_resource::<Assets<Image>>();
         }
         world
+    }
+
+    #[tokio::test]
+    async fn unrelated_updates_do_not_multiply_effect_preparation_deadlines() {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        let mut world = effect_world(false);
+        let parent = world.spawn(Node::default()).id();
+        let entity = effect(&mut world, parent, Effect::default(), Some("-1".into()));
+        show(&mut world, entity);
+        let wakes = Arc::new(AtomicU64::new(0));
+        let observed = wakes.clone();
+        world.insert_resource(crate::native::wake::WakeSignal::new(move || {
+            observed.fetch_add(1, Ordering::Relaxed);
+        }));
+        for _ in 0..16 { update_effects(&mut world); }
+        assert!(world.get::<EffectPreview>(entity).unwrap().pending.is_some());
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let active_wakes = wakes.swap(0, Ordering::Relaxed);
+        for _ in 0..16 { update_effects(&mut world); }
+        world.despawn(parent);
+        update_effects(&mut world);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let retired_wakes = wakes.load(Ordering::Relaxed);
+        let report = serde_json::json!({"source":"shader-preparation", "owners":1, "unrelated_updates":16, "active_wakes":active_wakes, "retired_wakes":retired_wakes, "scope":"CPU-only real native shader preparation, no raster or physical acceptance"});
+        println!("Wake cadence {report}");
+        if let Ok(path) = std::env::var("LINCE_PARK_TEST_ARTIFACTS") {
+            std::fs::create_dir_all(&path).unwrap();
+            std::fs::write(std::path::Path::new(&path).join("shader-preparation-wakes.json"), serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+        }
+        assert_eq!(active_wakes, 1);
+        assert_eq!(retired_wakes, 0);
     }
 
     fn show(world: &mut World, entity: Entity) {

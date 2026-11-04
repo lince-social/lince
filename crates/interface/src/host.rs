@@ -19,6 +19,11 @@ pub mod mapping;
 pub mod magnification;
 pub mod performance;
 
+#[cfg(any(feature = "ui", feature = "activation"))]
+mod deadline;
+#[cfg(any(feature = "ui", feature = "activation"))]
+pub use deadline::WakeDeadline;
+
 #[cfg_attr(feature = "ui", derive(bevy::prelude::Resource))]
 #[derive(Clone)]
 pub struct WakeSignal(Arc<dyn Fn() + Send + Sync>);

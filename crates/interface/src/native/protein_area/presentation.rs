@@ -1,4 +1,5 @@
 mod fields;
+mod retained;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -614,12 +615,20 @@ pub(super) fn controls(world: &mut World, row: Entity) {
 }
 
 pub(super) fn update(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeRecordPresentation);
     let rows: Vec<_> = world
         .query_filtered::<Entity, (With<RecordBinding>, With<super::rows::Row>)>()
         .iter(world)
         .collect();
     for row in rows {
-        if super::availability::hidden(world, row) || !supported(world, row) {
+        if super::availability::hidden(world, row) {
+            continue;
+        }
+        if retained::unchanged(world, row) {
+            crate::host::performance::count(crate::host::performance::Count::RecordViewRetained);
+            continue;
+        }
+        if !supported(world, row) {
             continue;
         }
         if world
@@ -630,8 +639,11 @@ pub(super) fn update(world: &mut World) {
         }
         if let Some(view) = current(world, row) {
             fields::arrange(world, row, &view);
+            retained::remember(world, row);
+            crate::host::performance::count(crate::host::performance::Count::RecordViewRefreshed);
         } else {
             fields::restore(world, row);
+            retained::forget(world, row);
         }
     }
 }

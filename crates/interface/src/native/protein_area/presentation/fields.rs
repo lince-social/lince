@@ -22,7 +22,7 @@ struct SettingsObserved;
 struct PresentationLabel;
 
 #[derive(Component, Clone)]
-struct Original {
+pub(super) struct Original {
     nodes: Vec<(Entity, Node)>,
     parents: Vec<(Entity, Entity)>,
     host: Entity,

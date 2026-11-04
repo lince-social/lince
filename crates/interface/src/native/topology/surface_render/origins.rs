@@ -39,10 +39,11 @@ impl CaptureOrigins {
         self.bound();
     }
 
-    fn normalize(&mut self, scopes: &BTreeMap<Entity, BTreeSet<Entity>>) {
+    fn normalize(&mut self, scopes: &crate::native::capture::Snapshot) {
+        let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCaptureNormalization);
         let mut contributors = BTreeSet::new();
         for entity in &self.contributors {
-            if let Some(sources) = scopes.get(entity) { contributors.extend(sources.iter().copied()); }
+            if let Some(sources) = scopes.resolve(*entity) { contributors.extend(sources.iter().copied()); }
             else { contributors.insert(*entity); self.complete = false; }
         }
         self.contributors = contributors;
@@ -105,7 +106,7 @@ pub(super) struct Inputs(CaptureOrigins);
 pub(super) struct MaterialInputs(
     BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
     BTreeSet<AssetId<Image>>,
-    BTreeMap<Entity, BTreeSet<Entity>>,
+    crate::native::capture::Snapshot,
 );
 
 pub(super) fn begin(completed: Res<CompletedCaptures>, images: Res<RenderAssets<GpuImage>>) {
@@ -201,7 +202,7 @@ pub(super) fn extract(
     }
     let scopes = {
         let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCaptureSources);
-        sources.entities().take(MAX_LINKS + 1).map(|entity| (entity, sources.resolve(entity))).collect()
+        sources.snapshot(MAX_LINKS + 1)
     };
     commands.insert_resource(MaterialInputs(material_images, targets, scopes));
 }

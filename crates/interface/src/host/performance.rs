@@ -81,6 +81,7 @@ stages! {
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
     NativeCaptureSources => "native-capture-source-derivation",
+    NativeCaptureNormalization => "native-capture-source-normalization",
     RenderUpdate => "render-update",
     FrameGeometry => "frame-geometry",
     FrameInput => "frame-input",

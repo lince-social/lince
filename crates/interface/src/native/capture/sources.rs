@@ -5,8 +5,11 @@ use bevy::ecs::{
     system::SystemParam,
 };
 
+mod storage;
 #[cfg(test)]
 mod tests;
+use storage::Path;
+pub(crate) use storage::Scope;
 
 #[derive(Clone, Copy)]
 struct Links {
@@ -56,14 +59,55 @@ pub(crate) struct Sources<'w, 's> {
 }
 
 impl Sources<'_, '_> {
+    #[cfg(test)]
     pub(crate) fn entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.nodes.iter().map(|node| node.entity)
     }
 
-    pub(crate) fn resolve(&self, entity: Entity) -> BTreeSet<Entity> {
+    #[cfg(test)]
+    pub(crate) fn compact(&self, entity: Entity) -> Scope {
         resolve(entity, |entity| {
             self.nodes.get(entity).ok().map(|node| node.links())
         })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn resolve(&self, entity: Entity) -> BTreeSet<Entity> {
+        self.compact(entity).into_btree()
+    }
+
+    pub(crate) fn snapshot(&self, limit: usize) -> Snapshot {
+        let mut live = self.nodes.iter();
+        let mut nodes: Vec<_> = live
+            .by_ref()
+            .take(limit)
+            .map(|node| (node.entity, node.links()))
+            .collect();
+        let complete = live.next().is_none();
+        nodes.sort_unstable_by_key(|(entity, _)| *entity);
+        Snapshot { nodes, complete }
+    }
+}
+
+pub(crate) struct Snapshot {
+    nodes: Vec<(Entity, Links)>,
+    complete: bool,
+}
+
+impl Snapshot {
+    fn links(&self, entity: Entity) -> Option<Links> {
+        self.nodes
+            .binary_search_by_key(&entity, |(entity, _)| *entity)
+            .ok()
+            .map(|index| self.nodes[index].1)
+    }
+
+    pub(crate) fn resolve(&self, entity: Entity) -> Option<Scope> {
+        if !self.complete {
+            return None;
+        }
+        self.links(entity)?;
+        Some(resolve(entity, |entity| self.links(entity)))
     }
 }
 
@@ -110,15 +154,16 @@ pub fn semantic_sources(world: &World, entity: Entity) -> BTreeSet<Entity> {
             },
         })
     })
+    .into_btree()
 }
 
-fn resolve(entity: Entity, read: impl Fn(Entity) -> Option<Links>) -> BTreeSet<Entity> {
+fn resolve(entity: Entity, read: impl Fn(Entity) -> Option<Links>) -> Scope {
     fn visit(
         entity: Entity,
         read: &impl Fn(Entity) -> Option<Links>,
-        path: &mut BTreeSet<Entity>,
+        path: &mut Path,
         budget: &mut usize,
-        sources: &mut BTreeSet<Entity>,
+        sources: &mut Scope,
     ) {
         if *budget == 0 || path.len() >= MAX_DEPTH || !path.insert(entity) {
             sources.insert(entity);
@@ -145,7 +190,7 @@ fn resolve(entity: Entity, read: impl Fn(Entity) -> Option<Links>) -> BTreeSet<E
         }
         path.remove(&entity);
     }
-    let mut sources = BTreeSet::new();
-    visit(entity, &read, &mut BTreeSet::new(), &mut 1024, &mut sources);
+    let mut sources = Scope::default();
+    visit(entity, &read, &mut Path::default(), &mut 1024, &mut sources);
     sources
 }

@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 mod ui;
 mod status;
 mod sources;
-pub(crate) use sources::Sources;
+pub(crate) use sources::{Snapshot, Sources};
 pub use sources::semantic_sources;
 pub mod render;
 pub(crate) use ui::{item_panel, window_panel};

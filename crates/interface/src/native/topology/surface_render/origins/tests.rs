@@ -109,7 +109,9 @@ fn receipts_keep_item_identity_instead_of_temporary_mesh_or_glyph_identity() {
     let owner = app.world_mut().spawn(crate::native::layout::LayoutBox::new(Vec2::splat(100.0))).id();
     let temporary = app.world_mut().spawn(crate::native::topology::presentation::VisualOwner(owner)).id();
     let mut origins = source(temporary);
-    origins.normalize(&BTreeMap::from([(temporary, crate::native::capture::semantic_sources(app.world(), temporary))]));
+    let mut sources = bevy::ecs::system::SystemState::<crate::native::capture::Sources>::new(app.world_mut());
+    let snapshot = sources.get(app.world()).unwrap().snapshot(MAX_LINKS + 1);
+    origins.normalize(&snapshot);
     let completed = app.world().resource::<CompletedCaptures>().clone();
     completed.queue(image.id(), (0, 0), true, origins);
     app.update();

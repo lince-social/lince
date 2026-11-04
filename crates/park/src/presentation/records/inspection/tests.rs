@@ -43,7 +43,7 @@ async fn inspection_preserves_the_in_flight_creation_and_original_destination_af
     let mut windows = HashMap::from([(surface, window)]);
     let mut identities = HashMap::from([(surface, identity)]);
     let mut records = Records::load(directory.path().join("windows.json")).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.requests.len() == 1).await;
     let pending = records.requests.clone();
     assert_eq!(pending.len(), 1);
     let uid = records.profile(identity).unwrap().creation.clone().unwrap();

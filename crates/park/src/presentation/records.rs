@@ -6,6 +6,10 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     io::{self, Read},
     path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -13,10 +17,17 @@ const SUBSCRIPTION: &str = "park-window-records";
 
 mod inspection;
 use inspection::Inspection;
+mod storage;
 
 #[cfg(test)]
 #[path = "records/recovery.rs"]
 mod recovery;
+
+#[cfg(test)]
+mod performance;
+
+#[cfg(test)]
+mod persistence;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -54,6 +65,12 @@ impl Saved {
     }
 }
 
+struct Saving {
+    version: u64,
+    intents: BTreeMap<PlacementId, String>,
+    notify: Arc<AtomicBool>,
+}
+
 pub(super) struct Records {
     path: PathBuf,
     saved: BTreeMap<PlacementId, Saved>,
@@ -69,13 +86,20 @@ pub(super) struct Records {
     inspect: Option<Inspection>,
     sender: Option<tokio::sync::mpsc::Sender<cell::ClientMessage>>,
     subscription: String,
-    intents_durable: bool,
+    durable_intents: BTreeMap<PlacementId, String>,
     intent_retry: Option<Instant>,
+    writer: Option<storage::Writer>,
+    saving: Option<Saving>,
+    save_version: u64,
 }
 
 impl Records {
     pub fn load(path: PathBuf) -> io::Result<Self> {
         let records = read(&path)?;
+        let durable_intents = records
+            .iter()
+            .filter_map(|profile| Some((PlacementId(profile.layout.id), profile.creation.clone()?)))
+            .collect();
         let creations = records.iter().filter(|record| record.creation.is_some()).map(|record| PlacementId(record.layout.id)).collect();
         Ok(Self {
             path,
@@ -95,8 +119,11 @@ impl Records {
             inspect: None,
             sender: None,
             subscription: format!("{SUBSCRIPTION}-{}", nucleus::new_uid("op")),
-            intents_durable: true,
+            durable_intents,
             intent_retry: None,
+            writer: None,
+            saving: None,
+            save_version: 0,
         })
     }
 
@@ -111,6 +138,9 @@ impl Records {
     }
 
     pub(super) fn capture_exclusion(&mut self, identity: PlacementId, uid: &str, excluded: bool) -> io::Result<()> {
+        self.saved.get(&identity).filter(|profile| profile.uid.as_deref() == Some(uid))
+            .ok_or_else(|| io::Error::other("The original window profile association is unavailable"))?;
+        self.finish_saving()?;
         let profile = self.saved.get_mut(&identity).filter(|profile| profile.uid.as_deref() == Some(uid))
             .ok_or_else(|| io::Error::other("The original window profile association is unavailable"))?;
         let previous = profile.layout.capture_excluded;
@@ -154,7 +184,6 @@ impl Records {
         }
         let creation = previous.map_or_else(|| Some(nucleus::new_uid("r")), |saved| saved.creation.clone());
         if previous.is_none() {
-            self.intents_durable = false;
             self.creations.insert(identity);
         }
         let saved = Saved {
@@ -182,6 +211,7 @@ impl Records {
         windows: &HashMap<SurfaceId, clients::Window>,
         identities: &HashMap<SurfaceId, PlacementId>,
     ) {
+        self.poll_saving(world);
         let sender = world.get_non_send::<native::cell_bridge::CellBridge>().map(|bridge| bridge.outgoing.clone());
         let changed = match (&self.sender, &sender) {
             (Some(previous), Some(current)) => !previous.same_channel(current),
@@ -223,6 +253,7 @@ impl Records {
                             saved.uid = Some(uid);
                             saved.creation = None;
                             self.creations.remove(&identity);
+                            self.durable_intents.remove(&identity);
                             self.dirty = true;
                         } else {
                             self.errors.insert(identity, "Record creation returned an unexpected identity".into());
@@ -305,6 +336,12 @@ impl Records {
                 }
             }
         }
+        if self.dirty
+            && let Some(saving) = &self.saving
+        {
+            saving.notify.store(true, Ordering::Release);
+            self.poll_saving(world);
+        }
         waiting |= self.create_pending(world, sender.as_ref());
         if live != self.subscribed {
             let message = if live.is_empty() {
@@ -333,10 +370,10 @@ impl Records {
                 waiting = true;
             }
         }
-        if self.dirty && self.last_write.elapsed() >= Duration::from_secs(1) {
-            self.last_write = Instant::now();
-            self.wake_pending = false;
-            if let Err(error) = self.flush() {
+        if self.dirty && self.saving.is_none() && self.last_write.elapsed() >= Duration::from_secs(1) {
+            if let Err(error) = self.start_saving(world.get_resource::<WakeSignal>().cloned()) {
+                self.last_write = Instant::now();
+                self.wake_pending = false;
                 native::notifications::report(
                     world,
                     "Park window customization",
@@ -344,7 +381,7 @@ impl Records {
                 );
             }
         }
-        if (self.dirty || waiting)
+        if (self.dirty && self.saving.is_none() || waiting)
             && !self.wake_pending
             && let Some(wake) = world.get_resource::<WakeSignal>()
         {
@@ -360,54 +397,200 @@ impl Records {
         }
     }
 
-    fn create_pending(&mut self, world: &World, sender: Option<&tokio::sync::mpsc::Sender<cell::ClientMessage>>) -> bool {
-        if !self.intents_durable {
-            if self.intent_retry.is_some_and(|due| due > Instant::now()) { return true; }
-            if let Err(error) = self.flush() {
-                self.last_write = Instant::now();
-                self.intent_retry = Some(self.last_write + Duration::from_secs(1));
-                native::notifications::report(world, "Park window Record", &format!("Record creation is waiting for its window profile to be saved: {error}"));
-                return true;
+    fn create_pending(
+        &mut self,
+        world: &World,
+        sender: Option<&tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+    ) -> bool {
+        let needs_save = self.creations.iter().any(|identity| {
+            self.saved
+                .get(identity)
+                .and_then(|profile| profile.creation.as_ref())
+                .is_some_and(|uid| self.durable_intents.get(identity) != Some(uid))
+        });
+        let mut waiting = false;
+        if needs_save && self.saving.is_none() {
+            if self.intent_retry.is_some_and(|due| due > Instant::now()) {
+                waiting = true;
+            } else {
+                self.dirty = true;
+                if let Err(error) = self.start_saving(world.get_resource::<WakeSignal>().cloned()) {
+                    self.last_write = Instant::now();
+                    self.intent_retry = Some(self.last_write + Duration::from_secs(1));
+                    native::notifications::report(
+                        world,
+                        "Park window Record",
+                        &format!(
+                            "Record creation is waiting for its window profile to be saved: {error}"
+                        ),
+                    );
+                    waiting = true;
+                }
             }
         }
         let pending: BTreeSet<_> = self.requests.values().copied().collect();
         for identity in &self.creations {
-            let Some(saved) = self.saved.get(identity) else { continue; };
-            let Some(uid) = &saved.creation else { continue; };
-            if pending.contains(identity) || self.errors.contains_key(identity) { continue; }
-            if self.requests.len() >= 64 { return true; }
-            let request = format!("{}-create-{:032x}-{}", self.subscription, u128::from_be_bytes(identity.0), nucleus::new_uid("op"));
+            let Some(saved) = self.saved.get(identity) else {
+                continue;
+            };
+            let Some(uid) = &saved.creation else {
+                continue;
+            };
+            if self.durable_intents.get(identity) != Some(uid)
+                || pending.contains(identity)
+                || self.errors.contains_key(identity)
+            {
+                continue;
+            }
+            if self.requests.len() >= 64 {
+                return true;
+            }
+            let request = format!(
+                "{}-create-{:032x}-{}",
+                self.subscription,
+                u128::from_be_bytes(identity.0),
+                nucleus::new_uid("op")
+            );
             let message = cell::ClientMessage::Act {
                 id: request.clone(),
                 action: engine::actions::Action::CreateRecordDraft {
                     draft: engine::record_creation::Draft {
-                        uid: uid.clone(), head: "Application window".into(), ..Default::default()
+                        uid: uid.clone(),
+                        head: "Application window".into(),
+                        ..Default::default()
                     },
                 },
             };
-            if sender.is_none_or(|sender| sender.try_send(message).is_err()) { return true; }
+            if sender.is_none_or(|sender| sender.try_send(message).is_err()) {
+                return true;
+            }
             self.requests.insert(request, *identity);
         }
-        false
+        waiting
     }
 
     pub fn flush(&mut self) -> io::Result<()> {
-        if !self.dirty {
+        self.finish_saving()?;
+        self.start_saving(None)?;
+        self.finish_saving()?;
+        Ok(())
+    }
+
+    fn start_saving(&mut self, wake: Option<WakeSignal>) -> io::Result<()> {
+        if !self.dirty || self.saving.is_some() {
             return Ok(());
         }
-        let records: Vec<_> = self
-            .saved
-            .values()
-            .collect();
-        if records.iter().any(|record| !record.valid()) {
-            return Err(io::Error::other("invalid window customization data"));
+        let version = self
+            .save_version
+            .checked_add(1)
+            .ok_or_else(|| io::Error::other("Window profile save version exhausted"))?;
+        if self.writer.is_none() {
+            self.writer = Some(storage::Writer::new(self.path.clone())?);
         }
-        super::outputs::save(&self.path, &records)?;
-        self.last_write = Instant::now();
+        let profiles: Vec<_> = self.saved.values().cloned().collect();
+        let intents: BTreeMap<_, _> = profiles
+            .iter()
+            .filter_map(|profile| Some((PlacementId(profile.layout.id), profile.creation.clone()?)))
+            .collect();
+        let notify =
+            Arc::new(AtomicBool::new(intents.iter().any(|(identity, uid)| {
+                self.durable_intents.get(identity) != Some(uid)
+            })));
+        self.writer.as_ref().unwrap().request(storage::Request {
+            version,
+            profiles,
+            wake,
+            notify: notify.clone(),
+        })?;
+        self.save_version = version;
+        self.saving = Some(Saving {
+            version,
+            intents,
+            notify,
+        });
         self.dirty = false;
-        self.intents_durable = true;
+        self.last_write = Instant::now();
+        self.wake_pending = false;
+        Ok(())
+    }
+
+    fn saved(&mut self, finished: storage::Finished) -> io::Result<()> {
+        let pending = self
+            .saving
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Unexpected window profile save result"))?;
+        if pending.version != finished.version {
+            return Err(io::Error::other("Outdated window profile save result"));
+        }
+        let pending = self.saving.take().unwrap();
+        pending.notify.store(false, Ordering::Release);
+        self.last_write = Instant::now();
+        self.wake_pending = false;
+        if let Err(error) = finished.result {
+            self.dirty = true;
+            self.intent_retry = Some(self.last_write + Duration::from_secs(1));
+            return Err(error);
+        }
+        self.durable_intents.retain(|identity, uid| {
+            self.creations.contains(identity)
+                && self
+                    .saved
+                    .get(identity)
+                    .and_then(|profile| profile.creation.as_ref())
+                    == Some(uid)
+        });
+        for (identity, uid) in pending.intents {
+            if self.creations.contains(&identity)
+                && self
+                    .saved
+                    .get(&identity)
+                    .and_then(|profile| profile.creation.as_ref())
+                    == Some(&uid)
+            {
+                self.durable_intents.insert(identity, uid);
+            }
+        }
         self.intent_retry = None;
         Ok(())
+    }
+
+    fn stopped_saving(&mut self) {
+        self.saving = None;
+        self.writer = None;
+        self.dirty = true;
+        self.last_write = Instant::now();
+        self.wake_pending = false;
+        self.intent_retry = Some(self.last_write + Duration::from_secs(1));
+    }
+
+    fn poll_saving(&mut self, world: &World) {
+        if self.saving.is_none() {
+            return;
+        }
+        let result = match self.writer.as_ref().unwrap().poll() {
+            Ok(Some(finished)) => self.saved(finished),
+            Ok(None) => return,
+            Err(error) => {
+                self.stopped_saving();
+                Err(error)
+            }
+        };
+        if let Err(error) = result {
+            native::notifications::report(world, "Park window customization", &error.to_string());
+        }
+    }
+
+    fn finish_saving(&mut self) -> io::Result<()> {
+        if self.saving.is_none() {
+            return Ok(());
+        }
+        match self.writer.as_ref().unwrap().finish() {
+            Ok(finished) => self.saved(finished),
+            Err(error) => {
+                self.stopped_saving();
+                Err(error)
+            }
+        }
     }
 
     pub fn pending(&self) -> bool { !self.requests.is_empty() || !self.creations.is_empty() }

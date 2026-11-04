@@ -220,7 +220,7 @@ async fn lost_creation_acknowledgements_survive_full_engine_release_and_replay_w
     let identities = HashMap::from([(first, first_identity), (second, second_identity)]);
     let path = directory.path().join("park-windows.json");
     let mut records = Records::load(path.clone()).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.requests.len() == 2).await;
     assert!(
         path.is_file(),
         "Creation intent must reach disk before the engine receives it"
@@ -352,7 +352,7 @@ async fn a_failed_intent_write_prevents_creation_until_the_same_uid_can_be_saved
     let identities = HashMap::from([(surface, identity)]);
     let mut records = Records::load(path.clone()).unwrap();
     std::fs::create_dir(&path).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.saving.is_none() && records.intent_retry.is_some()).await;
     let uid = records.profile(identity).unwrap().creation.clone().unwrap();
     assert!(records.requests.is_empty());
     assert!(records.pending());
@@ -393,7 +393,7 @@ async fn an_actual_creation_reply_after_close_cannot_bind_a_replacement_surface(
     let mut windows = HashMap::from([(surface, first_window)]);
     let mut identities = HashMap::from([(surface, first_identity)]);
     let mut records = Records::load(directory.path().join("park-windows.json")).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.requests.len() == 1).await;
     let uid = records
         .profile(first_identity)
         .unwrap()
@@ -470,7 +470,7 @@ async fn a_burst_of_windows_saves_every_intent_but_bounds_the_creation_queue() {
         identities.insert(surface, identity);
     }
     let mut records = Records::load(path.clone()).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.requests.len() == 64).await;
     assert_eq!(records.requests.len(), 64);
     assert!(records.pending());
     let saved = Records::load(path).unwrap();
@@ -501,7 +501,7 @@ async fn mismatched_actual_creation_replies_cannot_bind_windows_and_old_attempts
     let windows = HashMap::from([(first, first_window), (second, second_window)]);
     let identities = HashMap::from([(first, first_identity), (second, second_identity)]);
     let mut records = Records::load(directory.path().join("park-windows.json")).unwrap();
-    records.tick(&mut world, &windows, &identities);
+    pump(&mut world, &mut records, &windows, &identities, |records| records.requests.len() == 2).await;
     let first_uid = records
         .profile(first_identity)
         .unwrap()

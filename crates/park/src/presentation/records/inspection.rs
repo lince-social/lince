@@ -32,8 +32,12 @@ impl Records {
                 "Could not create the window Record: {error}"
             )));
         }
-        if !self.intents_durable {
-            return Some(CreationState::Failed("Could not save the window profile. Make its location writable, then retry Record creation.".into()));
+        if self.durable_intents.get(&identity).map(String::as_str) != Some(uid) {
+            return Some(if self.intent_retry.is_some() && self.saving.is_none() {
+                CreationState::Failed("Could not save the window profile. Make its location writable, then retry Record creation.".into())
+            } else {
+                CreationState::Pending
+            });
         }
         if self.sender.as_ref().is_none_or(|sender| sender.is_closed()) {
             return Some(CreationState::Failed(

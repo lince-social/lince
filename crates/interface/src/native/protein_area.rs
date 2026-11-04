@@ -948,6 +948,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
 }
 
 fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeRecordProjection);
     if !crate::native::laboratory::normal(world) {
         return;
     }

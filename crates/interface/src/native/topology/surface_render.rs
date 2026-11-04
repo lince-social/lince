@@ -245,6 +245,7 @@ fn fingerprint_captures(
     changed: Res<ExtractedAssets<GpuImage>>,
     images: Res<RenderAssets<GpuImage>>,
 ) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaceFingerprint);
     cache.targets.get_mut().unwrap().retain(|entity, _| {
         captures
             .get(*entity)

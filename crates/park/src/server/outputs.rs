@@ -126,6 +126,7 @@ impl Server {
                 self.state.remove_layer(&surface);
             }
             if let Some(removed) = self.state.outputs.remove(&id) {
+                lince_interface::host::performance::retire_output(id);
                 for window in self.state.windows.values() {
                     removed.output.leave(window.role.wl_surface());
                 }

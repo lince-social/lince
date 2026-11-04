@@ -199,6 +199,7 @@ impl Plugin for TokenStylePlugin {
 pub struct ApplyTokenStyles;
 
 fn apply(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeStyles);
     let sands: Vec<_> = world
         .query::<(Entity, &CanvasItem, Option<&AppliedSize>)>()
         .iter(world)

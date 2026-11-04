@@ -88,6 +88,12 @@ impl Driver {
                         }
                     };
                     if let Some(result) = result {
+                        #[cfg(feature = "native-presentation")]
+                        if lince_interface::host::performance::enabled() {
+                            let stage = if result.is_ok() { lince_interface::host::performance::Stage::GpuSubmissionToCompletion }
+                                else { lince_interface::host::performance::Stage::GpuCompletionFailure };
+                            lince_interface::host::performance::record(stage, job.started.elapsed());
+                        }
                         if let Err(error) = &result { failure = Some(error.clone()); }
                         *job.completion.result.lock().unwrap_or_else(|error| error.into_inner()) = Some(result);
                         job.notify.unpark();

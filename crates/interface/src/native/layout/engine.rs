@@ -249,6 +249,7 @@ fn content_intrinsic(world: &World, entity: Entity) -> Vec2 {
 }
 
 pub(super) fn resolve(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutSolve);
     super::records::restore(world);
     super::desktop::resolve(world);
     let mut entries: Vec<_> = world

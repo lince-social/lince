@@ -38,6 +38,11 @@ pub(crate) fn tracing_frames() -> bool {
 }
 
 pub(crate) fn trace_frame(stage: &str, started: std::time::Instant) {
+    if lince_interface::host::performance::enabled()
+        && let Some(stage) = lince_interface::host::performance::Stage::from_label(stage)
+    {
+        lince_interface::host::performance::record(stage, started.elapsed());
+    }
     if tracing_frames() {
         let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default().as_secs_f64();
@@ -529,6 +534,7 @@ fn run(
             started = true;
         }
         if let Some(scene) = scenes.take() {
+            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::SceneSync);
             scene_revision = scene.revision;
             if let Some(display) = scene.display {
                 canvas.world_mut().insert_resource(display);
@@ -786,6 +792,7 @@ fn run(
             #[cfg(test)]
             active.publications.fetch_add(1, Ordering::Release);
             if let Some(notify) = notify { notify.ring(); }
+            lince_interface::host::performance::flush_if_due();
         }
         if settle == 0 {
             #[cfg(test)]

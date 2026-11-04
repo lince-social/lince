@@ -17,6 +17,7 @@ pub mod launch;
 pub mod raster;
 pub mod mapping;
 pub mod magnification;
+pub mod performance;
 
 #[cfg_attr(feature = "ui", derive(bevy::prelude::Resource))]
 #[derive(Clone)]

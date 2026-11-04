@@ -3,6 +3,15 @@ use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
 use std::time::Instant;
 
 #[test]
+fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {
+    let checks = lince_interface::host::performance::checks::bounded_distributions_keep_counts_tails_and_concurrent_samples;
+    checks();
+    lince_interface::host::performance::checks::output_intervals_remain_independent_and_observations_are_bounded();
+    lince_interface::host::performance::checks::report_backpressure_does_not_block_and_is_reported(
+    );
+}
+
+#[test]
 fn shared_token_and_metric_behavior_cases_preserve_live_updates() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -108,6 +117,7 @@ fn sample(app: &mut App, rounds: usize, changing: bool) -> serde_json::Value {
             (cpu_ended.tv_sec - cpu_started.tv_sec) as f64 * 1000.0
                 + (cpu_ended.tv_nsec - cpu_started.tv_nsec) as f64 / 1_000_000.0,
         );
+        lince_interface::host::performance::flush_if_due();
     }
     values.sort_by(f64::total_cmp);
     cpu_values.sort_by(f64::total_cmp);

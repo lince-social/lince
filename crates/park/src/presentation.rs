@@ -148,6 +148,9 @@ struct FrameFailure(String);
 #[derive(Resource)]
 struct MainUpdateStart(std::time::Instant);
 
+#[derive(Resource)]
+struct RenderUpdateStart(std::time::Instant);
+
 fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::Result<records::Records> {
     let records = records::Records::load(data.join("park-windows.json"))?;
     let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
@@ -623,7 +626,7 @@ impl Presentation {
                 ..default()
             });
         let mut app = native::app::presentation_app(assets, plugins);
-        if crate::runtime::tracing_frames() {
+        if crate::runtime::tracing_frames() || lince_interface::host::performance::enabled() {
             app.add_systems(First, |mut commands: Commands| {
                 commands.insert_resource(MainUpdateStart(std::time::Instant::now()));
             }).add_systems(Last, |started: Res<MainUpdateStart>| {
@@ -659,6 +662,24 @@ impl Presentation {
             .map_err(|error| input_failure(&error.to_string()))?;
         app.finish();
         app.cleanup();
+        if lince_interface::host::performance::enabled() {
+            use bevy::render::{Render, RenderSystems};
+            let render = app.sub_app_mut(RenderApp);
+            if let Some(mut extract) = render.take_extract() {
+                render.set_extract(move |main, render| {
+                    let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeExtraction);
+                    extract(main, render);
+                });
+            }
+            render.add_systems(Render, (|world: &mut World| {
+                world.insert_resource(RenderUpdateStart(std::time::Instant::now()));
+            }).before(RenderSystems::ExtractCommands));
+            render.add_systems(Render, (|started: Option<Res<RenderUpdateStart>>| {
+                if let Some(started) = started {
+                    lince_interface::host::performance::record(lince_interface::host::performance::Stage::RenderUpdate, started.0.elapsed());
+                }
+            }).after(RenderSystems::PostCleanup));
+        }
         let target = app
             .world_mut()
             .resource_mut::<Assets<Image>>()

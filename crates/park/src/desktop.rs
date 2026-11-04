@@ -447,6 +447,7 @@ impl Desktop {
     }
 
     pub(crate) fn dispatch(&mut self) -> io::Result<()> {
+        let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::DesktopDispatch);
         #[cfg(feature = "session")]
         { self.reconcile_touch(); self.reconcile_tablet(); self.flush_touch()?; }
         if let Some(snapshot) = self.absolute_snapshot.clone() { self.absolute_settings(snapshot)?; }

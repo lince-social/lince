@@ -18,7 +18,7 @@ The real session's park-canvas thread used about 80% of one CPU core with Firefo
 
 ## Execution and shared families
 
-Keep three tracks: correct CPU/GPU placement, useful parallelism, and less work during activity and idle. Execute numbered work in order. Each experiment needs a baseline, an isolated change, correctness checks and an after measurement. Keep only measured improvements; reject complexity without a benefit. Remove completed tasks. When the next live result requires a new installed binary, push the locally validated batch and stop without waiting for Actions.
+Keep three tracks: correct CPU/GPU placement, useful parallelism, and less work during activity and idle. Execute numbered work in order. Each experiment needs a baseline, an isolated change, correctness checks and an after measurement. Keep only measured improvements; reject complexity without a benefit. Remove completed tasks. Push locally validated changes that need a new installed binary, and continue independent local work while the user sleeps; do not wait for Actions or restart the user's session. Leave physical acceptance open for the new binary.
 
 Use shared native presentation and derived state in interface/native; input and scene delivery in park/runtime, park/desktop and park/native_input; and output rendering, imports and completion in park/session, park/graphics and park/nested/renderer. Preserve editing, inherited appearance, focus, input ordering, IME, lock privacy, capture exclusion, color precision and GPU resource lifetimes. Reuse the regression against missing text and flashing controls.
 
@@ -26,7 +26,7 @@ GPU rasterization is appropriate; moving small dependency walks to the GPU may c
 
 ## Measurement: responsiveness and the critical path
 
-- [ ] **P34 — Add bounded real-session stage timings.** Measure dispatch, queue age, scene synchronization, native systems, extraction, GPU submission, import/export, completion and presentation. Aggregate outside timed work; retain p50/p95/p99. **Why:** current samples do not attribute the entire frame interval or distinguish execution from waiting.
+The stage profiler is opt-in with LINCE_TRACE_PERFORMANCE=1 and emits bounded JSON reports. Spans measure elapsed wall time, can overlap, and must not be summed as CPU time. Submission-to-completion measures observed queue/completion age, not hardware GPU execution. Per-output intervals identify DRM or dispatch fallback clocks; static content need not submit every refresh. Reports retain quantile upper bounds and lost-report counts. Local validation: target/park-validation/performance-20261104/profiler-receipt.json.
 
 - [ ] **P35 — Trace input age through presentation.** Follow existing serials and ownership for typing, clicks, scrolling and dragging without recording text or clipboard contents. Include application delivery and displayed-state age. **Why:** input can stall before rendering, and FPS does not reveal that delay.
 

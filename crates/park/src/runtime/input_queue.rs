@@ -4,9 +4,15 @@ use std::{collections::VecDeque, sync::{Arc, Mutex, atomic::{AtomicU64, Ordering
 
 const CAPACITY: usize = 128;
 
+struct Queued {
+    serial: u64,
+    input: Input,
+    started: Option<std::time::Instant>,
+}
+
 #[derive(Default)]
 struct State {
-    events: VecDeque<(u64, Input)>,
+    events: VecDeque<Queued>,
     closed: bool,
     retired: Arc<AtomicU64>,
 }
@@ -44,30 +50,33 @@ impl Sender {
     #[cfg(any(feature = "nested", test))]
     pub(super) fn can_send_controls(&self, count: usize) -> bool {
         let state = self.0.lock().unwrap();
-        count <= CAPACITY.saturating_sub(state.events.iter().filter(|(_, event)| !scroll(event)).count())
+        count <= CAPACITY.saturating_sub(state.events.iter().filter(|event| !scroll(&event.input)).count())
     }
 
     pub(super) fn try_send(&self, (serial, input): (u64, Input)) -> Result<(), TrySendError<(u64, Input)>> {
+        let started = lince_interface::host::performance::start();
         let mut state = self.0.lock().unwrap();
         if state.closed { return Err(TrySendError::Disconnected((serial, input))); }
         let retired = state.retired.load(Ordering::Acquire);
-        if let Some((previous_serial, previous)) = state.events.back_mut()
-            && *previous_serial > retired && combine(previous, &input) {
-                *previous_serial = serial;
+        if let Some(previous) = state.events.back_mut()
+            && previous.serial > retired && combine(&mut previous.input, &input) {
+                previous.serial = serial;
                 return Ok(());
             }
         let scrolling = scroll(&input);
-        if state.events.iter().filter(|(_, event)| scroll(event) == scrolling).count() >= CAPACITY {
+        if state.events.iter().filter(|event| scroll(&event.input) == scrolling).count() >= CAPACITY {
             return Err(TrySendError::Full((serial, input)));
         }
-        state.events.push_back((serial, input));
+        state.events.push_back(Queued { serial, input, started });
         Ok(())
     }
 }
 
 impl Receiver {
     pub(super) fn pop(&self) -> Option<(u64, Input)> {
-        self.0.lock().unwrap().events.pop_front()
+        let event = self.0.lock().unwrap().events.pop_front()?;
+        lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::InputQueueWait, event.started);
+        Some((event.serial, event.input))
     }
 }
 
@@ -137,5 +146,21 @@ mod tests {
         let (serial, Input::Scroll(delta, ..)) = receiver.pop().unwrap() else { panic!("Missing current scroll"); };
         assert_eq!(serial, 2);
         assert_eq!(delta, [0.0, 3.0]);
+    }
+
+    #[test]
+    fn combined_scroll_keeps_its_oldest_queue_timestamp_and_latest_serial() {
+        let (sender, receiver) = channel(Arc::default());
+        assert!(sender.try_send((1, wheel(2.0, 1))).is_ok());
+        let oldest = std::time::Instant::now() - std::time::Duration::from_millis(25);
+        sender.0.lock().unwrap().events.front_mut().unwrap().started = Some(oldest);
+        assert!(sender.try_send((2, wheel(3.0, 1))).is_ok());
+        let state = sender.0.lock().unwrap();
+        assert_eq!(state.events.front().unwrap().serial, 2);
+        assert_eq!(state.events.front().unwrap().started, Some(oldest));
+        drop(state);
+        let (serial, Input::Scroll(delta, ..)) = receiver.pop().unwrap() else { panic!("Missing scroll batch"); };
+        assert_eq!(serial, 2);
+        assert_eq!(delta, [0.0, 5.0]);
     }
 }

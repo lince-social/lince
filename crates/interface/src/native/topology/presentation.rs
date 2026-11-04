@@ -410,6 +410,7 @@ fn collect(world: &mut World) -> Option<NativePlan> {
 }
 
 pub fn synchronize(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaces);
     let native = collect(world);
     let demands: HashMap<_, _> = native
         .iter()

@@ -56,6 +56,7 @@ pub(crate) struct IconData {
 }
 
 pub(crate) fn icons(tokens: Tokens, mut icons: Query<IconData>) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
     let apply = |IconDataItem {
                      entity,
                      mut style,
@@ -98,6 +99,7 @@ pub(crate) struct LayoutData {
 }
 
 pub(crate) fn layout(tokens: Tokens, mut nodes: Query<LayoutData>) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
     let apply = |LayoutDataItem {
                      entity,
                      mut node,

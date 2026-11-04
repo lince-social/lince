@@ -366,6 +366,7 @@ pub fn run(
                                 }
                             };
                             if let Some(queued) = submitted {
+                                lince_interface::host::performance::presented(queued.id, presentation_time, hardware_clock);
                                 if crate::runtime::tracing_frames() {
                                     let observed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
                                         .unwrap_or_default().as_secs_f64();
@@ -528,7 +529,9 @@ pub fn run(
             children.retain_mut(|child| !matches!(child.try_wait(), Ok(Some(_))));
             desktop.server.dispatch()?;
             composition.capture(&mut hardware.renderer, &mut desktop, hardware.active)?;
+            lince_interface::host::performance::flush_if_due();
             if desktop.running {
+                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::EventLoopWait);
                 event_loop
                     .dispatch(desktop.repeat_timeout().into_iter().chain(hardware.configuration_timeout()).chain(hardware.power_timeout()).chain(desktop.server.output_power_timeout()).chain(desktop.server.display_timeout()).chain(desktop.server.control_timeout()).chain(desktop.scene_timeout())
                         .chain(desktop.server.capture_timeout()).chain(composition.capture_timeout()).chain(readiness.timeout()).min(), &mut events)
@@ -556,6 +559,7 @@ impl Hardware {
         vt_keys.clear();
         desktop.server.tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
         for screen in self.screens.values_mut() {
+            lince_interface::host::performance::retire_output(screen.id);
             screen.power.pause(&mut desktop.server, screen.pending && screen.prepared.is_none());
             if let Some(prepared) = screen.prepared.take() { self.retired.push(prepared); }
             screen.adaptive_sync.effective = None;

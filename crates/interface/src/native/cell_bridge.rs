@@ -13,6 +13,8 @@ use tokio::{
 
 mod recovery;
 mod speech_scope;
+mod command_changes;
+pub(crate) use command_changes::CommandChanges;
 
 pub use recovery::reconnect;
 

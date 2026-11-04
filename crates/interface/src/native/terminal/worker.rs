@@ -36,6 +36,13 @@ pub(super) struct Worker {
 }
 
 impl Worker {
+    #[cfg(test)]
+    pub(super) fn busy_for_test() -> (Self, mpsc::Receiver<Command>) {
+        let (commands, inbox) = mpsc::sync_channel(1);
+        assert!(commands.send(Command::Resize(80, 24)).is_ok());
+        (Self { commands, output: Arc::new(Mutex::new(Output::default())), cancelled: Arc::new(AtomicBool::new(false)) }, inbox)
+    }
+
     pub(super) fn start(
         cols: u16,
         rows: u16,

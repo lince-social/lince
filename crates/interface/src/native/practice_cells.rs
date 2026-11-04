@@ -130,19 +130,28 @@ pub(crate) fn send(world: &World, owner: Entity, message: ClientMessage) -> Resu
 }
 
 pub(crate) fn runtime(world: &World, owner: Entity) -> Option<cell::CellRuntime> {
-    if crate::native::laboratory::blocked(world, owner) {
-        return None;
-    }
+    if crate::native::laboratory::blocked(world, owner) { return None; }
+    runtime_ref(world, owner).cloned()
+}
+
+pub(crate) fn command_source(world: &World, owner: Entity) -> Option<cell::terminal::commands::Source> {
+    runtime_ref(world, owner).map(|runtime| runtime.commands.source())
+}
+
+pub(crate) fn command_changes(world: &World, owner: Entity, command: &str, run: Option<&str>) -> Option<cell::terminal::commands::Changes> {
+    runtime_ref(world, owner)?.commands.observe(command, run).ok()
+}
+
+fn runtime_ref(world: &World, owner: Entity) -> Option<&cell::CellRuntime> {
     if let Some(source) = source(world, owner) {
         return world
             .get_resource::<PracticeCells>()?
             .cells
-            .get(&source)
-            .cloned();
+            .get(&source);
     }
     world
         .get_resource::<crate::native::app::CellHandle>()
-        .map(|handle| handle.0.clone())
+        .map(|handle| &handle.0)
 }
 
 pub(crate) fn permits_area(world: &World, entity: Entity, uid: &str) -> bool {

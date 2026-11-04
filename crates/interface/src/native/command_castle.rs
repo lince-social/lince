@@ -48,6 +48,8 @@ struct CommandCastle {
     history_request: String,
     waiting: bool,
     next: Instant,
+    requested: bool,
+    changes: Option<crate::native::cell_bridge::CommandChanges>,
 }
 
 pub struct CommandCastlePlugin;
@@ -153,6 +155,7 @@ pub(crate) fn populate(
         12.0,
     );
     let history = panel::column(world, owner);
+    let changes = crate::native::cell_bridge::CommandChanges::new(world, owner, &binding.uid, None);
     world.entity_mut(owner).insert(CommandCastle {
         binding,
         head,
@@ -168,6 +171,8 @@ pub(crate) fn populate(
         history_request: nucleus::new_uid("command-history"),
         waiting: false,
         next: Instant::now(),
+        requested: true,
+        changes,
     });
 }
 
@@ -239,6 +244,7 @@ impl Action for Control {
         };
         if castle.binding.source != Source::Local
             || crate::native::laboratory::blocked(world, owner)
+            || castle.changes.as_ref().is_some_and(|changes| !changes.current(world, owner))
         {
             return;
         }
@@ -387,6 +393,14 @@ fn update(
             .map(|(owner, _)| owner)
             .collect();
         for owner in owners {
+            if world.get::<CommandCastle>(owner).and_then(|castle| castle.changes.as_ref()).is_some_and(|changes| !changes.current(world, owner)) {
+                let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+                castle.changes.as_ref().unwrap().cancel();
+                castle.waiting = false;
+                castle.requested = false;
+                castle.pending = None;
+                continue;
+            }
             let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
             if castle.pending.as_ref() == Some(id) {
                 castle.pending = None;
@@ -402,6 +416,7 @@ fn update(
                 } => {
                     castle.runs.insert(0, run.clone());
                     castle.next = Instant::now();
+                    castle.requested = true;
                     let show = castle.settings.show_output;
                     history::reconcile(world, owner);
                     panel::status(world, status, "Running on this machine");
@@ -427,9 +442,19 @@ fn update(
                     ..
                 } => {
                     castle.next = Instant::now();
+                    castle.requested = true;
                     panel::status(world, status, "Stop requested");
                 }
-                ServerMessage::Error { message, .. } => panel::status(world, status, message),
+                ServerMessage::Error { message, .. } => {
+                    castle.requested = true;
+                    if castle.history_request == *id {
+                        castle.next = Instant::now() + Duration::from_secs(1);
+                        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() { wake.after(Duration::from_secs(1)); }
+                    } else {
+                        castle.next = Instant::now();
+                    }
+                    panel::status(world, status, message);
+                }
                 _ => {}
             }
         }
@@ -439,8 +464,22 @@ fn update(
         .iter(world)
         .collect();
     for owner in owners {
+        if crate::native::laboratory::blocked(world, owner) { continue; }
+        if world.get::<CommandCastle>(owner).is_some_and(|castle| castle.waiting || Instant::now() < castle.next) { continue; }
+        {
+            let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+            if castle.changes.as_ref().is_some_and(|changes| changes.take()) {
+                castle.requested = true;
+            }
+        }
         let castle = world.get::<CommandCastle>(owner).unwrap();
-        if castle.waiting || Instant::now() < castle.next {
+        if castle.waiting || !castle.requested || Instant::now() < castle.next { continue; }
+        if castle.changes.as_ref().is_some_and(|changes| !changes.current(world, owner)) {
+            castle.changes.as_ref().unwrap().cancel();
+            let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+            castle.requested = false;
+            castle.waiting = false;
+            castle.pending = None;
             continue;
         }
         if panel::send(
@@ -457,10 +496,12 @@ fn update(
         {
             let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
             castle.waiting = true;
-            castle.next = Instant::now() + Duration::from_secs(1);
-            if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-                wake.after(Duration::from_secs(1));
-            }
+            castle.requested = false;
+        } else {
+            let due = crate::native::cell_bridge::CommandChanges::retry(world, owner);
+            let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+            castle.next = due;
+            if let Some(changes) = &castle.changes { changes.retain(); }
         }
     }
 }

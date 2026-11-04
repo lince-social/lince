@@ -376,3 +376,34 @@ async fn runtime_shutdown_stops_commands_and_saves_the_reason() {
     let events = fixture.finish(&run).await;
     assert!(events.iter().any(|event| matches!(event, Event::Finished { error: Some(error), .. } if error == "Stopped when Lince closed")));
 }
+
+#[tokio::test]
+async fn real_run_notifications_resume_saved_output_and_history_without_polling() {
+    let fixture = Fixture::new();
+    let mut history = fixture.host.observe(&fixture.command, None).unwrap();
+    let run = fixture.start("printf 'ready\\n'; read -r first; printf 'seen:%s\\n' \"$first\"; read -r second; exit 7");
+    assert!(tokio::time::timeout(Duration::from_secs(3), history.changed()).await.unwrap());
+    let mut changes = fixture.host.observe(&fixture.command, Some(&run.id)).unwrap();
+    let mut offset = 0;
+    let mut events = Vec::new();
+    for expected in ["ready", "seen:changed"] {
+        loop {
+            let Response::Output { events: page, next_offset, .. } = fixture.host.handle(Request::Read { command: fixture.command.clone(), run: run.id.clone(), offset }).unwrap() else { panic!("Expected output"); };
+            events.extend(page);
+            offset = next_offset;
+            if String::from_utf8_lossy(&output(&events)).contains(expected) { break; }
+            assert!(tokio::time::timeout(Duration::from_secs(3), changes.changed()).await.unwrap());
+        }
+        if expected == "ready" {
+            fixture.host.handle(Request::Input { command: fixture.command.clone(), run: run.id.clone(), data_base64: BASE64.encode(b"changed\n") }).unwrap();
+        }
+    }
+    assert!(tokio::time::timeout(Duration::from_millis(20), history.changed()).await.is_err());
+    fixture.host.handle(Request::Resize { command: fixture.command.clone(), run: run.id.clone(), cols: 100, rows: 30 }).unwrap();
+    assert!(tokio::time::timeout(Duration::from_secs(3), changes.changed()).await.unwrap());
+    fixture.host.handle(Request::Input { command: fixture.command.clone(), run: run.id.clone(), data_base64: BASE64.encode(b"done\n") }).unwrap();
+    assert!(tokio::time::timeout(Duration::from_secs(3), history.changed()).await.unwrap());
+    let events = fixture.finish(&run).await;
+    assert!(String::from_utf8_lossy(&output(&events)).contains("seen:changed"));
+    assert!(events.iter().any(|event| matches!(event, Event::Finished { exit_code: Some(7), .. })));
+}

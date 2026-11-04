@@ -1,4 +1,6 @@
 mod journal;
+mod changes;
+pub use changes::{Changes, Source};
 #[cfg(test)]
 mod tests;
 
@@ -16,6 +18,7 @@ pub struct CommandHost(Arc<Host>);
 struct Host {
     root: PathBuf,
     runs: Mutex<HashMap<String, Active>>,
+    changes: Arc<changes::Registry>,
 }
 
 struct Active {
@@ -53,7 +56,19 @@ impl CommandHost {
         Self(Arc::new(Host {
             root,
             runs: Mutex::new(HashMap::new()),
+            changes: Arc::new(changes::Registry::default()),
         }))
+    }
+
+    pub fn observe(&self, command: &str, run: Option<&str>) -> Result<Changes, String> {
+        if !nucleus::valid_uid(command, "r") || run.is_some_and(|run| !nucleus::valid_uid(run, "run")) {
+            return Err("Invalid Command or run identity".into());
+        }
+        self.0.changes.observe(command, run)
+    }
+
+    pub fn source(&self) -> Source {
+        self.0.changes.source()
     }
 
     pub async fn request(
@@ -159,6 +174,8 @@ impl CommandHost {
                 let (handle, journal) = self.active(&command, &run)?;
                 let mut file = journal.lock().map_err(|error| error.to_string())?;
                 journal::append(&mut file, &Event::Resize { cols, rows })?;
+                drop(file);
+                self.0.changes.notify(&command, &run, false);
                 handle
                     .master
                     .lock()
@@ -230,6 +247,7 @@ impl CommandHost {
                             error: Some(error.clone()),
                         },
                     )?;
+                    self.0.changes.notify(&run.command, &run.id, true);
                     return Err(error);
                 }
             };
@@ -255,6 +273,7 @@ impl CommandHost {
             })
             .map_err(|error| {
                 stop(&spawned.handle, pid);
+                self.0.changes.notify(&run.command, &run.id, true);
                 error.to_string()
             })?;
         runs.insert(
@@ -271,10 +290,11 @@ impl CommandHost {
         let host = Arc::downgrade(&self.0);
         let id = run.id.clone();
         let command_uid = run.command.clone();
+        let changes = self.0.changes.clone();
         if let Err(error) = thread::Builder::new()
             .name(format!("command-{id}"))
             .spawn(move || {
-                let error = collect(spawned.reader, &journal, &spawned.handle, pid);
+                let error = collect(spawned.reader, &journal, &spawned.handle, pid, &changes, &command_uid, &id);
                 let mut child = spawned.child;
                 let result = child.wait();
                 spawned
@@ -303,6 +323,7 @@ impl CommandHost {
                         }
                         runs.remove(&id);
                     }
+                    changes.notify(&command_uid, &id, true);
                     let host = CommandHost(host);
                     let _ = host.prune(&command_uid);
                 }
@@ -311,8 +332,11 @@ impl CommandHost {
             if let Some(active) = runs.remove(&run.id) {
                 stop(&active.handle, active.pid);
             }
+            self.0.changes.notify(&run.command, &run.id, true);
             return Err(format!("Cannot monitor command: {error}"));
         }
+        drop(runs);
+        self.0.changes.notify(&run.command, &run.id, true);
         Ok(Response::Started { run })
     }
 
@@ -380,6 +404,9 @@ fn collect(
     journal: &Mutex<File>,
     handle: &TerminalHandle,
     pid: Option<u32>,
+    changes: &changes::Registry,
+    command: &str,
+    run: &str,
 ) -> Option<String> {
     let mut bytes = [0; 8192];
     let mut total = 0;
@@ -410,6 +437,7 @@ fn collect(
             stop(handle, pid);
             return Some(error);
         }
+        changes.notify(command, run, false);
         if total >= journal::OUTPUT_LIMIT {
             stop(handle, pid);
             return Some("Stopped at the 256 MiB output limit".into());

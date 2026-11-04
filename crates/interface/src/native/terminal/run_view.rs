@@ -13,6 +13,8 @@ pub(super) struct RunView {
     requested: bool,
     next: Instant,
     request: String,
+    changes: Option<crate::native::cell_bridge::CommandChanges>,
+    source: Option<cell::terminal::commands::Source>,
 }
 
 pub(crate) fn attach(world: &mut World, parent: Entity, run: &Run) -> Result<Entity, String> {
@@ -40,6 +42,8 @@ pub(crate) fn attach(world: &mut World, parent: Entity, run: &Run) -> Result<Ent
     terminal.exited = run.finished_ms.is_some();
     let status = terminal.status;
     panel::status(world, status, "Loading saved terminal output…");
+    let changes = run.finished_ms.is_none().then(|| crate::native::cell_bridge::CommandChanges::new(world, owner, &run.command, Some(&run.id))).flatten();
+    let source = crate::native::practice_cells::command_source(world, owner);
     world.entity_mut(owner).insert(RunView {
         command: run.command.clone(),
         run: run.id.clone(),
@@ -50,6 +54,8 @@ pub(crate) fn attach(world: &mut World, parent: Entity, run: &Run) -> Result<Ent
         requested: true,
         next: Instant::now(),
         request: nucleus::new_uid("output"),
+        changes,
+        source,
     });
     Ok(owner)
 }
@@ -63,9 +69,10 @@ enum Playback {
 
 impl Action for Playback {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if world.get::<RunView>(owner).is_none_or(|run| run.pending) {
+        if crate::native::laboratory::blocked(world, owner) || world.get::<RunView>(owner).is_none_or(|run| run.pending) {
             return;
         }
+        if !current(world, owner) { return; }
         if !matches!(self, Self::Follow) {
             let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
             terminal.opened = false;
@@ -86,7 +93,12 @@ impl Action for Playback {
             terminal.opened = false;
             terminal.frame = None;
         }
+        let changes = if matches!(self, Self::Follow) {
+            let view = world.get::<RunView>(owner).unwrap();
+            crate::native::cell_bridge::CommandChanges::new(world, owner, &view.command, Some(&view.run))
+        } else { None };
         let mut view = world.get_mut::<RunView>(owner).unwrap();
+        view.changes = changes;
         view.follow = matches!(self, Self::Follow);
         view.requested = true;
         view.next = Instant::now();
@@ -98,13 +110,20 @@ impl Action for Playback {
 }
 
 pub(super) fn poll(world: &mut World, owner: Entity) {
+    if world.get::<RunView>(owner).is_none_or(|view| view.complete || view.pending || Instant::now() < view.next) { return; }
+    if crate::native::laboratory::blocked(world, owner) { return; }
+    if !current(world, owner) { super::close(world, owner); return; }
+    {
+        let mut view = world.get_mut::<RunView>(owner).unwrap();
+        if view.follow && view.changes.as_ref().is_some_and(|changes| changes.take()) { view.requested = true; }
+    }
     resize(world, owner);
     let Some(view) = world.get::<RunView>(owner) else {
         return;
     };
     if view.pending
         || view.complete
-        || (!view.follow && !view.requested)
+        || !view.requested
         || Instant::now() < view.next
     {
         return;
@@ -121,6 +140,11 @@ pub(super) fn poll(world: &mut World, owner: Entity) {
         let mut view = world.get_mut::<RunView>(owner).unwrap();
         view.pending = true;
         view.requested = false;
+    } else {
+        let due = crate::native::cell_bridge::CommandChanges::retry(world, owner);
+        let mut view = world.get_mut::<RunView>(owner).unwrap();
+        view.next = due;
+        if let Some(changes) = &view.changes { changes.retain(); }
     }
 }
 
@@ -191,6 +215,7 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         }
         return false;
     };
+    if !current(world, owner) { super::close(world, owner); return true; }
     let status = world.get::<TerminalSand>(owner).unwrap().status;
     world.get_mut::<RunView>(owner).unwrap().pending = false;
     match message {
@@ -205,11 +230,14 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         } => {
             let following = world.get::<RunView>(owner).unwrap().follow;
             let live = following && !complete && !world.get::<TerminalSand>(owner).unwrap().exited;
-            if let Err(error) =
+            if !events.is_empty() && let Err(error) =
                 command(world, owner, worker::Command::Journal(events.clone(), live))
             {
                 panel::status(world, status, error);
-                world.get_mut::<RunView>(owner).unwrap().requested = true;
+                let mut view = world.get_mut::<RunView>(owner).unwrap();
+                view.requested = true;
+                view.next = Instant::now() + Duration::from_millis(20);
+                if let Some(changes) = &view.changes { changes.retain(); }
                 if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
                     wake.after(Duration::from_millis(20));
                 }
@@ -218,8 +246,9 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
             let mut view = world.get_mut::<RunView>(owner).unwrap();
             view.offset = *next_offset;
             view.complete = *complete;
-            view.next =
-                Instant::now() + Duration::from_millis(if events.is_empty() { 50 } else { 1 });
+            view.next = Instant::now();
+            view.requested |= following && !complete && !events.is_empty();
+            if *complete { view.changes = None; }
             let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
             if *complete {
                 terminal.exited = true;
@@ -236,19 +265,10 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                     "Saved output · Next output advances through the full run"
                 },
             );
-            if following
-                && !complete
-                && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
-            {
-                wake.after(Duration::from_millis(if events.is_empty() {
-                    50
-                } else {
-                    1
-                }));
-            }
         }
         ServerMessage::Error { message, .. } => {
             world.get_mut::<RunView>(owner).unwrap().complete = true;
+            world.get_mut::<RunView>(owner).unwrap().changes = None;
             let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
             terminal.opened = false;
             terminal.input.clear();
@@ -262,5 +282,17 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
 pub(super) fn detach(world: &mut World, owner: Entity) {
     if let Some(mut view) = world.get_mut::<RunView>(owner) {
         view.complete = true;
+        view.pending = false;
+        view.requested = false;
+        view.changes = None;
+        view.request = nucleus::new_uid("output");
     }
 }
+
+fn current(world: &World, owner: Entity) -> bool {
+    world.get::<RunView>(owner).is_some_and(|view| view.source.as_ref().is_none_or(|source|
+        crate::native::practice_cells::command_source(world, owner).is_some_and(|current| source.same(&current))))
+}
+
+#[cfg(test)]
+mod tests;

@@ -2,6 +2,9 @@ use super::*;
 use crate::native::sand_panel::tests::{app, settle};
 use serde_json::json;
 
+#[cfg(test)]
+mod performance;
+
 #[cfg_attr(test, tokio::test)]
 async fn removing_castle_keeps_run_alive_and_reopening_restores_history() {
     let directory = std::env::temp_dir().join(nucleus::new_uid("castle-test"));

@@ -36,13 +36,15 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
 
 ## Less work on each core
 
-- [ ] **P41 — Prevent false change notifications.** Avoid hot writes and insertions when values are unchanged. **Why:** a redundant component change can invalidate layout, text, capture and extraction.
-
 - [ ] **P42 — Retain unchanged text layout.** Preserve shaping, glyph and intrinsic measurement state while text and constraints stay the same. **Why:** text is costly, and the former global reset caused disappearing labels and flashing controls.
+
+    The static one/two-output diagnostic already shows zero changes to text, fonts, text layout, measured text size and computed UI nodes after warmup. Verify selective editing, inherited font changes and constraint changes before proposing another text cache; static rebuilding is not established here. Reuse the retained-text rendering regression.
 
 ## Interaction latency
 
 - [ ] **P43 — Prevent input backlog behind scene work.** Shorten measured exclusive sections and batch compatible input, preserving keyboard transitions, clicks, IME and scroll target/order. **Why:** a frame-sized delay per queued event compounds into visible lag; increasing capacity alone worsens age.
+
+    In the private 128-surface two-output diagnostic, input snapshot preparation alone takes about 14 ms per full native frame. Inspect frame-input alongside native-main (about 86 ms), render-update (61 ms), native-surfaces (14 ms) and frame-geometry (4.8 ms). These are overlapping elapsed diagnostic spans, not additive CPU work or physical latency. Trace the actual input preparation and scene work before adding queue capacity or threads. Profile: target/park-validation/performance-20261104/changes/receipt.json.
 
 - [ ] **P45 — Remove unnecessary settling frames.** For native interactions, request follow-up updates only for actual pending layout, animation, import or input work. Client-only frames no longer restart the blanket settling countdown. **Why:** blanket settling multiplies the cost of every interaction; required settling needs an explicit owner.
 
@@ -103,6 +105,8 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
     Shared capture ownership now uses Bevy's retained typed query state in extraction, with current component values and one canonical traversal for typed and World readers. The matched private 60-frame diagnostic reduced source derivation from 10.86 ms to 4.55 ms, extraction from 15.12 ms to 8.62 ms, and retained-frame preparation from 40.77 ms to 33.82 ms; measured frame CPU fell about 13%. These are elapsed stage timings in a diagnostic build, with overlapping spans. Twenty-seven source/capture checks and eight GPU/worker cases preserve dynamic ownership, disabled/replaced/dead sources, limits, shader owners, actual private/public pixels, frozen surfaces and image aliases. Daily responsiveness and physical output acceptance remain open. Comparison: target/park-validation/performance-20261104/queries/comparison.json.
 
     Ownership extraction now copies an immutable bounded link graph and resolves actual contributors, using fixed path storage and inline single-owner results. The next paired private 60-frame diagnostic reduced median elapsed preparation from 35.35 ms to 30.95 ms and total frame CPU by 8.7%. A CPU-only comparison against compact eager resolution also improved dense and repeated-contributor cases. Twenty-nine source/capture cases and eight GPU/worker cases preserve missing/dead/cyclic owners, traversal limits, extracted versions, frozen-image provenance, private capture and retained text. The source-derivation stage now measures graph construction; native-capture-source-normalization measures deferred resolution separately. Neither stage alone establishes the total gain. Install the optimized binary and measure ordinary typing, dragging, scrolling and application response under P65, alongside P36/P64/P16/P15. Diagnostic results do not establish physical acceptance. Comparison: target/park-validation/performance-20261104/allocations/comparison.json.
+
+    P41's companion/preview guarded-write experiment was rejected: eliminating hundreds of redundant component notifications changed full-frame CPU by only 0.6–1.4%, alongside a 1.3% single-output control shift. No runtime rewrite from that experiment is retained. The reusable static-output diagnostic checks actual visible content and, with LINCE_TRACE_PERFORMANCE=1, records stage costs and native change counts. Revisit false writes only if profiling demonstrates a material cost; concentrate daily latency measurements on the expensive shared scene, render and input paths. Evidence: target/park-validation/performance-20261104/changes/receipt.json.
 
 - [ ] **P16 — Validate near-60-FPS presentation on both monitors.** Use the daily many-item workspace and Firefox; measure each output during continuous motion against its refresh rate. **Why:** one fast monitor or browser-only counter cannot establish desktop performance.
 

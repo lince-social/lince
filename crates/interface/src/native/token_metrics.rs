@@ -15,6 +15,10 @@ struct Metric {
 }
 
 impl Metric {
+    fn needed(&self, current: Val) -> bool {
+        matches!(current, Val::Px(value) if value != 0.0 || self.base != 0.0)
+    }
+
     fn scale(&mut self, current: f32, ratio: f32) -> f32 {
         if !self.ready || current != self.applied {
             self.base = current;
@@ -105,14 +109,45 @@ pub(crate) struct LayoutData {
     icon: Has<crate::native::icons::IconButton>,
 }
 
+struct RequiredMetrics {
+    spacing: bool,
+    padding: bool,
+    font: bool,
+}
+
+impl RequiredMetrics {
+    fn new(node: &Node, metrics: &Metrics, font: Option<&TextFont>, icon: bool) -> Self {
+        Self {
+            spacing: !icon && (metrics.spacing[0].needed(node.column_gap) || metrics.spacing[1].needed(node.row_gap)),
+            padding: !icon && [node.padding.left, node.padding.right, node.padding.top, node.padding.bottom].into_iter().zip(&metrics.padding).any(|(value, metric)| metric.needed(value)),
+            font: font.is_some_and(|font| matches!(font.font_size, FontSize::Px(value) if value != 0.0 || metrics.font.base != 0.0)),
+        }
+    }
+
+    fn any(&self) -> bool {
+        self.spacing || self.padding || self.font
+    }
+}
+
 pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
     tokens.refresh();
+    let mut work = 0;
     for node in nodes.iter() {
-        tokens.prepare_metric(node.entity, "spacing", Token::Spacing);
-        tokens.prepare_metric(node.entity, "padding", Token::Padding);
-        tokens.prepare_metric(node.entity, "font-size", Token::FontSize);
+        let required = RequiredMetrics::new(node.node, node.metrics, node.font, node.icon);
+        if required.any() || node.width.is_some() || node.radius.is_some() {
+            work += 1;
+        }
+        if required.spacing {
+            tokens.prepare_metric(node.entity, "spacing", Token::Spacing);
+        }
+        if required.padding {
+            tokens.prepare_metric(node.entity, "padding", Token::Padding);
+        }
+        if required.font {
+            tokens.prepare_metric(node.entity, "font-size", Token::FontSize);
+        }
         if let Some(width) = node.width {
             tokens.prepare(node.entity, [width.0]);
         }
@@ -130,25 +165,30 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
                      radius,
                      icon,
                  }: LayoutDataItem| {
+        let required = RequiredMetrics::new(&node, &metrics, font.as_deref(), icon);
+        if !required.any() && width.is_none() && radius.is_none() {
+            return;
+        }
         let mut next = *metrics;
-        let gap = tokens.metric(entity, "spacing", Token::Spacing).number() / 8.0;
-        let padding = tokens.metric(entity, "padding", Token::Padding).number() / 8.0;
-        let font_ratio = tokens.metric(entity, "font-size", Token::FontSize).number() / 16.0;
-        if !icon {
+        if required.spacing {
+            let gap = tokens.metric(entity, "spacing", Token::Spacing).number() / 8.0;
             let column_gap = next.spacing[0].length(node.column_gap, gap);
             let row_gap = next.spacing[1].length(node.row_gap, gap);
-            let padding = UiRect {
-                left: next.padding[0].length(node.padding.left, padding),
-                right: next.padding[1].length(node.padding.right, padding),
-                top: next.padding[2].length(node.padding.top, padding),
-                bottom: next.padding[3].length(node.padding.bottom, padding),
-            };
             if node.column_gap != column_gap {
                 node.column_gap = column_gap;
             }
             if node.row_gap != row_gap {
                 node.row_gap = row_gap;
             }
+        }
+        if required.padding {
+            let ratio = tokens.metric(entity, "padding", Token::Padding).number() / 8.0;
+            let padding = UiRect {
+                left: next.padding[0].length(node.padding.left, ratio),
+                right: next.padding[1].length(node.padding.right, ratio),
+                top: next.padding[2].length(node.padding.top, ratio),
+                bottom: next.padding[3].length(node.padding.bottom, ratio),
+            };
             if node.padding != padding {
                 node.padding = padding;
             }
@@ -170,9 +210,11 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
                 node.border_radius = value;
             }
         }
-        if let Some(mut font) = font
+        if required.font
+            && let Some(mut font) = font
             && let FontSize::Px(value) = font.font_size
         {
+            let font_ratio = tokens.metric(entity, "font-size", Token::FontSize).number() / 16.0;
             let size = next.font.scale(value, font_ratio);
             if size != value {
                 font.font_size = FontSize::Px(size);
@@ -180,7 +222,7 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
         }
         metrics.set_if_neq(next);
     };
-    if nodes.iter().len() >= 1024 {
+    if work >= 1024 {
         nodes.par_iter_mut().for_each(apply);
     } else {
         nodes.iter_mut().for_each(apply);
@@ -190,6 +232,155 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
 pub(crate) mod tests {
     use super::*;
     use crate::native::tokens::{ThemeSettings, TokenValue};
+
+    #[test]
+    fn initially_empty_metrics_follow_late_fields_bindings_and_reparenting() {
+        let mut world = World::new();
+        world.init_resource::<ThemeSettings>();
+        world.register_required_components::<Node, Metrics>();
+        let mut overrides = crate::native::tokens::TokenOverrides::default();
+        overrides.set(Token::Spacing, TokenValue::Number(16.0));
+        overrides.set(Token::Padding, TokenValue::Number(24.0));
+        overrides.set(Token::FontSize, TokenValue::Number(32.0));
+        let parent = world.spawn(overrides).id();
+        let other = world.spawn_empty().id();
+        let entity = world.spawn((Node::default(), ChildOf(parent))).id();
+        world.run_system_cached(layout).unwrap();
+        world.clear_trackers();
+        world.run_system_cached(layout).unwrap();
+        assert!(!world.entity(entity).get_ref::<Node>().unwrap().is_changed());
+        assert!(
+            !world
+                .entity(entity)
+                .get_ref::<Metrics>()
+                .unwrap()
+                .is_changed()
+        );
+        let mut node = world.get_mut::<Node>(entity).unwrap();
+        node.column_gap = px(3);
+        node.padding = UiRect::all(px(2));
+        drop(node);
+        world.entity_mut(entity).insert((
+            TextFont {
+                font_size: FontSize::Px(20.0),
+                ..default()
+            },
+            crate::native::canvas_host::authoring::AuthoredTokenUses(
+                std::collections::BTreeMap::from([("font-size".into(), Token::Spacing)]),
+            ),
+        ));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(6));
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(6))
+        );
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(20.0)
+        );
+        world.entity_mut(entity).insert(ChildOf(other));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(3));
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(2))
+        );
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(10.0)
+        );
+        world
+            .entity_mut(entity)
+            .remove::<crate::native::canvas_host::authoring::AuthoredTokenUses>();
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(20.0)
+        );
+    }
+
+    #[test]
+    fn zero_theme_ratios_keep_authored_bases_and_zero_bound_controls_still_update() {
+        let mut world = World::new();
+        world.init_resource::<ThemeSettings>();
+        world.register_required_components::<Node, Metrics>();
+        let entity = world
+            .spawn((
+                Node {
+                    column_gap: px(4),
+                    padding: UiRect::all(px(6)),
+                    ..default()
+                },
+                TextFont {
+                    font_size: FontSize::Px(20.0),
+                    ..default()
+                },
+                crate::native::canvas_host::authoring::AuthoredTokenUses(
+                    std::collections::BTreeMap::from([("font-size".into(), Token::Spacing)]),
+                ),
+            ))
+            .id();
+        let control = world
+            .spawn((
+                Node::default(),
+                WidthToken(Token::Spacing, false),
+                RadiusToken(Token::Padding),
+            ))
+            .id();
+        world.run_system_cached(layout).unwrap();
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Spacing, TokenValue::Number(0.0));
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Padding, TokenValue::Number(0.0));
+        for _ in 0..3 {
+            world.run_system_cached(layout).unwrap();
+        }
+        assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(0));
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(0))
+        );
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(0.0)
+        );
+        assert_eq!(world.get::<Node>(control).unwrap().width, px(0));
+        assert_eq!(
+            world.get::<Node>(control).unwrap().border_radius,
+            BorderRadius::all(px(0))
+        );
+        world.get_mut::<Node>(entity).unwrap().column_gap = px(3);
+        world.get_mut::<TextFont>(entity).unwrap().font_size = FontSize::Px(10.0);
+        world.run_system_cached(layout).unwrap();
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Spacing, TokenValue::Number(16.0));
+        world
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Padding, TokenValue::Number(16.0));
+        world.run_system_cached(layout).unwrap();
+        assert_eq!(world.get::<Node>(entity).unwrap().column_gap, px(6));
+        assert_eq!(
+            world.get::<Node>(entity).unwrap().padding,
+            UiRect::all(px(12))
+        );
+        assert_eq!(
+            world.get::<TextFont>(entity).unwrap().font_size,
+            FontSize::Px(10.0)
+        );
+        assert_eq!(world.get::<Node>(control).unwrap().width, px(16));
+        assert_eq!(
+            world.get::<Node>(control).unwrap().border_radius,
+            BorderRadius::all(px(16))
+        );
+    }
 
     #[cfg_attr(test, test)]
     fn spacing_padding_and_type_scale_without_compounding_or_losing_authored_changes() {

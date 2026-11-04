@@ -2,6 +2,8 @@ use super::*;
 use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
 use std::time::Instant;
 
+mod offscreen;
+
 #[test]
 fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {
     let checks = lince_interface::host::performance::checks::bounded_distributions_keep_counts_tails_and_concurrent_samples;

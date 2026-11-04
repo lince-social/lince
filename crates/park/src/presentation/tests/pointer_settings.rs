@@ -142,6 +142,14 @@ fn pointer_settings_validate_save_restore_and_cancel_at_wide_and_narrow_sizes() 
         native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
         native::edit_mode::EditAction::Park.apply(canvas.world_mut(), root);
         settle(&mut canvas);
+        let customization = named_button(&mut canvas, "Configure Park in Customization");
+        reveal(&mut canvas, customization);
+        click(&mut canvas, customization, size);
+        settle(&mut canvas);
+        let pointer_section = named_button(&mut canvas, "Pointer and touch devices");
+        reveal(&mut canvas, pointer_section);
+        click(&mut canvas, pointer_section, size);
+        settle(&mut canvas);
         let open = named_button(&mut canvas, "Edit pointer settings");
         reveal(&mut canvas, open);
         click(&mut canvas, open, size);

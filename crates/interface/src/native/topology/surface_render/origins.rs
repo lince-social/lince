@@ -155,7 +155,7 @@ pub(super) fn extract(
     mut commands: Commands,
     world: Extract<&World>,
     cameras: Extract<Query<(Entity, RenderEntity, Option<&VisibleEntities>, Option<&RenderTarget>), (With<Camera>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>>,
-    entities: Extract<Query<Entity, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>>>,
+    sources: Extract<crate::native::capture::Sources>,
     materials: Extract<Query<Entity, Or<(
         With<MeshMaterial3d<StandardMaterial>>,
         With<MeshMaterial3d<crate::native::description::shader::spatial::MeshMaterial>>,
@@ -199,7 +199,10 @@ pub(super) fn extract(
         origins.bound();
         commands.entity(render).insert(Inputs(origins));
     }
-    let scopes = entities.iter().take(MAX_LINKS + 1).map(|entity| (entity, crate::native::capture::semantic_sources(&world, entity))).collect();
+    let scopes = {
+        let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCaptureSources);
+        sources.entities().take(MAX_LINKS + 1).map(|entity| (entity, sources.resolve(entity))).collect()
+    };
     commands.insert_resource(MaterialInputs(material_images, targets, scopes));
 }
 

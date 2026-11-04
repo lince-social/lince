@@ -80,6 +80,7 @@ stages! {
     NativeRecordPresentation => "native-record-presentation",
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
+    NativeCaptureSources => "native-capture-source-derivation",
     RenderUpdate => "render-update",
     FrameGeometry => "frame-geometry",
     FrameInput => "frame-input",

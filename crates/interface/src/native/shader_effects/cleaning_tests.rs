@@ -3,6 +3,22 @@ use crate::native::{canvas_host::Identity, topology::rooms, workspace::Workspace
 use std::sync::Arc;
 
 #[test]
+fn typed_capture_sources_keep_all_shader_owners_and_ignore_preview_identity() {
+    use bevy::ecs::system::SystemState;
+    let mut world = World::new();
+    let owners: Vec<_> = (0..3).map(|_| world.spawn(crate::native::layout::LayoutBox::new(Vec2::ONE)).id()).collect();
+    let preview = world.spawn(crate::native::layout::LayoutBox::new(Vec2::ONE)).id();
+    let source = world.spawn((Floating { record:owners[0], preview, distant:false }, RecordMesh(owners[1]), RecordSphere(owners[2]))).id();
+    let mut state = SystemState::<crate::native::capture::Sources>::new(&mut world);
+    assert_eq!(state.get(&world).unwrap().resolve(source), owners.iter().copied().collect());
+    assert_eq!(state.get(&world).unwrap().resolve(source), crate::native::capture::semantic_sources(&world,source));
+    world.entity_mut(source).remove::<Floating>();
+    assert_eq!(state.get(&world).unwrap().resolve(source), owners[1..].iter().copied().collect());
+    world.despawn(owners[1]);
+    assert_eq!(state.get(&world).unwrap().resolve(source), owners[1..].iter().copied().collect());
+}
+
+#[test]
 fn cleaning_preset_converts_an_existing_floor_without_losing_its_record_source_or_mapping() {
     let mut world = World::new();
     world.init_resource::<Assets<Font>>();

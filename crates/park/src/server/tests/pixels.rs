@@ -358,10 +358,14 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
     let initial = canvas.probe_frame().unwrap();
     let geometry = initial.geometry.clone();
     let retained = std::env::var("LINCE_PARK_PIXEL_PATH").as_deref() == Ok("retained");
+    let rounds = std::env::var("LINCE_PARK_PIXEL_ROUNDS").ok()
+        .map(|value| value.parse::<usize>().unwrap()).unwrap_or(24);
+    assert!((3..=600).contains(&rounds) && rounds.is_multiple_of(3));
     let before = canvas.world().resource::<Updates>().0;
     let mut elapsed = Vec::new();
     let mut cpu_time = Vec::new();
-    for index in 0..24 {
+    eprintln!("pixel-stream measuring {rounds} rounds");
+    for index in 0..rounds {
         let color = [[255, 0, 0], [0, 255, 0], [0, 0, 255]][index % 3];
         buffers.push(colored(&mut harness, &window, color));
         let snapshots = harness.server.windows();
@@ -403,9 +407,10 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
             count > 20_000,
             "New client color was not visible: {color:?}, pixels={count}"
         );
+        lince_interface::host::performance::flush_if_due();
     }
     let updates = canvas.world().resource::<Updates>().0 - before;
-    assert_eq!(updates, if retained { 0 } else { 24 });
+    assert_eq!(updates, if retained { 0 } else { rounds as u64 });
     if retained {
         use std::io::{Seek, SeekFrom, Write};
         let (file, _, buffer) = buffers.last_mut().unwrap();

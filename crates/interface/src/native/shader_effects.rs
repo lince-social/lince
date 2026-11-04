@@ -47,6 +47,19 @@ pub(crate) fn capture_sources(world: &World, entity: Entity) -> impl Iterator<It
     ].into_iter().flatten()
 }
 
+#[derive(bevy::ecs::query::QueryData)]
+pub(crate) struct CaptureOwners {
+    floating: Option<&'static Floating>,
+    mesh: Option<&'static RecordMesh>,
+    sphere: Option<&'static RecordSphere>,
+}
+
+impl CaptureOwnersItem<'_, '_> {
+    pub(crate) fn entities(&self) -> [Option<Entity>; 3] {
+        [self.floating.map(|floating| floating.record), self.mesh.map(|mesh| mesh.0), self.sphere.map(|sphere| sphere.0)]
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FloatingSettings {
     #[serde(default)]

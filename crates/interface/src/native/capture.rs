@@ -8,6 +8,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 mod ui;
 mod status;
+mod sources;
+pub(crate) use sources::Sources;
+pub use sources::semantic_sources;
 pub mod render;
 pub(crate) use ui::{item_panel, window_panel};
 pub(crate) use status::panel as status_panel;
@@ -127,40 +130,6 @@ pub fn excluded(world: &World, entity: Entity) -> bool {
     excluded_with(world, entity, &BTreeSet::new())
 }
 
-pub fn semantic_sources(world: &World, entity: Entity) -> BTreeSet<Entity> {
-    fn visit(world: &World, entity: Entity, path: &mut BTreeSet<Entity>, budget: &mut usize, sources: &mut BTreeSet<Entity>) {
-        if *budget == 0 || path.len() >= MAX_DEPTH || !path.insert(entity) || world.get_entity(entity).is_err() {
-            sources.insert(entity);
-            return;
-        }
-        *budget -= 1;
-        let boundary = world.get::<LayoutBox>(entity).is_some() || world.get::<Workspaces>(entity).is_some()
-            || world.get::<WindowSources>(entity).is_some() || world.get::<crate::native::full_record::window::Metadata>(entity).is_some()
-            || world.get::<crate::native::layout::desktop::ApplicationWindow>(entity).is_some();
-        if boundary { sources.insert(entity); }
-        let mut linked = false;
-        if let Some(owner) = world.get::<crate::native::topology::presentation::VisualOwner>(entity) {
-            linked = true;
-            visit(world, owner.0, path, budget, sources);
-        }
-        if let Some(owner) = world.get::<render::TargetSource>(entity) {
-            linked = true;
-            visit(world, owner.0, path, budget, sources);
-        }
-        for owner in crate::native::shader_effects::capture_sources(world, entity) {
-            linked = true;
-            visit(world, owner, path, budget, sources);
-        }
-        if !boundary {
-            if let Some(parent) = world.get::<ChildOf>(entity) { visit(world, parent.parent(), path, budget, sources); }
-            else if !linked { sources.insert(entity); }
-        }
-        path.remove(&entity);
-    }
-    let mut sources = BTreeSet::new();
-    visit(world, entity, &mut BTreeSet::new(), &mut 1024, &mut sources);
-    sources
-}
 
 pub fn excluded_with(world: &World, entity: Entity, additional: &BTreeSet<Entity>) -> bool {
     fn visit(world: &World, current: Entity, additional: &BTreeSet<Entity>, path: &mut BTreeSet<Entity>, budget: &mut usize) -> bool {

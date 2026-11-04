@@ -69,6 +69,8 @@ stages! {
     NativeMain => "native-main",
     NativeUpdate => "native-update",
     NativeStyles => "native-styles",
+    NativeSandSizes => "native-sand-sizes",
+    NativeIconColors => "native-icon-colors",
     NativeIconMetrics => "native-icon-metrics",
     NativeLayoutMetrics => "native-layout-metrics",
     NativeLayoutSolve => "native-layout-solve",

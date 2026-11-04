@@ -55,8 +55,15 @@ pub(crate) struct IconData {
     metrics: &'static mut IconMetrics,
 }
 
-pub(crate) fn icons(tokens: Tokens, mut icons: Query<IconData>) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
+pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
+    tokens.refresh();
+    for icon in icons.iter() {
+        tokens.prepare_metric(icon.entity, "icon-size", Token::IconSize);
+        tokens.prepare_metric(icon.entity, "icon-padding", Token::IconPadding);
+    }
+    tokens.finish_preparing();
     let apply = |IconDataItem {
                      entity,
                      mut style,
@@ -98,8 +105,22 @@ pub(crate) struct LayoutData {
     icon: Has<crate::native::icons::IconButton>,
 }
 
-pub(crate) fn layout(tokens: Tokens, mut nodes: Query<LayoutData>) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
+pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
+    tokens.refresh();
+    for node in nodes.iter() {
+        tokens.prepare_metric(node.entity, "spacing", Token::Spacing);
+        tokens.prepare_metric(node.entity, "padding", Token::Padding);
+        tokens.prepare_metric(node.entity, "font-size", Token::FontSize);
+        if let Some(width) = node.width {
+            tokens.prepare(node.entity, [width.0]);
+        }
+        if let Some(radius) = node.radius {
+            tokens.prepare(node.entity, [radius.0]);
+        }
+    }
+    tokens.finish_preparing();
     let apply = |LayoutDataItem {
                      entity,
                      mut node,

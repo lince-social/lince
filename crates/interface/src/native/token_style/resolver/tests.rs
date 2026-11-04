@@ -51,8 +51,25 @@ fn typed_resolution_tracks_inheritance_sources_rules_and_removals() {
     );
     let mut state = SystemState::<Tokens>::new(&mut world);
     let mut verify = |world: &World| {
-        let typed = state.get(world).unwrap();
+        let mut typed = state.get(world).unwrap();
+        typed.refresh();
         for entity in &entities {
+            if world.get_entity(*entity).is_ok() {
+                typed.prepare_kind(*entity);
+                typed.prepare(
+                    *entity,
+                    crate::native::tokens::TOKENS
+                        .iter()
+                        .map(|definition| definition.token),
+                );
+            }
+        }
+        typed.finish_preparing();
+        for entity in &entities {
+            assert_eq!(
+                typed.inherited_kind(*entity),
+                super::super::inherited_kind(world, *entity)
+            );
             for definition in crate::native::tokens::TOKENS {
                 assert_eq!(
                     typed.resolve(*entity, definition.token),
@@ -63,6 +80,7 @@ fn typed_resolution_tracks_inheritance_sources_rules_and_removals() {
             }
         }
     };
+    verify(&world);
     verify(&world);
     world.entity_mut(root).insert(Colors {
         background: Some(RuleColor::Specific([10, 20, 30, 255])),
@@ -97,8 +115,88 @@ fn typed_resolution_tracks_inheritance_sources_rules_and_removals() {
     world.entity_mut(preview).remove::<TokenOverrides>();
     world.entity_mut(text).remove::<SandText>();
     verify(&world);
+    world.entity_mut(preview).remove::<PreviewSource>();
+    world
+        .entity_mut(preview)
+        .insert(PreviewKind(SandStyleKind::Fiote));
+    world.entity_mut(root).insert(Colors {
+        border: Some(RuleColor::Specific([1, 2, 3, 255])),
+        ..default()
+    });
+    world.entity_mut(leaf).remove::<ChildOf>();
+    verify(&world);
+    world.entity_mut(preview).insert(PreviewSource(source));
     world.despawn(source);
     verify(&world);
+}
+
+#[cfg_attr(test, test)]
+fn cached_values_follow_same_frame_edits_and_retire_removed_entities() {
+    let mut world = World::new();
+    world.init_resource::<ThemeSettings>();
+    let root = world
+        .spawn((Node::default(), PreviewKind(SandStyleKind::Text)))
+        .id();
+    let leaf = world.spawn((Node::default(), ChildOf(root))).id();
+    let mut first = SystemState::<Tokens>::new(&mut world);
+    let mut second = SystemState::<Tokens>::new(&mut world);
+    let prepare = |state: &mut SystemState<Tokens>, world: &World| {
+        let mut tokens = state.get(world).unwrap();
+        tokens.refresh();
+        tokens.prepare_kind(leaf);
+        tokens.prepare_metric(leaf, "font-size", Token::FontSize);
+        (
+            tokens.inherited_kind(leaf),
+            tokens.metric(leaf, "font-size", Token::FontSize),
+        )
+    };
+    assert_eq!(prepare(&mut first, &world).1.number(), 16.0);
+    assert_eq!(prepare(&mut second, &world).1.number(), 16.0);
+    world
+        .entity_mut(leaf)
+        .insert(RecordPlacement("record".into()));
+    assert_eq!(prepare(&mut first, &world).0, Some(SandStyleKind::Record));
+    world.entity_mut(leaf).remove::<RecordPlacement>();
+    assert_eq!(prepare(&mut first, &world).0, Some(SandStyleKind::Text));
+    let mut values = TokenOverrides::default();
+    values.set(Token::FontSize, TokenValue::Number(25.0));
+    world.entity_mut(root).insert(values);
+    assert_eq!(prepare(&mut first, &world).1.number(), 25.0);
+    world
+        .entity_mut(leaf)
+        .insert(AuthoredTokenUses(std::collections::BTreeMap::from([(
+            "font-size".into(),
+            Token::Padding,
+        )])));
+    assert_eq!(prepare(&mut second, &world).1.number(), 8.0);
+    world.entity_mut(leaf).remove::<AuthoredTokenUses>();
+    world.entity_mut(root).remove::<TokenOverrides>();
+    world.entity_mut(root).remove::<PreviewKind>();
+    assert_eq!(
+        prepare(&mut first, &world),
+        (None, TokenValue::Number(16.0))
+    );
+    let many = (0..1024)
+        .map(|_| world.spawn(Node::default()).id())
+        .collect::<Vec<_>>();
+    {
+        let mut tokens = first.get(&world).unwrap();
+        tokens.refresh();
+        for entity in &many {
+            tokens.prepare(*entity, [Token::Padding]);
+        }
+        assert!(tokens.cache.values.len() >= 1024);
+    }
+    for entity in many {
+        world.despawn(entity);
+    }
+    world.despawn(leaf);
+    let mut tokens = first.get(&world).unwrap();
+    tokens.refresh();
+    tokens.finish_preparing();
+    assert!(tokens.cache.values.is_empty());
+    assert!(tokens.cache.kinds.is_empty());
+    assert!(tokens.cache.values.capacity() <= 256);
 }
 
 #[cfg_attr(test, test)]
@@ -155,4 +253,5 @@ fn typed_metric_bindings_follow_authored_replacement_and_removal() {
 crate::native::laboratory_cases! {
     typed_resolution_tracks_inheritance_sources_rules_and_removals,
     typed_metric_bindings_follow_authored_replacement_and_removal,
+    cached_values_follow_same_frame_edits_and_retire_removed_entities,
 }

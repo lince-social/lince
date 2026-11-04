@@ -34,8 +34,6 @@ The stage profiler is opt-in with LINCE_TRACE_PERFORMANCE=1 and emits bounded JS
 
 ## Less work on each core
 
-- [ ] **P37 — Recompute styles only when dependencies change.** Track theme, ancestor overrides, kind, relation colors, preview sources and hierarchy; invalidate descendants and retire removed entities. **Why:** unchanged appearance does not justify repeated ancestor walks. Start conservatively and narrow invalidation after measurement.
-
 - [ ] **P38 — Retain derived Record presentation by revision.** Refresh affected rows, labels and declarations only after relevant data changes. **Why:** unrelated client frames should not clone or rebuild unchanged native views.
 
 - [ ] **P39 — Retain query state in measured hot callers.** Replace newly constructed queries or broad World access where profiling justifies typed cached access. **Why:** repeated archetype discovery and component lookup scale poorly. Avoid a mechanical repository-wide rewrite.
@@ -102,7 +100,7 @@ The stage profiler is opt-in with LINCE_TRACE_PERFORMANCE=1 and emits bounded JS
 
 - [ ] **P65 — Validate interaction latency under load.** Measure typing, clicks, scrolling and dragging with both monitors and Firefox active, including freezes and p95/p99 age. **Why:** responsiveness is an acceptance requirement separate from throughput.
 
-    The shared metric path now uses typed scheduled queries, retained state and parallel iteration for large queries. Local behavior and rendering checks pass; the dense diagnostic used about 45% less update time and 32% less total CPU time. Install the new optimized binary and measure actual typing, scrolling and dragging before claiming a live improvement. Comparison: target/park-validation/fixes-20261102/live-performance-20261103/metric-comparison.json.
+    The shared style and metric paths now retain resolved values, invalidate conservatively on relevant source changes and retire removed entities. Typed bindings and retained queries remove repeated ancestor walks and entity collections. The latest paired diagnostic reduced large unchanged updates from about 204 ms to 33 ms, changing-theme updates from 196 ms to 122 ms, and total CPU time by about 63% relative to the first metric batch. Ten behavior cases and seven rendering/capture checks pass. These are diagnostic-build results; install the new optimized binary and measure actual typing, scrolling and dragging. If relevant source changes repeatedly invalidate the whole cache in the daily scene, narrow invalidation from that evidence. Comparison: target/park-validation/performance-20261104/style-cache-comparison.json.
 
 - [ ] **P16 — Validate near-60-FPS presentation on both monitors.** Use the daily many-item workspace and Firefox; measure each output during continuous motion against its refresh rate. **Why:** one fast monitor or browser-only counter cannot establish desktop performance.
 

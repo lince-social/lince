@@ -9,6 +9,7 @@ use bevy::ecs::{
     query::{Allow, QueryData},
     system::SystemParam,
 };
+use std::collections::HashMap;
 
 pub(crate) mod tests;
 
@@ -70,22 +71,161 @@ impl InputsItem<'_, '_> {
 pub(crate) struct Tokens<'w, 's> {
     inputs: Query<'w, 's, Inputs, Allow<Disabled>>,
     theme: Res<'w, ThemeSettings>,
+    changed: Query<
+        'w,
+        's,
+        (),
+        (
+            Allow<Disabled>,
+            Or<(
+                Changed<ChildOf>,
+                Changed<TokenOverrides>,
+                Changed<SandText>,
+                Changed<PreviewKind>,
+                Changed<PreviewSource>,
+                Changed<StoredSand>,
+                Changed<Colors>,
+                Changed<AuthoredTokenUses>,
+                Added<RecordPlacement>,
+                Added<CanvasItem>,
+                Added<crate::native::protein_area::RecordBinding>,
+                Added<crate::native::castle::Castle>,
+                Added<crate::native::fiote::Fiote>,
+                Added<crate::native::map_castle::MapSand>,
+                Added<crate::native::time_castle::TimeSettings>,
+            )>,
+        ),
+    >,
+    removed: Removed<'w, 's>,
+    cache: Local<'s, Cache>,
+}
+
+#[derive(Default)]
+struct Cache {
+    values: HashMap<(Entity, usize), (TokenValue, &'static str)>,
+    kinds: HashMap<Entity, Option<SandStyleKind>>,
+}
+
+macro_rules! removals {
+    ($($field:ident: $component:ty),* $(,)?) => {
+        #[derive(SystemParam)]
+        struct Removed<'w, 's> {
+            $($field: RemovedComponents<'w, 's, $component>,)*
+        }
+        impl Removed<'_, '_> {
+            fn changed(&mut self) -> bool {
+                let mut changed = false;
+                $(changed |= self.$field.read().count() != 0;)*
+                changed
+            }
+        }
+    };
+}
+
+removals! {
+    parents: ChildOf, overrides: TokenOverrides, text: SandText, previews: PreviewKind,
+    sources: PreviewSource, stored: StoredSand, colors: Colors, uses: AuthoredTokenUses,
+    records: RecordPlacement, items: CanvasItem, bindings: crate::native::protein_area::RecordBinding,
+    castles: crate::native::castle::Castle, fiotes: crate::native::fiote::Fiote,
+    maps: crate::native::map_castle::MapSand, clocks: crate::native::time_castle::TimeSettings,
+    nodes: Node, icons: crate::native::icons::IconStyle, backgrounds: BackgroundToken,
+    labels: TextToken, borders: BorderToken, outlines: OutlineToken, cursors: CursorToken,
 }
 
 impl Tokens<'_, '_> {
+    pub(crate) fn refresh(&mut self) {
+        let removed = self.removed.changed();
+        if removed || self.theme.is_changed() || !self.changed.is_empty() {
+            self.cache.values.clear();
+            self.cache.kinds.clear();
+        }
+    }
+
+    pub(crate) fn prepare(&mut self, entity: Entity, tokens: impl IntoIterator<Item = Token>) {
+        for token in tokens {
+            let key = (entity, token as usize);
+            if !self.cache.values.contains_key(&key) {
+                let value = self.resolve_direct(entity, token);
+                self.cache.values.insert(key, value);
+            }
+        }
+    }
+
+    pub(crate) fn prepare_metric(&mut self, entity: Entity, usage: &str, fallback: Token) {
+        self.prepare(entity, [self.metric_token(entity, usage, fallback)]);
+    }
+
+    pub(crate) fn prepare_kind(&mut self, entity: Entity) {
+        if !self.cache.kinds.contains_key(&entity) {
+            let kind = self.inherited_kind(entity);
+            self.cache.kinds.insert(entity, kind);
+        }
+    }
+
+    pub(crate) fn finish_preparing(&mut self) {
+        if self.cache.values.capacity() > (self.cache.values.len() * 4).max(256) {
+            self.cache.values.shrink_to_fit();
+        }
+        if self.cache.kinds.capacity() > (self.cache.kinds.len() * 4).max(64) {
+            self.cache.kinds.shrink_to_fit();
+        }
+    }
+
+    pub(crate) fn kind(&self, entity: Entity) -> Option<SandStyleKind> {
+        self.inputs.get(entity).ok().and_then(|input| input.kind())
+    }
+
+    pub(crate) fn inherited_kind(&self, entity: Entity) -> Option<SandStyleKind> {
+        if let Some(kind) = self.cache.kinds.get(&entity) {
+            return *kind;
+        }
+        let mut ancestor = Some(entity);
+        while let Some(entity) = ancestor {
+            let input = self.inputs.get(entity).ok()?;
+            if let Some(kind) = input.kind() {
+                return Some(kind);
+            }
+            ancestor = input.parent.map(ChildOf::parent);
+        }
+        None
+    }
+
+    pub(crate) fn has_use(&self, entity: Entity, usage: &str) -> bool {
+        self.inputs
+            .get(entity)
+            .ok()
+            .and_then(|input| input.uses)
+            .is_some_and(|uses| uses.0.contains_key(usage))
+    }
+
+    pub(crate) fn clock(&self, entity: Entity) -> bool {
+        self.inputs.get(entity).is_ok_and(|input| input.time)
+    }
+
     pub(crate) fn metric(&self, entity: Entity, usage: &str, fallback: Token) -> TokenValue {
-        let token = self
-            .inputs
+        self.resolve(entity, self.metric_token(entity, usage, fallback))
+            .0
+    }
+
+    fn metric_token(&self, entity: Entity, usage: &str, fallback: Token) -> Token {
+        self.inputs
             .get(entity)
             .ok()
             .and_then(|input| input.uses)
             .and_then(|uses| uses.0.get(usage))
             .copied()
-            .unwrap_or(fallback);
-        self.resolve(entity, token).0
+            .unwrap_or(fallback)
     }
 
     pub(crate) fn resolve(&self, entity: Entity, token: Token) -> (TokenValue, &'static str) {
+        self.cache
+            .values
+            .get(&(entity, token as usize))
+            .copied()
+            .unwrap_or_else(|| self.resolve_direct(entity, token))
+    }
+
+    fn resolve_direct(&self, entity: Entity, token: Token) -> (TokenValue, &'static str) {
         if matches!(
             token,
             Token::SandBackground
@@ -153,7 +293,7 @@ impl Tokens<'_, '_> {
                 );
             }
             if let Some(source) = input.source {
-                return self.resolve(source.0, token);
+                return self.resolve_direct(source.0, token);
             }
             ancestor = input.parent.map(ChildOf::parent);
         }

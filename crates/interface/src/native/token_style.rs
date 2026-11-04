@@ -5,12 +5,16 @@ use crate::native::{
     tokens::{SandStyleKind, ThemeSettings, Token, TokenOverrides, TokenValue},
     workspace::RecordPlacement,
 };
-use bevy::{prelude::*, text::TextCursorStyle};
+use bevy::{
+    ecs::{query::QueryState, system::SystemState},
+    prelude::*,
+};
 
 pub use lince_interface::style::{
     BackgroundToken, BorderToken, CursorToken, OutlineToken, TextToken, background, border, text,
 };
 
+mod presentation;
 pub(crate) mod resolver;
 pub(crate) use resolver::Tokens;
 
@@ -173,6 +177,7 @@ pub struct TokenStylePlugin;
 impl Plugin for TokenStylePlugin {
     fn build(&self, app: &mut App) {
         crate::native::token_metrics::install(app);
+        app.register_required_components::<crate::native::icons::IconStyle, AppliedIconColors>();
         app.init_resource::<ThemeSettings>()
             .add_systems(
                 PostUpdate,
@@ -188,7 +193,13 @@ impl Plugin for TokenStylePlugin {
             )
             .add_systems(
                 PostUpdate,
-                apply
+                (
+                    sizes,
+                    presentation::apply,
+                    presentation::icons,
+                    presentation::clear,
+                )
+                    .chain()
                     .in_set(ApplyTokenStyles)
                     .before(bevy::ui::UiSystems::Prepare),
             );
@@ -198,15 +209,32 @@ impl Plugin for TokenStylePlugin {
 #[derive(SystemSet, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ApplyTokenStyles;
 
-fn apply(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeStyles);
-    let sands: Vec<_> = world
-        .query::<(Entity, &CanvasItem, Option<&AppliedSize>)>()
-        .iter(world)
-        .filter(|(entity, _, _)| kind(world, *entity).is_some())
-        .map(|(entity, item, applied)| (entity, item.size, applied.map(|size| size.0)))
-        .collect();
-    for (entity, size, previous) in sands {
+#[derive(Default)]
+struct Sizes {
+    query: Option<QueryState<(Entity, &'static CanvasItem, Option<&'static AppliedSize>)>>,
+    tokens: Option<SystemState<Tokens<'static, 'static>>>,
+    values: Vec<(Entity, Vec2, Option<Vec2>, Vec2)>,
+}
+
+fn sizes(world: &mut World, mut state: Local<Sizes>) {
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeSandSizes);
+    let Sizes {
+        query,
+        tokens,
+        values: sands,
+    } = &mut *state;
+    let query = query.get_or_insert_with(|| world.query());
+    sands.clear();
+    sands.extend(
+        query
+            .iter(world)
+            .filter(|(entity, _, _)| kind(world, *entity).is_some())
+            .map(|(entity, item, applied)| {
+                (entity, item.size, applied.map(|size| size.0), Vec2::ZERO)
+            }),
+    );
+    for &(entity, size, previous, _) in sands.iter() {
         let mut values = overrides(world, entity);
         let baseline = previous.unwrap_or_else(|| {
             let defaults = ThemeSettings::default();
@@ -229,207 +257,28 @@ fn apply(world: &mut World) {
             }
         }
         set_overrides(world, entity, values);
-        let next = Vec2::new(
-            resolve(world, entity, Token::Width).0.number(),
-            resolve(world, entity, Token::Height).0.number(),
-        );
+    }
+    let tokens = tokens.get_or_insert_with(|| SystemState::new(world));
+    {
+        let mut tokens = tokens.get(world).unwrap();
+        tokens.refresh();
+        for &(entity, _, _, _) in sands.iter() {
+            tokens.prepare(entity, [Token::Width, Token::Height]);
+        }
+        tokens.finish_preparing();
+        for (entity, _, _, next) in sands.iter_mut() {
+            *next = Vec2::new(
+                tokens.resolve(*entity, Token::Width).0.number(),
+                tokens.resolve(*entity, Token::Height).0.number(),
+            );
+        }
+    }
+    for &(entity, size, previous, next) in sands.iter() {
         if size != next {
             world.get_mut::<CanvasItem>(entity).unwrap().size = next;
         }
         if previous != Some(next) {
             world.entity_mut(entity).insert(AppliedSize(next));
-        }
-        let background = resolve(world, entity, Token::SandBackground).0.color();
-        let border = resolve(world, entity, Token::SandBorder).0.color();
-        let radius = resolve(world, entity, Token::Roundness).0.number();
-        let width = resolve(world, entity, Token::BorderWidth).0.number();
-        let clock = world
-            .get::<crate::native::time_castle::TimeSettings>(entity)
-            .is_some();
-        if let Some(mut color) = world.get_mut::<BackgroundColor>(entity) {
-            color.set_if_neq(BackgroundColor(if clock {
-                Color::NONE
-            } else {
-                background
-            }));
-        }
-        if let Some(mut color) = world.get_mut::<BorderColor>(entity) {
-            color.set_if_neq(BorderColor::all(border));
-        } else {
-            world.entity_mut(entity).insert(BorderColor::all(border));
-        }
-        if let Some(mut node) = world.get_mut::<Node>(entity) {
-            let next_radius = BorderRadius::all(px(radius));
-            let next_border = UiRect::all(px(if clock { 0.0 } else { width }));
-            if node.border_radius != next_radius || node.border != next_border {
-                node.border_radius = next_radius;
-                node.border = next_border;
-            }
-        }
-    }
-    let previews: Vec<_> = world
-        .query_filtered::<Entity, With<crate::native::sand_store::PreviewKind>>()
-        .iter(world)
-        .collect();
-    for entity in previews {
-        let radius = resolve(world, entity, Token::Roundness).0.number();
-        if let Some(mut node) = world.get_mut::<Node>(entity) {
-            let radius = BorderRadius::all(px(radius));
-            if node.border_radius != radius {
-                node.border_radius = radius;
-            }
-        }
-    }
-    let bindings: Vec<_> = world
-        .query_filtered::<(
-            Entity,
-            Option<&BackgroundToken>,
-            Option<&TextToken>,
-            Option<&BorderToken>,
-            Option<&OutlineToken>,
-            Option<&CursorToken>,
-        ), Or<(
-            With<BackgroundToken>,
-            With<TextToken>,
-            With<BorderToken>,
-            With<OutlineToken>,
-            With<CursorToken>,
-        )>>()
-        .iter(world)
-        .map(|(entity, bg, text, border, outline, cursor)| {
-            (
-                entity,
-                bg.copied(),
-                text.copied(),
-                border.copied(),
-                outline.copied(),
-                cursor.copied(),
-            )
-        })
-        .collect();
-    for (entity, bg, text, border, outline, cursor) in bindings {
-        let icon = world
-            .get::<crate::native::icons::IconButton>(entity)
-            .is_some();
-        if let Some(binding) = bg.filter(|_| {
-            !icon
-                || crate::native::canvas_host::authoring::token_use_override(
-                    world,
-                    entity,
-                    "background",
-                )
-        }) {
-            let token = if world.get::<CanvasItem>(entity).is_some()
-                && kind(world, entity).is_some()
-                && !crate::native::canvas_host::authoring::token_use_override(
-                    world,
-                    entity,
-                    "background",
-                ) {
-                Token::SandBackground
-            } else {
-                binding.0
-            };
-            let value = resolve(world, entity, token).0.color();
-            if let Some(mut color) = world.get_mut::<BackgroundColor>(entity) {
-                color.set_if_neq(BackgroundColor(value));
-            }
-        }
-        if let Some(binding) = text {
-            let token = if inherited_kind(world, entity).is_some()
-                && !crate::native::canvas_host::authoring::token_use_override(world, entity, "text")
-            {
-                Token::SandInk
-            } else {
-                binding.0
-            };
-            let value = resolve(world, entity, token).0.color();
-            if let Some(mut color) = world.get_mut::<TextColor>(entity) {
-                color.set_if_neq(TextColor(value));
-            }
-            if let Some(mut image) = world.get_mut::<ImageNode>(entity)
-                && image.color != value
-            {
-                image.color = value;
-            }
-        }
-        if let Some(binding) = border.filter(|_| {
-            !icon
-                || crate::native::canvas_host::authoring::token_use_override(
-                    world, entity, "border",
-                )
-        }) {
-            let value = resolve(world, entity, binding.0).0.color();
-            if let Some(mut color) = world.get_mut::<BorderColor>(entity) {
-                color.set_if_neq(BorderColor::all(value));
-            }
-        }
-        if let Some(binding) = outline {
-            let value = resolve(world, entity, binding.0).0.color();
-            if let Some(mut outline) = world.get_mut::<Outline>(entity) {
-                if outline.color != value {
-                    outline.color = value;
-                }
-            }
-        }
-        if let Some(binding) = cursor {
-            let value = resolve(world, entity, binding.0).0.color();
-            if let Some(mut cursor) = world.get_mut::<TextCursorStyle>(entity) {
-                if cursor.color != value {
-                    cursor.color = value;
-                }
-            }
-        }
-    }
-    let icons: Vec<_> = world
-        .query::<(
-            Entity,
-            &crate::native::icons::IconStyle,
-            Option<&AppliedIconColors>,
-        )>()
-        .iter(world)
-        .map(|(entity, style, previous)| (entity, *style, previous.copied()))
-        .collect();
-    for (entity, style, previous) in icons {
-        let defaults = crate::native::icons::IconStyle::default();
-        let mut previous = previous.unwrap_or(AppliedIconColors {
-            colors: [defaults.color, defaults.background, defaults.border_color],
-            bound: [true; 3],
-        });
-        let mut next = [style.color, style.background, style.border_color];
-        for (index, token) in [Token::Ink, Token::Surface, Token::Accent]
-            .into_iter()
-            .enumerate()
-        {
-            previous.bound[index] &= next[index] == previous.colors[index];
-            if previous.bound[index] {
-                next[index] = resolve(world, entity, token).0.color();
-            }
-        }
-        if next != [style.color, style.background, style.border_color] {
-            let mut style = world
-                .get_mut::<crate::native::icons::IconStyle>(entity)
-                .unwrap();
-            style.color = next[0];
-            style.background = next[1];
-            style.border_color = next[2];
-        }
-        previous.colors = next;
-        if let Some(mut current) = world.get_mut::<AppliedIconColors>(entity) {
-            current.set_if_neq(previous);
-        } else {
-            world.entity_mut(entity).insert(previous);
-        }
-    }
-    if world.contains_resource::<ClearColor>() {
-        let value = world
-            .resource::<ThemeSettings>()
-            .resolve(Token::CanvasBackground, None, &TokenOverrides::default())
-            .0
-            .color();
-        let mut clear = world.resource_mut::<ClearColor>();
-        if clear.0 != value {
-            clear.0 = value;
         }
     }
 }
@@ -438,6 +287,16 @@ fn apply(world: &mut World) {
 struct AppliedIconColors {
     colors: [Color; 3],
     bound: [bool; 3],
+}
+
+impl Default for AppliedIconColors {
+    fn default() -> Self {
+        let defaults = crate::native::icons::IconStyle::default();
+        Self {
+            colors: [defaults.color, defaults.background, defaults.border_color],
+            bound: [true; 3],
+        }
+    }
 }
 
 pub(crate) mod tests {

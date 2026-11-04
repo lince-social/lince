@@ -18,12 +18,6 @@ struct PartIdentity(BTreeMap<Entity, String>);
 #[derive(Component)]
 pub(crate) struct AuthoredTokenUses(pub(crate) BTreeMap<String, Token>);
 
-pub(crate) fn token_use_override(world: &World, entity: Entity, usage: &str) -> bool {
-    world
-        .get::<AuthoredTokenUses>(entity)
-        .is_some_and(|uses| uses.0.contains_key(usage))
-}
-
 pub(crate) fn metric_token(world: &World, entity: Entity, usage: &str, fallback: Token) -> Token {
     world
         .get::<AuthoredTokenUses>(entity)

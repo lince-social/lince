@@ -22,13 +22,15 @@ use std::{
     path::PathBuf,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
         mpsc::{Receiver, SyncSender, TrySendError, sync_channel},
     },
     thread::{JoinHandle, Thread},
 };
 
 static NEXT_FRAME_SEQUENCE: AtomicU64 = AtomicU64::new(1);
+const NATIVE: u8 = 1;
+const SCENE: u8 = 2;
 
 mod input_queue;
 pub(crate) mod latency;
@@ -174,7 +176,7 @@ pub struct CanvasWorker {
     requests: Receiver<HostRequest>,
     failures: Receiver<ProbeFailure>,
     running: Arc<AtomicBool>,
-    dirty: Arc<AtomicBool>,
+    dirty: Arc<AtomicU8>,
     input_activity: lince_interface::host::input::InputActivity,
     native_focus: lince_interface::host::input::InputActivity,
     retired_input: Arc<AtomicU64>,
@@ -245,7 +247,7 @@ impl CanvasWorker {
         let (failed, failures) = sync_channel(1);
         let running = Arc::new(AtomicBool::new(true));
         let active = running.clone();
-        let dirty = Arc::new(AtomicBool::new(true));
+        let dirty = Arc::new(AtomicU8::new(NATIVE));
         let changed = dirty.clone();
         let input_activity = lince_interface::host::input::InputActivity::default();
         let worker_activity = input_activity.clone();
@@ -331,7 +333,7 @@ impl CanvasWorker {
             .publish(scene)
             .map_err(|_| std::io::Error::other("the Park canvas has stopped"))?;
         lince_interface::host::performance::count(lince_interface::host::performance::Count::ScenePublished);
-        self.wake();
+        self.wake_for(SCENE);
         Ok(())
     }
 
@@ -425,10 +427,14 @@ impl CanvasWorker {
     pub(crate) fn test_activity(&self) -> (bool, u64) { (self.idle.load(Ordering::Acquire), self.publications.load(Ordering::Acquire)) }
 
     pub fn wake(&self) {
+        self.wake_for(NATIVE);
+    }
+
+    fn wake_for(&self, reason: u8) {
         lince_interface::host::performance::count(lince_interface::host::performance::Count::CanvasExplicitWake);
         #[cfg(test)]
         self.idle.store(false, Ordering::Release);
-        self.dirty.store(true, Ordering::Release);
+        self.dirty.fetch_or(reason, Ordering::Release);
         self.thread.unpark();
     }
 
@@ -462,7 +468,7 @@ fn run(
     starting: LatestSender<Started>,
     commands: SyncSender<HostRequest>,
     active: &Active,
-    dirty: &Arc<AtomicBool>,
+    dirty: &Arc<AtomicU8>,
     notify: Option<&WakeSignal>,
     prepare: impl FnOnce(&mut Presentation),
 ) -> Result<(), ProbeFailure> {
@@ -487,7 +493,7 @@ fn run(
         }
         #[cfg(test)]
         idle.store(false, Ordering::Release);
-        changed.store(true, Ordering::Release);
+        changed.fetch_or(NATIVE, Ordering::Release);
         thread.unpark();
     });
     let connected = configuration.cell.is_some();
@@ -518,7 +524,7 @@ fn run(
     let mut scene_revision = 0;
     let mut started = false;
     let mut pending = false;
-    let mut settle = 8;
+    let mut settle: u8 = 8;
     let mut input_serial = 0;
     let mut awaiting: Option<Completed> = None;
     let mut button_pending = false;
@@ -527,6 +533,8 @@ fn run(
     let mut focus_revision = None;
     let mut timing = latency::Batch::default();
     let mut last_sample = None;
+    let mut pixel_work = false;
+    let mut pixel_imports = false;
     let synchronize_focus = |canvas: &mut Presentation, revision: &mut Option<(u64, u64)>| -> Result<(), ProbeFailure> {
         canvas.synchronize_input_activity()?;
         let current = (active.input_activity.revision(), active.native_focus.revision());
@@ -540,7 +548,9 @@ fn run(
         #[cfg(test)]
         active.idle.store(false, Ordering::Release);
         let stopping = !running.load(Ordering::Acquire);
-        let changed = dirty.swap(false, Ordering::AcqRel);
+        let reasons = dirty.swap(0, Ordering::AcqRel);
+        let changed = reasons != 0;
+        let native_changed = reasons & NATIVE != 0;
         synchronize_focus(&mut canvas, &mut focus_revision)?;
         if !started {
             canvas.frame()?;
@@ -550,18 +560,29 @@ fn run(
         if let Some(scene) = scenes.take() {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::SceneReceived);
             let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::SceneSync);
+            let pixels = !native_changed && !showoff && scene_revision == scene.revision && canvas.pixel_scene(&scene);
+            let synchronized = if pixels { canvas.sync_pixels(&scene.windows).ok() } else { None };
+            if tracing_frames() {
+                eprintln!("Park scene: native={native_changed}, settle={settle}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}", scene.revision, canvas.retains_frame(), canvas.pixel_scene(&scene));
+            }
+            if matches!(synchronized, Some(crate::presentation::PixelSync::Ready | crate::presentation::PixelSync::Pending)) {
+                pending = synchronized == Some(crate::presentation::PixelSync::Pending);
+                pixel_work = true;
+                pixel_imports = true;
+            } else {
+                if let Some(display) = scene.display { canvas.world_mut().insert_resource(display); }
+                canvas.outputs(scene.outputs)?;
+                if showoff {
+                    canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
+                    showoff = false;
+                }
+                pending = canvas.sync_windows(&scene.windows)?;
+                settle = settle.max(3);
+                pixel_work = false;
+                pixel_imports = false;
+            }
             scene_revision = scene.revision;
-            if let Some(display) = scene.display {
-                canvas.world_mut().insert_resource(display);
-            }
-            canvas.outputs(scene.outputs)?;
-            if showoff {
-                canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
-                showoff = false;
-            }
-            pending = canvas.sync_windows(&scene.windows)?;
             windows = scene.windows;
-            settle = settle.max(3);
         }
         let mut input = false;
         let pointer = if button_pending { None } else { motion.take() };
@@ -802,10 +823,16 @@ fn run(
         }
         if input {
             settle = settle.max(3);
-        } else if changed {
+            pixel_work = false;
+            pixel_imports = false;
+        } else if native_changed {
             settle = settle.max(1);
+            pixel_work = false;
+            pixel_imports = false;
         }
-        if pending && canvas.imports_ready() { settle = settle.max(1); }
+        if pending && canvas.imports_ready() {
+            if pixel_imports { pixel_work = true; } else { settle = settle.max(1); }
+        }
         if let Some(completed) = awaiting.as_ref() {
             if !completed.frame.ready()? {
                 lince_interface::host::performance::count(lince_interface::host::performance::Count::GpuPark);
@@ -822,7 +849,7 @@ fn run(
             if let Some(notify) = notify { notify.ring(); }
             lince_interface::host::performance::flush_if_due();
         }
-        if settle == 0 {
+        if settle == 0 && !pixel_work {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::IdlePark);
             #[cfg(test)]
             active.idle.store(true, Ordering::Release);
@@ -832,12 +859,24 @@ fn run(
         let settling = !input && !changed && !pending;
         if pending {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
-            pending = canvas.sync_windows(&windows)?;
+            if pixel_imports {
+                match canvas.sync_pixels(&windows) {
+                    Ok(crate::presentation::PixelSync::Ready) => pending = false,
+                    Ok(crate::presentation::PixelSync::Pending) => {},
+                    _ => { pixel_imports = false; pixel_work = false; settle = settle.max(1); pending = canvas.sync_windows(&windows)?; }
+                }
+            } else { pending = canvas.sync_windows(&windows)?; }
         }
         if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
         if let Some(notify) = notify { notify.ring(); }
-        if settling { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
-        let frame = canvas.frame()?;
+        let pixels = pixel_work && settle == 0 && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
+        if settling && !pixels { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
+        let frame = if pixels { canvas.pixel_frame()? } else {
+            pixel_imports = false;
+            settle = settle.max(1);
+            canvas.frame()?
+        };
+        pixel_work = false;
         lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
         active.progress.applied.fetch_max(input_serial, Ordering::Release);
         canvas.accessibility_input_completed();
@@ -856,7 +895,7 @@ fn run(
                 input_serial,
                 latency: latency::Frame::new(frame_sequence, last_sample),
             });
-        settle -= 1;
+        settle = settle.saturating_sub(1);
     }
     canvas.finish()
 }

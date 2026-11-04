@@ -32,13 +32,7 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
 
 - [ ] **P36 — Measure native scene wake causes.** Count buffer-only commits, geometry/style changes, Record messages, timers and self-wakes in the daily workspace. **Why:** a quiet laptop workspace shares work with the other output and the rest of Lince.
 
-    Source counters pass local checks (15 unit/behavior cases and five enabled private cases). Receipt: target/park-validation/performance-20261104/wake-receipt.json. After installing the new binary with LINCE_TRACE_PERFORMANCE=1, record 30 seconds of the daily workspace and compare pixel/semantic commits, native scene delivery, accepted/superseded frames, settling, timer and Cell activity. Counters measure requests and processing steps; they can overlap and do not equal OS wakeups. Style invalidations count each resolver cache, not unique edits. No daily-workspace measurement has passed yet.
-
-## Client pixels and semantic state
-
-- [ ] **P44 — Separate client pixels from semantic scene updates.** Retain native geometry, focus and hit-test state when only an application buffer changes. **Why:** client animation should not rebuild the rest of Lince. Preserve resize, popup, capture and ownership revisions.
-
-    Desktop already preserves its scene barrier for ordinary pixel commits; do not replace that behavior based on the server's broader window revision. Each new window payload still runs native output/window synchronization, resets settling and goes through the full native app update. Reproduce a continuous buffer stream, retain semantic state, and measure native updates avoided. Preserve geometry, focus, popup, capture, color, import-failure and buffer/GPU ownership, including damage without a new attachment. Compare accepted/published/superseded counters without interpreting every superseded frame as a pixel-induced rejection.
+    Source counters pass local checks (15 unit/behavior cases and five enabled private cases). Receipt: target/park-validation/performance-20261104/wake-receipt.json. After installing the new binary with LINCE_TRACE_PERFORMANCE=1, record 30 seconds of the daily workspace and compare pixel/semantic commits, native scene delivery, accepted/superseded frames, settling, timer and Cell activity. Compare native-pixel-frames-prepared and native-pixels against native-main and settling after client-only activity: application buffers now retain native geometry and input snapshots. Counters measure requests and processing steps; they can overlap and do not equal OS wakeups. Style invalidations count each resolver cache, not unique edits. No daily-workspace measurement has passed yet.
 
 ## Less work on each core
 
@@ -56,7 +50,7 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
 
 - [ ] **P43 — Prevent input backlog behind scene work.** Shorten measured exclusive sections and batch compatible input, preserving keyboard transitions, clicks, IME and scroll target/order. **Why:** a frame-sized delay per queued event compounds into visible lag; increasing capacity alone worsens age.
 
-- [ ] **P45 — Remove unnecessary settling frames.** Request follow-up updates only for actual pending layout, animation, import or input work. **Why:** blanket settling multiplies the cost of every interaction; required settling needs an explicit owner.
+- [ ] **P45 — Remove unnecessary settling frames.** For native interactions, request follow-up updates only for actual pending layout, animation, import or input work. Client-only frames no longer restart the blanket settling countdown. **Why:** blanket settling multiplies the cost of every interaction; required settling needs an explicit owner.
 
 - [ ] **P46 — Keep heavy background operations outside input handling.** Use bounded workers for measured blocking I/O, persistence, decoding or projection, publishing versioned results. **Why:** a slow data operation must not delay typing or pointer movement. Reject obsolete results.
 
@@ -107,6 +101,8 @@ Input timing is enabled by the same profiler flag. It retains oldest native batc
 - [ ] **P65 — Validate interaction latency under load.** Measure typing, clicks, scrolling and dragging with both monitors and Firefox active, including freezes and p95/p99 age. **Why:** responsiveness is an acceptance requirement separate from throughput.
 
     The shared style and metric paths now retain resolved values, invalidate conservatively on relevant source changes and retire removed entities. Typed bindings and retained queries remove repeated ancestor walks and entity collections. The latest paired diagnostic reduced large unchanged updates from about 204 ms to 33 ms, changing-theme updates from 196 ms to 122 ms, and total CPU time by about 63% relative to the first metric batch. Ten behavior cases and seven rendering/capture checks pass. These are diagnostic-build results; install the new optimized binary and measure actual typing, scrolling and dragging. If relevant source changes repeatedly invalidate the whole cache in the daily scene, narrow invalidation from that evidence. Comparison: target/park-validation/performance-20261104/style-cache-comparison.json.
+
+    Client-only commits now reuse native geometry, focus and hit testing, while input, native wakes and semantic/output changes run the normal update. A private 64-Sand real-client stream needed zero native updates for 24 buffers, versus 24 previously; median elapsed time fell from 97.4 ms to 41.4 ms and CPU work by about 54%. RGB readback, released-buffer reuse, capture exclusion and policy revocation passed; the real worker also preserves input/title/wake updates and settles under a continuous stream. These are warmed diagnostic-build results, not physical latency or daily-use acceptance. Install the optimized binary and measure P36/P64/P65/P16/P15. Remaining extraction/render work is still substantial. Comparison and regressions: target/park-validation/performance-20261104/pixels/.
 
 - [ ] **P16 — Validate near-60-FPS presentation on both monitors.** Use the daily many-item workspace and Firefox; measure each output during continuous motion against its refresh rate. **Why:** one fast monitor or browser-only counter cannot establish desktop performance.
 

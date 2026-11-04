@@ -46,7 +46,7 @@ fn an_atomic_file_edit_wakes_a_quiet_worker_and_publishes_the_new_policy_without
         let workspaces: Vec<_> = world.get::<native::workspace::Workspaces>(root).unwrap().entries.iter().map(|workspace| workspace.id).collect();
         for workspace in workspaces { native::workspace_config::set_physics(world, root, workspace, false); }
         native::edit_mode::EditAction::Open.apply(world, root);
-        native::edit_mode::EditAction::Park.apply(world, root);
+        native::edit_mode::EditAction::Customization.apply(world, root);
     }))).unwrap();
     frame(&worker, serial);
     let serial = worker.input(Input::Test(Box::new(|canvas| {

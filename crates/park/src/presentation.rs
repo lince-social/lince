@@ -38,6 +38,8 @@ mod tablet;
 pub mod manipulation;
 mod outputs;
 mod records;
+mod pixels;
+pub(crate) use pixels::Sync as PixelSync;
 #[cfg(test)]
 mod color_tests;
 #[cfg(feature = "native-client-gate")]
@@ -77,6 +79,7 @@ pub struct Presentation {
     magnification_caret: Option<lince_interface::host::magnification::Caret>,
     magnification_pointer_epoch: Option<u64>,
     input_activity_revision: Option<u64>,
+    retained: Option<pixels::Retained>,
 }
 
 pub struct Frame {
@@ -85,7 +88,7 @@ pub struct Frame {
     pub output: Option<lince_interface::host::OutputId>,
     image: Option<ExportedImage>,
     pub geometry: Option<Arc<lince_interface::host::GeometrySnapshot>>,
-    pub input: InputSnapshot,
+    pub input: Arc<InputSnapshot>,
     pub windows: Vec<WindowConfiguration>,
     pub previewed: Vec<lince_interface::host::SurfaceId>,
     pub fullscreen: bool,
@@ -107,6 +110,7 @@ impl OutputFrame {
     }
 }
 
+#[derive(Clone)]
 pub struct WindowConfiguration {
     pub surface: lince_interface::host::SurfaceId,
     pub size: [u32; 2],
@@ -709,14 +713,19 @@ impl Presentation {
             magnification_caret: None,
             magnification_pointer_epoch: None,
             input_activity_revision: None,
+            retained: None,
             manipulation: None,
             records,
         })
     }
 
     pub fn world_mut(&mut self) -> &mut World {
+        self.retained = None;
         self.app.world_mut()
     }
+
+    #[cfg(test)]
+    pub(crate) fn world(&self) -> &World { self.app.world() }
 
     pub(crate) fn prepare_linear_output(&mut self, requested: bool) -> Result<(), ProbeFailure> {
         if !requested { return Ok(()); }
@@ -1060,6 +1069,7 @@ impl Presentation {
     }
 
     pub fn frame(&mut self) -> Result<Frame, ProbeFailure> {
+        self.retained = None;
         self.synchronize_input_activity()?;
         let hand_focus = self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>();
         if let Some(request) = hand_focus
@@ -1106,7 +1116,7 @@ impl Presentation {
         }
         if self.suspended() {
             let geometry = self.frame_geometry().map(Arc::new);
-            let input = self.finish_input(geometry.as_deref())?;
+            let input = Arc::new(self.finish_input(geometry.as_deref())?);
             self.release_capture_uploads();
             return Ok(Frame {
                 client_formats: self.client_formats.clone(),
@@ -1123,26 +1133,26 @@ impl Presentation {
                 capture: None,
             });
         }
-        let texture = self
-            .app
-            .sub_app(RenderApp)
-            .world()
-            .resource::<RenderAssets<GpuImage>>()
-            .get(self.target.id())
-            .ok_or_else(|| ProbeFailure {
-                stage: "native_frame".into(),
-                detail: "the canvas output is not prepared".into(),
-            })?
-            .texture
-            .clone();
         let geometry = self.frame_geometry().map(Arc::new);
         crate::runtime::trace_frame("frame-geometry", started);
         let detail = std::time::Instant::now();
-        let input = self.finish_input(geometry.as_deref())?;
+        let input = Arc::new(self.finish_input(geometry.as_deref())?);
         crate::runtime::trace_frame("frame-input", detail);
         let detail = std::time::Instant::now();
         let windows = self.window_configurations();
         crate::runtime::trace_frame("frame-window-configurations", detail);
+        let retained = pixels::Retained {
+            geometry, input, windows,
+            previewed: native::layout::desktop::overview::previewed_applications(self.app.world_mut()),
+        };
+        self.retained = Some(retained.clone());
+        self.export_frame(retained)
+    }
+
+    fn export_frame(&mut self, retained: pixels::Retained) -> Result<Frame, ProbeFailure> {
+        let started = std::time::Instant::now();
+        let texture = self.app.sub_app(RenderApp).world().resource::<RenderAssets<GpuImage>>()
+            .get(self.target.id()).ok_or_else(|| input_failure("the canvas output is not prepared"))?.texture.clone();
         let detail = std::time::Instant::now();
         let mut outputs = Vec::new();
         for (id, target) in &self.output_state.targets {
@@ -1170,10 +1180,10 @@ impl Presentation {
             encoding: self.native_encoding(),
             output: self.output_state.assignments.focused(),
             image: Some(self.renderer.export_copy(&texture)?),
-            geometry,
-            input,
-            windows,
-            previewed: native::layout::desktop::overview::previewed_applications(self.app.world_mut()),
+            geometry: retained.geometry,
+            input: retained.input,
+            windows: retained.windows,
+            previewed: retained.previewed,
             fullscreen: self.render_fullscreen,
             origin: self.render_origin,
             outputs,

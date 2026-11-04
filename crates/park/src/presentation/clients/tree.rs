@@ -31,7 +31,61 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 }
 
 impl Presentation {
+    pub(crate) fn sync_pixels(&mut self, windows: &[WindowSnapshot]) -> Result<PixelSync, ProbeFailure> {
+        if self.retained.is_none() || self.suspended() || !self.rejected.is_empty()
+            || windows.len() != self.painted_windows.len()
+            || windows.iter().any(|window| self.painted_windows.get(&window.id).is_none_or(|previous| !previous.same_semantics(window))) {
+            return Ok(PixelSync::Incompatible);
+        }
+        self.renderer.retain_imports(windows);
+        let mut pending = false;
+        let mut imported = Vec::new();
+        for snapshot in windows {
+            if !snapshot.mapped { self.painted_windows.insert(snapshot.id, snapshot.clone()); continue; }
+            let mut ready = true;
+            let Some(window) = self.windows.get(&snapshot.id) else { return Ok(PixelSync::Incompatible); };
+            for node in &snapshot.nodes {
+                let Some(view) = window.nodes.get(&node.surface) else { return Ok(PixelSync::Incompatible); };
+                if view.version == Some(node.content.version) { continue; }
+                let Some((texture, opaque)) = self.renderer.import_surface(node, view.previous(node))? else {
+                    pending = true; ready = false; continue;
+                };
+                if opaque != view.opaque { return Ok(PixelSync::Incompatible); }
+                if view.texture.as_ref() != Some(&texture) {
+                    let image = self.app.world().resource::<Assets<Image>>().get(&view.image).ok_or_else(|| input_failure("The retained client image is unavailable"))?;
+                    if image.texture_descriptor.size != texture.size() || image.texture_descriptor.format != texture.format() {
+                        return Ok(PixelSync::Incompatible);
+                    }
+                }
+                imported.push((snapshot.id, node, texture, opaque));
+            }
+            if !ready { imported.clear(); continue; }
+            for (id, node, texture, opaque) in imported.drain(..) {
+                let view = self.windows.get_mut(&id).unwrap().nodes.get_mut(&node.surface).unwrap();
+                if view.texture.as_ref() != Some(&texture) {
+                    let world = self.app.world_mut();
+                    world.resource_mut::<Textures>().0.insert(view.image.id(), texture.clone());
+                    world.resource_mut::<Messages<bevy::asset::AssetEvent<ClientMaterial>>>()
+                        .write(bevy::asset::AssetEvent::Modified { id: view.material.id() });
+                    view.texture = Some(texture);
+                }
+                view.version = Some(node.content.version);
+                view.layout = Some(node.layout);
+                view.opaque = opaque;
+                self.uploads.push(node.content.clone());
+            }
+            if let Some(window) = self.windows.get_mut(&snapshot.id) {
+                for node in &snapshot.nodes {
+                    window.nodes.get_mut(&node.surface).unwrap().commit = Some(node.damage.current_commit());
+                }
+            }
+            self.painted_windows.insert(snapshot.id, snapshot.clone());
+        }
+        Ok(if pending { PixelSync::Pending } else { PixelSync::Ready })
+    }
+
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
+        self.retained = None;
         lince_interface::host::performance::count(lince_interface::host::performance::Count::ClientSync);
         let started = std::time::Instant::now();
         self.renderer.retain_imports(windows);

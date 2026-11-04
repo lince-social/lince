@@ -68,6 +68,7 @@ stages! {
     SceneSync => "scene-sync",
     NativeMain => "native-main",
     NativeUpdate => "native-update",
+    NativePixels => "native-pixels",
     NativeStyles => "native-styles",
     NativeSandSizes => "native-sand-sizes",
     NativeIconColors => "native-icon-colors",
@@ -169,6 +170,7 @@ counts! {
     ImportRetry => "native-client-import-retries",
     SupersededFrame => "native-frames-superseded-by-scene-revision",
     FrameAccepted => "native-frames-accepted",
+    PixelFrame => "native-pixel-frames-prepared",
 }
 
 #[derive(Default)]

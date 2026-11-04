@@ -166,13 +166,18 @@ fn request(
         }
     }
     if let Some(density) = super::previews::demand(world, root, entity, item) {
-        let density = density * if result.text { 2.0 } else { 1.0 };
         result.density = if result.visible {
             result.density.max(density)
         } else {
             density
         };
         result.visible = true;
+    }
+    if result.visible {
+        result.text = has_text(world, entity);
+        if result.text {
+            result.density *= 2.0;
+        }
     }
     result
 }
@@ -186,7 +191,6 @@ fn request_in(
     physical_size: UVec2,
     scale_factor: f32,
 ) -> Request {
-    let (offset, clip) = crate::native::layout::viewport::clip(world, entity);
     let active = world
         .get::<WorkspaceMember>(entity)
         .is_some_and(|member| super::holes::live_in(world, root, active_workspace, member.0))
@@ -195,13 +199,9 @@ fn request_in(
         && world
             .get::<crate::native::layout::desktop::Suppressed>(entity)
             .is_none()
-        && clip.size().min_element() > 0.0
         && world
             .get::<crate::native::protein_area::placement::Pending>(entity)
-            .is_none()
-        && !super::holes::surface_pieces_in(world, root, active_workspace, entity, item)
-            .0
-            .is_empty();
+            .is_none();
     let previous = world
         .get::<Surface>(entity)
         .filter(|surface| surface.visible)
@@ -211,12 +211,21 @@ fn request_in(
         density: 1.0,
         previous,
         visible: active,
-        text: has_text(world, entity),
+        text: false,
         exact: world
             .get::<crate::native::layout::desktop::ApplicationWindow>(entity)
             .is_some(),
     };
     if !active || !item.size.is_finite() || item.size.min_element() <= 0.0 {
+        request.visible = false;
+        return request;
+    }
+    let (offset, clip) = crate::native::layout::viewport::clip(world, entity);
+    let exposed = clip.size().min_element() > 0.0
+        && !super::holes::surface_pieces_in(world, root, active_workspace, entity, item)
+            .0
+            .is_empty();
+    if !exposed {
         request.visible = false;
         return request;
     }
@@ -277,8 +286,7 @@ fn request_in(
             && !points.iter().all(|point| point.x > max.x)
             && !points.iter().all(|point| point.z < min.y)
             && !points.iter().all(|point| point.z > max.y);
-        request.density =
-            canvas.zoom as f32 * scale_factor * scale * if request.text { 2.0 } else { 1.0 };
+        request.density = canvas.zoom as f32 * scale_factor * scale;
         return request;
     }
     let rotation = Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0).as_dquat();
@@ -294,8 +302,7 @@ fn request_in(
         .iter()
         .map(|point| -point.z)
         .fold(f64::INFINITY, f64::min);
-    request.density = physical_size.y as f32 * scale / (2.0 * tangent * (nearest as f32).max(0.5))
-        * if request.text { 2.0 } else { 1.0 };
+    request.density = physical_size.y as f32 * scale / (2.0 * tangent * (nearest as f32).max(0.5));
     request
 }
 
@@ -1027,6 +1034,8 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod admission;
 
     fn scene(count: usize) -> (World, Entity, Vec<Entity>) {
         let mut world = World::new();

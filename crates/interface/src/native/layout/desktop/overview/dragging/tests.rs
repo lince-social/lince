@@ -453,6 +453,24 @@ fn edge_scroll_clamps_scaled_content_and_returns_quietly_at_either_extent() {
 }
 
 #[test]
+fn edge_scroll_requests_a_tick_before_elapsed_time_can_move_the_content() {
+    let mut world = World::new();
+    let list = world.spawn((Node::default(), ScrollPosition::default())).id();
+    geometry(&mut world, list, Rect::new(10.0, 20.0, 510.0, 420.0), 2.0);
+    world.get_mut::<ComputedNode>(list).unwrap().content_size.y = 1600.0;
+    world.get_mut::<ScrollPosition>(list).unwrap().0.y = 400.0;
+    let settings = OverviewSettings::default();
+    for elapsed in [Duration::ZERO, Duration::from_nanos(1)] {
+        assert!(scroll(&mut world, list, Vec2::new(250.0, 21.0), elapsed, settings));
+        assert_eq!(world.get::<ScrollPosition>(list).unwrap().0.y, 400.0);
+        assert!(!scroll(&mut world, list, Vec2::new(250.0, 419.0), elapsed, settings));
+        assert!(!scroll(&mut world, list, Vec2::new(250.0, 200.0), elapsed, settings));
+    }
+    assert!(scroll(&mut world, list, Vec2::new(250.0, 21.0), Duration::from_millis(16), settings));
+    assert!(world.get::<ScrollPosition>(list).unwrap().0.y < 400.0);
+}
+
+#[test]
 fn clipped_preview_bounds_use_logical_pixels_and_never_target_invisible_content() {
     let mut world = World::new();
     let target = world.spawn(Node::default()).id();

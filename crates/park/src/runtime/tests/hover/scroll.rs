@@ -7,6 +7,7 @@ struct Observed {
     limit: f32,
     top: [f32; 2],
     bottom: [f32; 2],
+    pointer: Option<[f32; 2]>,
 }
 
 fn watch(world: &mut World, observed: Arc<Mutex<Option<Observed>>>) {
@@ -16,11 +17,13 @@ fn watch(world: &mut World, observed: Arc<Mutex<Option<Observed>>>) {
         .unwrap()
         .add_systems(
             (move |world: &mut World| {
+                let pointer = world.query_filtered::<&Window, With<bevy::window::PrimaryWindow>>().iter(world)
+                    .next().and_then(Window::cursor_position).map(|point| point.to_array());
                 let value = world
-                    .query::<(&ScrollPosition, &ComputedNode, &UiGlobalTransform, &ChildOf)>()
+                    .query::<(&ScrollPosition, &ComputedNode, &UiGlobalTransform, &ChildOf, &Name)>()
                     .iter(world)
-                    .find_map(|(position, node, transform, parent)| {
-                        if !world
+                    .find_map(|(position, node, transform, parent, name)| {
+                        if name.as_str() != "desktop.overview.workspaces" || !world
                             .get::<Name>(parent.parent())
                             .is_some_and(|name| name.as_str() == "desktop.overview")
                         {
@@ -33,6 +36,7 @@ fn watch(world: &mut World, observed: Arc<Mutex<Option<Observed>>>) {
                         );
                         Some(Observed {
                             position: position.0.y,
+                            pointer,
                             limit: (node.content_size().y - node.size().y).max(0.0) * scale,
                             top: [bounds.min.x + 1.0, bounds.min.y + 1.0],
                             bottom: [bounds.min.x + 1.0, bounds.max.y - 1.0],
@@ -183,7 +187,7 @@ fn stationary_file_edge_scroll_reaches_its_real_limit_and_cancels_without_late_w
         }
         assert!(
             Instant::now() < deadline,
-            "The replacement drag did not scroll in the opposite direction after {serial}"
+            "The replacement drag did not scroll in the opposite direction after {serial}: initial={initial:?}, clamped={clamped:?}, current={current:?}, pointer={:?}", current.pointer
         );
         std::thread::sleep(Duration::from_millis(2));
     }

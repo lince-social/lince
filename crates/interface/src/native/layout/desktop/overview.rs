@@ -185,6 +185,7 @@ pub(super) fn toggle(world: &mut World, root: Entity) {
     let help = label(world, overlay, "", 13.0);
     let list = world
         .spawn((
+            Name::new("desktop.overview.workspaces"),
             Node {
                 min_height: px(0),
                 flex_grow: 1.0,

@@ -486,7 +486,7 @@ pub(super) fn scroll(
     };
     let limit = (node.content_size().y - node.size().y).max(0.0) * node.inverse_scale_factor();
     let amount = edge_scroll(point.as_dvec2().to_array(), bounds, elapsed, settings) as f32;
-    if !limit.is_finite() || amount == 0.0 {
+    if !limit.is_finite() {
         return false;
     }
     let Some(mut position) = world.get_mut::<ScrollPosition>(list) else {
@@ -497,7 +497,8 @@ pub(super) fn scroll(
     }
     let next = (position.0.y + amount).clamp(0.0, limit);
     if next == position.0.y {
-        return false;
+        let intent = edge_scroll(point.as_dvec2().to_array(), bounds, Duration::from_millis(16), settings);
+        return intent < 0.0 && position.0.y > 0.0 || intent > 0.0 && position.0.y < limit;
     }
     position.0.y = next;
     true

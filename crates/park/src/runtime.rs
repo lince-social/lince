@@ -524,7 +524,7 @@ fn run(
     let mut scene_revision = 0;
     let mut started = false;
     let mut pending = false;
-    let mut settle: u8 = 8;
+    let mut update = true;
     let mut input_serial = 0;
     let mut awaiting: Option<Completed> = None;
     let mut button_pending = false;
@@ -563,7 +563,7 @@ fn run(
             let pixels = !native_changed && !showoff && scene_revision == scene.revision && canvas.pixel_scene(&scene);
             let synchronized = if pixels { canvas.sync_pixels(&scene.windows).ok() } else { None };
             if tracing_frames() {
-                eprintln!("Park scene: native={native_changed}, settle={settle}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}", scene.revision, canvas.retains_frame(), canvas.pixel_scene(&scene));
+                eprintln!("Park scene: native={native_changed}, update={update}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}", scene.revision, canvas.retains_frame(), canvas.pixel_scene(&scene));
             }
             if matches!(synchronized, Some(crate::presentation::PixelSync::Ready | crate::presentation::PixelSync::Pending)) {
                 pending = synchronized == Some(crate::presentation::PixelSync::Pending);
@@ -577,7 +577,7 @@ fn run(
                     showoff = false;
                 }
                 pending = canvas.sync_windows(&scene.windows)?;
-                settle = settle.max(3);
+                update = true;
                 pixel_work = false;
                 pixel_imports = false;
             }
@@ -821,17 +821,13 @@ fn run(
         if stopping {
             break;
         }
-        if input {
-            settle = settle.max(3);
-            pixel_work = false;
-            pixel_imports = false;
-        } else if native_changed {
-            settle = settle.max(1);
+        if input || native_changed {
+            update = true;
             pixel_work = false;
             pixel_imports = false;
         }
         if pending && canvas.imports_ready() {
-            if pixel_imports { pixel_work = true; } else { settle = settle.max(1); }
+            if pixel_imports { pixel_work = true; } else { update = true; }
         }
         if let Some(completed) = awaiting.as_ref() {
             if !completed.frame.ready()? {
@@ -849,7 +845,7 @@ fn run(
             if let Some(notify) = notify { notify.ring(); }
             lince_interface::host::performance::flush_if_due();
         }
-        if settle == 0 && !pixel_work {
+        if !update && !pixel_work {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::IdlePark);
             #[cfg(test)]
             active.idle.store(true, Ordering::Release);
@@ -863,17 +859,16 @@ fn run(
                 match canvas.sync_pixels(&windows) {
                     Ok(crate::presentation::PixelSync::Ready) => pending = false,
                     Ok(crate::presentation::PixelSync::Pending) => {},
-                    _ => { pixel_imports = false; pixel_work = false; settle = settle.max(1); pending = canvas.sync_windows(&windows)?; }
+                    _ => { pixel_imports = false; pixel_work = false; update = true; pending = canvas.sync_windows(&windows)?; }
                 }
             } else { pending = canvas.sync_windows(&windows)?; }
         }
         if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
         if let Some(notify) = notify { notify.ring(); }
-        let pixels = pixel_work && settle == 0 && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
+        let pixels = pixel_work && !update && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
         if settling && !pixels { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
         let frame = if pixels { canvas.pixel_frame()? } else {
             pixel_imports = false;
-            settle = settle.max(1);
             canvas.frame()?
         };
         pixel_work = false;
@@ -895,7 +890,7 @@ fn run(
                 input_serial,
                 latency: latency::Frame::new(frame_sequence, last_sample),
             });
-        settle = settle.saturating_sub(1);
+        update = false;
     }
     canvas.finish()
 }
@@ -914,6 +909,7 @@ mod tests {
     mod logout;
     mod hover;
     mod configuration;
+    mod settling;
 
     #[test]
     fn canvas_panic_wakes_the_compositor_after_marking_the_worker_stopped() {

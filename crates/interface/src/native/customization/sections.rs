@@ -18,8 +18,9 @@ struct Section;
 #[derive(Component)]
 struct HiddenTabIndex(i32);
 
-pub(super) fn synchronize_keyboard(world: &mut World) {
+pub(crate) fn synchronize_keyboard(world: &mut World) {
     use bevy::input_focus::tab_navigation::TabIndex;
+    if world.query_filtered::<(), (With<Section>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>().iter(world).next().is_none() { return; }
     let candidates = world.query::<(Entity, &TabIndex, Option<&HiddenTabIndex>)>().iter(world)
         .map(|(entity, index, previous)| (entity, index.0, previous.map(|previous| previous.0))).collect::<Vec<_>>();
     for (entity, index, previous) in candidates {
@@ -155,6 +156,47 @@ pub(super) fn render(world: &mut World, root: Entity, panel: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tab_navigation_rechecks_dynamic_sections_without_losing_drafts() {
+        use bevy::{
+            input::{InputPlugin, ButtonState, keyboard::{Key, KeyboardInput}},
+            input_focus::{InputFocus, FocusCause, InputFocusPlugin, InputDispatchPlugin, tab_navigation::{TabGroup, TabIndex, TabNavigationPlugin}},
+            window::PrimaryWindow,
+        };
+        let mut app = App::new();
+        crate::native::laboratory::isolate(app.world_mut());
+        app.add_plugins((InputPlugin, InputFocusPlugin, InputDispatchPlugin, TabNavigationPlugin, crate::native::actions::ActionsPlugin))
+            .init_resource::<Assets<Font>>()
+            .init_resource::<crate::native::theme::Typography>();
+        let world = app.world_mut();
+        let window = world.spawn((Window::default(), PrimaryWindow)).id();
+        let root = world.spawn_empty().id();
+        let panel = world.spawn(TabGroup::modal()).id();
+        let body = accordion(world, root, panel, "park", "Park");
+        let header = world.query::<(Entity, &Accordion)>().iter(world).find(|(_, section)| section.body == body).unwrap().0;
+        let dynamic = world.spawn((Node { display: Display::None, ..default() }, ChildOf(body))).id();
+        let draft = world.spawn((TabIndex(0), Text::new("Unsaved draft"), ChildOf(dynamic))).id();
+        let hidden = world.spawn((Node { display: Display::None, ..default() }, ChildOf(body))).id();
+        let hidden_control = world.spawn((TabIndex(0), ChildOf(hidden))).id();
+        Toggle.apply(world, header);
+        assert_eq!(world.get::<TabIndex>(draft).unwrap().0, -1);
+        world.resource_mut::<InputFocus>().set(header, FocusCause::Navigated);
+        app.update();
+        for visible in [true, false, true] {
+            app.world_mut().get_mut::<Node>(dynamic).unwrap().display = if visible { Display::Flex } else { Display::None };
+            for state in [ButtonState::Pressed, ButtonState::Released] {
+                app.world_mut().write_message(KeyboardInput {
+                    key_code: KeyCode::Tab, logical_key: Key::Tab, state, text: None, repeat: false, window,
+                });
+            }
+            app.update();
+            assert_eq!(app.world().resource::<InputFocus>().get(), Some(if visible { draft } else { header }));
+            assert_eq!(app.world().get::<TabIndex>(draft).unwrap().0, if visible { 0 } else { -1 });
+            assert_eq!(app.world().get::<TabIndex>(hidden_control).unwrap().0, -1);
+            assert_eq!(app.world().get::<Text>(draft).unwrap().0, "Unsaved draft");
+        }
+    }
 
     #[test]
     fn collapsed_sections_leave_tab_order_without_losing_nested_drafts_or_indices() {

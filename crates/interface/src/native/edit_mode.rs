@@ -806,6 +806,13 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         world.get_mut::<EditMode>(root).unwrap().information = action == EditAction::Information;
         world.get_mut::<EditMode>(root).unwrap().shortcuts = action == EditAction::Shortcuts;
         world.get_mut::<EditMode>(root).unwrap().park = action == EditAction::Park;
+        if action != EditAction::Customization {
+            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            mode.customization = false;
+            mode.store = action == EditAction::Store;
+            mode.canvas = action == EditAction::Canvas;
+            mode.credits = action == EditAction::Credits;
+        }
     }
     let mode = world.get::<EditMode>(root).unwrap();
     match action {
@@ -1052,6 +1059,7 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     let mut mode = world.get_mut::<EditMode>(root).unwrap();
     mode.general = false;
     mode.customization = true;
+    mode.store = false;
     mode.information = false;
     mode.shortcuts = false;
     mode.park = false;
@@ -2556,6 +2564,27 @@ pub(crate) mod tests {
         assert!(matches!(control.action, EditAction::Customization));
         crate::native::customization::OpenPark.apply(app.world_mut(), root);
         assert!(app.world().get::<EditMode>(root).unwrap().enabled);
+    }
+
+    #[test]
+    fn reopening_customization_after_each_tab_renders_its_settings_and_keeps_focus() {
+        let (mut app, root) = fixture();
+        activate(&mut app, root, EditAction::Toggle);
+        crate::native::customization::OpenPark.apply(app.world_mut(), root);
+        app.update();
+        for tab in [EditAction::Park, EditAction::Information, EditAction::Shortcuts, EditAction::Canvas,
+            EditAction::Store, EditAction::Credits, EditAction::General, EditAction::Workspaces] {
+            activate(&mut app, root, tab);
+            crate::native::customization::OpenPark.apply(app.world_mut(), root);
+            app.update();
+            let world = app.world_mut();
+            assert!(world.query::<&AccessibilityNode>().iter(world).any(|node| node.label() == Some("Park desktop")), "Reopening Customization after {tab:?} rendered a different tab");
+            assert!(!world.query::<&AccessibilityNode>().iter(world).any(|node| node.label() == Some("Configure Park in Customization")));
+            let focused = world.resource::<InputFocus>().get().unwrap();
+            let control = world.get::<EditControl>(focused).unwrap();
+            assert_eq!(control.root, root);
+            assert_eq!(control.action, EditAction::Customization);
+        }
     }
 
     #[cfg_attr(test, test)]

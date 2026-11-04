@@ -180,6 +180,9 @@ fn dispatch_key(
             return;
         }
         crate::native::keyboard::logical(world, modifiers);
+        if event.key_code == KeyCode::Tab && event.state.is_pressed() && !event.repeat {
+            crate::native::customization::synchronize_keyboard(world);
+        }
         world
             .resource_mut::<Messages<KeyboardInput>>()
             .write(event.clone());

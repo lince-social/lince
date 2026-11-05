@@ -184,6 +184,8 @@ counts! {
     RecordDraftClears => "record-draft-clears",
     RecordBindingViews => "record-binding-views-compared",
     RecordBindingViewChanged => "record-binding-views-changed",
+    RecordEditorTextCopies => "record-editor-input-text-copies",
+    RecordEditorTextCopiedBytes => "record-editor-input-text-copied-bytes",
     StyleInvalidated => "style-resolver-cache-invalidations",
     FramePrepared => "native-frames-prepared",
     FramePublished => "native-frames-published",

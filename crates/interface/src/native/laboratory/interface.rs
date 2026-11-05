@@ -2,6 +2,27 @@ use super::driver::{Selector, UiCondition};
 use crate::native::{actions::Action, edit_mode::EditAction};
 use bevy::{a11y::AccessibilityNode, math::DVec2, prelude::*};
 
+pub(super) fn fast_cases() -> Vec<super::Case> {
+    let mut cases = Vec::new();
+    laboratory_cases(&mut cases);
+    let mut records = Vec::new();
+    crate::native::protein_area::tests::laboratory_cases(&mut records);
+    let mut selected = records.into_iter().filter(|case| {
+        case.name
+            .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
+    });
+    cases.push(
+        selected
+            .next()
+            .expect("Missing native Record selection regression"),
+    );
+    assert!(
+        selected.next().is_none(),
+        "Duplicate native Record selection regression"
+    );
+    cases
+}
+
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
     let (sender, incoming) = std::sync::mpsc::sync_channel(1);
     let wake = crate::native::wake::WakeSignal::new(move || {
@@ -53,13 +74,27 @@ fn fast_interface_rules() {
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
-    let catalogue = super::catalogue();
+    assert!(results.last().is_some_and(|result| {
+        result
+            .name
+            .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
+    }));
+    let expected = fast_cases();
+    assert_eq!(results.len(), expected.len());
     assert!(
         results
             .iter()
-            .zip(&catalogue)
+            .zip(&expected)
             .all(|(result, case)| result.name == case.name)
     );
+    let catalogue = super::catalogue();
+    assert!(results.iter().all(|result| {
+        catalogue
+            .iter()
+            .filter(|case| case.name == result.name)
+            .count()
+            == 1
+    }));
     let failures: Vec<_> = results
         .iter()
         .filter(|result| result.error.is_some())

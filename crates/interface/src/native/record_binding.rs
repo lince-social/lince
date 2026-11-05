@@ -511,6 +511,120 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn pending_paste_and_active_ime_preserve_remote_changes_and_commit_unicode() {
+        let mut fonts = FontCx::default();
+        let font = Font::from_bytes(
+            include_bytes!("../../../../institute/assets/fonts/DejaVuSans/DejaVuSansMono.ttf")
+                .to_vec(),
+        );
+        fonts.collection.register_fonts(font.data, None);
+        fonts.set_sans_serif_family("DejaVu Sans Mono").unwrap();
+        let mut layout = LayoutCx::default();
+        for composing in [false, true] {
+            let (mut world, engine, uid, first, second) = fixture().await;
+            let before = "Olá 👩‍💻 עולם";
+            let inserted = "é新👩‍💻";
+            {
+                let mut text = world.get_mut::<EditableText>(first).unwrap();
+                text.pending_edits.clear();
+                text.editor
+                    .driver(&mut fonts.context, &mut layout.0)
+                    .select_byte_range(before.len(), before.len());
+                if composing {
+                    text.editor
+                        .driver(&mut fonts.context, &mut layout.0)
+                        .set_compose(inserted, Some((inserted.len(), inserted.len())));
+                    assert!(text.is_composing());
+                } else {
+                    text.pending_paste = Some(bevy::clipboard::ClipboardRead::Ready(Ok(
+                        inserted.to_string()
+                    )));
+                    assert!(crate::native::record_view::pending_text(&text));
+                }
+            }
+            engine
+                .write_record_text(&uid, None, Some(&format!("REMOTE {before}")))
+                .await
+                .unwrap();
+            pump(&mut world, |world| {
+                world
+                    .resource::<Bindings>()
+                    .documents
+                    .values()
+                    .any(|document| {
+                        document
+                            .incoming
+                            .iter()
+                            .any(|message| matches!(message, ServerMessage::CollabChange { .. }))
+                    })
+            })
+            .await;
+            for entity in [first, second] {
+                assert_eq!(
+                    world
+                        .get::<EditableText>(entity)
+                        .unwrap()
+                        .value()
+                        .to_string(),
+                    before
+                );
+            }
+            assert!(
+                world
+                    .resource::<Bindings>()
+                    .documents
+                    .values()
+                    .all(|document| {
+                        document.pending.is_empty() && document.revision == document.saved
+                    })
+            );
+            {
+                let mut text = world.get_mut::<EditableText>(first).unwrap();
+                if composing {
+                    text.editor
+                        .driver(&mut fonts.context, &mut layout.0)
+                        .finish_compose();
+                } else {
+                    let pasted = text
+                        .pending_paste
+                        .take()
+                        .unwrap()
+                        .poll_result()
+                        .unwrap()
+                        .unwrap();
+                    text.editor
+                        .driver(&mut fonts.context, &mut layout.0)
+                        .insert_or_replace_selection(&pasted);
+                }
+            }
+            let expected = format!("REMOTE {before}{inserted}");
+            pump(&mut world, |world| {
+                world
+                    .resource::<Bindings>()
+                    .documents
+                    .values()
+                    .all(|document| {
+                        document.pending.is_empty()
+                            && !document.saving
+                            && document.doc.get_text("body").to_string() == expected
+                    })
+            })
+            .await;
+            assert_eq!(engine.doc_text(&uid).await.unwrap().1, expected);
+            for entity in [first, second] {
+                assert_eq!(
+                    world
+                        .get::<EditableText>(entity)
+                        .unwrap()
+                        .value()
+                        .to_string(),
+                    expected
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn reopening_restores_and_delivers_a_saved_unsent_edit() {
         let (mut world, engine, uid, first, _) = fixture().await;
         let binding = world.get::<TextBinding>(first).unwrap().record.clone();
@@ -1151,13 +1265,20 @@ fn selection(
     document: &Document,
     binding: &TextBinding,
     text: &EditableText,
-    value: &str,
 ) -> (Option<Cursor>, Option<Cursor>) {
     let convert = |index: usize| {
-        value
-            .char_indices()
-            .take_while(|(byte, _)| *byte < index)
-            .count()
+        let mut remaining = index;
+        text.value()
+            .into_iter()
+            .map(|part| {
+                let count = part
+                    .char_indices()
+                    .take_while(|(byte, _)| *byte < remaining)
+                    .count();
+                remaining = remaining.saturating_sub(part.len());
+                count
+            })
+            .sum()
     };
     let selected = text.editor.raw_selection();
     let field = document.doc.get_text(binding.property.as_str());
@@ -1351,23 +1472,26 @@ fn update(world: &mut World) {
                 let Some(text) = world.get::<EditableText>(*entity) else {
                     continue;
                 };
-                let value = text.value().to_string();
-                let changed = value != binding.observed
+                let current = text.value();
+                let changed = current != binding.observed.as_str()
                     && !document.failed
                     && document.writable.contains(&binding.property);
-                if changed {
+                let value = changed.then(|| current.to_string());
+                if let Some(value) = &value {
+                    performance::count(Count::RecordEditorTextCopies);
+                    performance::add(Count::RecordEditorTextCopiedBytes, value.len() as u64);
                     let _timing = performance::Span::new(Stage::RecordEditSplice);
                     let before = document.doc.oplog_vv();
                     if let Err(error) =
-                        splice(&document.doc, &binding.property, &binding.observed, &value)
+                        splice(&document.doc, &binding.property, &binding.observed, value)
                             .and_then(|()| document.queue(&key.1, &before))
                     {
                         fail(document, error);
                     }
                 }
                 let text = world.get::<EditableText>(*entity).unwrap();
-                anchors.insert(*entity, selection(document, binding, text, &value));
-                if changed {
+                anchors.insert(*entity, selection(document, binding, text));
+                if let Some(value) = value {
                     world.get_mut::<TextBinding>(*entity).unwrap().observed = value;
                 }
             }
@@ -1578,7 +1702,7 @@ fn update(world: &mut World) {
                 let value = document.doc.get_text(binding.property.as_str()).to_string();
                 if world
                     .get::<EditableText>(*entity)
-                    .is_some_and(|text| text.value().to_string() != value)
+                    .is_some_and(|text| text.value() != value.as_str())
                 {
                     performance::count(Count::RecordBindingViewChanged);
                     let positions = anchors.get(entity).and_then(|(anchor, focus)| {
@@ -1634,8 +1758,7 @@ fn update(world: &mut World) {
                     .is_none_or(|at| at.elapsed() >= Duration::from_millis(150))
             {
                 let text = world.get::<EditableText>(*entity).unwrap();
-                let value = text.value().to_string();
-                let selected = selection(document, binding, text, &value);
+                let selected = selection(document, binding, text);
                 if let (Some(anchor), Some(focus)) = selected {
                     let payload = (
                         binding.property.clone(),

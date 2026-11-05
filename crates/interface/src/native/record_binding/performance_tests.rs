@@ -70,14 +70,20 @@ async fn file_backed_local_edit_phase_probe() {
         .parse()
         .unwrap();
     let field = std::env::var("LINCE_EDIT_PROBE_FIELD").unwrap_or_else(|_| "body".into());
-    assert!([1024, 65536, 1048576].contains(&bytes));
+    let position = std::env::var("LINCE_EDIT_PROBE_POSITION").unwrap_or_else(|_| "end".into());
+    assert!([0, 1024, 65536, 1048576].contains(&bytes));
     assert!([1, 8].contains(&views));
     assert!(["head", "body"].contains(&field.as_str()));
+    assert!(["start", "end"].contains(&position.as_str()));
     let directory = tempfile::tempdir().unwrap();
     let database = directory.path().join("private-edit.sqlite");
     let url = format!("sqlite://{}", database.display());
     let engine = Arc::new(engine::Engine::open(&url).await.unwrap());
-    let mut expected_head = "Local synthetic title".to_string();
+    let mut expected_head = if bytes == 0 {
+        String::new()
+    } else {
+        "Local synthetic title".to_string()
+    };
     let body_bytes = bytes.min(engine::collab::limits().text_bytes - expected_head.len() - 3);
     let mut expected_body = body(body_bytes);
     let uid = engine
@@ -170,7 +176,11 @@ async fn file_backed_local_edit_phase_probe() {
         } else {
             &mut expected_body
         };
-        value.push(suffix);
+        if position == "start" {
+            value.insert(0, suffix);
+        } else {
+            value.push(suffix);
+        }
         let started = Instant::now();
         world
             .get_mut::<EditableText>(editors[0])
@@ -269,6 +279,7 @@ async fn file_backed_local_edit_phase_probe() {
     let report = serde_json::json!({
         "case": "file-backed-local-edit-phases",
         "field": field,
+        "position": position,
         "requested_body_bytes": bytes,
         "body_bytes": body_bytes,
         "views": views,
@@ -321,7 +332,7 @@ fn current_unicode_selection_survives_stale_binding_text_and_remote_insertion() 
             value[..actual.anchor().index()].chars().count(),
             value[..actual.focus().index()].chars().count(),
         );
-        let selected = selection(&document, &binding, &text, value);
+        let selected = selection(&document, &binding, &text);
         assert_eq!(
             document
                 .doc
@@ -344,7 +355,7 @@ fn current_unicode_selection_survives_stale_binding_text_and_remote_insertion() 
     text.editor
         .driver(&mut fonts.context, &mut layout.0)
         .select_byte_range(2, value.len());
-    let selected = selection(&document, &binding, &text, value);
+    let selected = selection(&document, &binding, &text);
     document.doc.get_text("body").insert(0, "新").unwrap();
     document.doc.commit();
     assert_eq!(

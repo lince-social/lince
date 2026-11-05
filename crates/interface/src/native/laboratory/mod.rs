@@ -1,8 +1,8 @@
 mod catalogue;
-mod interface;
+pub mod components;
 #[cfg(feature = "test-driver")]
 pub mod driver;
-pub mod components;
+mod interface;
 mod isolation;
 pub mod showoff;
 mod stress;
@@ -88,12 +88,14 @@ impl BehaviorRun {
     }
 
     pub fn start_interface(wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
-        let mut cases = Vec::new();
-        interface::laboratory_cases(&mut cases);
+        let cases = interface::fast_cases();
         Self::start_cases(cases, wake)
     }
 
-    fn start_cases(cases: Vec<Case>, wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
+    fn start_cases(
+        cases: Vec<Case>,
+        wake: Option<crate::native::wake::WakeSignal>,
+    ) -> std::io::Result<Self> {
         let total = cases.len();
         let cancel = Arc::new(AtomicBool::new(false));
         let stopped = cancel.clone();

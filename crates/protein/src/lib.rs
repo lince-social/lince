@@ -925,8 +925,66 @@ pub async fn execute_saved_with_signer(
     execute_for_with_signer(store, &protein, subject, installed_signer_actor).await
 }
 
-pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
-    !is_ephemeral(protein)
+pub fn affects(protein: &Protein, fact: &nucleus::Fact, subject: Option<&str>) -> bool {
+    if is_ephemeral(protein) {
+        return false;
+    }
+    if protein.source != Source::Record
+        || subject.is_some()
+        || fact.actor_uid.is_some()
+        || fact.cause.kind != nucleus::CauseKind::UserEdit
+        || fact.cause.uid.is_some()
+        || fact.delta != nucleus::fact::zero_delta()
+        || fact.payload.as_deref() != Some("{\"collab\":true}")
+        || fact.record_uid.is_empty()
+        || protein.aggregate.is_some()
+    {
+        return true;
+    }
+    let [Predicate::UidEq(uid)] = protein.filter.as_slice() else {
+        return true;
+    };
+    if uid.is_empty()
+        || protein.fields.as_ref().is_none_or(|fields| {
+            fields.iter().any(|field| {
+                !matches!(
+                    field.as_str(),
+                    "uid"
+                        | "slug"
+                        | "kind"
+                        | "head"
+                        | "body"
+                        | "quantity"
+                        | "created_at"
+                        | "updated_at"
+                        | "created_hlc"
+                )
+            })
+        })
+        || !matches!(
+            &protein.include,
+            Include {
+                relation_context: None,
+                record_after: None,
+                facts: None,
+                promises: None,
+                links: None,
+                threads: None,
+                availability: false,
+                extension: None,
+                shader_effect: false,
+                numeric_fields,
+                numeric_extensions: false,
+                projection: None,
+                contact: false,
+                conversations: false,
+                reference_reads: false,
+            } if numeric_fields.is_empty()
+        )
+    {
+        return true;
+    }
+    uid == &fact.record_uid
 }
 
 pub fn is_ephemeral(protein: &Protein) -> bool {

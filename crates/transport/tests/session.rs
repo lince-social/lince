@@ -255,7 +255,7 @@ async fn visibility_subject_gates_the_session() {
         .unwrap()
         .created
         .unwrap();
-    engine
+    let private = engine
         .act(
             Action::CreateRecord {
                 slug: Some("private".into()),
@@ -266,6 +266,15 @@ async fn visibility_subject_gates_the_session() {
             },
             None,
         )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let owner = store::auth::ensure_role(&engine.store.pool, "visibility-owner")
+        .await
+        .unwrap()
+        .to_string();
+    store::visibility::grant(&engine.store.pool, "role", Some(&owner), &private)
         .await
         .unwrap();
     engine

@@ -116,9 +116,9 @@ async fn a_nearby_subscription_is_woken_by_the_tick_and_not_by_facts() {
         hash: String::new(),
         signature: None,
     };
-    assert!(!protein::affects(&protein, &fact));
+    assert!(!protein::affects(&protein, &fact, None));
     let records: Protein =
         serde_json::from_value(serde_json::json!({ "source": "record" })).unwrap();
     assert!(!protein::is_ephemeral(&records));
-    assert!(protein::affects(&records, &fact));
+    assert!(protein::affects(&records, &fact, None));
 }

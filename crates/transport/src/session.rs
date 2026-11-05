@@ -1055,7 +1055,7 @@ impl Session {
             }
         }
         for (id, protein) in &self.subscriptions {
-            if !protein::affects(protein, fact) {
+            if !protein::affects(protein, fact, self.subject.as_deref()) {
                 continue;
             }
             match self.execute_sync(id, protein).await {

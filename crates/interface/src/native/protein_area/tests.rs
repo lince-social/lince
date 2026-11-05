@@ -1354,6 +1354,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
 }
 
 crate::native::laboratory_cases! {
+    async local_record_text_refreshes_only_dependent_queries,
     record_source_stays_stable_while_paused_and_typing_resumes_at_selection,
     async independent_sorting_uses_live_protein_order_without_spawning_and_clears_on_stop,
     async protein_pull_filters_query_real_properties_without_spawning_and_isolate_sources,
@@ -1369,6 +1370,157 @@ crate::native::laboratory_cases! {
     templates_validate_and_request_only_bound_properties_even_before_rows_exist,
     async area_reads_real_records_preserves_entities_edits_and_deletes_through_actions,
     remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded,
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn local_record_text_refreshes_only_dependent_queries() {
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let mut records = Vec::new();
+    for head in ["First", "Second"] {
+        records.push(
+            engine
+                .act(
+                    engine::actions::Action::CreateRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::Plain,
+                        head: head.into(),
+                        body: String::new(),
+                        quantity: 0.0,
+                    },
+                    None,
+                )
+                .await
+                .unwrap()
+                .created
+                .unwrap(),
+        );
+    }
+    let query = |target: Option<&str>| protein::Protein {
+        source: protein::Source::Record,
+        filter: target
+            .map(|uid| vec![protein::Predicate::UidEq(uid.into())])
+            .unwrap_or_default(),
+        fields: Some(["uid", "head", "updated_at"].map(str::to_owned).into()),
+        include: Default::default(),
+        aggregate: None,
+        order: Vec::new(),
+        limit: None,
+    };
+    let lanes = std::sync::Arc::new(cell::LaneHub::new());
+    let mut session = cell::Session::local(engine.clone(), lanes.clone(), "local-query-check");
+    for (id, target) in [
+        ("all", None),
+        ("first", Some(records[0].as_str())),
+        ("second", Some(records[1].as_str())),
+    ] {
+        let messages = session
+            .handle(ClientMessage::Subscribe {
+                id: id.into(),
+                protein: query(target),
+            })
+            .await;
+        assert!(
+            matches!(messages.as_slice(), [ServerMessage::Snapshot { rows, .. }] if !rows.is_empty())
+        );
+    }
+    let mut facts = engine.subscribe();
+    for (index, id, head) in [(0, "first", "Changed é"), (1, "second", "Changed 👩‍💻")] {
+        let before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_activity")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        engine
+            .write_record_text(&records[index], Some(head), None)
+            .await
+            .unwrap();
+        let fact = facts.recv().await.unwrap();
+        assert_eq!(fact.record_uid, records[index]);
+        let messages = session.on_fact(&fact).await;
+        assert_eq!(messages.len(), 2, "Unrelated queries must stay unchanged");
+        let mut identifiers = Vec::new();
+        for message in messages {
+            let ServerMessage::Update { id: updated, rows } = message else {
+                panic!("Expected updated query rows");
+            };
+            let row = rows
+                .iter()
+                .find(|row| row["uid"] == records[index])
+                .unwrap();
+            assert_eq!(row["head"], head);
+            identifiers.push(updated);
+        }
+        identifiers.sort();
+        assert_eq!(identifiers, ["all", id]);
+        let after: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_activity")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(after - before, 2);
+    }
+    let refreshed = session.refresh().await;
+    assert_eq!(refreshed.len(), 3);
+    assert!(
+        refreshed
+            .iter()
+            .all(|message| matches!(message, ServerMessage::Snapshot { .. }))
+    );
+
+    let person = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Person,
+            head: "Private query reader",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    let role = store::auth::ensure_role(&engine.store.pool, "private-query-reader")
+        .await
+        .unwrap();
+    let permission = store::auth::ensure_permission(&engine.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, permission)
+        .await
+        .unwrap();
+    store::auth::set_user_role(&engine.store.pool, &person, role)
+        .await
+        .unwrap();
+    let mut delegated =
+        cell::Session::new(engine.clone(), lanes, "delegated-query-check", Some(person));
+    let initial = delegated
+        .handle(ClientMessage::Subscribe {
+            id: "delegated".into(),
+            protein: query(Some(&records[1])),
+        })
+        .await;
+    assert!(
+        matches!(initial.as_slice(), [ServerMessage::Snapshot { rows, .. }] if rows.len() == 1)
+    );
+    for revoked in [false, true] {
+        if revoked {
+            store::auth::revoke(&engine.store.pool, role, permission)
+                .await
+                .unwrap();
+        }
+        engine
+            .write_record_text(
+                &records[0],
+                Some(if revoked { "Revoked" } else { "Delegated" }),
+                None,
+            )
+            .await
+            .unwrap();
+        let fact = facts.recv().await.unwrap();
+        let messages = delegated.on_fact(&fact).await;
+        assert!(
+            matches!(messages.as_slice(), [ServerMessage::Update { rows, .. }] if rows.len() == usize::from(!revoked))
+        );
+    }
 }
 
 #[cfg_attr(test, test)]

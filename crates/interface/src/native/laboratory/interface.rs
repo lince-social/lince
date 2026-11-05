@@ -7,6 +7,14 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     laboratory_cases(&mut cases);
     let mut records = Vec::new();
     crate::native::protein_area::tests::laboratory_cases(&mut records);
+    let query = records
+        .iter()
+        .position(|case| {
+            case.name
+                .ends_with("::local_record_text_refreshes_only_dependent_queries")
+        })
+        .expect("Missing native query dependency regression");
+    cases.push(records.remove(query));
     let mut selected = records.into_iter().filter(|case| {
         case.name
             .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
@@ -75,6 +83,11 @@ fn fast_interface_rules() {
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
+    assert!(results.iter().any(|result| {
+        result
+            .name
+            .ends_with("::local_record_text_refreshes_only_dependent_queries")
+    }));
     assert!(results.get(results.len() - 3).is_some_and(|result| {
         result
             .name

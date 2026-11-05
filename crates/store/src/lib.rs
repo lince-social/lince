@@ -58,6 +58,7 @@ pub mod receipt_references;
 pub mod receipt_sources;
 pub mod record_changes;
 pub mod record_docs;
+pub mod record_edit_drafts;
 pub mod record_move;
 pub mod record_revisions;
 pub mod records;

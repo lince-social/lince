@@ -16,6 +16,7 @@ pub(crate) fn retry(world: &mut World, record: &RecordBinding) {
         return;
     }
     document.failed = false;
+    document.journal.failed = false;
     document.joined = false;
     document.joining = None;
     document.recovery_join = Some(format!("binding-rejoin-{}", nucleus::new_uid("op")));

@@ -4,14 +4,21 @@ use bevy::{
     text::{EditableText, FontCx, LayoutCx},
 };
 use cell::{ClientMessage, ServerMessage};
-use loro::{ExportMode, LoroDoc, UndoManager, VersionVector, cursor::Cursor};
-use serde::{Deserialize, Serialize};
+#[cfg(test)]
+use loro::ExportMode;
+use loro::{LoroDoc, UndoManager, VersionVector, cursor::Cursor};
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crate::host::performance::{self, Count, Stage};
 use crate::native::protein_area::{RecordBinding, Source};
 
+mod journal;
+
+pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
+    journal::laboratory_cases(cases);
+}
 mod recovery;
 pub(crate) use recovery::retry;
 
@@ -367,6 +374,7 @@ mod tests {
                 .load_record_edit_draft(&serde_json::to_string(&Source::Local).unwrap(), &uid)
                 .await
                 .unwrap()
+                .recovered
                 .is_none()
         );
     }
@@ -635,14 +643,14 @@ mod tests {
             let before = document.doc.oplog_vv();
             splice(&document.doc, "body", "Olá 👩‍💻 עולם", "Recovered 👩‍💻").unwrap();
             document.queue(&uid, &before).unwrap();
-            serde_json::to_string(&Draft {
-                snapshot: B64.encode(document.doc.export(ExportMode::Snapshot).unwrap()),
-                pending: document.pending.clone(),
-            })
-            .unwrap()
+            document
+                .journal
+                .prepare(&document.doc, &document.pending)
+                .unwrap()
+                .0
         };
         engine
-            .save_record_edit_draft(&storage_source(&key, None), &uid, &draft)
+            .save_record_edit_draft(&storage_source(&key, None), &uid, draft)
             .await
             .unwrap();
         world.insert_resource(Bindings::default());
@@ -668,6 +676,7 @@ mod tests {
                 .load_record_edit_draft(&storage_source(&key, None), &uid)
                 .await
                 .unwrap()
+                .recovered
                 .is_none()
         );
     }
@@ -705,6 +714,289 @@ mod tests {
         assert!(!document.joined);
         assert!(document.joining.is_none());
         assert_eq!(document.status, "Saved");
+    }
+
+    #[tokio::test]
+    async fn a_durable_prefix_survives_a_full_sender_while_the_next_edit_is_still_writing() {
+        let (mut world, engine, uid, first, _) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        let (sender, mut commands) = tokio::sync::mpsc::channel(1);
+        sender
+            .try_send(ClientMessage::CollabLeave {
+                record_uid: uid.clone(),
+            })
+            .unwrap();
+        world
+            .resource_mut::<Bindings>()
+            .documents
+            .get_mut(&key)
+            .unwrap()
+            .sender = Some(sender);
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Alpha");
+        update(&mut world);
+        let first_id = world.resource::<Bindings>().documents[&key].pending[0]
+            .id
+            .clone();
+        assert!(
+            world.resource::<Bindings>().documents[&key]
+                .inflight
+                .is_none()
+        );
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while world.resource::<Bindings>().incoming.is_empty() {
+            assert!(Instant::now() < deadline);
+            tokio::time::sleep(Duration::from_millis(2)).await;
+        }
+        let durable = engine
+            .load_record_edit_draft(&storage_source(&key, None), &uid)
+            .await
+            .unwrap()
+            .recovered
+            .unwrap();
+        assert_eq!(durable.pending[0].id, first_id);
+        let held = engine
+            .store
+            .pool
+            .begin_with("BEGIN IMMEDIATE")
+            .await
+            .unwrap();
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("AlphaBeta");
+        update(&mut world);
+        assert!(
+            world.resource::<Bindings>().documents[&key]
+                .inflight
+                .is_none()
+        );
+        assert_eq!(
+            world.resource::<Bindings>().documents[&key].pending[0].id,
+            first_id
+        );
+        assert!(matches!(
+            commands.try_recv().unwrap(),
+            ClientMessage::CollabLeave { .. }
+        ));
+        update(&mut world);
+        {
+            let bindings = world.resource::<Bindings>();
+            let document = &bindings.documents[&key];
+            assert!(document.saved < document.revision && document.saving);
+            assert_eq!(document.inflight.as_ref().unwrap().0, first_id);
+            assert_eq!(document.pending.len(), 2);
+        }
+        match commands.try_recv().unwrap() {
+            ClientMessage::Act {
+                action: engine::actions::Action::ChangeRecord { request },
+                ..
+            } => assert_eq!(request.id, first_id),
+            _ => panic!("Expected the durable canonical request"),
+        }
+        held.rollback().await.unwrap();
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.saved == document.revision && !document.saving
+        })
+        .await;
+        let recovered = engine
+            .load_record_edit_draft(&storage_source(&key, None), &uid)
+            .await
+            .unwrap()
+            .recovered
+            .unwrap();
+        assert_eq!(recovered.pending.len(), 2);
+        let document = LoroDoc::new();
+        document.import(&recovered.snapshot).unwrap();
+        assert_eq!(document.get_text("body").to_string(), "AlphaBeta");
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 עולם");
+    }
+
+    #[tokio::test]
+    async fn late_storage_results_cannot_mark_a_replaced_binding_as_loaded_or_saved() {
+        let (mut world, _, _, first, _) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        let (instance, cursor, generation) = {
+            let mut bindings = world.resource_mut::<Bindings>();
+            let document = bindings.documents.get_mut(&key).unwrap();
+            let (write, cursor) = document
+                .journal
+                .prepare(&document.doc, &document.pending)
+                .unwrap();
+            (document.journal.instance.clone(), cursor, write.generation)
+        };
+        let metadata = store::record_edit_drafts::Metadata {
+            stamp: store::record_edit_drafts::Stamp {
+                generation,
+                sequence: 1,
+            },
+            pending: vec![],
+            update_count: 0,
+            update_bytes: 0,
+            request_bytes: 0,
+            checkpoint_bytes: 0,
+            write_hash: String::new(),
+        };
+        let mut bindings = world.resource_mut::<Bindings>();
+        bindings
+            .documents
+            .insert(key.clone(), Document::new(Source::Local, None));
+        let replacement = bindings.documents[&key].journal.instance.clone();
+        bindings
+            .sender
+            .send(StorageEvent::Loaded(
+                key.clone(),
+                instance.clone(),
+                Ok(engine::record_edit::Loaded {
+                    metadata: Some(metadata.clone()),
+                    recovered: None,
+                }),
+            ))
+            .unwrap();
+        bindings
+            .sender
+            .send(StorageEvent::Saved(
+                key.clone(),
+                instance,
+                u64::MAX,
+                cursor,
+                Ok(metadata),
+            ))
+            .unwrap();
+        drop(bindings);
+        update(&mut world);
+        let bindings = world.resource::<Bindings>();
+        let document = &bindings.documents[&key];
+        assert_eq!(document.journal.instance, replacement);
+        assert!(!document.loaded && document.saved == 0 && document.journal.metadata.is_none());
+    }
+
+    #[tokio::test]
+    async fn a_failed_journal_write_keeps_the_request_and_explicit_retry_saves_it_once() {
+        let (mut world, engine, uid, first, _) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        store::sqlx::query("CREATE TRIGGER fail_native_recovery BEFORE INSERT ON record_edit_update BEGIN SELECT RAISE(ABORT,'held native recovery'); END").execute(&engine.store.pool).await.unwrap();
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Kept locally é新");
+        update(&mut world);
+        let request = world.resource::<Bindings>().documents[&key].pending[0]
+            .id
+            .clone();
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.journal.failed && !document.saving
+        })
+        .await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 עולם");
+        assert!(
+            store::record_edit_drafts::metadata(
+                &engine.store.pool,
+                &storage_source(&key, None),
+                &uid
+            )
+            .await
+            .unwrap()
+            .is_none()
+        );
+        assert_eq!(
+            world.resource::<Bindings>().documents[&key].pending[0].id,
+            request
+        );
+        assert_eq!(
+            world
+                .get::<EditableText>(first)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Kept locally é新"
+        );
+        store::sqlx::query("DROP TRIGGER fail_native_recovery")
+            .execute(&engine.store.pool)
+            .await
+            .unwrap();
+        retry(&mut world, &record);
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            !document.failed && document.joined && document.pending.is_empty() && !document.saving
+        })
+        .await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Kept locally é新");
+        assert_eq!(
+            store::sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid=?"
+            )
+            .bind(&request)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap(),
+            1
+        );
+    }
+
+    #[tokio::test]
+    async fn retiring_the_last_editor_releases_only_its_empty_recovery_cache() {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Saved before closing");
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.pending.is_empty() && !document.saving
+        })
+        .await;
+        assert!(
+            store::record_edit_drafts::metadata(
+                &engine.store.pool,
+                &storage_source(&key, None),
+                &uid
+            )
+            .await
+            .unwrap()
+            .is_some()
+        );
+        world.entity_mut(first).remove::<TextBinding>();
+        world.entity_mut(second).remove::<TextBinding>();
+        world
+            .resource_mut::<Bindings>()
+            .documents
+            .get_mut(&key)
+            .unwrap()
+            .touched = Instant::now() - Duration::from_secs(31);
+        update(&mut world);
+        assert!(!world.resource::<Bindings>().documents.contains_key(&key));
+        pump(&mut world, |world| {
+            world.resource::<Bindings>().cleanup.is_none()
+        })
+        .await;
+        assert!(
+            store::record_edit_drafts::metadata(
+                &engine.store.pool,
+                &storage_source(&key, None),
+                &uid
+            )
+            .await
+            .unwrap()
+            .is_none()
+        );
+        assert_eq!(
+            engine.doc_text(&uid).await.unwrap().1,
+            "Saved before closing"
+        );
     }
 
     #[tokio::test]
@@ -829,19 +1121,14 @@ pub(crate) fn pending(world: &World, record: &RecordBinding) -> bool {
         .is_some_and(|document| document.saving || !document.pending.is_empty())
 }
 
-#[derive(Serialize, Deserialize)]
-struct Draft {
-    snapshot: String,
-    pending: VecDeque<engine::record_change::Request>,
-}
-
 struct Document {
     doc: LoroDoc,
     undo: UndoManager,
     source: Source,
     principal: Option<String>,
     sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
-    pending: VecDeque<engine::record_change::Request>,
+    pending: VecDeque<Arc<engine::record_change::Request>>,
+    journal: journal::Journal,
     inflight: Option<(String, Instant)>,
     loaded: bool,
     joined: bool,
@@ -872,6 +1159,7 @@ impl Document {
             principal,
             sender: None,
             pending: VecDeque::new(),
+            journal: journal::Journal::default(),
             inflight: None,
             loaded: false,
             joined: false,
@@ -896,11 +1184,12 @@ impl Document {
             return Ok(());
         }
         let update_base64 = engine::collab::encode_update(&self.doc, before)?;
-        self.pending.push_back(engine::record_change::Request {
-            id: nucleus::new_uid("op"),
-            record_uid: uid.into(),
-            mutation: engine::record_change::Mutation::Text { update_base64 },
-        });
+        self.pending
+            .push_back(Arc::new(engine::record_change::Request {
+                id: nucleus::new_uid("op"),
+                record_uid: uid.into(),
+                mutation: engine::record_change::Mutation::Text { update_base64 },
+            }));
         self.revision += 1;
         self.status = "Saving locally…".into();
         Ok(())
@@ -908,8 +1197,14 @@ impl Document {
 }
 
 enum StorageEvent {
-    Loaded(Key, Result<Option<String>, String>),
-    Saved(Key, u64, Result<(), String>),
+    Loaded(Key, String, Result<engine::record_edit::Loaded, String>),
+    Saved(
+        Key,
+        String,
+        u64,
+        journal::Cursor,
+        Result<store::record_edit_drafts::Metadata, String>,
+    ),
 }
 
 #[derive(Resource)]
@@ -919,6 +1214,7 @@ struct Bindings {
     incoming: tokio::sync::mpsc::UnboundedReceiver<StorageEvent>,
     wake_at: Option<Instant>,
     principals: HashMap<String, String>,
+    cleanup: Option<journal::Cleanup>,
 }
 
 impl Default for Bindings {
@@ -930,6 +1226,7 @@ impl Default for Bindings {
             incoming,
             wake_at: None,
             principals: HashMap::new(),
+            cleanup: None,
         }
     }
 }
@@ -1141,21 +1438,45 @@ fn fail(document: &mut Document, error: impl std::fmt::Display) {
     document.status = format!("Not saved: {error}. Your draft is kept.");
 }
 
-fn load_draft(document: &mut Document, raw: Option<String>) -> Result<(), String> {
-    if let Some(raw) = raw {
-        let draft: Draft = serde_json::from_str(&raw).map_err(|error| error.to_string())?;
-        let bytes = B64
-            .decode(draft.snapshot)
-            .map_err(|error| error.to_string())?;
+fn load_draft(document: &mut Document, loaded: engine::record_edit::Loaded) -> Result<(), String> {
+    let restored = loaded.recovered.is_some();
+    if let Some(draft) = loaded.recovered {
         document
             .doc
-            .import(&bytes)
+            .import(&draft.snapshot)
             .map_err(|error| error.to_string())?;
+        if !draft.pending_updates.is_empty() {
+            document
+                .doc
+                .import_batch(&draft.pending_updates)
+                .map_err(|error| error.to_string())?;
+        }
         let entered = std::mem::take(&mut document.pending);
-        document.pending = draft.pending;
+        document.pending = draft.pending.into();
         document.pending.extend(entered);
     }
+    document
+        .journal
+        .loaded(loaded.metadata, restored, &document.doc);
     document.loaded = true;
+    Ok(())
+}
+
+fn import_collaboration(
+    document: &mut Document,
+    encoded: String,
+    state: bool,
+) -> Result<(), String> {
+    let empty_before = document.doc.len_ops() == 0;
+    let bytes = B64.decode(&encoded).map_err(|error| error.to_string())?;
+    let status = document
+        .doc
+        .import(&bytes)
+        .map_err(|error| error.to_string())?;
+    let initial = state && document.journal.base(encoded, empty_before, &document.doc);
+    if !initial && status.pending.is_some_and(|pending| !pending.is_empty()) {
+        document.journal.pending_import(bytes)?;
+    }
     Ok(())
 }
 
@@ -1186,6 +1507,7 @@ pub(crate) fn submit(
         bindings
             .documents
             .insert(key.clone(), Document::new(record.source.clone(), principal));
+        let instance = bindings.documents[&key].journal.instance.clone();
         let sender = bindings.sender.clone();
         let key = key.clone();
         tokio::spawn(async move {
@@ -1193,7 +1515,7 @@ pub(crate) fn submit(
                 .load_record_edit_draft(&storage, &key.1)
                 .await
                 .map_err(|error| error.to_string());
-            let _ = sender.send(StorageEvent::Loaded(key, result));
+            let _ = sender.send(StorageEvent::Loaded(key, instance, result));
             if let Some(wake) = wake {
                 wake.ring();
             }
@@ -1230,7 +1552,7 @@ pub(crate) fn submit(
         return Err("Wait for pending edits to sync".into());
     }
     document.sender = channel;
-    document.pending.push_back(request);
+    document.pending.push_back(Arc::new(request));
     document.revision += 1;
     document.status = "Saving locally…".into();
     Ok(())
@@ -1321,6 +1643,14 @@ fn update(world: &mut World) {
     let Some(mut bindings) = world.remove_resource::<Bindings>() else {
         return;
     };
+    if bindings
+        .cleanup
+        .as_ref()
+        .is_some_and(journal::Cleanup::finished)
+    {
+        bindings.cleanup = None;
+    }
+    let mut retired = Vec::new();
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
@@ -1345,7 +1675,7 @@ fn update(world: &mut World) {
         }
         if !bindings.documents.contains_key(&key) {
             if bindings.documents.len() >= 64 {
-                if focus != Some(*entity) {
+                if focus != Some(*entity) || bindings.cleanup.is_some() {
                     continue;
                 }
                 let oldest = bindings
@@ -1358,6 +1688,7 @@ fn update(world: &mut World) {
                     continue;
                 };
                 if let Some(document) = bindings.documents.remove(&oldest) {
+                    journal::retire(world, &oldest, &document, &mut retired);
                     if let Some(sender) = document.sender {
                         let _ = sender.try_send(ClientMessage::CollabLeave {
                             record_uid: oldest.1,
@@ -1371,6 +1702,7 @@ fn update(world: &mut World) {
                 key.clone(),
                 Document::new(binding.record.source.clone(), principal),
             );
+            let instance = bindings.documents[&key].journal.instance.clone();
             let engine = engine.clone();
             let sender = bindings.sender.clone();
             let wake = wake.clone();
@@ -1380,7 +1712,7 @@ fn update(world: &mut World) {
                     .load_record_edit_draft(&storage, &key.1)
                     .await
                     .map_err(|error| error.to_string());
-                let _ = sender.send(StorageEvent::Loaded(key, result));
+                let _ = sender.send(StorageEvent::Loaded(key, instance, result));
                 if let Some(wake) = wake {
                     wake.ring();
                 }
@@ -1400,20 +1732,34 @@ fn update(world: &mut World) {
     }
     while let Ok(event) = bindings.incoming.try_recv() {
         match event {
-            StorageEvent::Loaded(key, result) => {
-                if let Some(document) = bindings.documents.get_mut(&key) {
+            StorageEvent::Loaded(key, instance, result) => {
+                if let Some(document) = bindings
+                    .documents
+                    .get_mut(&key)
+                    .filter(|document| document.journal.instance == instance)
+                {
                     match result.and_then(|raw| load_draft(document, raw)) {
                         Ok(()) => {}
                         Err(error) => fail(document, error),
                     }
                 }
             }
-            StorageEvent::Saved(key, revision, result) => {
-                if let Some(document) = bindings.documents.get_mut(&key) {
+            StorageEvent::Saved(key, instance, revision, cursor, result) => {
+                if let Some(document) = bindings
+                    .documents
+                    .get_mut(&key)
+                    .filter(|document| document.journal.instance == instance)
+                {
                     document.saving = false;
                     match result {
-                        Ok(()) => document.saved = revision,
-                        Err(error) => fail(document, error),
+                        Ok(metadata) => {
+                            document.journal.accept(metadata, cursor);
+                            document.saved = revision;
+                        }
+                        Err(error) => {
+                            document.journal.failed = true;
+                            fail(document, error);
+                        }
                     }
                 }
             }
@@ -1520,42 +1866,21 @@ fn update(world: &mut World) {
                         snapshot_base64,
                         writable,
                         ..
-                    } => {
-                        match B64
-                            .decode(snapshot_base64)
-                            .map_err(|error| error.to_string())
-                            .and_then(|bytes| {
-                                document
-                                    .doc
-                                    .import(&bytes)
-                                    .map(|_| ())
-                                    .map_err(|error| error.to_string())
-                            }) {
-                            Ok(()) => {
-                                document.joined = true;
-                                document.joining = None;
-                                document.writable = writable;
-                                document.status = if document.pending.is_empty() {
-                                    "Saved".into()
-                                } else {
-                                    "Waiting to sync…".into()
-                                };
-                            }
-                            Err(error) => fail(document, error),
+                    } => match import_collaboration(document, snapshot_base64, true) {
+                        Ok(()) => {
+                            document.joined = true;
+                            document.joining = None;
+                            document.writable = writable;
+                            document.status = if document.pending.is_empty() {
+                                "Saved".into()
+                            } else {
+                                "Waiting to sync…".into()
+                            };
                         }
-                    }
+                        Err(error) => fail(document, error),
+                    },
                     ServerMessage::CollabChange { update_base64, .. } => {
-                        if let Err(error) = B64
-                            .decode(update_base64)
-                            .map_err(|error| error.to_string())
-                            .and_then(|bytes| {
-                                document
-                                    .doc
-                                    .import(&bytes)
-                                    .map(|_| ())
-                                    .map_err(|error| error.to_string())
-                            })
-                        {
+                        if let Err(error) = import_collaboration(document, update_base64, false) {
                             fail(document, error);
                         }
                     }
@@ -1611,82 +1936,76 @@ fn update(world: &mut World) {
                 document.joining = Some(Instant::now());
             }
         }
-        if document.loaded && document.revision > document.saved && !document.saving {
+        if document.loaded
+            && document.revision > document.saved
+            && !document.saving
+            && !document.journal.failed
+        {
             let timing = performance::Span::new(Stage::RecordDraftPrepare);
-            let draft = if document.pending.is_empty() {
-                Ok(None)
-            } else {
-                document
-                    .doc
-                    .export(ExportMode::Snapshot)
-                    .map_err(|error| error.to_string())
-                    .and_then(|bytes| {
-                        performance::count(Count::RecordDraftSnapshot);
-                        performance::add(Count::RecordDraftSnapshotBytes, bytes.len() as u64);
-                        serde_json::to_string(&Draft {
-                            snapshot: B64.encode(bytes),
-                            pending: document.pending.clone(),
-                        })
-                        .map_err(|error| error.to_string())
-                    })
-                    .map(Some)
-            };
+            let draft = document.journal.prepare(&document.doc, &document.pending);
             drop(timing);
             match draft {
-                Ok(draft) => {
-                    if let Some(draft) = &draft {
-                        performance::add(Count::RecordDraftEncodedBytes, draft.len() as u64);
-                    }
+                Ok((draft, cursor)) => {
+                    let clearing = document.pending.is_empty();
                     document.saving = true;
                     let sender = bindings.sender.clone();
                     let engine = engine.clone();
                     let key = key.clone();
                     let storage = storage_source(&key, document.principal.as_deref());
                     let revision = document.revision;
+                    let instance = document.journal.instance.clone();
                     let wake = wake.clone();
                     let queued = performance::start();
                     tokio::spawn(async move {
                         performance::record_since(Stage::RecordDraftQueueWait, queued);
                         let timing = performance::Span::new(Stage::RecordDraftWrite);
-                        let result = if let Some(draft) = draft {
-                            performance::count(Count::RecordDraftWrites);
-                            engine
-                                .save_record_edit_draft(&storage, &key.1, &draft)
-                                .await
-                        } else {
+                        if clearing {
                             performance::count(Count::RecordDraftClears);
-                            engine.clear_record_edit_draft(&storage, &key.1).await
+                        } else {
+                            performance::count(Count::RecordDraftWrites);
                         }
-                        .map_err(|error| error.to_string());
+                        let result = engine
+                            .save_record_edit_draft(&storage, &key.1, draft)
+                            .await
+                            .map_err(|error| error.to_string());
                         drop(timing);
-                        let _ = sender.send(StorageEvent::Saved(key, revision, result));
+                        let _ = sender
+                            .send(StorageEvent::Saved(key, instance, revision, cursor, result));
                         if let Some(wake) = wake {
                             wake.ring();
                         }
                     });
                 }
-                Err(error) => fail(document, error),
+                Err(error) => {
+                    document.journal.failed = true;
+                    fail(document, error);
+                }
             }
         }
         if (document.joined || !needs_text)
             && !document.failed
-            && document.saved == document.revision
             && document
                 .inflight
                 .as_ref()
                 .is_none_or(|(_, at)| at.elapsed().as_secs() >= 5)
         {
             if let Some(request) = document.pending.front() {
-                if document.sender.as_ref().is_some_and(|sender| {
-                    sender
-                        .try_send(ClientMessage::Act {
-                            id: request.id.clone(),
-                            action: engine::actions::Action::ChangeRecord {
-                                request: request.clone(),
-                            },
-                        })
-                        .is_ok()
-                }) {
+                if document
+                    .journal
+                    .metadata
+                    .as_ref()
+                    .is_some_and(|metadata| metadata.pending.contains(&request.id))
+                    && document.sender.as_ref().is_some_and(|sender| {
+                        sender
+                            .try_send(ClientMessage::Act {
+                                id: request.id.clone(),
+                                action: engine::actions::Action::ChangeRecord {
+                                    request: request.as_ref().clone(),
+                                },
+                            })
+                            .is_ok()
+                    })
+                {
                     document.inflight = Some((request.id.clone(), Instant::now()));
                     document.status = match document.source {
                         Source::Local => "Saved locally · syncing…".into(),
@@ -1794,6 +2113,10 @@ fn update(world: &mut World) {
             || !document.pending.is_empty()
             || document.saving;
         if !keep {
+            if bindings.cleanup.is_some() {
+                return true;
+            }
+            journal::retire(world, key, document, &mut retired);
             if let Some(sender) = &document.sender {
                 let _ = sender.try_send(ClientMessage::CollabLeave {
                     record_uid: key.1.clone(),
@@ -1802,6 +2125,9 @@ fn update(world: &mut World) {
         }
         keep
     });
+    if !retired.is_empty() {
+        bindings.cleanup = Some(journal::Cleanup::start(retired, wake.clone()));
+    }
     let active = bindings
         .documents
         .values()

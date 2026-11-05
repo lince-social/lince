@@ -20,6 +20,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
         selected.next().is_none(),
         "Duplicate native Record selection regression"
     );
+    crate::native::record_binding::laboratory_cases(&mut cases);
     cases
 }
 
@@ -74,10 +75,15 @@ fn fast_interface_rules() {
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
-    assert!(results.last().is_some_and(|result| {
+    assert!(results.get(results.len() - 2).is_some_and(|result| {
         result
             .name
             .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
+    }));
+    assert!(results.last().is_some_and(|result| {
+        result
+            .name
+            .ends_with("::journal_updates_remain_incremental_across_acknowledgements")
     }));
     let expected = fast_cases();
     assert_eq!(results.len(), expected.len());

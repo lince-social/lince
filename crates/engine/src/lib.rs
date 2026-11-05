@@ -79,6 +79,7 @@ pub mod read_filter;
 pub mod rebuild;
 pub mod record_change;
 pub mod record_creation;
+pub mod record_edit;
 pub mod record_extensions;
 pub mod record_moves;
 mod record_policy;
@@ -151,6 +152,7 @@ pub struct Engine {
     thread_creation_lock: Mutex<()>,
     mailbox_delivery_lock: Mutex<()>,
     evidence_serving_slots: tokio::sync::Semaphore,
+    record_edit_work: record_edit::Work,
     pub(crate) trust_remote: trust_analysis::remote::Runtime,
     pub(crate) evidence_custody: trust_analysis::custody::Runtime,
     calls: Mutex<calls::Calls>,
@@ -251,6 +253,7 @@ impl Engine {
             thread_creation_lock: Mutex::new(()),
             mailbox_delivery_lock: Mutex::new(()),
             evidence_serving_slots: tokio::sync::Semaphore::new(4),
+            record_edit_work: record_edit::Work::default(),
             trust_remote: trust_analysis::remote::Runtime::default(),
             evidence_custody: Default::default(),
             calls: Mutex::new(calls::Calls::default()),

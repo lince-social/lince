@@ -263,6 +263,7 @@ async fn file_backed_local_edit_phase_probe() {
             .load_record_edit_draft(&storage, &uid)
             .await
             .unwrap()
+            .recovered
             .is_none()
     );
     drop(world);

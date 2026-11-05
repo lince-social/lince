@@ -482,47 +482,6 @@ impl Engine {
         Ok(changed)
     }
 
-    pub async fn load_record_edit_draft(
-        &self,
-        source: &str,
-        uid: &str,
-    ) -> Result<Option<String>, EngineError> {
-        Ok(store::sqlx::query_scalar(
-            "SELECT state FROM record_edit_draft WHERE source = ? AND record_uid = ?",
-        )
-        .bind(source)
-        .bind(uid)
-        .fetch_optional(&self.store.pool)
-        .await?)
-    }
-
-    pub async fn save_record_edit_draft(
-        &self,
-        source: &str,
-        uid: &str,
-        state: &str,
-    ) -> Result<(), EngineError> {
-        if state.len() > crate::collab::limits().snapshot_bytes * 4 {
-            return Err(invalid("Pending edits exceed their storage limit"));
-        }
-        store::sqlx::query("INSERT INTO record_edit_draft (source, record_uid, state, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(source, record_uid) DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at")
-            .bind(source).bind(uid).bind(state).bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await?;
-        Ok(())
-    }
-
-    pub async fn clear_record_edit_draft(
-        &self,
-        source: &str,
-        uid: &str,
-    ) -> Result<(), EngineError> {
-        store::sqlx::query("DELETE FROM record_edit_draft WHERE source = ? AND record_uid = ?")
-            .bind(source)
-            .bind(uid)
-            .execute(&self.store.pool)
-            .await?;
-        Ok(())
-    }
-
     pub async fn change_record(
         &self,
         request: Request,

@@ -2,6 +2,14 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## Private CPU sampling on 2026-11-05
+
+The frozen P101 diagnostic executable now has one CPU-counter run and two userspace stack recordings, with performance tracing disabled. All 36 controlled input responses pass their color-pixel oracle. Current seven-case common rules pass first, with Protein Area Add filter first. Full and predeclared five-second-delayed captures contain 773 and 286 samples, with zero reported sample loss. Bevy compute workers account for 47.35%/37.76% of sampled periods and park-canvas for 40.62%/43.36%; the remainder includes IO and the test thread. This proves worker execution, not useful simultaneous core occupancy, a CPU/GPU division error or a percentage of current desktop lag.
+
+These captures do not supply the required optimized daily bottleneck ranking. Startup includes Naga/shader preparation; the delayed capture still includes EGL/Mesa initialization for readback and the test's pixel loop. Five seconds is not a proven steady-state boundary. Native Rust parent call chains are insufficient to attribute a dominant main system, although some C runtime chains resolve. Do not promote a rendering rewrite or optimize the oracle as if it were product work from these samples. The existing observed frame-preparation span remains a hypothesis to narrow, not an assigned CPU/GPU cause. P66 stays open; P102 remains next locally supported work.
+
+Receipt, raw data, executable/source identities, counter output and analyses: target/park-validation/performance-20261105/frame-cpu/receipt.json. Explicit user-only call chains permit sampling without changing kernel settings. Initial shell/permission/report-option/raw-layout failures and corrections are retained; raw aggregation matches both official sample counts and event-period totals. The executable is the earlier diagnostic fixture, not the current optimized session. CPU geometry/shaping/atlas ink and synthetic color checks do not close actual GPU glyph paint or formal rule mapping (P146/P140). No source optimization was kept from this inconclusive frame attribution, and no real session, clipboard, release build or Actions polling was involved.
+
 ## Dependent subscription refresh completed on 2026-11-05
 
 P118 is complete for the measured local-owner text notification family. Known canonical text Facts now skip unrelated sole exact-UID queries selecting only direct Record fields, with no derived/includes/aggregate dependencies. The guard checks the current subject and Fact origin; delegated viewers, unknown changes and complex queries retain full refresh. Its Include match is exhaustive so newly added dependencies require review. No grant cache, worker, setting, sync-history suppression or durability change was introduced.

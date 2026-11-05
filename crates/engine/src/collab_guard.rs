@@ -82,6 +82,7 @@ impl std::error::Error for GuardError {}
 pub struct AcceptedDoc {
     doc: LoroDoc,
     version: VersionVector,
+    validated_limits: Limits,
     head: String,
     body: String,
     snapshot: Vec<u8>,
@@ -157,6 +158,7 @@ impl AcceptedDoc {
         bounded(snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
         Ok(Self {
             version: doc.oplog_vv(),
+            validated_limits: limits.clone(),
             doc,
             head,
             body,
@@ -263,7 +265,16 @@ impl AcceptedDoc {
         bounded(raw_json.len(), limits.delta_bytes, "delta bytes")?;
         bounded(self.snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
         let base_validation = crate::performance::Span::new("record-guard-base-validation");
-        validate_document(&self.doc, limits)?;
+        if self.validated_limits != *limits
+            || self.doc.oplog_vv() != self.version
+            || self.doc.get_pending_txn_len() != 0
+            || self.doc.is_detached()
+            || self.doc.is_shallow()
+        {
+            validate_document(&self.doc, limits)?;
+        } else {
+            crate::performance::add("record-guard-bases-reused", 1);
+        }
         drop(base_validation);
         let raw: RawSchema =
             serde_json::from_slice(raw_json).map_err(|_| GuardError::InvalidJson)?;
@@ -1989,6 +2000,107 @@ mod tests {
         assert_eq!(base.doc.get_pending_txn_len(), pending_len);
         assert_eq!(base.doc.oplog_vv(), pending_version);
         assert_eq!(base.version(), before);
+    }
+
+    #[test]
+    fn collab_guard_changed_limits_validate_the_base_before_a_shrinking_candidate() {
+        let base = accepted("T", "ab😀é");
+        let editor = client(&base, 7);
+        editor.get_text("body").delete(0, 4).unwrap();
+        let raw = delta(&editor, &base.version());
+        assert_eq!(
+            base.prepare_delta(&raw, &body_only(), &Limits::default())
+                .unwrap()
+                .body(),
+            ""
+        );
+        assert_eq!(
+            refusal(
+                &base,
+                &raw,
+                &body_only(),
+                &Limits {
+                    text_bytes: 3,
+                    ..Limits::default()
+                }
+            ),
+            GuardError::Limit("text bytes")
+        );
+    }
+
+    #[test]
+    fn collab_guard_unchanged_limits_still_validate_the_new_candidate() {
+        let limits = Limits {
+            text_bytes: 3,
+            ..Limits::default()
+        };
+        let base = AcceptedDoc::from_trusted_text("T", "a", &limits).unwrap();
+        let editor = client(&base, 7);
+        editor.get_text("body").insert(1, "bc").unwrap();
+        assert_eq!(
+            refusal(
+                &base,
+                &delta(&editor, &base.version()),
+                &body_only(),
+                &limits
+            ),
+            GuardError::Limit("text bytes")
+        );
+    }
+
+    #[test]
+    fn collab_guard_changed_internal_revision_cannot_reuse_its_validation() {
+        let base = accepted("T", "body");
+        base.doc.get_text("secret").insert(0, "x").unwrap();
+        base.doc.commit();
+        assert_ne!(base.doc.oplog_vv(), base.version());
+        assert_eq!(
+            refusal(
+                &base,
+                &bytes(&insertion()),
+                &body_only(),
+                &Limits::default()
+            ),
+            GuardError::UnsupportedContainer
+        );
+    }
+
+    #[test]
+    fn collab_guard_reused_and_fresh_base_validation_preserve_the_same_candidate() {
+        let limits = Limits::default();
+        let fresh_limits = Limits {
+            message_bytes: limits.message_bytes - 1,
+            ..limits.clone()
+        };
+        for (head, body) in [("", ""), ("Té", "a😀éZ")] {
+            let base = accepted(head, body);
+            let original = base.snapshot().to_vec();
+            let editor = client(&base, 7);
+            editor.get_text("body").insert(0, "👩‍💻").unwrap();
+            let raw = delta(&editor, &base.version());
+            let reused = base.prepare_delta(&raw, &body_only(), &limits).unwrap();
+            let fresh = base
+                .prepare_delta(&raw, &body_only(), &fresh_limits)
+                .unwrap();
+            assert_eq!(reused.head(), fresh.head());
+            assert_eq!(reused.body(), fresh.body());
+            assert_eq!(reused.normalized_delta(), fresh.normalized_delta());
+            assert_eq!(reused.candidate.version(), fresh.candidate.version());
+            assert_eq!(reused.touched_properties(), fresh.touched_properties());
+            assert_eq!(reused.new_atoms(), fresh.new_atoms());
+            assert_eq!(reused.is_duplicate(), fresh.is_duplicate());
+            assert_eq!(
+                reused.candidate.doc.get_deep_value(),
+                fresh.candidate.doc.get_deep_value()
+            );
+            let reopened = AcceptedDoc::from_trusted_snapshot(reused.snapshot(), &limits).unwrap();
+            assert_eq!(reopened.head(), fresh.head());
+            assert_eq!(reopened.body(), fresh.body());
+            assert_eq!(reopened.version(), fresh.candidate.version());
+            assert_eq!(base.snapshot(), original);
+            assert_eq!(base.head(), head);
+            assert_eq!(base.body(), body);
+        }
     }
 
     #[test]

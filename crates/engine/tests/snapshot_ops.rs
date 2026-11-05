@@ -42,6 +42,122 @@ async fn ops_of_kind(e: &Engine, uid: &str, kind: &str) -> Vec<sync_ops::OpRow> 
         .collect()
 }
 
+async fn accept_replication(e: &Engine, organ: &str) {
+    store::organs::set_sync_policy(&e.store.pool, organ, false, true)
+        .await
+        .expect("incoming replication");
+}
+
+#[tokio::test]
+async fn large_text_mutations_checkpoint_at_the_atom_budget_without_removing_history() {
+    let (e, _) = cell("http://atom-budget").await;
+    for (atoms, checkpoint) in [(65535, false), (65536, true), (65537, true)] {
+        let uid = plain(&e, &format!("atom-budget-{atoms}")).await;
+        let body = "x".repeat(atoms);
+        e.write_record_text(&uid, None, Some(&body)).await.unwrap();
+        let stored = store::record_docs::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap();
+        let operations = ops_of_kind(&e, &uid, "crdt").await;
+        assert_eq!(operations.len(), 1);
+        assert_eq!(stored.through_seq >= operations[0].seq, checkpoint);
+        let snapshot = loro::LoroDoc::new();
+        snapshot.import(&stored.snapshot).unwrap();
+        if checkpoint {
+            assert_eq!(snapshot.get_text("body").to_string(), body);
+        } else {
+            assert_eq!(snapshot.get_text("body").to_string(), "");
+        }
+        e.close_record_doc(&uid);
+        assert_eq!(e.doc_text(&uid).await.unwrap().1, body);
+    }
+    let uid = plain(&e, "unicode-atom-budget").await;
+    let body = "é".repeat(32768);
+    e.write_record_text(&uid, None, Some(&body)).await.unwrap();
+    let stored = store::record_docs::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(stored.through_seq, 0);
+    e.close_record_doc(&uid);
+    assert_eq!(e.doc_text(&uid).await.unwrap().1, body);
+}
+
+#[tokio::test]
+async fn large_text_checkpoint_rolls_back_with_a_failed_fact_and_can_be_retried() {
+    let (e, _) = cell("http://checkpoint-rollback").await;
+    let uid = plain(&e, "checkpoint-rollback").await;
+    let body = "x".repeat(65536);
+    store::sqlx::query("CREATE TRIGGER fail_large_text_fact BEFORE INSERT ON fact BEGIN SELECT RAISE(ABORT, 'held test fact'); END")
+        .execute(&e.store.pool).await.unwrap();
+    assert!(e.write_record_text(&uid, None, Some(&body)).await.is_err());
+    assert_eq!(
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .body,
+        ""
+    );
+    assert!(ops_of_kind(&e, &uid, "crdt").await.is_empty());
+    let stored = store::record_docs::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(stored.through_seq, 0);
+    e.close_record_doc(&uid);
+    assert_eq!(e.doc_text(&uid).await.unwrap().1, "");
+    store::sqlx::query("DROP TRIGGER fail_large_text_fact")
+        .execute(&e.store.pool)
+        .await
+        .unwrap();
+    e.write_record_text(&uid, None, Some(&body)).await.unwrap();
+    assert!(
+        store::record_docs::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .through_seq
+            > 0
+    );
+    e.close_record_doc(&uid);
+    assert_eq!(e.doc_text(&uid).await.unwrap().1, body);
+}
+
+#[tokio::test]
+async fn small_text_mutations_keep_the_existing_checkpoint_boundary() {
+    let (e, _) = cell("http://small-checkpoint").await;
+    let uid = plain(&e, "small-checkpoint").await;
+    let mut checkpoint = 0;
+    for revision in 1..=101 {
+        let body = format!("value-{revision}");
+        e.write_record_text(&uid, None, Some(&body)).await.unwrap();
+        if revision >= 99 {
+            let stored = store::record_docs::get(&e.store.pool, &uid)
+                .await
+                .unwrap()
+                .unwrap();
+            let operations = ops_of_kind(&e, &uid, "crdt").await;
+            assert_eq!(operations.len(), revision);
+            let snapshot = loro::LoroDoc::new();
+            snapshot.import(&stored.snapshot).unwrap();
+            if revision == 99 {
+                assert_eq!(stored.through_seq, 0);
+                assert_eq!(snapshot.get_text("body").to_string(), "");
+            } else {
+                if revision == 100 {
+                    checkpoint = operations[99].seq;
+                }
+                assert_eq!(stored.through_seq, checkpoint);
+                assert_eq!(snapshot.get_text("body").to_string(), "value-100");
+            }
+            e.close_record_doc(&uid);
+            assert_eq!(e.doc_text(&uid).await.unwrap().1, body);
+        }
+    }
+}
+
 #[tokio::test]
 async fn compaction_logs_a_snapshot_op_owned_by_this_cell() {
     let (e, organ) = cell("http://cell-a").await;
@@ -163,6 +279,7 @@ async fn a_tombstone_is_not_superseded_by_a_collab_op() {
     store::organs::add_contact(&e.store.pool, &peer_organ, None, "C", "http://cell-c", 1)
         .await
         .expect("contact");
+    accept_replication(&e, &peer_organ).await;
     let mut wire = e.hydrate_ops(snapshot).await.expect("hydrate");
     for op in &mut wire {
         op.organ_uid = peer_organ.clone();
@@ -256,6 +373,7 @@ async fn a_contact_added_after_a_prune_still_receives_the_text() {
     store::organs::add_contact(&b.store.pool, &a_organ, None, "A", "http://cell-a", 1)
         .await
         .expect("contact");
+    accept_replication(&b, &a_organ).await;
     let (feed, _head) = a.ops_after(0, 10_000).await.expect("feed");
     b.import_op_batch(&OpBatch {
         from_organ: a_organ,
@@ -283,6 +401,7 @@ async fn importing_a_snapshot_does_not_emit_one_back() {
     store::organs::add_contact(&b.store.pool, &a_organ, None, "A", "http://cell-a", 1)
         .await
         .expect("contact");
+    accept_replication(&b, &a_organ).await;
 
     let uid = plain(&a, "shared").await;
     a.write_record_text(&uid, None, Some("from a"))
@@ -316,6 +435,7 @@ async fn importing_a_compaction_sized_op_does_not_deadlock() {
     let (b, _b_organ) = cell("http://cell-b").await;
     let a_intro = a.introduction().await.expect("introduction");
     b.adopt_introduction(&a_intro, 1).await.expect("adopt");
+    accept_replication(&b, &a_organ).await;
 
     let uid = plain(&a, "big").await;
     let big = "lorem ipsum ".repeat(40_000);
@@ -352,6 +472,7 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
     let (b, _b_organ) = cell("http://cell-b").await;
     let a_intro = a.introduction().await.expect("introduction");
     b.adopt_introduction(&a_intro, 1).await.expect("adopt");
+    accept_replication(&b, &a_organ).await;
     store::organs::add_contact(&a.store.pool, "organ-old", None, "Old", "http://old", 1)
         .await
         .expect("contact");
@@ -427,6 +548,7 @@ async fn a_version_vector_never_mentions_a_third_organ() {
     for peer in [&a, &c] {
         let intro = peer.introduction().await.expect("introduction");
         us.adopt_introduction(&intro, 1).await.expect("adopt");
+        accept_replication(&us, &intro.organ_uid).await;
     }
     for (peer, organ) in [(&a, &a_organ), (&c, &c_organ)] {
         let uid = plain(peer, "note").await;

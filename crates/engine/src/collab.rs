@@ -11,6 +11,7 @@ use crate::error::EngineError;
 
 const MAX_OPEN_DOCS: usize = 64;
 const COMPACT_OPS: i64 = 100;
+const COMPACT_ATOMS: usize = 64 * 1024;
 
 struct OpenDoc {
     doc: Arc<AcceptedDoc>,
@@ -275,8 +276,15 @@ impl crate::Engine {
         uid: &str,
         requested: BTreeSet<Property>,
     ) -> Result<BTreeSet<Property>, EngineError> {
-        if actor.is_some() && store::sqlx::query_scalar::<_, bool>(crate::record_policy::LOCAL_AUTOMATION_RECORD_QUERY)
-            .bind(uid).bind(uid).fetch_one(&self.store.pool).await? {
+        if actor.is_some()
+            && store::sqlx::query_scalar::<_, bool>(
+                crate::record_policy::LOCAL_AUTOMATION_RECORD_QUERY,
+            )
+            .bind(uid)
+            .bind(uid)
+            .fetch_one(&self.store.pool)
+            .await?
+        {
             return Ok(BTreeSet::new());
         }
         self.authorize_action(
@@ -523,16 +531,21 @@ impl crate::Engine {
             )
             .await?;
         }
-        let through: i64 = store::sqlx::query_scalar(
-            "SELECT COALESCE(through_seq, 0) FROM record_doc WHERE record_uid = ?",
-        )
-        .bind(uid)
-        .fetch_optional(&mut *tx)
-        .await?
-        .unwrap_or(0);
-        let count: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind = 'crdt' AND seq > ?")
-            .bind(uid).bind(through).fetch_one(&mut *tx).await?;
-        if count >= COMPACT_OPS {
+        let compact = if prepared.new_atoms() >= COMPACT_ATOMS {
+            true
+        } else {
+            let through: i64 = store::sqlx::query_scalar(
+                "SELECT COALESCE(through_seq, 0) FROM record_doc WHERE record_uid = ?",
+            )
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await?
+            .unwrap_or(0);
+            let count: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind = 'crdt' AND seq > ?")
+                .bind(uid).bind(through).fetch_one(&mut *tx).await?;
+            count >= COMPACT_OPS
+        };
+        if compact {
             let seq: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(seq), 0) FROM sync_op")
                 .fetch_one(&mut *tx)
                 .await?;

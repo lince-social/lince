@@ -55,6 +55,7 @@ fn captured(row: &store::access_snapshot::AssertionMetadata) -> AssertionState {
         subject_uid: row.subject_uid.clone(),
         predicate_uid: row.predicate_uid.clone(),
         object_uid: row.object_uid.clone(),
+        object_uri: row.object_uri.clone(),
         quantity: row.quantity,
         unit_uid: row.unit_uid.clone(),
         role: match row.role {
@@ -70,6 +71,7 @@ fn written(row: &store::assertions::AssertionRow) -> AssertionState {
         subject_uid: row.subject_uid.clone(),
         predicate_uid: row.predicate_uid.clone(),
         object_uid: row.object_uid.clone(),
+        object_uri: row.object_uri.clone(),
         quantity: row.quantity,
         unit_uid: row.unit_uid.clone(),
         role: match row.role.as_str() {

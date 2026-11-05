@@ -93,6 +93,7 @@ pub struct PreparedDelta {
     normalized_delta: Vec<u8>,
     touched_properties: BTreeSet<Property>,
     duplicate: bool,
+    new_atoms: usize,
 }
 
 impl AcceptedDoc {
@@ -201,10 +202,11 @@ impl AcceptedDoc {
         doc.commit();
         let schema =
             doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
-        self.prepare_delta(
+        self.prepare_delta_with_candidate(
             &encode_bounded(&schema, limits.delta_bytes, "delta bytes")?,
             &both_properties(),
             limits,
+            Some(doc),
         )
     }
 
@@ -243,6 +245,16 @@ impl AcceptedDoc {
         selected_grant_properties: &BTreeSet<Property>,
         limits: &Limits,
     ) -> Result<PreparedDelta, GuardError> {
+        self.prepare_delta_with_candidate(raw_json, selected_grant_properties, limits, None)
+    }
+
+    fn prepare_delta_with_candidate(
+        &self,
+        raw_json: &[u8],
+        selected_grant_properties: &BTreeSet<Property>,
+        limits: &Limits,
+        authored: Option<LoroDoc>,
+    ) -> Result<PreparedDelta, GuardError> {
         validate_limits(limits)?;
         bounded(raw_json.len(), limits.delta_bytes, "delta bytes")?;
         bounded(self.snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
@@ -280,11 +292,15 @@ impl AcceptedDoc {
             limits.history_changes,
             "history changes",
         )?;
-        let candidate = import_snapshot(&self.snapshot)?;
-        if candidate.oplog_vv() != base_version {
-            return Err(GuardError::InvalidState);
-        }
-        let candidate = import_complete(candidate, schema.clone())?;
+        let candidate = if let Some(candidate) = authored {
+            candidate
+        } else {
+            let candidate = import_snapshot(&self.snapshot)?;
+            if candidate.oplog_vv() != base_version {
+                return Err(GuardError::InvalidState);
+            }
+            import_complete(candidate, schema.clone())?
+        };
         if candidate.len_ops() != expected_atoms {
             return Err(GuardError::InvalidState);
         }
@@ -304,6 +320,7 @@ impl AcceptedDoc {
         }
         let normalized_delta = encode_bounded(&normalized, limits.delta_bytes, "delta bytes")?;
         Ok(PreparedDelta {
+            new_atoms,
             duplicate: version == base_version,
             candidate: Self::from_document(candidate, limits)?,
             base_version,
@@ -314,6 +331,10 @@ impl AcceptedDoc {
 }
 
 impl PreparedDelta {
+    pub fn new_atoms(&self) -> usize {
+        self.new_atoms
+    }
+
     pub fn export_updates(&self, version: &VersionVector) -> Result<Vec<u8>, GuardError> {
         self.candidate.export_updates(version)
     }
@@ -1099,6 +1120,106 @@ mod tests {
         doc.import(accepted.snapshot()).unwrap();
         doc.set_peer_id(peer).unwrap();
         doc
+    }
+
+    #[test]
+    fn authored_text_candidates_match_guarded_replay_without_changing_the_base() {
+        for peer in [1, 7] {
+            for (head, body) in [
+                (None, None),
+                (Some(""), Some("")),
+                (Some("Before é"), None),
+                (Some("新 title 👩‍💻"), Some("α before 👩‍💻 עברית after")),
+            ] {
+                let base = accepted("Before é", "Before 👩‍💻 body");
+                let snapshot = base.snapshot().to_vec();
+                let prepared = base
+                    .prepare_text(peer, head, body, &Limits::default())
+                    .unwrap();
+                let replay = base
+                    .prepare_delta(
+                        prepared.normalized_delta(),
+                        &both_properties(),
+                        &Limits::default(),
+                    )
+                    .unwrap();
+                assert_eq!(prepared.head(), head.unwrap_or("Before é"));
+                assert_eq!(prepared.body(), body.unwrap_or("Before 👩‍💻 body"));
+                assert_eq!(prepared.head(), replay.head());
+                assert_eq!(prepared.body(), replay.body());
+                assert_eq!(prepared.base_version(), replay.base_version());
+                assert_eq!(prepared.candidate.version(), replay.candidate.version());
+                assert_eq!(prepared.normalized_delta(), replay.normalized_delta());
+                assert_eq!(prepared.touched_properties(), replay.touched_properties());
+                assert_eq!(prepared.is_duplicate(), replay.is_duplicate());
+                assert_eq!(prepared.new_atoms(), replay.new_atoms());
+                if prepared.is_duplicate() {
+                    assert_eq!(prepared.new_atoms(), 0);
+                }
+                let reopened = LoroDoc::new();
+                reopened.import(prepared.snapshot()).unwrap();
+                assert_eq!(reopened.get_text("head").to_string(), prepared.head());
+                assert_eq!(reopened.get_text("body").to_string(), prepared.body());
+                assert_eq!(base.snapshot(), snapshot);
+                assert_eq!(base.head(), "Before é");
+                assert_eq!(base.body(), "Before 👩‍💻 body");
+            }
+        }
+    }
+
+    #[test]
+    fn authored_text_candidates_still_enforce_admission_and_output_limits() {
+        let base = accepted("H", "b");
+        let snapshot = base.snapshot().to_vec();
+        for limits in [
+            Limits {
+                peers: 1,
+                ..Limits::default()
+            },
+            Limits {
+                delta_bytes: 8,
+                ..Limits::default()
+            },
+            Limits {
+                delta_changes: 0,
+                ..Limits::default()
+            },
+            Limits {
+                delta_operations: 0,
+                ..Limits::default()
+            },
+            Limits {
+                delta_atoms: 1,
+                ..Limits::default()
+            },
+            Limits {
+                text_bytes: 3,
+                ..Limits::default()
+            },
+            Limits {
+                history_atoms: 6,
+                delta_atoms: 6,
+                ..Limits::default()
+            },
+            Limits {
+                snapshot_bytes: 1,
+                ..Limits::default()
+            },
+        ] {
+            assert!(
+                base.prepare_text(7, Some("AA"), Some("BB"), &limits)
+                    .is_err(),
+                "{limits:?}"
+            );
+            assert_eq!(base.snapshot(), snapshot);
+            assert_eq!(base.head(), "H");
+            assert_eq!(base.body(), "b");
+        }
+        let prepared = base
+            .prepare_text(7, Some("AA"), Some("BB"), &Limits::default())
+            .unwrap();
+        assert_eq!(prepared.head(), "AA");
+        assert_eq!(prepared.body(), "BB");
     }
 
     fn delta(doc: &LoroDoc, base: &VersionVector) -> Vec<u8> {

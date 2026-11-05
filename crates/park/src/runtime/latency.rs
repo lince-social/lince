@@ -1,12 +1,13 @@
-#[cfg(any(feature = "nested", test))]
 use lince_interface::host::OutputId;
-use lince_interface::host::performance::{self, Count, Stage};
+use lince_interface::host::performance::{self, Count, InputStage, InputTrace, Stage};
 use std::{
     cell::Cell,
+    sync::atomic::{AtomicU64, Ordering},
     time::{Duration, Instant},
 };
 
 thread_local! { static CURRENT: Cell<Option<Stamp>> = const { Cell::new(None) }; }
+static NEXT_ORIGIN: AtomicU64 = AtomicU64::new(1);
 
 pub(crate) fn monotonic() -> Duration {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
@@ -18,6 +19,7 @@ pub(crate) fn monotonic() -> Duration {
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Stamp {
+    id: u64,
     instant: Instant,
     time: Duration,
 }
@@ -31,6 +33,11 @@ impl Stamp {
     }
     pub(crate) fn fresh() -> Option<Self> {
         performance::enabled().then(|| Self {
+            id: NEXT_ORIGIN
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                    value.checked_add(1)
+                })
+                .unwrap_or(0),
             instant: Instant::now(),
             time: monotonic(),
         })
@@ -43,8 +50,46 @@ impl Stamp {
         CURRENT.with(Cell::get).or_else(Self::fresh)
     }
 
+    #[cfg(all(test, feature = "nested"))]
+    pub(crate) fn origin(self) -> u64 {
+        self.id
+    }
+
     pub(crate) fn record(self, stage: Stage) {
         performance::record(stage, self.instant.elapsed());
+    }
+
+    pub(crate) fn checkpoint(self, stage: InputStage, input_serial: u64, pointer_serial: u64) {
+        self.trace(InputTrace {
+            stage,
+            origin: self.id,
+            origin_us: self.time.as_micros().min(u128::from(u64::MAX)) as u64,
+            observed_us: monotonic().as_micros().min(u128::from(u64::MAX)) as u64,
+            input_serial,
+            pointer_serial,
+            frame: 0,
+            output: None,
+        });
+    }
+
+    fn trace(self, reading: InputTrace) {
+        if self.id != 0 && reading.observed_us >= reading.origin_us {
+            performance::trace_input(reading);
+        }
+    }
+
+    #[cfg(feature = "nested")]
+    pub(crate) fn observed(self, stage: InputStage, output: OutputId, time: Duration) {
+        self.trace(InputTrace {
+            stage,
+            origin: self.id,
+            origin_us: self.time.as_micros().min(u128::from(u64::MAX)) as u64,
+            observed_us: time.as_micros().min(u128::from(u64::MAX)) as u64,
+            input_serial: 0,
+            pointer_serial: 0,
+            frame: 0,
+            output: Some(output.0),
+        });
     }
 
     #[cfg(any(feature = "nested", test))]
@@ -77,6 +122,9 @@ impl Dispatch {
     }
 
     pub(crate) fn resume(stamp: Option<Stamp>) -> Self {
+        if let Some(stamp) = stamp {
+            stamp.checkpoint(InputStage::Dispatch, 0, 0);
+        }
         Self {
             previous: stamp.and_then(|stamp| CURRENT.with(|current| current.replace(Some(stamp)))),
             active: stamp.is_some(),
@@ -129,6 +177,7 @@ pub(crate) struct Batch {
 impl Batch {
     pub(crate) fn accept(&mut self, stamp: Option<Stamp>, input: u64, pointer: u64) {
         if let Some(stamp) = stamp {
+            stamp.checkpoint(InputStage::NativeDelivered, input, pointer);
             self.stamp = Stamp::earliest(self.stamp, Some(stamp));
             self.input_serial = self.input_serial.max(input);
             self.pointer_serial = self.pointer_serial.max(pointer);
@@ -141,12 +190,29 @@ impl Batch {
         let stamp = batch.stamp?;
         stamp.record(Stage::NativeInputToFrame);
         performance::count(Count::NativeInputBatches);
-        Some(Sample {
+        let sample = Sample {
             id: sequence,
             stamp,
             input_serial: batch.input_serial,
             pointer_serial: batch.pointer_serial,
-        })
+        };
+        sample.checkpoint(InputStage::FramePrepared, None, monotonic());
+        Some(sample)
+    }
+}
+
+impl Sample {
+    fn checkpoint(self, stage: InputStage, output: Option<OutputId>, observed: Duration) {
+        self.stamp.trace(InputTrace {
+            stage,
+            origin: self.stamp.id,
+            origin_us: self.stamp.time.as_micros().min(u128::from(u64::MAX)) as u64,
+            observed_us: observed.as_micros().min(u128::from(u64::MAX)) as u64,
+            input_serial: self.input_serial,
+            pointer_serial: self.pointer_serial,
+            frame: self.id,
+            output: output.map(|output| output.0),
+        });
     }
 }
 
@@ -170,6 +236,13 @@ impl Frame {
         self.created.record(Stage::NativeFrameToPublication);
         if let Some(input) = self.input.filter(|input| input.id == self.sequence) {
             input.stamp.record(Stage::NativeInputToPublication);
+            input.checkpoint(InputStage::Published, None, monotonic());
+        }
+    }
+
+    pub(crate) fn ready(self) {
+        if let Some(input) = self.input.filter(|input| input.id == self.sequence) {
+            input.checkpoint(InputStage::GpuReady, None, monotonic());
         }
     }
 
@@ -193,6 +266,17 @@ impl Frame {
                     Stage::NativeInputToDrm | Stage::NativeInputToObserved
                 ) {
                     performance::count(Count::NativeInputPresented);
+                    if let Some(input) = self.input {
+                        input.checkpoint(
+                            if hardware {
+                                InputStage::PresentedDrm
+                            } else {
+                                InputStage::PresentedObserved
+                            },
+                            Some(output),
+                            time,
+                        );
+                    }
                 }
             } else {
                 performance::count(Count::TimingRejected);
@@ -249,6 +333,9 @@ pub(crate) struct Outputs([Option<OutputId>; 16]);
 
 #[cfg(any(feature = "nested", test))]
 impl Outputs {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.iter().all(Option::is_none)
+    }
     pub(crate) fn visit(&mut self, output: OutputId) -> bool {
         if self.0.contains(&Some(output)) {
             return false;
@@ -307,6 +394,7 @@ impl Buffer {
 #[cfg(test)]
 pub(crate) fn stamp_at(time: Duration) -> Stamp {
     Stamp {
+        id: 0,
         instant: Instant::now(),
         time,
     }
@@ -315,6 +403,9 @@ pub(crate) fn stamp_at(time: Duration) -> Stamp {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "nested")]
+    mod visible;
 
     #[test]
     fn batches_keep_oldest_time_and_independent_serial_domains() {
@@ -399,12 +490,14 @@ mod tests {
     #[test]
     fn output_receipts_are_independent_deduplicated_and_bounded() {
         let mut outputs = Outputs::default();
+        assert!(outputs.is_empty());
         for id in 1..=16 {
             assert!(outputs.visit(OutputId(id)));
         }
         assert!(!outputs.visit(OutputId(1)));
         assert!(!outputs.visit(OutputId(17)));
         assert_eq!(outputs.0.iter().flatten().count(), 16);
+        assert!(!outputs.is_empty());
     }
 
     #[test]

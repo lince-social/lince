@@ -837,6 +837,7 @@ fn run(
             }
             let completed = awaiting.take().unwrap();
             let timing = completed.latency;
+            if let Some(timing) = timing { timing.ready(); }
             if images.publish(completed).is_err() { return canvas.finish(); }
             lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePublished);
             if let Some(timing) = timing { timing.published(); }

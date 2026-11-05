@@ -276,6 +276,13 @@ fn dispatch() -> Result<()> {
             }
             prune::with_cleanup(&root, || checked(cargo_command().arg("test").args(&extra)))
         }
+        Some("test-interface") => {
+            no_extra(&extra)?;
+            checked(cargo_command().args([
+                "test", "--locked", "-p", "lince-interface", "--features", "native-presentation",
+                "--lib", "native::laboratory::interface::fast_interface_rules", "--", "--exact", "--nocapture",
+            ]))
+        }
         Some("release") => {
             no_extra(&extra)?;
             checked(cargo_command().args(["run", "--release", "-p", "lince"]))
@@ -341,7 +348,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-store-transactions|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-interface|test-store-transactions|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -363,6 +370,7 @@ fn dispatch() -> Result<()> {
                 "check and test forward arguments to Cargo; test-all runs every workspace target."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
+            println!("test-interface runs the ordered fast Laboratory interface rules in the local test executable.");
             println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
             println!(
                 "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."

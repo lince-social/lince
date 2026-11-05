@@ -1,12 +1,24 @@
 use super::*;
 use crate::runtime::latency::{Outputs, Stamp};
-use lince_interface::host::performance::{self, Count, Stage};
+use lince_interface::host::performance::{self, Count, InputStage, Stage};
 use std::time::Duration;
 
 struct Pending {
     stamp: Stamp,
     minimum_version: u64,
     outputs: Outputs,
+}
+
+impl Pending {
+    fn forwarded(&mut self, stamp: Stamp, version: u64) {
+        self.stamp = if self.outputs.is_empty() {
+            Stamp::earliest(Some(self.stamp), Some(stamp)).unwrap()
+        } else {
+            stamp
+        };
+        self.minimum_version = version;
+        self.outputs = Outputs::default();
+    }
 }
 
 #[derive(Default)]
@@ -30,15 +42,17 @@ impl State {
             return;
         }
         stamp.record(Stage::ClientInputToForward);
+        stamp.checkpoint(InputStage::ClientForwarded, 0, 0);
         performance::count(Count::ClientInputForwarded);
-        self.latency.pending.insert(
-            root,
-            Pending {
+        self.latency
+            .pending
+            .entry(root)
+            .and_modify(|pending| pending.forwarded(stamp, self.revision))
+            .or_insert(Pending {
                 stamp,
                 minimum_version: self.revision,
                 outputs: Outputs::default(),
-            },
-        );
+            });
     }
 }
 
@@ -78,9 +92,47 @@ impl Applications {
             time,
         ) {
             performance::count(Count::ClientInputProxyPresented);
+            pending.stamp.observed(
+                if hardware {
+                    InputStage::ClientProxyDrm
+                } else {
+                    InputStage::ClientProxyObserved
+                },
+                output,
+                time,
+            );
             return true;
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runtime::latency::stamp_at;
+
+    #[test]
+    fn a_burst_keeps_its_oldest_origin_until_a_newer_buffer_was_observed() {
+        let mut pending = Pending {
+            stamp: stamp_at(Duration::from_millis(10)),
+            minimum_version: 1,
+            outputs: Outputs::default(),
+        };
+        pending.forwarded(stamp_at(Duration::from_millis(30)), 4);
+        assert_eq!(
+            pending.stamp.age(Duration::from_millis(50)),
+            Some(Duration::from_millis(40))
+        );
+        assert_eq!(pending.minimum_version, 4);
+        assert!(pending.outputs.visit(OutputId(1)));
+        pending.forwarded(stamp_at(Duration::from_millis(60)), 8);
+        assert_eq!(
+            pending.stamp.age(Duration::from_millis(80)),
+            Some(Duration::from_millis(20))
+        );
+        assert_eq!(pending.minimum_version, 8);
+        assert!(pending.outputs.is_empty());
     }
 }
 

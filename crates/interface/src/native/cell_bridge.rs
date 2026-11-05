@@ -297,7 +297,11 @@ fn connect_session(
                         }
                         _ => {}
                     }
-                    session.handle(request).await
+                    let started = matches!(&request, ClientMessage::Act { action: engine::actions::Action::ChangeRecord { .. }, .. })
+                        .then(crate::host::performance::start).flatten();
+                    let messages = session.handle(request).await;
+                    crate::host::performance::record_since(crate::host::performance::Stage::RecordChangeService, started);
+                    messages
                 }
                 event = sync_events.next(session.has_ephemeral_subscriptions()) => {
                     let Some(event) = event else { break };

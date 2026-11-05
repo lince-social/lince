@@ -129,7 +129,7 @@ tokens! {
     IconPadding, "Icon padding", Number(7.0), Number(7.0), Some((0.0,24.0));
     ControlRoundness, "Button roundness", Number(0.0), Number(0.0), Some((0.0,32.0));
     ControlBorder, "Control border thickness", Number(1.0), Number(1.0), Some((0.0,8.0));
-    PanelWidth, "Panel width", Number(376.0), Number(376.0), Some((280.0,1200.0));
+    PanelWidth, "Panel width", Number(420.0), Number(420.0), Some((280.0,1200.0));
     CustomizationWidth, "Customization width", Number(720.0), Number(720.0), Some((360.0,1600.0));
     TooltipWidth, "Tooltip width", Number(280.0), Number(280.0), Some((120.0,800.0));
     TooltipRoundness, "Tooltip roundness", Number(4.0), Number(4.0), Some((0.0,32.0));

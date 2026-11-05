@@ -4,7 +4,7 @@
 
 ## Fixed workload identities
 
-P103 creates the reusable manifests. Start from the following sizes, recording actual entity/glyph/row/texture counts as well as top-level items. A nested Castle can contain far more work than one plain Sand. Use the same content, visibility and effects in baseline and candidate.
+P103 completed the reusable [workload definitions](workloads.json) and a separate runtime/source snapshot linked in 00. Full mixed-scene adapter coverage remains explicit work; a definition is not an executed benchmark. Start from the following sizes, recording actual entity/glyph/row/texture counts as well as top-level items. A nested Castle can contain far more work than one plain Sand. Use the same content, visibility and effects in baseline and candidate.
 
 | Scene | Contents and purpose |
 | --- | --- |

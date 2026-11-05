@@ -15,21 +15,25 @@ The user accepts slower production compilation for a better runtime binary. Test
 
     **Why:** dead or superseded branches increase maintenance and can retain unnecessary initialization/dispatch work. **Scope:** choose one exact P86 entry, trace callers and feature configurations, then remove its obsolete implementation and wiring without preserving unused-version compatibility. **Verify:** declared current capabilities, applicable checks and any measured resource effect. Protected files and migrations remain untouched. If no executed work changes, describe the benefit as simplification/build cleanup rather than a responsiveness fix.
 
+- [ ] **P89 — Consolidate one redundant derived-state cache or resolver layer.**
+
+    **Why:** overlapping caches can repeat work and obscure invalidation/retirement. **Scope:** select one P86-proven overlap in shared style/metric/geometry/data derivation, reuse the existing canonical family and remove redundant storage/callers. **Verify:** keys, source revisions, zero/restored values, reparenting, removals, memory bounds and small/changing workloads. Do not merge unrelated semantics into an all-purpose global cache or cache permission decisions. Maintain a single explicit invalidation/lifetime contract for the selected value.
+
 - [ ] **P88 — Consolidate one duplicated pure coordinate-mapping operation.**
 
     **Why:** projection/mapping formulas appear in multiple presentation and input paths, increasing derivation cost and disagreement risk. **Scope:** assess host/raster, presentation/mapping and native_input projection/transfer/pointer; share one genuinely identical pure operation. Keep each caller's authority, lifetime and eligibility checks. **Verify:** scaling, rotated/projected geometry, clipping, output epochs, queued presses and replacement. Different native/client/capture policies must not be merged merely because the arithmetic resembles each other.
 
-- [ ] **P89 — Consolidate one redundant derived-state cache or resolver layer.**
+- [ ] **P92 — Initialize one unused-at-startup resource family on demand.**
 
-    **Why:** overlapping caches can repeat work and obscure invalidation/retirement. **Scope:** select one P86-proven overlap in shared style/metric/geometry/data derivation, reuse the existing canonical family and remove redundant storage/callers. **Verify:** keys, source revisions, zero/restored values, reparenting, removals, memory bounds and small/changing workloads. Do not merge unrelated semantics into an all-purpose global cache or cache permission decisions. Maintain a single explicit invalidation/lifetime contract for the selected value.
+    **Why:** optional backend/watch/decoder/model resources may incur cost before any view or operation needs them. **Scope:** choose an actual startup allocation/worker from P86, retain the feature and coalesce first-use initialization through existing ownership infrastructure. **Verify:** startup and idle resources, first-open latency, simultaneous consumers, close/reopen, cancellation and cleanup. Preserve required background semantic operations. Registering a plugin does not prove its resources initialize eagerly; establish that first.
 
 - [ ] **P90 — Remove one unused dependency or redundant feature activation.**
 
     **Why:** unnecessary dependency activation can enlarge builds, startup work and resident resources. **Scope:** choose one P86-proven unused active dependency/flag and verify its transitive uses in the supported shipping configuration. **Verify:** package/check coverage, startup/build or memory change and availability of existing features. Do not disable a supported Castle, decoder or backend to make benchmarks faster. A build-size improvement is worthwhile but must not be reported as a measured frame-time gain without runtime evidence.
 
-- [ ] **P92 — Initialize one unused-at-startup resource family on demand.**
+- [ ] **P148 — Repair worker-only test feature gates.**
 
-    **Why:** optional backend/watch/decoder/model resources may incur cost before any view or operation needs them. **Scope:** choose an actual startup allocation/worker from P86, retain the feature and coalesce first-use initialization through existing ownership infrastructure. **Verify:** startup and idle resources, first-open latency, simultaneous consumers, close/reopen, cancellation and cleanup. Preserve required background semantic operations. Registering a plugin does not prove its resources initialize eagerly; establish that first.
+    **Why:** the additional P101 check `cargo check --locked --no-default-features -p lince-park --features native-presentation,server-tests --tests` fails on session-only tests/imports while the full Park configuration passes; this prevents cheap worker-only validation and obscures new failures. **Scope:** gate the existing presentation settings/keyboard/display/external-command/overview tests and related imports by the actual required features, using the existing test-module family. The 21 diagnostics' primary locations and crate module gates are unchanged from HEAD; see input-trace/worker-gate-attribution.json. **Verify:** the same worker-only command plus the full supported Park check/test compilation with warnings as errors and exact nonzero relevant selectors. Preserve test coverage in the intended configuration; do not add `allow` attributes, pull session dependencies into every worker test, or fix it by removing tests. Report validation/build simplification separately from runtime performance. **Priority:** below current interaction bottlenecks; this is an independently recorded check failure, not a P101 runtime regression.
 
 - [ ] **P96 — Compare cross-crate ThinLTO with the current release profile.**
 
@@ -43,13 +47,13 @@ The user accepts slower production compilation for a better runtime binary. Test
 
     **Why:** the user prefers final binary quality over short production builds, and full cross-crate optimization may provide an additional gain. **Scope:** test lto = true/"fat" against the P96 result at a fixed codegen count and otherwise identical configuration. **Verify:** representative runtime and correctness, including a control scene, and record linker/toolchain support, peak build memory and CI duration. Full LTO is not guaranteed faster than ThinLTO. If it wins, make the necessary production build budget explicit; retain ThinLTO when full LTO adds cost without a dependable benefit.
 
-- [ ] **P99 — Test representative profile-guided optimization for the selected release profile.**
-
-    **Why:** actual branch/call frequency can guide optimization beyond generic compiler settings. **Scope:** after the major runtime changes stabilize, train an instrumented candidate on normal native content, interaction and client activity; merge profiles with a matching LLVM toolchain and evaluate the final non-instrumented artifact. Keep flags/source consistent between training and use. **Verify:** held-out daily workloads, startup and correctness, stale/missing profile diagnostics and repeatability. Do not train solely on the Firefox FPS fixture or benchmark the instrumented binary as the final result. Keep this conditional on a maintainable release workflow and measured benefit.
-
 - [ ] **P100 — Compare a deliberate CPU target with the shipping target.**
 
     **Why:** available SIMD/instructions may help some CPU work, while an accidental CI-host target may produce the wrong artifact. **Scope:** establish the actual machine's capabilities, then compare the current target with one supported explicit CPU/ISA target at fixed LTO/codegen settings. A machine-specific Nix build and a distributable CI artifact must have clearly identified target assumptions; do not use target-cpu=native on a random runner as a proxy for this laptop. **Verify:** actual execution, CPU-heavy and interaction workloads, code size and thermal effects. Keep the existing target if there is no measured gain; changing a linker or CPU name alone does not establish better runtime code.
+
+- [ ] **P99 — Test representative profile-guided optimization for the selected release profile.**
+
+    **Why:** actual branch/call frequency can guide optimization beyond generic compiler settings. **Scope:** after the major runtime changes stabilize, train an instrumented candidate on normal native content, interaction and client activity; merge profiles with a matching LLVM toolchain and evaluate the final non-instrumented artifact. Keep flags/source consistent between training and use. **Verify:** held-out daily workloads, startup and correctness, stale/missing profile diagnostics and repeatability. Do not train solely on the Firefox FPS fixture or benchmark the instrumented binary as the final result. Keep this conditional on a maintainable release workflow and measured benefit.
 
 ## Established release baseline
 

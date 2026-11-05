@@ -11,6 +11,7 @@ fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {
     lince_interface::host::performance::checks::output_intervals_remain_independent_and_observations_are_bounded();
     lince_interface::host::performance::checks::report_backpressure_does_not_block_and_is_reported(
     );
+    lince_interface::host::performance::checks::input_traces_are_bounded_nonblocking_and_report_loss_without_payloads();
 }
 
 #[test]

@@ -230,8 +230,11 @@ pub(crate) fn layout(world: &mut World) {
         let (_, maximum) =
             super::panel_horizontal(size.x, size.x, 0.0, [usable.min.x, usable.max.x]);
         let margin = ((usable.width() - maximum) * 0.5).max(0.0);
-        usable.min += Vec2::splat(margin);
-        usable.max = (usable.max - Vec2::splat(margin)).max(usable.min + Vec2::ONE);
+        let paired_width = (usable.width() - margin - 12.0).max(2.0);
+        if kind == Kind::Item {
+            usable.min += Vec2::splat(margin);
+            usable.max = (usable.max - Vec2::splat(margin)).max(usable.min + Vec2::ONE);
+        }
         if let Some(mode) = world.get::<super::EditMode>(root)
             && let (Some(button), Some(root_transform)) = (
                 crate::native::inspection::bounds(world, mode.toggle),
@@ -281,12 +284,12 @@ pub(crate) fn layout(world: &mut World) {
         } else {
             match world.get::<Node>(owner).map(|node| node.width) {
                 Some(Val::Px(width)) => width,
-                _ => 376.0,
+                _ => crate::native::tokens::Token::PanelWidth.default_value(Default::default()).number(),
             }
         };
         let max_width = other_width
             .map_or(usable.width(), |other| {
-                let available = (usable.width() - 12.0).max(2.0);
+                let available = paired_width;
                 if preferred + other <= available {
                     preferred
                 } else {
@@ -301,7 +304,10 @@ pub(crate) fn layout(world: &mut World) {
             .filter(|height| *height > 0.0)
             .unwrap_or(usable.height());
         let height = if kind == Kind::Edit {
-            (usable.height() * 0.85).min(760.0)
+            let top = state.position.map_or(usable.min.y, |position| {
+                position.y.clamp(usable.min.y, (usable.max.y - 56.0).max(usable.min.y))
+            });
+            (usable.max.y - top).max(1.0)
         } else if state.minimized {
             56.0_f32.min(usable.height())
         } else {

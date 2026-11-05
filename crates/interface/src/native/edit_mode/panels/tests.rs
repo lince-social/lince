@@ -92,11 +92,12 @@ fn dragging_panels_keeps_them_screen_fixed_clamps_edges_and_does_not_move_the_ot
     let (mut world, root, edit, item) = fixture(1280.0);
     layout(&mut world);
     let before = rectangle(&world, item);
+    let edit_before = rectangle(&world, edit).min;
     move_panel(&mut world, edit, Vec2::new(300.0, 60.0));
     layout(&mut world);
     let moved = rectangle(&world, edit);
     assert_eq!(rectangle(&world, item), before);
-    assert!(moved.min.x < 700.0 && moved.min.y > 60.0);
+    assert_eq!(moved.min, edit_before + Vec2::new(300.0, 60.0));
     move_panel(&mut world, edit, Vec2::splat(100_000.0));
     layout(&mut world);
     assert!(rectangle(&world, edit).max.x <= 1280.0);

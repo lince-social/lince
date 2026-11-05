@@ -64,6 +64,7 @@ impl Sender {
             && previous.serial > retired && combine(&mut previous.input, &input) {
                 previous.serial = serial;
                 previous.latency = super::latency::Stamp::earliest(previous.latency, latency);
+                if let Some(stamp) = latency { stamp.checkpoint(lince_interface::host::performance::InputStage::NativeEnqueued, serial, 0); }
                 lince_interface::host::performance::count(lince_interface::host::performance::Count::InputAccepted);
                 lince_interface::host::performance::count(lince_interface::host::performance::Count::ScrollCombined);
                 return Ok(());
@@ -73,6 +74,7 @@ impl Sender {
             return Err(TrySendError::Full((serial, input)));
         }
         state.events.push_back(Queued { serial, input, started, latency });
+        if let Some(stamp) = latency { stamp.checkpoint(lince_interface::host::performance::InputStage::NativeEnqueued, serial, 0); }
         lince_interface::host::performance::count(lince_interface::host::performance::Count::InputAccepted);
         Ok(())
     }
@@ -86,6 +88,7 @@ impl Receiver {
 
     pub(super) fn pop_timed(&self) -> Option<(u64, Input, Option<super::latency::Stamp>)> {
         let event = self.0.lock().unwrap().events.pop_front()?;
+        if let Some(stamp) = event.latency { stamp.checkpoint(lince_interface::host::performance::InputStage::NativeDequeued, event.serial, 0); }
         lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::InputQueueWait, event.started);
         Some((event.serial, event.input, event.latency))
     }

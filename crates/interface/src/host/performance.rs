@@ -78,6 +78,13 @@ stages! {
     NativeSurfaces => "native-surfaces",
     NativeRecordProjection => "native-record-projection",
     NativeRecordPresentation => "native-record-presentation",
+    RecordBindingUpdate => "record-binding-update",
+    RecordEditSplice => "record-edit-splice",
+    RecordDraftPrepare => "record-draft-prepare",
+    RecordDraftQueueWait => "record-draft-queue-wait",
+    RecordDraftWrite => "record-draft-write-await",
+    RecordChangeService => "record-change-service-await",
+    RecordBindingPublish => "record-binding-publish",
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
     NativeCaptureSources => "native-capture-source-derivation",
@@ -170,6 +177,13 @@ counts! {
     RecordRowsReceived => "record-row-messages-received",
     RecordViewRefreshed => "record-view-derivations",
     RecordViewRetained => "record-view-derivations-retained",
+    RecordDraftSnapshot => "record-draft-snapshots",
+    RecordDraftSnapshotBytes => "record-draft-snapshot-bytes",
+    RecordDraftEncodedBytes => "record-draft-encoded-bytes",
+    RecordDraftWrites => "record-draft-writes",
+    RecordDraftClears => "record-draft-clears",
+    RecordBindingViews => "record-binding-views-compared",
+    RecordBindingViewChanged => "record-binding-views-changed",
     StyleInvalidated => "style-resolver-cache-invalidations",
     FramePrepared => "native-frames-prepared",
     FramePublished => "native-frames-published",
@@ -262,7 +276,40 @@ pub struct Report {
     pub stages: Vec<Reading>,
     pub outputs: Vec<OutputReading>,
     pub counters: Vec<CountReading>,
+    pub input_trace: Vec<InputTrace>,
+    pub dropped_input_trace: u64,
 }
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InputStage {
+    Dispatch,
+    NativeEnqueued,
+    NativeDequeued,
+    NativeDelivered,
+    FramePrepared,
+    GpuReady,
+    Published,
+    PresentedDrm,
+    PresentedObserved,
+    ClientForwarded,
+    ClientProxyDrm,
+    ClientProxyObserved,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct InputTrace {
+    pub stage: InputStage,
+    pub origin: u64,
+    pub origin_us: u64,
+    pub observed_us: u64,
+    pub input_serial: u64,
+    pub pointer_serial: u64,
+    pub frame: u64,
+    pub output: Option<u64>,
+}
+
+const INPUT_TRACE_LIMIT: usize = 1024;
 
 #[derive(Serialize)]
 pub struct CountReading {
@@ -278,6 +325,8 @@ struct Monitor {
     dropped_reports: AtomicU64,
     sender: Option<SyncSender<Report>>,
     counters: Vec<AtomicU64>,
+    input_trace: Mutex<Vec<InputTrace>>,
+    dropped_input_trace: AtomicU64,
 }
 
 impl Monitor {
@@ -293,6 +342,8 @@ impl Monitor {
             dropped_reports: AtomicU64::new(0),
             sender,
             counters: Count::ALL.iter().map(|_| AtomicU64::new(0)).collect(),
+            input_trace: Mutex::new(Vec::new()),
+            dropped_input_trace: AtomicU64::new(0),
         }
     }
 
@@ -397,13 +448,38 @@ impl Monitor {
                     })
                 })
                 .collect(),
+            input_trace: std::mem::take(
+                &mut *self
+                    .input_trace
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner()),
+            ),
+            dropped_input_trace: self.dropped_input_trace.swap(0, Ordering::Relaxed),
+        }
+    }
+
+    fn trace_input(&self, reading: InputTrace) {
+        if let Ok(mut trace) = self.input_trace.try_lock()
+            && trace.len() < INPUT_TRACE_LIMIT
+        {
+            trace.push(reading);
+            return;
+        }
+        self.dropped_input_trace.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn flush(&self) {
+        if let Some(sender) = &self.sender
+            && sender.try_send(self.snapshot()).is_err()
+        {
+            self.dropped_reports.fetch_add(1, Ordering::Relaxed);
         }
     }
 
     fn flush_if_due(&self) {
-        let Some(sender) = &self.sender else {
+        if self.sender.is_none() {
             return;
-        };
+        }
         let now = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
         let previous = self.reported_at_us.load(Ordering::Relaxed);
         if now.saturating_sub(previous) < 1_000_000
@@ -414,9 +490,7 @@ impl Monitor {
         {
             return;
         }
-        if sender.try_send(self.snapshot()).is_err() {
-            self.dropped_reports.fetch_add(1, Ordering::Relaxed);
-        }
+        self.flush();
     }
 }
 
@@ -474,8 +548,12 @@ pub fn record_output(stage: Stage, output: super::OutputId, duration: Duration) 
 }
 
 pub fn count(counter: Count) {
+    add(counter, 1);
+}
+
+pub fn add(counter: Count, value: u64) {
     if let Some(monitor) = monitor() {
-        monitor.counters[counter as usize].fetch_add(1, Ordering::Relaxed);
+        monitor.counters[counter as usize].fetch_add(value, Ordering::Relaxed);
     }
 }
 
@@ -507,6 +585,18 @@ pub fn flush_if_due() {
     }
 }
 
+pub fn trace_input(reading: InputTrace) {
+    if let Some(monitor) = monitor() {
+        monitor.trace_input(reading);
+    }
+}
+
+pub fn flush() {
+    if let Some(monitor) = monitor() {
+        monitor.flush();
+    }
+}
+
 pub struct Span {
     stage: Stage,
     started: Option<Instant>,
@@ -530,6 +620,50 @@ impl Drop for Span {
 #[cfg(any(test, feature = "behavior-checks"))]
 pub mod checks {
     use super::*;
+
+    #[cfg_attr(test, test)]
+    pub fn input_traces_are_bounded_nonblocking_and_report_loss_without_payloads() {
+        let monitor = std::sync::Arc::new(Monitor::new(None));
+        let reading = InputTrace {
+            stage: InputStage::NativeDequeued,
+            origin: 7,
+            origin_us: 100,
+            observed_us: 500,
+            input_serial: 12,
+            pointer_serial: 0,
+            frame: 0,
+            output: None,
+        };
+        {
+            let _held = monitor.input_trace.lock().unwrap();
+            monitor.trace_input(reading);
+        }
+        let workers = (0..4)
+            .map(|_| {
+                let monitor = monitor.clone();
+                std::thread::spawn(move || {
+                    for _ in 0..1000 {
+                        monitor.trace_input(reading);
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        let report = monitor.snapshot();
+        assert!(report.input_trace.len() <= INPUT_TRACE_LIMIT);
+        assert_eq!(
+            report.input_trace.len() as u64 + report.dropped_input_trace,
+            4001
+        );
+        let serialized = serde_json::to_value(report.input_trace[0]).unwrap();
+        assert_eq!(serialized["stage"], "native-dequeued");
+        assert_eq!(serialized["origin"], 7);
+        assert_eq!(serialized.as_object().unwrap().len(), 8);
+        assert!(monitor.snapshot().input_trace.is_empty());
+        assert_eq!(monitor.snapshot().dropped_input_trace, 0);
+    }
 
     #[cfg_attr(test, test)]
     pub fn bounded_distributions_keep_counts_tails_and_concurrent_samples() {

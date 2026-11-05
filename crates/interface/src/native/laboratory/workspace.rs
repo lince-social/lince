@@ -157,6 +157,7 @@ pub enum LaboratoryAction {
     Showoff,
     Open,
     RunAll,
+    Interface,
     Behavior,
     Stress,
     Stop,
@@ -198,11 +199,15 @@ impl Action for LaboratoryAction {
                 }
             }
             Self::Stop => stop(world),
-            Self::RunAll | Self::Behavior if !busy(world) => {
+            Self::RunAll | Self::Interface | Self::Behavior if !busy(world) => {
                 let wake = world
                     .get_resource::<crate::native::wake::WakeSignal>()
                     .cloned();
-                let run = BehaviorRun::start(wake);
+                let run = if matches!(self, Self::Interface) {
+                    BehaviorRun::start_interface(wake)
+                } else {
+                    BehaviorRun::start(wake)
+                };
                 let mut lab = world.resource_mut::<Laboratory>();
                 match run {
                     Ok(run) => {
@@ -734,6 +739,7 @@ fn render(world: &mut World) {
         for (title, action) in [
             ("showoff workspace", LaboratoryAction::Showoff),
             ("Run all", LaboratoryAction::RunAll),
+            ("Interface checks", LaboratoryAction::Interface),
             ("Behavior", LaboratoryAction::Behavior),
             ("Stress", LaboratoryAction::Stress),
             ("Stop", LaboratoryAction::Stop),

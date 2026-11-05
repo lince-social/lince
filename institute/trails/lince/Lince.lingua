@@ -855,6 +855,8 @@ Pan to look elsewhere, zoom to see more or less, and use Home or Fit to recover 
 
 Edit mode and the store (@edit-mode: 0, #instinct, #part-of @instinct-interface: 3) { r_5FH4XFDNTBBBYKZNZG3GP2M7VM
 Open Edit mode to add or arrange pieces. Open the store, find an item, then return to normal interaction. The store offers small Sands and composed Castles. Reveal controls when you need them.
+
+|> [edit-panel-geometry] The edit panel starts flush against the left edge of the usable viewport and fills the available height from its top to just above the bottom-left workspace controls, keeping those controls visible and usable. Its standard width should be a little wider than the current panel, with all controls reachable on narrow viewports.
 } r_5FH4XFDNTBBBYKZNZG3GP2M7VM
 
 Sands and placement (@sands: 0, #instinct, #part-of @instinct-interface: 4) { r_0J3KYFP5MJS7GZV063D7RW0BW6
@@ -913,8 +915,14 @@ Facts and work metadata (@facts: 0, #instinct, #part-of @instinct-records: 5) { 
 A Fact records a confirmed change. Inspect one sample change and its current quantity. Dates, assignees, estimate and work log describe the work. A click is not proof of a saved change; wait for confirmation.
 } r_6KDD83XJXD0ZHZWRT5D9HE276E
 
-Protein (@protein: 0, #instinct, #part-of @instinct-protein: 1) { r_04PESBG43ASBNW30QDN8KQPARV
+Protein (
+    @protein: 0, // |> [protein-laboratory] The common fast native interface suite must exercise Protein interactions in Laboratory. Its first mandatory case opens a Protein Area's Add filter dropdown and verifies visible choice text and successful selection on every suite run.
+    #instinct,
+    #part-of @instinct-protein: 1
+) { r_04PESBG43ASBNW30QDN8KQPARV
 A Protein selects live data you are allowed to see. Choose a prepared source, apply one filter and inspect results before spawning. The filter chooses data; the row template chooses presentation. Protein does not grant access to hidden data.
+
+|> [protein-readable-text] Protein labels, current selections, filter choices and result text must render readable glyphs wherever they are presented. Opening Add filter in a Protein Area must show readable, selectable filter choices rather than an empty box.
 } r_04PESBG43ASBNW30QDN8KQPARV
 
 Protein Castle and presentation (@protein-presentation: 0, #instinct, #part-of @instinct-protein: 2) { r_3A4R2K8WF4PGC5CRM52W0EKWKV

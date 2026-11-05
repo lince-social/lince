@@ -1,6 +1,6 @@
 # Park: rebuild responsiveness across the whole experience
 
-This directory is the working optimization plan for Park and the active Lince interface/backend paths it uses. The goal is prompt typing, clicking, scrolling, opening, dragging and local editing in a normal populated workspace on both monitors. A faster Firefox fixture alone does not finish it. This update organizes research and future implementation; it changes no executable and starts no compilation, installation or session test.
+This directory is the working optimization plan for Park and the active Lince interface/backend paths it uses. The goal is prompt typing, clicking, scrolling, opening, dragging and local editing in a normal populated workspace on both monitors. A faster Firefox fixture alone does not finish it. The queue selects the next authorized task; merely editing these documents changes no executable or session.
 
 The owner's [Park Record](../../trails/lince/Park.lingua) and [Lince Record](../../trails/lince/Lince.lingua) retain authority. The old [plan entry point](../Park.md) links here so existing Record and packaging links remain useful. All unfinished tasks live here, with one checkbox definition per P number. Existing IDs survive the move. Completed mechanisms and rejected experiments belong in the evidence ledger, not the task list.
 
@@ -16,7 +16,7 @@ On the user's existing machine, with both physical monitors, many ordinary canva
 
 Exact workloads, targets and measurement limitations are in [08-benchmarks.md](08-benchmarks.md). They are targets to implement and demonstrate, not claims that the current build passes.
 
-## Read and execute in this order
+## Execution queue and subject files
 
 | Stage | File | Decision/output |
 | --- | --- | --- |
@@ -33,9 +33,11 @@ Exact workloads, targets and measurement limitations are in [08-benchmarks.md](0
 | Architecture used by every stage | [10 — Architecture](10-architecture.md) | Shared families, intended data ownership, invalidation and handoff boundaries. |
 | 11 | [11 — Acceptance and experiments](11-acceptance-and-experiments.md) | Combined candidate evidence, honest physical acceptance, unfinished repairs and rejected directions. |
 
-Within a stage, take tasks in file order unless a measured dominant cause makes a later task the appropriate next step; record that reason. Do not complete every audit or minor task before fixing an established major bottleneck. Conditional experiments need evidence of their premise, not implementation merely to tick a box.
+Follow [execution-order.md](execution-order.md), the single cross-file queue. The first pending ready row is the next task. Re-rank it after every result so the next task always has the greatest supported expected benefit; actual gains become known through testing. Subject-file numbers organize details, not priority. Their checkboxes follow the current global order within each subject. Do not finish a whole subject before moving to a more valuable task in another file.
 
-The first implementation round starts with a current fixture/source identity and a trace of typing and a local Record edit, extending the existing profiler only where signals are missing. Use those same observations for P66/P67 and the wake/GPU questions. The first fixes then attack the largest demonstrated input blocker and save amplification. The completed exclusive-system audit already identifies surface preparation and the sequential main/render boundary as architectural candidates. They must remain early candidates, rather than being postponed behind endless getter/cache experiments.
+P103 has frozen the [workload definitions](workloads.json), executable identity and separate source snapshot; its receipt is in 00. P101 has completed bounded input correlation and private visible-response checks; its evidence is in 00. The first pending task is P102 to trace local edit/save phases, then P66 ranks the largest observed causes in the current optimized daily workload. A proven dominant render, wake, storage or input cause promotes its fix immediately; do not finish all audits or small experiments first. The existing exclusive-system audit makes surface preparation and main/render handoff early architectural candidates.
+
+Small inexpensive wins are welcome with care. There is no minimum percentage: count a repeatable gain or clearly eliminated work, allocations, copies or wakes, especially when ownership and code get simpler. If elapsed results are below measurement resolution, keep a sound low-cost simplification/work reduction with that limit stated; do not claim measured FPS or latency improvement. Check regressions and total resources, avoid new layers for a marginal benefit, and do not spend many iterations chasing noise while a dominant blocker remains. Combined improvements are measured rather than added arithmetically.
 
 ## Direction of the overhaul
 

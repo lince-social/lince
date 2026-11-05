@@ -2,6 +2,130 @@ use super::*;
 use crate::runtime::latency::monotonic;
 
 #[test]
+#[ignore = "private Vulkan/EGL controlled Wayland response; run tracing on and off without concurrent compilation"]
+fn a_client_key_drives_verified_new_pixels_with_an_explicit_observed_proxy() {
+    use crate::runtime::latency::{Dispatch, Stamp};
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(32 * 1024 * 1024)
+        .build()
+        .unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let mut harness = Harness::new();
+    harness
+        .server
+        .configure_outputs(&[Monitor {
+            id: OutputId(1),
+            name: "Private input trace".into(),
+            origin: [0, 0],
+            size: [640, 480],
+        }])
+        .unwrap();
+    let window = harness.window();
+    let _red = super::pixel_tests::colored(&mut harness, &window, [255, 0, 0]);
+    let previous = harness.server.windows().remove(0);
+    let mut canvas = crate::presentation::Presentation::new(
+        [640, 480],
+        directory.path().into(),
+        lince_interface::host::WakeSignal::new(|| {}),
+    )
+    .unwrap();
+    canvas.frame().unwrap();
+    canvas
+        .outputs(
+            harness
+                .server
+                .output_viewports()
+                .into_iter()
+                .map(|(name, viewport)| crate::presentation::Output { name, viewport })
+                .collect(),
+        )
+        .unwrap();
+    let paint = |canvas: &mut crate::presentation::Presentation,
+                 windows: &[WindowSnapshot],
+                 expected: [u8; 3]| {
+        let deadline = Instant::now() + Duration::from_secs(20);
+        let mut frames = 0;
+        loop {
+            canvas.sync_windows(windows).unwrap();
+            let frame = canvas.probe_frame().unwrap();
+            frames += 1;
+            let pixels = crate::presentation::probe_pixels(frame.dmabuf().unwrap()).unwrap();
+            let matching = pixels
+                .chunks_exact(4)
+                .filter(|pixel| {
+                    pixel[..3]
+                        .iter()
+                        .zip(expected)
+                        .all(|(value, expected)| value.abs_diff(expected) < 20)
+                })
+                .count();
+            if matching > 20_000 {
+                return (pixels, frames);
+            }
+            assert!(
+                Instant::now() < deadline,
+                "The controlled client response stayed invisible after {frames} frames, matching={matching}"
+            );
+        }
+    };
+    let (red, baseline_frames) = paint(&mut canvas, &[previous.clone()], [255, 0, 0]);
+    assert!(
+        red.chunks_exact(4)
+            .filter(|p| p[0] > 220 && p[1] < 30 && p[2] < 30)
+            .count()
+            > 20_000
+    );
+    harness.server.focus(
+        Some(previous.id),
+        smithay::utils::SERIAL_COUNTER.next_serial(),
+    );
+    let begin = Instant::now();
+    let origin = {
+        let _scope = Dispatch::new();
+        let origin = Stamp::current();
+        harness.server.keyboard(30, true, 1, |_| false).unwrap();
+        origin
+    };
+    {
+        let _scope = Dispatch::new();
+        harness.server.keyboard(30, false, 2, |_| false).unwrap();
+    }
+    harness.sync();
+    assert_eq!(harness.client.keys, [(30, true), (30, false)]);
+    let _green = super::pixel_tests::colored(&mut harness, &window, [0, 255, 0]);
+    let updated = harness.server.windows().remove(0);
+    assert!(updated.nodes[0].content.version > previous.nodes[0].content.version);
+    let (pixels, response_frames) = paint(&mut canvas, &[updated.clone()], [0, 255, 0]);
+    let green = pixels
+        .chunks_exact(4)
+        .filter(|p| p[1] > 220 && p[0] < 30 && p[2] < 30)
+        .count();
+    assert!(green > 20_000);
+    let observed =
+        harness
+            .server
+            .observe_input_presentation(OutputId(1), &updated.nodes, monotonic(), false);
+    assert_eq!(
+        observed,
+        usize::from(lince_interface::host::performance::enabled())
+    );
+    let result = serde_json::json!({"scope":"Private real Wayland key delivery followed by controlled client color response and GPU readback; observed proxy, not physical scanout or arbitrary-client causal proof","tracing":lince_interface::host::performance::enabled(),"origin":origin.map(Stamp::origin),"previous_version":previous.nodes[0].content.version,"response_version":updated.nodes[0].content.version,"matching_pixels":green,"baseline_frames":baseline_frames,"response_frames":response_frames,"input_to_verified_readback_ms":begin.elapsed().as_secs_f64()*1000.0});
+    if let Some(path) = std::env::var_os("LINCE_PARK_TEST_ARTIFACTS") {
+        std::fs::create_dir_all(&path).unwrap();
+        std::fs::write(
+            std::path::Path::new(&path).join("client-input-visible.json"),
+            serde_json::to_vec_pretty(&result).unwrap(),
+        )
+        .unwrap();
+    }
+    canvas.finish().unwrap();
+    lince_interface::host::performance::flush();
+    std::thread::sleep(Duration::from_millis(50));
+}
+
+#[test]
 fn pixel_only_classification_preserves_layout_limits_and_input_regions() {
     let mut harness = Harness::new();
     let window = harness.window();

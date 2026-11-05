@@ -592,10 +592,10 @@ pub(crate) fn setup(world: &mut World) {
                 Node {
                     display: Display::None,
                     position_type: PositionType::Absolute,
-                    left: px(16),
-                    top: px(12),
+                    left: px(0),
+                    top: px(0),
                     bottom: px(64),
-                    width: px(376),
+                    width: px(crate::native::tokens::Token::PanelWidth.default_value(Default::default()).number()),
                     max_width: percent(94),
                     padding: UiRect::all(px(16)),
                     border: UiRect::all(px(1)),
@@ -1381,15 +1381,16 @@ fn render_panel_content(world: &mut World, root: Entity) {
         }
     }
     world.get_mut::<EditMode>(root).unwrap().name = None;
-    world.get_mut::<Node>(panel).unwrap().width = px(if customization { 720 } else { 376 });
+    let width = if customization {
+        crate::native::tokens::Token::CustomizationWidth
+    } else {
+        crate::native::tokens::Token::PanelWidth
+    };
+    world.get_mut::<Node>(panel).unwrap().width = px(width.default_value(Default::default()).number());
     world
         .entity_mut(panel)
         .insert(crate::native::token_metrics::WidthToken(
-            if customization {
-                crate::native::tokens::Token::CustomizationWidth
-            } else {
-                crate::native::tokens::Token::PanelWidth
-            },
+            width,
             false,
         ));
     world.get_mut::<ScrollPosition>(panel).unwrap().0 = Vec2::ZERO;

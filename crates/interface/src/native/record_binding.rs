@@ -9,10 +9,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 
+use crate::host::performance::{self, Count, Stage};
 use crate::native::protein_area::{RecordBinding, Source};
 
 mod recovery;
 pub(crate) use recovery::retry;
+
+#[cfg(test)]
+mod performance_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1147,8 +1151,8 @@ fn selection(
     document: &Document,
     binding: &TextBinding,
     text: &EditableText,
+    value: &str,
 ) -> (Option<Cursor>, Option<Cursor>) {
-    let value = text.value().to_string();
     let convert = |index: usize| {
         value
             .char_indices()
@@ -1192,6 +1196,7 @@ fn set_text(world: &mut World, entity: Entity, value: &str, positions: Option<(u
 }
 
 fn update(world: &mut World) {
+    let _timing = performance::Span::new(Stage::RecordBindingUpdate);
     let Some(mut bindings) = world.remove_resource::<Bindings>() else {
         return;
     };
@@ -1347,10 +1352,11 @@ fn update(world: &mut World) {
                     continue;
                 };
                 let value = text.value().to_string();
-                if value != binding.observed
+                let changed = value != binding.observed
                     && !document.failed
-                    && document.writable.contains(&binding.property)
-                {
+                    && document.writable.contains(&binding.property);
+                if changed {
+                    let _timing = performance::Span::new(Stage::RecordEditSplice);
                     let before = document.doc.oplog_vv();
                     if let Err(error) =
                         splice(&document.doc, &binding.property, &binding.observed, &value)
@@ -1358,10 +1364,12 @@ fn update(world: &mut World) {
                     {
                         fail(document, error);
                     }
-                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value;
                 }
                 let text = world.get::<EditableText>(*entity).unwrap();
-                anchors.insert(*entity, selection(document, binding, text));
+                anchors.insert(*entity, selection(document, binding, text, &value));
+                if changed {
+                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value;
+                }
             }
             if undo.0
                 && members.iter().any(|(entity, _)| focus == Some(*entity))
@@ -1480,36 +1488,53 @@ fn update(world: &mut World) {
             }
         }
         if document.loaded && document.revision > document.saved && !document.saving {
-            let draft = document
-                .doc
-                .export(ExportMode::Snapshot)
-                .map_err(|error| error.to_string())
-                .and_then(|bytes| {
-                    serde_json::to_string(&Draft {
-                        snapshot: B64.encode(bytes),
-                        pending: document.pending.clone(),
-                    })
+            let timing = performance::Span::new(Stage::RecordDraftPrepare);
+            let draft = if document.pending.is_empty() {
+                Ok(None)
+            } else {
+                document
+                    .doc
+                    .export(ExportMode::Snapshot)
                     .map_err(|error| error.to_string())
-                });
+                    .and_then(|bytes| {
+                        performance::count(Count::RecordDraftSnapshot);
+                        performance::add(Count::RecordDraftSnapshotBytes, bytes.len() as u64);
+                        serde_json::to_string(&Draft {
+                            snapshot: B64.encode(bytes),
+                            pending: document.pending.clone(),
+                        })
+                        .map_err(|error| error.to_string())
+                    })
+                    .map(Some)
+            };
+            drop(timing);
             match draft {
                 Ok(draft) => {
+                    if let Some(draft) = &draft {
+                        performance::add(Count::RecordDraftEncodedBytes, draft.len() as u64);
+                    }
                     document.saving = true;
                     let sender = bindings.sender.clone();
                     let engine = engine.clone();
                     let key = key.clone();
                     let storage = storage_source(&key, document.principal.as_deref());
-                    let empty = document.pending.is_empty();
                     let revision = document.revision;
                     let wake = wake.clone();
+                    let queued = performance::start();
                     tokio::spawn(async move {
-                        let result = if empty {
-                            engine.clear_record_edit_draft(&storage, &key.1).await
-                        } else {
+                        performance::record_since(Stage::RecordDraftQueueWait, queued);
+                        let timing = performance::Span::new(Stage::RecordDraftWrite);
+                        let result = if let Some(draft) = draft {
+                            performance::count(Count::RecordDraftWrites);
                             engine
                                 .save_record_edit_draft(&storage, &key.1, &draft)
                                 .await
+                        } else {
+                            performance::count(Count::RecordDraftClears);
+                            engine.clear_record_edit_draft(&storage, &key.1).await
                         }
                         .map_err(|error| error.to_string());
+                        drop(timing);
                         let _ = sender.send(StorageEvent::Saved(key, revision, result));
                         if let Some(wake) = wake {
                             wake.ring();
@@ -1546,13 +1571,16 @@ fn update(world: &mut World) {
                 }
             }
         }
+        let publication = performance::Span::new(Stage::RecordBindingPublish);
         for (entity, binding) in &members {
             if document.joined && !composing && !document.failed {
+                performance::count(Count::RecordBindingViews);
                 let value = document.doc.get_text(binding.property.as_str()).to_string();
                 if world
                     .get::<EditableText>(*entity)
                     .is_some_and(|text| text.value().to_string() != value)
                 {
+                    performance::count(Count::RecordBindingViewChanged);
                     let positions = anchors.get(entity).and_then(|(anchor, focus)| {
                         Some((
                             document
@@ -1605,11 +1633,9 @@ fn update(world: &mut World) {
                     .presence_at
                     .is_none_or(|at| at.elapsed() >= Duration::from_millis(150))
             {
-                let selected = selection(
-                    document,
-                    binding,
-                    world.get::<EditableText>(*entity).unwrap(),
-                );
+                let text = world.get::<EditableText>(*entity).unwrap();
+                let value = text.value().to_string();
+                let selected = selection(document, binding, text, &value);
                 if let (Some(anchor), Some(focus)) = selected {
                     let payload = (
                         binding.property.clone(),
@@ -1638,6 +1664,7 @@ fn update(world: &mut World) {
                 }
             }
         }
+        drop(publication);
     }
     bindings.documents.retain(|key, document| {
         let keep = document.touched.elapsed().as_secs() < 30

@@ -8,7 +8,7 @@ use std::time::Instant;
 #[derive(Resource, Default)]
 struct Updates(u64);
 
-fn colored(
+pub(super) fn colored(
     harness: &mut Harness,
     window: &Window,
     color: [u8; 3],

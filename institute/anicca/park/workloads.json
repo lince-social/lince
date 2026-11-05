@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "identity": "park-workloads-20261105-v1",
+  "seed": "lince-park-p103-20261105-v1",
+  "owner_task": "P103",
+  "purpose": "Frozen deterministic inputs shared by existing validation/Laboratory adapters; this document is not evidence that all adapters exist or scenes have run.",
+  "isolation": {
+    "user_workspace_mutation": false,
+    "user_clipboard": false,
+    "user_records": false,
+    "fixture_database": "new private file-backed database per scene/run",
+    "real_network_required": false,
+    "instance_names": "synthetic",
+    "external_clients": "private profile/client data only"
+  },
+  "outputs": [
+    {
+      "id": 1,
+      "name": "eDP-1",
+      "physical_size": [
+        1366,
+        768
+      ],
+      "refresh_millihz": 60059,
+      "scale": 1,
+      "position": [
+        0,
+        0
+      ],
+      "workspace": 1
+    },
+    {
+      "id": 2,
+      "name": "HDMI-A-1",
+      "physical_size": [
+        1920,
+        1080
+      ],
+      "refresh_millihz": 60000,
+      "scale": 1,
+      "position": [
+        1366,
+        0
+      ],
+      "workspace": 2
+    }
+  ],
+  "inactive_workspace": 3,
+  "geometry": {
+    "layout": "free",
+    "visible_grid_columns": 4,
+    "grid_gap_logical_px": 8,
+    "visible_cell_rule": "Divide each output usable rectangle into columns and enough rows for that output visible-item count; inset by grid_gap. Existing layout/Fit/Fill control variants are separate factors. Record actual bar usable insets in the run manifest.",
+    "off_camera_rule": "Use each item off_camera_origin; preserve its workspace and required hidden semantics.",
+    "zoom": 1.0,
+    "browser_zoom_percent": 100,
+    "quality": "normal supported content, alpha, effects, text precision; no silent simplification",
+    "visibility_oracle": "Visibility labels are intended fixture demand: adapters must verify actual geometry and exposed complete pixels; labels alone do not establish visible content or acceptance."
+  },
+  "scenes": [
+    {
+      "id": "S0",
+      "kind": "small-control",
+      "expected_items": 8,
+      "adapter_status": "partial existing family controls; complete eight-item adapter still to wire through P104/P134",
+      "ordered_families": [
+        "plain-text",
+        "editable-text",
+        "record-view",
+        "query-list",
+        "rich-description",
+        "layout-group",
+        "settings-controls",
+        "live-status"
+      ],
+      "output_ids": [
+        1
+      ]
+    },
+    {
+      "id": "S1",
+      "kind": "normal-mixed",
+      "expected_items": 64,
+      "expected_visibility": {
+        "visible": 32,
+        "off-camera": 16,
+        "inactive-workspace": 16
+      },
+      "shared_record_count": 4,
+      "adapter_status": "specification frozen; full mixed-content fixture construction/wiring remains P104/P134 using existing Sand/practice/Record helpers",
+      "multiplier": 1,
+      "output_ids": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "S2",
+      "kind": "dense-mixed",
+      "expected_items": 256,
+      "expected_visibility": {
+        "visible": 128,
+        "off-camera": 64,
+        "inactive-workspace": 64
+      },
+      "shared_record_count": 4,
+      "large_query": {
+        "rows": 10000,
+        "row_uid_recipe": "record_uid(seed, S2/query-row/ + decimal ordinal padded to 5)",
+        "materialization": "complete semantic result; visible rows plus bounded margin when virtualization implemented",
+        "unsupported_limits": "report unsupported; do not silently reduce row count"
+      },
+      "adapter_status": "same P104/P134 mixed adapter at multiplier 4; large list wiring linked to P49",
+      "multiplier": 4,
+      "output_ids": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "S3",
+      "kind": "actual-daily-observation",
+      "mutate_to_match_synthetic": false,
+      "counts": "unobserved; obtain aggregate counts only through safe supported inspection in P124/current session",
+      "private_contents": "never included",
+      "adapter_status": "physical installed-session observation; actual counts and input-visible oracle remain explicit missing setup",
+      "output_ids": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "S4",
+      "kind": "local-edit-scaling",
+      "body_bytes": [
+        1024,
+        65536,
+        1048576
+      ],
+      "simultaneous_views": [
+        1,
+        8
+      ],
+      "record_uid_recipe": "record_uid(seed, S4/body/ + body byte count + /views/ + view count)",
+      "body_recipe": {
+        "encoding": "ascii",
+        "repeat": "Local Park fixture paragraph. Edit recovery and publication must preserve this text.\n",
+        "construction": "repeat then truncate to exact body byte count"
+      },
+      "head": "Synthetic local Record",
+      "mutations": [
+        {
+          "field": "head",
+          "insert_offset": 4,
+          "text": "Z"
+        },
+        {
+          "field": "body",
+          "insert_offset": "middle",
+          "text": "z"
+        },
+        {
+          "field": "body",
+          "insert_offset": "end",
+          "text": "z"
+        }
+      ],
+      "readiness": "disk ready baseline; held/failing writes are separate correctness controls",
+      "storage": "private actual file-backed SQLite with current Full/WAL durability",
+      "unsupported_limits": "record unsupported sizes explicitly without claiming a pass",
+      "adapter_status": "input/save correlation and integrated edit driver remain P102/P104; existing Record tests provide behavior building blocks, profile JSON tests are not substitutes",
+      "output_ids": [
+        1,
+        2
+      ]
+    }
+  ],
+  "activity_variants": [
+    "quiet",
+    "typing",
+    "click-open",
+    "scroll",
+    "pan-drag",
+    "local-save",
+    "background-ready"
+  ],
+  "lifecycle_variants": [
+    "cold-first-open",
+    "warm-reuse",
+    "hide-edit-reveal",
+    "close-reopen",
+    "source-replacement"
+  ],
+  "controlled_input": {
+    "committed_characters_per_second": 8,
+    "observation_seconds": 30,
+    "warmup_seconds": 5,
+    "repeat_and_pressure": "separate ordered-key/IME/queue-pressure correctness cases, not silently coalesced text",
+    "privacy": "synthetic text and bounded correlation only"
+  },
+  "content_assignments": {
+    "record-view": "round-robin four shared local Records, distinct stable UID from display title",
+    "live-status": [
+      "time",
+      "sync",
+      "assertion",
+      "karma"
+    ],
+    "query-list": "shared synthetic local records with deterministic filter/sort and full semantic results",
+    "rich-description": "ordinary paragraphs plus bundled markup/media/shader content using existing practice helpers",
+    "image-document": "existing bundled local practice sample",
+    "media-shader": "existing bundled local practice samples, actual hidden recording/audio semantics maintained",
+    "layout-group": "existing ordinary Sand composition/Fit/Fill",
+    "settings-controls": "existing native fields/sliders/dropdowns/accordions"
+  },
+  "required_workflows": [
+    "W01",
+    "W02",
+    "W03",
+    "W04",
+    "W05",
+    "W06",
+    "W07",
+    "W08",
+    "W09",
+    "W10",
+    "W11",
+    "W12",
+    "W13",
+    "W14",
+    "W15",
+    "W16",
+    "W17",
+    "W18",
+    "W19",
+    "W20",
+    "W21",
+    "W22",
+    "W23",
+    "W24",
+    "W25",
+    "W26",
+    "W27",
+    "W28"
+  ],
+  "factor_registry": "09-workflows.md",
+  "required_triples": "09-workflows.md mandatory combinations table",
+  "existing_selectors": [
+    {
+      "id": "style-control",
+      "package": "park",
+      "features": [
+        "server-tests"
+      ],
+      "selector": "presentation::tests::performance::dense_native_styles_and_metrics_record_unchanged_and_changing_costs",
+      "source": "crates/park/src/presentation/tests/performance.rs",
+      "function": "dense_native_styles_and_metrics_record_unchanged_and_changing_costs",
+      "scope": "CPU-only style/metric isolation; 64/512/2048 leaves; not S1/S2 complete mixed scenes",
+      "ignored": true
+    },
+    {
+      "id": "static-render",
+      "package": "park",
+      "features": [
+        "server-tests"
+      ],
+      "selector": "presentation::tests::performance::static_native_outputs_record_full_frame_cost_with_visible_surface_checks",
+      "source": "crates/park/src/presentation/tests/performance.rs",
+      "function": "static_native_outputs_record_full_frame_cost_with_visible_surface_checks",
+      "scope": "Private Vulkan/EGL; 640x480 outputs; 1x16/2x16/2x64 simple owners; not physical output or mixed S1 acceptance",
+      "ignored": true
+    },
+    {
+      "id": "hidden-render",
+      "package": "park",
+      "features": [
+        "server-tests"
+      ],
+      "selector": "presentation::tests::performance::offscreen::invisible_native_items_record_preparation_cost_without_changing_visible_pixels",
+      "source": "crates/park/src/presentation/tests/performance/offscreen.rs",
+      "function": "invisible_native_items_record_preparation_cost_without_changing_visible_pixels",
+      "scope": "Two private 640x480 outputs; visible/off-camera/inactive control; not the full mixed-scene adapter",
+      "ignored": true
+    },
+    {
+      "id": "blocked-profile-typing",
+      "package": "park",
+      "features": [
+        "server-tests"
+      ],
+      "selector": "presentation::records::performance::typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake_native_work",
+      "source": "crates/park/src/presentation/records/performance.rs",
+      "function": "typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake_native_work",
+      "scope": "Private profile JSON writer held while typing; distinct from Record text recovery/canonical SQL",
+      "ignored": true
+    },
+    {
+      "id": "profile-size-control",
+      "package": "park",
+      "features": [
+        "server-tests"
+      ],
+      "selector": "presentation::records::performance::automatic_profile_saves_record_caller_cost_and_durable_contents",
+      "source": "crates/park/src/presentation/records/performance.rs",
+      "function": "automatic_profile_saves_record_caller_cost_and_durable_contents",
+      "scope": "Private file-backed profile JSON caller/worker; distinct from title/body SQL path",
+      "ignored": true
+    }
+  ],
+  "comparison": {
+    "same_source_features_toolchain_profile": true,
+    "compile_before_timing": true,
+    "concurrent_compilation": false,
+    "concurrent_private_gpu_scenes": false,
+    "unchanged_control": "S0 plus repeated baseline under the selected exact selector",
+    "order": "balanced baseline/candidate with warmup and baseline drift reporting",
+    "small_win": "no minimum percentage; report repeatable timing or deterministic work reduction and label unresolved runtime gain",
+    "no_percentage_addition": true
+  },
+  "missing_setup": [
+    "P101 causal native/client input-visible links where existing reporting is insufficient",
+    "P102 file-backed Record edit timing rather than profile JSON timing",
+    "P104/P134 complete mixed-scene adapters/coverage wiring",
+    "P124 actual aggregate daily-scene inventory",
+    "P67/P70 actual graphics placement/execution timing",
+    "matched actual installed performance observation with source-stamped manifest"
+  ],
+  "normal_families": [
+    {
+      "family": "plain-text",
+      "normal_count": 8
+    },
+    {
+      "family": "editable-text",
+      "normal_count": 8
+    },
+    {
+      "family": "record-view",
+      "normal_count": 12
+    },
+    {
+      "family": "live-status",
+      "normal_count": 8
+    },
+    {
+      "family": "query-list",
+      "normal_count": 8
+    },
+    {
+      "family": "rich-description",
+      "normal_count": 4
+    },
+    {
+      "family": "image-document",
+      "normal_count": 4
+    },
+    {
+      "family": "media-shader",
+      "normal_count": 4
+    },
+    {
+      "family": "layout-group",
+      "normal_count": 4
+    },
+    {
+      "family": "settings-controls",
+      "normal_count": 4
+    }
+  ],
+  "generation": {
+    "record_uid": "SHA-256 of UTF-8(seed + slash + key), first 16 bytes encoded as 26 Crockford-base32 digits, prefix r_",
+    "item_order": "normal_families order; multiplier consecutive items per family, zero-based ordinal n",
+    "visibility": "n mod 4 below 2 visible; equal 2 off-camera; equal 3 inactive",
+    "workspace": "inactive: 3; otherwise 1 + floor(n/4) mod 2",
+    "visible_output": "workspace id; hidden: null",
+    "grid_slot": "number of earlier visible items in same workspace",
+    "off_camera_origin": "[10000 + n*128,10000]",
+    "fixture_key": "scene/family/zero-padded three-digit family ordinal",
+    "shared_record_key": "scene/local/record/(family ordinal mod 4) for record-view, rich-description and query-list",
+    "canonical_record_data": {
+      "head": "Synthetic local Record plus record ordinal",
+      "body_bytes": 1024,
+      "body_repeat": "Local Park fixture paragraph. Edit recovery and publication must preserve this text.\n",
+      "quantity": 0,
+      "real_network": false
+    },
+    "S0_exception": "ordered_families, one item each; all visible on workspace/output 1; own scene-scoped Record identity"
+  }
+}

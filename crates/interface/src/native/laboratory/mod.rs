@@ -1,4 +1,5 @@
 mod catalogue;
+mod interface;
 #[cfg(feature = "test-driver")]
 pub mod driver;
 pub mod components;
@@ -11,6 +12,7 @@ pub use isolation::{blocked, temporary_owner};
 pub(crate) use isolation::{reserved as reserved_source, source as owner_source};
 
 pub use catalogue::catalogue;
+pub use interface::run_interface_checks;
 pub use stress::{Measurement, StressConfig, StressReport};
 pub use workspace::{
     Laboratory, LaboratoryAction, LaboratoryPlugin, LaboratoryRoot, active, close, normal, scope,
@@ -82,7 +84,16 @@ enum Progress {
 
 impl BehaviorRun {
     pub fn start(wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
-        let cases = catalogue();
+        Self::start_cases(catalogue(), wake)
+    }
+
+    pub fn start_interface(wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
+        let mut cases = Vec::new();
+        interface::laboratory_cases(&mut cases);
+        Self::start_cases(cases, wake)
+    }
+
+    fn start_cases(cases: Vec<Case>, wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
         let total = cases.len();
         let cancel = Arc::new(AtomicBool::new(false));
         let stopped = cancel.clone();

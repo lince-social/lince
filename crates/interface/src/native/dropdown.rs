@@ -15,6 +15,19 @@ pub struct Dropdown {
 #[derive(Component)]
 pub(crate) struct DropdownMenu;
 
+fn caption(world: &mut World, parent: Entity, value: &str) {
+    let caption = label(world, parent, value, 14.0);
+    world.entity_mut(caption).insert((
+        Node {
+            flex_grow: 1.0,
+            flex_shrink: 1.0,
+            min_width: px(0),
+            ..default()
+        },
+        TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
+    ));
+}
+
 pub fn spawn(
     world: &mut World,
     parent: Entity,
@@ -62,16 +75,7 @@ pub fn spawn(
         .get_mut::<AccessibilityNode>(toggle)
         .unwrap()
         .set_expanded(false);
-    let caption = label(world, toggle, selected, 14.0);
-    world.entity_mut(caption).insert((
-        Node {
-            flex_grow: 1.0,
-            flex_shrink: 1.0,
-            min_width: px(0),
-            ..default()
-        },
-        TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
-    ));
+    caption(world, toggle, selected);
     label(world, toggle, "v", 14.0);
     let menu = world
         .spawn((
@@ -157,15 +161,7 @@ pub fn spawn(
             .get_mut::<AccessibilityNode>(button)
             .unwrap()
             .set_label(title.as_str());
-        let caption = label(world, button, &title, 14.0);
-        world.entity_mut(caption).insert((
-            Node {
-                min_width: px(0),
-                flex_shrink: 1.0,
-                ..default()
-            },
-            TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
-        ));
+        caption(world, button, &title);
         world
             .entity_mut(button)
             .observe(move |_: On<Activate>, mut commands: Commands| {

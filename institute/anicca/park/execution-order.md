@@ -26,22 +26,24 @@ Many small wins can accumulate. Verify the combined path periodically: overlappi
 
 P103/P101, borrowed editor input/splicing and incremental recovery are complete; P115's periodic encoding is already handled by the same bounded worker. The running executable was rechecked at /proc/528996/exe and is still the 9d8c20bc Nix package, excluding these changes. P102 now separates backend phases; its remaining local work includes populated queries, per-edit causal linkage and observable SQL/fsync boundaries. P137 halves history checks/bytes, and completed P79 removes helper buffers with lower large-body first-update times. Their save acknowledgement controls remain mixed/slower, so reuse these frozen baselines to attribute the outstanding canonical/scheduling/I/O tails next; do not claim a total-save improvement or rebuild the profiler. P66 supplies current optimized daily attribution once its binary is running. P43/P105 retain the broader input-blocking work and remaining full-text/projection dependencies; diagnostic frame preparation is also substantial. Independent locally testable work can continue while live validation is pending, with shared unresolved mechanisms investigated sequentially.
 
+P102 populated-subscription evidence now promotes P118 to the front: three edits cause 24 reads and 24 durable history inserts, with 18 inserts for six unrelated exact-UID Records. The measured refresh scopes reach 0.39–1.33 seconds across three diagnostic edits, and child-only sync counts rise 12 → 38. First remove the proven unnecessary dependency; preserve conservative remote/derived fallbacks and relevant sync history. Reuse this baseline before widening instrumentation or changing scheduling/locks.
+
 ## Pending tasks
 
 | Next | Task and full definition | Expected value / activation |
 | --- | --- | --- |
-| 1 | [P102 — Trace one local Record edit through durability and view publication.](01-measurement.md) | Separate echo, encoding, durable I/O, canonical commit and publication amplification. |
-| 2 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Rank the actual largest causes and immediately update this queue. |
-| 3 | [P43 — Bound input waiting behind the longest native work section.](02-input-and-scheduling.md) | Remove a measured input wait shared by everyday interactions. |
-| 4 | [P105 — Remove the longest unrelated dependency from native text feedback.](02-input-and-scheduling.md) | Make native text feedback independent of unrelated expensive work. |
-| 5 | [P106 — Bound one busy queue drain so control input remains serviceable.](02-input-and-scheduling.md) | Prevent one bulk drain from starving current input/control. |
-| 6 | [P94 — Identify the cause of the database-locked toast.](03-local-edits-and-storage.md) | Promote on actual database-lock errors; otherwise defer missing reproduction. |
-| 7 | [P137 — Remove one document-sized cost from canonical text mutation preparation.](03-local-edits-and-storage.md) | Potential document-sized canonical work per small edit. |
-| 8 | [P138 — Shorten the engine-wide access gate without weakening operation validity.](03-local-edits-and-storage.md) | Potential engine-wide serialization of otherwise unrelated work. |
-| 9 | [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](03-local-edits-and-storage.md) | Potential rules/effects on the local-save acknowledgement path. |
-| 10 | [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](03-local-edits-and-storage.md) | Potential long Cell request blocking every local request. |
-| 11 | [P117 — Shorten the measured SQL transaction critical section for an edit.](03-local-edits-and-storage.md) | Shorten measured SQL acquire/hold/commit delay. |
-| 12 | [P118 — Limit one local edit notification to actually dependent subscriptions.](03-local-edits-and-storage.md) | Stop one edit refreshing unrelated queries/views. |
+| 1 | [P118 — Limit one local edit notification to actually dependent subscriptions.](03-local-edits-and-storage.md) | Stop one edit refreshing unrelated queries/views. |
+| 2 | [P102 — Trace one local Record edit through durability and view publication.](01-measurement.md) | Separate echo, encoding, durable I/O, canonical commit and publication amplification. |
+| 3 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Rank the actual largest causes and immediately update this queue. |
+| 4 | [P43 — Bound input waiting behind the longest native work section.](02-input-and-scheduling.md) | Remove a measured input wait shared by everyday interactions. |
+| 5 | [P105 — Remove the longest unrelated dependency from native text feedback.](02-input-and-scheduling.md) | Make native text feedback independent of unrelated expensive work. |
+| 6 | [P106 — Bound one busy queue drain so control input remains serviceable.](02-input-and-scheduling.md) | Prevent one bulk drain from starving current input/control. |
+| 7 | [P94 — Identify the cause of the database-locked toast.](03-local-edits-and-storage.md) | Promote on actual database-lock errors; otherwise defer missing reproduction. |
+| 8 | [P137 — Remove one document-sized cost from canonical text mutation preparation.](03-local-edits-and-storage.md) | Potential document-sized canonical work per small edit. |
+| 9 | [P138 — Shorten the engine-wide access gate without weakening operation validity.](03-local-edits-and-storage.md) | Potential engine-wide serialization of otherwise unrelated work. |
+| 10 | [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](03-local-edits-and-storage.md) | Potential rules/effects on the local-save acknowledgement path. |
+| 11 | [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](03-local-edits-and-storage.md) | Potential long Cell request blocking every local request. |
+| 12 | [P117 — Shorten the measured SQL transaction critical section for an edit.](03-local-edits-and-storage.md) | Shorten measured SQL acquire/hold/commit delay. |
 | 13 | [P119 — Update a description preview incrementally while typing.](03-local-edits-and-storage.md) | Avoid complete description-tree reconstruction while typing. |
 | 14 | [P67 — Map CPU/GPU responsibilities across the active frame path.](01-measurement.md) | Promote immediately if processor placement, transfers or waits dominate. |
 | 15 | [P70 — Observe GPU execution separately from submission/completion age.](01-measurement.md) | Promote only where missing actual GPU timing prevents a causal choice. |

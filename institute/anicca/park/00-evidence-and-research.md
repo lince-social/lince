@@ -2,6 +2,16 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## Populated query/storage attribution on 2026-11-05
+
+P102 now observes actual metadata subscriptions in the private native binding/Cell fixture: the ordinary global feed, the edited Record and six unrelated exact-UID Records. Its added updated_at field distinguishes real refreshes after head/body changes; timestamps correlate input, acknowledgement, relevant-query settlement and validated recovery with child-only strace. One narrow readback validation query is added per edit. Relevant refresh completion is not a global idle barrier; the private query messages do not reconstruct the full graphical Protein views.
+
+All 16 file-backed cases/48 edits reopen exactly, covering 1 KiB/1 MiB head/body and zero/one/eight subscriptions, plus syscall captures. Three text edits execute zero queries without subscriptions, three with the global feed and 24 with all eight subscriptions. Every unrelated query sends three Updates, and each query execution inserts one durable sync-history row: 24 history inserts for three edits, including 18 for unaffected Records. The source is explicit: protein::affects ignores the Fact for every non-ephemeral source; Session::execute_sync records each result through SyncService::run and sync_activity::append in its own transaction. P118 is promoted ahead of speculative fixes. Preserve actual relevant query/history semantics; do not simply disable sync history or relax durability.
+
+Actual sync calls inside the private three-edit window are 12 without subscriptions, 17 with one and 38 with eight; these include WAL/database/directory syncs, not just canonical commits. Syscall wall sums are 46.2/69.8/159.4 ms under tracing, with no call crossing the window end. Do not use those traced values as normal latency or disk hardware time. Untraced eight-query refresh spans total about 0.39–1.33 seconds across three edits in these diagnostic samples; canonical work and query read/refresh scopes can overlap. Current evidence supports removing unnecessary work, not a shipping percentage.
+
+Receipt and frozen baseline, common-six-case UI checks, raw reports/syscalls and parser: target/park-validation/performance-20261105/query-fanout/receipt.json. The first static check rejected a deprecated Bevy accessor, which was corrected; final source/test compilation has no warnings. P102 still needs SQL-statement counts, production per-operation causal identity/presentation and current optimized daily evidence. Actual GPU paint/formal rule mapping remain open. No release build, installation, real-session restart, clipboard operation or Actions polling was performed.
+
 ## Borrowed native text splicing completed on 2026-11-05
 
 P79 is complete. The shared native binding splice scans Unicode scalars for matching prefixes/suffixes, counts scalar deletion positions, and borrows the inserted UTF-8 slice. It removes both whole-string character vectors and the inserted temporary string while preserving the existing Loro mutation/commit boundaries. The original algorithm is now the regression oracle in Laboratory and the common fast native suite, behind Protein Area Add filter. No new editor, diff engine, cache or setting was added.

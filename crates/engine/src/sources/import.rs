@@ -329,7 +329,7 @@ impl Engine {
                     store::records::get_extension(&self.store.pool, uid, RESOURCE_NAMESPACE)
                         .await?;
                 records.push(json!({
-                    "uid":uid,"source_uid":record.uid,"title":record.head,"body":prepared.body(&record.body),"quantity":record.quantity,
+                    "uid":uid,"source_uid":record.uid,"base":document.base,"title":record.head,"body":prepared.body(&record.body),"quantity":record.quantity,
                     "slug":record.slug,"personal":prepared.personal.contains(&record.uid),
                     "state":if existing.is_none() {"create"} else if metadata.as_ref().is_some_and(|value| value["hash"] == document.hash && value["base"] == document.base) {"reuse"} else {"update_available"},
                     "resource":resource,"reference_review":existing.is_some()&&previous_resource!=resource,"assertions":record.assertions.iter().map(|assertion|json!({
@@ -343,7 +343,7 @@ impl Engine {
             "ready":true,
             "binding_ready":store::records::get_extension(&self.store.pool, &prepared.binding, BINDING_NAMESPACE).await?.is_some_and(|binding| binding["revision"] == source.revision),
             "entry":source.entry,"revision":source.revision,"binding":prepared.bound_state.then_some(&prepared.binding),"root":selected_record(source).and_then(|record| prepared.records.get(&record.uid)),
-            "records":records,"conflicts":conflicts,"parameters":source.parameters,"bindings":prepared.bindings,"actors":actors,
+            "documents":outline(source),"records":records,"conflicts":conflicts,"parameters":source.parameters,"bindings":prepared.bindings,"actors":actors,
             "options":source.options,"rules":source.documents.iter().flat_map(|document| &document.project.rules).map(|rule|json!({"title":rule.slug,"condition":rule.condition,"gate":rule.gate.as_deref().unwrap_or("always"),"carry":rule.carry.as_deref().unwrap_or("value"),"cadence":rule.cadence,"consequences":rule.consequences_json})).collect::<Vec<_>>(),
             "vocabulary":prepared.definitions.iter().map(|(name,definition)|json!({"name":name,"definition":definition,"uid":prepared.concepts[name]})).collect::<Vec<_>>(),
         }))

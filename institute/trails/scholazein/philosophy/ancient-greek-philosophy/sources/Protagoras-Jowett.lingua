@@ -3,6 +3,8 @@ Import "Further-primary-readings.lingua"
 Protagoras (@greek-source-protagoras: 0, is #book, #part-of @greek-further-sources) { r_0CCC0YE28KF66XW6CWP0K0FED1
 Plato; translated by Benjamin Jowett. Project Gutenberg ebook 1591. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1591/pg1591-images-3.epub).
+
 [Retained EPUB](../books/plato-protagoras.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/1591). Project Gutenberg identifies this edition as public domain in the USA; original notices and production credits remain in the retained file.
 
 **Used passages:** The teacher's promise, the myth and argument for civic education, and the later examination of virtue and knowledge.
@@ -12,6 +14,7 @@ Plato; translated by Benjamin Jowett. Project Gutenberg ebook 1591. English.
 
 Extension @greek-source-protagoras "lince.resource" {
  uri "../books/plato-protagoras.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1591/pg1591-images-3.epub" media_type "application/epub+zip" }]
  title "Protagoras"
  hash "23afdef104c42d060ba8fff5e33238bc5b589ed86f6ad3469eda942cfb9c3f49"
  media_type "application/epub+zip"

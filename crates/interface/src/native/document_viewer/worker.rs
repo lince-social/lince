@@ -39,7 +39,7 @@ pub(super) enum Reply {
     Retained {
         owner: Entity,
         path: String,
-        result: Result<String, String>,
+        result: Result<lince_resources::Entry, String>,
     },
     Render {
         owner: Entity,

@@ -6,6 +6,8 @@ Import "Gorgias-Jowett.lingua"
 The Dialogues of Plato, volume II (@greek-source-dialogues: 0, is #book, #part-of @greek-sources, #contains @greek-euthyphro-text, #contains @greek-meno-text, #contains @greek-gorgias-text) { r_1AD7N0E0ZYZ07XSMQWSK5PA5X8
 Plato; translated into English with analyses and introductions by Benjamin Jowett. Macmillan, 1892.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/76464/pg76464-images-3.epub).
+
 [Retained EPUB](../books/plato-dialogues-volume-2.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/76464). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
 
 Read [Euthyphro](Euthyphro-Jowett.lingua#r_1EH96KVFJX5TD94W0N1A3AYNZ6), [Meno](Meno-Jowett.lingua#r_0JPD7WWT4EKNFXS3ETCQ0YJ3XP), and [Gorgias](Gorgias-Jowett.lingua#r_3D3G4G9SE2PC96ZWFB8M6ZZR0V) through their dialogue text. Introductions precede several works and offer Jowett's interpretation; keep them distinct from Plato's dialogue. This volume also supplies an alternative translation of Apology, Crito, and Phaedo. The appendices contain further works whose attribution requires separate examination.
@@ -15,6 +17,7 @@ Read [Euthyphro](Euthyphro-Jowett.lingua#r_1EH96KVFJX5TD94W0N1A3AYNZ6), [Meno](M
 
 Extension @greek-source-dialogues "lince.resource" {
  uri "../books/plato-dialogues-volume-2.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/76464/pg76464-images-3.epub" media_type "application/epub+zip" }]
  title "The Dialogues of Plato, volume II"
  hash "9f2d10db68a84f82f32385efa8606ed6824f7cd06018c748955b53d74a12e3cf"
  media_type "application/epub+zip"

@@ -484,6 +484,7 @@ fn render(world: &mut World, root: Entity, target: Entity, choose_parent: bool) 
         LayoutAction::Apply,
         "Apply sizes and spacing",
     );
+    crate::native::item_properties::panel(world, root, panel, target);
     let error = label(world, panel, "", 14.0);
     let physical_parent = world.get::<ChildOf>(target).map(ChildOf::parent);
     if world.get::<SandText>(target).is_some() {

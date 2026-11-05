@@ -294,6 +294,12 @@ fn menu(world: &mut World) {
             ChildOf(panel),
         ));
     }
+    world.spawn((
+        IconButton::new(Icon::Info, "Record properties"),
+        IconStyle { size: 20.0, padding: 6.0, ..default() },
+        ActionButton::new(target, crate::native::actions![crate::native::item_properties::Open]),
+        ChildOf(panel),
+    ));
     let mut buttons = Vec::new();
     if !area {
         buttons.extend([

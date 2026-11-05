@@ -69,6 +69,7 @@ fn model<'a>(world: &'a World, target: &Target, hidden: bool) -> Result<&'a Mode
         && world.get::<Metadata>(*inspector).is_none_or(|metadata| metadata.uid != *uid || metadata.placement != target.placement.0 || !metadata.live)
     { return Err("The original window association is closed or changed."); }
     if let Some((_, uid)) = &target.inspector
+        && !uid.is_empty()
         && world.get::<RecordBinding>(target.entity).is_none_or(|binding| binding.uid != *uid
             || binding.area != target.entity || binding.source != crate::native::protein_area::Source::Local)
     { return Err("The original window Record association changed."); }

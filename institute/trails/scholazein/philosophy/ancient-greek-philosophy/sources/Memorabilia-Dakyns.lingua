@@ -3,6 +3,8 @@ Import "Sources.lingua"
 The Memorabilia (@greek-source-xenophon: 0, is #book, #part-of @greek-sources) { r_6R4K67BD9B740H00FCVTM869A1
 Xenophon; translated by Henry Graham Dakyns.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1177/pg1177-images-3.epub).
+
 [Retained EPUB](../books/xenophon-memorabilia.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/1177). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
 
 Used passages: Book I, chapters 1–2 for the defence of Socrates; Book IV, chapter 6 for discussion and definitions. [Comparison guide](../socratic/Xenophon.lingua#r_386T9BE05SXJZK8E0NX7TAYJK8).
@@ -12,6 +14,7 @@ Used passages: Book I, chapters 1–2 for the defence of Socrates; Book IV, chap
 
 Extension @greek-source-xenophon "lince.resource" {
  uri "../books/xenophon-memorabilia.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1177/pg1177-images-3.epub" media_type "application/epub+zip" }]
  title "The Memorabilia"
  hash "8cd077f0bb89b6bed3580dad1833b28a97de368970a95745020097f871d55eef"
  media_type "application/epub+zip"

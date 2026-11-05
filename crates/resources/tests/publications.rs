@@ -9,6 +9,31 @@ fn philosophy() -> PathBuf {
 }
 
 #[test]
+fn philosophy_books_offer_downloadable_public_editions_without_relabeling_local_hashes() {
+    let temporary = tempfile::tempdir().unwrap();
+    let library = Library::new(temporary.path());
+    let source = Publication::load(&library, philosophy().to_str().unwrap(), &[], false).unwrap();
+    let resources = source.resources().unwrap();
+    let books = resources
+        .iter()
+        .filter(|(_, resource)| resource.media_type == "application/epub+zip")
+        .collect::<Vec<_>>();
+    assert!(!books.is_empty());
+    for (uid, resource) in books {
+        assert!(resource.hash.is_some(), "{uid}");
+        assert!(
+            resource.representations.iter().any(|representation| {
+                representation.uri.starts_with("https://")
+                    && representation.uri.ends_with(".epub")
+                    && representation.media_type == "application/epub+zip"
+                    && representation.hash.is_none()
+            }),
+            "{uid}"
+        );
+    }
+}
+
+#[test]
 fn philosophy_is_a_navigable_graph_of_separate_ordinary_documents() {
     let dir = tempfile::tempdir().unwrap();
     let library = Library::new(dir.path());

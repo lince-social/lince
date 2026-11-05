@@ -24,6 +24,304 @@ pub fn attach(world: &mut World, entity: Entity) {
     }
 }
 
+#[derive(Component)]
+struct Scrollbar {
+    viewport: Entity,
+    thumb: Entity,
+}
+
+#[derive(Component, Clone, Copy)]
+struct ScrollThumb(Entity);
+
+pub(crate) fn bounded(world: &mut World, parent: Entity, height: f32) -> Entity {
+    let frame = world
+        .spawn((
+            Node {
+                width: percent(100),
+                height: px(height),
+                min_height: px(80),
+                flex_shrink: 0.0,
+                column_gap: px(4),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id();
+    let viewport = world
+        .spawn((
+            Node {
+                min_width: px(0),
+                flex_grow: 1.0,
+                flex_basis: px(0),
+                height: percent(100),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4),
+                ..default()
+            },
+            ChildOf(frame),
+        ))
+        .id();
+    attach(world, viewport);
+    let track = world
+        .spawn((
+            Node {
+                width: px(18),
+                height: percent(100),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(frame),
+            crate::native::token_style::background(crate::native::tokens::Token::Surface),
+        ))
+        .id();
+    let mut accessible = accesskit::Node::new(accesskit::Role::ScrollBar);
+    accessible.set_label("Scroll content");
+    let thumb = world
+        .spawn((
+            bevy::ui_widgets::Button,
+            Node {
+                position_type: PositionType::Absolute,
+                width: percent(100),
+                min_height: px(24),
+                ..default()
+            },
+            ChildOf(track),
+            ScrollThumb(track),
+            bevy::input_focus::tab_navigation::TabIndex(0),
+            bevy::a11y::AccessibilityNode::from(accessible),
+            crate::native::token_style::background(crate::native::tokens::Token::Accent),
+            crate::native::icons::Tooltip(
+                "Drag to scroll; arrow keys, Page Up/Down, Home and End".into(),
+            ),
+        ))
+        .id();
+    world
+        .entity_mut(track)
+        .insert(Scrollbar { viewport, thumb })
+        .observe(scrollbar_click);
+    world
+        .entity_mut(thumb)
+        .observe(scrollbar_drag)
+        .observe(|mut event: On<Pointer<DragStart>>| event.propagate(false))
+        .observe(|mut event: On<Pointer<DragEnd>>| event.propagate(false))
+        .observe(scrollbar_key);
+    viewport
+}
+
+pub(crate) fn fill(world: &mut World, parent: Entity) -> Entity {
+    let viewport = bounded(world, parent, 300.0);
+    let frame = world.get::<ChildOf>(viewport).unwrap().parent();
+    let mut node = world.get_mut::<Node>(frame).unwrap();
+    node.height = percent(100);
+    node.min_height = px(0);
+    node.flex_grow = 1.0;
+    node.flex_shrink = 1.0;
+    viewport
+}
+
+fn geometry(node: &ComputedNode) -> (f32, f32) {
+    let scale = node.inverse_scale_factor();
+    let height = node.size().y * scale;
+    let maximum = ((node.content_size.y - node.size().y) * scale).max(0.0);
+    (height, maximum)
+}
+
+pub(crate) fn update_bars(world: &mut World) {
+    let mut changed = false;
+    let bars = world
+        .query::<(Entity, &Scrollbar)>()
+        .iter(world)
+        .map(|(track, bar)| (track, bar.viewport, bar.thumb))
+        .collect::<Vec<_>>();
+    for (track, viewport, thumb) in bars {
+        let Some(computed) = world.get::<ComputedNode>(viewport) else {
+            continue;
+        };
+        let (height, maximum) = geometry(computed);
+        if height <= 0.0 {
+            continue;
+        }
+        let thumb_height = (height * height / (height + maximum)).max(24.0).min(height);
+        let offset = world
+            .get::<ScrollPosition>(viewport)
+            .map_or(0.0, |scroll| scroll.0.y)
+            .clamp(0.0, maximum);
+        if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
+            if scroll.0.y != offset {
+                scroll.0.y = offset;
+                changed = true;
+            }
+        }
+        let mut node = world.get_mut::<Node>(thumb).unwrap();
+        let top = px(if maximum > 0.0 {
+            offset / maximum * (height - thumb_height)
+        } else {
+            0.0
+        });
+        let display = if maximum > 0.0 {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        if node.height != px(thumb_height) {
+            node.height = px(thumb_height);
+            changed = true;
+        }
+        if node.top != top {
+            node.top = top;
+            changed = true;
+        }
+        if node.display != display {
+            node.display = display;
+            changed = true;
+        }
+        if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(thumb) {
+            if accessibility.numeric_value() != Some(offset as f64) {
+                accessibility.set_numeric_value(offset as f64);
+            }
+            if accessibility.min_numeric_value() != Some(0.0) {
+                accessibility.set_min_numeric_value(0.0);
+            }
+            if accessibility.max_numeric_value() != Some(maximum as f64) {
+                accessibility.set_max_numeric_value(maximum as f64);
+            }
+        }
+        if let Some(mut node) = world.get_mut::<Node>(track) {
+            if node.display != display {
+                node.display = display;
+                changed = true;
+            }
+        }
+    }
+    if changed && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+        wake.ring();
+    }
+}
+
+fn move_thumb(world: &mut World, track: Entity, delta: f32) {
+    let Some(bar) = world.get::<Scrollbar>(track) else {
+        return;
+    };
+    let viewport = bar.viewport;
+    let Some(node) = world.get::<ComputedNode>(viewport) else {
+        return;
+    };
+    let (height, maximum) = geometry(node);
+    let thumb = (height * height / (height + maximum)).max(24.0).min(height);
+    if height <= thumb || maximum <= 0.0 {
+        return;
+    }
+    if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
+        scroll.0.y = (scroll.0.y + delta * maximum / (height - thumb)).clamp(0.0, maximum);
+    }
+    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+        wake.ring();
+    }
+}
+
+fn scrollbar_drag(
+    mut event: On<Pointer<Drag>>,
+    thumbs: Query<&ScrollThumb>,
+    transforms: Query<&UiGlobalTransform>,
+    mut commands: Commands,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Primary {
+        return;
+    }
+    let Ok(thumb) = thumbs.get(event.entity) else {
+        return;
+    };
+    event.propagate(false);
+    let track = thumb.0;
+    let delta = transforms.get(track).map_or(event.delta.y, |transform| {
+        transform.inverse().transform_vector2(event.delta).y
+    });
+    commands.queue(move |world: &mut World| move_thumb(world, track, delta));
+}
+
+fn scrollbar_click(
+    mut event: On<Pointer<Click>>,
+    bars: Query<&Scrollbar>,
+    thumbs: Query<&ScrollThumb>,
+    mut commands: Commands,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Primary
+        || bars.get(event.entity).is_err()
+    {
+        return;
+    }
+    event.propagate(false);
+    if thumbs.get(event.original_event_target()).is_ok() {
+        return;
+    }
+    let track = event.entity;
+    let position = event.pointer_location.position;
+    commands.queue(move |world: &mut World| {
+        let Some(bar) = world.get::<Scrollbar>(track) else {
+            return;
+        };
+        let viewport = bar.viewport;
+        let Some(node) = world.get::<ComputedNode>(viewport) else {
+            return;
+        };
+        let (height, maximum) = geometry(node);
+        let Some(transform) = world.get::<UiGlobalTransform>(track) else {
+            return;
+        };
+        let y = transform.inverse().transform_point2(position).y + height * 0.5;
+        if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
+            scroll.0.y = (y / height * maximum).clamp(0.0, maximum);
+        }
+    });
+}
+
+fn scrollbar_key(
+    mut event: On<bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>>,
+    thumbs: Query<&ScrollThumb>,
+    bars: Query<&Scrollbar>,
+    mut commands: Commands,
+) {
+    if !event.input.state.is_pressed() {
+        return;
+    }
+    let Ok(thumb) = thumbs.get(event.focused_entity) else {
+        return;
+    };
+    let Ok(bar) = bars.get(thumb.0) else { return };
+    let viewport = bar.viewport;
+    let key = event.input.key_code;
+    if !matches!(
+        key,
+        KeyCode::ArrowUp
+            | KeyCode::ArrowDown
+            | KeyCode::PageUp
+            | KeyCode::PageDown
+            | KeyCode::Home
+            | KeyCode::End
+    ) {
+        return;
+    }
+    event.propagate(false);
+    commands.queue(move |world: &mut World| {
+        let Some(node) = world.get::<ComputedNode>(viewport) else {
+            return;
+        };
+        let (height, maximum) = geometry(node);
+        if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
+            scroll.0.y = match key {
+                KeyCode::Home => 0.0,
+                KeyCode::End => maximum,
+                KeyCode::ArrowUp => scroll.0.y - 32.0,
+                KeyCode::ArrowDown => scroll.0.y + 32.0,
+                KeyCode::PageUp => scroll.0.y - height,
+                _ => scroll.0.y + height,
+            }
+            .clamp(0.0, maximum);
+        }
+    });
+}
+
 pub(crate) fn reveal(
     world: &mut World,
     viewport: Entity,
@@ -84,6 +382,44 @@ pub(crate) fn reveal(
 mod tests {
     use super::*;
     use bevy::math::Affine2;
+
+    #[test]
+    fn dragging_the_thumb_reaches_both_ends_at_scaled_sizes_and_clamps_after_resize() {
+        let mut world = World::new();
+        let parent = world.spawn(Node::default()).id();
+        let viewport = bounded(&mut world, parent, 100.0);
+        world.entity_mut(viewport).insert(ComputedNode {
+            size: Vec2::new(300.0, 200.0),
+            content_size: Vec2::new(300.0, 2000.0),
+            inverse_scale_factor: 0.5,
+            ..default()
+        });
+        update_bars(&mut world);
+        let (track, thumb) = world
+            .query::<(Entity, &Scrollbar)>()
+            .iter(&world)
+            .find(|(_, bar)| bar.viewport == viewport)
+            .map(|(track, bar)| (track, bar.thumb))
+            .unwrap();
+        assert_eq!(world.get::<Node>(thumb).unwrap().height, px(24));
+        move_thumb(&mut world, track, 38.0);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 450.0);
+        update_bars(&mut world);
+        assert_eq!(world.get::<Node>(thumb).unwrap().top, px(38));
+        move_thumb(&mut world, track, 1000.0);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 900.0);
+        move_thumb(&mut world, track, -1000.0);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 0.0);
+        move_thumb(&mut world, track, 1000.0);
+        world
+            .get_mut::<ComputedNode>(viewport)
+            .unwrap()
+            .content_size
+            .y = 200.0;
+        update_bars(&mut world);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 0.0);
+        assert_eq!(world.get::<Node>(track).unwrap().display, Display::None);
+    }
 
     #[test]
     fn revealing_a_selected_descendant_scrolls_once_without_changing_input_focus() {

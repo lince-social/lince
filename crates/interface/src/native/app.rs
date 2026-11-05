@@ -131,6 +131,7 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
             crate::native::instinct::InstinctPlugin,
             crate::native::thread_castle::ThreadCastlePlugin,
         ))
+        .add_plugins(crate::native::item_properties::ItemPropertiesPlugin)
         .add_plugins(crate::native::workspace_sync::WorkspaceSyncPlugin)
         .add_plugins(crate::native::location::LocationPlugin)
         .add_plugins(crate::native::map_castle::MapPlugin)

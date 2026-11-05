@@ -3,6 +3,8 @@ Import "Socratic-dialogues-Cary.lingua"
 Phaedo (@phaedo: 0, #part-of @socratic-dialogues, #source @socratic-dialogues) { r_00000000000000000000001008
 Plato; translated by Henry Cary in the retained [Apology, Crito, and Phaedo of Socrates](Socratic-dialogues-Cary.lingua#r_00000000000000000000001005).
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/13726/pg13726-images-3.epub).
+
 **Read with:** [Phaedo guide](../plato/Phaedo.lingua#r_6JFZZP5W43FY7FFQENQNH96AFQ), which supplies the question, preparation, passage selection, practice, and next readings.
 
 **Return:** [Ancient Greek philosophy](../Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) · [Plato](../plato/Plato.lingua#r_00000000000000000000001004).
@@ -10,6 +12,7 @@ Plato; translated by Henry Cary in the retained [Apology, Crito, and Phaedo of S
 
 Extension @phaedo "lince.resource" {
  uri "../books/Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/13726/pg13726-images-3.epub" media_type "application/epub+zip" }]
  title "Phaedo"
  hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
  media_type "application/epub+zip"

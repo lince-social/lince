@@ -38,12 +38,30 @@ pub(super) fn update(world: &mut World) {
                 if world
                     .get::<DocumentViewer>(owner)
                     .is_some_and(|state| state.path == path)
-                    && let Some(mut view) = world.get_mut::<View>(owner)
                 {
-                    view.retention = Some(match result {
-                        Ok(_) => "Available offline".into(),
+                    let status = match result {
+                        Ok(entry) => {
+                            let mut state = world.get_mut::<DocumentViewer>(owner).unwrap();
+                            let resource =
+                                state
+                                    .resource
+                                    .get_or_insert_with(|| lince_resources::Resource {
+                                        uri: path.clone(),
+                                        media_type: entry.media_type.clone(),
+                                        ..default()
+                                    });
+                            resource.hash = Some(entry.hash);
+                            let mut view = world.get_mut::<View>(owner).unwrap();
+                            view.epoch = view.epoch.wrapping_add(1);
+                            view.key = None;
+                            view.layout = None;
+                            view.failed = false;
+                            view.busy = false;
+                            "Available offline".into()
+                        }
                         Err(error) => format!("Offline retention failed: {error}"),
-                    });
+                    };
+                    world.get_mut::<View>(owner).unwrap().retention = Some(status);
                 }
             }
             worker::Reply::Pick { owner, path } => {

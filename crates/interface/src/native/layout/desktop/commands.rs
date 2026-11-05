@@ -33,6 +33,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn default_screenshot_actions_are_available_without_custom_commands() {
+        let (mut world, root, _, _) = super::super::tests::fixture();
+        let (sender, _receiver) = std::sync::mpsc::sync_channel(2);
+        world.insert_resource(HostRequests(sender));
+        world.insert_resource(crate::host::external::Snapshot { available: true, ..default() });
+        let context = CommandContext::new(&world, root);
+        for action in [crate::host::external::Action::ScreenshotScreen, crate::host::external::Action::ScreenshotRegion] {
+            assert!(context.unavailable(DesktopAction::External(action)).is_none());
+        }
+        assert!(context.unavailable(DesktopAction::External(crate::host::external::Action::Editor)).is_some());
+    }
+
+    #[test]
     fn adjacent_command_availability_tracks_reordering_without_changing_focus_or_camera() {
         let (mut world, root, _, _) = super::super::tests::fixture();
         let mut other = world.get::<Workspaces>(root).unwrap().entries[0].clone();
@@ -175,12 +188,7 @@ mod tests {
             .entity_mut(application)
             .remove::<bevy::ecs::entity_disabling::Disabled>();
         super::super::focus_item(&mut world, native);
-        assert!(
-            CommandContext::new(&world, root)
-                .unavailable(DesktopAction::InspectWindowRecord)
-                .unwrap()
-                .contains("Record")
-        );
+        assert!(CommandContext::new(&world, root).unavailable(DesktopAction::InspectWindowRecord).is_none());
         world.get_mut::<Workspaces>(root).unwrap().entries[0]
             .desktop
             .set_mode(WorkspaceLayout::Free);
@@ -261,10 +269,10 @@ impl CommandContext {
                 .get_resource::<crate::host::external::Snapshot>()
                 .filter(|snapshot| snapshot.available)
                 .map(|snapshot| {
-                    snapshot
-                        .settings
-                        .0
-                        .keys()
+                    crate::host::external::Action::ALL
+                        .into_iter()
+                        .filter(|action| snapshot.settings.0.contains_key(action)
+                            || matches!(action, crate::host::external::Action::ScreenshotScreen | crate::host::external::Action::ScreenshotRegion))
                         .fold(0, |mask, action| mask | 1 << action.index())
                 }),
         }

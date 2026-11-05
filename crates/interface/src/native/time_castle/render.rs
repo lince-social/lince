@@ -199,7 +199,8 @@ fn svg(
         let entry = &view.entries[occurrence.index];
         let points =
             occurrence_points(settings, &occurrence, palette.width, now, size, view.unwind);
-        let color = palette::css(palette.event(occurrence.lane, view.selected.contains(&entry.id)));
+        let color =
+            palette::css(palette.event(occurrence.index, view.selected.contains(&entry.id)));
         if occurrence.time.until_ms.is_some() {
             svg.push_str(&format!(
                 "<path d='{}' fill='none' stroke='{color}' stroke-width='{}' stroke-linecap='round'/>",

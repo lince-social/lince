@@ -3,6 +3,8 @@ Import "Sources.lingua"
 The First Philosophers of Greece (@greek-source-fairbanks: 0, is #book, #part-of @greek-sources) { r_0CETPRSWH0WZT8335D8692RNJY
 Arthur Fairbanks, editor and translator. The First Philosophers of Greece: An Edition and Translation of the Remaining Fragments of the Pre-Sokratic Philosophers, Together with a Translation of the More Important Accounts of Their Opinions Contained in the Early Epitomes of Their Works. London: Kegan Paul, Trench, Trübner & Co., 1898.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/78670/pg78670-images-3.epub).
+
 [Retained EPUB](../books/fairbanks-first-philosophers-of-greece.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/78670). Greek texts with English translations, critical notes, and ancient testimonies. Project Gutenberg identifies this edition as public domain in the USA; the original notices and production credits remain in the retained file.
 
 Use this anthology to examine fragments and the passages through which later authors preserve or describe the earlier thinkers. Doxography is the collection of reports about thinkers' views. A fragment, its transmitting author's context, and an editor's reconstruction supply different kinds of evidence.
@@ -27,6 +29,7 @@ Compare a chosen passage with [Burnet's historical interpretation](Early-Greek-P
 
 Extension @greek-source-fairbanks "lince.resource" {
  uri "../books/fairbanks-first-philosophers-of-greece.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/78670/pg78670-images-3.epub" media_type "application/epub+zip" }]
  title "The First Philosophers of Greece"
  hash "1316f26c8674f39defadc369c2c8e5f9cc4b3682480d576528ba75ff5100c9df"
  media_type "application/epub+zip"

@@ -90,7 +90,7 @@ fn external_commands_use_real_fields_literal_arguments_save_retry_cancel_and_sha
         reveal(&mut canvas, volume);
         click(&mut canvas, volume, size);
         settle(&mut canvas);
-        let program_caption = "Executable (empty disables this command)";
+        let program_caption = "Executable (empty uses the default, if available)";
         let directory_caption = "Working directory (absolute; empty uses Park's directory)";
         let program = labelled(&mut canvas, program_caption);
         let argument = labelled(&mut canvas, "Argument 1");

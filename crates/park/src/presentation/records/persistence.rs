@@ -8,15 +8,13 @@ fn world() -> World {
     world
 }
 
-fn profile(records: &mut Records, creating: bool) -> (PlacementId, String) {
+fn profile(records: &mut Records, _: bool) -> (PlacementId, String) {
     let layout = native::layout::LayoutBox::new(Vec2::splat(300.0));
     let identity = PlacementId(layout.id);
-    let uid = nucleus::new_uid("r");
+    let uid = String::new();
     records.saved.insert(
         identity,
         Saved {
-            uid: (!creating).then(|| uid.clone()),
-            creation: creating.then(|| uid.clone()),
             layout,
             workspace: 1,
             position: [0.0; 2],
@@ -25,9 +23,6 @@ fn profile(records: &mut Records, creating: bool) -> (PlacementId, String) {
             launch: None,
         },
     );
-    if creating {
-        records.creations.insert(identity);
-    }
     records.dirty = true;
     (identity, uid)
 }
@@ -44,17 +39,6 @@ fn gated(path: PathBuf) -> (storage::Writer, mpsc::Receiver<()>, mpsc::SyncSende
     })
     .unwrap();
     (writer, started, release)
-}
-
-fn created(message: cell::ClientMessage) -> String {
-    let cell::ClientMessage::Act {
-        action: engine::actions::Action::CreateRecordDraft { draft },
-        ..
-    } = message
-    else {
-        panic!("Expected a window Record creation");
-    };
-    draft.uid
 }
 
 #[test]
@@ -111,97 +95,15 @@ fn blocked_saves_keep_ticks_available_and_coalesce_mutations_into_the_next_snaps
 }
 
 #[test]
-fn creation_and_failed_saves_wake_without_further_input() {
-    for failing in [false, true] {
-        let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("profiles.json");
-        let mut records = Records::load(path.clone()).unwrap();
-        profile(&mut records, !failing);
-        let target = path.clone();
-        records.writer = Some(
-            storage::Writer::with_writer(move |profiles| {
-                if failing {
-                    return Err(io::Error::other("Controlled write failure"));
-                }
-                storage::save(&target, profiles)
-            })
-            .unwrap(),
-        );
-        let (awake, woken) = mpsc::sync_channel(1);
-        records
-            .start_saving(Some(WakeSignal::new(move || {
-                let _ = awake.try_send(());
-            })))
-            .unwrap();
-        woken.recv_timeout(Duration::from_secs(2)).unwrap();
-        assert_eq!(records.finish_saving().is_err(), failing);
-        assert_eq!(path.exists(), !failing);
-    }
-}
-
-#[test]
-fn creation_uses_only_durable_current_uids_and_keeps_progress_when_new_profiles_arrive() {
-    use native::full_record::window::CreationState;
+fn failed_saves_wake_without_further_input() {
     let directory = tempfile::tempdir().unwrap();
-    let path = directory.path().join("profiles.json");
-    let mut records = Records::load(path.clone()).unwrap();
-    let (first, first_uid) = profile(&mut records, true);
-    let (sender, mut receiver) = tokio::sync::mpsc::channel(8);
-    records.sender = Some(sender.clone());
-    let (writer, started, release) = gated(path.clone());
-    records.writer = Some(writer);
-    let world = world();
-    assert!(!records.create_pending(&world, Some(&sender)));
-    started.recv_timeout(Duration::from_secs(2)).unwrap();
-    assert!(receiver.try_recv().is_err());
-    assert!(matches!(
-        records.creation_state(first.0, &first_uid),
-        Some(CreationState::Pending)
-    ));
-    let (second, old_uid) = profile(&mut records, true);
-    assert!(!records.create_pending(&world, Some(&sender)));
-    let version = records.saving.as_ref().unwrap().version;
-    assert!(
-        records
-            .saved(storage::Finished {
-                version: version - 1,
-                result: Ok(())
-            })
-            .is_err()
-    );
-    assert_eq!(records.saving.as_ref().unwrap().version, version);
-    assert!(records.durable_intents.is_empty());
-    release.send(()).unwrap();
-    records.finish_saving().unwrap();
-    assert!(!records.create_pending(&world, Some(&sender)));
-    started.recv_timeout(Duration::from_secs(2)).unwrap();
-    assert_eq!(created(receiver.try_recv().unwrap()), first_uid);
-    assert!(receiver.try_recv().is_err());
-    let replacement = nucleus::new_uid("r");
-    records.saved.get_mut(&second).unwrap().creation = Some(replacement.clone());
-    records.dirty = true;
-    release.send(()).unwrap();
-    records.finish_saving().unwrap();
-    assert!(!records.durable_intents.contains_key(&second));
-    assert!(!records.create_pending(&world, Some(&sender)));
-    started.recv_timeout(Duration::from_secs(2)).unwrap();
-    assert!(receiver.try_recv().is_err());
-    assert_ne!(old_uid, replacement);
-    release.send(()).unwrap();
-    records.finish_saving().unwrap();
-    assert!(!records.create_pending(&world, Some(&sender)));
-    assert_eq!(created(receiver.try_recv().unwrap()), replacement);
-    assert!(receiver.try_recv().is_err());
-    assert_eq!(records.requests.len(), 2);
-    let restored = Records::load(path).unwrap();
-    assert_eq!(
-        restored.profile(first).unwrap().creation.as_ref(),
-        Some(&first_uid)
-    );
-    assert_eq!(
-        restored.profile(second).unwrap().creation.as_ref(),
-        Some(&replacement)
-    );
+    let mut records = Records::load(directory.path().join("profiles.json")).unwrap();
+    profile(&mut records, false);
+    records.writer = Some(storage::Writer::with_writer(|_| Err(io::Error::other("Controlled write failure"))).unwrap());
+    let (awake, woken) = mpsc::sync_channel(1);
+    records.start_saving(Some(WakeSignal::new(move || { let _ = awake.try_send(()); }))).unwrap();
+    woken.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert!(records.finish_saving().is_err());
 }
 
 #[test]

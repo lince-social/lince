@@ -108,8 +108,6 @@ fn typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake
     records.saved.insert(
         PlacementId(layout.id),
         Saved {
-            uid: Some(nucleus::new_uid("r")),
-            creation: None,
             layout,
             workspace: 1,
             position: [200.0, 0.0],
@@ -218,8 +216,6 @@ fn automatic_profile_saves_record_caller_cost_and_durable_contents() {
             records.saved.insert(
                 PlacementId(layout.id),
                 Saved {
-                    uid: Some(nucleus::new_uid("r")),
-                    creation: None,
                     layout,
                     workspace: 1,
                     position: [0.0; 2],

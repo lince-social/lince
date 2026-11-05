@@ -50,14 +50,20 @@ impl Palette {
         }
     }
 
-    pub fn event(&self, lane: usize, selected: bool) -> Color {
+    pub fn event(&self, index: usize, selected: bool) -> Color {
         if selected {
-            self.present
-        } else if lane > 0 {
-            self.overlap.mix(&self.event, (lane % 4) as f32 * 0.18)
-        } else {
-            self.event
+            return self.present;
         }
+        if index == 0 {
+            return self.event;
+        }
+        let base = Hsla::from(self.event.mix(&self.overlap, 0.25));
+        Color::hsla(
+            (base.hue + index as f32 * 137.507_77).rem_euclid(360.0),
+            base.saturation.max(0.55),
+            base.lightness.clamp(0.4, 0.7),
+            base.alpha,
+        )
     }
 }
 

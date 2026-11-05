@@ -1,6 +1,27 @@
 use lince_resources::{Library, Reference};
 
 #[test]
+fn github_file_pages_resolve_as_raw_sources_with_their_identity_intact() {
+    let directory = tempfile::tempdir().unwrap();
+    let library = Library::new(directory.path());
+    let entry = Reference::new(
+        "https://github.com/example/collection/blob/main/notes/Entry%20point.lingua#r_00000000000000000000000001",
+    );
+    let candidate = entry.addresses(&library).unwrap().remove(0);
+    assert_eq!(
+        candidate.uri,
+        "https://github.com/example/collection/raw/main/notes/Entry%20point.lingua"
+    );
+    assert_eq!(
+        candidate.uid.as_deref(),
+        Some("r_00000000000000000000000001")
+    );
+    let other =
+        Reference::new("https://github.com.example.org/example/collection/blob/main/Entry.lingua");
+    assert!(other.addresses(&library).unwrap()[0].uri.contains("/blob/"));
+}
+
+#[test]
 fn contextual_addresses_preserve_fragments_queries_and_native_paths() {
     let directory = tempfile::tempdir().unwrap();
     let library = Library::new(directory.path());

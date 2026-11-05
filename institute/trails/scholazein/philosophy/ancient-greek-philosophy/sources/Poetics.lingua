@@ -3,6 +3,8 @@ Import "Further-primary-readings.lingua"
 The Poetics of Aristotle (@greek-source-poetics: 0, is #book, #part-of @greek-further-sources) { r_188F7W37RPBA4RSDC6C373SN67
 Aristotle; translated by S. H. Butcher. Project Gutenberg ebook 1974. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1974/pg1974-images-3.epub).
+
 [Retained EPUB](../books/aristotle-poetics.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/1974). Project Gutenberg identifies this edition as public domain in the USA; original notices and production credits remain in the retained file.
 
 **Used passages:** Chapters I–IX and XIII–XIV, read with the complete short work.
@@ -12,6 +14,7 @@ Aristotle; translated by S. H. Butcher. Project Gutenberg ebook 1974. English.
 
 Extension @greek-source-poetics "lince.resource" {
  uri "../books/aristotle-poetics.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1974/pg1974-images-3.epub" media_type "application/epub+zip" }]
  title "The Poetics of Aristotle"
  hash "f48185f6330fb86e8cfd9113986aac8126d9042537a8c3c904ad0a393e9350b9"
  media_type "application/epub+zip"

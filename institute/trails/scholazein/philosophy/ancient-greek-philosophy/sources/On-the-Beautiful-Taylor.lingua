@@ -3,6 +3,8 @@ Import "Further-primary-readings.lingua"
 An Essay on the Beautiful (@greek-source-plotinus: 0, is #book, #part-of @greek-further-sources) { r_7KVSD4FCD7B57PCG677NRSEXBB
 Plotinus; translated by Thomas Taylor. London: John M. Watkins, 1917; Project Gutenberg ebook 29510. Translation of Ennead I.6. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/29510/pg29510-images-3.epub).
+
 [Retained EPUB](../books/plotinus-on-the-beautiful.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/29510). Project Gutenberg identifies this edition as public domain in the USA; original notices and production credits remain in the retained file.
 
 **Used passages:** The full short treatise, beginning with sensible beauty and the criticism of an explanation through proportion.
@@ -12,6 +14,7 @@ Plotinus; translated by Thomas Taylor. London: John M. Watkins, 1917; Project Gu
 
 Extension @greek-source-plotinus "lince.resource" {
  uri "../books/plotinus-on-the-beautiful.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/29510/pg29510-images-3.epub" media_type "application/epub+zip" }]
  title "An Essay on the Beautiful"
  hash "2e6ed0b1ab9f358443824a10c33cb948e89da6f18350a7af6e69fde997c3b83a"
  media_type "application/epub+zip"

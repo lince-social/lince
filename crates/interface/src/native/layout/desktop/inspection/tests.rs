@@ -47,11 +47,11 @@ fn native_properties_reuse_the_record_factory_in_sandbox_and_park() {
 }
 
 #[test]
-fn inspection_preserves_explicit_unfocus_and_rejects_unbound_or_invalid_native_records() {
+fn inspection_accepts_unbound_items_preserves_explicit_unfocus_and_rejects_invalid_records() {
     let (mut world, root, native, _) = super::super::tests::fixture();
     super::super::super::engine::resolve(&mut world);
     focus_item(&mut world, native);
-    assert!(capture(&world, root).is_err());
+    assert!(matches!(capture(&world, root), Ok(Target::Item(item)) if item == native));
     bound(&mut world, native);
     assert!(capture(&world, root).is_ok());
     world.get_mut::<RecordBinding>(native).unwrap().uid = "a-slug".into();

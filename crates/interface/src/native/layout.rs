@@ -12,7 +12,9 @@ pub(crate) mod viewport;
 pub(crate) use engine::edited;
 
 #[cfg(test)]
-pub(crate) fn resolve_for_test(world: &mut World) { engine::resolve(world); }
+pub(crate) fn resolve_for_test(world: &mut World) {
+    engine::resolve(world);
+}
 
 pub(crate) fn linked(world: &World, entity: Entity) -> bool {
     let Some(layout) = world.get::<LayoutBox>(entity) else {
@@ -183,7 +185,11 @@ impl Plugin for LayoutPlugin {
                     .after(ResolveFollow)
                     .before(bevy::ui::UiSystems::Layout),
             )
-            .add_observer(engine::scroll);
+            .add_observer(engine::scroll)
+            .add_systems(
+                PostUpdate,
+                crate::native::scroll_sand::update_bars.after(bevy::ui::UiSystems::Layout),
+            );
     }
 }
 

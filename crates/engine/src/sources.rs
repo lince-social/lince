@@ -293,6 +293,7 @@ impl Engine {
                         .to_ascii_lowercase();
                     let media_type = match extension.as_str() {
                         "pdf" => Some("application/pdf"),
+                        "mp3" | "m4a" | "ogg" | "wav" | "flac" => Some("audio/*"),
                         "epub" => Some("application/epub+zip"),
                         "mp4" | "webm" | "mkv" => Some("video/*"),
                         "png" | "jpg" | "jpeg" | "webp" | "gif" => Some("image/*"),
@@ -383,7 +384,7 @@ impl Engine {
                                     "assertions":record.assertions.iter().map(|assertion| json!({"predicate":assertion.predicate,"uri":assertion.object_uri.as_ref().or_else(|| assertion.object_uid.as_ref().and_then(|uid| definitions.get(uid))),"quantity":assertion.quantity})).collect::<Vec<_>>()})
                             })).collect::<Vec<_>>();
                             result = Some(
-                                json!({"browsing":true,"ready":false,"entry":source.entry,"revision":source.revision,"fragment":source.fragment,"records":records}),
+                                json!({"browsing":true,"ready":false,"entry":source.entry,"revision":source.revision,"fragment":source.fragment,"documents":outline(&source),"records":records}),
                             );
                             break;
                         }
@@ -648,6 +649,59 @@ impl Engine {
     }
 }
 
+fn outline(source: &Publication) -> Value {
+    let definitions: BTreeMap<_, _> = source
+        .documents
+        .iter()
+        .flat_map(|document| {
+            document.project.records.iter().flat_map(move |record| {
+                std::iter::once((record.uid.clone(), document.base.clone())).chain(
+                    record
+                        .slug
+                        .clone()
+                        .map(|slug| (slug, document.base.clone())),
+                )
+            })
+        })
+        .collect();
+    let locations: BTreeMap<_, _> = source
+        .documents
+        .iter()
+        .flat_map(|document| {
+            [
+                (document.uri.as_str(), document.base.as_str()),
+                (document.base.as_str(), document.base.as_str()),
+            ]
+        })
+        .collect();
+    let documents = source
+        .documents
+        .iter()
+        .map(|document| {
+            let children = document
+                .project
+                .imports
+                .iter()
+                .filter_map(|import| {
+                    if let Some(identity) = import.target.strip_prefix('@') {
+                        definitions.get(identity).cloned()
+                    } else {
+                        lince_resources::resolve(&document.base, &import.target)
+                            .ok()
+                            .and_then(|uri| {
+                                let mut uri = lince_resources::address(&uri).ok()?;
+                                uri.set_fragment(None);
+                                locations.get(uri.as_str()).map(|base| (*base).to_owned())
+                            })
+                    }
+                })
+                .collect::<Vec<_>>();
+            json!({"uri":document.base,"source_uri":document.uri,"children":children})
+        })
+        .collect::<Vec<_>>();
+    json!(documents)
+}
+
 fn linked_body(body: &str, links: &BTreeMap<String, String>) -> String {
     let mut body = body.to_owned();
     for (name, uri) in links {
@@ -655,4 +709,36 @@ fn linked_body(body: &str, links: &BTreeMap<String, String>) -> String {
         body = body.replace(&format!("|{name}]]"), &format!("|{uri}]]"));
     }
     body
+}
+
+#[cfg(test)]
+mod outline_tests {
+    use super::*;
+
+    #[test]
+    fn source_outline_keeps_only_direct_imports_and_uses_relative_document_locations() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::create_dir(directory.path().join("parts")).unwrap();
+        std::fs::write(directory.path().join("Root.lingua"), "Import \"parts/Child.lingua\"\nRoot (@root: 0) { r_00000000000000000000000001\n} r_00000000000000000000000001\n").unwrap();
+        std::fs::write(directory.path().join("parts/Child.lingua"), "Import \"../Root.lingua\"\nChild (@child: 0) { r_00000000000000000000000002\n} r_00000000000000000000000002\n").unwrap();
+        let library = Library::new(directory.path().join("cache"));
+        let source = Publication::load(
+            &library,
+            directory.path().join("Root.lingua").to_str().unwrap(),
+            &[],
+            false,
+        )
+        .unwrap();
+        let rows = outline(&source);
+        assert_eq!(rows.as_array().unwrap().len(), 2);
+        assert!(rows[0]["uri"].as_str().unwrap().ends_with("/Root.lingua"));
+        assert!(
+            rows[0]["children"][0]
+                .as_str()
+                .unwrap()
+                .ends_with("/parts/Child.lingua")
+        );
+        assert_eq!(rows[0]["children"].as_array().unwrap().len(), 1);
+        assert_eq!(rows[1]["children"][0], rows[0]["uri"]);
+    }
 }

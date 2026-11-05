@@ -2,6 +2,7 @@ use super::*;
 use crate::{host::WindowInspection, native::protein_area::RecordBinding};
 
 pub(super) enum Target {
+    Item(Entity),
     Native {
         workspace: u64,
         position: bevy::math::DVec2,
@@ -54,6 +55,8 @@ pub(super) fn capture(world: &World, root: Entity) -> Result<Target, &'static st
             placement: world.get::<Managed>(entity).unwrap().id.0,
         }));
     }
+    if world.get::<crate::native::item_properties::Attachment>(entity).is_some()
+        || world.get::<RecordBinding>(entity).is_none() { return Ok(Target::Item(entity)); }
     Ok(Target::Native {
         workspace: space.id,
         position,
@@ -65,6 +68,7 @@ pub(super) fn capture(world: &World, root: Entity) -> Result<Target, &'static st
 
 pub(super) fn request(world: &mut World, root: Entity) {
     let result = match capture(world, root) {
+        Ok(Target::Item(entity)) => crate::native::item_properties::open(world, root, entity).map(|_| ()).ok_or("The original canvas item is unavailable."),
         Ok(Target::Native {
             workspace,
             position,

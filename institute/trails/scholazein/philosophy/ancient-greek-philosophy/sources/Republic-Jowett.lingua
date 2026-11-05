@@ -3,6 +3,8 @@ Import "Sources.lingua"
 The Republic (@greek-source-republic: 0, is #book, #part-of @greek-sources) { r_2K96NK6GTRV5ZT0DD1DWJA9BZF
 Plato; translated by Benjamin Jowett.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1497/pg1497-images-3.epub).
+
 [Retained EPUB](../books/plato-republic.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/1497). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
 
 Used passages: Books I–II and IV for justice; the end of Book VI and Book VII for knowledge and education. Open the book's contents to find the named books; the long preceding introduction is Jowett's account. [Reading guide](../plato/Republic.lingua#r_05G1N50PP71GRGDNAPG38CQ8J5).
@@ -12,6 +14,7 @@ Used passages: Books I–II and IV for justice; the end of Book VI and Book VII 
 
 Extension @greek-source-republic "lince.resource" {
  uri "../books/plato-republic.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1497/pg1497-images-3.epub" media_type "application/epub+zip" }]
  title "The Republic"
  hash "db8d7a66f3b90d10eee5b92e0df55f3bb15c88814d80be11813235daf7a045bb"
  media_type "application/epub+zip"

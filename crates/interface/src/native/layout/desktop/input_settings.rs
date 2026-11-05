@@ -82,7 +82,7 @@ pub(crate) fn button(
     (button, text)
 }
 
-pub(super) fn field(world: &mut World, parent: Entity, caption: &str, maximum: usize) -> Entity {
+pub(crate) fn field(world: &mut World, parent: Entity, caption: &str, maximum: usize) -> Entity {
     let label = label(world, parent, caption, 14.0);
     let mut node = world.get_mut::<Node>(label).unwrap();
     node.width = percent(100);

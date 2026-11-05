@@ -650,7 +650,7 @@ pub(super) fn update(
             .unwrap()
             .selected
             .contains(&label.id);
-        let color = palette.event(label.occurrence.lane, selected);
+        let color = palette.event(label.occurrence.index, selected);
         world
             .get_mut::<TextColor>(title)
             .unwrap()

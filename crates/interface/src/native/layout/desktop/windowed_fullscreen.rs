@@ -82,7 +82,7 @@ fn source(world: &World, page: &Page) -> Result<Target, &'static str> {
         return Err("The original window association is closed or changed.");
     }
     let target = page.target.as_ref().ok_or("The original application window is unavailable.")?;
-    if world.get::<RecordBinding>(target.entity).is_none_or(|binding| binding.uid != page.uid
+    if !page.uid.is_empty() && world.get::<RecordBinding>(target.entity).is_none_or(|binding| binding.uid != page.uid
         || binding.area != target.entity || binding.source != crate::native::protein_area::Source::Local)
     { return Err("The original window Record association changed."); }
     state(world, target)?;

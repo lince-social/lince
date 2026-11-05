@@ -118,7 +118,7 @@ impl Presentation {
         let targets = native::capture::requested_windows(self.app.world_mut());
         let policies = targets.into_iter().filter_map(|(placement, uid)| {
             let profile = self.records.as_ref()?.profile(PlacementId(placement))?;
-            if profile.uid.as_deref() != Some(uid.as_str()) { return None; }
+            if !uid.is_empty() { return None; }
             Some(native::capture::WindowPolicy { placement, uid, excluded: profile.layout.capture_excluded })
         }).collect();
         native::capture::publish_windows(self.app.world_mut(), self.records.is_some(), policies);

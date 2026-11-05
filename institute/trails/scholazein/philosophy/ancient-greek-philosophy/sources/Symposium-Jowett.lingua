@@ -3,6 +3,8 @@ Import "Sources.lingua"
 Symposium (@greek-source-symposium: 0, is #book, #part-of @greek-sources) { r_475VMK1BGF0K12WYA6VG06CT7B
 Plato; translated by Benjamin Jowett.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1600/pg1600-images-3.epub).
+
 [Retained EPUB](../books/plato-symposium.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/1600). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
 
 Read the speeches in their dramatic setting, especially Socrates' exchange with Agathon, the report of Diotima's teaching, and Alcibiades' speech. [Reading guide](../plato/Symposium.lingua#r_5NMHFGWX7QGRJ65XQDFFEG9K8B).
@@ -12,6 +14,7 @@ Read the speeches in their dramatic setting, especially Socrates' exchange with 
 
 Extension @greek-source-symposium "lince.resource" {
  uri "../books/plato-symposium.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1600/pg1600-images-3.epub" media_type "application/epub+zip" }]
  title "Symposium"
  hash "4a16221df96d02f65abb1e4cb72bed7ec789d15d8a0e82c069958286b7db4811"
  media_type "application/epub+zip"

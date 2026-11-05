@@ -385,3 +385,6 @@ pub mod transfer_castle;
 pub mod organ_castle;
 
 pub use crate::{actions, laboratory_cases};
+
+#[cfg(feature = "native-presentation")]
+pub mod item_properties;

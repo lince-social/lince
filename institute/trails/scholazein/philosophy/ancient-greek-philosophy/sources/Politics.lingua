@@ -3,6 +3,8 @@ Import "Further-primary-readings.lingua"
 Politics — A Treatise on Government (@greek-source-politics: 0, is #book, #part-of @greek-further-sources) { r_1DZ4505WSQF0FN2EDX5WT9W4PX
 Aristotle; translated by William Ellis. Published as A Treatise on Government; Project Gutenberg ebook 6762. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/6762/pg6762-images-3.epub).
+
 [Retained EPUB](../books/aristotle-politics.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/6762). Project Gutenberg identifies this edition as public domain in the USA; original notices and production credits remain in the retained file.
 
 **Used passages:** Books I, chapters 1–7, and III, chapters 1 and 6–9; Book VII, chapters 1–3 for further depth.
@@ -12,6 +14,7 @@ Aristotle; translated by William Ellis. Published as A Treatise on Government; P
 
 Extension @greek-source-politics "lince.resource" {
  uri "../books/aristotle-politics.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/6762/pg6762-images-3.epub" media_type "application/epub+zip" }]
  title "Politics — A Treatise on Government"
  hash "3be55d55ce17b3535cc39312a2d3de659c4c4b3e2974bacd8127ca4c7c556184"
  media_type "application/epub+zip"

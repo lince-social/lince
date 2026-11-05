@@ -115,8 +115,14 @@ impl Action for Control {
                 std::thread::spawn(move || {
                     let result = engine::sources::library()
                         .map_err(|error| error.to_string())
-                        .and_then(|library| library.fetch(&resource))
-                        .map(|entry| entry.path.to_string_lossy().into_owned());
+                        .and_then(|library| {
+                            if let Some(entry) = library.find(&resource)?
+                                && entry.path == library.root().join("files").join(&entry.hash)
+                            {
+                                return Ok(entry);
+                            }
+                            library.fetch(&resource)
+                        });
                     let _ = sender.send(worker::Reply::Retained {
                         owner,
                         path,

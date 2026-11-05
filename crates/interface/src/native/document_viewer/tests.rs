@@ -182,7 +182,15 @@ fn manual_online_sources_and_retention_results_follow_the_current_document() {
         .send(worker::Reply::Retained {
             owner,
             path: "/old.pdf".into(),
-            result: Ok("/retained".into()),
+            result: Ok(lince_resources::Entry {
+                hash: "a".repeat(64),
+                path: "/retained".into(),
+                bytes: 10,
+                uri: uri.into(),
+                media_type: "application/epub+zip".into(),
+                resolved_uri: None,
+                registered_at: 0,
+            }),
         })
         .unwrap();
     runtime::update(&mut world);
@@ -193,13 +201,31 @@ fn manual_online_sources_and_retention_results_follow_the_current_document() {
         .send(worker::Reply::Retained {
             owner,
             path: uri.into(),
-            result: Ok("/retained".into()),
+            result: Ok(lince_resources::Entry {
+                hash: "a".repeat(64),
+                path: "/retained".into(),
+                bytes: 10,
+                uri: uri.into(),
+                media_type: "application/epub+zip".into(),
+                resolved_uri: None,
+                registered_at: 0,
+            }),
         })
         .unwrap();
     runtime::update(&mut world);
     assert_eq!(
         world.get::<View>(owner).unwrap().retention.as_deref(),
         Some("Available offline")
+    );
+    assert_eq!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .resource
+            .as_ref()
+            .unwrap()
+            .hash,
+        Some("a".repeat(64))
     );
     ui::open(&mut world, owner, "/new.pdf".into());
     assert!(world.get::<View>(owner).unwrap().retention.is_none());

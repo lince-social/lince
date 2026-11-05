@@ -407,7 +407,7 @@ impl Commands {
                 self.external
                     .command(action, false)
                     .map_err(io::Error::other)?
-                    .clone(),
+                    .into_owned(),
             ),
             _ => return Err(io::Error::other("This action is not an external command")),
         };

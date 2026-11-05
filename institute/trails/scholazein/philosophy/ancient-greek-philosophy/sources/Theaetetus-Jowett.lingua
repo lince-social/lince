@@ -3,6 +3,8 @@ Import "Further-primary-readings.lingua"
 Theaetetus (@greek-source-theaetetus: 0, is #book, #part-of @greek-further-sources) { r_4WKXEWKMJYVH6KAD0MDMQ31N2P
 Plato; translated by Benjamin Jowett. Project Gutenberg ebook 1726. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1726/pg1726-images-3.epub).
+
 [Retained EPUB](../books/plato-theaetetus.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/1726). Project Gutenberg identifies this edition as public domain in the USA; original notices and production credits remain in the retained file.
 
 **Used passages:** The opening account of midwifery and the proposals concerning perception, true judgment, and an account.
@@ -12,6 +14,7 @@ Plato; translated by Benjamin Jowett. Project Gutenberg ebook 1726. English.
 
 Extension @greek-source-theaetetus "lince.resource" {
  uri "../books/plato-theaetetus.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1726/pg1726-images-3.epub" media_type "application/epub+zip" }]
  title "Theaetetus"
  hash "e8c6c46d01baeec1cdd97bd3f88be409e1a9e00abc2427a0b11ff2ff6fa2cad0"
  media_type "application/epub+zip"

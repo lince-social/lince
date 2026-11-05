@@ -466,20 +466,23 @@ pub fn update(world: &mut World) {
                     top: px(80),
                     width: px(300),
                     max_height: percent(65),
-                    overflow: Overflow::scroll_y(),
+                    overflow: Overflow::clip(),
                     flex_direction: FlexDirection::Column,
                     padding: UiRect::all(px(8)),
                     row_gap: px(4),
                     ..default()
                 },
                 ScrollPosition::default(),
-                GlobalZIndex(24),
+                GlobalZIndex(21),
                 ChildOf(root),
                 crate::native::token_style::background(crate::native::tokens::Token::Surface),
             ))
             .id();
         if let Some(target) = target {
             world.entity_mut(panel).insert(Readout(target));
+            let panel = crate::native::edit_mode::panels::attach(
+                world, panel, root, crate::native::edit_mode::panels::Kind::Item,
+            );
             super::terrain::editor::item_controls(world, panel, root, target);
             if world.get::<super::terrain::Effect>(target).is_some() {
                 crate::native::edit_mode::label(world, panel, "Floor effect", 14.0);

@@ -5,6 +5,8 @@ use engine::sources::Command;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
+#[path = "source_view/outline.rs"]
+mod outline;
 #[path = "source_view_persistence.rs"]
 mod persistence;
 pub(crate) use persistence::{SavedSourceView, snapshot};
@@ -281,6 +283,13 @@ mod tests {
                 "rules":[{"title":"Authored measure","condition":"@practice","consequences":"[{\"kind\":\"set-quantity\",\"value\":\"7\"}]"}]
             }),
         );
+        assert!(
+            !world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0.contains("Authored measure"))
+        );
+        outline::Control::Details.apply(world, owner);
         let labels = world
             .query::<&Text>()
             .iter(world)
@@ -318,6 +327,8 @@ struct View {
     destination: Entity,
     status: Entity,
     body: Entity,
+    controls: Entity,
+    pulling: bool,
     preview: Option<Value>,
     parameters: BTreeMap<String, Entity>,
 }
@@ -331,6 +342,7 @@ struct Card {
 
 #[derive(Clone)]
 enum Operation {
+    Pull,
     Preview,
     Exchange,
     Read,
@@ -433,22 +445,20 @@ fn populate(world: &mut World, owner: Entity, frame: Entity, exchange: bool) {
     let input = panel::field(world, frame, "Source file, folder or URI", &uri);
     let row = panel::row(world, frame);
     panel::button(world, row, owner, "Open source", Operation::Read);
-    if exchange {
-        panel::button(world, row, owner, "Audit folder links", Operation::Audit);
-        panel::button(world, row, owner, "Preview import", Operation::Preview);
-    }
-    let body = panel::column(world, frame);
-    if !exchange {
-        let mut node = world.get_mut::<Node>(body).unwrap();
-        node.overflow = Overflow::scroll_y();
-        node.flex_grow = 1.0;
-        node.flex_shrink = 1.0;
-        node.flex_basis = px(0);
-        crate::native::scroll_sand::attach(world, body);
-    }
+    let status = crate::native::edit_mode::label(
+        world,
+        frame,
+        "Open a source or follow a Record reference.",
+        13.0,
+    );
+    let controls = panel::column(world, frame);
+    let body =
+        crate::native::scroll_sand::bounded(world, frame, if exchange { 120.0 } else { 340.0 });
     let destination = if exchange {
         let destination = panel::field(world, frame, "Export or ZIP extraction folder", "");
         let row = panel::row(world, frame);
+        panel::button(world, row, owner, "Audit folder links", Operation::Audit);
+        panel::button(world, row, owner, "Preview import", Operation::Preview);
         panel::button(world, row, owner, "Extract ZIP", Operation::Extract);
         panel::button(
             world,
@@ -468,17 +478,13 @@ fn populate(world: &mut World, owner: Entity, frame: Entity, exchange: bool) {
     } else {
         Entity::PLACEHOLDER
     };
-    let status = crate::native::edit_mode::label(
-        world,
-        frame,
-        "Open a source or follow a Record reference.",
-        13.0,
-    );
     world.entity_mut(owner).insert(View {
         input,
         destination,
         status,
         body,
+        controls,
+        pulling: false,
         preview: None,
         parameters: BTreeMap::new(),
     });
@@ -508,6 +514,9 @@ fn root(world: &World, mut entity: Entity) -> Option<Entity> {
 fn request(world: &mut World, owner: Entity, source: Source, command: Command, card: bool) {
     world.init_resource::<Pending>();
     let Some(sender) = crate::native::description::source_sender(world, &source) else {
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.pulling = false;
+        }
         status(
             world,
             owner,
@@ -529,7 +538,12 @@ fn request(world: &mut World, owner: Entity, source: Source, command: Command, c
             pending.0.insert(id, (owner, source, card));
             status(world, owner, "Working…");
         }
-        Err(error) => status(world, owner, error.to_string()),
+        Err(error) => {
+            if let Some(mut view) = world.get_mut::<View>(owner) {
+                view.pulling = false;
+            }
+            status(world, owner, error.to_string());
+        }
     }
 }
 
@@ -585,9 +599,13 @@ fn capture(world: &mut World, owner: Entity) {
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.preview = None;
         if source_changed {
+            view.pulling = false;
             let body = view.body;
+            let controls = view.controls;
             view.parameters.clear();
             panel::clear(world, body);
+            panel::clear(world, controls);
+            world.entity_mut(owner).remove::<outline::Outline>();
         }
     }
 }
@@ -595,6 +613,29 @@ fn capture(world: &mut World, owner: Entity) {
 impl Action for Operation {
     fn apply(&self, world: &mut World, owner: Entity) {
         match self {
+            Self::Pull => {
+                capture(world, owner);
+                let Some(view) = world.get::<View>(owner) else {
+                    return;
+                };
+                if view.pulling
+                    || world.get_resource::<Pending>().is_some_and(|pending| {
+                        pending.0.values().any(|(target, _, _)| *target == owner)
+                    })
+                {
+                    return;
+                }
+                if view
+                    .preview
+                    .as_ref()
+                    .is_some_and(|data| data["ready"] == true)
+                {
+                    Self::Import(false).apply(world, owner);
+                } else {
+                    world.get_mut::<View>(owner).unwrap().pulling = true;
+                    Self::Preview.apply(world, owner);
+                }
+            }
             Self::Exchange => {
                 let uri = world
                     .get::<SourceView>(owner)
@@ -607,6 +648,7 @@ impl Action for Operation {
             Self::Browse(reference, record) => {
                 let source = reference_source(world, owner);
                 let destination = if world.get::<SourceView>(owner).is_some() {
+                    world.entity_mut(owner).remove::<outline::Outline>();
                     let mut castle = world.get_mut::<SourceView>(owner).unwrap();
                     castle.current = None;
                     castle.binding = None;
@@ -822,7 +864,9 @@ impl Action for Operation {
                             ..default()
                         },
                     );
-                } else if resource.media_type.starts_with("video/") {
+                } else if resource.media_type.starts_with("video/")
+                    || resource.media_type.starts_with("audio/")
+                {
                     let sand = crate::native::sand_store::spawn_sand(
                         world,
                         root,
@@ -853,7 +897,7 @@ impl Action for Operation {
                         },
                     );
                 } else {
-                    crate::native::document_viewer::spawn(
+                    let viewer = crate::native::document_viewer::spawn(
                         world,
                         root,
                         workspace,
@@ -862,6 +906,42 @@ impl Action for Operation {
                             resource.clone(),
                         ),
                     );
+                    let mut origin = Some(owner);
+                    while let Some(entity) = origin {
+                        if let Some(item) = world
+                            .get::<crate::native::canvas::CanvasItem>(entity)
+                            .copied()
+                        {
+                            let spatial = crate::native::canvas::presented_spatial(world, entity);
+                            world
+                                .get_mut::<crate::native::canvas::CanvasItem>(viewer)
+                                .unwrap()
+                                .position = item.position;
+                            world
+                                .entity_mut(viewer)
+                                .insert(crate::native::topology::Spatial {
+                                    elevation: spatial.elevation + 1.0,
+                                    rotation: spatial.rotation,
+                                    ..default()
+                                });
+                            break;
+                        }
+                        origin = world.get::<ChildOf>(entity).map(ChildOf::parent);
+                    }
+                    let order = world
+                        .query::<(
+                            &ChildOf,
+                            Option<&ZIndex>,
+                            &crate::native::canvas::CanvasItem,
+                        )>()
+                        .iter(world)
+                        .filter(|(parent, _, _)| parent.parent() == root)
+                        .map(|(_, order, _)| order.map_or(0, |order| order.0))
+                        .max()
+                        .unwrap_or(0)
+                        .saturating_add(1);
+                    world.entity_mut(viewer).insert(ZIndex(order));
+                    crate::native::document_viewer::keep_offline(world, viewer);
                 }
             }
             Self::Quantity(uid, amount) => {
@@ -959,6 +1039,9 @@ fn render(world: &mut World, owner: Entity, data: Value) {
     let exchange = world.get::<Exchange>(owner).is_some();
     let body = world.get::<View>(owner).unwrap().body;
     panel::clear(world, body);
+    let controls = world.get::<View>(owner).unwrap().controls;
+    panel::clear(world, controls);
+    outline::controls(world, owner, controls, &data, exchange);
     let castle = world.get::<SourceView>(owner).unwrap().clone();
     if data["audit"].is_object() {
         crate::native::edit_mode::label(
@@ -983,37 +1066,16 @@ fn render(world: &mut World, owner: Entity, data: Value) {
     }
     world.get_mut::<View>(owner).unwrap().parameters.clear();
     if let Some(current) = &castle.current {
-        crate::native::edit_mode::label(world, body, "Selected Record", 16.0);
-        attach(world, body, current, Source::Local);
-    }
-    for file in data["files"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-    {
-        let row = panel::row(world, body);
-        let link = panel::button(
-            world,
-            row,
-            owner,
-            &link_label(file),
-            Operation::Browse(lince_resources::Reference::new(file), None),
-        );
-        world
-            .entity_mut(link)
-            .insert(crate::native::icons::Tooltip(file.into()));
         panel::button(
             world,
-            row,
+            body,
             owner,
-            if castle.selected.iter().any(|selected| selected == file) {
-                "Selected"
-            } else {
-                "Select"
-            },
-            Operation::Select(file.into()),
+            "Open imported Record",
+            Operation::Open(current.clone(), Source::Local),
         );
+    }
+    if data["files"].is_array() {
+        outline::render_files(world, owner, body, &data);
     }
     if let Some(parameters) = data["parameters"].as_object() {
         for (name, input) in parameters {
@@ -1060,203 +1122,56 @@ fn render(world: &mut World, owner: Entity, data: Value) {
         );
         panel::button(world, body, owner, &label, Operation::Select(uri.into()));
     }
-    let titles = data["records"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|record| Some((record["uid"].as_str()?, record["title"].as_str()?)))
-        .collect::<BTreeMap<_, _>>();
-    for record in data["records"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|record| {
-            data["browsing"] != true
-                || data["fragment"]
-                    .as_str()
-                    .is_none_or(|fragment| record["uid"] == fragment)
-        })
-    {
-        if record["reference_review"] == true {
-            crate::native::edit_mode::label(
-                world,
-                body,
-                "The source or location changed. Review this reference before accepting the update.",
-                13.0,
-            );
-        }
-        let title = record["title"].as_str().unwrap_or("Record");
-        crate::native::edit_mode::label(
-            world,
-            body,
-            &format!(
-                "{title} · {}{}",
-                match record["state"].as_str() {
-                    Some("create") => "New Record",
-                    Some("reuse") => "Already in Cell",
-                    Some("update_available") => "Updated source",
-                    Some("source") =>
-                        if record["saved"] == true {
-                            "Saved source snapshot"
-                        } else if record["cached"] == true {
-                            "HTTP cache"
-                        } else {
-                            "Source document"
-                        },
-                    _ => "",
-                },
-                if record["personal"] == true {
-                    " · personal"
-                } else {
-                    ""
-                }
-            ),
-            15.0,
-        );
-        let content = panel::column(world, body);
-        if let Some(base) = record["base"].as_str() {
-            world.entity_mut(content).insert(ReferenceBase(base.into()));
-        }
-        if let Some(text) = record["body"].as_str().filter(|body| !body.is_empty()) {
-            let source = reference_source(world, owner);
-            crate::native::description::readonly(
-                world,
-                content,
-                text,
-                crate::native::description::Context {
-                    owner: content,
-                    source,
-                },
-            );
-        }
-        if let Some(assertions) = record["assertions"].as_array() {
-            for assertion in assertions {
-                let predicate = assertion["predicate"].as_str().unwrap_or("assertion");
-                let object = assertion["object"]
-                    .as_str()
-                    .and_then(|uid| titles.get(uid))
-                    .copied();
-                let label = object.map_or_else(
-                    || format!("#{predicate}"),
-                    |object| format!("#{predicate} → {object}"),
+    if data["files"].is_null() {
+        outline::render_tree(world, owner, body, &data);
+    }
+    if outline::details(world, owner) {
+        for concept in data["vocabulary"].as_array().into_iter().flatten() {
+            if let Some(definition) = concept["definition"]
+                .as_str()
+                .filter(|value| !value.is_empty())
+            {
+                crate::native::edit_mode::label(
+                    world,
+                    body,
+                    &format!(
+                        "#{}: {definition}",
+                        concept["name"].as_str().unwrap_or("Meaning")
+                    ),
+                    13.0,
                 );
-                if let Some(uri) = assertion["uri"].as_str() {
-                    let link = panel::button(
-                        world,
-                        content,
-                        owner,
-                        &format!("#{predicate} → {}", link_label(uri)),
-                        Operation::Browse(lince_resources::Reference::new(uri), None),
-                    );
-                    world
-                        .entity_mut(link)
-                        .insert(crate::native::icons::Tooltip(uri.into()));
-                } else {
-                    crate::native::edit_mode::label(world, content, &label, 12.0);
-                }
             }
         }
-        if let Some(uid) = record["uid"]
-            .as_str()
-            .filter(|_| record["state"] != "create" && record["state"] != "source")
-        {
-            panel::button(
-                world,
-                body,
-                owner,
-                "Open Record",
-                Operation::Open(uid.into(), Source::Local),
-            );
-            panel::button(
-                world,
-                body,
-                owner,
-                "Select Record",
-                Operation::Focus(uid.into()),
-            );
-        }
-        if let Ok(resource) =
-            serde_json::from_value::<lince_resources::Resource>(record["resource"].clone())
-        {
-            let _ = media(world, body, owner, &resource);
-        }
-    }
-    for concept in data["vocabulary"].as_array().into_iter().flatten() {
-        if let Some(definition) = concept["definition"]
-            .as_str()
-            .filter(|value| !value.is_empty())
-        {
+        for rule in data["rules"].as_array().into_iter().flatten() {
             crate::native::edit_mode::label(
                 world,
                 body,
                 &format!(
-                    "#{}: {definition}",
-                    concept["name"].as_str().unwrap_or("Meaning")
+                    "Proposed Karma: {} · {} · gate {} · carry {}",
+                    rule["title"].as_str().unwrap_or("Rule"),
+                    rule["condition"].as_str().unwrap_or("Scheduled condition"),
+                    rule["gate"].as_str().unwrap_or("always"),
+                    rule["carry"].as_str().unwrap_or("value")
                 ),
-                13.0,
+                12.0,
             );
-        }
-    }
-    for rule in data["rules"].as_array().into_iter().flatten() {
-        crate::native::edit_mode::label(
-            world,
-            body,
-            &format!(
-                "Proposed Karma: {} · {} · gate {} · carry {}",
-                rule["title"].as_str().unwrap_or("Rule"),
-                rule["condition"].as_str().unwrap_or("Scheduled condition"),
-                rule["gate"].as_str().unwrap_or("always"),
-                rule["carry"].as_str().unwrap_or("value")
-            ),
-            12.0,
-        );
-        if let Some(cadence) = rule["cadence"].as_str() {
-            crate::native::edit_mode::label(world, body, &format!("Cadence: {cadence}"), 12.0);
-        }
-        if let Some(consequences) = rule["consequences"]
-            .as_str()
-            .and_then(|value| serde_json::from_str::<Vec<Value>>(value).ok())
-        {
-            for consequence in consequences {
-                crate::native::edit_mode::label(
-                    world,
-                    body,
-                    &consequence_label(&consequence),
-                    12.0,
-                );
+            if let Some(cadence) = rule["cadence"].as_str() {
+                crate::native::edit_mode::label(world, body, &format!("Cadence: {cadence}"), 12.0);
+            }
+            if let Some(consequences) = rule["consequences"]
+                .as_str()
+                .and_then(|value| serde_json::from_str::<Vec<Value>>(value).ok())
+            {
+                for consequence in consequences {
+                    crate::native::edit_mode::label(
+                        world,
+                        body,
+                        &consequence_label(&consequence),
+                        12.0,
+                    );
+                }
             }
         }
-    }
-    for conflict in data["conflicts"].as_array().into_iter().flatten() {
-        crate::native::edit_mode::label(world, body, &conflict.to_string(), 13.0);
-    }
-    if data["browsing"] == true {
-        panel::button(
-            world,
-            body,
-            owner,
-            if exchange {
-                "Preview import"
-            } else {
-                "Import through Sync"
-            },
-            if exchange {
-                Operation::Preview
-            } else {
-                Operation::Exchange
-            },
-        );
-    }
-    if exchange && data["ready"] != false {
-        let row = panel::row(world, body);
-        panel::button(world, row, owner, "Add to Cell", Operation::Import(false));
-        panel::button(
-            world,
-            row,
-            owner,
-            "Accept source updates",
-            Operation::Import(true),
-        );
     }
     if let Some(binding) = castle.binding.filter(|_| {
         data["rules"]
@@ -1272,6 +1187,137 @@ fn render(world: &mut World, owner: Entity, data: Value) {
         );
     }
     world.get_mut::<View>(owner).unwrap().preview = Some(data);
+}
+
+fn render_record(
+    world: &mut World,
+    owner: Entity,
+    body: Entity,
+    record: &Value,
+    titles: &BTreeMap<&str, &str>,
+) {
+    if record["state"] == "file" {
+        if let Some(uri) = record["uid"].as_str() {
+            panel::button(
+                world,
+                body,
+                owner,
+                "Open file",
+                Operation::Browse(lince_resources::Reference::new(uri), None),
+            );
+            panel::button(
+                world,
+                body,
+                owner,
+                "Select file",
+                Operation::Select(uri.into()),
+            );
+        }
+        return;
+    }
+    if record["reference_review"] == true {
+        crate::native::edit_mode::label(
+            world,
+            body,
+            "The source or location changed. Review this reference before accepting the update.",
+            13.0,
+        );
+    }
+    let title = record["title"].as_str().unwrap_or("Record");
+    crate::native::edit_mode::label(
+        world,
+        body,
+        &format!(
+            "{title} · {}{}",
+            match record["state"].as_str() {
+                Some("create") => "New Record",
+                Some("reuse") => "Already in Cell",
+                Some("update_available") => "Updated source",
+                Some("source") =>
+                    if record["saved"] == true {
+                        "Saved source snapshot"
+                    } else if record["cached"] == true {
+                        "HTTP cache"
+                    } else {
+                        "Source document"
+                    },
+                _ => "",
+            },
+            if record["personal"] == true {
+                " · personal"
+            } else {
+                ""
+            }
+        ),
+        15.0,
+    );
+    let content = panel::column(world, body);
+    if let Some(base) = record["base"].as_str() {
+        world.entity_mut(content).insert(ReferenceBase(base.into()));
+    }
+    if let Some(text) = record["body"].as_str().filter(|body| !body.is_empty()) {
+        let source = reference_source(world, owner);
+        crate::native::description::readonly(
+            world,
+            content,
+            text,
+            crate::native::description::Context {
+                owner: content,
+                source,
+            },
+        );
+    }
+    if let Some(assertions) = record["assertions"].as_array() {
+        for assertion in assertions {
+            let predicate = assertion["predicate"].as_str().unwrap_or("assertion");
+            let object = assertion["object"]
+                .as_str()
+                .and_then(|uid| titles.get(uid))
+                .copied();
+            let label = object.map_or_else(
+                || format!("#{predicate}"),
+                |object| format!("#{predicate} → {object}"),
+            );
+            if let Some(uri) = assertion["uri"].as_str() {
+                let link = panel::button(
+                    world,
+                    content,
+                    owner,
+                    &format!("#{predicate} → {}", link_label(uri)),
+                    Operation::Browse(lince_resources::Reference::new(uri), None),
+                );
+                world
+                    .entity_mut(link)
+                    .insert(crate::native::icons::Tooltip(uri.into()));
+            } else {
+                crate::native::edit_mode::label(world, content, &label, 12.0);
+            }
+        }
+    }
+    if let Some(uid) = record["uid"]
+        .as_str()
+        .filter(|_| record["state"] != "create" && record["state"] != "source")
+    {
+        panel::button(
+            world,
+            body,
+            owner,
+            "Open Record",
+            Operation::Open(uid.into(), Source::Local),
+        );
+        panel::button(
+            world,
+            body,
+            owner,
+            "Select Record",
+            Operation::Focus(uid.into()),
+        );
+    }
+    if let Ok(resource) =
+        serde_json::from_value::<lince_resources::Resource>(record["resource"].clone())
+    {
+        let _ = media(world, body, owner, &resource);
+    }
 }
 
 fn consequence_label(consequence: &Value) -> String {
@@ -1376,6 +1422,46 @@ fn media(
             13.0,
         );
         return None;
+    }
+    if matches!(
+        resource.media_type.as_str(),
+        "application/pdf" | "application/epub+zip"
+    ) {
+        let row = panel::row(world, parent);
+        panel::button(
+            world,
+            row,
+            owner,
+            "Download and read",
+            Operation::Resource(resource.clone()),
+        );
+        for (index, representation) in resource.representations.iter().enumerate() {
+            if let Ok(selected) = resource.representation(index) {
+                panel::button(
+                    world,
+                    row,
+                    owner,
+                    &format!("Download and read {}", representation.label),
+                    Operation::Resource(selected),
+                );
+            }
+        }
+    }
+    if !matches!(
+        resource.media_type.as_str(),
+        "application/pdf" | "application/epub+zip"
+    ) && let Some(reference) = world.get::<Card>(owner).map(|card| card.reference.clone())
+    {
+        panel::button(
+            world,
+            parent,
+            owner,
+            "Download / keep offline",
+            Operation::Request(Command::Download {
+                record: reference,
+                representation: None,
+            }),
+        );
     }
     let frame = crate::native::embedded_media::resource(
         world,
@@ -1550,7 +1636,12 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             ServerMessage::ActionOk {
                 data: Some(data), ..
             } => crate::native::description::external_transclusion(world, owner, data),
-            ServerMessage::Error { message, .. } => status(world, owner, message),
+            ServerMessage::Error { message, .. } => {
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.pulling = false;
+                }
+                status(world, owner, message);
+            }
             _ => {}
         }
         return;
@@ -1769,13 +1860,27 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 Operation::Read.apply(world, owner);
             }
             if data["records"].is_array() {
+                let pulling = world.get::<View>(owner).unwrap().pulling;
+                world.get_mut::<View>(owner).unwrap().pulling = false;
                 render(world, owner, data.clone());
+                if pulling
+                    && data["ready"] == true
+                    && data["conflicts"].as_array().is_none_or(Vec::is_empty)
+                {
+                    Operation::Import(false).apply(world, owner);
+                    return;
+                }
             } else if data["preview"].is_object() {
                 Operation::Preview.apply(world, owner);
             }
             status(world, owner, "Ready.");
         }
-        ServerMessage::Error { message, .. } => status(world, owner, message),
+        ServerMessage::Error { message, .. } => {
+            if let Some(mut view) = world.get_mut::<View>(owner) {
+                view.pulling = false;
+            }
+            status(world, owner, message);
+        }
         _ => {}
     }
 }

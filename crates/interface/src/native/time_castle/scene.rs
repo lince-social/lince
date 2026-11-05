@@ -363,7 +363,7 @@ pub(super) fn update(
         let entry = &band.entry;
         let color = palette::rgba(
             palette
-                .event(occurrence.lane, selected.contains(&entry.id))
+                .event(occurrence.index, selected.contains(&entry.id))
                 .with_alpha(band.opacity()),
         );
         let mut ribbon = Ribbon::default();
@@ -438,7 +438,7 @@ pub(super) fn annotations(
                 let color = palette::rgba(
                     palette
                         .event(
-                            label.occurrence.lane,
+                            label.occurrence.index,
                             world
                                 .get::<View>(owner)
                                 .unwrap()
@@ -481,7 +481,7 @@ pub(super) fn annotations(
         let end = Vec3::new(edge.x, anchor.y, edge.y);
         let color = palette::rgba(
             palette
-                .event(label.occurrence.lane, selected.contains(&label.id))
+                .event(label.occurrence.index, selected.contains(&label.id))
                 .with_alpha(
                     0.45 * world
                         .get::<motion::Motion>(owner)

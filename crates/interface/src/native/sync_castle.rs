@@ -268,17 +268,20 @@ pub fn open_source(world: &mut World, root: Entity, uri: &str) -> Entity {
         "",
         bevy::math::DVec2::ZERO,
     );
-    let children = world
+    let mut pending = world
         .get::<Children>(sand)
         .map(|children| children.iter().collect::<Vec<_>>())
         .unwrap_or_default();
-    for child in children {
+    while let Some(child) = pending.pop() {
         if world
             .get::<crate::native::source_view::SourceView>(child)
             .is_some()
         {
             crate::native::source_view::set_source(world, child, uri);
             return child;
+        }
+        if let Some(children) = world.get::<Children>(child) {
+            pending.extend(children.iter());
         }
     }
     let owner = crate::native::source_view::exchange(world, sand, uri);
@@ -288,38 +291,23 @@ pub fn open_source(world: &mut World, root: Entity, uri: &str) -> Entity {
 
 pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity {
     world.init_resource::<Requests>();
-    world
-        .entity_mut(sand)
-        .insert((
-            crate::native::castle::Castle,
-            Node {
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8),
-                padding: UiRect::all(px(12)),
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-            ScrollPosition::default(),
-            crate::native::token_style::background(crate::native::tokens::Token::Surface),
-        ))
-        .observe(
-            |mut event: On<Pointer<bevy::picking::events::Scroll>>,
-             mut scrolls: Query<&mut ScrollPosition>| {
-                if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
-                    let step = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
-                        24.0
-                    } else {
-                        1.0
-                    };
-                    scroll.0.y = (scroll.0.y - event.y * step).max(0.0);
-                    event.propagate(false);
-                }
-            },
-        );
-    label(world, sand, "Sync", 22.0);
+    world.entity_mut(sand).insert((
+        crate::native::castle::Castle,
+        Node {
+            flex_direction: FlexDirection::Column,
+            row_gap: px(8),
+            padding: UiRect::all(px(12)),
+            overflow: Overflow::clip(),
+            ..default()
+        },
+        crate::native::token_style::background(crate::native::tokens::Token::Surface),
+    ));
+    let content = crate::native::scroll_sand::fill(world, sand);
+    world.get_mut::<Node>(content).unwrap().row_gap = px(8);
+    label(world, content, "Sync", 22.0);
     let toggle = crate::native::information::action_button(
         world,
-        sand,
+        content,
         sand,
         "File sync: off",
         crate::native::actions![Command::Toggle],
@@ -332,7 +320,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
                 row_gap: px(8),
                 ..default()
             },
-            ChildOf(sand),
+            ChildOf(content),
         ))
         .id();
     let selected = label(world, controls, "All local Records", 16.0);
@@ -383,8 +371,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         Command::Format(FileFormat::Markdown),
     );
     button(world, controls, sand, "Save directory", Command::Save);
-    button(world, sand, sand, "Reload settings", Command::Reload);
-    let status = label(world, sand, "Loading…", 14.0);
+    button(world, content, sand, "Reload settings", Command::Reload);
+    let status = label(world, content, "Loading…", 14.0);
     world.entity_mut(sand).insert(SyncCastle {
         enabled: false,
         confirmed_enabled: false,
@@ -404,12 +392,12 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         names: Default::default(),
     });
     set_enabled(world, sand, false);
-    crate::native::source_view::exchange(world, sand, "");
-    blobs::populate(world, sand);
-    offers::populate(world, sand);
-    plugins::populate(world, sand);
-    crate::native::workspace_sync::populate(world, root, sand);
-    crate::native::information::sync::panel(world, root, sand);
+    crate::native::source_view::exchange(world, content, "");
+    blobs::populate(world, content);
+    offers::populate(world, content);
+    plugins::populate(world, content);
+    crate::native::workspace_sync::populate(world, root, content);
+    crate::native::information::sync::panel(world, root, content);
     sand
 }
 

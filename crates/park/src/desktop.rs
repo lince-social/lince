@@ -1153,7 +1153,7 @@ impl Desktop {
                 .as_ref()
                 .ok_or_else(|| io::Error::other("Park display is unavailable"))?.clone();
             let commands = crate::commands::Commands::load(path)?;
-            let description = if let DesktopAction::External(external) = action {
+            let mut description = if let DesktopAction::External(external) = action {
                 let changed = self.external.configure(commands.external.clone());
                 if changed {
                     self.stop_external_repeats();
@@ -1162,11 +1162,20 @@ impl Desktop {
                 if changed && repeating {
                     return Err(io::Error::other("Release the key before using the changed command."));
                 }
-                commands.external.command(external, self.server.locked()).map_err(io::Error::other)?.clone()
+                commands.external.command(external, self.server.locked()).map_err(io::Error::other)?.into_owned()
             } else {
                 if self.server.locked() { return Err(io::Error::other("This command is unavailable while locked")); }
                 commands.command(action)?
             };
+            if let DesktopAction::External(external @ lince_interface::host::external::Action::ScreenshotScreen) = action {
+                let output = self.pending_output.and_then(|(_, output)| output)
+                    .or_else(|| self.current.as_ref().and_then(|current| current.frame.output));
+                if let Some((name, _)) = self.server.output_viewports().into_iter()
+                    .find(|(_, viewport)| output.is_none_or(|output| viewport.id == output))
+                {
+                    lince_interface::host::external::screenshot::Options::target_output(external, &mut description, &name);
+                }
+            }
             if let Some(grants) = grants {
                 if !grants.contains(&crate::launch::Capability::DesktopControl) || !grants.contains(&crate::launch::Capability::Launch)
                     || description.capabilities.iter().any(|capability| !grants.contains(capability))

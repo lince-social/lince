@@ -211,6 +211,8 @@ fn sandbox_and_pending_text_cannot_submit_or_enable_privileged_lock_actions() {
         .clear();
     Change::Select(ExternalAction::ScreenshotScreen).apply(app.world_mut(), page);
     settle(&mut app);
+    Change::CaptureCustom.apply(app.world_mut(), page);
+    settle(&mut app);
     write(&mut app, program, "screenshot-tool");
     Change::Locked.apply(app.world_mut(), page);
     Change::Save.apply(app.world_mut(), page);
@@ -232,9 +234,58 @@ fn display_power_commands_save_only_output_control_authority_without_executing()
         write(&mut app, program, "power-tool");
         Change::Locked.apply(app.world_mut(), page);
         Change::Save.apply(app.world_mut(), page);
-        let HostRequest::External(request) = receiver.try_recv().unwrap() else { panic!("request"); };
+        let HostRequest::External(request) = receiver.try_recv().unwrap() else {
+            panic!("request");
+        };
         let command = &request.settings.0[&action];
         assert_eq!(command.command.capabilities, [Capability::OutputControl]);
         assert!(command.allow_when_locked);
     }
+}
+
+#[test]
+fn screenshot_settings_expose_folder_and_pointer_without_requiring_shell_arguments() {
+    let (mut app, page, receiver) = fixture(true);
+    Change::Select(ExternalAction::ScreenshotRegion).apply(app.world_mut(), page);
+    settle(&mut app);
+    let state = app.world().get::<Page>(page).unwrap();
+    let folder = state.capture_directory;
+    assert!(state.capture_options.is_some());
+    assert_eq!(
+        app.world()
+            .get::<Node>(state.custom_controls)
+            .unwrap()
+            .display,
+        Display::None
+    );
+    assert_eq!(
+        app.world()
+            .get::<Node>(state.capture_controls)
+            .unwrap()
+            .display,
+        Display::Flex
+    );
+    write(&mut app, folder, "/tmp/My Pictures");
+    Change::CapturePointer.apply(app.world_mut(), page);
+    Change::Save.apply(app.world_mut(), page);
+    let HostRequest::External(request) = receiver.try_recv().unwrap() else {
+        panic!("settings request");
+    };
+    let command = request
+        .settings
+        .command(ExternalAction::ScreenshotRegion, false)
+        .unwrap();
+    let options = crate::host::external::screenshot::Options::from_command(
+        ExternalAction::ScreenshotRegion,
+        &command,
+    )
+    .unwrap();
+    assert_eq!(options.directory, "/tmp/My Pictures");
+    assert!(options.show_pointer);
+    assert!(
+        request
+            .settings
+            .command(ExternalAction::ScreenshotRegion, true)
+            .is_err()
+    );
 }

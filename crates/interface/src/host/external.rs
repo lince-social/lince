@@ -5,6 +5,8 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub mod screenshot;
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Action {
@@ -181,11 +183,17 @@ impl Command {
             return Err("Use an executable, up to 64 literal arguments of at most 4096 bytes, and an absolute working directory.".into());
         }
         if self.allow_when_locked && !action.lockable() {
-            return Err("Only hardware, display-power and media controls can be allowed while locked.".into());
+            return Err(
+                "Only hardware, display-power and media controls can be allowed while locked."
+                    .into(),
+            );
         }
-        if self.command.capabilities.iter().any(|capability| {
-            Some(*capability) != action.capability()
-        }) {
+        if self
+            .command
+            .capabilities
+            .iter()
+            .any(|capability| Some(*capability) != action.capability())
+        {
             return Err("Only screenshot commands may request capture access, and only display-power commands may request output-control access.".into());
         }
         Ok(())
@@ -206,16 +214,27 @@ impl Settings {
         Ok(())
     }
 
-    pub fn command(&self, action: Action, locked: bool) -> Result<&Description, String> {
-        let command = self
-            .0
-            .get(&action)
-            .ok_or("Configure this external command in Customization → Park desktop.")?;
+    pub fn command(
+        &self,
+        action: Action,
+        locked: bool,
+    ) -> Result<std::borrow::Cow<'_, Description>, String> {
+        if locked && !action.lockable() {
+            return Err("This command is not permitted while locked.".into());
+        }
+        let Some(command) = self.0.get(&action) else {
+            return screenshot::Options::default()
+                .command(action)
+                .map(std::borrow::Cow::Owned)
+                .ok_or_else(|| {
+                    "Configure this external command in Customization → Park desktop.".into()
+                });
+        };
         command.validate(action)?;
         if locked && (!action.lockable() || !command.allow_when_locked) {
             return Err("This command is not permitted while locked.".into());
         }
-        Ok(&command.command)
+        Ok(std::borrow::Cow::Borrowed(&command.command))
     }
 }
 

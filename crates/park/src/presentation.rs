@@ -981,7 +981,6 @@ impl Presentation {
                     };
                 }
                 if !requested && native::app::text_ready_to_close(self.app.world_mut())
-                    && self.records.as_ref().is_none_or(|records| !records.pending())
                 {
                     if let Some(records) = &mut self.records {
                         records.flush().map_err(|error| input_failure(&format!(
@@ -1083,19 +1082,11 @@ impl Presentation {
             self.focus_output(request.output)?;
         }
         let started = std::time::Instant::now();
-        let references = self.records.as_ref().map(|records| records.opening_references()).unwrap_or_default();
+        let references = self.windows.values().filter_map(|window| self.app.world().get::<native::protein_area::RecordBinding>(window.entity).map(|binding| binding.uid.clone())).collect();
         native::layout::desktop::opening::window_references(self.app.world_mut(), references);
         if let Some(records) = &mut self.records {
             records.tick(self.app.world_mut(), &self.windows, &self.identities);
         }
-        if let Some(inspection) = self
-            .records
-            .as_mut()
-            .and_then(records::Records::take_inspection)
-        {
-            self.open_inspection(inspection);
-        }
-        self.refresh_inspections();
         self.apply_window_requests();
         self.refresh_viewport()?;
         self.accessibility_requests();
@@ -1877,10 +1868,10 @@ mod tests {
         let identity = canvas.open_window(surface, "Save retry", "test.generic").unwrap();
         for _ in 0..100 {
             canvas.probe_frame().unwrap();
-            if canvas.records.as_ref().unwrap().profile(identity).is_some_and(|record| record.uid.is_some()) { break; }
+            if canvas.records.as_ref().unwrap().profile(identity).is_some() { break; }
             std::thread::sleep(std::time::Duration::from_millis(2));
         }
-        let uid = canvas.records.as_ref().unwrap().profile(identity).unwrap().uid.clone().unwrap();
+        let placement = canvas.records.as_ref().unwrap().profile(identity).unwrap().layout.id;
         let path = directory.path().join("park-windows.json");
         if path.exists() { std::fs::remove_file(&path).unwrap(); }
         std::fs::create_dir(&path).unwrap();
@@ -1893,7 +1884,7 @@ mod tests {
         canvas.finish().unwrap();
         let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         let saved = saved.as_array().unwrap().iter()
-            .find(|record| record["uid"].as_str() == Some(uid.as_str())).unwrap();
+            .find(|record| record["layout"]["id"] == serde_json::json!(placement)).unwrap();
         assert_eq!(saved["launch"]["program"], "test-generic");
     }
 

@@ -6,6 +6,8 @@ Import "Phaedo-Cary.lingua"
 Apology, Crito, and Phaedo of Socrates (@socratic-dialogues: 0, is #book, #part-of @plato, #contains @apology, #contains @crito, #contains @phaedo) { r_00000000000000000000001005
 Plato. Translated by Henry Cary, with an introduction by Edward Brooks. Project Gutenberg ebook 13726. English. [Original book and publication notices](https://www.gutenberg.org/ebooks/13726). The retained EPUB preserves the original text and notices; Project Gutenberg identifies this edition as public domain in the USA.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/13726/pg13726-images-3.epub).
+
 Read the dialogue before using the introduction as an interpretation. The three texts share the setting of Socrates' trial, imprisonment, and death, but develop distinct questions and arguments.
 
 | Text | Guided reading |
@@ -21,6 +23,7 @@ Read the dialogue before using the introduction as an interpretation. The three 
 
 Extension @socratic-dialogues "lince.resource" {
  uri "../books/Apology, Crito, and Phaedo of Socrates by Plato.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/13726/pg13726-images-3.epub" media_type "application/epub+zip" }]
  title "Apology, Crito, and Phaedo of Socrates"
  hash "7a8a5e90f391210e7a69eb57f627d60f94badcfa4d72042ebca6feb5cecbb673"
  media_type "application/epub+zip"

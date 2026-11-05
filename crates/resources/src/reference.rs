@@ -159,6 +159,13 @@ impl Reference {
                 continue;
             };
             let mut uri = address(&uri)?;
+            if uri.host_str() == Some("github.com") {
+                let mut segments = uri.path().split('/').map(str::to_owned).collect::<Vec<_>>();
+                if segments.len() >= 6 && segments[3] == "blob" {
+                    segments[3] = "raw".into();
+                    uri.set_path(&segments.join("/"));
+                }
+            }
             if uri.scheme() == "file" && !library.allows_local_files() {
                 continue;
             }

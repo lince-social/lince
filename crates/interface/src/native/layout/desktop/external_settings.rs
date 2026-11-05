@@ -30,6 +30,13 @@ struct Page {
     argument_list: Entity,
     arguments: Vec<Entity>,
     argument_rows: Vec<Entity>,
+    custom_controls: Entity,
+    capture_controls: Entity,
+    capture_defaults: Entity,
+    capture_custom: Entity,
+    capture_directory: Entity,
+    capture_pointer: (Entity, Entity),
+    capture_options: Option<crate::host::external::screenshot::Options>,
     locked: (Entity, Entity),
     binding: (Entity, Entity),
     status: Entity,
@@ -53,6 +60,9 @@ enum Change {
     Locked,
     Clear,
     Binding,
+    CaptureDefaults,
+    CaptureCustom,
+    CapturePointer,
     Save,
     Cancel,
 }
@@ -113,7 +123,7 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
     label(
         world,
         body,
-        "Choose your tools here. Editing or saving never runs them. Leave the executable empty to disable a command.",
+        "Screenshots use Grim and Slurp by default: Print captures the screen; Ctrl+Print selects a region. Editing or saving never runs a program.",
         14.0,
     );
     let selected = ExternalAction::BrightnessDown;
@@ -145,21 +155,52 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
         .menu;
     world.get_mut::<Node>(menu).unwrap().max_height = px(240);
     crate::native::scroll_sand::attach(world, menu);
-    let program = field(
+    let capture_defaults = button(
         world,
         body,
-        "Executable (empty disables this command)",
+        page,
+        "Use Grim + Slurp defaults",
+        Change::CaptureDefaults,
+    )
+    .0;
+    let capture_custom = button(
+        world,
+        body,
+        page,
+        "Use a custom screenshot command",
+        Change::CaptureCustom,
+    )
+    .0;
+    let capture_controls = crate::native::sand_panel::column(world, body);
+    let capture_directory = field(
+        world,
+        capture_controls,
+        "Screenshot folder (absolute; empty uses Pictures)",
+        4096,
+    );
+    let capture_pointer = button(
+        world,
+        capture_controls,
+        page,
+        "Show pointer: off",
+        Change::CapturePointer,
+    );
+    let custom_controls = crate::native::sand_panel::column(world, body);
+    let program = field(
+        world,
+        custom_controls,
+        "Executable (empty uses the default, if available)",
         4096,
     );
     let directory = field(
         world,
-        body,
+        custom_controls,
         "Working directory (absolute; empty uses Park's directory)",
         4096,
     );
     label(
         world,
-        body,
+        custom_controls,
         "Literal arguments · each row is one argument; quotes and shell symbols stay literal.",
         14.0,
     );
@@ -173,10 +214,16 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
                 flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(body),
+            ChildOf(custom_controls),
         ))
         .id();
-    button(world, body, page, "Add argument", Change::AddArgument);
+    button(
+        world,
+        custom_controls,
+        page,
+        "Add argument",
+        Change::AddArgument,
+    );
     let locked = button(world, body, page, "Allow while locked: off", Change::Locked);
     label(
         world,
@@ -208,6 +255,13 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
         argument_list,
         arguments: Vec::new(),
         argument_rows: Vec::new(),
+        custom_controls,
+        capture_controls,
+        capture_defaults,
+        capture_custom,
+        capture_directory,
+        capture_pointer,
+        capture_options: None,
         locked,
         binding,
         status,
@@ -234,6 +288,25 @@ fn value(world: &World, entity: Entity) -> Result<String, String> {
 }
 
 fn read(world: &World, page: &mut Page) -> Result<Settings, String> {
+    if let Some(mut options) = page.capture_options.clone() {
+        options.directory = value(world, page.capture_directory)?;
+        options.validate()?;
+        if options == Default::default() {
+            page.draft.0.remove(&page.selected);
+        } else {
+            page.draft.0.insert(
+                page.selected,
+                Command {
+                    command: options
+                        .command(page.selected)
+                        .ok_or("Choose a screenshot action")?,
+                    allow_when_locked: false,
+                },
+            );
+        }
+        page.capture_options = Some(options);
+        return Ok(configured(&page.draft));
+    }
     let mut command = page
         .draft
         .0
@@ -249,14 +322,18 @@ fn read(world: &World, page: &mut Page) -> Result<Settings, String> {
         .map(|entity| value(world, *entity))
         .collect::<Result<_, _>>()?;
     page.draft.0.insert(page.selected, command);
-    Ok(Settings(
-        page.draft
+    Ok(configured(&page.draft))
+}
+
+fn configured(draft: &Settings) -> Settings {
+    Settings(
+        draft
             .0
             .iter()
             .filter(|(_, command)| !command.command.program.is_empty())
             .map(|(action, command)| (*action, command.clone()))
             .collect(),
-    ))
+    )
 }
 
 fn set_value(world: &mut World, entity: Entity, value: &str) {
@@ -310,6 +387,61 @@ fn selected(world: &mut World, entity: Entity, page: &mut Page) {
         .get(&page.selected)
         .cloned()
         .unwrap_or_else(|| empty(page.selected));
+    let screenshot = matches!(
+        page.selected,
+        ExternalAction::ScreenshotScreen | ExternalAction::ScreenshotRegion
+    );
+    page.capture_options = if screenshot {
+        if page.draft.0.contains_key(&page.selected) {
+            crate::host::external::screenshot::Options::from_command(
+                page.selected,
+                &command.command,
+            )
+        } else {
+            Some(Default::default())
+        }
+    } else {
+        None
+    };
+    world
+        .get_mut::<Node>(page.capture_defaults)
+        .unwrap()
+        .display = if screenshot {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    world.get_mut::<Node>(page.capture_custom).unwrap().display = if screenshot {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    world
+        .get_mut::<Node>(page.capture_controls)
+        .unwrap()
+        .display = if page.capture_options.is_some() {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    world.get_mut::<Node>(page.custom_controls).unwrap().display = if page.capture_options.is_some()
+    {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    if let Some(options) = &page.capture_options {
+        set_value(world, page.capture_directory, &options.directory);
+        caption(
+            world,
+            page.capture_pointer,
+            if options.show_pointer {
+                "Show pointer: on"
+            } else {
+                "Show pointer: off"
+            },
+        );
+    }
     set_value(world, page.program, &command.command.program);
     set_value(
         world,
@@ -380,7 +512,11 @@ impl Action for Change {
                     }
                     world.resource_mut::<InputFocus>().set(
                         if page.expanded && snapshot.available {
-                            page.program
+                            if page.capture_options.is_some() {
+                                page.capture_directory
+                            } else {
+                                page.program
+                            }
                         } else {
                             page.toggle.0
                         },
@@ -433,16 +569,68 @@ impl Action for Change {
                     page.alert = false;
                 }
                 action => {
-                    read(world, &mut page)?;
+                    if !matches!(
+                        action,
+                        Self::CaptureDefaults | Self::CaptureCustom | Self::Clear
+                    ) {
+                        read(world, &mut page)?;
+                    }
                     match action {
+                        Self::CaptureCustom => {
+                            if matches!(
+                                page.selected,
+                                ExternalAction::ScreenshotScreen | ExternalAction::ScreenshotRegion
+                            ) {
+                                page.draft.0.insert(page.selected, empty(page.selected));
+                                selected(world, entity, &mut page);
+                                world
+                                    .resource_mut::<InputFocus>()
+                                    .set(page.program, FocusCause::Navigated);
+                            }
+                        }
+                        Self::CaptureDefaults => {
+                            if matches!(
+                                page.selected,
+                                ExternalAction::ScreenshotScreen | ExternalAction::ScreenshotRegion
+                            ) {
+                                page.draft.0.remove(&page.selected);
+                                selected(world, entity, &mut page);
+                                world
+                                    .resource_mut::<InputFocus>()
+                                    .set(page.capture_directory, FocusCause::Navigated);
+                                page.message =
+                                    "Grim + Slurp defaults restored in the draft. Save to apply."
+                                        .into();
+                                page.alert = false;
+                            }
+                        }
+                        Self::CapturePointer => {
+                            if let Some(options) = &mut page.capture_options {
+                                options.show_pointer = !options.show_pointer;
+                                caption(
+                                    world,
+                                    page.capture_pointer,
+                                    if options.show_pointer {
+                                        "Show pointer: on"
+                                    } else {
+                                        "Show pointer: off"
+                                    },
+                                );
+                            }
+                        }
                         Self::Select(action) => {
                             page.message.clear();
                             page.alert = false;
                             page.selected = action;
                             selected(world, entity, &mut page);
-                            world
-                                .resource_mut::<InputFocus>()
-                                .set(page.program, FocusCause::Navigated);
+                            world.resource_mut::<InputFocus>().set(
+                                if page.capture_options.is_some() {
+                                    page.capture_directory
+                                } else {
+                                    page.program
+                                },
+                                FocusCause::Navigated,
+                            );
                         }
                         Self::AddArgument => {
                             let command = page
@@ -490,7 +678,12 @@ impl Action for Change {
                         Self::Clear => {
                             page.draft.0.remove(&page.selected);
                             selected(world, entity, &mut page);
-                            page.message = "Command cleared in the draft. Save to apply.".into();
+                            page.message = if page.capture_options.is_some() {
+                                "Default screenshot behavior restored in the draft. Save to apply."
+                            } else {
+                                "Command cleared in the draft. Save to apply."
+                            }
+                            .into();
                             page.alert = false;
                         }
                         _ => {}
@@ -532,7 +725,7 @@ fn refresh(world: &mut World) {
             page.summary,
             if snapshot.available {
                 format!(
-                    "{} of {} commands configured. Programs are chosen locally.",
+                    "{} custom commands. Screenshots use Grim + Slurp unless overridden. {} actions available.",
                     snapshot.settings.0.len(),
                     ExternalAction::ALL.len()
                 )
@@ -631,9 +824,16 @@ fn refresh(world: &mut World) {
             !snapshot.available || page.pending.is_some() || candidate.is_err() || stale,
         );
         disable(world, page.cancel, page.pending.is_some());
-        for input in [page.program, page.directory]
-            .into_iter()
-            .chain(page.arguments.iter().copied())
+        for input in [
+            page.program,
+            page.directory,
+            page.capture_directory,
+            page.capture_pointer.0,
+            page.capture_defaults,
+            page.capture_custom,
+        ]
+        .into_iter()
+        .chain(page.arguments.iter().copied())
         {
             disable(world, input, !snapshot.available);
         }

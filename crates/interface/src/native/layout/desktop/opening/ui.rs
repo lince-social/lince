@@ -178,7 +178,7 @@ pub(super) fn references(world: &mut World) -> (BTreeSet<String>, BTreeSet<Strin
             match &editor.kind { Kind::Rule { .. } => { rules.insert(uid.clone()); }, Kind::Window => { windows.insert(uid.clone()); } }
         }
     }
-    for window in world.query::<&WindowControls>().iter(world) { windows.insert(window.uid.clone()); }
+    for window in world.query::<&WindowControls>().iter(world) { if !window.uid.is_empty() { windows.insert(window.uid.clone()); } }
     (rules, windows)
 }
 
@@ -321,7 +321,12 @@ impl Action for WindowAction {
         let (root, uid, placement, area) = (controls.root, controls.uid.clone(), controls.placement, controls.area);
         let target = captured_window(world, controls);
         match self {
-            Self::Overrides => editor::open(world, root, Some(uid), Some(true), None),
+            Self::Overrides => {
+                let record = target.and_then(|target| world.get::<Children>(root).and_then(|children| children.iter().find(|entity| world.get::<LayoutBox>(*entity).is_some_and(|layout| layout.id == target.placement))))
+                    .and_then(|entity| world.get::<RecordBinding>(entity)).map(|binding| binding.uid.clone());
+                if let Some(record) = record { editor::open(world, root, Some(record), Some(true), None); }
+                else { crate::native::notifications::report(world, "Opening preferences", "Attach a Record to store opening overrides."); }
+            }
             Self::NewRule => {
                 let app_id = world.get::<crate::native::full_record::window::Metadata>(area)
                     .filter(|metadata| metadata.uid == uid && metadata.placement == placement)

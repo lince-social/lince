@@ -25,7 +25,7 @@ impl Presentation {
 
     pub(super) fn opening_window(&mut self, root: Entity, entity: Entity, identity: PlacementId, title: &str, app_id: &str) -> Result<(), ProbeFailure> {
         let profile = self.records.as_ref().and_then(|records| records.profile(identity));
-        let uid = profile.and_then(|profile| profile.uid.as_deref());
+        let uid = self.app.world().get::<native::protein_area::RecordBinding>(entity).map(|binding| binding.uid.as_str());
         let mut metadata = self.app.world().get::<native::area::RecordProperties>(entity)
             .map(|properties| properties.0.clone()).filter(serde_json::Value::is_object).unwrap_or_else(|| serde_json::json!({}));
         metadata["head"] = serde_json::json!(title);
@@ -80,8 +80,7 @@ impl Presentation {
             if world.get::<native::workspace::WorkspaceMember>(entity).is_none_or(|member| member.0 != target.workspace)
                 || world.get::<native::layout::desktop::TransientParent>(entity).is_some()
             { return Err(input_failure("The captured application changed workspace or ownership.")); }
-            let profile = self.records.as_ref().and_then(|records| records.profile(PlacementId(target.placement)));
-            let uid = profile.and_then(|profile| profile.uid.as_deref());
+            let uid = self.app.world().get::<native::protein_area::RecordBinding>(entity).map(|binding| binding.uid.as_str());
             let properties = world.get::<native::area::RecordProperties>(entity).map(|properties| &properties.0);
             let title = properties.and_then(|properties| properties.get("window_title").or_else(|| properties.get("head"))).cloned().unwrap_or_default();
             let app_id = properties.and_then(|properties| properties.get("app_id")).cloned().unwrap_or_default();

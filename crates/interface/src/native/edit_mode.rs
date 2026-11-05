@@ -21,6 +21,7 @@ pub use crate::native::canvas_colors::ColorField;
 pub use crate::native::sand_text_editor::TextAction;
 
 mod workspaces;
+pub(crate) mod panels;
 
 #[derive(Component)]
 pub(crate) struct FocusScroll;
@@ -210,7 +211,7 @@ impl Plugin for EditModePlugin {
             )
             .add_systems(
                 PostUpdate,
-                (reveal_focus, anchor_panel).after(bevy::ui::UiSystems::Layout),
+                (reveal_focus, panels::layout).after(bevy::ui::UiSystems::Layout),
             )
             .add_systems(
                 PostUpdate,
@@ -547,72 +548,6 @@ fn panel_horizontal(root: f32, width: f32, anchor: f32, usable: [f32; 2]) -> (f3
     (anchor.clamp(low, high), maximum)
 }
 
-fn anchor_panel(
-    modes: Query<(Entity, &EditMode)>,
-    geometry: Query<(&ComputedNode, &UiGlobalTransform)>,
-    viewports: Query<&crate::native::layout::desktop::HostViewport>,
-    mut nodes: Query<&mut Node>,
-    wake: Option<Res<crate::native::wake::WakeSignal>>,
-) {
-    for (root, mode) in &modes {
-        let Ok((root_node, root_transform)) = geometry.get(root) else {
-            continue;
-        };
-        let Ok((button, transform)) = geometry.get(mode.toggle) else {
-            continue;
-        };
-        if !root_node.size().is_finite()
-            || !button.size().is_finite()
-            || root_node.size().min_element() <= 0.0
-            || button.size().min_element() <= 0.0
-        {
-            continue;
-        }
-        let scale = root_node.inverse_scale_factor();
-        let position = transform.translation - root_transform.translation + root_node.size() * 0.5;
-        let anchor = ((position.x - button.size().x * 0.5) * scale).max(12.0);
-        let bottom = px((root_node.size().y - position.y + button.size().y * 0.5) * scale + 8.0);
-        if let Ok(mut node) = nodes.get_mut(mode.panel) {
-            let root_width = root_node.size().x * scale;
-            let usable = viewports
-                .get(root)
-                .ok()
-                .and_then(|viewport| {
-                    viewport.0.usable.map(|usable| {
-                        [
-                            (usable.origin()[0] - viewport.0.bounds.origin()[0]) as f32,
-                            (usable.origin()[0] + usable.size()[0] - viewport.0.bounds.origin()[0])
-                                as f32,
-                        ]
-                    })
-                })
-                .unwrap_or([0.0, root_width]);
-            let width = geometry
-                .get(mode.panel)
-                .ok()
-                .map(|(panel, _)| panel.unrounded_size().x * scale)
-                .filter(|width| *width > 0.0)
-                .unwrap_or_else(|| {
-                    if let Val::Px(width) = node.width {
-                        width
-                    } else {
-                        root_width
-                    }
-                });
-            let (left, maximum) = panel_horizontal(root_width, width, anchor, usable);
-            if node.left != px(left) || node.right != Val::Auto || node.bottom != bottom || node.max_width != px(maximum) {
-                node.left = px(left);
-                node.right = Val::Auto;
-                node.bottom = bottom;
-                node.max_width = px(maximum);
-                if let Some(wake) = &wake {
-                    wake.ring();
-                }
-            }
-        }
-    }
-}
-
 pub(crate) fn setup(world: &mut World) {
     let roots: Vec<_> = world
         .query_filtered::<Entity, (
@@ -657,7 +592,7 @@ pub(crate) fn setup(world: &mut World) {
                 Node {
                     display: Display::None,
                     position_type: PositionType::Absolute,
-                    left: px(16),
+                    right: px(16),
                     top: px(12),
                     bottom: px(64),
                     width: px(376),
@@ -680,6 +615,7 @@ pub(crate) fn setup(world: &mut World) {
             ))
             .observe(|mut event: On<Pointer<Scroll>>| event.propagate(false))
             .id();
+        panels::attach(world, panel, root, panels::Kind::Edit);
         world.entity_mut(root).insert(EditMode {
             enabled: false,
             revision: 0,
@@ -1436,7 +1372,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
         .copied()
         .find(|child| world.get::<EditTabs>(*child).is_some());
     for child in children {
-        if Some(child) != existing_tabs && world.get::<EditClose>(child).is_none() {
+        if Some(child) != existing_tabs && world.get::<EditClose>(child).is_none()
+            && world.get::<panels::Header>(child).is_none()
+        {
             world.despawn(child);
         }
     }
@@ -1954,6 +1892,7 @@ pub(crate) mod tests {
     fn fractional_panel_anchoring_is_independent_of_rounded_pixel_width() {
         for scale in [0.5, 0.8, 1.0] {
             let (mut app, root) = fixture();
+            EditAction::Open.apply(app.world_mut(), root);
             let mode = app.world().get::<EditMode>(root).unwrap();
             let (panel, toggle) = (mode.panel, mode.toggle);
             app.world_mut().entity_mut(root).insert((

@@ -331,18 +331,16 @@ fn connected_cell_autosaves_committed_geometry_and_recovers_during_window_previe
                     .as_ref()
                     .unwrap()
                     .profile(*id)
-                    .is_some_and(|saved| saved.uid.is_some())
+                    .is_some()
             })
         });
-        let uid = canvas
-            .records
-            .as_ref()
-            .unwrap()
-            .profile(identity)
-            .unwrap()
-            .uid
-            .clone()
-            .unwrap();
+        let uid = runtime.block_on(async {
+            cell.0.engine.act(engine::actions::Action::CreateRecord {
+                slug: None, kind: nucleus::RecordKind::Plain, head: "Preview attachment".into(), body: String::new(), quantity: 0.0,
+            }, None).await.unwrap().created.unwrap()
+        });
+        native::item_properties::attach(canvas.world_mut(), root, target, &uid).unwrap();
+        until(&mut canvas, |canvas| canvas.app.world().get::<native::protein_area::RecordBinding>(target).is_some());
         runtime.block_on(async {
             cell.0
                 .engine

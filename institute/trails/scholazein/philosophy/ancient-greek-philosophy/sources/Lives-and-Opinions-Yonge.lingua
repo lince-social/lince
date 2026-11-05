@@ -3,6 +3,8 @@ Import "Sources.lingua"
 The Lives and Opinions of Eminent Philosophers (@greek-source-diogenes: 0, is #book, #part-of @greek-sources) { r_2MZ8K8NBGJSS2844MJ7DDGR849
 Diogenes Laertius; translated by Charles Duke Yonge. Historical English translation originally published in 1853.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/57342/pg57342-images-3.epub).
+
 [Retained EPUB](../books/diogenes-lives-and-opinions.epub) · [Original book and publication notices](https://www.gutenberg.org/ebooks/57342). English. Project Gutenberg identifies this edition as public domain in the USA; its notices and production credits remain in the retained file.
 
 Used passages: Book X, the letter to Menoeceus, letters on nature, and concluding maxims; Book IX, the life of Pyrrho and its account of scepticism; Book VII for the optional comparison with Stoic accounts of knowledge. Distinguish preserved letters, reported arguments, anecdotes, and the transmitting author's organisation. [Epicurus guide](../schools/Epicurus.lingua#r_6KHZKEFRKY1J18Z7TSRAJABZQP) and [sceptics guide](../schools/Sceptics.lingua#r_6KEA1AHWJRDT3ZN8VJQTK06ZFK).
@@ -12,6 +14,7 @@ Used passages: Book X, the letter to Menoeceus, letters on nature, and concludin
 
 Extension @greek-source-diogenes "lince.resource" {
  uri "../books/diogenes-lives-and-opinions.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/57342/pg57342-images-3.epub" media_type "application/epub+zip" }]
  title "The Lives and Opinions of Eminent Philosophers"
  hash "15a5cd46b2cca6fb7b9ba436e5196e91ffa6aa3406e288376ff87b1c6aed2fea"
  media_type "application/epub+zip"

@@ -44,6 +44,8 @@ impl Pinned {
 #[derive(Component, Clone, Default, Serialize, Deserialize)]
 pub struct Placement {
     #[serde(default)]
+    pub record_properties: Option<crate::native::item_properties::Attachment>,
+    #[serde(default)]
     pub room: Option<crate::native::topology::rooms::Room>,
     #[serde(default)]
     pub room_member: Option<crate::native::topology::rooms::Member>,
@@ -95,6 +97,7 @@ impl Placement {
             component.component = nucleus::component::ComponentState::Composition { composition };
         }
         Self {
+            record_properties: world.get::<crate::native::item_properties::Attachment>(entity).cloned(),
             room: world
                 .get::<crate::native::topology::rooms::Room>(entity)
                 .cloned(),
@@ -163,6 +166,8 @@ impl Placement {
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
+        world.entity_mut(entity).remove::<crate::native::item_properties::Attachment>();
+        if let Some(attachment) = self.record_properties { world.entity_mut(entity).insert(attachment); }
         world.entity_mut(entity).remove::<(
             crate::native::topology::rooms::Room,
             crate::native::topology::rooms::Member,
@@ -258,7 +263,8 @@ impl Placement {
     }
 
     pub(crate) fn valid(&self) -> bool {
-        self.room.as_ref().is_none_or(|value| value.0.valid())
+        self.record_properties.as_ref().is_none_or(crate::native::item_properties::Attachment::valid)
+            && self.room.as_ref().is_none_or(|value| value.0.valid())
             && self
                 .room_member
                 .as_ref()

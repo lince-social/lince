@@ -162,6 +162,11 @@ pub fn spawn(
     owner
 }
 
+pub(crate) fn keep_offline(world: &mut World, owner: Entity) {
+    world.init_resource::<worker::Worker>();
+    ui::Control::KeepOffline.apply(world, owner);
+}
+
 pub(crate) fn embedded(
     world: &mut World,
     parent: Entity,

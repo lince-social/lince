@@ -30,8 +30,15 @@ fn arrange(items: &mut [Item], index: usize) -> Vec2 {
     let mut extent = items[index].intrinsic;
     let mut cursor = Vec2::splat(rules.padding);
     let columns = usize::from(rules.columns);
-    let mut widths = vec![0.0_f32; columns];
-    let mut heights = vec![0.0_f32; children.len().div_ceil(columns)];
+    let (mut widths, mut heights) =
+        if rules.arrangement == Arrangement::Grid && !children.is_empty() {
+            (
+                vec![0.0_f32; columns],
+                vec![0.0_f32; children.len().div_ceil(columns)],
+            )
+        } else {
+            (Vec::new(), Vec::new())
+        };
     if rules.arrangement == Arrangement::Grid {
         for (n, child) in children.iter().enumerate() {
             widths[n % columns] = widths[n % columns].max(items[*child].size.x);

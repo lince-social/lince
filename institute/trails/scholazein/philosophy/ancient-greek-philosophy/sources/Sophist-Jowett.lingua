@@ -3,6 +3,8 @@ Import "Scholarship.lingua"
 Sophist — Jowett translation (@greek-source-sophist: 0, is #book, #part-of @greek-scholarly-sources) { r_4B67CBBBRAQS5SCS5M5K8RGXXR
 Plato. Sophist, translated by Benjamin Jowett. Project Gutenberg ebook 1735. English.
 
+[Download and read the public EPUB](https://www.gutenberg.org/cache/epub/1735/pg1735-images-3.epub).
+
 [Retained EPUB](../books/plato-sophist.epub) · [Original book and notices](https://www.gutenberg.org/ebooks/1735). Project Gutenberg identifies this edition as public domain in the USA; the retained file preserves its original notices and production credits.
 
 Read the complete dialogue with [the advanced seminar on being, difference, and falsehood](../research/seminars/Plato-being-and-knowledge.lingua#r_34WRXN1SRY8SZVRKRV7X3X9QWA). The opening classifications, the ontological investigation, and the account of false statement belong to the whole argument.
@@ -14,6 +16,7 @@ Use this translation alongside [an identified critical Greek text](Plato-critica
 
 Extension @greek-source-sophist "lince.resource" {
  uri "../books/plato-sophist.epub"
+ representations [{ label "Public EPUB" uri "https://www.gutenberg.org/cache/epub/1735/pg1735-images-3.epub" media_type "application/epub+zip" }]
  title "Sophist"
  hash "4cf2aa527142010f669a430160ecc82ed7c2bd95b6aae638689db55fb8ba653c"
  media_type "application/epub+zip"

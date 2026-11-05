@@ -1,0 +1,71 @@
+# 8. Benchmarks for tests, Laboratory and daily use
+
+[Organization](Park.md), [workflow coverage](09-workflows.md), [measurement tasks](01-measurement.md). These are explicit engineering targets for the combined optimized candidate. They are not measured current results. Historical private-fixture/debug timings cannot establish these physical gates.
+
+## Fixed workload identities
+
+P103 creates the reusable manifests. Start from the following sizes, recording actual entity/glyph/row/texture counts as well as top-level items. A nested Castle can contain far more work than one plain Sand. Use the same content, visibility and effects in baseline and candidate.
+
+| Scene | Contents and purpose |
+| --- | --- |
+| S0 small control | Eight ordinary native items, one editor, one local Record, one simple list, one output in the private fixture. Catches overhead added to cheap cases. |
+| S1 normal synthetic | 64 mixed native presentations: 8 plain text, 8 editable text, 12 Record presentations over 4 shared Records, 8 live/status Castles, 8 query/list views, 4 rich descriptions, 4 image/document views, 4 media/shader views, 4 composed layout groups and 4 settings/interaction panels. Children are counted separately. Demand distribution: 32 visible across two outputs, 16 off-camera in active workspaces and 16 in inactive workspaces; manifest which are focused/dirty, playing or semantically active. Reuse existing practice assets and harmless local data. |
+| S2 dense scaling | 256 mixed presentations using the same proportions/dependencies, plus a 10,000-row local query with only its viewport plus bounded margin materialized if virtualization is implemented. This tests growth rather than redefining normal daily load. Use existing supported content limits. |
+| S3 actual daily workspace | The user's normal many-item, two-monitor setup with Firefox and Ghostty. Record counts/types and background activity without private content. Do not rearrange, populate, delete or replace the user's workspace merely to force S1 counts. This is the physical acceptance workload; S1/S2 remain reproducible private comparisons. |
+| S4 local edit scaling | One private local Record with 1 KiB, 64 KiB and 1 MiB descriptions, subject to current supported limits, plus a short title. One view and eight views of the same Record; separate distinct-Record views as a fanout control. Actual file-backed SQLite and current history/recovery/collaboration mechanisms. |
+
+S1 is a calibration fixture, not a claim that those exact counts describe today's workspace. P124 fills actual concrete feature representatives and records unavailable/gated cases. Keep small, normal and dense controls; report a deliberate change to any fixture instead of silently making it easier. Dense limits are diagnostic scalability goals and must not hide a failure of normal S3.
+
+Each scene has quiet, typing, click/open, scroll, pan/drag, save and background-ready variants. Exercise one active/one quiet output and both active. Cold first-use and warm reuse are separate measurements. Required overlays, clips, transparency and normal quality remain enabled. Device/scale/resolution/refresh and browser zoom are explicit. No new HDR/VRR/XWayland/provider matrix is implied.
+
+## User-visible targets
+
+Let R be the affected output's actual refresh period; at 60 Hz, R = 16.67 ms. Measure every relevant output independently. These targets judge latency distributions, frame age and pauses together, not an averaged FPS headline.
+
+| ID | Measure | Initial target and oracle |
+| --- | --- | --- |
+| B01 | Physical continuous presentation | At least 57 FPS on each 60 Hz output in S3 continuous activity, approaching the real refresh rate; presentation interval p95 at most 1.25R and p99 at most 2R. Record all longer gaps and stale frame age. A static screen does not need duplicate refresh submissions. |
+| B02 | Correct input-to-visible response | Warm typing/preedit, click feedback, scroll and drag p95 at most 2R, p99 at most 3R, with no unexplained interaction pause above 100 ms in the controlled normal workload. Include oldest event age, not only the latest event in a batch. Match input to changed pixels/state and affected-output presentation; report visibility signals that are unavailable. |
+| B03 | Admission/dispatch latency | Device-to-Park-dispatch and Park-dispatch-to-client/native-state service are separate distributions. Each should fit within 2 ms at p95 and 5 ms at p99 in the warm normal fixture; account for timestamp/clock precision. Track overruns and the exact blocking stage. Visible B02 remains the user-facing gate. |
+| B04 | Opening and control feedback | Warm local button/tab/panel/view first meaningful feedback within 50 ms at p95 and 100 ms at p99; a warm small local panel usable within 100 ms at p95. Expensive files/models/decoders may take longer to finish, with prompt loading/cancel feedback and no unrelated input blocking. Record cold load and final-content latency separately; an empty shell is not completed content. |
+| B05 | Local title/description editing | Echo meets B02; dependent local views reflect the edit within 50 ms at p95 after local application. Recoverable/canonical durable local acknowledgement, clearly distinguished, targets at most 100 ms p95 and 250 ms p99 on the user's normal local disk for ordinary edits. No remote round trip lies on the local completion path. Record sizes/history, transaction waits and actual flushes; if hardware I/O makes a target unattainable, identify that cost rather than weakening durability or renaming a queued edit “saved.” |
+| B06 | Firefox video | Same visible 30-second 720p60 source, 100% zoom and matched external-monitor geometry: dropped video frames no worse than the established Niri reference of 0.5/second; stretch goal at most 0.1/second. Record decoded, dropped and compositor-presented values separately. Recheck the reference only if its hardware/content/geometry identity no longer matches. Browser callbacks are not physical scanout. |
+| B14 | Small local semantic actions | Ordinary local Record property changes and control actions reach their required local result within 100 ms p95 / 250 ms p99, with feedback meeting B02/B04. Measure required rule/effect completion separately and keep its status honest; heavy queries/models/imports have prompt feedback/cancel and their own completion metric. No arbitrary network wait or all-feature refresh belongs to a small local action. |
+
+The B02 visible deadline is independent of how long a local commit takes. A slow or deliberately held write must not delay echo, selection, scrolling or unrelated windows. Show pending/failed status honestly. Reopen/recovery tests prove stored contents; an optimistic display does not prove durability.
+
+## Internal work and resource targets
+
+These catch useless work before an end-to-end benchmark exposes it. They are measurable design goals, not instructions to suspend required semantic activity.
+
+| ID | Measure | Target |
+| --- | --- | --- |
+| B07 | Work per local edit | Work follows the edit and affected dependencies. A one-character edit must not routinely export/encode/write the full document/history, rebuild every description or refresh every unrelated query/view. Count bytes, snapshots, transactions, queries, rows, entity churn and native updates. Periodic compaction is explicit, amortized and outside feedback. Preserve necessary facts/history/access/recovery operations. |
+| B08 | Unchanged style/layout | With unchanged style sources, text/caret/client pixels cause no unrelated token resolution, style component writes, glyph shaping or clean-root layout. Cache hits alone are not a pass if every consumer is still scanned expensively. Compare the best dense/shared representation and dirty bookkeeping by total CPU/memory. A real theme change pays its measured bounded write cost. |
+| B09 | Foreground computation | Initial S1 engineering budget: native CPU preparation p95 at most 8 ms, and no recurring indivisible foreground section above 2 ms without attribution and a justified boundary. These guide decomposition; CPU sums, elapsed critical path and GPU work are reported separately. Meeting a substage budget does not substitute for B01/B02. |
+| B10 | Quiet resource use | Static S1/S3 should have no self-sustaining native update/redraw loop. Intentional timers/producers wake only as needed; static styling/layout/Record presentation stays untouched between meaningful changes. Initial steady aggregate Park/native CPU goal is at most 1% of one logical core when no intentional animation/media/compute is active, with low/quiet GPU activity and explained source/OS wakes. Record clock/background work separately rather than subtracting unidentified load. |
+| B11 | Output and producer isolation | Client-only pixel streams require zero full native semantic/layout/style updates while geometry and policy are unchanged, reusing the existing implemented fast path. Activity on one output does not force unnecessary full work on the other. Multiple views share compatible immutable media/assets/derivation; demand from capture/overview remains included. |
+| B12 | Bounded resources and scaling | Pending input/jobs, retained style/surface/list/assets and in-flight frames have explicit owners and bounds. Stable input rate must not accumulate older work. Closing a view retires its resources after legitimate consumers finish; repeated short open/close controls show no monotonic retained growth. Dense visible-list presentation scales with visible rows plus bounded margin, and local edits with their dependency closure. Record CPU, allocations, RSS/VRAM and queue high-water marks. |
+| B13 | Style writes versus reads | In steady S1/S2, resolved style reads should be compact and inheritance/rule derivation occur only for actual changes. For a global edit, preserve a coherent frame and target settled visible style within 100 ms p95 / 250 ms p99; normal interaction still meets B02. Interactive sliders show the latest preview and converge within that budget after release. Report initialization, dynamic-rule and continuous-write cases separately. Slower rare writes are acceptable only with measured overall benefit and bounded stalls. |
+
+Per-operation CPU/resource budgets are not additive caps on overlapping stages. If a measured bottleneck calls for a different internal split, change the implementation and explain the accounting; do not claim “CPU moved to GPU” just because CPU fell. Count transfers, waits and total energy/thermal effects where observable.
+
+## Correctness oracles that accompany performance
+
+For an optimization's affected workflows, compare final model state, ordered input delivery and relevant pixels/geometry. Preserve text/IME/selection/undo and pending-paste behavior; shared Record UID/source identity and durable recovery; layout/intrinsic/Fit/Fill/zero values; correct action targets and pointer capture; live sort/filter/group and background semantic activity; output/focus/privacy epochs and GPU resource lifetimes.
+
+A faster incomplete render is a correctness failure. Existing border-only/missing-label and blinking Castles are specifically covered by complete-frame comparisons across quiet time, theme change, live Record refresh, first-open and asynchronous readiness. Do not label a frame complete merely because its outer rectangle is present. Keep exact pixels for deterministic cases and declared tolerances only for nondeterministic animation/AA; label the scope.
+
+File-backed edit tests verify exact text after reopen and recovery at controlled interruption points. Remote/collaborative cases use deterministic private peers/held jobs rather than contacting real users. No benchmark reads private clipboard contents or records real keystroke text. Existing capture/lock isolation and permission checks remain part of affected-path correctness.
+
+## How the evidence is collected
+
+Use the existing Laboratory catalogue, driver/headless helpers, Park private tests and xtask validation. P93/P104/P134 add missing wiring/coverage; they do not create a new broad test framework. A checked-in case should exercise a meaningful outcome or work bound, not mirror an implementation detail. Do not test an unrelated feature after every small edit merely because it exists in the inventory.
+
+Work-count/determinism tests can run in headless mode. GPU fixtures prove rendering/lifetime properties on their actual device. Optimized elapsed benchmarks need frozen equivalent source/features/toolchain/profile and a documented comparison order. The private diagnostic/debug benchmark can justify a mechanism or reject a theory; final optimized timing remains separate. An exact selector returning zero cases is failure, not success.
+
+Keep timing samples and distributions in bounded reports. Report sample count and p50/p95/p99/max; short runs with few events have weak p99 estimates and must say so. Do not silently discard startup/slow samples: label cold/warm phases before the run. Start physical observation at 30 seconds, extending only to resolve a named sampling/drift uncertainty. Do not introduce a long soak by default.
+
+Compile both variants before timing. No concurrent compilation or private GPU scenes during causal runs; distinguish controlled benchmark activity from the normal backgrounds the workload intentionally includes. Record trace-on overhead with a trace-off control. Validate executable/source/feature/profile identities and baseline drift before accepting a tiny percentage. System/device/dispatch/GPU/output clocks are converted only with valid calibration; unknown spans stay unknown. Overlapping elapsed spans cannot be added into CPU percentages.
+
+Physical acceptance uses the verified installed prebuilt candidate. Reuse the existing final runner with an absolute executable path and the intended installed scenario; a null executable can invoke a local release compile. A source checkout or Nix activation does not update an already-running compositor. Necessary user/physical actions remain coordinated individually. Laboratory isolates normal workspaces and temporary data; its successful run cannot certify the current physical session.

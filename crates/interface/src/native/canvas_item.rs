@@ -278,6 +278,14 @@ fn menu(world: &mut World) {
         ChildOf(panel),
     ));
     if area {
+        if world.get::<crate::native::area::InfluenceArea>(target).is_some_and(|area| area.protein.is_some()) {
+            world.spawn((
+                IconButton::new(Icon::Pencil, "Configure Protein"),
+                IconStyle { size: 20.0, padding: 6.0, ..default() },
+                ActionButton::new(target, crate::native::actions![crate::native::protein_area::ConfigureProtein]),
+                ChildOf(panel),
+            ));
+        }
         world.spawn((
             IconButton::new(Icon::General, "Configure this area and its behaviors"),
             IconStyle {
@@ -758,7 +766,8 @@ pub(crate) mod tests {
                         })
                 );
             }
-            assert_eq!(icons.len(), 11);
+            assert_eq!(icons.len(), 12);
+            assert!(icons.contains(&crate::native::icons::Icon::Info));
         }
     }
 

@@ -3,6 +3,17 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct ScrollSand;
 
+const BAR_WIDTH: f32 = 6.0;
+
+#[derive(Component)]
+struct ScrollCredits;
+
+#[derive(Component)]
+struct OverlayBar;
+
+#[derive(Component)]
+struct Decorated;
+
 const CREDITS: &[crate::native::credits::Attribution] = &[crate::native::credits::Attribution {
     name: "Bevy",
     author: "Bevy contributors",
@@ -11,14 +22,23 @@ const CREDITS: &[crate::native::credits::Attribution] = &[crate::native::credits
 
 pub fn attach(world: &mut World, entity: Entity) {
     if world.get::<ScrollSand>(entity).is_none() {
+        world.entity_mut(entity).insert(ScrollSand);
         world
             .entity_mut(entity)
-            .insert((ScrollSand, ScrollPosition::default()));
+            .entry::<ScrollPosition>()
+            .or_default();
     }
-    world.spawn((
-        crate::native::sand_store::SandCredits(CREDITS),
-        ChildOf(entity),
-    ));
+    if !world.get::<Children>(entity).is_some_and(|children| {
+        children
+            .iter()
+            .any(|child| world.get::<ScrollCredits>(child).is_some())
+    }) {
+        world.spawn((
+            ScrollCredits,
+            crate::native::sand_store::SandCredits(CREDITS),
+            ChildOf(entity),
+        ));
+    }
     if let Some(mut node) = world.get_mut::<Node>(entity) {
         node.overflow = Overflow::scroll_y();
     }
@@ -32,6 +52,41 @@ struct Scrollbar {
 
 #[derive(Component, Clone, Copy)]
 struct ScrollThumb(Entity);
+
+pub(crate) fn decorate(world: &mut World, viewport: Entity) {
+    attach(world, viewport);
+    if world
+        .query::<&Scrollbar>()
+        .iter(world)
+        .any(|bar| bar.viewport == viewport)
+    {
+        return;
+    }
+    let track = bar(world, viewport, viewport);
+    world.entity_mut(track).insert((
+        OverlayBar,
+        bevy::ui::IgnoreScroll(bevy::math::BVec2::TRUE),
+        ZIndex(1),
+    ));
+    let mut node = world.get_mut::<Node>(track).unwrap();
+    node.position_type = PositionType::Absolute;
+    node.right = px(2);
+    node.top = px(0);
+    node.display = Display::None;
+    if world.get::<Decorated>(viewport).is_none() {
+        world.entity_mut(viewport).insert(Decorated);
+        let mut node = world.get_mut::<Node>(viewport).unwrap();
+        let padding = match node.padding.right {
+            Val::Px(value) => value,
+            _ => 0.0,
+        };
+        node.padding.right = px(padding + BAR_WIDTH + 4.0);
+    }
+}
+
+pub(crate) fn decoration(world: &World, entity: Entity) -> bool {
+    world.get::<OverlayBar>(entity).is_some() || world.get::<ScrollCredits>(entity).is_some()
+}
 
 pub(crate) fn bounded(world: &mut World, parent: Entity, height: f32) -> Entity {
     let frame = world
@@ -63,15 +118,20 @@ pub(crate) fn bounded(world: &mut World, parent: Entity, height: f32) -> Entity 
         ))
         .id();
     attach(world, viewport);
+    bar(world, frame, viewport);
+    viewport
+}
+
+fn bar(world: &mut World, parent: Entity, viewport: Entity) -> Entity {
     let track = world
         .spawn((
             Node {
-                width: px(18),
+                width: px(BAR_WIDTH),
                 height: percent(100),
                 flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(frame),
+            ChildOf(parent),
             crate::native::token_style::background(crate::native::tokens::Token::Surface),
         ))
         .id();
@@ -106,7 +166,7 @@ pub(crate) fn bounded(world: &mut World, parent: Entity, height: f32) -> Entity 
         .observe(|mut event: On<Pointer<DragStart>>| event.propagate(false))
         .observe(|mut event: On<Pointer<DragEnd>>| event.propagate(false))
         .observe(scrollbar_key);
-    viewport
+    track
 }
 
 pub(crate) fn fill(world: &mut World, parent: Entity) -> Entity {
@@ -127,6 +187,14 @@ fn geometry(node: &ComputedNode) -> (f32, f32) {
     (height, maximum)
 }
 
+fn track_length(node: &ComputedNode, overlay: bool) -> f32 {
+    if overlay {
+        node.content_box().height().max(0.0) * node.inverse_scale_factor()
+    } else {
+        node.size().y * node.inverse_scale_factor()
+    }
+}
+
 pub(crate) fn update_bars(world: &mut World) {
     let mut changed = false;
     let bars = world
@@ -135,14 +203,37 @@ pub(crate) fn update_bars(world: &mut World) {
         .map(|(track, bar)| (track, bar.viewport, bar.thumb))
         .collect::<Vec<_>>();
     for (track, viewport, thumb) in bars {
+        if world.get_entity(viewport).is_err() {
+            world.despawn(track);
+            continue;
+        }
         let Some(computed) = world.get::<ComputedNode>(viewport) else {
             continue;
         };
         let (height, maximum) = geometry(computed);
+        let overlay = world.get::<OverlayBar>(track).is_some();
+        let length = track_length(computed, overlay);
+        if overlay {
+            let top = px((computed.content_box().min.y + computed.size().y * 0.5)
+                * computed.inverse_scale_factor());
+            let mut node = world.get_mut::<Node>(track).unwrap();
+            if node.height != px(length) || node.top != top {
+                node.height = px(length);
+                node.top = top;
+                changed = true;
+            }
+        }
         if height <= 0.0 {
+            if world
+                .get::<Node>(track)
+                .is_some_and(|node| node.display != Display::None)
+            {
+                world.get_mut::<Node>(track).unwrap().display = Display::None;
+                changed = true;
+            }
             continue;
         }
-        let thumb_height = (height * height / (height + maximum)).max(24.0).min(height);
+        let thumb_height = (length * height / (height + maximum)).max(24.0).min(length);
         let offset = world
             .get::<ScrollPosition>(viewport)
             .map_or(0.0, |scroll| scroll.0.y)
@@ -155,7 +246,7 @@ pub(crate) fn update_bars(world: &mut World) {
         }
         let mut node = world.get_mut::<Node>(thumb).unwrap();
         let top = px(if maximum > 0.0 {
-            offset / maximum * (height - thumb_height)
+            offset / maximum * (length - thumb_height)
         } else {
             0.0
         });
@@ -208,12 +299,13 @@ fn move_thumb(world: &mut World, track: Entity, delta: f32) {
         return;
     };
     let (height, maximum) = geometry(node);
-    let thumb = (height * height / (height + maximum)).max(24.0).min(height);
-    if height <= thumb || maximum <= 0.0 {
+    let length = track_length(node, world.get::<OverlayBar>(track).is_some());
+    let thumb = (length * height / (height + maximum)).max(24.0).min(length);
+    if length <= thumb || maximum <= 0.0 {
         return;
     }
     if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
-        scroll.0.y = (scroll.0.y + delta * maximum / (height - thumb)).clamp(0.0, maximum);
+        scroll.0.y = (scroll.0.y + delta * maximum / (length - thumb)).clamp(0.0, maximum);
     }
     if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
@@ -265,7 +357,11 @@ fn scrollbar_click(
         let Some(node) = world.get::<ComputedNode>(viewport) else {
             return;
         };
-        let (height, maximum) = geometry(node);
+        let (_, maximum) = geometry(node);
+        let height = track_length(node, world.get::<OverlayBar>(track).is_some());
+        if height <= 0.0 {
+            return;
+        }
         let Some(transform) = world.get::<UiGlobalTransform>(track) else {
             return;
         };
@@ -382,6 +478,59 @@ pub(crate) fn reveal(
 mod tests {
     use super::*;
     use bevy::math::Affine2;
+
+    #[test]
+    fn decorating_existing_panels_preserves_geometry_scroll_and_single_slim_bar() {
+        let mut world = World::new();
+        let viewport = world
+            .spawn((
+                Node {
+                    width: px(376),
+                    height: px(400),
+                    padding: UiRect::all(px(16)),
+                    ..default()
+                },
+                ScrollPosition(Vec2::new(0.0, 72.0)),
+                ComputedNode {
+                    size: Vec2::new(376.0, 400.0),
+                    content_size: Vec2::new(376.0, 1600.0),
+                    ..default()
+                },
+            ))
+            .id();
+        decorate(&mut world, viewport);
+        decorate(&mut world, viewport);
+        let node = world.get::<Node>(viewport).unwrap();
+        assert_eq!((node.width, node.height), (px(376), px(400)));
+        assert_eq!(node.padding.right, px(26));
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 72.0);
+        assert_eq!(world.query::<&Scrollbar>().iter(&world).count(), 1);
+        let (track, thumb) = world
+            .query::<(Entity, &Scrollbar)>()
+            .iter(&world)
+            .find(|(_, bar)| bar.viewport == viewport)
+            .map(|(track, bar)| (track, bar.thumb))
+            .unwrap();
+        assert_eq!(world.get::<Node>(track).unwrap().width, px(6));
+        assert_eq!(world.get::<ChildOf>(track).unwrap().parent(), viewport);
+        assert_eq!(
+            world.get::<bevy::ui::IgnoreScroll>(track).unwrap().0,
+            bevy::math::BVec2::TRUE
+        );
+        update_bars(&mut world);
+        move_thumb(&mut world, track, 10000.0);
+        update_bars(&mut world);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 1200.0);
+        assert!(world.get::<Node>(thumb).unwrap().top != px(0));
+        world
+            .get_mut::<ComputedNode>(viewport)
+            .unwrap()
+            .content_size
+            .y = 400.0;
+        update_bars(&mut world);
+        assert_eq!(world.get::<Node>(track).unwrap().display, Display::None);
+        assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, 0.0);
+    }
 
     #[test]
     fn dragging_the_thumb_reaches_both_ends_at_scaled_sizes_and_clamps_after_resize() {

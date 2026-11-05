@@ -20,7 +20,7 @@ struct HiddenTabIndex(i32);
 
 pub(crate) fn synchronize_keyboard(world: &mut World) {
     use bevy::input_focus::tab_navigation::TabIndex;
-    if world.query_filtered::<(), (With<Section>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>().iter(world).next().is_none() { return; }
+    if world.query_filtered::<(), (Or<(With<Section>, With<crate::native::dropdown::DropdownMenu>)>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>().iter(world).next().is_none() { return; }
     let candidates = world.query::<(Entity, &TabIndex, Option<&HiddenTabIndex>)>().iter(world)
         .map(|(entity, index, previous)| (entity, index.0, previous.map(|previous| previous.0))).collect::<Vec<_>>();
     for (entity, index, previous) in candidates {
@@ -29,7 +29,7 @@ pub(crate) fn synchronize_keyboard(world: &mut World) {
         let mut hidden = false;
         for _ in 0..crate::native::layout::MAX_DEPTH {
             let Some(ancestor) = current else { break; };
-            section |= world.get::<Section>(ancestor).is_some();
+            section |= world.get::<Section>(ancestor).is_some() || world.get::<crate::native::dropdown::DropdownMenu>(ancestor).is_some();
             hidden |= world.get::<Node>(ancestor).is_some_and(|node| node.display == Display::None);
             current = world.get::<ChildOf>(ancestor).map(ChildOf::parent);
         }
@@ -86,7 +86,7 @@ impl Action for Toggle {
     }
 }
 
-pub(super) fn accordion(world: &mut World, root: Entity, parent: Entity, key: &str, title: &str) -> Entity {
+pub(crate) fn accordion(world: &mut World, root: Entity, parent: Entity, key: &str, title: &str) -> Entity {
     world.entity_mut(root).entry::<Expansion>().or_default();
     let expanded = world.get::<Expansion>(root).unwrap().0.contains(key);
     let section = world.spawn((Node { width: percent(100), min_width: px(0), flex_direction: FlexDirection::Column,

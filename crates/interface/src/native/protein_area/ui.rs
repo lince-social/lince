@@ -136,6 +136,62 @@ fn input(
     ));
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct ConfigureProtein;
+
+impl Action for ConfigureProtein {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+            return;
+        };
+        let target = world
+            .get::<filter::Subscription>(owner)
+            .map_or(owner, |filter| filter.0);
+        if !crate::native::area_panel::owns(world, root, target)
+            || !world
+                .get::<crate::native::edit_mode::EditMode>(root)
+                .is_some_and(|mode| mode.enabled)
+        {
+            return;
+        }
+        world.init_resource::<Runtime>();
+        let existing = world
+            .query::<(Entity, &QueryEditor)>()
+            .iter(world)
+            .find(|(_, link)| link.0 == owner)
+            .map(|(entity, _)| entity);
+        if let Some(entity) = existing {
+            crate::native::sand_placement::PlacementAction::Front.apply(world, entity);
+            return;
+        }
+        let Some(config) = configuration(world, owner) else {
+            return;
+        };
+        let workspace = world
+            .get::<crate::native::workspace::WorkspaceMember>(owner)
+            .unwrap()
+            .0;
+        let position = world
+            .get::<crate::native::canvas::CanvasView>(root)
+            .map_or(bevy::math::DVec2::ZERO, |view| view.center);
+        let entity =
+            crate::native::protein_castle::spawn(world, root, workspace, position, config.draft);
+        world.entity_mut(entity).insert((
+            QueryEditor(owner),
+            crate::native::actions::ControlOwner(target),
+        ));
+        if crate::native::practice_cells::owns_source(world, &config.source) {
+            if let Source::Organ(source) = config.source {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::native::practice_cells::PracticeSource(source));
+            }
+        }
+        crate::native::protein_castle::refresh_editor(world, entity);
+        mirror_editor(world, owner);
+    }
+}
+
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
         let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
@@ -153,44 +209,7 @@ impl Action for Command {
             return;
         }
         if matches!(self, Self::Query) {
-            let existing = world
-                .query::<(Entity, &QueryEditor)>()
-                .iter(world)
-                .find(|(_, link)| link.0 == owner)
-                .map(|(entity, _)| entity);
-            if let Some(entity) = existing {
-                world.despawn(entity);
-            }
-            let Some(config) = configuration(world, owner) else {
-                return;
-            };
-            let workspace = world
-                .get::<crate::native::workspace::WorkspaceMember>(owner)
-                .unwrap()
-                .0;
-            let position = world
-                .get::<crate::native::canvas::CanvasView>(root)
-                .map_or(bevy::math::DVec2::ZERO, |view| view.center);
-            let entity = crate::native::protein_castle::spawn(
-                world,
-                root,
-                workspace,
-                position,
-                config.draft,
-            );
-            world.entity_mut(entity).insert((
-                QueryEditor(owner),
-                crate::native::actions::ControlOwner(target),
-            ));
-            if crate::native::practice_cells::owns_source(world, &config.source) {
-                if let Source::Organ(source) = config.source {
-                    world
-                        .entity_mut(entity)
-                        .insert(crate::native::practice_cells::PracticeSource(source));
-                }
-            }
-            crate::native::protein_castle::refresh_editor(world, entity);
-            mirror_editor(world, owner);
+            ConfigureProtein.apply(world, owner);
             return;
         }
         if let Self::Page(next) = self {
@@ -498,6 +517,7 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         );
         return;
     };
+    crate::native::sand_panel::button(world, panel, owner, "Configure Protein", Command::Query);
     if config.relations && !filtering {
         crate::native::relation_castle::styles::controls(
             world,
@@ -689,14 +709,6 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         }
     }
     let row = crate::native::area_panel::row(world, panel);
-    button(
-        world,
-        row,
-        owner,
-        Command::Query,
-        Icon::Pencil,
-        "Edit the query in a Protein Castle; changes return to this Area",
-    );
     button(
         world,
         row,

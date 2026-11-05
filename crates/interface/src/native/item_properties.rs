@@ -107,7 +107,7 @@ pub fn open(world: &mut World, root: Entity, target: Entity) -> Option<Entity> {
             Name::new("item.properties"),
         ))
         .id();
-    crate::native::scroll_sand::attach(world, owner);
+    crate::native::scroll_sand::decorate(world, owner);
     crate::native::edit_mode::label(world, owner, "Item properties", 20.0);
     input_settings::button(world, owner, owner, "Close properties", Change::Close);
     panel(world, root, owner, target);

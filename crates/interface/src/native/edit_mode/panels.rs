@@ -144,7 +144,7 @@ pub(crate) fn attach(world: &mut World, owner: Entity, root: Entity, kind: Kind)
             },
             ScrollPosition::default(),
         ));
-        crate::native::scroll_sand::attach(world, body);
+        crate::native::scroll_sand::decorate(world, body);
         (Some(body), Some(toggle))
     } else {
         (None, None)
@@ -308,7 +308,7 @@ pub(crate) fn layout(world: &mut World) {
             height.min(usable.height())
         };
         let default = Vec2::new(
-            if kind == Kind::Edit {
+            if kind == Kind::Item {
                 usable.max.x - width
             } else {
                 usable.min.x

@@ -333,17 +333,21 @@ fn force_status(area: &InfluenceArea) -> &'static str {
 fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     label(world, panel, "Force", 18.0);
-    let row = row(world, panel);
-    for (direction, title) in [(Direction::Attract, "Attract"), (Direction::Repel, "Repel")] {
-        choice(
-            world,
-            root,
-            row,
-            AreaAction::Direction(direction),
-            title,
-            area.direction == direction,
-        );
-    }
+    select(
+        world,
+        root,
+        panel,
+        "Force direction",
+        if area.direction == Direction::Attract {
+            "Attract"
+        } else {
+            "Repel"
+        },
+        vec![
+            ("Attract".into(), AreaAction::Direction(Direction::Attract)),
+            ("Repel".into(), AreaAction::Direction(Direction::Repel)),
+        ],
+    );
     label(world, panel, "Strength", 14.0);
     let slider = crate::native::slider::spawn(
         world,
@@ -734,17 +738,22 @@ fn matching_controls(
     ));
     for (index, rule) in area.rules.iter().enumerate() {
         label(world, panel, &format!("Property {}", index + 1), 14.0);
-        let options = row(world, panel);
-        for property in Property::ALL {
-            choice(
-                world,
-                root,
-                options,
-                AreaAction::Property(index, property),
-                property.name(),
-                rule.property == property,
-            );
-        }
+        select(
+            world,
+            root,
+            panel,
+            "Matching property",
+            rule.property.name(),
+            Property::ALL
+                .into_iter()
+                .map(|property| {
+                    (
+                        property.name().into(),
+                        AreaAction::Property(index, property),
+                    )
+                })
+                .collect(),
+        );
         field(
             world,
             root,
@@ -775,35 +784,40 @@ fn reach_controls(
     area: &InfluenceArea,
 ) {
     label(world, panel, "Reach", 18.0);
-    let modes = row(world, panel);
-    for (mode, title) in [
-        (ReachMode::Limited, "Limited"),
-        (ReachMode::Unlimited, "Unlimited"),
-    ] {
-        choice(
+    select(
+        world,
+        root,
+        panel,
+        "Reach mode",
+        if area.reach.mode == ReachMode::Limited {
+            "Limited"
+        } else {
+            "Unlimited"
+        },
+        vec![
+            ("Limited".into(), AreaAction::Reach(ReachMode::Limited)),
+            ("Unlimited".into(), AreaAction::Reach(ReachMode::Unlimited)),
+        ],
+    );
+    if area.reach.mode == ReachMode::Limited {
+        select(
             world,
             root,
-            modes,
-            AreaAction::Reach(mode),
-            title,
-            area.reach.mode == mode,
+            panel,
+            "Reach shape",
+            if area.reach.shape == ReachShape::Square {
+                "Square"
+            } else {
+                "Follow shape"
+            },
+            vec![
+                ("Square".into(), AreaAction::ReachShape(ReachShape::Square)),
+                (
+                    "Follow shape".into(),
+                    AreaAction::ReachShape(ReachShape::FollowShape),
+                ),
+            ],
         );
-    }
-    if area.reach.mode == ReachMode::Limited {
-        let shapes = row(world, panel);
-        for (shape, title) in [
-            (ReachShape::Square, "Square"),
-            (ReachShape::FollowShape, "Follow shape"),
-        ] {
-            choice(
-                world,
-                root,
-                shapes,
-                AreaAction::ReachShape(shape),
-                title,
-                area.reach.shape == shape,
-            );
-        }
         field(
             world,
             root,
@@ -816,50 +830,64 @@ fn reach_controls(
     }
 }
 
+fn select(
+    world: &mut World,
+    root: Entity,
+    parent: Entity,
+    name: &str,
+    selected: &str,
+    choices: Vec<(String, AreaAction)>,
+) -> Entity {
+    crate::native::dropdown::spawn(
+        world,
+        parent,
+        root,
+        name,
+        selected,
+        choices
+            .into_iter()
+            .map(|(title, action)| (title, crate::native::actions![EditAction::Area(action)]))
+            .collect(),
+    )
+}
+
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     if world.get::<AreaEditor>(root).is_none() {
         world.entity_mut(root).insert(AreaEditor::default());
     }
     label(world, panel, "Areas", 22.0);
-    label(world, panel, "Add", 14.0);
-    let add = row(world, panel);
+    let create =
+        crate::native::customization::section(world, root, panel, "areas.create", "Create Area");
+    let add = row(world, create);
     for (action, title) in [
         (AreaAction::Add(ShapeKind::Square), "Add square"),
         (AreaAction::Add(ShapeKind::Circle), "Add circle"),
     ] {
         button(world, root, add, action, title);
     }
-    label(world, panel, "Draw", 14.0);
-    let draw = row(world, panel);
     let tool = world.get::<AreaEditor>(root).unwrap().tool;
-    for (kind, title) in [
-        (
-            ShapeKind::Square,
-            "Drag a square on the canvas. Escape cancels.",
-        ),
-        (
-            ShapeKind::Circle,
-            "Drag a circle on the canvas. Escape cancels.",
-        ),
-        (
-            ShapeKind::Drawn,
-            "Click to start, draw freely, then click to close the outline. Escape cancels.",
-        ),
-    ] {
-        choice(
-            world,
-            root,
-            draw,
-            AreaAction::Draw(kind),
-            title,
-            tool == Some(kind),
-        );
-    }
+    select(
+        world,
+        root,
+        create,
+        "Drawing tool",
+        match tool {
+            Some(ShapeKind::Square) => "Square",
+            Some(ShapeKind::Circle) => "Circle",
+            Some(ShapeKind::Drawn) => "Free outline",
+            None => "Choose drawing tool",
+        },
+        vec![
+            ("Square".into(), AreaAction::Draw(ShapeKind::Square)),
+            ("Circle".into(), AreaAction::Draw(ShapeKind::Circle)),
+            ("Free outline".into(), AreaAction::Draw(ShapeKind::Drawn)),
+        ],
+    );
     if let Some(tool) = tool {
         if tool == ShapeKind::Drawn {
-            button(world, root, draw, AreaAction::Finish, "Close outline");
+            button(world, root, create, AreaAction::Finish, "Close outline");
         }
-        button(world, root, draw, AreaAction::Cancel, "Cancel drawing");
+        button(world, root, create, AreaAction::Cancel, "Cancel drawing");
     }
     let notice = world.get::<AreaEditor>(root).unwrap().notice.clone();
     if !notice.is_empty() {
@@ -880,21 +908,31 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         .map(|(entity, area)| (entity, area.name.clone(), area.id.clone()))
         .collect();
     areas.sort_by(|a, b| a.2.cmp(&b.2));
-    label(world, panel, "Selection", 14.0);
-    for (entity, name, _) in areas {
-        choice(
-            world,
-            root,
-            panel,
-            AreaAction::Select(entity),
-            &name,
-            selected == Some(entity),
-        );
-    }
-    let Some(entity) = selected else { return };
+    let name = areas
+        .iter()
+        .find(|(entity, _, _)| Some(*entity) == selected)
+        .map_or("Choose an Area", |(_, name, _)| name.as_str())
+        .to_owned();
+    select(
+        world,
+        root,
+        panel,
+        "Selected Area",
+        &name,
+        areas
+            .into_iter()
+            .map(|(entity, name, _)| (name, AreaAction::Select(entity)))
+            .collect(),
+    );
+    let Some(entity) = selected else {
+        crate::native::customization::synchronize_keyboard(world);
+        return;
+    };
     let panel = world
         .spawn((
             Node {
+                width: percent(100),
+                min_width: px(0),
                 flex_direction: FlexDirection::Column,
                 row_gap: px(8),
                 ..default()
@@ -903,27 +941,39 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             crate::native::actions::ControlOwner(entity),
         ))
         .id();
-    crate::native::influence_report::ui::panel(world, root, panel, Some(entity));
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
-    for (action, title, enabled) in [
-        (AreaAction::Enabled, "Area enabled", area.enabled),
-        (
-            AreaAction::AttractionEnabled,
-            "Attraction",
-            area.attraction_enabled,
-        ),
-        (
-            AreaAction::ChangesEnabled,
-            "Change properties",
-            area.changes_enabled,
-        ),
-    ] {
-        choice(world, root, panel, action, title, enabled);
-    }
+    let section = |world: &mut World, key: &str, title: &str| {
+        crate::native::customization::section(
+            world,
+            root,
+            panel,
+            &format!("areas.{}.{key}", area.id),
+            title,
+        )
+    };
+    let general = section(world, "general", "General");
+    crate::native::influence_report::ui::panel(world, root, general, Some(entity));
     choice(
         world,
         root,
-        panel,
+        general,
+        AreaAction::Enabled,
+        "Area enabled",
+        area.enabled,
+    );
+    field(
+        world,
+        root,
+        general,
+        entity,
+        Field::Name,
+        "Name",
+        area.name.clone(),
+    );
+    choice(
+        world,
+        root,
+        general,
         AreaAction::Hole,
         "Hole to workspace below",
         area.hole,
@@ -941,7 +991,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         });
         label(
             world,
-            panel,
+            general,
             &below.map_or_else(
                 || "There is no workspace below this one.".into(),
                 |name| format!("Opens {name}. Its physics and area behaviors stay active."),
@@ -949,20 +999,10 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             14.0,
         );
     }
-    field(
-        world,
-        root,
-        panel,
-        entity,
-        Field::Name,
-        "Name",
-        area.name.clone(),
-    );
-    label(world, panel, "Background", 14.0);
     let [r, g, b] = area.color;
     let picker = crate::native::color_picker::spawn(
         world,
-        panel,
+        general,
         "Area background",
         [r, g, b, (area.opacity * 255.0).round() as u8],
         true,
@@ -982,36 +1022,48 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             });
         },
     );
-    crate::native::protein_area::controls(world, root, panel, entity);
-    crate::native::protein_area::filter::controls(world, panel, entity);
-    crate::native::area_effects::controls(world, root, panel, entity);
-    crate::native::sound_area::controls(world, root, panel, entity);
-    force_controls(world, root, panel, entity);
-    reach_controls(world, root, panel, entity, &area);
-    label(world, panel, "Target", 18.0);
-    let targets = row(world, panel);
+    let protein = section(world, "protein", "Protein");
+    crate::native::protein_area::controls(world, root, protein, entity);
+    let matching = section(world, "matching", "Matching Sands");
+    crate::native::protein_area::filter::controls(world, matching, entity);
+    if area.filter.is_none() {
+        matching_controls(world, root, matching, entity, &area);
+    }
+    let effects = section(world, "effects", "Presentation and sound");
+    crate::native::area_effects::controls(world, root, effects, entity);
+    crate::native::sound_area::controls(world, root, effects, entity);
+    let forces = section(world, "forces", "Forces and reach");
     choice(
         world,
         root,
-        targets,
-        AreaAction::TargetCenter,
-        "Center",
-        area.target == AttractionTarget::Center,
+        forces,
+        AreaAction::AttractionEnabled,
+        "Attraction",
+        area.attraction_enabled,
     );
-    choice(
+    force_controls(world, root, forces, entity);
+    reach_controls(world, root, forces, entity, &area);
+    select(
         world,
         root,
-        targets,
-        AreaAction::TargetPoint,
-        "Point",
-        matches!(area.target, AttractionTarget::Point(_)),
+        forces,
+        "Attraction target",
+        if area.target == AttractionTarget::Center {
+            "Center"
+        } else {
+            "Point"
+        },
+        vec![
+            ("Center".into(), AreaAction::TargetCenter),
+            ("Point".into(), AreaAction::TargetPoint),
+        ],
     );
     if let AttractionTarget::Point(offset) = area.target {
         for (axis, title) in [(0, "Offset X"), (1, "Offset Y")] {
             field(
                 world,
                 root,
-                panel,
+                forces,
                 entity,
                 Field::Target(axis),
                 title,
@@ -1019,34 +1071,34 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             );
         }
     }
-    if area.filter.is_none() {
-        matching_controls(world, root, panel, entity, &area);
-    }
-    label(world, panel, "Shape", 18.0);
-    let shapes = row(world, panel);
-    for (kind, title) in [(ShapeKind::Square, "Square"), (ShapeKind::Circle, "Circle")] {
-        choice(
-            world,
-            root,
-            shapes,
-            AreaAction::Shape(kind),
-            title,
-            area.shape.kind() == kind,
-        );
-    }
-    choice(
+    let shape = section(world, "shape", "Shape and position");
+    select(
         world,
         root,
-        shapes,
+        shape,
+        "Area shape",
+        match area.shape.kind() {
+            ShapeKind::Square => "Square",
+            ShapeKind::Circle => "Circle",
+            ShapeKind::Drawn => "Free outline",
+        },
+        vec![
+            ("Square".into(), AreaAction::Shape(ShapeKind::Square)),
+            ("Circle".into(), AreaAction::Shape(ShapeKind::Circle)),
+        ],
+    );
+    button(
+        world,
+        root,
+        shape,
         AreaAction::Redraw,
         "Redraw the selected Area",
-        area.shape.kind() == ShapeKind::Drawn,
     );
     for (axis, title) in [(0, "Position X"), (1, "Position Y")] {
         field(
             world,
             root,
-            panel,
+            shape,
             entity,
             Field::Center(axis),
             title,
@@ -1056,7 +1108,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     field(
         world,
         root,
-        panel,
+        shape,
         entity,
         Field::Size(0),
         if area.shape.kind() == ShapeKind::Drawn {
@@ -1070,7 +1122,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         field(
             world,
             root,
-            panel,
+            shape,
             entity,
             Field::Size(1),
             "Height",
@@ -1080,14 +1132,24 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     field(
         world,
         root,
-        panel,
+        shape,
         entity,
         Field::Depth,
         "Depth",
         area.depth.to_string(),
     );
-    crate::native::area_mutation_panel::render(world, root, panel, entity);
+    let changes = section(world, "changes", "Record changes");
+    choice(
+        world,
+        root,
+        changes,
+        AreaAction::ChangesEnabled,
+        "Change properties",
+        area.changes_enabled,
+    );
+    crate::native::area_mutation_panel::render(world, root, changes, entity);
     button(world, root, panel, AreaAction::Remove, "Delete Area");
+    crate::native::customization::synchronize_keyboard(world);
 }
 
 pub(crate) mod tests {
@@ -1117,6 +1179,153 @@ pub(crate) mod tests {
         EditAction::Open.apply(app.world_mut(), root);
         EditAction::Areas.apply(app.world_mut(), root);
         (app, root)
+    }
+
+    #[test]
+    fn areas_reuse_collapsible_sections_with_indentation_dropdowns_and_retained_drafts() {
+        let (mut app, root) = fixture();
+        EditAction::Area(AreaAction::Add(ShapeKind::Circle)).apply(app.world_mut(), root);
+        let input = app
+            .world_mut()
+            .query::<(Entity, &AreaField)>()
+            .iter(app.world())
+            .find(|(_, field)| matches!(field.field, Field::Name))
+            .unwrap()
+            .0;
+        let body = app.world().get::<ChildOf>(input).unwrap().parent();
+        assert_eq!(
+            app.world().get::<Node>(body).unwrap().display,
+            Display::None
+        );
+        assert_eq!(app.world().get::<Node>(body).unwrap().padding.left, px(8));
+        let header = app
+            .world_mut()
+            .query::<(Entity, &AccessibilityNode)>()
+            .iter(app.world())
+            .find(|(entity, node)| {
+                node.label() == Some("General")
+                    && app
+                        .world()
+                        .get::<crate::native::edit_mode::EditControl>(*entity)
+                        .is_none()
+            })
+            .unwrap()
+            .0;
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: header });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(body).unwrap().display,
+            Display::Flex
+        );
+        app.world_mut()
+            .get_mut::<EditableText>(input)
+            .unwrap()
+            .editor
+            .set_text("Reading corner");
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: header });
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity: header });
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(input)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Reading corner"
+        );
+        for title in [
+            "Selected Area",
+            "Area shape",
+            "Force direction",
+            "Reach mode",
+        ] {
+            assert!(
+                app.world_mut()
+                    .query::<(&crate::native::dropdown::Dropdown, &AccessibilityNode)>()
+                    .iter(app.world())
+                    .any(|(_, node)| node.label() == Some(title)),
+                "{title}"
+            );
+        }
+        let panel = app.world().get::<EditMode>(root).unwrap().panel;
+        assert!(
+            app.world()
+                .get::<crate::native::scroll_sand::ScrollSand>(panel)
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn any_area_can_configure_its_protein_without_a_workflow_specific_editor() {
+        use crate::native::{actions::Action, protein_area, protein_castle::ProteinCastle};
+        for relations in [false, true] {
+            let (mut app, root) = fixture();
+            EditAction::Area(AreaAction::Add(ShapeKind::Circle)).apply(app.world_mut(), root);
+            let owner = app
+                .world()
+                .get::<AreaEditor>(root)
+                .unwrap()
+                .selected
+                .unwrap();
+            let config = protein_area::Config {
+                relations,
+                ..protein_area::Config::records()
+            };
+            app.world_mut()
+                .get_mut::<InfluenceArea>(owner)
+                .unwrap()
+                .protein = Some(config);
+            EditAction::General.apply(app.world_mut(), root);
+            protein_area::ConfigureProtein.apply(app.world_mut(), owner);
+            let editor = app
+                .world_mut()
+                .query::<(Entity, &protein_area::QueryEditor)>()
+                .iter(app.world())
+                .find(|(_, link)| link.0 == owner)
+                .unwrap()
+                .0;
+            app.world_mut()
+                .get_mut::<ProteinCastle>(editor)
+                .unwrap()
+                .draft
+                .query["where"] = serde_json::json!([{"text_contains":"Plato"}]);
+            protein_area::editor_changed(app.world_mut(), editor);
+            protein_area::ConfigureProtein.apply(app.world_mut(), owner);
+            assert_eq!(
+                app.world_mut()
+                    .query::<&protein_area::QueryEditor>()
+                    .iter(app.world())
+                    .count(),
+                1
+            );
+            assert!(protein_area::run_editor(app.world_mut(), editor));
+            let config = app
+                .world()
+                .get::<InfluenceArea>(owner)
+                .unwrap()
+                .protein
+                .as_ref()
+                .unwrap();
+            assert_eq!(config.relations, relations);
+            assert_eq!(
+                config.draft.query["where"],
+                serde_json::json!([{"text_contains":"Plato"}])
+            );
+            assert!(config.enabled);
+            assert!(config.draft.compile().is_ok());
+            app.world_mut().despawn(editor);
+            EditAction::Close.apply(app.world_mut(), root);
+            protein_area::ConfigureProtein.apply(app.world_mut(), owner);
+            assert_eq!(
+                app.world_mut()
+                    .query::<&protein_area::QueryEditor>()
+                    .iter(app.world())
+                    .count(),
+                0
+            );
+        }
     }
 
     #[cfg_attr(test, test)]

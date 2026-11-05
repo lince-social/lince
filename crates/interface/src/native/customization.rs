@@ -15,6 +15,7 @@ mod layout;
 pub(crate) mod programs;
 pub(crate) use sections::OpenPark;
 pub(crate) use sections::synchronize_keyboard;
+pub(crate) use sections::accordion as section;
 
 #[derive(Component)]
 struct Appearance(Entity);

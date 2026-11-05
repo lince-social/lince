@@ -462,7 +462,7 @@ pub fn update(world: &mut World) {
                 crate::native::sand::Square,
                 Node {
                     position_type: PositionType::Absolute,
-                    left: px(12),
+                    right: px(12),
                     top: px(80),
                     width: px(300),
                     max_height: percent(65),

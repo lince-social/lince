@@ -70,11 +70,15 @@ fn default_panels_start_apart_on_wide_and_narrow_screens_and_respect_reserved_sp
                 },
             ));
         layout(&mut world);
-        let left = rectangle(&world, item);
-        let right = rectangle(&world, edit);
+        let left = rectangle(&world, edit);
+        let right = rectangle(&world, item);
         assert!(left.max.x + 11.9 <= right.min.x);
         assert!(left.min.x >= 0.0 && right.max.x <= width);
         assert!(left.min.y >= 40.0 && right.min.y >= 40.0);
+        if width >= 800.0 {
+            assert_eq!(left.width(), 376.0);
+            assert_eq!(right.width(), 300.0);
+        }
         assert!(
             world
                 .get::<crate::native::canvas_item::CanvasItem>(edit)
@@ -88,7 +92,7 @@ fn dragging_panels_keeps_them_screen_fixed_clamps_edges_and_does_not_move_the_ot
     let (mut world, root, edit, item) = fixture(1280.0);
     layout(&mut world);
     let before = rectangle(&world, item);
-    move_panel(&mut world, edit, Vec2::new(-500.0, 60.0));
+    move_panel(&mut world, edit, Vec2::new(300.0, 60.0));
     layout(&mut world);
     let moved = rectangle(&world, edit);
     assert_eq!(rectangle(&world, item), before);
@@ -170,17 +174,14 @@ fn title_bar_pointer_drag_moves_the_panel_without_recreating_its_contents() {
         },
         Drag {
             button: PointerButton::Primary,
-            distance: Vec2::new(-100.0, 40.0),
-            delta: Vec2::new(-100.0, 40.0),
+            distance: Vec2::new(100.0, 40.0),
+            delta: Vec2::new(100.0, 40.0),
         },
         header,
     ));
     world.flush();
     layout(&mut world);
-    assert_eq!(
-        rectangle(&world, edit).min,
-        before + Vec2::new(-100.0, 40.0)
-    );
+    assert_eq!(rectangle(&world, edit).min, before + Vec2::new(100.0, 40.0));
     assert_eq!(world.get::<ChildOf>(header).unwrap().parent(), edit);
 }
 
@@ -207,7 +208,12 @@ fn real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport()
             crate::native::sand::SandPlugin,
         ))
         .init_resource::<Assets<TextureAtlasLayout>>()
-        .add_systems(PostUpdate, layout.after(bevy::ui::UiSystems::Layout));
+        .add_systems(
+            PostUpdate,
+            (layout, crate::native::scroll_sand::update_bars)
+                .chain()
+                .after(bevy::ui::UiSystems::Layout),
+        );
         app.world_mut().spawn((
             Camera2d,
             Camera {
@@ -239,6 +245,7 @@ fn real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport()
                         width: px(if kind == Kind::Edit { 376 } else { 300 }),
                         flex_direction: FlexDirection::Column,
                         padding: UiRect::all(px(8)),
+                        border: UiRect::all(px(1)),
                         row_gap: px(4),
                         overflow: Overflow::clip(),
                         ..default()
@@ -247,6 +254,9 @@ fn real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport()
                 ))
                 .id();
             let body = attach(app.world_mut(), panel, root, kind);
+            if kind == Kind::Edit {
+                crate::native::scroll_sand::decorate(app.world_mut(), body);
+            }
             for index in 0..40 {
                 super::super::label(app.world_mut(), body, &format!("Control {index}"), 14.0);
             }
@@ -259,8 +269,28 @@ fn real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport()
             |app: &App, entity| crate::native::inspection::bounds(app.world(), entity).unwrap();
         let edit = bounds(&app, panels[0]);
         let item = bounds(&app, panels[1]);
-        assert!(item.max.x + 11.0 <= edit.min.x, "{item:?} {edit:?}");
-        assert!(item.min.x >= 0.0 && edit.max.x <= width as f32);
+        assert!(edit.max.x + 11.0 <= item.min.x, "{item:?} {edit:?}");
+        assert!(edit.min.x >= 0.0 && item.max.x <= width as f32);
+        let track = app
+            .world_mut()
+            .query::<(&bevy::a11y::AccessibilityNode, &ChildOf)>()
+            .iter(app.world())
+            .filter(|(node, _)| node.label() == Some("Scroll content"))
+            .map(|(_, parent)| parent.parent())
+            .find(|track| app.world().get::<ChildOf>(*track).unwrap().parent() == panels[0])
+            .unwrap();
+        let before_scroll = bounds(&app, track);
+        assert!((before_scroll.width() - 6.0).abs() < 0.1);
+        app.world_mut()
+            .get_mut::<ScrollPosition>(panels[0])
+            .unwrap()
+            .0
+            .y = 80.0;
+        for _ in 0..4 {
+            app.update();
+        }
+        let after_scroll = bounds(&app, track);
+        assert!((after_scroll.min - before_scroll.min).length() < 0.1);
         Minimize.apply(app.world_mut(), panels[1]);
         for _ in 0..8 {
             app.update();
@@ -272,6 +302,30 @@ fn real_ui_layout_keeps_panel_headers_and_restore_controls_inside_the_viewport()
         assert!(
             restore.min.x >= compact.min.x && restore.max.x <= compact.max.x + 0.1,
             "{restore:?} {compact:?}"
+        );
+        let remove = app
+            .world()
+            .get::<Children>(panels[0])
+            .unwrap()
+            .iter()
+            .filter(|entity| {
+                !crate::native::scroll_sand::decoration(app.world(), *entity)
+                    && app.world().get::<Header>(*entity).is_none()
+            })
+            .collect::<Vec<_>>();
+        for entity in remove {
+            app.world_mut().despawn(entity);
+        }
+        for _ in 0..8 {
+            app.update();
+        }
+        assert_eq!(
+            app.world().get::<Node>(track).unwrap().display,
+            Display::None
+        );
+        assert_eq!(
+            app.world().get::<ScrollPosition>(panels[0]).unwrap().0.y,
+            0.0
         );
     }
 }

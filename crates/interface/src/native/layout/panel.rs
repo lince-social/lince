@@ -592,6 +592,7 @@ fn render(world: &mut World, root: Entity, target: Entity, choose_parent: bool) 
         error,
         choose_parent,
     });
+    crate::native::scroll_sand::decorate(world, panel);
 }
 
 pub(super) fn cleanup(world: &mut World) {

@@ -1,0 +1,68 @@
+# Park: rebuild responsiveness across the whole experience
+
+This directory is the working optimization plan for Park and the active Lince interface/backend paths it uses. The goal is prompt typing, clicking, scrolling, opening, dragging and local editing in a normal populated workspace on both monitors. A faster Firefox fixture alone does not finish it. This update organizes research and future implementation; it changes no executable and starts no compilation, installation or session test.
+
+The owner's [Park Record](../../trails/lince/Park.lingua) and [Lince Record](../../trails/lince/Lince.lingua) retain authority. The old [plan entry point](../Park.md) links here so existing Record and packaging links remain useful. All unfinished tasks live here, with one checkbox definition per P number. Existing IDs survive the move. Completed mechanisms and rejected experiments belong in the evidence ledger, not the task list.
+
+## What success means
+
+On the user's existing machine, with both physical monitors, many ordinary canvas items and normal Firefox/Ghostty activity:
+
+- Continuous activity presents at least 57 FPS on each 60 Hz output, with good frame intervals and no accumulating frame/input backlog. The stronger goal is sustained delivery at the actual refresh rate.
+- Typing, clicks, scroll and drag produce the correct visible response within two refresh periods at p95; p99, worst pauses and queue age are measured separately. Input dispatch and local computation have their own budgets.
+- Local title/description edits echo immediately, update other local views promptly and reach honest durable-save acknowledgement without waiting for network sync. A local save must not trigger document-sized work per character or rebuild the entire interface.
+- Unchanged presentation sleeps. Cost scales with changed data, visible/demanded content and necessary semantics, rather than every registered feature, every stored Record or the whole canvas.
+- The same workflows still function together: live Records, editing/IME, composition, scrolling, focus, accessibility, media, automation, capture and both outputs. Quality, correctness and supported functionality remain part of the result.
+
+Exact workloads, targets and measurement limitations are in [08-benchmarks.md](08-benchmarks.md). They are targets to implement and demonstrate, not claims that the current build passes.
+
+## Read and execute in this order
+
+| Stage | File | Decision/output |
+| --- | --- | --- |
+| Evidence to reuse | [00 — Evidence and research](00-evidence-and-research.md) | What is established, what is only a theory, receipts and source anchors; do not repeat completed work. |
+| 1 | [01 — Measurement](01-measurement.md) | Reproducible current workload, causal input/save traces, ranked critical path, CPU/GPU/wait ownership. |
+| 2 | [02 — Input and scheduling](02-input-and-scheduling.md) | Short, bounded interaction work; independent rendering and background work; useful parallelism. |
+| 3 | [03 — Local edits and storage](03-local-edits-and-storage.md) | Cheap local feedback, incremental recovery and writes, short transactions, bounded fanout. |
+| 4 | [04 — Styles, layout and retention](04-style-layout-and-retention.md) | Read-optimized resolved styles, precise invalidation, local layout and retained transforms. |
+| 5 | [05 — Feature costs and scaling](05-feature-costs-and-scaling.md) | Every active feature mapped to shared paths; visible-list scaling, bounded workers and retained panels. |
+| 6 | [06 — GPU and outputs](06-gpu-and-outputs.md) | Correct device work, fewer passes/transfers/waits, independent output pacing and damage. |
+| 7 | [07 — Unbloat and release](07-unbloat-and-release.md) | Delete proven waste, simplify ownership and produce a better optimized shipping artifact. |
+| Contract used by every stage | [08 — Benchmarks](08-benchmarks.md) | Stable numerical and work-count targets for Laboratory/tests and real daily use. |
+| Coverage used by every stage | [09 — Workflows and combinations](09-workflows.md) | User actions, feature inventory, combinations, oracles and missing coverage. |
+| Architecture used by every stage | [10 — Architecture](10-architecture.md) | Shared families, intended data ownership, invalidation and handoff boundaries. |
+| 11 | [11 — Acceptance and experiments](11-acceptance-and-experiments.md) | Combined candidate evidence, honest physical acceptance, unfinished repairs and rejected directions. |
+
+Within a stage, take tasks in file order unless a measured dominant cause makes a later task the appropriate next step; record that reason. Do not complete every audit or minor task before fixing an established major bottleneck. Conditional experiments need evidence of their premise, not implementation merely to tick a box.
+
+The first implementation round starts with a current fixture/source identity and a trace of typing and a local Record edit, extending the existing profiler only where signals are missing. Use those same observations for P66/P67 and the wake/GPU questions. The first fixes then attack the largest demonstrated input blocker and save amplification. The completed exclusive-system audit already identifies surface preparation and the sequential main/render boundary as architectural candidates. They must remain early candidates, rather than being postponed behind endless getter/cache experiments.
+
+## Direction of the overhaul
+
+Treat input, semantic mutation, presentation derivation, GPU execution, output presentation and durable storage as distinct responsibilities with explicit handoffs. One keystroke must not require every feature to poll, every style to resolve, every subtree to lay out, every document to serialize and every output to repaint before its own effect becomes visible. Reuse the existing ECS, host bridge, source revisions, workers, wake deadlines, retained surfaces and test catalogue; replace a boundary when the evidence shows it is fundamentally wrong. This is permission to plan substantial refactors of active paths, not a requirement to keep an inefficient architecture intact.
+
+**Styling favors reads.** Themes and token assignments are usually edited far less often than their resolved values are consumed. Prefer paying bounded derivation/invalidation cost on actual changes and reading compact, already-resolved values on ordinary frames. Continuous sliders, relation color rules, dynamic inherited contexts and newly opened items still need correct live updates. Persisted JSON/token source representation is a separate concern from the runtime hot representation. No claim of “100% optimized” is credible without workload evidence; the open style tasks explicitly test this gap.
+
+**Local editing is local.** Separate immediate in-memory feedback, recoverable draft persistence, canonical local commit, view publication and remote replication. Keep their status honest. Existing durability and collaboration protections are intentional; replace excessive work with a cheaper correct mechanism rather than removing recovery, authorization, history or synchronization.
+
+**Parallelism must shorten the user-visible path.** Use existing pools for sufficiently large independent immutable batches, retaining dependent parent/child and global-budget decisions in order. Removing a chain between exclusive World systems does not make them concurrent. Include extraction/copy, queues, validation and synchronization in the comparison. Correct CPU/GPU placement is assessed from actual work and transfer/wait cost, not a utilization screenshot.
+
+**Unbloating must reach executed work.** Remove duplicate scans, conversions, subscriptions, writes, ownership adapters, caches and eager initialization where their use/cost is established. Source size alone is not a responsiveness diagnosis. Preserve functionality, attribution, credits and declared behavior; do not touch the unplugged web frontend or protected files as collateral cleanup.
+
+## Benchmarks and combinations govern experiments
+
+Each experiment names its critical-path hypothesis, shared family, workloads, expected gain, correctness oracle and dependencies before coding. An isolated throughput result does not establish typing latency or whole-desktop benefit. Keep raw observations and compute the same metrics for baseline and candidate, including unchanged controls and baseline drift. Do not add percentages from overlapping spans or multiply independent microbenchmark gains into a desktop prediction.
+
+The user accepts a net performance gain even when some cases become slower. Show the actual gains, costs and affected workflows instead of imposing a new regression policy or automatically rejecting any slowdown. A temporary failure during a staged refactor stays visible with a specific repair task and affected benchmark; it is not a passed result. Try the follow-up optimization that can restore the affected case while retaining the win. Keep benchmark definitions and correctness oracles stable so a worse result cannot be hidden by changing the test. Final acceptance reflects the measured combined candidate and the user's tradeoff decisions.
+
+Use the finite workflow factors and pairwise coverage in 09, plus named high-risk triples and transitions. Enumerating the infinite Cartesian product of every feature, document, layout and event is impossible. Coverage is complete only relative to a source-stamped inventory and an explicit selected set; unknown/uncovered cases are named. Newly reachable UI features extend that inventory through P124, without requiring a new benchmark framework per Castle.
+
+## Completing one task
+
+Keep only one definition of each task. A task may finish with a useful implementation, a measured rejection, or an investigation that has the stated deliverable. Remove it only when that outcome and its required checks are recorded. Missing required evidence stays pending. Record a rejected experiment in the evidence ledger; the user's existing authorization for an exact negative result in Build.lingua does not authorize unrelated Record edits. A successful mechanism need not close the physical acceptance tasks.
+
+Use a frozen source/toolchain/features/profile identity and actual executable hashes. Compile comparison variants before timing; exclude compilation, competing test renderers and uncontrolled benchmark processes. Reuse existing fixtures and a bounded runner. Start with short observations and extend only to answer a named uncertainty. Do not create whole worktrees or rebuild the dependency graph for each small hypothesis when the existing matching setup suffices.
+
+Use cargo check, warnings as errors, and the existing Nix/xtask workflow for executions. No cargo build/clean, code comments, past migration edits or automatic session disruption. Schema changes, if necessary, use new append-only migrations and the repository's migration checks. Preserve concurrent agents' edits. Documentation work does not initiate release builds, Actions polling, installation, logout or physical monitor/lock/VT actions. A task requiring those actions remains explicit and coordinated with the user.
+
+The source review for this reorganization was at b4429a44cf3d20ba18b3f90a131339f64ba14201 with a dirty shared worktree. Historical optimized runs and the uncommitted P91 scheduling change have different identities; none is silently a current desktop benchmark.

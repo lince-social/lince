@@ -592,7 +592,7 @@ pub(crate) fn setup(world: &mut World) {
                 Node {
                     display: Display::None,
                     position_type: PositionType::Absolute,
-                    right: px(16),
+                    left: px(16),
                     top: px(12),
                     bottom: px(64),
                     width: px(376),
@@ -1333,6 +1333,7 @@ pub(crate) fn reorder_workspaces(world: &mut World, root: Entity) {
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
     render_panel_content(world, root);
     let panel = world.get::<EditMode>(root).unwrap().panel;
+    crate::native::scroll_sand::decorate(world, panel);
     world.spawn((
         ChildOf(panel),
         Node {
@@ -1374,6 +1375,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
     for child in children {
         if Some(child) != existing_tabs && world.get::<EditClose>(child).is_none()
             && world.get::<panels::Header>(child).is_none()
+            && !crate::native::scroll_sand::decoration(world, child)
         {
             world.despawn(child);
         }

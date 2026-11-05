@@ -106,7 +106,7 @@ async fn explicit_attachment_streams_existing_properties_updates_and_detaches_wi
     assert_eq!(app.world().get::<RecordBinding>(item).unwrap().uid, uid);
     assert_eq!(
         app.world().get::<RecordProperties>(item).unwrap().0["quantity"],
-        3.0
+        "3"
     );
     engine
         .act(
@@ -246,6 +246,13 @@ fn property_controls_attach_without_spawning_a_record_view_and_close_with_the_it
         .next()
         .unwrap();
     let uid = nucleus::new_uid("r");
+    let mut ancestor = Some(page);
+    while let Some(entity) = ancestor {
+        if app.world().get::<InheritedVisibility>(entity).is_some() {
+            app.world_mut().entity_mut(entity).insert(InheritedVisibility::VISIBLE);
+        }
+        ancestor = app.world().get::<ChildOf>(entity).map(ChildOf::parent);
+    }
     app.world_mut()
         .get_mut::<EditableText>(input)
         .unwrap()

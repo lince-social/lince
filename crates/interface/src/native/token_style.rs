@@ -195,8 +195,7 @@ impl Plugin for TokenStylePlugin {
                 PostUpdate,
                 (
                     sizes,
-                    presentation::apply,
-                    presentation::icons,
+                    (presentation::apply, presentation::icons),
                     presentation::clear,
                 )
                     .chain()
@@ -488,10 +487,63 @@ pub(crate) mod tests {
         }
     }
 
+    #[cfg_attr(test, test)]
+    fn styling_publishes_complete_theme_colors_before_same_tick_consumers() {
+        #[derive(Resource, Default)]
+        struct Observed(usize, Color);
+
+        let (mut app, root) = fixture();
+        app.add_plugins(bevy::app::TaskPoolPlugin::default());
+        let sand = spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::ZERO);
+        app.world_mut()
+            .entity_mut(sand)
+            .remove::<BorderColor>()
+            .insert((OutlineToken(Token::Accent), Outline::default()));
+        let icon = app
+            .world_mut()
+            .spawn(crate::native::icons::IconStyle::default())
+            .id();
+        let glyph = app
+            .world_mut()
+            .spawn((ImageNode::default(), TextToken(Token::Ink)))
+            .id();
+        app.init_resource::<Observed>().add_systems(
+            PostUpdate,
+            (move |world: &mut World| {
+                let expected = world.resource::<Observed>().1;
+                assert_eq!(world.get::<BorderColor>(sand).unwrap().top, expected);
+                assert_eq!(world.get::<Outline>(sand).unwrap().color, expected);
+                assert_eq!(
+                    world
+                        .get::<crate::native::icons::IconStyle>(icon)
+                        .unwrap()
+                        .color,
+                    expected
+                );
+                assert_eq!(world.get::<ImageNode>(glyph).unwrap().color, expected);
+                world.resource_mut::<Observed>().0 += 1;
+            })
+            .after(ApplyTokenStyles),
+        );
+        for color in [[17, 61, 203, 255], [210, 33, 19, 0], [40, 190, 80, 255]] {
+            let value = TokenValue::Color(color);
+            app.world_mut().resource_mut::<Observed>().1 = value.color();
+            for token in [Token::SandBorder, Token::Accent, Token::Ink] {
+                app.world_mut()
+                    .resource_mut::<ThemeSettings>()
+                    .global
+                    .set(token, value);
+            }
+            app.update();
+        }
+        assert_eq!(app.world().resource::<Observed>().0, 3);
+    }
+
     crate::native::laboratory_cases! {
         image_glyphs_follow_ink_when_switching_themes,
         renders_global_type_and_individual_styles_and_preserves_later_resizing,
         nested_text_inherits_its_parent_and_can_override_it,
         styling_stays_unchanged_while_idle_and_keeps_explicit_icon_colors,
+        styling_publishes_complete_theme_colors_before_same_tick_consumers,
     }
 }

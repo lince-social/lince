@@ -32,6 +32,7 @@ use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 pub(crate) use ui::Command as ProteinAction;
 pub(crate) use ui::controls;
+pub(crate) use ui::ConfigureProtein;
 
 pub(crate) fn attach_field_history(world: &mut World, entity: Entity) {
     history::attach_text(world, entity);

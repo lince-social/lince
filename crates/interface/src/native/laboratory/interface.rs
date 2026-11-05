@@ -75,10 +75,15 @@ fn fast_interface_rules() {
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
-    assert!(results.get(results.len() - 2).is_some_and(|result| {
+    assert!(results.get(results.len() - 3).is_some_and(|result| {
         result
             .name
             .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
+    }));
+    assert!(results.get(results.len() - 2).is_some_and(|result| {
+        result
+            .name
+            .ends_with("::splice_preserves_unicode_mutations_and_cursors")
     }));
     assert!(results.last().is_some_and(|result| {
         result

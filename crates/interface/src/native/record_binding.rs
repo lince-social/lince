@@ -15,8 +15,10 @@ use crate::host::performance::{self, Count, Stage};
 use crate::native::protein_area::{RecordBinding, Source};
 
 mod journal;
+mod splice_checks;
 
 pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
+    splice_checks::laboratory_cases(cases);
     journal::laboratory_cases(cases);
 }
 mod recovery;
@@ -1559,24 +1561,33 @@ pub(crate) fn submit(
 }
 
 fn splice(doc: &LoroDoc, property: &str, before: &str, after: &str) -> Result<(), String> {
-    let old: Vec<char> = before.chars().collect();
-    let new: Vec<char> = after.chars().collect();
-    let prefix = old.iter().zip(&new).take_while(|(a, b)| a == b).count();
-    let suffix = old[prefix..]
-        .iter()
+    let mut prefix = 0;
+    let mut prefix_bytes = 0;
+    for (old, new) in before.chars().zip(after.chars()) {
+        if old != new {
+            break;
+        }
+        prefix += 1;
+        prefix_bytes += old.len_utf8();
+    }
+    let old = &before[prefix_bytes..];
+    let new = &after[prefix_bytes..];
+    let suffix_bytes: usize = old
+        .chars()
         .rev()
-        .zip(new[prefix..].iter().rev())
+        .zip(new.chars().rev())
         .take_while(|(a, b)| a == b)
-        .count();
+        .map(|(character, _)| character.len_utf8())
+        .sum();
     let text = doc.get_text(property);
-    let removed = old.len() - prefix - suffix;
+    let removed = old[..old.len() - suffix_bytes].chars().count();
     if removed != 0 {
         text.delete(prefix, removed)
             .map_err(|error| error.to_string())?;
     }
-    let inserted: String = new[prefix..new.len() - suffix].iter().collect();
+    let inserted = &new[..new.len() - suffix_bytes];
     if !inserted.is_empty() {
-        text.insert(prefix, &inserted)
+        text.insert(prefix, inserted)
             .map_err(|error| error.to_string())?;
     }
     doc.commit();

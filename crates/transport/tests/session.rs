@@ -402,6 +402,24 @@ async fn collab_join_is_refused_for_a_record_the_subject_cannot_see() {
     .expect("record")
     .uid;
 
+    let owner = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Owner",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    store::visibility::grant(&engine.store.pool, "actor", Some(&owner), &uid)
+        .await
+        .unwrap();
+    allow_person(&engine, &owner, "record", "read").await;
+
     let person = store::records::create(
         &engine.store.pool,
         store::records::NewRecord {
@@ -417,6 +435,8 @@ async fn collab_join_is_refused_for_a_record_the_subject_cannot_see() {
     .uid;
     allow_person(&engine, &person, "record", "read").await;
     allow_person(&engine, &person, "record", "update").await;
+    assert!(engine.may_read_record(Some(&owner), &uid).await.unwrap());
+    assert!(!engine.may_read_record(Some(&person), &uid).await.unwrap());
     let mut remote = Session::new(engine.clone(), hub.clone(), "conn-remote", Some(person));
     let out = remote
         .handle(ClientMessage::CollabJoin {

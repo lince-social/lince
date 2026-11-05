@@ -295,10 +295,16 @@ impl Engine {
                 return operation.await;
             }
             if write {
+                let waiting = crate::performance::Span::new("record-access-write-wait");
                 let _guard = self.access_gate.write().await;
+                drop(waiting);
+                let _held = crate::performance::Span::new("record-access-write-hold-await");
                 ACCESS_SCOPE.scope((key, true), operation).await
             } else {
+                let waiting = crate::performance::Span::new("record-access-read-wait");
                 let _guard = self.access_gate.read().await;
+                drop(waiting);
+                let _held = crate::performance::Span::new("record-access-read-hold-await");
                 ACCESS_SCOPE.scope((key, false), operation).await
             }
         }

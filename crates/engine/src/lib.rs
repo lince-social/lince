@@ -27,6 +27,7 @@ pub mod custom_component;
 pub mod directory;
 pub mod demeter;
 pub mod optimization;
+pub use utils::performance;
 pub mod effects;
 pub mod enrolment;
 pub mod error;
@@ -431,11 +432,14 @@ impl Engine {
         fact: Fact,
         now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
+        let observing = performance::Span::new("record-observe-state-await");
         self.observe_fact_state(&fact, now).await?;
+        drop(observing);
         let _ = self.bus.send(fact.clone());
         let changed = vec![fact.record_uid.clone()];
         let event_id = fact.uid.clone();
         let mut committed = vec![fact];
+        let _reactions = performance::Span::new("record-reactions-await");
         committed.extend(Box::pin(self.react_to_event(changed, event_id, now)).await?);
         Ok(committed)
     }

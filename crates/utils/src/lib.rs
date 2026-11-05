@@ -6,5 +6,6 @@ pub mod diagnostics;
 pub mod logging;
 pub mod macros;
 pub mod owner_backup;
+pub mod performance;
 pub mod self_update;
 pub mod vault;

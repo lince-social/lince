@@ -84,6 +84,33 @@ stages! {
     RecordDraftQueueWait => "record-draft-queue-wait",
     RecordDraftWrite => "record-draft-write-await",
     RecordChangeService => "record-change-service-await",
+    RecordAccessWriteWait => "record-access-write-wait",
+    RecordAccessReadWait => "record-access-read-wait",
+    RecordAccessWriteHold => "record-access-write-hold-await",
+    RecordAccessReadHold => "record-access-read-hold-await",
+    RecordAdmission => "record-admission-await",
+    RecordTextPermissions => "record-text-permissions-await",
+    RecordImportWait => "record-import-lock-wait",
+    RecordImportHold => "record-import-lock-hold-await",
+    RecordAcceptedLookup => "record-accepted-document-await",
+    RecordPrepare => "record-canonical-prepare",
+    RecordGuardBase => "record-guard-base-validation",
+    RecordGuardCandidateImport => "record-guard-candidate-import",
+    RecordGuardCandidateBuild => "record-guard-candidate-build",
+    RecordGuardHistory => "record-guard-history-validation",
+    RecordGuardHistoryEncode => "record-guard-history-encoding",
+    RecordSnapshotExport => "record-canonical-snapshot-export",
+    RecordPersistence => "record-canonical-persist-await",
+    RecordCompositionCheck => "record-composition-check-await",
+    RecordDeltaExport => "record-canonical-delta-export",
+    RecordSignerWait => "record-signer-wait",
+    RecordTransactionBegin => "record-canonical-begin-await",
+    RecordTransactionBody => "record-canonical-transaction-body-await",
+    RecordTransactionCommit => "record-canonical-commit-await",
+    RecordObserve => "record-observe-state-await",
+    RecordReact => "record-reactions-await",
+    CellQuery => "cell-query-execute-await",
+    CellRefresh => "cell-refresh-await",
     RecordBindingPublish => "record-binding-publish",
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
@@ -144,6 +171,9 @@ macro_rules! counts {
         impl Count {
             pub const ALL: &'static [Self] = &[$(Self::$name,)*];
             fn label(self) -> &'static str { match self { $(Self::$name => $label,)* } }
+            pub fn from_label(label: &str) -> Option<Self> {
+                match label { $($label => Some(Self::$name),)* _ => None }
+            }
         }
     };
 }
@@ -185,6 +215,14 @@ counts! {
     RecordDraftCheckpointBytes => "record-draft-initial-checkpoint-bytes",
     RecordDraftWrites => "record-draft-writes",
     RecordDraftClears => "record-draft-clears",
+    RecordCanonicalChanges => "record-canonical-changes",
+    RecordCanonicalBegins => "record-canonical-begins",
+    RecordCanonicalCommits => "record-canonical-commits",
+    RecordGuardHistoryBytes => "record-guard-history-bytes",
+    RecordCanonicalSnapshotBytes => "record-canonical-snapshot-bytes",
+    RecordCanonicalDeltaBytes => "record-canonical-delta-bytes",
+    CellQueries => "cell-queries",
+    CellQueryRows => "cell-query-rows",
     RecordBindingViews => "record-binding-views-compared",
     RecordBindingViewChanged => "record-binding-views-changed",
     RecordEditorTextCopies => "record-editor-input-text-copies",
@@ -335,6 +373,22 @@ struct Monitor {
 }
 
 impl Monitor {
+    #[cfg(feature = "native-presentation")]
+    fn backend(&self, reading: engine::performance::Reading) {
+        match reading {
+            engine::performance::Reading::Elapsed(label, elapsed) => {
+                if let Some(stage) = Stage::from_label(label) {
+                    self.record(stage, elapsed);
+                }
+            }
+            engine::performance::Reading::Count(label, count) => {
+                if let Some(counter) = Count::from_label(label) {
+                    self.counters[counter as usize].fetch_add(count, Ordering::Relaxed);
+                }
+            }
+        }
+    }
+
     fn new(sender: Option<SyncSender<Report>>) -> Self {
         Self {
             stages: Stage::ALL
@@ -527,9 +581,21 @@ fn monitor() -> Option<&'static Monitor> {
                         }
                     }
                 });
-            logger.ok().map(|_| Monitor::new(Some(sender)))
+            let monitor = logger.ok().map(|_| Monitor::new(Some(sender)));
+            #[cfg(feature = "native-presentation")]
+            if monitor.is_some() {
+                engine::performance::install(backend);
+            }
+            monitor
         })
         .as_ref()
+}
+
+#[cfg(feature = "native-presentation")]
+fn backend(reading: engine::performance::Reading) {
+    if let Some(monitor) = monitor() {
+        monitor.backend(reading);
+    }
 }
 
 pub fn enabled() -> bool {
@@ -625,6 +691,43 @@ impl Drop for Span {
 #[cfg(any(test, feature = "behavior-checks"))]
 pub mod checks {
     use super::*;
+
+    #[cfg(feature = "native-presentation")]
+    #[cfg_attr(test, test)]
+    pub fn backend_phases_share_the_monitor_and_only_allow_declared_numeric_readings() {
+        let monitor = Monitor::new(None);
+        monitor.backend(engine::performance::Reading::Elapsed(
+            "record-guard-base-validation",
+            Duration::from_micros(25),
+        ));
+        monitor.backend(engine::performance::Reading::Count("cell-query-rows", 8));
+        monitor.backend(engine::performance::Reading::Elapsed(
+            "private Record contents",
+            Duration::from_secs(1),
+        ));
+        monitor.backend(engine::performance::Reading::Count(
+            "private Record contents",
+            99,
+        ));
+        let report = monitor.snapshot();
+        assert_eq!(report.stages.len(), 1);
+        assert_eq!(report.stages[0].stage, "record-guard-base-validation");
+        assert_eq!(report.stages[0].total_us, 25);
+        assert_eq!(report.counters.len(), 1);
+        assert_eq!(report.counters[0].counter, "cell-query-rows");
+        assert_eq!(report.counters[0].count, 8);
+        assert!(
+            !serde_json::to_string(&report)
+                .unwrap()
+                .contains("private Record contents")
+        );
+        for counter in Count::ALL {
+            assert_eq!(
+                Count::from_label(counter.label()).map(|value| value as usize),
+                Some(*counter as usize)
+            );
+        }
+    }
 
     #[cfg_attr(test, test)]
     pub fn input_traces_are_bounded_nonblocking_and_report_loss_without_payloads() {

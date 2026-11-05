@@ -143,13 +143,17 @@ impl AcceptedDoc {
     }
 
     fn from_document(doc: LoroDoc, limits: &Limits) -> Result<Self, GuardError> {
+        let _building = crate::performance::Span::new("record-guard-candidate-build");
         validate_limits(limits)?;
         validate_document(&doc, limits)?;
         let head = doc.get_text("head").to_string();
         let body = doc.get_text("body").to_string();
+        let exporting = crate::performance::Span::new("record-canonical-snapshot-export");
         let snapshot = doc
             .export(ExportMode::Snapshot)
             .map_err(|_| GuardError::ExportRefused)?;
+        drop(exporting);
+        crate::performance::add("record-canonical-snapshot-bytes", snapshot.len() as u64);
         bounded(snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
         Ok(Self {
             version: doc.oplog_vv(),
@@ -258,7 +262,9 @@ impl AcceptedDoc {
         validate_limits(limits)?;
         bounded(raw_json.len(), limits.delta_bytes, "delta bytes")?;
         bounded(self.snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
+        let base_validation = crate::performance::Span::new("record-guard-base-validation");
         validate_document(&self.doc, limits)?;
+        drop(base_validation);
         let raw: RawSchema =
             serde_json::from_slice(raw_json).map_err(|_| GuardError::InvalidJson)?;
         let schema = raw.into_schema(limits)?;
@@ -295,6 +301,7 @@ impl AcceptedDoc {
         let candidate = if let Some(candidate) = authored {
             candidate
         } else {
+            let _importing = crate::performance::Span::new("record-guard-candidate-import");
             let candidate = import_snapshot(&self.snapshot)?;
             if candidate.oplog_vv() != base_version {
                 return Err(GuardError::InvalidState);
@@ -488,6 +495,7 @@ fn validate_document(doc: &LoroDoc, limits: &Limits) -> Result<(), GuardError> {
         limits.text_bytes,
         "text bytes",
     )?;
+    let _history = crate::performance::Span::new("record-guard-history-validation");
     let history = doc
         .export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv());
     inspect_schema(
@@ -498,7 +506,9 @@ fn validate_document(doc: &LoroDoc, limits: &Limits) -> Result<(), GuardError> {
         &VersionVector::default(),
     )?;
     verify_delete_targets(doc, &history, &doc.oplog_vv())?;
-    encode_bounded(&history, limits.history_bytes, "history bytes")?;
+    let _encoding = crate::performance::Span::new("record-guard-history-encoding");
+    let encoded = encode_bounded(&history, limits.history_bytes, "history bytes")?;
+    crate::performance::add("record-guard-history-bytes", encoded.len() as u64);
     Ok(())
 }
 

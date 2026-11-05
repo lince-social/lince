@@ -416,11 +416,13 @@ impl crate::Engine {
         incoming: Option<(&crate::sync::WireOp, Option<&str>)>,
         receipt: Option<(&str, &str)>,
     ) -> Result<Option<nucleus::Fact>, EngineError> {
+        let _persistence = crate::performance::Span::new("record-canonical-persist-await");
         if prepared.is_duplicate() && incoming.is_none() && receipt.is_none() {
             return Ok(None);
         }
         let publish = publish && !prepared.is_duplicate();
         let candidate = &prepared;
+        let composition = crate::performance::Span::new("record-composition-check-await");
         if let Some(record) = store::records::get(&self.store.pool, uid).await?
             && let Ok(previous) = nucleus::component::Document::decode(&record.body)
         {
@@ -461,8 +463,10 @@ impl crate::Engine {
             self.resolve_canvas_component(&mut document.component, actor)
                 .await?;
         }
+        drop(composition);
         let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
         let beginning = VersionVector::default();
+        let exporting = crate::performance::Span::new("record-canonical-delta-export");
         let delta = candidate
             .export_updates(if has_history {
                 prepared.base_version()
@@ -470,6 +474,8 @@ impl crate::Engine {
                 &beginning
             })
             .map_err(refused)?;
+        drop(exporting);
+        crate::performance::add("record-canonical-delta-bytes", delta.len() as u64);
         let relay = if let Some((op, _)) = incoming {
             let local = store::cells::local(&self.store.pool).await?;
             let record = store::records::get(&self.store.pool, uid).await?;
@@ -482,9 +488,15 @@ impl crate::Engine {
         } else {
             false
         };
+        let signer_wait = crate::performance::Span::new("record-signer-wait");
         let signer = self.signer.lock().await.clone();
+        drop(signer_wait);
         let now = nucleus::execution::now();
+        let beginning = crate::performance::Span::new("record-canonical-begin-await");
+        crate::performance::add("record-canonical-begins", 1);
         let mut tx = store::write_tx(&self.store.pool).await?;
+        drop(beginning);
+        let body = crate::performance::Span::new("record-canonical-transaction-body-await");
         let checkpoint = self
             .record_checkpoint_on(
                 &mut tx,
@@ -573,7 +585,11 @@ impl crate::Engine {
         if let Some(checkpoint) = checkpoint {
             checkpoint.finish(&mut tx, Default::default()).await?;
         }
+        drop(body);
+        let committing = crate::performance::Span::new("record-canonical-commit-await");
         tx.commit().await?;
+        drop(committing);
+        crate::performance::add("record-canonical-commits", 1);
         self.cache_doc(uid, Arc::new(prepared.into_accepted_after_commit()));
         Ok(fact)
     }
@@ -650,20 +666,30 @@ impl crate::Engine {
         receipt: Option<(&str, &str)>,
     ) -> Result<Vec<nucleus::Fact>, EngineError> {
         self.access_scope(true, async {
+            let permission_check = crate::performance::Span::new("record-text-permissions-await");
             let permissions = self.record_text_permissions(actor, uid).await?;
+            drop(permission_check);
             if update.len() > limits().delta_bytes * 2 {
                 return Err(refused("edit is too large"));
             }
             let raw = B64.decode(update).map_err(refused)?;
+            let waiting = crate::performance::Span::new("record-import-lock-wait");
             let _serial = self.import_lock.lock().await;
+            drop(waiting);
+            let held = crate::performance::Span::new("record-import-lock-hold-await");
+            let lookup = crate::performance::Span::new("record-accepted-document-await");
             let doc = self.accepted_doc(uid).await?;
+            drop(lookup);
+            let preparation = crate::performance::Span::new("record-canonical-prepare");
             let prepared = doc
                 .prepare_delta(&raw, &permissions, &limits())
                 .map_err(refused)?;
+            drop(preparation);
             let fact = self
                 .persist_text(uid, prepared, true, actor, None, receipt)
                 .await?;
             drop(_serial);
+            drop(held);
             if let Some(fact) = fact {
                 self.observe_committed_fact(fact, nucleus::execution::now())
                     .await

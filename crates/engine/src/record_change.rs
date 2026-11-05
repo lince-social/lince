@@ -487,6 +487,7 @@ impl Engine {
         request: Request,
         actor: Option<&str>,
     ) -> Result<ActionOutcome, EngineError> {
+        crate::performance::add("record-canonical-changes", 1);
         self.access_scope(true, self.change_record_inner(request, actor, None))
             .await
     }
@@ -515,6 +516,7 @@ impl Engine {
                 "A property change needs durable Record and change identities",
             ));
         }
+        let admission = crate::performance::Span::new("record-admission-await");
         let uid = &request.record_uid;
         self.authorize_action(
             &crate::actions::Action::EditRecordText {
@@ -592,6 +594,7 @@ impl Engine {
         if payload.len() > crate::collab::limits().delta_bytes * 2 {
             return Err(invalid("Property change is too large"));
         }
+        drop(admission);
         if let Mutation::Text { update_base64 } = &request.mutation {
             let facts = self
                 .apply_text_change_as(uid, update_base64, actor, Some((&request.id, &payload)))

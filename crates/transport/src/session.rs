@@ -689,13 +689,15 @@ impl Session {
         &self,
         protein: &Protein,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
+        let _query = engine::performance::Span::new("cell-query-execute-await");
+        engine::performance::add("cell-queries", 1);
         if matches!(protein.source, protein::Source::Calendar | protein::Source::Schedule) {
             let context = protein::calendar::context(protein, self.subject.as_deref())?;
             self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
         }
         let signer_actor = self.available_signer_actor().await;
         let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
-        protein::execute_for_with_context(
+        let rows = protein::execute_for_with_context(
             &self.engine.store,
             protein,
             self.subject.as_deref(),
@@ -704,7 +706,9 @@ impl Session {
                 nearby: nearby.as_deref(),
             },
         )
-        .await
+        .await?;
+        engine::performance::add("cell-query-rows", rows.len() as u64);
+        Ok(rows)
     }
 
     async fn subscribe_workspace(&mut self, id: String, workspace: String, client: engine::workspace_sync::Client) -> Vec<ServerMessage> {
@@ -764,6 +768,7 @@ impl Session {
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
+        let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
             self.workspace_subscriptions.clear();
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
@@ -1032,6 +1037,7 @@ impl Session {
     }
 
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
+        let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];

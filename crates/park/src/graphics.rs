@@ -115,6 +115,11 @@ pub(crate) struct VulkanRenderer {
     waits: std::cell::RefCell<std::collections::HashMap<(smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer, u64), wait::Watch>>,
     #[cfg(feature = "native-presentation")]
     reactor: wait::Reactor,
+    pub(crate) gpu: Arc<GpuContext>,
+    _thread: std::marker::PhantomData<std::cell::Cell<()>>,
+}
+
+pub(crate) struct GpuContext {
     completion: completion::Driver,
     pub(crate) _instance: wgpu::Instance,
     pub(crate) adapter: wgpu::Adapter,
@@ -124,7 +129,14 @@ pub(crate) struct VulkanRenderer {
     raw_device: ash::Device,
     physical_device: vk::PhysicalDevice,
     queue_family: u32,
-    _thread: std::marker::PhantomData<std::cell::Cell<()>>,
+}
+
+impl std::ops::Deref for VulkanRenderer {
+    type Target = GpuContext;
+
+    fn deref(&self) -> &Self::Target {
+        &self.gpu
+    }
 }
 
 struct Allocation {
@@ -287,19 +299,23 @@ impl VulkanRenderer {
             waits: Default::default(),
             #[cfg(feature = "native-presentation")]
             reactor,
-            completion: completion::Driver::new(device.clone())?,
-            _instance: instance,
-            adapter,
-            device,
-            queue,
-            raw_instance,
-            raw_device,
-            physical_device,
-            queue_family,
+            gpu: Arc::new(GpuContext {
+                completion: completion::Driver::new(device.clone())?,
+                _instance: instance,
+                adapter,
+                device,
+                queue,
+                raw_instance,
+                raw_device,
+                physical_device,
+                queue_family,
+            }),
             _thread: Default::default(),
         })
     }
+}
 
+impl GpuContext {
     fn create_shared_image(&self, width: u32, height: u32) -> Result<SharedImage> {
         self.create_shared_image_format(width, height, wgpu::TextureFormat::Bgra8Unorm)
     }

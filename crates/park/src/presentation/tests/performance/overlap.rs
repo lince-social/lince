@@ -12,25 +12,35 @@ use std::{
 };
 
 struct RenderWorker {
-    sender: Option<SyncSender<(SubApp, usize)>>,
+    sender: Option<SyncSender<(SubApp, usize, Option<Epoch>)>>,
     receiver: Receiver<(SubApp, usize, [f64; 2])>,
     worker: Option<JoinHandle<()>>,
 }
 
 impl RenderWorker {
-    fn new(origin: Instant, runtime: tokio::runtime::Handle) -> Self {
-        let (sender, incoming) = sync_channel::<(SubApp, usize)>(1);
+    fn new(
+        origin: Instant,
+        runtime: tokio::runtime::Handle,
+        exporter: Option<(Arc<crate::graphics::GpuContext>, SyncSender<Publication>)>,
+    ) -> Self {
+        let (sender, incoming) = sync_channel::<(SubApp, usize, Option<Epoch>)>(1);
         let (outgoing, receiver) = sync_channel(1);
         let worker = std::thread::Builder::new()
             .name("park-overlap-probe".into())
             .stack_size(32 * 1024 * 1024)
             .spawn(move || {
                 let _entered = runtime.enter();
-                while let Ok((mut app, epoch)) = incoming.recv() {
+                while let Ok((mut app, number, epoch)) = incoming.recv() {
                     let start = origin.elapsed().as_secs_f64() * 1000.0;
                     app.update();
                     let end = origin.elapsed().as_secs_f64() * 1000.0;
-                    if outgoing.send((app, epoch, [start, end])).is_err() {
+                    if let Some(epoch) = epoch {
+                        let (gpu, publisher) = exporter.as_ref().unwrap();
+                        if publisher.send(export(gpu, &app, epoch, origin)).is_err() {
+                            break;
+                        }
+                    }
+                    if outgoing.send((app, number, [start, end])).is_err() {
                         break;
                     }
                 }
@@ -43,9 +53,13 @@ impl RenderWorker {
         }
     }
 
-    fn submit(&self, app: SubApp, epoch: usize) {
+    fn submit(&self, app: SubApp, number: usize, epoch: Option<Epoch>) {
         assert_send_resources(&app);
-        self.sender.as_ref().unwrap().send((app, epoch)).unwrap();
+        self.sender
+            .as_ref()
+            .unwrap()
+            .send((app, number, epoch))
+            .unwrap();
     }
 
     fn receive(&self) -> (SubApp, usize, [f64; 2]) {
@@ -61,8 +75,91 @@ impl RenderWorker {
 impl Drop for RenderWorker {
     fn drop(&mut self) {
         drop(self.sender.take());
-        self.worker.take().unwrap().join().unwrap();
+        if let Err(error) = self.worker.take().unwrap().join()
+            && !std::thread::panicking()
+        {
+            std::panic::resume_unwind(error);
+        }
     }
+}
+
+type Publication = (Frame, serde_json::Value);
+
+struct Publisher {
+    sender: Option<SyncSender<Publication>>,
+    worker: Option<JoinHandle<Vec<Publication>>>,
+}
+
+impl Publisher {
+    fn new(origin: Instant) -> Self {
+        let (sender, incoming) = sync_channel::<Publication>(1);
+        let worker = std::thread::Builder::new()
+            .name("park-publication-probe".into())
+            .spawn(move || {
+                let mut received = Vec::new();
+                while let Ok((frame, mut sample)) = incoming.recv() {
+                    sample["published_ms"] =
+                        serde_json::json!(origin.elapsed().as_secs_f64() * 1000.0);
+                    assert!(frame.ready().unwrap());
+                    received.push((frame, sample));
+                }
+                received
+            })
+            .unwrap();
+        Self {
+            sender: Some(sender),
+            worker: Some(worker),
+        }
+    }
+
+    fn sender(&self) -> SyncSender<Publication> {
+        self.sender.as_ref().unwrap().clone()
+    }
+
+    fn finish(mut self) -> Vec<Publication> {
+        drop(self.sender.take());
+        self.worker.take().unwrap().join().unwrap()
+    }
+}
+
+impl Drop for Publisher {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+        if let Some(worker) = self.worker.take()
+            && let Err(error) = worker.join()
+            && !std::thread::panicking()
+        {
+            std::panic::resume_unwind(error);
+        }
+    }
+}
+
+enum Pending {
+    Native(Epoch),
+    Exported(usize),
+}
+
+fn receive(
+    worker: &RenderWorker,
+    pending: Pending,
+    gpu: &crate::graphics::GpuContext,
+    publisher: &Publisher,
+    origin: Instant,
+    intervals: &mut Vec<(usize, [f64; 2])>,
+) -> SubApp {
+    let (app, number, interval) = worker.receive();
+    intervals.push((number, interval));
+    match pending {
+        Pending::Native(epoch) => {
+            assert_eq!(epoch.number, number);
+            publisher
+                .sender()
+                .send(export(gpu, &app, epoch, origin))
+                .unwrap();
+        }
+        Pending::Exported(expected) => assert_eq!(number, expected),
+    }
+    app
 }
 
 fn assert_send_resources(app: &SubApp) {
@@ -195,7 +292,13 @@ fn prepare(
     }
 }
 
-fn export(canvas: &Presentation, render: &SubApp, mut epoch: Epoch) -> (Frame, serde_json::Value) {
+fn export(
+    gpu: &crate::graphics::GpuContext,
+    render: &SubApp,
+    mut epoch: Epoch,
+    origin: Instant,
+) -> Publication {
+    let export_start = origin.elapsed().as_secs_f64() * 1000.0;
     let assets = render.world().resource::<RenderAssets<GpuImage>>();
     let mut textures = epoch
         .targets
@@ -205,7 +308,7 @@ fn export(canvas: &Presentation, render: &SubApp, mut epoch: Epoch) -> (Frame, s
     textures.push(wgpu::Texture::clone(
         &assets.get(epoch.primary.id()).unwrap().texture,
     ));
-    let mut images = canvas.renderer.export_render_targets(&textures).unwrap();
+    let mut images = gpu.export_render_targets(&textures).unwrap();
     epoch.frame.image = images.pop();
     epoch.frame.outputs = epoch
         .targets
@@ -222,7 +325,7 @@ fn export(canvas: &Presentation, render: &SubApp, mut epoch: Epoch) -> (Frame, s
     let ready_ms = epoch.started.elapsed().as_secs_f64() * 1000.0;
     (
         epoch.frame,
-        serde_json::json!({"epoch":epoch.number,"main_ms":epoch.main,"input_to_ready_ms":ready_ms}),
+        serde_json::json!({"epoch":epoch.number,"main_ms":epoch.main,"input_to_ready_ms":ready_ms,"export_ms":[export_start,origin.elapsed().as_secs_f64()*1000.0]}),
     )
 }
 
@@ -247,7 +350,12 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     let mut reports = Vec::new();
-    let mut modes = ["serial", "threaded-serial", "overlap"];
+    let mut modes = [
+        "serial",
+        "threaded-serial",
+        "overlap",
+        "overlap-worker-export",
+    ];
     if std::env::var_os("LINCE_PARK_OVERLAP_REVERSE").is_some() {
         modes.reverse();
     }
@@ -336,60 +444,75 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
         assert_send_resources(render.as_ref().unwrap());
         let origin = Instant::now();
         let before = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
-        let worker =
-            (mode != "serial").then(|| RenderWorker::new(origin, runtime.handle().clone()));
+        let publisher = Publisher::new(origin);
+        let worker = (mode != "serial").then(|| {
+            RenderWorker::new(
+                origin,
+                runtime.handle().clone(),
+                (mode == "overlap-worker-export")
+                    .then(|| (canvas.renderer.gpu.clone(), publisher.sender())),
+            )
+        });
         let mut pending = None;
-        let mut frames = Vec::new();
-        let mut samples = Vec::new();
         let mut render_intervals = Vec::new();
         for number in 0..12 {
             let epoch = prepare(&mut canvas, editor, owner, original, number, origin);
             if let Some(previous) = pending.take() {
-                let (app, returned, interval) = worker.as_ref().unwrap().receive();
-                let previous: Epoch = previous;
-                assert_eq!(previous.number, returned);
-                render_intervals.push((returned, interval));
-                let (frame, sample) = export(&canvas, &app, previous);
-                frames.push(frame);
-                samples.push(sample);
-                render = Some(app);
+                render = Some(receive(
+                    worker.as_ref().unwrap(),
+                    previous,
+                    &canvas.renderer.gpu,
+                    &publisher,
+                    origin,
+                    &mut render_intervals,
+                ));
             }
             let mut app = render.take().unwrap();
             app.extract(canvas.app.world_mut());
             canvas.app.world_mut().clear_trackers();
             if let Some(worker) = &worker {
-                worker.submit(app, number);
-                if mode == "overlap" {
-                    pending = Some(epoch);
+                if mode == "overlap-worker-export" {
+                    worker.submit(app, number, Some(epoch));
+                    pending = Some(Pending::Exported(number));
                 } else {
-                    let (app, returned, interval) = worker.receive();
-                    assert_eq!(number, returned);
-                    render_intervals.push((returned, interval));
-                    let (frame, sample) = export(&canvas, &app, epoch);
-                    frames.push(frame);
-                    samples.push(sample);
-                    render = Some(app);
+                    worker.submit(app, number, None);
+                    if mode == "overlap" {
+                        pending = Some(Pending::Native(epoch));
+                    } else {
+                        render = Some(receive(
+                            worker,
+                            Pending::Native(epoch),
+                            &canvas.renderer.gpu,
+                            &publisher,
+                            origin,
+                            &mut render_intervals,
+                        ));
+                    }
                 }
             } else {
                 let start = origin.elapsed().as_secs_f64() * 1000.0;
                 app.update();
                 let end = origin.elapsed().as_secs_f64() * 1000.0;
                 render_intervals.push((number, [start, end]));
-                let (frame, sample) = export(&canvas, &app, epoch);
-                frames.push(frame);
-                samples.push(sample);
+                publisher
+                    .sender()
+                    .send(export(&canvas.renderer.gpu, &app, epoch, origin))
+                    .unwrap();
                 render = Some(app);
             }
         }
         if let Some(epoch) = pending.take() {
-            let (app, returned, interval) = worker.as_ref().unwrap().receive();
-            assert_eq!(epoch.number, returned);
-            render_intervals.push((returned, interval));
-            let (frame, sample) = export(&canvas, &app, epoch);
-            frames.push(frame);
-            samples.push(sample);
-            render = Some(app);
+            render = Some(receive(
+                worker.as_ref().unwrap(),
+                epoch,
+                &canvas.renderer.gpu,
+                &publisher,
+                origin,
+                &mut render_intervals,
+            ));
         }
+        drop(worker);
+        let (frames, samples): (Vec<_>, Vec<_>) = publisher.finish().into_iter().unzip();
         let elapsed = origin.elapsed().as_secs_f64() * 1000.0;
         let after = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
         let cpu = (after.tv_sec - before.tv_sec) as f64 * 1000.0
@@ -500,21 +623,34 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
                 (r[1].min(main[1].as_f64().unwrap()) - r[0].max(main[0].as_f64().unwrap())).max(0.0)
             })
             .sum::<f64>();
-        if mode == "overlap" {
+        if mode.starts_with("overlap") {
             assert!(overlap > 0.0, "No main/render temporal overlap occurred");
         } else {
             assert_eq!(overlap, 0.0);
         }
-        reports.push(serde_json::json!({"mode":mode,"frames":12,"wall_ms":elapsed,"process_cpu_ms":cpu,"overlapped_wall_ms":overlap,"samples":samples,"render_intervals":render_intervals,"pixels":pixels}));
+        let publications_during_next_main = samples
+            .windows(2)
+            .filter(|pair| {
+                let published = pair[0]["published_ms"].as_f64().unwrap();
+                let main = pair[1]["main_ms"].as_array().unwrap();
+                published >= main[0].as_f64().unwrap() && published < main[1].as_f64().unwrap()
+            })
+            .count();
+        if mode == "overlap-worker-export" {
+            assert!(
+                publications_during_next_main > 0,
+                "No ready frame was published during the next main update"
+            );
+        }
+        reports.push(serde_json::json!({"mode":mode,"frames":12,"wall_ms":elapsed,"process_cpu_ms":cpu,"overlapped_wall_ms":overlap,"publications_during_next_main":publications_during_next_main,"samples":samples,"render_intervals":render_intervals,"pixels":pixels}));
         canvas.app.insert_sub_app(RenderApp, render.take().unwrap());
-        drop(worker);
         canvas.finish().unwrap();
     }
     let path = std::path::PathBuf::from(
         std::env::var_os("LINCE_PARK_TEST_ARTIFACTS").expect("Set private artifacts"),
     );
     std::fs::create_dir_all(&path).unwrap();
-    let result = serde_json::json!({"scope":"Private debug native-only full-scene main n+1/render n prototype, two outputs, no external clients/records/capture demand. One persistent render worker, one render job, GPU export/readiness stays on native owner and one frame at a time. Epoch input/geometry/target handles saved before advancing main. Retained-image readback follows timing. Direct per-epoch key delivery differs between serial and overlap; ready age is diagnostic and not a matched offered-load latency result. No desktop FPS, physical presentation or production pipeline claim. Filtered capture, client imports/uploads, privacy/output replacement, cancellation and production worker feedback remain required before shipping.","reports":reports});
+    let result = serde_json::json!({"scope":"Private debug native-only full-scene main n+1/render n prototype, two outputs, no external clients/records/capture demand. One persistent render worker, one render job and one GPU frame at a time. Compare native-owner export with worker-owned export/readiness through the same bounded publication consumer. Immutable GPU context shares existing device/queue/completion; thread-local import reactor stays native. Epoch input/geometry/target handles saved before advancing main. Retained-image readback follows timing. Direct per-epoch key delivery differs between serial and overlap; ready age is diagnostic and not a matched offered-load latency result. No desktop FPS, physical presentation or production pipeline claim. Filtered capture, client imports/uploads, privacy/output replacement, cancellation and production worker feedback remain required before shipping.","reports":reports});
     std::fs::write(
         path.join("native-render-overlap.json"),
         serde_json::to_vec_pretty(&result).unwrap(),

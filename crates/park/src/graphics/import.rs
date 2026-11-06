@@ -329,6 +329,9 @@ impl VulkanRenderer {
         Ok(texture)
     }
 
+}
+
+impl GpuContext {
     pub(crate) fn export_copy(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
         if render_target_source(source) {
             return self.export_render_target(source);

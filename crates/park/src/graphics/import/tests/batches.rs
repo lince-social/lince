@@ -285,6 +285,40 @@ fn batched_outputs_preserve_pixels_precision_initialization_and_lifetimes() {
 }
 
 #[test]
+#[ignore = "hardware Vulkan/EGL shared GPU context ownership regression; ordered interface suite first"]
+fn worker_exports_survive_native_owner_and_gpu_context_shutdown() {
+    interface_checks();
+    let renderer = VulkanRenderer::new().unwrap();
+    let sources = [
+        target(&renderer, [67, 29], wgpu::TextureFormat::Bgra8Unorm),
+        target(&renderer, [31, 53], wgpu::TextureFormat::Bgra8Unorm),
+    ];
+    let expected = [
+        write(&renderer, &sources[0], &[19, 87, 239, 255]),
+        write(&renderer, &sources[1], &[201, 56, 7, 255]),
+    ];
+    let gpu = renderer.gpu.clone();
+    let (release, released) = std::sync::mpsc::sync_channel(1);
+    let worker = std::thread::spawn(move || {
+        released.recv().unwrap();
+        let images = gpu.export_render_targets(&sources).unwrap();
+        drop(sources);
+        for image in &images {
+            image.wait_for_probe().unwrap();
+        }
+        drop(gpu);
+        images
+    });
+    drop(renderer);
+    release.send(()).unwrap();
+    let images = worker.join().unwrap();
+    let reader = VulkanRenderer::new().unwrap();
+    for (image, expected) in images.iter().zip(expected) {
+        assert_eq!(read(&reader, image, wgpu::TextureFormat::Bgra8Unorm), expected);
+    }
+}
+
+#[test]
 #[ignore = "hardware export submission comparison; no concurrent compilation; ordered interface suite first"]
 fn export_submission_comparison() {
     interface_checks();

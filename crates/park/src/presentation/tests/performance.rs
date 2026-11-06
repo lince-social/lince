@@ -3,6 +3,7 @@ use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
 use std::time::Instant;
 
 mod offscreen;
+mod overlap;
 mod schedules;
 
 #[test]

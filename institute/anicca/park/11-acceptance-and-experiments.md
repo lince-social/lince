@@ -14,6 +14,8 @@ Do not initiate monitor/lock/VT/logout/resume tests or a new release build from 
 
 - [ ] **P135 — Measure the combined candidate and repair one harmful interaction.**
 
+    **P56 included, full-session proof pending:** local GPU byte/lifetime/privacy checks and reduced two-output submission CPU are kept. Recheck complete optimized frame/input age under the normal mixed scene and the single-output control; its local p95 was slower. Use one actual submission/completion for two output images and preserve capture/lock/output lifetimes. The local 6.027 → 5.106 ms export submission CPU result is not a whole-desktop percentage or physical FPS pass.
+
     **Why:** the sum of isolated wins is not the behavior of shared queues, caches, layouts, GPU resources and output pacing together. **Scope:** combine accepted input/save/style/scheduling/GPU changes at a frozen revision and run the fixed benchmark/workflow set. Compare baseline, each relevant single change and the combined path only where needed to attribute a regression; include style read/write distribution and representative active backgrounds. If a conflict appears, trace and implement one targeted repair or record the actual tradeoff/next repair rather than hiding the case. **Verify:** end-to-end p95/p99, both outputs, local durability, quiet CPU/memory and the workflow oracles, with drift controls. No arithmetic addition of microbenchmark gains. A still-failing required outcome stays open. **Runs at integration boundaries,** not as another full suite after every tiny edit.
 
 - [ ] **P64 — Establish genuinely quiet daily-workspace resource use.**

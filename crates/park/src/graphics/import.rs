@@ -2,6 +2,21 @@ use super::*;
 use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
 use std::os::fd::{AsRawFd, IntoRawFd};
 
+struct PreparedExport {
+    commands: [wgpu::CommandBuffer; 2],
+    target: SharedAllocation,
+    source: wgpu::Texture,
+}
+
+fn render_target_source(source: &wgpu::Texture) -> bool {
+    source
+        .usage()
+        .contains(wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT)
+        && source.dimension() == wgpu::TextureDimension::D2
+        && source.depth_or_array_layers() == 1
+        && source.sample_count() == 1
+}
+
 impl VulkanRenderer {
     pub(crate) fn import_dmabuf(&self, buffer: &Dmabuf) -> Result<wgpu::Texture> {
         self.import_dmabuf_into(buffer, None)
@@ -315,11 +330,7 @@ impl VulkanRenderer {
     }
 
     pub(crate) fn export_copy(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
-        if source.usage().contains(wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT)
-            && source.dimension() == wgpu::TextureDimension::D2
-            && source.depth_or_array_layers() == 1
-            && source.sample_count() == 1
-        {
+        if render_target_source(source) {
             return self.export_render_target(source);
         }
         #[cfg(feature = "native-presentation")]
@@ -357,36 +368,118 @@ impl VulkanRenderer {
     }
 
     fn export_render_target(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
+        let prepared = self.prepare_export_render_target(source)?;
+        let completion = self.submit_exports(
+            prepared.commands,
+            (prepared.source, prepared.target.allocation.clone()),
+        )?;
+        Ok(ExportedImage {
+            completion,
+            dmabuf: prepared.target.dmabuf,
+            _allocation: prepared.target.allocation,
+        })
+    }
+
+    fn submit_exports(
+        &self,
+        commands: impl IntoIterator<Item = wgpu::CommandBuffer>,
+        retained: impl Send + 'static,
+    ) -> Result<completion::Completion> {
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        let submission = self.queue.submit(commands);
+        #[cfg(feature = "native-presentation")]
+        crate::runtime::trace_frame("dmabuf-export-submit", started);
+        self.retain(retained);
+        self.completion.track(submission)
+    }
+
+    pub(crate) fn export_render_targets(
+        &self,
+        sources: &[wgpu::Texture],
+    ) -> Result<Vec<ExportedImage>> {
+        if sources.is_empty() {
+            return Ok(Vec::new());
+        }
+        if let [source] = sources {
+            return self.export_render_target(source).map(|image| vec![image]);
+        }
+        let mut targets = Vec::with_capacity(sources.len());
+        let mut retained = Vec::with_capacity(sources.len());
+        let mut prepare = self.device.create_command_encoder(&Default::default());
+        let mut copies = self.device.create_command_encoder(&Default::default());
+        for source in sources {
+            let target = self.allocate_export_target(source)?;
+            #[cfg(feature = "native-presentation")]
+            let started = std::time::Instant::now();
+            self.encode_export_source(source, &mut prepare);
+            self.encode_export_copy(source, &target, &mut copies)?;
+            #[cfg(feature = "native-presentation")]
+            crate::runtime::trace_frame("dmabuf-export-copy", started);
+            retained.push((source.clone(), target.allocation.clone()));
+            targets.push(target);
+        }
+        let completion = self.submit_exports([prepare.finish(), copies.finish()], retained)?;
+        Ok(targets
+            .into_iter()
+            .map(|target| ExportedImage {
+                completion: completion.clone(),
+                dmabuf: target.dmabuf,
+                _allocation: target.allocation,
+            })
+            .collect())
+    }
+
+    fn allocate_export_target(&self, source: &wgpu::Texture) -> Result<SharedAllocation> {
+        if !render_target_source(source) {
+            return Err(ProbeFailure::at(
+                "vulkan_export_copy",
+                "Native output exports require a copyable single-layer render target",
+            ));
+        }
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let target = self.allocate_shared_image(source.width(), source.height(), source.format())?;
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-allocation", started);
-        #[cfg(feature = "native-presentation")]
-        let started = std::time::Instant::now();
+        Ok(target)
+    }
+
+    fn encode_export_source(&self, source: &wgpu::Texture, encoder: &mut wgpu::CommandEncoder) {
         let view = source.create_view(&wgpu::TextureViewDescriptor {
             mip_level_count: Some(1),
             ..Default::default()
         });
-        let mut encoder = self.device.create_command_encoder(&Default::default());
         {
             let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     depth_slice: None,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 ..Default::default()
             });
         }
-        encoder.transition_resources(std::iter::empty(), std::iter::once(wgpu::TextureTransition {
-            texture: source,
-            selector: None,
-            state: wgpu::TextureUses::COPY_SRC,
-        }));
-        let prepare = encoder.finish();
-        let mut encoder = self.device.create_command_encoder(&Default::default());
+        encoder.transition_resources(
+            std::iter::empty(),
+            std::iter::once(wgpu::TextureTransition {
+                texture: source,
+                selector: None,
+                state: wgpu::TextureUses::COPY_SRC,
+            }),
+        );
+    }
+
+    fn encode_export_copy(
+        &self,
+        source: &wgpu::Texture,
+        target: &SharedAllocation,
+        encoder: &mut wgpu::CommandEncoder,
+    ) -> Result<()> {
         let source_image = {
             let source = unsafe { source.as_hal::<Vulkan>() }
                 .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
@@ -394,40 +487,87 @@ impl VulkanRenderer {
         };
         unsafe {
             encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
-                let encoder = encoder.ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
+                let encoder = encoder
+                    .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
                 let command = encoder.raw_handle();
                 let range = vk::ImageSubresourceRange::default()
-                    .aspect_mask(vk::ImageAspectFlags::COLOR).level_count(1).layer_count(1);
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .level_count(1)
+                    .layer_count(1);
                 let initialize = vk::ImageMemoryBarrier::default()
-                    .image(target.allocation.image).subresource_range(range)
-                    .old_layout(vk::ImageLayout::UNDEFINED).new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-                    .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED).dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                    .image(target.allocation.image)
+                    .subresource_range(range)
+                    .old_layout(vk::ImageLayout::UNDEFINED)
+                    .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                    .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                    .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
                     .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE);
-                self.raw_device.cmd_pipeline_barrier(command, vk::PipelineStageFlags::TOP_OF_PIPE,
-                    vk::PipelineStageFlags::TRANSFER, vk::DependencyFlags::empty(), &[], &[], &[initialize]);
-                let layers = vk::ImageSubresourceLayers::default().aspect_mask(vk::ImageAspectFlags::COLOR).layer_count(1);
-                self.raw_device.cmd_copy_image(command, source_image, vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                    target.allocation.image, vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &[vk::ImageCopy::default().src_subresource(layers).dst_subresource(layers)
-                        .extent(vk::Extent3D { width: source.width(), height: source.height(), depth: 1 })]);
+                self.raw_device.cmd_pipeline_barrier(
+                    command,
+                    vk::PipelineStageFlags::TOP_OF_PIPE,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::DependencyFlags::empty(),
+                    &[],
+                    &[],
+                    &[initialize],
+                );
+                let layers = vk::ImageSubresourceLayers::default()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .layer_count(1);
+                self.raw_device.cmd_copy_image(
+                    command,
+                    source_image,
+                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    target.allocation.image,
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &[vk::ImageCopy::default()
+                        .src_subresource(layers)
+                        .dst_subresource(layers)
+                        .extent(vk::Extent3D {
+                            width: source.width(),
+                            height: source.height(),
+                            depth: 1,
+                        })],
+                );
                 let release = vk::ImageMemoryBarrier::default()
-                    .image(target.allocation.image).subresource_range(range)
-                    .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL).new_layout(vk::ImageLayout::GENERAL)
-                    .src_queue_family_index(self.queue_family).dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
+                    .image(target.allocation.image)
+                    .subresource_range(range)
+                    .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                    .new_layout(vk::ImageLayout::GENERAL)
+                    .src_queue_family_index(self.queue_family)
+                    .dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
                     .src_access_mask(vk::AccessFlags::TRANSFER_WRITE);
-                self.raw_device.cmd_pipeline_barrier(command, vk::PipelineStageFlags::TRANSFER,
-                    vk::PipelineStageFlags::BOTTOM_OF_PIPE, vk::DependencyFlags::empty(), &[], &[], &[release]);
+                self.raw_device.cmd_pipeline_barrier(
+                    command,
+                    vk::PipelineStageFlags::TRANSFER,
+                    vk::PipelineStageFlags::BOTTOM_OF_PIPE,
+                    vk::DependencyFlags::empty(),
+                    &[],
+                    &[],
+                    &[release],
+                );
                 Ok::<_, ProbeFailure>(())
             })?;
         }
-        let submission = self.queue.submit([prepare, encoder.finish()]);
-        self.retain((source.clone(), target.allocation.clone()));
+        Ok(())
+    }
+
+    fn prepare_export_render_target(&self, source: &wgpu::Texture) -> Result<PreparedExport> {
+        let target = self.allocate_export_target(source)?;
+        #[cfg(feature = "native-presentation")]
+        let started = std::time::Instant::now();
+        let mut prepare = self.device.create_command_encoder(&Default::default());
+        self.encode_export_source(source, &mut prepare);
+        let prepare = prepare.finish();
+        let mut copy = self.device.create_command_encoder(&Default::default());
+        self.encode_export_copy(source, &target, &mut copy)?;
+        let commands = [prepare, copy.finish()];
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-copy", started);
-        Ok(ExportedImage {
-            completion: self.completion.track(submission)?,
-            dmabuf: target.dmabuf,
-            _allocation: target.allocation,
+        Ok(PreparedExport {
+            commands,
+            target,
+            source: source.clone(),
         })
     }
 }
@@ -459,6 +599,9 @@ fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "native-presentation")]
+    mod batches;
 
     #[test]
     fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats() {

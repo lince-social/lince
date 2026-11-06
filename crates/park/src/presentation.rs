@@ -1144,10 +1144,17 @@ impl Presentation {
 
     fn export_frame(&mut self, retained: pixels::Retained) -> Result<Frame, ProbeFailure> {
         let started = std::time::Instant::now();
-        let texture = self.app.sub_app(RenderApp).world().resource::<RenderAssets<GpuImage>>()
-            .get(self.target.id()).ok_or_else(|| input_failure("the canvas output is not prepared"))?.texture.clone();
+        let texture = self
+            .app
+            .sub_app(RenderApp)
+            .world()
+            .resource::<RenderAssets<GpuImage>>()
+            .get(self.target.id())
+            .map(|image| wgpu::Texture::clone(&image.texture))
+            .ok_or_else(|| input_failure("the canvas output is not prepared"))?;
         let detail = std::time::Instant::now();
-        let mut outputs = Vec::new();
+        let mut destinations = Vec::new();
+        let mut textures = Vec::new();
         for (id, target) in &self.output_state.targets {
             if Some(*id) == self.output_state.assignments.focused() {
                 continue;
@@ -1161,18 +1168,29 @@ impl Presentation {
             else {
                 continue;
             };
-            outputs.push(OutputFrame {
-                id: *id,
-                image: self.renderer.export_copy(&texture.texture)?,
-                origin: target.origin,
-                fullscreen: target.fullscreen,
-            });
+            textures.push(wgpu::Texture::clone(&texture.texture));
+            destinations.push((*id, target.origin, target.fullscreen));
         }
+        textures.push(texture);
+        let mut images = self.renderer.export_render_targets(&textures)?;
+        let image = images
+            .pop()
+            .ok_or_else(|| input_failure("the canvas output export is unavailable"))?;
+        let outputs = destinations
+            .into_iter()
+            .zip(images)
+            .map(|((id, origin, fullscreen), image)| OutputFrame {
+                id,
+                image,
+                origin,
+                fullscreen,
+            })
+            .collect();
         let mut frame = Frame {
             client_formats: self.client_formats.clone(),
             encoding: self.native_encoding(),
             output: self.output_state.assignments.focused(),
-            image: Some(self.renderer.export_copy(&texture)?),
+            image: Some(image),
             geometry: retained.geometry,
             input: retained.input,
             windows: retained.windows,

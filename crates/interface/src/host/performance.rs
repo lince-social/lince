@@ -153,6 +153,7 @@ stages! {
     ImportCopy => "dmabuf-import-copy",
     ExportAllocation => "dmabuf-export-allocation",
     ExportCopy => "dmabuf-export-copy",
+    ExportSubmit => "dmabuf-export-submit",
     ExportRelease => "dmabuf-export-release",
     SharedInitialize => "shared-image-initialize",
     SharedMemory => "shared-image-memory",

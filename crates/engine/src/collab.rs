@@ -429,7 +429,8 @@ impl crate::Engine {
         let publish = publish && !prepared.is_duplicate();
         let candidate = &prepared;
         let composition = crate::performance::Span::new("record-composition-check-await");
-        if let Some(record) = store::records::get(&self.store.pool, uid).await?
+        let record = store::records::get(&self.store.pool, uid).await?;
+        if let Some(record) = &record
             && let Ok(previous) = nucleus::component::Document::decode(&record.body)
         {
             let document =
@@ -449,7 +450,7 @@ impl crate::Engine {
                 self.authorize_component(&component, actor).await?;
             }
         }
-        if let Some(record) = store::records::get(&self.store.pool, uid).await?
+        if let Some(record) = &record
             && let Ok(previous) = nucleus::canvas::Document::decode(&record.body)
         {
             let mut document =
@@ -469,6 +470,7 @@ impl crate::Engine {
             self.resolve_canvas_component(&mut document.component, actor)
                 .await?;
         }
+        drop(record);
         drop(composition);
         let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
         let beginning = VersionVector::default();

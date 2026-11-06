@@ -76,6 +76,8 @@ stages! {
     NativeLayoutMetrics => "native-layout-metrics",
     NativeLayoutSolve => "native-layout-solve",
     NativeSurfaces => "native-surfaces",
+    NativeSurfaceDerivation => "native-surface-derivation",
+    NativeSurfaceApplication => "native-surface-application",
     NativeRecordProjection => "native-record-projection",
     NativeRecordPresentation => "native-record-presentation",
     RecordBindingUpdate => "record-binding-update",

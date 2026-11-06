@@ -135,6 +135,7 @@ fn native_pass_hardware_intervals_belong_to_one_completed_full_or_pixel_frame() 
     }
     drain(&mut canvas, enabled);
     clear(&mut canvas);
+    lince_interface::host::performance::flush();
     let mut samples = Vec::new();
     let mut totals = Vec::new();
     for pixel_only in [false, true] {
@@ -197,6 +198,7 @@ fn native_pass_hardware_intervals_belong_to_one_completed_full_or_pixel_frame() 
         }
         totals.push(serde_json::json!({"pixel_only":pixel_only,
             "host_frame": summary(&readings), "host_samples": readings}));
+        lince_interface::host::performance::flush();
     }
     assert_eq!(frame_pixels(&canvas.probe_frame().unwrap()), reference);
     let report = serde_json::json!({

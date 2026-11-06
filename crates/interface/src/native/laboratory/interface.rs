@@ -55,6 +55,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
         "Duplicate native Record selection regression"
     );
     crate::native::record_binding::laboratory_cases(&mut cases);
+    crate::native::topology::presentation::tests::laboratory_cases(&mut cases);
     cases
 }
 

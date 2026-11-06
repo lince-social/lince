@@ -416,8 +416,15 @@ fn collect(world: &mut World) -> Option<NativePlan> {
     })
 }
 
-pub fn synchronize(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaces);
+struct SurfacePlan {
+    native: Option<NativePlan>,
+    effects: Vec<(Entity, surface_budget::Entry)>,
+    grants: Vec<surface_budget::Grant>,
+    diagnostics: surface_budget::Diagnostics,
+}
+
+fn derive(world: &mut World) -> SurfacePlan {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaceDerivation);
     let native = collect(world);
     let demands: HashMap<_, _> = native
         .iter()
@@ -430,7 +437,6 @@ pub fn synchronize(world: &mut World) {
         })
         .collect();
     let effects = crate::native::description::shader::extent::requests(world, &demands);
-    let native_count = native.as_ref().map_or(0, |plan| plan.entities.len());
     let entries: Vec<_> = native
         .iter()
         .flat_map(|plan| {
@@ -449,7 +455,7 @@ pub fn synchronize(world: &mut World) {
         .get_resource::<bevy::render::renderer::RenderDevice>()
         .map_or(4096, |device| device.limits().max_texture_dimension_2d);
     let grants = surface_budget::allocate(&entries, surface_budget::BYTE_BUDGET, maximum);
-    world.insert_resource(surface_budget::Diagnostics {
+    let diagnostics = surface_budget::Diagnostics {
         granted_bytes: entries
             .iter()
             .zip(&grants)
@@ -460,7 +466,21 @@ pub fn synchronize(world: &mut World) {
             .filter(|grant| grant.device_limited || grant.budget_limited)
             .count(),
         maximum_extent: maximum,
-    });
+    };
+    SurfacePlan { native, effects, grants, diagnostics }
+}
+
+pub fn synchronize(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaces);
+    let plan = derive(world);
+    apply(world, plan);
+}
+
+fn apply(world: &mut World, plan: SurfacePlan) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaceApplication);
+    let SurfacePlan { native, effects, grants, diagnostics } = plan;
+    let native_count = native.as_ref().map_or(0, |plan| plan.entities.len());
+    world.insert_resource(diagnostics);
     crate::native::description::shader::extent::apply(world, &effects, &grants[native_count..]);
     let Some(NativePlan {
         physical_size,
@@ -1031,10 +1051,11 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
     min.is_finite().then(|| Rect::from_corners(min, max))
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(any(test, feature = "behavior-checks"))]
+pub(crate) mod tests {
     use super::*;
 
+    #[cfg(test)]
     mod admission;
 
     fn scene(count: usize) -> (World, Entity, Vec<Entity>) {
@@ -1077,6 +1098,7 @@ mod tests {
         (world, root, entities)
     }
 
+    #[cfg(test)]
     fn texture_bytes(world: &mut World) -> u64 {
         let surfaces: Vec<_> = world
             .query::<&Surface>()
@@ -1143,7 +1165,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn text_surfaces_supersample_and_fade_without_darkening_transparent_edges() {
         let (mut world, _, entities) = scene(2);
         let text = entities[0];
@@ -1265,7 +1287,7 @@ mod tests {
         texture_bytes(&mut world);
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn stationary_surfaces_do_not_invalidate_assets_or_camera_layout() {
         let (mut world, _, entities) = scene(1);
         let entity = entities[0];
@@ -1436,5 +1458,10 @@ mod tests {
         assert!(pixels.max_element() <= 4096);
         assert!((pixels.as_vec2() / density - size).abs().max_element() < 1.0);
         assert_eq!(dimensions(size, 1.1), dimensions(size, 1.2));
+    }
+
+    crate::native::laboratory_cases! {
+        text_surfaces_supersample_and_fade_without_darkening_transparent_edges,
+        stationary_surfaces_do_not_invalidate_assets_or_camera_layout,
     }
 }

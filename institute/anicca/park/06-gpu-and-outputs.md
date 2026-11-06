@@ -7,6 +7,14 @@ This stage is coupled to input, retained presentation and output clocks. P67/P70
 Start with the largest traced cost. Direct scanout is conditional late work for eligible fullscreen clients; it cannot solve native editing/saving. Do not make every window eligible by disabling overlays, transformations, capture or color precision. Bevy rendering is already GPU-backed; an entirely new renderer is justified only by evidence that the existing integration cannot meet the shared budgets. Preserve actual GPU/native thread affinity and every submitted consumer lifetime.
 
 
+- [ ] **P56 — Batch one demonstrated GPU submission break.**
+
+    **Why:** the installed optimized frame path spends about 5 ms exporting two native output images and submits their copies separately. **Scope:** first compare submitting the existing independent per-output export command buffers together once per coherent frame, reusing current completion and retained-resource ownership. Keep identical copies, external queue-family releases, required initialization and image precision; shared readiness must cover every command. This is one submission boundary, not a new renderer/atlas/pool or a processor migration. **Verify:** one/two outputs, exact output association, source overwrite/drop before consumption, untouched exported pixels, alpha/HDR precision, uninitialized-memory privacy, partial preparation failure, resource retirement and capture/lock/output epochs. Measure submission counts, total CPU/elapsed and actual frame age with an unchanged control; the existing copy span includes driver/API time and does not guarantee a batching speedup. If a simpler unrelated draw/upload break is later shown larger, select it with evidence and preserve z-order/clip/text semantics. Do not reorder transparent content or drop required ownership barriers.
+
+- [ ] **P55 — Remove one measured redundant render pass or copy.**
+
+    **Why:** hardware acceleration can still waste bandwidth and impose synchronization. **Scope:** select one transition from the P67 pass/transfer map: client texture, native surface, canvas, conversion or final composition. Keep the required precision, alpha, transformations and capture path. **Verify:** equivalent final pixels and privacy, fewer transferred bytes/submissions and lower complete-path cost. Do not remove a copy that is the actual ownership, lifetime or color boundary without replacing that responsibility.
+
 - [ ] **P68 — Compare processor placement for one evidenced misplaced stage.**
 
     **Why:** some image/geometry work may benefit from a different processor, while small transfers may erase the gain. **Scope:** choose exactly one stage from P67 and compare the current path with the justified CPU, batched CPU or GPU alternative using the same inputs and precision. Include preparation, transfer, synchronization and result-consumption cost. **Verify:** complete-path latency/CPU/GPU improvement and output correctness under normal load. Reject an isolated fast kernel that makes the interactive path slower or requires a synchronous GPU round trip for each input event.
@@ -19,10 +27,6 @@ Start with the largest traced cost. Direct scanout is conditional late work for 
 
     **Why:** coupling outputs or answering undamaged clients too quickly can burn CPU and cause uneven delivery. **Scope:** distinct dirty, queued and waiting states in session/desktop, with callback throttling even when a redraw finds no damage. **Verify:** independent output activity, quiet/off-screen clients, missed deadlines, completion/failure and resume. Compare native frame age and output intervals. Follow Niri's estimated-vblank distinction; do not remove callback service or create a fixed global polling clock.
 
-- [ ] **P55 — Remove one measured redundant render pass or copy.**
-
-    **Why:** hardware acceleration can still waste bandwidth and impose synchronization. **Scope:** select one transition from the P67 pass/transfer map: client texture, native surface, canvas, conversion or final composition. Keep the required precision, alpha, transformations and capture path. **Verify:** equivalent final pixels and privacy, fewer transferred bytes/submissions and lower complete-path cost. Do not remove a copy that is the actual ownership, lifetime or color boundary without replacing that responsibility.
-
 - [ ] **P81 — Retain compatible incoming DMA-BUF import bindings.**
 
     **Why:** import.rs can allocate a Vulkan wrapper/memory binding before copying into a retained destination. **Scope:** measure and reuse that import setup for genuinely identical live buffers, including format/modifier/planes/offsets/strides and producer identity. **Verify:** release/reuse, FD-number recycling, partial/empty damage, resize, unsupported layouts and producer/output retirement. Bound the retained set and wait for all consumers. Existing damaged-region copying/retained destinations already work; this task does not assume that imports currently use CPU software blits.
@@ -30,10 +34,6 @@ Start with the largest traced cost. Direct scanout is conditional late work for 
 - [ ] **P54 — Reuse compatible exported/output resources within a bounded budget.**
 
     **Why:** replacing output textures/views/export resources can add driver cost and freezes. **Scope:** one measured allocation site in graphics/session, separate from incoming-buffer imports. Key compatibility by actual device, extent, format, usage and ownership epoch. **Verify:** in-flight scanout/capture/native consumers, replacement, output loss and memory returning to a bound. No reuse before completion or unbounded pool. Measure allocation reduction and end-to-end cost; existing safe reuse is retained.
-
-- [ ] **P56 — Improve one demonstrated draw/upload batching break.**
-
-    **Why:** many tiny compatible draws or uploads can dominate host submission work. **Scope:** identify the expensive break first; reuse Bevy's existing batching/atlases where possible. **Verify:** draw/submission cost and exact z-order, alpha, clip, text and capture boundaries. Do not add a new atlas or reorder transparent content by default. Preserve private/public contributor ownership and account for any extra batching analysis or upload work.
 
 - [ ] **P59 — Reduce measured raster-resolution churn during navigation.**
 

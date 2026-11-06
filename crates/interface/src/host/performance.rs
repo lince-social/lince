@@ -236,6 +236,8 @@ counts! {
     RecordCanonicalBegins => "record-canonical-begins",
     RecordCanonicalCommits => "record-canonical-commits",
     RecordGuardHistoryBytes => "record-guard-history-bytes",
+    RecordGuardHistoryValidatedBytes => "record-guard-history-validated-bytes",
+    RecordGuardHistoryReusedTextBytes => "record-guard-history-reused-text-bytes",
     RecordGuardBasesReused => "record-guard-bases-reused",
     RecordCanonicalSnapshotBytes => "record-canonical-snapshot-bytes",
     RecordCanonicalDeltaBytes => "record-canonical-delta-bytes",

@@ -83,6 +83,7 @@ pub struct AcceptedDoc {
     doc: LoroDoc,
     version: VersionVector,
     validated_limits: Limits,
+    history_text_json_bytes: usize,
     head: String,
     body: String,
     snapshot: Vec<u8>,
@@ -134,7 +135,7 @@ impl AcceptedDoc {
         validate_limits(limits)?;
         bounded(bytes.len(), limits.snapshot_bytes, "snapshot bytes")?;
         let doc = import_snapshot(bytes)?;
-        validate_document(&doc, limits)?;
+        validate_document(&doc, limits, None)?;
         let history = doc.export_json_updates_without_peer_compression(
             &VersionVector::default(),
             &doc.oplog_vv(),
@@ -144,9 +145,17 @@ impl AcceptedDoc {
     }
 
     fn from_document(doc: LoroDoc, limits: &Limits) -> Result<Self, GuardError> {
+        Self::from_document_with_text_json_bytes(doc, limits, None)
+    }
+
+    fn from_document_with_text_json_bytes(
+        doc: LoroDoc,
+        limits: &Limits,
+        history_text_json_bytes: Option<usize>,
+    ) -> Result<Self, GuardError> {
         let _building = crate::performance::Span::new("record-guard-candidate-build");
         validate_limits(limits)?;
-        validate_document(&doc, limits)?;
+        let history_text_json_bytes = validate_document(&doc, limits, history_text_json_bytes)?;
         let head = doc.get_text("head").to_string();
         let body = doc.get_text("body").to_string();
         let exporting = crate::performance::Span::new("record-canonical-snapshot-export");
@@ -159,6 +168,7 @@ impl AcceptedDoc {
         Ok(Self {
             version: doc.oplog_vv(),
             validated_limits: limits.clone(),
+            history_text_json_bytes,
             doc,
             head,
             body,
@@ -229,7 +239,7 @@ impl AcceptedDoc {
             }
             Ok(())
         })?;
-        validate_document(&doc, limits)?;
+        validate_document(&doc, limits, None)?;
         let schema =
             doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
         let mut admission = limits.clone();
@@ -265,16 +275,17 @@ impl AcceptedDoc {
         bounded(raw_json.len(), limits.delta_bytes, "delta bytes")?;
         bounded(self.snapshot.len(), limits.snapshot_bytes, "snapshot bytes")?;
         let base_validation = crate::performance::Span::new("record-guard-base-validation");
-        if self.validated_limits != *limits
+        let history_text_json_bytes = if self.validated_limits != *limits
             || self.doc.oplog_vv() != self.version
             || self.doc.get_pending_txn_len() != 0
             || self.doc.is_detached()
             || self.doc.is_shallow()
         {
-            validate_document(&self.doc, limits)?;
+            validate_document(&self.doc, limits, None)?
         } else {
             crate::performance::add("record-guard-bases-reused", 1);
-        }
+            self.history_text_json_bytes
+        };
         drop(base_validation);
         let raw: RawSchema =
             serde_json::from_slice(raw_json).map_err(|_| GuardError::InvalidJson)?;
@@ -337,10 +348,23 @@ impl AcceptedDoc {
             return Err(GuardError::InvalidState);
         }
         let normalized_delta = encode_bounded(&normalized, limits.delta_bytes, "delta bytes")?;
+        let normalized_metadata_bytes =
+            metadata_bytes(normalized, limits.delta_bytes, "delta bytes")?;
+        let added_text_bytes = normalized_delta
+            .len()
+            .checked_sub(normalized_metadata_bytes)
+            .ok_or(GuardError::InvalidState)?;
+        let history_text_json_bytes = history_text_json_bytes
+            .checked_add(added_text_bytes)
+            .ok_or(GuardError::Limit("history bytes"))?;
         Ok(PreparedDelta {
             new_atoms,
             duplicate: version == base_version,
-            candidate: Self::from_document(candidate, limits)?,
+            candidate: Self::from_document_with_text_json_bytes(
+                candidate,
+                limits,
+                Some(history_text_json_bytes),
+            )?,
             base_version,
             normalized_delta,
             touched_properties: inspection.touched,
@@ -478,7 +502,11 @@ fn import_complete(doc: LoroDoc, schema: JsonSchema) -> Result<LoroDoc, GuardErr
     })
 }
 
-fn validate_document(doc: &LoroDoc, limits: &Limits) -> Result<(), GuardError> {
+fn validate_document(
+    doc: &LoroDoc,
+    limits: &Limits,
+    history_text_json_bytes: Option<usize>,
+) -> Result<usize, GuardError> {
     if doc.get_pending_txn_len() != 0 {
         return Err(GuardError::UncommittedState);
     }
@@ -518,9 +546,30 @@ fn validate_document(doc: &LoroDoc, limits: &Limits) -> Result<(), GuardError> {
     )?;
     verify_delete_targets(doc, &history, &doc.oplog_vv())?;
     let _encoding = crate::performance::Span::new("record-guard-history-encoding");
-    let encoded = encode_bounded(&history, limits.history_bytes, "history bytes")?;
-    crate::performance::add("record-guard-history-bytes", encoded.len() as u64);
-    Ok(())
+    let (text_bytes, encoded_bytes) = if let Some(text_bytes) = history_text_json_bytes {
+        let metadata_bytes = metadata_bytes(history, limits.history_bytes, "history bytes")?;
+        let encoded_bytes = bounded_sum(
+            metadata_bytes,
+            text_bytes,
+            limits.history_bytes,
+            "history bytes",
+        )?;
+        crate::performance::add("record-guard-history-reused-text-bytes", text_bytes as u64);
+        (text_bytes, encoded_bytes)
+    } else {
+        let text_bytes = text_json_bytes(&history, limits.history_bytes, "history bytes")?;
+        let metadata_bytes = metadata_bytes(history, limits.history_bytes, "history bytes")?;
+        let encoded_bytes = bounded_sum(
+            metadata_bytes,
+            text_bytes,
+            limits.history_bytes,
+            "history bytes",
+        )?;
+        crate::performance::add("record-guard-history-bytes", encoded_bytes as u64);
+        (text_bytes, encoded_bytes)
+    };
+    crate::performance::add("record-guard-history-validated-bytes", encoded_bytes as u64);
+    Ok(text_bytes)
 }
 
 struct Inspection {
@@ -920,17 +969,19 @@ fn cover_insert(
     Ok(())
 }
 
-struct CappedWriter {
-    bytes: Vec<u8>,
+struct CappedWriter<W> {
+    output: W,
+    written: usize,
     maximum: usize,
 }
 
-impl Write for CappedWriter {
+impl<W: Write> Write for CappedWriter<W> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if bytes.len() > self.maximum.saturating_sub(self.bytes.len()) {
+        if bytes.len() > self.maximum.saturating_sub(self.written) {
             return Err(io::Error::other("JSON byte limit"));
         }
-        self.bytes.extend_from_slice(bytes);
+        self.output.write_all(bytes)?;
+        self.written += bytes.len();
         Ok(bytes.len())
     }
 
@@ -945,11 +996,58 @@ fn encode_bounded(
     name: &'static str,
 ) -> Result<Vec<u8>, GuardError> {
     let mut writer = CappedWriter {
-        bytes: Vec::new(),
+        output: Vec::new(),
+        written: 0,
         maximum,
     };
     serde_json::to_writer(&mut writer, value).map_err(|_| GuardError::Limit(name))?;
-    Ok(writer.bytes)
+    Ok(writer.output)
+}
+
+fn text_json_bytes(
+    schema: &JsonSchema,
+    maximum: usize,
+    name: &'static str,
+) -> Result<usize, GuardError> {
+    let mut writer = CappedWriter {
+        output: io::sink(),
+        written: 0,
+        maximum,
+    };
+    let mut delimiters = 0usize;
+    for change in &schema.changes {
+        for op in &change.ops {
+            if let JsonOpContent::Text(JsonTextOp::Insert { text, .. }) = &op.content {
+                serde_json::to_writer(&mut writer, text).map_err(|_| GuardError::Limit(name))?;
+                delimiters = delimiters.checked_add(2).ok_or(GuardError::Limit(name))?;
+            }
+        }
+    }
+    writer
+        .written
+        .checked_sub(delimiters)
+        .ok_or(GuardError::InvalidState)
+}
+
+fn metadata_bytes(
+    mut schema: JsonSchema,
+    maximum: usize,
+    name: &'static str,
+) -> Result<usize, GuardError> {
+    for change in &mut schema.changes {
+        for op in &mut change.ops {
+            if let JsonOpContent::Text(JsonTextOp::Insert { text, .. }) = &mut op.content {
+                text.clear();
+            }
+        }
+    }
+    let mut writer = CappedWriter {
+        output: io::sink(),
+        written: 0,
+        maximum,
+    };
+    serde_json::to_writer(&mut writer, &schema).map_err(|_| GuardError::Limit(name))?;
+    Ok(writer.written)
 }
 
 #[derive(Deserialize)]
@@ -1141,6 +1239,145 @@ mod tests {
         doc.import(accepted.snapshot()).unwrap();
         doc.set_peer_id(peer).unwrap();
         doc
+    }
+
+    fn assert_history_size_oracle(accepted: &AcceptedDoc) {
+        let history = accepted.doc.export_json_updates_without_peer_compression(
+            &VersionVector::default(),
+            &accepted.version(),
+        );
+        let encoded_bytes = serde_json::to_vec(&history).unwrap().len();
+        let text_bytes: usize = history
+            .changes
+            .iter()
+            .flat_map(|change| &change.ops)
+            .filter_map(|op| match &op.content {
+                JsonOpContent::Text(JsonTextOp::Insert { text, .. }) => {
+                    Some(serde_json::to_vec(text).unwrap().len() - 2)
+                }
+                _ => None,
+            })
+            .sum();
+        assert_eq!(accepted.history_text_json_bytes, text_bytes);
+        assert_eq!(
+            metadata_bytes(history, usize::MAX, "history bytes").unwrap() + text_bytes,
+            encoded_bytes,
+        );
+        for maximum in [encoded_bytes - 1, encoded_bytes, encoded_bytes + 1] {
+            let limits = Limits {
+                history_bytes: maximum,
+                delta_bytes: maximum.min(Limits::default().delta_bytes),
+                ..Limits::default()
+            };
+            let predicted = validate_document(&accepted.doc, &limits, Some(text_bytes));
+            let fresh = validate_document(&accepted.doc, &limits, None);
+            assert_eq!(predicted, fresh);
+            if maximum < encoded_bytes {
+                assert_eq!(predicted, Err(GuardError::Limit("history bytes")));
+            } else {
+                assert_eq!(predicted, Ok(text_bytes));
+            }
+        }
+    }
+
+    #[test]
+    fn collab_guard_incremental_history_bytes_match_full_json_across_unicode_edits() {
+        let controls: String = (0..32).map(char::from).collect();
+        let values = [
+            controls.as_str(),
+            "\"\\/é新👩‍💻עברית",
+            "\n\t\r\u{0008}\u{000c}",
+        ];
+        let mut base = accepted("Head\"", "Body\\é");
+        assert_history_size_oracle(&base);
+        for index in 0..36 {
+            let editor = client(&base, [1, 7, 9][index % 3]);
+            let field = if index % 2 == 0 { "head" } else { "body" };
+            let text = editor.get_text(field);
+            if index % 4 == 3 && text.len_unicode() > 0 {
+                text.delete(0, 1).unwrap();
+            } else {
+                text.insert(text.len_unicode(), values[index % values.len()])
+                    .unwrap();
+            }
+            let raw = delta(&editor, &base.version());
+            let prepared = base
+                .prepare_delta(&raw, &both_properties(), &Limits::default())
+                .unwrap();
+            assert_history_size_oracle(&prepared.candidate);
+            let replay =
+                AcceptedDoc::from_trusted_snapshot(prepared.snapshot(), &Limits::default())
+                    .unwrap();
+            assert_eq!(
+                prepared.candidate.history_text_json_bytes,
+                replay.history_text_json_bytes
+            );
+            base = prepared.into_accepted_after_commit();
+        }
+    }
+
+    #[test]
+    fn collab_guard_incremental_history_bytes_preserve_concurrent_and_duplicate_updates() {
+        let base = accepted("H\n", "é\"👩‍💻");
+        let first = client(&base, 7);
+        first.get_text("body").insert(0, "\0新").unwrap();
+        let first = delta(&first, &base.version());
+        let second = client(&base, 9);
+        second.get_text("head").insert(0, "\\\r").unwrap();
+        let second = delta(&second, &base.version());
+        let after_first = base
+            .prepare_delta(&first, &body_only(), &Limits::default())
+            .unwrap()
+            .into_accepted_after_commit();
+        let after_second = after_first
+            .prepare_delta(&second, &both_properties(), &Limits::default())
+            .unwrap()
+            .into_accepted_after_commit();
+        assert_history_size_oracle(&after_second);
+        for raw in [&first, &second] {
+            let replay = after_second
+                .prepare_delta(raw, &both_properties(), &Limits::default())
+                .unwrap();
+            assert!(replay.is_duplicate());
+            assert_history_size_oracle(&replay.candidate);
+            assert_eq!(
+                replay.candidate.history_text_json_bytes,
+                after_second.history_text_json_bytes,
+            );
+        }
+    }
+
+    #[test]
+    fn collab_guard_incremental_history_bytes_enforce_the_exact_cached_limit() {
+        let base = accepted("H", &"\0\"é".repeat(128));
+        let editor = client(&base, 7);
+        editor.get_text("body").insert(0, "\n\\👩‍💻").unwrap();
+        let raw = delta(&editor, &base.version());
+        let candidate = base
+            .prepare_delta(&raw, &body_only(), &Limits::default())
+            .unwrap();
+        let history = candidate
+            .candidate
+            .doc
+            .export_json_updates_without_peer_compression(
+                &VersionVector::default(),
+                &candidate.candidate.version(),
+            );
+        let actual = serde_json::to_vec(&history).unwrap().len();
+        for maximum in [actual - 1, actual] {
+            let limits = Limits {
+                history_bytes: maximum,
+                delta_bytes: maximum,
+                ..Limits::default()
+            };
+            let cached = AcceptedDoc::from_trusted_snapshot(base.snapshot(), &limits).unwrap();
+            let prepared = cached.prepare_delta(&raw, &body_only(), &limits);
+            if maximum < actual {
+                assert!(matches!(prepared, Err(GuardError::Limit("history bytes"))));
+            } else {
+                assert_history_size_oracle(&prepared.unwrap().candidate);
+            }
+        }
     }
 
     #[test]
@@ -1702,6 +1939,8 @@ mod tests {
         let duplicate = updated
             .prepare_delta(&bytes(&raw), &body_only(), &Limits::default())
             .unwrap();
+        assert_history_size_oracle(&updated);
+        assert_history_size_oracle(&duplicate.candidate);
         assert!(duplicate.is_duplicate());
         assert_eq!(duplicate.body(), "a😀é");
     }
@@ -1747,12 +1986,15 @@ mod tests {
         let prepared = first
             .prepare_delta(&full, &body_only(), &Limits::default())
             .unwrap();
+        assert_history_size_oracle(&first);
+        assert_history_size_oracle(&prepared.candidate);
         assert_eq!(prepared.body(), "a😀éZ");
         assert_eq!(prepared.candidate.doc.len_ops(), 4);
         let duplicate = prepared
             .into_accepted_after_commit()
             .prepare_delta(&full, &body_only(), &Limits::default())
             .unwrap();
+        assert_history_size_oracle(&duplicate.candidate);
         assert!(duplicate.is_duplicate());
         let mut altered: Value = serde_json::from_slice(&full).unwrap();
         altered["changes"][0]["ops"][0]["content"]["text"] = json!("a😈");
@@ -1783,6 +2025,8 @@ mod tests {
         let prepared = first
             .prepare_delta(&full, &body_only(), &Limits::default())
             .unwrap();
+        assert_history_size_oracle(&first);
+        assert_history_size_oracle(&prepared.candidate);
         assert_eq!(prepared.body(), "a");
         assert!(
             prepared
@@ -2223,6 +2467,7 @@ mod tests {
             .prepare_delta(&bytes(&raw), &body_only(), &Limits::default())
             .unwrap()
             .into_accepted_after_commit();
+        assert_history_size_oracle(&updated);
         assert!(
             updated
                 .prepare_delta(&bytes(&raw), &body_only(), &Limits::default())
@@ -2256,6 +2501,7 @@ mod tests {
         assert_eq!(normalized.changes[0].lamport, 1);
         assert_eq!(normalized.changes[0].deps, vec![ID::new(7, 0)]);
         let updated = prepared.into_accepted_after_commit();
+        assert_history_size_oracle(&updated);
         assert!(
             updated
                 .prepare_delta(&bytes(&next), &body_only(), &Limits::default())

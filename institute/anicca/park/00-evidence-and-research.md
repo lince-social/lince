@@ -2,6 +2,41 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## Exact history JSON-size reuse kept on 2026-11-06
+
+P137 removes the repeated serialization of all historical text merely to enforce a JSON byte limit. It does not skip candidate history validation. Full roots, schema/operation/dependency/known-ID checks, delete-target checks, grant/property checks, current text limits and actual snapshot limits remain. AcceptedDoc retains eight bytes of exact escaped-text accounting with its existing private validated document/version/limits. Reuse still requires the valid immutable base; changed limits/revisions use fresh validation. No dependency, schema, permission cache, worker, runtime setting or user flow is added.
+
+The exact size identity is `E(H) = M(H) + T(H)`: E is the full JSON encoding length; M serializes the same owned history with each insert's text emptied; T sums each inserted string's escaped JSON content bytes, excluding its two surrounding quotes. The same capped Serde serializer measures M and all fresh text; escaping is not reimplemented or approximated. After existing overlap/known-operation and normalized-delta checks, historical insertion atoms are retained and immutable, so the next T equals the valid base T plus the normalized delta's new T. That new T is the already required normalized wire encoding's length minus its fresh metadata encoding's length. Candidate metadata, including operation splitting/merging, messages, counters, peers and frontiers, is measured afresh. The resulting exact full-history byte count is checked against the unchanged cap. The private candidate constructor is only reached through this guarded preparation path.
+
+Fresh constructors count text and metadata with the existing CappedWriter generalized for Vec/sink outputs. They no longer need a discarded whole-history JSON buffer. Candidate history is still exported as typed data and inspected completely before the owned exported strings are emptied for metadata measurement. Snapshot import/export and full structural/history work remain possible costs. The old history-bytes counter records full text-budget processing; new validated-bytes and reused-text-bytes counters distinguish exact budget coverage from skipped text rescanning. Do not interpret these as bytes written to disk or as permission reuse.
+
+All 49 guard cases pass. Three new independent full-serialization/per-string oracles cover repeated Unicode/control/escaping edits, three peers, concurrent merge/replay and exact below/equal/above byte boundaries. Existing partial-overlap, split Unicode, reverse-delete and timestamp/message tests also check the independent oracle. Existing malformed input, limits, isolation, selected-property, poisoned-candidate and snapshot guards remain. Seventeen Engine integration cases and eight common native cases pass, with Protein Add filter first. All final Engine/native checks and test compilations have zero compiler diagnostics. CPU glyph/layout coverage does not close P140's full mapping or P146's actual GPU paint.
+
+An optimized helper-only comparison copies the old/new size helpers, uses the actual pinned Loro/Serde schema/serializer types, and compiles those helpers with Rust opt-level=3. Data construction/cloning precedes timing; both variants consume their owned exported schema. ABBA order gives six observations per variant/case. Every size equals independent full JSON serialization. This is not a fully optimized Engine/Lince or desktop benchmark: linked SDK dependencies are reused debug artifacts, and the helper harness has a minimal error carrier.
+
+| Size calculation control | Previous median | Retained-text median | Exact JSON size |
+| --- | --- | --- | --- |
+| Empty history | 0.882 µs | 0.271 µs | 65 bytes |
+| 1 KiB text | 1.852 µs | 0.952 µs | 1,249 bytes |
+| 1,048,000-byte text | 691.094 µs | 7.136 µs | 1,048,225 bytes |
+| Escaped/Unicode text | 1,166.670 µs | 4.006 µs | 852,193 bytes |
+| 512 tiny insertions, 32 alternating peers | 574.412 µs | 413.656 µs | 88,989 bytes |
+
+The real debug binding/Cell/file-backed comparison uses frozen 29539860 and the candidate, identical probe source/features and no concurrent compilation. Six tracing-off edits per variant/case plus one three-edit counter run per variant/case give 72 edits and 24 exact durable reopens. One/eight views, zero/eight subscriptions, head/body and 1 KiB/roughly 1 MiB bodies are covered. Three canonical commits, three recovery writes/clears, all six required related-query history entries/updates (or zero without subscriptions) and unrelated-query silence remain exact. The candidate scans no old text for the JSON size budget during measured edits while validating the exact full size; 3,145,725 escaped text bytes are reused across three large edits. Random peer metadata slightly changes total JSON/snapshot lengths between runs; the independent same-document size oracle is the exactness proof.
+
+| Tracing-off settled response | Baseline → candidate median | Process CPU for three edits |
+| --- | --- | --- |
+| Small title / one view | 38.95 → 34.60 ms | 70 → 55 ms |
+| Small body / one view | 93.94 → 36.63 ms | 110 → 75 ms |
+| Large title / eight views | 190.03 → 146.30 ms | 730 → 625 ms |
+| Large body / eight views | 277.91 → 227.47 ms | 1,320 → 1,175 ms |
+
+Keep sampling limits and unfavorable controls: the small-body baseline includes a 318.659 ms tail, so its full elapsed difference is not attributed to this tiny small-string optimization. Large-body echo rises from 33.54 to 36.60 ms in these six-event samples. No optimized full-save or physical input/FPS acceptance is established. Process CPU is quantized to 10 ms, the adapter is high-entropy rather than complete paragraph S4, and nested stage durations cannot be added as CPU.
+
+In one accounting run per variant, three large-title edits reduce JSON-size encoding from 69.098 to 0.237 ms and full synchronous preparation from 224.563 to 181.399 ms; large-body preparation changes 384.809 → 263.263 ms. These diagnostic stage reductions do not imply equal release/desktop gains. Remaining typed-history export/inspection, snapshot import/export, live echo, full-field projection, large replacement/tail behavior and optimized complete-path tests stay under P137/P102. Return to actual shipping frame/input and CPU/GPU ownership evidence in P66/P67 before more debug save micro-optimization; do not sum successive improvements into a desktop prediction.
+
+Receipt, final source manifest and exact check/test/artifact records: /home/user/.local/state/lince/park-validation/performance-20261106/history-budget/receipt.json and source.json. The helper source/build/results and size-probe-summary.json are alongside them. Native raw controls/counters and summary.json are under comparison-20261106T153916Z/. No local release application build, Actions query, real database/clipboard mutation or session restart occurred. No migration or .lingua changed.
+
 ## Canonical preflight Record reuse kept on 2026-11-06
 
 Canonical text persistence previously loaded the complete existing Record independently for legacy composition and native canvas validation. Both resolvers are read-only with respect to that Record, and the canonical caller retains its existing import/access serialization. It now shares one fresh, operation-local Record value, retains both validation branches, their order, origin/reference/actor checks and all later transaction guards, and explicitly releases the Record before opening the write transaction. There is no cross-operation data cache, permission cache, schema/API change or new layer. The five per-edit WAL boundaries are unchanged.

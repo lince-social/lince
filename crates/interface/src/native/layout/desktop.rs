@@ -163,6 +163,42 @@ struct Runtime {
     restoring_free: BTreeSet<(Entity, u64)>,
 }
 
+#[derive(Resource)]
+struct ResolveQueries {
+    roots: QueryState<(Entity, &'static Workspaces)>,
+    managed: QueryState<(Entity, &'static ChildOf, &'static Managed)>,
+    suppressed: QueryState<(Entity, &'static ChildOf), With<Suppressed>>,
+    items: QueryState<(
+        Entity,
+        &'static CanvasItem,
+        &'static ChildOf,
+        &'static WorkspaceMember,
+    )>,
+    members: QueryState<(Entity, &'static ChildOf, &'static WorkspaceMember)>,
+    influences: QueryState<(
+        Entity,
+        &'static ChildOf,
+        &'static WorkspaceMember,
+        Option<Ref<'static, crate::native::area::InfluenceArea>>,
+        Option<Ref<'static, crate::native::protein_area::filter::Matches>>,
+        Option<Ref<'static, crate::native::area::RecordProperties>>,
+        Option<Ref<'static, crate::native::protein_area::RecordBinding>>,
+    )>,
+}
+
+impl FromWorld for ResolveQueries {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            roots: QueryState::new(world),
+            managed: QueryState::new(world),
+            suppressed: QueryState::new(world),
+            items: QueryState::new(world),
+            members: QueryState::new(world),
+            influences: QueryState::new(world),
+        }
+    }
+}
+
 #[derive(PartialEq)]
 struct InfluenceStamp {
     sources: Vec<(Entity, [u32; 4])>,
@@ -173,22 +209,14 @@ struct InfluenceStamp {
 }
 
 fn influence_stamp(
-    world: &mut World,
+    world: &World,
+    queries: &mut ResolveQueries,
     root: Entity,
     workspace: u64,
     bounds: Rectangle,
     entities: &BTreeMap<PlacementId, Entity>,
 ) -> InfluenceStamp {
-    let mut sources: Vec<_> = world
-        .query::<(
-            Entity,
-            &ChildOf,
-            &WorkspaceMember,
-            Option<Ref<crate::native::area::InfluenceArea>>,
-            Option<Ref<crate::native::protein_area::filter::Matches>>,
-            Option<Ref<crate::native::area::RecordProperties>>,
-            Option<Ref<crate::native::protein_area::RecordBinding>>,
-        )>()
+    let mut sources: Vec<_> = queries.influences
         .iter(world)
         .filter(|(_, parent, member, area, filter, record, binding)| {
             parent.parent() == root
@@ -384,12 +412,18 @@ fn candidate(world: &World, entity: Entity) -> bool {
 }
 
 pub(crate) fn resolve(world: &mut World) {
+    world.init_resource::<ResolveQueries>();
+    world.resource_scope(|world, mut queries: Mut<ResolveQueries>| {
+        resolve_queried(world, &mut queries);
+    });
+}
+
+fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
     transients::inherit(world);
     world.init_resource::<Runtime>();
     world.init_resource::<PublishedGeometry>();
     let layout_settings = preferences::synchronize(world);
-    let roots: Vec<_> = world
-        .query::<(Entity, &Workspaces)>()
+    let roots: Vec<_> = queries.roots
         .iter(world)
         .flat_map(|(root, spaces)| {
             if let Some(views) = world
@@ -463,8 +497,7 @@ pub(crate) fn resolve(world: &mut World) {
                 .find(|workspace| workspace.id == active)
                 .is_none_or(|workspace| workspace.desktop.items().is_empty())
         {
-            let managed: Vec<_> = world
-                .query::<(Entity, &ChildOf, &Managed)>()
+            let managed: Vec<_> = queries.managed
                 .iter(world)
                 .filter(|(_, parent, _)| parent.parent() == root)
                 .map(|(entity, _, _)| entity)
@@ -472,8 +505,7 @@ pub(crate) fn resolve(world: &mut World) {
             for entity in managed {
                 world.entity_mut(entity).remove::<Managed>();
             }
-            let hidden: Vec<_> = world
-                .query_filtered::<(Entity, &ChildOf), With<Suppressed>>()
+            let hidden: Vec<_> = queries.suppressed
                 .iter(world)
                 .filter(|(_, parent)| parent.parent() == root)
                 .map(|(entity, _)| entity)
@@ -498,8 +530,7 @@ pub(crate) fn resolve(world: &mut World) {
             };
             std::mem::take(&mut workspace.desktop)
         };
-        let mut rows: Vec<_> = world
-            .query::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember)>()
+        let mut rows: Vec<_> = queries.items
             .iter(world)
             .filter(|(entity, _, parent, member)| {
                 parent.parent() == root && member.0 == active && candidate(world, *entity)
@@ -681,7 +712,7 @@ pub(crate) fn resolve(world: &mut World) {
                 model.remove(*id);
             }
         }
-        let stamp = influence_stamp(world, root, active, usable, &entities);
+        let stamp = influence_stamp(world, queries, root, active, usable, &entities);
         if mode != WorkspaceLayout::Free
             && world.resource::<Runtime>().influences.get(&(root, active)) != Some(&stamp)
         {
@@ -747,8 +778,7 @@ pub(crate) fn resolve(world: &mut World) {
                     solution.focused = model.focused();
                 }
                 let fullscreen = model.fullscreen().and_then(|id| entities.get(&id).copied());
-                let members: Vec<_> = world
-                    .query::<(Entity, &ChildOf, &WorkspaceMember)>()
+                let members: Vec<_> = queries.members
                     .iter(world)
                     .filter(|(entity, parent, member)| {
                         parent.parent() == root
@@ -1508,9 +1538,15 @@ pub(crate) mod tests {
         assert!(world.get_entity(dialog).is_ok());
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn two_outputs_resolve_one_canonical_root_without_reparenting_items() {
         let (mut world, root, native, application) = fixture();
+        resolve(&mut world);
+        #[derive(Component)]
+        struct Updated;
+        for entity in [root, native, application] {
+            world.entity_mut(entity).insert(Updated);
+        }
         let mut other = world.get::<Workspaces>(root).unwrap().entries[0].clone();
         other.id = 2;
         world
@@ -2043,5 +2079,6 @@ pub(crate) mod tests {
         dialog_stays_above_its_parent_and_preserves_parent_fullscreen,
         fullscreen_restore_keeps_free_geometry_despite_presentation_changes,
         mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window,
+        two_outputs_resolve_one_canonical_root_without_reparenting_items,
     }
 }

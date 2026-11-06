@@ -12,6 +12,8 @@ use std::{
     sync::Mutex,
 };
 
+mod bodies;
+
 #[derive(Clone, Copy, serde::Serialize)]
 struct Reading {
     wall_ms: f64,
@@ -164,6 +166,7 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         checks.iter().all(|check| check.error.is_none()),
         "{checks:?}"
     );
+    let bodies = Arc::new(bodies::Probe::default());
     if std::env::var_os("LINCE_PARK_TRACE_SYSTEMS").is_some() {
         use bevy::log::tracing_subscriber::{Layer, layer::SubscriberExt};
         let layer = bevy::log::tracing_subscriber::fmt::layer()
@@ -174,7 +177,13 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
             .with_filter(bevy::log::tracing_subscriber::filter::filter_fn(
                 |metadata| metadata.is_span() && metadata.name() == "system",
             ));
-        let subscriber = bevy::log::tracing_subscriber::registry().with(layer);
+        let subscriber = bevy::log::tracing_subscriber::registry().with(layer).with(
+            bodies::Layer(bodies.clone()).with_filter(
+                bevy::log::tracing_subscriber::filter::filter_fn(|metadata| {
+                    metadata.is_span() && metadata.name() == "system"
+                }),
+            ),
+        );
         bevy::log::tracing::subscriber::set_global_default(subscriber).unwrap();
     }
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -248,10 +257,28 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         assert!(glyphs > 200, "Reference labels are not drawn: {glyphs}");
     }
     let mut original = Vec::new();
+    bodies.start();
     for _ in 0..24 {
         let clock = Clock::start();
         drop(canvas.probe_frame().unwrap());
         original.push(clock.finish());
+    }
+    let warmed_bodies = bodies.stop();
+    if std::env::var_os("LINCE_PARK_TRACE_SYSTEMS").is_some() {
+        for name in [
+            "bevy_ui::layout::ui_layout_system",
+            "lince_interface::native::layout::engine::resolve",
+            "lince_interface::native::topology::presentation::synchronize",
+        ] {
+            assert_eq!(
+                warmed_bodies
+                    .iter()
+                    .filter(|(body, _)| body == name)
+                    .count(),
+                24,
+                "Missing warmed system executions: {name}"
+            );
+        }
     }
     let labels = canvas
         .app
@@ -409,6 +436,7 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         "compute_workers":bevy::tasks::ComputeTaskPool::get().thread_num(),
         "system_names_available":main_systems[0].ends_with("Main::run_main"),"inventory":inventory,"original_full":summary(&original),"original_samples":original,
         "instrumented_full":summary(&observed),"instrumented_samples":observed,
+        "warmed_system_bodies":warmed_bodies,
         "attribution":attribution,"selected_index":selected,"selected_schedule":format!("{label:?}"),
         "comparisons":comparisons,"reference_hash":hash.finish(),"interface_cases":checks.iter().map(|check|&check.name).collect::<Vec<_>>(),
         "correctness":"Exact pixels including glyphs on both outputs at every variant block; ordered ASCII and Unicode input reflected in editor state and same-frame marker pixels under both executors; baseline restored after deletion and original Main restored without rerunning startup. Marker is not a glyph-paint oracle."

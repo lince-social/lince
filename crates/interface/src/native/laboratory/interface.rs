@@ -17,6 +17,18 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
             .expect("Missing native Castle readiness regression");
         cases.push(readiness.remove(case));
     }
+    let mut desktop = Vec::new();
+    crate::native::layout::desktop::tests::laboratory_cases(&mut desktop);
+    for name in [
+        "::two_outputs_resolve_one_canonical_root_without_reparenting_items",
+        "::mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window",
+    ] {
+        let case = desktop
+            .iter()
+            .position(|case| case.name.ends_with(name))
+            .expect("Missing native desktop lifecycle regression");
+        cases.push(desktop.remove(case));
+    }
     let mut records = Vec::new();
     crate::native::protein_area::tests::laboratory_cases(&mut records);
     for name in [
@@ -100,6 +112,8 @@ fn fast_interface_rules() {
     for name in [
         "::layout_snapshots_track_optional_components_commands_and_removals",
         "::presented_castles_keep_their_surface_while_replacement_content_settles",
+        "::two_outputs_resolve_one_canonical_root_without_reparenting_items",
+        "::mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window",
     ] {
         assert!(results.iter().any(|result| result.name.ends_with(name)));
     }

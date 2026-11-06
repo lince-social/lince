@@ -110,22 +110,18 @@ async fn assignees_and_assertions_do_not_reveal_an_unreadable_person() {
                 .unwrap(),
         );
     }
-    engine
-        .act(
-            Action::CreateConcept {
-                lingua: "g_local".into(),
-                name: "assigned-to".into(),
-                parents: Vec::new(),
-            },
-            None,
-        )
+    let assignment = store::vocabulary::feature_binding(&engine.store.pool, "assignment")
         .await
+        .unwrap()
+        .concept_uids
+        .into_iter()
+        .next()
         .unwrap();
     engine
         .act(
             Action::AssertRecord {
                 subject: ids[0].clone(),
-                predicate: "assigned-to".into(),
+                predicate: assignment,
                 object: Some(ids[1].clone()),
                 quantity: None,
                 unit: None,

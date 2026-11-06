@@ -1671,9 +1671,32 @@ async fn execute_records(
     }
 
     let mut out = Vec::with_capacity(rows.len());
-    let concept_names = store::vocabulary::display_names(&store.pool, subject).await?;
-    let selected: Vec<_> = rows.iter().map(|record| record.uid.clone()).collect();
-    let work = store::records::extensions_for_records(&store.pool, "work", &selected).await?;
+    let wants = |key| record_schema::requests(protein, key);
+    let concept_names = if wants("concept_name")
+        || wants("assertions")
+        || protein.include.links.is_some()
+        || protein.include.relation_context.is_some()
+    {
+        store::vocabulary::display_names(&store.pool, subject).await?
+    } else {
+        HashMap::new()
+    };
+    let work = if [
+        "start_date",
+        "due_date",
+        "estimate_min",
+        "work_logs",
+        "spent_seconds",
+        "running_since",
+    ]
+    .iter()
+    .any(|key| wants(key))
+    {
+        let selected: Vec<_> = rows.iter().map(|record| record.uid.clone()).collect();
+        store::records::extensions_for_records(&store.pool, "work", &selected).await?
+    } else {
+        HashMap::new()
+    };
     let mut projected =
         record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
     let mut shader_effects = HashMap::new();
@@ -1715,30 +1738,65 @@ async fn execute_records(
             HashSet::new()
         };
     for r in rows {
-        let record_unit_uid = r.unit_uid.clone();
-        let mut row = json!({
-            "uid": r.uid,
-            "slug": r.slug,
-            "kind": r.kind,
-            "head": r.head,
-            "body": r.body,
-            "quantity": r.quantity.to_string(),
-            "concept": r.identity_predicate_uid,
-            "unit": r.unit_uid,
-            "organ": r.organ_uid,
-            "concept_name": r.identity_predicate_uid.as_ref().and_then(|uid| concept_names.get(uid)),
-            "created_at": r.created_at,
-            "updated_at": r.updated_at,
-            "created_hlc": r.created_hlc,
-            "start_date": work.get(&r.uid).and_then(|value| value.get("start")).and_then(Value::as_str),
-            "due_date": work.get(&r.uid).and_then(|value| value.get("due")).and_then(Value::as_str),
-        });
+        let mut row = json!({"uid": r.uid});
+        if wants("slug") {
+            row["slug"] = json!(r.slug);
+        }
+        row["kind"] = json!(r.kind);
+        if wants("head") {
+            row["head"] = json!(r.head);
+        }
+        if wants("body") {
+            row["body"] = json!(r.body);
+        }
+        if wants("quantity") {
+            row["quantity"] = json!(r.quantity.to_string());
+        }
+        if wants("concept") {
+            row["concept"] = json!(r.identity_predicate_uid);
+        }
+        if wants("unit") {
+            row["unit"] = json!(r.unit_uid);
+        }
+        if wants("organ") {
+            row["organ"] = json!(r.organ_uid);
+        }
+        if wants("concept_name") {
+            row["concept_name"] = json!(
+                r.identity_predicate_uid
+                    .as_ref()
+                    .and_then(|uid| concept_names.get(uid))
+            );
+        }
+        if wants("created_at") {
+            row["created_at"] = json!(r.created_at);
+        }
+        if wants("updated_at") {
+            row["updated_at"] = json!(r.updated_at);
+        }
+        if wants("created_hlc") {
+            row["created_hlc"] = json!(r.created_hlc);
+        }
+        if wants("start_date") {
+            row["start_date"] = json!(
+                work.get(&r.uid)
+                    .and_then(|value| value.get("start"))
+                    .and_then(Value::as_str)
+            );
+        }
+        if wants("due_date") {
+            row["due_date"] = json!(
+                work.get(&r.uid)
+                    .and_then(|value| value.get("due"))
+                    .and_then(Value::as_str)
+            );
+        }
         attach_includes(
             store,
             &mut row,
             &r.uid,
             r.quantity_f64(),
-            record_unit_uid.as_deref(),
+            r.unit_uid.as_deref(),
             &protein.include,
             &protected_transfers,
             &concept_names,
@@ -1839,11 +1897,18 @@ async fn order_records(
     } else {
         HashMap::new()
     };
-    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
-        .await?
-        .into_iter()
-        .map(|concept| (concept.uid, concept.canonical_name))
-        .collect();
+    let concept_names: HashMap<String, String> = if order.iter().any(|key| {
+        matches!(key, Order::Asc(field) | Order::Desc(field)
+            if field == "concept_name" || field == "concept")
+    }) {
+        store::concepts::list_all(&store.pool)
+            .await?
+            .into_iter()
+            .map(|concept| (concept.uid, concept.canonical_name))
+            .collect()
+    } else {
+        HashMap::new()
+    };
     let mut assignees = HashMap::new();
     if order.iter().any(
         |key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "assignee_name"),

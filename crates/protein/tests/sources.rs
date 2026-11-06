@@ -165,6 +165,9 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
 #[tokio::test]
 async fn concept_source_reads_the_lingua_dag() {
     let e = engine().await;
+    let initial = protein::execute(&e.store, &protein(Source::Concept))
+        .await
+        .unwrap();
     let food = store::concepts::create(&e.store.pool, "food", &[])
         .await
         .unwrap();
@@ -181,7 +184,12 @@ async fn concept_source_reads_the_lingua_dag() {
     let rows = protein::execute(&e.store, &protein(Source::Concept))
         .await
         .unwrap();
-    assert_eq!(rows.len(), 4);
+    assert_eq!(rows.len(), initial.len() + 4);
+    assert!(
+        initial
+            .iter()
+            .all(|before| rows.iter().any(|row| row["uid"] == before["uid"]))
+    );
     let apple = rows.iter().find(|r| r["name"] == "apple").unwrap();
     assert_eq!(apple["parents"][0], fruit.as_str());
 
@@ -396,7 +404,9 @@ fn transfer_source_derives_the_occurrence_status_ladder() {
                                 expected_local_delta: preview["expected_local_delta"]
                                     .as_f64()
                                     .unwrap(),
-                                expected_effects_hash: preview["expected_effects_hash"].as_str().map(str::to_owned),
+                                expected_effects_hash: preview["expected_effects_hash"]
+                                    .as_str()
+                                    .map(str::to_owned),
                                 expected_application_formula_hash:
                                     preview["expected_application_formula_hash"]
                                         .as_str()

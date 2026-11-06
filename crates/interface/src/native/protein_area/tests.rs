@@ -1355,6 +1355,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
 
 crate::native::laboratory_cases! {
     async local_record_text_refreshes_only_dependent_queries,
+    async record_projection_preserves_requested_fields_and_exact_values,
     record_source_stays_stable_while_paused_and_typing_resumes_at_selection,
     async independent_sorting_uses_live_protein_order_without_spawning_and_clears_on_stop,
     async protein_pull_filters_query_real_properties_without_spawning_and_isolate_sources,
@@ -1370,6 +1371,162 @@ crate::native::laboratory_cases! {
     templates_validate_and_request_only_bound_properties_even_before_rows_exist,
     async area_reads_real_records_preserves_entities_edits_and_deletes_through_actions,
     remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded,
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn record_projection_preserves_requested_fields_and_exact_values() {
+    let engine = engine::Engine::open_memory().await.unwrap();
+    let uid = engine
+        .act(
+            engine::actions::Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: "Projection é".into(),
+                body: "Description 👩‍💻\nSecond line".into(),
+                quantity: 1.25,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    engine
+        .act(
+            engine::actions::Action::SetQuantityExact {
+                target: uid.clone(),
+                amount: "9007199254740993.125".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .act(
+            engine::actions::Action::SetExtension {
+                target: uid.clone(),
+                namespace: "work".into(),
+                fds: serde_json::json!({"start":"2026-09-01","due":"2026-09-30","estimate_min":90,"logs":[{"start":"2026-09-01T10:00:00Z","end":"2026-09-01T10:15:00Z"}]}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut query = protein::Protein {
+        source: protein::Source::Record,
+        filter: vec![protein::Predicate::UidEq(uid.clone())],
+        fields: None,
+        include: Default::default(),
+        aggregate: None,
+        order: Vec::new(),
+        limit: None,
+    };
+    let concept = store::concepts::create(&engine.store.pool, "Alpha projection", &[])
+        .await
+        .unwrap();
+    store::assertions::set_identity(&engine.store.pool, &uid, Some(&concept), None)
+        .await
+        .unwrap();
+    let full = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(full.len(), 1);
+    assert_eq!(full[0]["quantity"], "9007199254740993.125");
+    assert_eq!(full[0]["spent_seconds"], 900);
+    assert_eq!(full[0]["concept_name"], "Alpha projection");
+    let expected_metadata = serde_json::json!({
+        "uid": uid,
+        "slug": null,
+        "kind": "plain",
+        "head": "Projection é",
+        "quantity": "9007199254740993.125",
+    });
+    let mut selections: Vec<Vec<String>> = protein::record_schema::fields()
+        .into_iter()
+        .map(|field| vec![field.key.into()])
+        .chain(
+            [
+                "concept",
+                "unit",
+                "organ",
+                "concept_name",
+                "created_hlc",
+                "unknown",
+            ]
+            .map(|field| vec![field.into()]),
+        )
+        .collect();
+    selections.extend([
+        Vec::new(),
+        ["uid", "head", "slug", "kind", "quantity"]
+            .map(str::to_owned)
+            .into(),
+        ["body", "body", "head"].map(str::to_owned).into(),
+    ]);
+    for fields in selections {
+        let mut expected = full.clone();
+        expected[0]
+            .as_object_mut()
+            .unwrap()
+            .retain(|key, _| key == "uid" || key == "kind" || fields.contains(key));
+        query.fields = Some(fields);
+        let selected = protein::execute(&engine.store, &query).await.unwrap();
+        assert_eq!(selected, expected);
+        if query.fields.as_ref().is_some_and(|fields| {
+            fields == &["uid", "head", "slug", "kind", "quantity"].map(str::to_owned)
+        }) {
+            assert_eq!(
+                serde_json::to_vec(&selected[0]).unwrap(),
+                serde_json::to_vec(&expected_metadata).unwrap()
+            );
+        }
+    }
+    let other = engine
+        .act(
+            engine::actions::Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Plain,
+                head: "Alpha row".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let other_concept = store::concepts::create(&engine.store.pool, "Zulu projection", &[])
+        .await
+        .unwrap();
+    store::assertions::set_identity(&engine.store.pool, &other, Some(&other_concept), None)
+        .await
+        .unwrap();
+    query.filter = vec![protein::Predicate::Any(vec![
+        protein::Predicate::UidEq(uid.clone()),
+        protein::Predicate::UidEq(other.clone()),
+    ])];
+    query.fields = Some(vec!["head".into()]);
+    for field in ["concept", "concept_name"] {
+        for descending in [false, true] {
+            query.order = vec![if descending {
+                protein::Order::Desc(field.into())
+            } else {
+                protein::Order::Asc(field.into())
+            }];
+            let rows = protein::execute(&engine.store, &query).await.unwrap();
+            let sorted: Vec<_> = rows
+                .iter()
+                .map(|row| row["uid"].as_str().unwrap())
+                .collect();
+            assert_eq!(
+                sorted,
+                if descending {
+                    [other.as_str(), uid.as_str()]
+                } else {
+                    [uid.as_str(), other.as_str()]
+                }
+            );
+        }
+    }
 }
 
 #[cfg_attr(test, tokio::test)]

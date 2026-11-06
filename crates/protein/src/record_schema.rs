@@ -53,6 +53,13 @@ pub fn selected(protein: &Protein) -> Vec<Field> {
         .collect()
 }
 
+pub(crate) fn requests(query: &Protein, key: &str) -> bool {
+    query
+        .fields
+        .as_ref()
+        .is_none_or(|fields| fields.iter().any(|field| field == key))
+}
+
 pub(crate) async fn attach(
     store: &Store,
     query: &Protein,
@@ -61,12 +68,20 @@ pub(crate) async fn attach(
     work: &HashMap<String, Value>,
     concept_names: &HashMap<String, String>,
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
-    let wants = |key: &str| {
-        query
-            .fields
-            .as_ref()
-            .is_none_or(|fields| fields.iter().any(|field| field == key))
-    };
+    let wants = |key| requests(query, key);
+    if ![
+        "estimate_min",
+        "work_logs",
+        "spent_seconds",
+        "running_since",
+        "assertions",
+        "assignees",
+    ]
+    .iter()
+    .any(|key| wants(key))
+    {
+        return Ok(HashMap::new());
+    }
     let mut out = HashMap::new();
     for record in records {
         let mut value = json!({});
@@ -78,13 +93,14 @@ pub(crate) async fn attach(
                 .unwrap_or(Value::Null);
         }
         let logs = metadata
-            .and_then(|work| work["logs"].as_array())
-            .cloned()
+            .and_then(|work| work.get("logs"))
+            .and_then(Value::as_array)
+            .map(Vec::as_slice)
             .unwrap_or_default();
         if wants("work_logs") {
             let entries: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY json_extract(value, '$.start'), property")
                 .bind(&record.uid).fetch_all(&store.pool).await?;
-            let mut identified = logs.clone();
+            let mut identified = logs.to_vec();
             for (index, log) in identified.iter_mut().enumerate() {
                 log["id"] = json!(
                     entries
@@ -93,36 +109,38 @@ pub(crate) async fn attach(
                         .unwrap_or_else(|| format!("work.log:seed-{index}"))
                 );
             }
-            value["work_logs"] = json!(identified);
+            value["work_logs"] = Value::Array(identified);
         }
-        let mut spent = 0i64;
-        let mut running = Value::Null;
-        for log in &logs {
-            let Some(start) = log["start"]
-                .as_str()
-                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            else {
-                continue;
-            };
-            let end = log["end"]
-                .as_str()
-                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok());
-            if end.is_none() {
-                running = log["start"].clone();
+        if wants("spent_seconds") || wants("running_since") {
+            let mut spent = 0i64;
+            let mut running = Value::Null;
+            for log in logs {
+                let Some(start) = log["start"]
+                    .as_str()
+                    .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                else {
+                    continue;
+                };
+                let end = log["end"]
+                    .as_str()
+                    .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok());
+                if end.is_none() {
+                    running = log["start"].clone();
+                }
+                spent = spent.saturating_add(
+                    (end.map(|v| v.with_timezone(&chrono::Utc))
+                        .unwrap_or_else(chrono::Utc::now)
+                        - start.with_timezone(&chrono::Utc))
+                    .num_seconds()
+                    .max(0),
+                );
             }
-            spent = spent.saturating_add(
-                (end.map(|v| v.with_timezone(&chrono::Utc))
-                    .unwrap_or_else(chrono::Utc::now)
-                    - start.with_timezone(&chrono::Utc))
-                .num_seconds()
-                .max(0),
-            );
-        }
-        if wants("spent_seconds") {
-            value["spent_seconds"] = json!(spent);
-        }
-        if wants("running_since") {
-            value["running_since"] = running;
+            if wants("spent_seconds") {
+                value["spent_seconds"] = json!(spent);
+            }
+            if wants("running_since") {
+                value["running_since"] = running;
+            }
         }
         if wants("assertions") {
             value["assertions"] = json!([]);

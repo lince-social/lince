@@ -13250,6 +13250,8 @@ dependencies = [
  "serde_json",
  "store",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

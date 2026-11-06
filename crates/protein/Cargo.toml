@@ -20,6 +20,8 @@ ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
 engine = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 chrono = { workspace = true }
 store = { workspace = true }

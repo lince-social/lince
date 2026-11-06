@@ -2,6 +2,167 @@ use super::*;
 use lince_interface::host::{DesktopAction, OutputId, WorkspaceLayout};
 use std::hash::{Hash, Hasher};
 
+pub(super) fn fixture(
+    directory: &std::path::Path,
+    mode: &str,
+    hidden: usize,
+) -> (Presentation, Vec<(Entity, bool)>) {
+    let size = [640, 480];
+    std::fs::create_dir_all(directory.join(mode)).unwrap();
+    let mut canvas =
+        super::super::appearance::launch(&directory.join(format!("{mode}/workspace.json")), size);
+    let root = canvas.canvas_root().unwrap();
+    for _ in 0..2 {
+        native::workspace::create(canvas.world_mut(), root);
+    }
+    assert!(
+        canvas
+            .app
+            .world()
+            .get::<native::workspace::Workspaces>(root)
+            .unwrap()
+            .entries
+            .iter()
+            .any(|workspace| workspace.id == 3)
+    );
+    canvas
+        .outputs(
+            (1..=2)
+                .map(|id| {
+                    let mut output = super::super::transfers::output(
+                        id,
+                        (id - 1) as f64 * f64::from(size[0]),
+                        size,
+                    );
+                    output.viewport.workspace = id;
+                    output
+                })
+                .collect(),
+        )
+        .unwrap();
+    let presented: Vec<_> = canvas
+        .app
+        .world()
+        .resource::<native::output_views::OutputViews>()
+        .outputs
+        .iter()
+        .map(|output| output.workspace)
+        .collect();
+    let inactive = canvas
+        .app
+        .world()
+        .get::<native::workspace::Workspaces>(root)
+        .unwrap()
+        .entries
+        .iter()
+        .find(|workspace| !presented.contains(&workspace.id))
+        .unwrap()
+        .id;
+    for workspace in [1, 2, 3] {
+        native::workspace_config::set_physics(canvas.world_mut(), root, workspace, false);
+    }
+    let mut owners = Vec::new();
+    for id in 1..=2 {
+        canvas.focus_output(OutputId(id)).unwrap();
+        let workspace = canvas
+            .app
+            .world()
+            .get::<native::workspace::Workspaces>(root)
+            .unwrap()
+            .active;
+        canvas
+            .desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free))
+            .unwrap();
+        *canvas
+            .world_mut()
+            .get_mut::<native::canvas::CanvasView>(root)
+            .unwrap() = Default::default();
+        for index in 0..(8 + hidden) {
+            let visible = index < 8;
+            let owner = super::super::appearance::item(
+                &mut canvas,
+                root,
+                Vec2::new(68.0, 80.0),
+                if visible {
+                    [index as f64 * 72.0 - 252.0, 0.0]
+                } else {
+                    [10000.0 + index as f64 * 100.0, 0.0]
+                },
+                Color::srgb(0.0, 1.0, 0.0),
+                i32::try_from(index).unwrap(),
+                false,
+            );
+            canvas
+                .world_mut()
+                .entity_mut(owner)
+                .insert(native::workspace::WorkspaceMember(
+                    if !visible && mode == "inactive-workspace" {
+                        inactive
+                    } else {
+                        workspace
+                    },
+                ));
+            for node in 0..32 {
+                canvas.world_mut().spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: px((node % 8) as f32 * 6.0),
+                        top: px((node / 8) as f32 * 6.0),
+                        width: px(3),
+                        height: px(3),
+                        ..default()
+                    },
+                    ChildOf(owner),
+                ));
+            }
+            let font = canvas
+                .app
+                .world()
+                .resource::<native::theme::Typography>()
+                .text(12.0);
+            canvas.world_mut().spawn((
+                Text::new(format!("Item {index}")),
+                TextColor(Color::BLACK),
+                font,
+                TextLayout::no_wrap(),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: px(4),
+                    top: px(24),
+                    width: px(60),
+                    height: px(20),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                ChildOf(owner),
+            ));
+            owners.push((owner, visible));
+        }
+    }
+    canvas.focus_output(OutputId(1)).unwrap();
+    canvas.desktop_action(DesktopAction::Unfocus).unwrap();
+    for _ in 0..12 {
+        drop(canvas.probe_frame().unwrap());
+    }
+    for (owner, visible) in &owners {
+        assert_eq!(
+            canvas
+                .app
+                .world()
+                .get::<native::topology::presentation::Surface>(*owner)
+                .unwrap()
+                .visible,
+            *visible,
+            "Unexpected visibility for {mode}, owner {owner:?}; outputs {:?}",
+            canvas
+                .app
+                .world()
+                .resource::<native::output_views::OutputViews>()
+        );
+    }
+    (canvas, owners)
+}
+
 #[test]
 #[ignore = "hardware Vulkan/EGL full-frame visibility diagnostic; no concurrent compilation"]
 fn invisible_native_items_record_preparation_cost_without_changing_visible_pixels() {
@@ -19,160 +180,7 @@ fn invisible_native_items_record_preparation_cost_without_changing_visible_pixel
         ("inactive-workspace", 32),
     ] {
         let size = [640, 480];
-        std::fs::create_dir_all(directory.path().join(mode)).unwrap();
-        let mut canvas = super::super::appearance::launch(
-            &directory.path().join(format!("{mode}/workspace.json")),
-            size,
-        );
-        let root = canvas.canvas_root().unwrap();
-        for _ in 0..2 {
-            native::workspace::create(canvas.world_mut(), root);
-        }
-        assert!(
-            canvas
-                .app
-                .world()
-                .get::<native::workspace::Workspaces>(root)
-                .unwrap()
-                .entries
-                .iter()
-                .any(|workspace| workspace.id == 3)
-        );
-        canvas
-            .outputs(
-                (1..=2)
-                    .map(|id| {
-                        let mut output = super::super::transfers::output(
-                            id,
-                            (id - 1) as f64 * f64::from(size[0]),
-                            size,
-                        );
-                        output.viewport.workspace = id;
-                        output
-                    })
-                    .collect(),
-            )
-            .unwrap();
-        let presented: Vec<_> = canvas
-            .app
-            .world()
-            .resource::<native::output_views::OutputViews>()
-            .outputs
-            .iter()
-            .map(|output| output.workspace)
-            .collect();
-        let inactive = canvas
-            .app
-            .world()
-            .get::<native::workspace::Workspaces>(root)
-            .unwrap()
-            .entries
-            .iter()
-            .find(|workspace| !presented.contains(&workspace.id))
-            .unwrap()
-            .id;
-        for workspace in [1, 2, 3] {
-            native::workspace_config::set_physics(canvas.world_mut(), root, workspace, false);
-        }
-        let mut owners = Vec::new();
-        for id in 1..=2 {
-            canvas.focus_output(OutputId(id)).unwrap();
-            let workspace = canvas
-                .app
-                .world()
-                .get::<native::workspace::Workspaces>(root)
-                .unwrap()
-                .active;
-            canvas
-                .desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free))
-                .unwrap();
-            *canvas
-                .world_mut()
-                .get_mut::<native::canvas::CanvasView>(root)
-                .unwrap() = Default::default();
-            for index in 0..(8 + hidden) {
-                let visible = index < 8;
-                let owner = super::super::appearance::item(
-                    &mut canvas,
-                    root,
-                    Vec2::new(68.0, 80.0),
-                    if visible {
-                        [index as f64 * 72.0 - 252.0, 0.0]
-                    } else {
-                        [10000.0 + index as f64 * 100.0, 0.0]
-                    },
-                    Color::srgb(0.0, 1.0, 0.0),
-                    index,
-                    false,
-                );
-                canvas
-                    .world_mut()
-                    .entity_mut(owner)
-                    .insert(native::workspace::WorkspaceMember(
-                        if !visible && mode == "inactive-workspace" {
-                            inactive
-                        } else {
-                            workspace
-                        },
-                    ));
-                for node in 0..32 {
-                    canvas.world_mut().spawn((
-                        Node {
-                            position_type: PositionType::Absolute,
-                            left: px((node % 8) as f32 * 6.0),
-                            top: px((node / 8) as f32 * 6.0),
-                            width: px(3),
-                            height: px(3),
-                            ..default()
-                        },
-                        ChildOf(owner),
-                    ));
-                }
-                let font = canvas
-                    .app
-                    .world()
-                    .resource::<native::theme::Typography>()
-                    .text(12.0);
-                canvas.world_mut().spawn((
-                    Text::new(format!("Item {index}")),
-                    TextColor(Color::BLACK),
-                    font,
-                    TextLayout::no_wrap(),
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: px(4),
-                        top: px(24),
-                        width: px(60),
-                        height: px(20),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ChildOf(owner),
-                ));
-                owners.push((owner, visible));
-            }
-        }
-        canvas.focus_output(OutputId(1)).unwrap();
-        canvas.desktop_action(DesktopAction::Unfocus).unwrap();
-        for _ in 0..12 {
-            drop(canvas.probe_frame().unwrap());
-        }
-        for (owner, visible) in &owners {
-            assert_eq!(
-                canvas
-                    .app
-                    .world()
-                    .get::<native::topology::presentation::Surface>(*owner)
-                    .unwrap()
-                    .visible,
-                *visible,
-                "Unexpected visibility for {mode}, owner {owner:?}; outputs {:?}",
-                canvas
-                    .app
-                    .world()
-                    .resource::<native::output_views::OutputViews>()
-            );
-        }
+        let (mut canvas, owners) = fixture(directory.path(), mode, hidden);
         let mut elapsed = Vec::new();
         let mut cpu = Vec::new();
         for _ in 0..15 {

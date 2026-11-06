@@ -3,6 +3,7 @@ use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
 use std::time::Instant;
 
 mod offscreen;
+mod schedules;
 
 #[test]
 fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {

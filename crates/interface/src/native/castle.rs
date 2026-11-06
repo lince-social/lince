@@ -76,6 +76,76 @@ impl Plugin for CastlePlugin {
 
 pub(crate) mod tests {
     use super::*;
+    use bevy::ecs::system::RunSystemOnce;
+
+    fn remember_layout(world: &mut World) {
+        world.run_system_once(super::remember_layout).unwrap();
+    }
+
+    #[cfg_attr(test, test)]
+    fn layout_snapshots_track_optional_components_commands_and_removals() {
+        #[derive(Resource)]
+        struct Spawned(Entity);
+
+        let mut app = App::new();
+        crate::native::laboratory::isolate(app.world_mut());
+        app.add_plugins((MinimalPlugins, CastlePlugin));
+        app.add_systems(
+            PostUpdate,
+            (|mut commands: Commands, mut done: Local<bool>| {
+                if !*done {
+                    *done = true;
+                    let entity = commands.spawn(Node::default()).id();
+                    commands.insert_resource(Spawned(entity));
+                }
+            })
+            .in_set(bevy::ui::UiSystems::PostLayout),
+        );
+        let entity = app.world_mut().spawn(Node::default()).id();
+        app.update();
+        let spawned = app.world().resource::<Spawned>().0;
+        assert_eq!(app.world().resource::<Layouts>().0.len(), 2);
+        assert_eq!(
+            app.world().resource::<Layouts>().0.get(&spawned),
+            stamp(app.world(), spawned).as_ref()
+        );
+        let changes: [fn(&mut World, Entity); 5] = [
+            |world, entity| {
+                world.get_mut::<Node>(entity).unwrap().width = px(123);
+            },
+            |world, entity| {
+                world.spawn((Node::default(), ChildOf(entity)));
+            },
+            |world, entity| {
+                world.entity_mut(entity).insert(ImageNode::default());
+            },
+            |world, entity| {
+                world.entity_mut(entity).insert(Text::new("Ready"));
+            },
+            |world, entity| {
+                world.entity_mut(entity).insert(EditableText::new("Ready"));
+            },
+        ];
+        for change in changes {
+            let before = app.world().resource::<Layouts>().0[&entity];
+            change(app.world_mut(), entity);
+            app.update();
+            let after = app.world().resource::<Layouts>().0[&entity];
+            assert_ne!(before, after);
+            assert_eq!(Some(after), stamp(app.world(), entity));
+            app.update();
+            assert_eq!(app.world().resource::<Layouts>().0[&entity], after);
+        }
+        app.world_mut()
+            .entity_mut(entity)
+            .remove::<(ImageNode, Text, EditableText)>();
+        app.update();
+        assert_eq!(app.world().resource::<Layouts>().0[&entity][2..], [0; 3]);
+        app.world_mut().entity_mut(spawned).remove::<Node>();
+        app.world_mut().despawn(entity);
+        app.update();
+        assert!(app.world().resource::<Layouts>().0.is_empty());
+    }
 
     #[cfg_attr(test, test)]
     fn nested_castles_wait_for_every_image_without_hiding_unrelated_sands() {
@@ -229,6 +299,7 @@ pub(crate) mod tests {
         assert!(world.get::<StartupStatus>(root).unwrap().0.is_empty());
     }
     crate::native::laboratory_cases! {
+        layout_snapshots_track_optional_components_commands_and_removals,
         nested_castles_wait_for_every_image_without_hiding_unrelated_sands,
         new_members_and_pending_work_hold_the_whole_group,
         presented_castles_keep_their_surface_while_replacement_content_settles,
@@ -349,13 +420,32 @@ fn stamp(world: &World, entity: Entity) -> Option<[u32; 5]> {
     ])
 }
 
-fn remember_layout(world: &mut World) {
-    let layouts = world
-        .query_filtered::<Entity, With<Node>>()
-        .iter(world)
-        .filter_map(|entity| stamp(world, entity).map(|stamp| (entity, stamp)))
+fn remember_layout(
+    nodes: Query<(
+        Entity,
+        Ref<Node>,
+        Option<Ref<Children>>,
+        Option<Ref<ImageNode>>,
+        Option<Ref<Text>>,
+        Option<Ref<EditableText>>,
+    )>,
+    mut layouts: ResMut<Layouts>,
+) {
+    layouts.0 = nodes
+        .iter()
+        .map(|(entity, node, children, image, text, editable)| {
+            (
+                entity,
+                [
+                    node.last_changed().get(),
+                    children.map_or(0, |value| value.last_changed().get()),
+                    image.map_or(0, |value| value.last_changed().get()),
+                    text.map_or(0, |value| value.last_changed().get()),
+                    editable.map_or(0, |value| value.last_changed().get()),
+                ],
+            )
+        })
         .collect();
-    world.resource_mut::<Layouts>().0 = layouts;
 }
 
 fn present(world: &mut World) {

@@ -473,8 +473,6 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         zoom
     );
     native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
-    let frame = super::shortcuts::settle(&mut canvas);
-    capture("before-note-drag", &probe_pixels(frame.dmabuf().unwrap()).unwrap());
     let note = canvas
         .world_mut()
         .query::<(Entity, &native::sand_store::StoredSand)>()
@@ -482,6 +480,19 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .find(|(_, sand)| sand.kind == native::sand_store::SandKind::EditableText)
         .unwrap()
         .0;
+    let position = canvas
+        .app
+        .world()
+        .get::<native::canvas::CanvasItem>(note)
+        .unwrap()
+        .position;
+    canvas
+        .world_mut()
+        .get_mut::<native::canvas::CanvasView>(root)
+        .unwrap()
+        .center = position;
+    let frame = super::shortcuts::settle(&mut canvas);
+    capture("before-note-drag", &probe_pixels(frame.dmabuf().unwrap()).unwrap());
     let corners =
         native::topology::presentation::projected_corners(canvas.app.world(), note).unwrap();
     let point = [0.5, 0.25, 0.75, 0.1, 0.9]
@@ -884,8 +895,10 @@ fn overview_case(canvas: &mut Presentation, root: Entity, workspace: u64, model:
         .unwrap();
     for (key, pressed) in [
         (KeyCode::SuperLeft, true),
+        (KeyCode::ShiftLeft, true),
         (KeyCode::Space, true),
         (KeyCode::Space, false),
+        (KeyCode::ShiftLeft, false),
         (KeyCode::SuperLeft, false),
     ] {
         super::shortcuts::key(canvas, key, pressed);

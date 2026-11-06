@@ -5,6 +5,18 @@ use bevy::{a11y::AccessibilityNode, math::DVec2, prelude::*};
 pub(super) fn fast_cases() -> Vec<super::Case> {
     let mut cases = Vec::new();
     laboratory_cases(&mut cases);
+    let mut readiness = Vec::new();
+    crate::native::castle::tests::laboratory_cases(&mut readiness);
+    for name in [
+        "::layout_snapshots_track_optional_components_commands_and_removals",
+        "::presented_castles_keep_their_surface_while_replacement_content_settles",
+    ] {
+        let case = readiness
+            .iter()
+            .position(|case| case.name.ends_with(name))
+            .expect("Missing native Castle readiness regression");
+        cases.push(readiness.remove(case));
+    }
     let mut records = Vec::new();
     crate::native::protein_area::tests::laboratory_cases(&mut records);
     for name in [
@@ -85,6 +97,12 @@ fn fast_interface_rules() {
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
+    for name in [
+        "::layout_snapshots_track_optional_components_commands_and_removals",
+        "::presented_castles_keep_their_surface_while_replacement_content_settles",
+    ] {
+        assert!(results.iter().any(|result| result.name.ends_with(name)));
+    }
     assert!(results.iter().any(|result| {
         result
             .name

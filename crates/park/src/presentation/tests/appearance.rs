@@ -29,7 +29,12 @@ pub(super) fn apply(canvas: &mut Presentation, caption: &str, value: &str, size:
 }
 
 pub(super) fn launch(path: &Path, size: [u32; 2]) -> Presentation {
+    launch_with_color(path, size, false)
+}
+
+pub(super) fn launch_with_color(path: &Path, size: [u32; 2], linear: bool) -> Presentation {
     let mut canvas = Presentation::new(size, path.parent().unwrap().join("assets"), WakeSignal::new(|| {})).unwrap();
+    canvas.prepare_linear_output(linear).unwrap();
     canvas.world_mut().insert_resource(native::workspace::WorkspaceFile::new(path.into()));
     settle(&mut canvas);
     canvas

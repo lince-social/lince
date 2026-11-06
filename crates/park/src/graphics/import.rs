@@ -2,6 +2,9 @@ use super::*;
 use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
 use std::os::fd::{AsRawFd, IntoRawFd};
 
+#[cfg(all(test, feature = "nested"))]
+pub(crate) mod direct;
+
 struct PreparedExport {
     commands: [wgpu::CommandBuffer; 2],
     target: SharedAllocation,

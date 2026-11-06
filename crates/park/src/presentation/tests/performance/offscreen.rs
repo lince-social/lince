@@ -7,10 +7,19 @@ pub(super) fn fixture(
     mode: &str,
     hidden: usize,
 ) -> (Presentation, Vec<(Entity, bool)>) {
+    fixture_with_color(directory, mode, hidden, false)
+}
+
+pub(super) fn fixture_with_color(
+    directory: &std::path::Path,
+    mode: &str,
+    hidden: usize,
+    linear: bool,
+) -> (Presentation, Vec<(Entity, bool)>) {
     let size = [640, 480];
     std::fs::create_dir_all(directory.join(mode)).unwrap();
     let mut canvas =
-        super::super::appearance::launch(&directory.join(format!("{mode}/workspace.json")), size);
+        super::super::appearance::launch_with_color(&directory.join(format!("{mode}/workspace.json")), size, linear);
     let root = canvas.canvas_root().unwrap();
     for _ in 0..2 {
         native::workspace::create(canvas.world_mut(), root);

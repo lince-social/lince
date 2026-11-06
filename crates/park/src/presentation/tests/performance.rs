@@ -5,6 +5,8 @@ use std::time::Instant;
 mod offscreen;
 mod overlap;
 mod schedules;
+#[cfg(feature = "nested")]
+mod direct;
 
 #[test]
 fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {

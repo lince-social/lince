@@ -18,6 +18,8 @@ pub(crate) use buffers::{RetainedCapture, retained_capture, retire_capture};
 #[cfg(feature = "graphics-gate")]
 mod canvas;
 mod import;
+#[cfg(all(test, feature = "nested"))]
+pub(crate) use import::direct;
 mod completion;
 mod synchronization;
 pub use synchronization::probe as synchronization_probe;
@@ -526,41 +528,43 @@ impl GpuContext {
     }
 
     fn initialize(&self, allocation: Arc<Allocation>) -> Result<()> {
-        let image = allocation.image;
-        self.submit_raw("initialize_image", |command| {
-            let range = vk::ImageSubresourceRange::default()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .level_count(1)
-                .layer_count(1);
-            let barrier = vk::ImageMemoryBarrier::default()
-                .image(image)
-                .subresource_range(range)
-                .old_layout(vk::ImageLayout::UNDEFINED)
-                .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-                .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-                .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-                .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE);
-            unsafe {
-                self.raw_device.cmd_pipeline_barrier(
-                    command,
-                    vk::PipelineStageFlags::TOP_OF_PIPE,
-                    vk::PipelineStageFlags::TRANSFER,
-                    vk::DependencyFlags::empty(),
-                    &[],
-                    &[],
-                    &[barrier],
-                );
-                self.raw_device.cmd_clear_color_image(
-                    command,
-                    image,
-                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &vk::ClearColorValue { float32: [0.0; 4] },
-                    &[range],
-                );
-            }
-        })?;
+        self.submit_raw("initialize_image", |command| self.encode_initialize(&allocation, command))?;
         self.retain(allocation);
         Ok(())
+    }
+
+    fn encode_initialize(&self, allocation: &Allocation, command: vk::CommandBuffer) {
+        let image = allocation.image;
+        let range = vk::ImageSubresourceRange::default()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .level_count(1)
+            .layer_count(1);
+        let barrier = vk::ImageMemoryBarrier::default()
+            .image(image)
+            .subresource_range(range)
+            .old_layout(vk::ImageLayout::UNDEFINED)
+            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+            .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+            .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE);
+        unsafe {
+            self.raw_device.cmd_pipeline_barrier(
+                command,
+                vk::PipelineStageFlags::TOP_OF_PIPE,
+                vk::PipelineStageFlags::TRANSFER,
+                vk::DependencyFlags::empty(),
+                &[],
+                &[],
+                &[barrier],
+            );
+            self.raw_device.cmd_clear_color_image(
+                command,
+                image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &vk::ClearColorValue { float32: [0.0; 4] },
+                &[range],
+            );
+        }
     }
 
     fn release(
@@ -570,34 +574,43 @@ impl GpuContext {
         access: vk::AccessFlags,
         stage: vk::PipelineStageFlags,
     ) -> Result<wgpu::SubmissionIndex> {
-        let image = allocation.image;
-        let submission = self.submit_raw("release_to_egl", |command| {
-            let range = vk::ImageSubresourceRange::default()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .level_count(1)
-                .layer_count(1);
-            let barrier = vk::ImageMemoryBarrier::default()
-                .image(image)
-                .subresource_range(range)
-                .old_layout(layout)
-                .new_layout(vk::ImageLayout::GENERAL)
-                .src_queue_family_index(self.queue_family)
-                .dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
-                .src_access_mask(access);
-            unsafe {
-                self.raw_device.cmd_pipeline_barrier(
-                    command,
-                    stage,
-                    vk::PipelineStageFlags::BOTTOM_OF_PIPE,
-                    vk::DependencyFlags::empty(),
-                    &[],
-                    &[],
-                    &[barrier],
-                );
-            }
-        })?;
+        let submission = self.submit_raw("release_to_egl", |command| self.encode_release(&allocation, layout, access, stage, command))?;
         self.retain(allocation);
         Ok(submission)
+    }
+
+    fn encode_release(
+        &self,
+        allocation: &Allocation,
+        layout: vk::ImageLayout,
+        access: vk::AccessFlags,
+        stage: vk::PipelineStageFlags,
+        command: vk::CommandBuffer,
+    ) {
+        let image = allocation.image;
+        let range = vk::ImageSubresourceRange::default()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .level_count(1)
+            .layer_count(1);
+        let barrier = vk::ImageMemoryBarrier::default()
+            .image(image)
+            .subresource_range(range)
+            .old_layout(layout)
+            .new_layout(vk::ImageLayout::GENERAL)
+            .src_queue_family_index(self.queue_family)
+            .dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
+            .src_access_mask(access);
+        unsafe {
+            self.raw_device.cmd_pipeline_barrier(
+                command,
+                stage,
+                vk::PipelineStageFlags::BOTTOM_OF_PIPE,
+                vk::DependencyFlags::empty(),
+                &[],
+                &[],
+                &[barrier],
+            );
+        }
     }
 
     fn clear(&self, image: SharedImage, color: wgpu::Color) -> Result<ExportedImage> {

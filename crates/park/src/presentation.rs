@@ -1172,7 +1172,13 @@ impl Presentation {
             destinations.push((*id, target.origin, target.fullscreen));
         }
         textures.push(texture);
+        #[cfg(not(all(test, feature = "nested")))]
         let mut images = self.renderer.export_render_targets(&textures)?;
+        #[cfg(all(test, feature = "nested"))]
+        let mut images = match self.app.sub_app_mut(RenderApp).world_mut().remove_resource::<crate::graphics::direct::Prepared>() {
+            Some(prepared) => prepared.export(&self.renderer.gpu, &textures)?,
+            None => self.renderer.export_render_targets(&textures)?,
+        };
         let image = images
             .pop()
             .ok_or_else(|| input_failure("the canvas output export is unavailable"))?;

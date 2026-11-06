@@ -319,6 +319,46 @@ fn worker_exports_survive_native_owner_and_gpu_context_shutdown() {
 }
 
 #[test]
+#[cfg(feature = "nested")]
+#[ignore = "hardware experimental direct-target precision/initialization/lifetime proof; ordered interface suite first"]
+fn direct_targets_preserve_zero_initialization_float_and_packed_precision() {
+    interface_checks();
+    let renderer = VulkanRenderer::new().unwrap();
+    let formats = [wgpu::TextureFormat::Bgra8Unorm, wgpu::TextureFormat::Rgba8Unorm,
+        wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgb10a2Unorm];
+    let sources = formats.into_iter().enumerate().map(|(index, format)|
+        target(&renderer, [33+index as u32*4, 19+index as u32*2], format)).collect::<Vec<_>>();
+    let mut retained = Vec::new();
+    for round in 0..3 {
+        let prepared = crate::graphics::direct::Prepared::new(&renderer.gpu, &sources).unwrap();
+        let textures = (0..sources.len()).map(|index| prepared.texture(index).clone()).collect::<Vec<_>>();
+        let mut expected = Vec::new();
+        for (index, texture) in textures.iter().enumerate() {
+            let pixel: &[u8] = match index {
+                0 => &[17,54,201,255],
+                1 => &[201,54,17,255],
+                2 => &[0,0x40,0,0x38,0,0x34,0,0x3c],
+                _ => &[0x01,0x08,0x30,0xc0],
+            };
+            expected.push(if round==0 {vec![0; texture.width() as usize*texture.height() as usize*pixel.len()]}
+                else {write(&renderer, texture, pixel)});
+        }
+        let images = prepared.export(&renderer.gpu, &textures).unwrap();
+        drop(textures);
+        for ((image, expected), format) in images.into_iter().zip(expected).zip(formats) {
+            assert_eq!(read(&renderer, &image, format), expected);
+            retained.push((image, expected, format));
+        }
+    }
+    drop(sources);
+    for (image, expected, format) in retained {
+        assert_eq!(read(&renderer, &image, format), expected);
+    }
+    let srgb=target(&renderer,[8,8],wgpu::TextureFormat::Bgra8UnormSrgb);
+    assert!(crate::graphics::direct::Prepared::new(&renderer.gpu,&[srgb]).is_err());
+}
+
+#[test]
 #[ignore = "hardware export submission comparison; no concurrent compilation; ordered interface suite first"]
 fn export_submission_comparison() {
     interface_checks();

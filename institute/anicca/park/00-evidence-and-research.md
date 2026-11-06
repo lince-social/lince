@@ -2,6 +2,37 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## P67: warmed render work and rejected serial Render scheduler on 2026-11-06
+
+The existing bounded system-body observer now covers selected render preparation/submission functions as well as main systems. A separately labelled 24-frame pixel-only loop uses the real pixel_frame entry point, waits for export completion and proves that native main/UI layout did not execute. It reads the actual last pixel-only frame before running Main again, then verifies the resumed full frame against the same two-output reference. The original first generation checked only the subsequent full frame; it is retained as exploratory timing evidence, not the final pixel-path visual oracle. The final source is the second generation.
+
+The fixture remains private and unoptimized: sixteen native text-bearing items with 32 children each, two simulated 640×480 outputs, no actual client/Records stream, DRM or physical presentation. Optional Bevy names/tracing is enabled only in the diagnostic process. Every listed body has 24 observations per mode; the observer records 624 full-frame and 384 pixel-frame body executions without dropping samples. Nested parent/child durations and concurrent process CPU cannot be added as disjoint work.
+
+| Selected body | Full update: wall / owner-thread CPU | Pixel-only: wall / owner-thread CPU |
+| --- | ---: | ---: |
+| Render schedule wrapper | 35.285 / 14.023 ms | 34.490 / 13.940 ms |
+| Render system | 12.845 / 7.668 ms | 12.866 / 7.586 ms |
+| Camera driver | 10.995 / 6.053 ms | 10.913 / 5.972 ms |
+| GPU light-clustering preparation | 4.507 / 4.458 ms | 4.742 / 4.656 ms |
+| Pipeline queue processing | 0.024 / 0.021 ms | 0.027 / 0.022 ms |
+
+The render wrapper's process CPU medians are 53.044/51.678 ms. Its owner-thread CPU does not account for all workers or establish GPU execution time. Light-clustering preparation is repeated CPU work, with per-view buffers constructed by the pinned Bevy implementation; it is a candidate for work removal, not proof that its CPU preparation belongs on the GPU. Warm pipeline queue processing is small here, so this does not support treating ordinary sustained lag as pipeline compilation. Cold first-use stalls remain a separate conditional question. The tracing-off pixel-frame median is 36.950 ms versus 45.896 ms with collection: diagnostic overhead/drift is material, and these durations are not an optimized desktop percentage.
+
+The larger worker/process cost justified one controlled experiment: use SingleThreadedExecutor for the Render schedule while preserving its graph and all main/PostUpdate rules. The same frozen executable compares default/serial in two process orders, with actual pixel bytes and input/reference checks. Both main executor controls still run independently within each process.
+
+| Process order | Full update wall / process CPU, default → serial | Pixel-only wall / process CPU, default → serial |
+| --- | ---: | ---: |
+| Default first | 139.139 / 174.492 → 131.904 / 155.012 ms | 45.252 / 67.035 → 48.102 / 57.437 ms |
+| Serial first | 133.935 / 167.874 → 146.174 / 168.995 ms | 44.171 / 65.411 → 47.359 / 55.838 ms |
+
+Reject unconditional serial Render scheduling in this scope. It lowers pixel-frame CPU in both orders but increases pixel-frame elapsed time about 6–7%; full-update results change direction. No net responsiveness improvement is established for the experience being repaired. This is not a new policy against tradeoffs or a conclusion that every parallel render job helps. The candidate-only flag/switch is removed; exact source, patch and executable remain in the receipt. The owner's specifically authorized negative entry is recorded in Build.lingua. The useful observer and direct pixel-frame check remain, with production scheduling unchanged.
+
+Final source bytes match source-v2.json after removing the serial candidate. Named and normal feature checks and test compilation pass without compiler warnings/errors. Six final main/render comparison processes execute all twelve common interface cases, Protein Add filter first: 72 case executions. All retain reference hash 7066745708592007671, actual pixel-only and resumed full-frame reference bytes, ordered ASCII/Unicode editor state and same-frame response markers under both main executor controls. Actual Protein GPU text and full rule mapping remain P146/P140; generic scene glyphs do not close them. No release application build, live restart, runtime-profile or clipboard mutation, attached sampling or Actions query occurred.
+
+P70 is now the next ready prerequisite before a broader render/resource rewrite: collect hardware timestamp intervals at a bounded existing submission/pass boundary, distinguish actual device duration from host queue/driver/worker waits, and report unsupported capabilities. Reuse the measured CPU/ownership map and copy/precision/lifetime gates. Do not add more broad CPU timers, enable a global serial renderer, or interpret the host gaps as GPU execution. Current optimized daily attribution and complete native/GLES/DRM timing remain open.
+
+Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/render-bodies/`, especially `source-v2.json`, `park-check-render-v2-result.json`, `park-tests-render-v2-result.json`, `render-complete-v2.json`, `body-summary-v2.json`, `park-check-render-normal-v2-result.json`, `source-v3.json`, `render-executor-complete-v3.json`, `render-executor-reversed-complete-v3.json`, `rejected-render-executor-summary-v3.json`, `experimental-v3-source/` and `experimental-v3.patch`. Source/executable hashes are frozen and checked; compilation and GPU observations do not overlap. These remain private debug observations with shared desktop load and uncontrolled thermals.
+
 ## P60: warmed main bodies and desktop query reuse on 2026-11-06
 
 The existing named-system diagnostic now observes selected execution bodies only during its 24 warmed original-dispatcher frames. It reuses Bevy's system spans and the existing wall/process/owner-thread clocks; collection stops before the phase/executor comparison. Both subscriber layers retain the system-only filter. This excludes startup from the selected-body samples and records wall time separately from executing-thread CPU. It remains a private debug fixture with tracing overhead, desktop contention and uncontrolled thermals, not an optimized daily cost ranking. The initial compiled observer generation was not run; its additional layer needed the same filter before measurements. The corrected generation passes both collection-off/on controls.

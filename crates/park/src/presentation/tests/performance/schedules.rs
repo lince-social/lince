@@ -64,8 +64,7 @@ fn summary(readings: &[Reading]) -> serde_json::Value {
     serde_json::json!({"count":readings.len(),"wall_ms":stats(|r|r.wall_ms),"process_cpu_ms":stats(|r|r.process_cpu_ms),"owner_cpu_ms":stats(|r|r.owner_cpu_ms)})
 }
 
-fn pixels(canvas: &mut Presentation) -> Vec<Vec<u8>> {
-    let frame = canvas.probe_frame().unwrap();
+fn frame_pixels(frame: &Frame) -> Vec<Vec<u8>> {
     (1..=2)
         .map(|id| {
             let image = if frame.output == Some(lince_interface::host::OutputId(id)) {
@@ -81,6 +80,11 @@ fn pixels(canvas: &mut Presentation) -> Vec<Vec<u8>> {
             probe_pixels(image).unwrap()
         })
         .collect()
+}
+
+fn pixels(canvas: &mut Presentation) -> Vec<Vec<u8>> {
+    let frame = canvas.probe_frame().unwrap();
+    frame_pixels(&frame)
 }
 
 fn input(canvas: &mut Presentation, editor: Entity) {
@@ -280,6 +284,47 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
             );
         }
     }
+    let mut pixel_frames = Vec::new();
+    let mut pixel_bodies = Vec::new();
+    if std::env::var_os("LINCE_PARK_TRACE_RENDER").is_some() {
+        for _ in 0..4 {
+            let frame = canvas.pixel_frame().unwrap();
+            frame.wait_for_probe().unwrap();
+        }
+        bodies.start();
+        let mut last_pixel_frame = None;
+        for index in 0..24 {
+            let clock = Clock::start();
+            let frame = canvas.pixel_frame().unwrap();
+            frame.wait_for_probe().unwrap();
+            if index == 23 {
+                last_pixel_frame = Some(frame);
+            } else {
+                drop(frame);
+            }
+            pixel_frames.push(clock.finish());
+        }
+        pixel_bodies = bodies.stop();
+        if std::env::var_os("LINCE_PARK_TRACE_SYSTEMS").is_some() {
+            for name in [
+                "bevy_render::renderer::render_system",
+                "bevy_pbr::cluster::gpu::prepare_clusters_for_gpu_clustering",
+            ] {
+                assert_eq!(
+                    pixel_bodies.iter().filter(|(body, _)| body == name).count(),
+                    24,
+                    "Missing pixel-frame render executions: {name}"
+                );
+            }
+            assert!(pixel_bodies.iter().all(|(name, _)| {
+                !name.starts_with("lince_interface::native::layout::engine::")
+                    && !name.starts_with("bevy_ui::layout::")
+            }));
+        }
+        assert_eq!(frame_pixels(last_pixel_frame.as_ref().unwrap()), reference);
+        drop(last_pixel_frame);
+        assert_eq!(pixels(&mut canvas), reference);
+    }
     let labels = canvas
         .app
         .world()
@@ -437,6 +482,7 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         "system_names_available":main_systems[0].ends_with("Main::run_main"),"inventory":inventory,"original_full":summary(&original),"original_samples":original,
         "instrumented_full":summary(&observed),"instrumented_samples":observed,
         "warmed_system_bodies":warmed_bodies,
+        "pixel_frame_samples":pixel_frames,"pixel_frame_system_bodies":pixel_bodies,
         "attribution":attribution,"selected_index":selected,"selected_schedule":format!("{label:?}"),
         "comparisons":comparisons,"reference_hash":hash.finish(),"interface_cases":checks.iter().map(|check|&check.name).collect::<Vec<_>>(),
         "correctness":"Exact pixels including glyphs on both outputs at every variant block; ordered ASCII and Unicode input reflected in editor state and same-frame marker pixels under both executors; baseline restored after deletion and original Main restored without rerunning startup. Marker is not a glyph-paint oracle."

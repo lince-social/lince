@@ -20,6 +20,21 @@ const SELECTED: &[&str] = &[
     "lince_interface::native::castle::remember_layout",
     "lince_interface::native::layout::desktop::publish",
     "lince_interface::native::topology::surface_render::origins::extract",
+    "bevy_render::run_render_schedule",
+    "bevy_render::renderer::render_system",
+    "bevy_core_pipeline::schedule::camera_driver",
+    "bevy_render::render_resource::pipeline_cache::PipelineCache::process_pipeline_queue_system",
+    "bevy_pbr::cluster::gpu::prepare_clusters_for_gpu_clustering",
+    "bevy_render::extract_plugin::apply_extract_commands",
+    "bevy_core_pipeline::schedule::submit_pending_command_buffers",
+    "bevy_pbr::render::mesh::extract_meshes_for_gpu_building",
+    "bevy_pbr::light_probe::upload_light_probes",
+    "bevy_pbr::render::light::prepare_lights",
+    "bevy_pbr::render::mesh_view_bindings::prepare_mesh_view_bind_groups",
+    "bevy_pbr::cluster::gpu::prepare_clustering_bind_groups",
+    "bevy_pbr::cluster::gpu::upload_view_gpu_clustering_buffers",
+    "bevy_render::view::prepare_view_uniforms",
+    "bevy_ui_render::prepare_uinodes",
 ];
 
 #[derive(Default)]
@@ -106,7 +121,7 @@ impl<S: Subscriber + for<'lookup> LookupSpan<'lookup>> tracing_subscriber::Layer
         {
             let reading = clock.finish();
             let mut readings = self.0.readings.lock().unwrap();
-            assert!(readings.len() < 1024, "Warmed system observation overflow");
+            assert!(readings.len() < 8192, "Warmed system observation overflow");
             readings.push((body.name.clone(), reading));
         }
     }

@@ -1,4 +1,6 @@
 use super::*;
+
+mod offered;
 use bevy::{
     app::SubApp,
     input::keyboard::Key,
@@ -22,6 +24,7 @@ impl RenderWorker {
         origin: Instant,
         runtime: tokio::runtime::Handle,
         exporter: Option<(Arc<crate::graphics::GpuContext>, SyncSender<Publication>)>,
+        notification: Option<SyncSender<offered::Signal>>,
     ) -> Self {
         let (sender, incoming) = sync_channel::<(SubApp, usize, Option<Epoch>)>(1);
         let (outgoing, receiver) = sync_channel(1);
@@ -41,6 +44,11 @@ impl RenderWorker {
                         }
                     }
                     if outgoing.send((app, number, [start, end])).is_err() {
+                        break;
+                    }
+                    if let Some(notification) = &notification
+                        && notification.send(offered::Signal::Rendered).is_err()
+                    {
                         break;
                     }
                 }
@@ -185,6 +193,7 @@ fn palette(length: usize) -> [u8; 3] {
 
 struct Epoch {
     number: usize,
+    first: usize,
     started: Instant,
     main: [f64; 2],
     frame: Frame,
@@ -200,6 +209,19 @@ fn prepare(
     number: usize,
     origin: Instant,
 ) -> Epoch {
+    prepare_inputs(canvas, editor, owner, original, number, number, 3.0, origin)
+}
+
+fn prepare_inputs(
+    canvas: &mut Presentation,
+    editor: Entity,
+    owner: Entity,
+    original: bevy::math::DVec2,
+    first: usize,
+    number: usize,
+    movement: f64,
+    origin: Instant,
+) -> Epoch {
     assert!(canvas.windows.is_empty() && canvas.uploads.is_empty() && canvas.records.is_none());
     assert!(
         canvas
@@ -213,25 +235,27 @@ fn prepare(
         .world_mut()
         .get_mut::<native::canvas::CanvasItem>(owner)
         .unwrap()
-        .position = original + bevy::math::DVec2::new((number + 1) as f64 * 3.0, 0.0);
-    canvas
-        .key(
-            KeyCode::KeyA,
-            Key::Character("a".into()),
-            Some("a".into()),
-            true,
-            false,
-        )
-        .unwrap();
-    canvas
-        .key(
-            KeyCode::KeyA,
-            Key::Character("a".into()),
-            None,
-            false,
-            false,
-        )
-        .unwrap();
+        .position = original + bevy::math::DVec2::new((number + 1) as f64 * movement, 0.0);
+    for _ in first..=number {
+        canvas
+            .key(
+                KeyCode::KeyA,
+                Key::Character("a".into()),
+                Some("a".into()),
+                true,
+                false,
+            )
+            .unwrap();
+        canvas
+            .key(
+                KeyCode::KeyA,
+                Key::Character("a".into()),
+                None,
+                false,
+                false,
+            )
+            .unwrap();
+    }
     canvas.synchronize_input_activity().unwrap();
     canvas.refresh_viewport().unwrap();
     let view = canvas.native_input_view(None);
@@ -265,6 +289,7 @@ fn prepare(
     );
     Epoch {
         number,
+        first,
         started,
         main: [main_start, main_end],
         primary: canvas.target.clone(),
@@ -325,8 +350,204 @@ fn export(
     let ready_ms = epoch.started.elapsed().as_secs_f64() * 1000.0;
     (
         epoch.frame,
-        serde_json::json!({"epoch":epoch.number,"main_ms":epoch.main,"input_to_ready_ms":ready_ms,"export_ms":[export_start,origin.elapsed().as_secs_f64()*1000.0]}),
+        serde_json::json!({"epoch":epoch.number,"first":epoch.first,"main_ms":epoch.main,"input_to_ready_ms":ready_ms,"export_ms":[export_start,origin.elapsed().as_secs_f64()*1000.0]}),
     )
+}
+
+struct Scene {
+    canvas: Presentation,
+    owner: Entity,
+    editor: Entity,
+    original: bevy::math::DVec2,
+    item: ItemId,
+}
+
+fn scene(directory: &std::path::Path, mode: &str) -> Scene {
+    let (mut canvas, owners) = super::offscreen::fixture(directory, mode, 0);
+    canvas
+        .world_mut()
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_millis(16),
+        ));
+    let owner = owners[0].0;
+    let world = canvas.world_mut();
+    let bundle =
+        native::sand::single_line_editor("", world.resource::<native::theme::Typography>(), 0, 32);
+    let editor = world.spawn((bundle, ChildOf(owner))).id();
+    canvas.world_mut().entity_mut(editor).insert(Node {
+        position_type: PositionType::Absolute,
+        left: px(4),
+        top: px(48),
+        width: px(60),
+        height: px(28),
+        ..default()
+    });
+    let marker = canvas
+        .world_mut()
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(8),
+                top: px(4),
+                width: px(52),
+                height: px(16),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(1.0, 0.0, 0.0)),
+            ChildOf(owner),
+        ))
+        .id();
+    let original = canvas
+        .app
+        .world()
+        .get::<native::canvas::CanvasItem>(owner)
+        .unwrap()
+        .position;
+    canvas.app.add_systems(
+        PostUpdate,
+        (move |texts: Query<&bevy::text::EditableText>,
+               mut colors: Query<&mut BackgroundColor>| {
+            let length = texts.get(editor).unwrap().value().chars().count();
+            let rgb = palette(length);
+            colors
+                .get_mut(marker)
+                .unwrap()
+                .set_if_neq(BackgroundColor(Color::srgb(
+                    f32::from(rgb[0]) / 255.0,
+                    f32::from(rgb[1]) / 255.0,
+                    f32::from(rgb[2]) / 255.0,
+                )));
+        })
+        .after(bevy::text::EditableTextSystems)
+        .before(bevy::ui::UiSystems::Layout),
+    );
+    for _ in 0..12 {
+        drop(canvas.probe_frame().unwrap());
+    }
+    canvas
+        .world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, FocusCause::Navigated);
+    let item = ItemId::Native(
+        canvas
+            .app
+            .world()
+            .get::<native::layout::LayoutBox>(owner)
+            .unwrap()
+            .id,
+    );
+    Scene {
+        canvas,
+        owner,
+        editor,
+        original,
+        item,
+    }
+}
+
+fn check_pixels(
+    frames: &[Frame],
+    samples: &[serde_json::Value],
+    item: ItemId,
+    original: bevy::math::DVec2,
+    movement: f64,
+    mode: &str,
+    secondary_reference: &mut Option<u64>,
+) -> Vec<serde_json::Value> {
+    let mut pixels = Vec::new();
+    for (frame, sample) in frames.iter().zip(samples) {
+        let number = sample["epoch"].as_u64().unwrap() as usize;
+        assert_eq!(
+            frame.input.editor.as_ref().unwrap().surrounding,
+            "a".repeat(number + 1)
+        );
+        let geometry = frame.geometry.as_ref().unwrap();
+        let mapping = geometry
+            .items
+            .iter()
+            .find(|entry| entry.id == item && entry.output == OutputId(1))
+            .unwrap()
+            .mapping;
+        let point = mapping
+            .canvas_point([
+                mapping.surface.origin()[0] + mapping.surface.size()[0] * 20.0 / 68.0,
+                mapping.surface.origin()[1] + mapping.surface.size()[1] * 12.0 / 80.0,
+            ])
+            .unwrap();
+        let expected_point = [
+            640.0 / 2.0 + original.x - 68.0 / 2.0 + 20.0 + (number + 1) as f64 * movement,
+            480.0 / 2.0 + original.y - 80.0 / 2.0 + 12.0,
+        ];
+        assert!(
+            point
+                .iter()
+                .zip(expected_point)
+                .all(|(actual, expected)| (actual - expected).abs() < 0.01),
+            "{mode} epoch {number}: geometry {point:?}, expected {expected_point:?}"
+        );
+        let image = if frame.output == Some(OutputId(1)) {
+            frame.dmabuf().unwrap()
+        } else {
+            frame
+                .outputs
+                .iter()
+                .find(|output| output.id == OutputId(1))
+                .unwrap()
+                .dmabuf()
+        };
+        let bytes = probe_pixels(image).unwrap();
+        let offset = (point[1].round() as usize * 640 + point[0].round() as usize) * 4;
+        let actual = &bytes[offset..offset + 3];
+        let expected = palette(number + 1);
+        assert!(
+            actual
+                .iter()
+                .zip(expected)
+                .all(|(actual, expected)| actual.abs_diff(expected) < 30),
+            "{mode} epoch {number} at {point:?}: {actual:?}, expected {expected:?}"
+        );
+        let secondary = if frame.output == Some(OutputId(2)) {
+            frame.dmabuf().unwrap()
+        } else {
+            frame
+                .outputs
+                .iter()
+                .find(|output| output.id == OutputId(2))
+                .unwrap()
+                .dmabuf()
+        };
+        let secondary = probe_pixels(secondary).unwrap();
+        let green = secondary
+            .chunks_exact(4)
+            .filter(|pixel| pixel[0] < 30 && pixel[1] > 230 && pixel[2] < 30)
+            .count();
+        let glyphs = (0..8)
+            .flat_map(|index| {
+                (200..280).flat_map(move |y| {
+                    ((34 + index * 72)..(102 + index * 72)).map(move |x| (y * 640 + x) * 4)
+                })
+            })
+            .filter(|offset| {
+                secondary[*offset..*offset + 3]
+                    .iter()
+                    .all(|channel| *channel < 180)
+            })
+            .count();
+        assert!(
+            green > 20000 && glyphs > 200,
+            "{mode} epoch {number}: secondary green {green}, glyphs {glyphs}"
+        );
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        std::hash::Hash::hash(&secondary, &mut hash);
+        let hash = std::hash::Hasher::finish(&hash);
+        assert_eq!(
+            *secondary_reference.get_or_insert(hash),
+            hash,
+            "The quiet output changed: {mode}, epoch {number}"
+        );
+        pixels.push(serde_json::json!({"epoch":number,"point":point,"rgb":actual,"geometry_revision":geometry.revision,"secondary_hash":hash,"secondary_green":green,"secondary_glyphs":glyphs}));
+    }
+    pixels
 }
 
 #[test]
@@ -361,83 +582,13 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
     }
     let mut secondary_reference = None;
     for mode in modes {
-        let (mut canvas, owners) = super::offscreen::fixture(directory.path(), mode, 0);
-        canvas
-            .world_mut()
-            .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
-                Duration::from_millis(16),
-            ));
-        let owner = owners[0].0;
-        let world = canvas.world_mut();
-        let bundle = native::sand::single_line_editor(
-            "",
-            world.resource::<native::theme::Typography>(),
-            0,
-            32,
-        );
-        let editor = world.spawn((bundle, ChildOf(owner))).id();
-        canvas.world_mut().entity_mut(editor).insert(Node {
-            position_type: PositionType::Absolute,
-            left: px(4),
-            top: px(48),
-            width: px(60),
-            height: px(28),
-            ..default()
-        });
-        let marker = canvas
-            .world_mut()
-            .spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: px(8),
-                    top: px(4),
-                    width: px(52),
-                    height: px(16),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(1.0, 0.0, 0.0)),
-                ChildOf(owner),
-            ))
-            .id();
-        let original = canvas
-            .app
-            .world()
-            .get::<native::canvas::CanvasItem>(owner)
-            .unwrap()
-            .position;
-        canvas.app.add_systems(
-            PostUpdate,
-            (move |texts: Query<&bevy::text::EditableText>,
-                   mut colors: Query<&mut BackgroundColor>| {
-                let length = texts.get(editor).unwrap().value().chars().count();
-                let rgb = palette(length);
-                colors
-                    .get_mut(marker)
-                    .unwrap()
-                    .set_if_neq(BackgroundColor(Color::srgb(
-                        f32::from(rgb[0]) / 255.0,
-                        f32::from(rgb[1]) / 255.0,
-                        f32::from(rgb[2]) / 255.0,
-                    )));
-            })
-            .after(bevy::text::EditableTextSystems)
-            .before(bevy::ui::UiSystems::Layout),
-        );
-        for _ in 0..12 {
-            drop(canvas.probe_frame().unwrap());
-        }
-        canvas
-            .world_mut()
-            .resource_mut::<InputFocus>()
-            .set(editor, FocusCause::Navigated);
-        let item = ItemId::Native(
-            canvas
-                .app
-                .world()
-                .get::<native::layout::LayoutBox>(owner)
-                .unwrap()
-                .id,
-        );
+        let Scene {
+            mut canvas,
+            owner,
+            editor,
+            original,
+            item,
+        } = scene(directory.path(), mode);
         assert_eq!(canvas.app.sub_apps().sub_apps.len(), 1);
         let mut render = Some(canvas.app.remove_sub_app(RenderApp).unwrap());
         assert!(canvas.app.sub_apps().sub_apps.is_empty());
@@ -451,6 +602,7 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
                 runtime.handle().clone(),
                 (mode == "overlap-worker-export")
                     .then(|| (canvas.renderer.gpu.clone(), publisher.sender())),
+                None,
             )
         });
         let mut pending = None;
@@ -518,98 +670,15 @@ fn native_epoch_pixels_remain_coherent_while_the_next_main_update_overlaps_rende
         let cpu = (after.tv_sec - before.tv_sec) as f64 * 1000.0
             + (after.tv_nsec - before.tv_nsec) as f64 / 1_000_000.0;
         assert_eq!(frames.len(), 12);
-        let mut pixels = Vec::new();
-        for (number, frame) in frames.iter().enumerate() {
-            assert_eq!(
-                frame.input.editor.as_ref().unwrap().surrounding,
-                "a".repeat(number + 1)
-            );
-            let geometry = frame.geometry.as_ref().unwrap();
-            let mapping = geometry
-                .items
-                .iter()
-                .find(|entry| entry.id == item && entry.output == OutputId(1))
-                .unwrap()
-                .mapping;
-            let point = mapping
-                .canvas_point([
-                    mapping.surface.origin()[0] + mapping.surface.size()[0] * 20.0 / 68.0,
-                    mapping.surface.origin()[1] + mapping.surface.size()[1] * 12.0 / 80.0,
-                ])
-                .unwrap();
-            let expected_point = [
-                640.0 / 2.0 + original.x - 68.0 / 2.0 + 20.0 + (number + 1) as f64 * 3.0,
-                480.0 / 2.0 + original.y - 80.0 / 2.0 + 12.0,
-            ];
-            assert!(
-                point
-                    .iter()
-                    .zip(expected_point)
-                    .all(|(actual, expected)| (actual - expected).abs() < 0.01),
-                "{mode} epoch {number}: geometry {point:?}, expected {expected_point:?}"
-            );
-            let image = if frame.output == Some(OutputId(1)) {
-                frame.dmabuf().unwrap()
-            } else {
-                frame
-                    .outputs
-                    .iter()
-                    .find(|output| output.id == OutputId(1))
-                    .unwrap()
-                    .dmabuf()
-            };
-            let bytes = probe_pixels(image).unwrap();
-            let offset = (point[1].round() as usize * 640 + point[0].round() as usize) * 4;
-            let actual = &bytes[offset..offset + 3];
-            let expected = palette(number + 1);
-            assert!(
-                actual
-                    .iter()
-                    .zip(expected)
-                    .all(|(actual, expected)| actual.abs_diff(expected) < 30),
-                "{mode} epoch {number} at {point:?}: {actual:?}, expected {expected:?}"
-            );
-            let secondary = if frame.output == Some(OutputId(2)) {
-                frame.dmabuf().unwrap()
-            } else {
-                frame
-                    .outputs
-                    .iter()
-                    .find(|output| output.id == OutputId(2))
-                    .unwrap()
-                    .dmabuf()
-            };
-            let secondary = probe_pixels(secondary).unwrap();
-            let green = secondary
-                .chunks_exact(4)
-                .filter(|pixel| pixel[0] < 30 && pixel[1] > 230 && pixel[2] < 30)
-                .count();
-            let glyphs = (0..8)
-                .flat_map(|index| {
-                    (200..280).flat_map(move |y| {
-                        ((34 + index * 72)..(102 + index * 72)).map(move |x| (y * 640 + x) * 4)
-                    })
-                })
-                .filter(|offset| {
-                    secondary[*offset..*offset + 3]
-                        .iter()
-                        .all(|channel| *channel < 180)
-                })
-                .count();
-            assert!(
-                green > 20000 && glyphs > 200,
-                "{mode} epoch {number}: secondary green {green}, glyphs {glyphs}"
-            );
-            let mut hash = std::collections::hash_map::DefaultHasher::new();
-            std::hash::Hash::hash(&secondary, &mut hash);
-            let hash = std::hash::Hasher::finish(&hash);
-            assert_eq!(
-                *secondary_reference.get_or_insert(hash),
-                hash,
-                "The quiet output changed: {mode}, epoch {number}"
-            );
-            pixels.push(serde_json::json!({"epoch":number,"point":point,"rgb":actual,"geometry_revision":geometry.revision,"secondary_hash":hash,"secondary_green":green,"secondary_glyphs":glyphs}));
-        }
+        let pixels = check_pixels(
+            &frames,
+            &samples,
+            item,
+            original,
+            3.0,
+            mode,
+            &mut secondary_reference,
+        );
         let overlap = samples
             .windows(2)
             .map(|pair| {

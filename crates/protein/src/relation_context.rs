@@ -19,9 +19,9 @@ impl Include {
     }
 }
 
-pub(crate) async fn attach(
+pub(crate) async fn attach<Body>(
     store: &Store,
-    records: &[RecordRow],
+    records: &[RecordRow<Body>],
     visible: Option<&HashSet<String>>,
     include: &Include,
     names: &HashMap<String, String>,

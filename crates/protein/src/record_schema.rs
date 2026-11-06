@@ -1,4 +1,4 @@
-use crate::Protein;
+use crate::{Include, Order, Predicate, Protein};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
@@ -60,10 +60,124 @@ pub(crate) fn requests(query: &Protein, key: &str) -> bool {
         .is_none_or(|fields| fields.iter().any(|field| field == key))
 }
 
-pub(crate) async fn attach(
+pub(crate) fn predicates_require_body(predicates: &[Predicate]) -> bool {
+    predicates.iter().any(|predicate| match predicate {
+        Predicate::All(children) | Predicate::Any(children) => predicates_require_body(children),
+        Predicate::Not(child) => predicates_require_body(std::slice::from_ref(child.as_ref())),
+        Predicate::QuantityLt(_)
+        | Predicate::QuantityLte(_)
+        | Predicate::QuantityGt(_)
+        | Predicate::QuantityGte(_)
+        | Predicate::QuantityEq(_)
+        | Predicate::UidEq(_)
+        | Predicate::KindEq(_)
+        | Predicate::SlugEq(_)
+        | Predicate::ConceptIn(_)
+        | Predicate::Relation { .. }
+        | Predicate::Under { .. }
+        | Predicate::WorkDate { .. }
+        | Predicate::Near { .. }
+        | Predicate::OrganEq(_)
+        | Predicate::OrganIn(_) => false,
+        _ => true,
+    })
+}
+
+fn field_requires_body(field: &str) -> bool {
+    !matches!(
+        field,
+        "uid"
+            | "kind"
+            | "slug"
+            | "head"
+            | "title"
+            | "quantity"
+            | "concept"
+            | "concept_name"
+            | "unit"
+            | "place"
+            | "organ"
+            | "created_at"
+            | "updated_at"
+            | "created_hlc"
+            | "start_date"
+            | "due_date"
+            | "estimate_min"
+            | "spent_seconds"
+            | "running_since"
+            | "work_logs"
+            | "work_timer"
+            | "assertions"
+            | "assignees"
+            | "assignee"
+            | "assignee_name"
+            | "facts"
+            | "promises"
+            | "links"
+            | "threads"
+            | "extension"
+            | "numeric_extensions"
+            | "numeric_values"
+            | "shader_effect"
+            | "relation_context"
+            | "reference_reads"
+            | "contact"
+            | "conversations"
+            | "projected"
+            | "actual"
+            | "reserved"
+            | "available"
+            | "surplus"
+            | "can_offer"
+            | "actual_exact"
+            | "reserved_exact"
+            | "surplus_exact"
+            | "can_offer_exact"
+    )
+}
+
+fn includes_require_body(include: &Include) -> bool {
+    match include {
+        Include {
+            relation_context: _,
+            record_after: _,
+            facts: _,
+            promises: _,
+            links: _,
+            threads: _,
+            availability: _,
+            extension: _,
+            shader_effect: _,
+            numeric_fields: _,
+            numeric_extensions: _,
+            projection: _,
+            contact: _,
+            conversations: _,
+            reference_reads: _,
+        } => false,
+    }
+}
+
+pub(crate) fn requires_body(query: &Protein) -> bool {
+    predicates_require_body(&query.filter)
+        || query.aggregate.is_none()
+            && (query
+                .fields
+                .as_ref()
+                .is_none_or(|fields| fields.iter().any(|field| field_requires_body(field)))
+                || query.order.iter().any(|order| match order {
+                    Order::Link(_) => false,
+                    Order::Asc(field) | Order::Desc(field) => {
+                        !field.starts_with('#') && field_requires_body(field)
+                    }
+                })
+                || includes_require_body(&query.include))
+}
+
+pub(crate) async fn attach<Body>(
     store: &Store,
     query: &Protein,
-    records: &[RecordRow],
+    records: &[RecordRow<Body>],
     visible: Option<&HashSet<String>>,
     work: &HashMap<String, Value>,
     concept_names: &HashMap<String, String>,
@@ -173,9 +287,15 @@ pub(crate) async fn attach(
                         if !assignees.contains_key(uid) {
                             assignees.insert(
                                 uid.into(),
-                                store::records::get(&store.pool, uid)
-                                    .await?
-                                    .map(|person| person.head),
+                                store::records::read::<Option<String>>(
+                                    &store.pool,
+                                    store::records::RecordSelection::Uid(uid),
+                                    false,
+                                )
+                                .await?
+                                .into_iter()
+                                .next()
+                                .map(|person| person.head),
                             );
                         }
                         if let Some(head) = assignees.get(uid).and_then(Option::as_ref) {

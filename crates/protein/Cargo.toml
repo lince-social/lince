@@ -19,6 +19,7 @@ base64 = { workspace = true }
 ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
+libc = "=0.2.189"
 engine = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

@@ -83,13 +83,44 @@ async fn require_active_on(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Resul
     }
 }
 
+pub trait RecordBody: Sized + Send + Sync {
+    fn from_loaded(body: Option<String>) -> Result<Self, StoreError>;
+
+    fn loaded(&self) -> Option<&str>;
+
+    fn required(&self) -> Result<&str, StoreError> {
+        self.loaded()
+            .ok_or_else(|| protocol("Record body was not loaded for this query"))
+    }
+}
+
+impl RecordBody for String {
+    fn from_loaded(body: Option<String>) -> Result<Self, StoreError> {
+        body.ok_or_else(|| protocol("Record body was not loaded for this query"))
+    }
+
+    fn loaded(&self) -> Option<&str> {
+        Some(self.as_str())
+    }
+}
+
+impl RecordBody for Option<String> {
+    fn from_loaded(body: Option<String>) -> Result<Self, StoreError> {
+        Ok(body)
+    }
+
+    fn loaded(&self) -> Option<&str> {
+        self.as_deref()
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct RecordRow {
+pub struct RecordRow<Body = String> {
     pub uid: String,
     pub slug: Option<String>,
     pub kind: String,
     pub head: String,
-    pub body: String,
+    pub body: Body,
     pub quantity: DecimalValue,
     pub identity_predicate_uid: Option<String>,
     pub unit_uid: Option<String>,
@@ -100,7 +131,7 @@ pub struct RecordRow {
     pub created_hlc: Option<i64>,
 }
 
-impl RecordRow {
+impl<Body> RecordRow<Body> {
     pub fn quantity_f64(&self) -> f64 {
         self.quantity.to_f64()
     }
@@ -110,13 +141,13 @@ impl RecordRow {
     }
 }
 
-fn map_row(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow, StoreError> {
-    Ok(RecordRow {
+fn map_row<Body: RecordBody>(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow<Body>, StoreError> {
+    let row = RecordRow {
         uid: r.get("uid"),
         slug: r.get("slug"),
         kind: r.get("kind"),
         head: r.get("head"),
-        body: r.get("body"),
+        body: Body::from_loaded(r.try_get::<Option<String>, _>("body")?)?,
         quantity: read_decimal(&r, "quantity")?,
         identity_predicate_uid: r.get("identity_predicate_uid"),
         unit_uid: r.get("unit_uid"),
@@ -125,11 +156,78 @@ fn map_row(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow, StoreError> {
         created_at: r.get("created_at"),
         updated_at: r.get("updated_at"),
         created_hlc: r.try_get("created_hlc").ok().flatten(),
-    })
+    };
+    nucleus::performance::add(
+        "record-read-body-bytes",
+        row.body.loaded().map_or(0, str::len) as u64,
+    );
+    Ok(row)
 }
 
 fn map_rows(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<RecordRow>, StoreError> {
     rows.into_iter().map(map_row).collect()
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum RecordSelection<'a> {
+    All,
+    Uid(&'a str),
+    Token(&'a str),
+    Uids(&'a [&'a str]),
+}
+
+pub async fn read<Body: RecordBody>(
+    pool: &SqlitePool,
+    selection: RecordSelection<'_>,
+    with_body: bool,
+) -> Result<Vec<RecordRow<Body>>, StoreError> {
+    if let RecordSelection::Uids(uids) = selection {
+        if uids.is_empty() {
+            return Ok(Vec::new());
+        }
+        if uids.len() > 10_000 {
+            return Err(protocol("Choose at most 10000 Record identities"));
+        }
+    }
+    let mut query = sqlx::QueryBuilder::<Sqlite>::new("SELECT ");
+    query.push(if with_body {
+        "r.*"
+    } else {
+        "r.uid, r.slug, r.kind, r.head, NULL AS body, r.quantity_mantissa, r.quantity_scale, r.unit_uid, r.place_uid, r.organ_uid, r.created_at, r.updated_at, r.created_hlc"
+    });
+    query.push(
+        ", (SELECT predicate_uid FROM record_assertion a WHERE a.subject_uid = r.uid AND a.role = 'identity' AND a.retracted_at IS NULL) AS identity_predicate_uid FROM record r WHERE r.deleted_at IS NULL",
+    );
+    match selection {
+        RecordSelection::All => {
+            query.push(" ORDER BY r.created_at, r.uid");
+        }
+        RecordSelection::Uid(uid) => {
+            query.push(" AND r.uid = ").push_bind(uid);
+        }
+        RecordSelection::Token(token) => {
+            query
+                .push(" AND (r.slug = ")
+                .push_bind(token)
+                .push(" OR r.uid = ")
+                .push_bind(token)
+                .push(") LIMIT 1");
+        }
+        RecordSelection::Uids(uids) => {
+            let ids = serde_json::to_string(uids).map_err(|error| protocol(error.to_string()))?;
+            query
+                .push(" AND r.uid IN (SELECT value FROM json_each(")
+                .push_bind(ids)
+                .push(")) ORDER BY r.created_at, r.uid");
+        }
+    }
+    query
+        .build()
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(map_row)
+        .collect()
 }
 
 pub struct NewRecord<'a> {

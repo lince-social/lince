@@ -241,6 +241,7 @@ counts! {
     RecordCanonicalDeltaBytes => "record-canonical-delta-bytes",
     CellQueries => "cell-queries",
     CellQueryRows => "cell-query-rows",
+    RecordReadBodyBytes => "record-read-body-bytes",
     RecordBindingViews => "record-binding-views-compared",
     RecordBindingViewChanged => "record-binding-views-changed",
     RecordEditorTextCopies => "record-editor-input-text-copies",

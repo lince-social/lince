@@ -36,9 +36,9 @@ pub fn validate(requests: &[Request]) -> Result<(), crate::ProteinError> {
     Ok(())
 }
 
-pub(crate) async fn attach(
+pub(crate) async fn attach<Body>(
     store: &Store,
-    rows: &[RecordRow],
+    rows: &[RecordRow<Body>],
     requests: &[Request],
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
     if requests.is_empty() {

@@ -1479,6 +1479,24 @@ async fn record_projection_preserves_requested_fields_and_exact_values() {
             );
         }
     }
+    let partial = store::records::read::<Option<String>>(
+        &engine.store.pool,
+        store::records::RecordSelection::Uid(&uid),
+        false,
+    )
+    .await
+    .unwrap();
+    assert!(partial[0].body.is_none());
+    query.fields = Some(vec!["head".into(), "quantity".into()]);
+    query.filter.push(protein::Predicate::All(vec![
+        protein::Predicate::TextContains("👩‍💻".into()),
+        protein::Predicate::Not(Box::new(protein::Predicate::TextContains("missing".into()))),
+    ]));
+    let filtered = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(filtered.len(), 1);
+    assert_eq!(filtered[0]["head"], "Projection é");
+    assert_eq!(filtered[0]["quantity"], "9007199254740993.125");
+    query.filter = vec![protein::Predicate::UidEq(uid.clone())];
     let other = engine
         .act(
             engine::actions::Action::CreateRecord {

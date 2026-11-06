@@ -21,7 +21,7 @@ use ed25519_dalek::{Signature, Verifier as _, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
-use store::Store;
+use store::{Store, records::RecordBody};
 
 pub type ProteinError = store::StoreError;
 
@@ -505,12 +505,18 @@ async fn read_filter_targets(
         order: vec![],
         limit: None,
     };
-    let roots = matching_records_for(store, &narrowed, Some(ceiling), Some(person_uid))
-        .await?
-        .into_iter()
-        .map(|row| row.uid)
-        .filter(|uid| ceiling.contains(uid))
-        .collect::<Vec<_>>();
+    let roots = matching_records_for::<Option<String>>(
+        store,
+        &narrowed,
+        Some(ceiling),
+        Some(person_uid),
+        record_schema::predicates_require_body(&narrowed.filter),
+    )
+    .await?
+    .into_iter()
+    .map(|row| row.uid)
+    .filter(|uid| ceiling.contains(uid))
+    .collect::<Vec<_>>();
     let threads = store::vocabulary::feature_read(&store.pool, "thread").await?;
     let messages = store::vocabulary::feature_read(&store.pool, "message").await?;
     let roots = serde_json::to_string(&roots)
@@ -1515,15 +1521,16 @@ pub async fn matching_records(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    matching_records_for(store, protein, visible, None).await
+    matching_records_for::<String>(store, protein, visible, None, true).await
 }
 
-async fn matching_records_for(
+async fn matching_records_for<Body: RecordBody>(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
     subject: Option<&str>,
-) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+    with_body: bool,
+) -> Result<Vec<store::records::RecordRow<Body>>, ProteinError> {
     fn supported(predicate: &Predicate) -> bool {
         match predicate {
             Predicate::All(children) | Predicate::Any(children) => children.iter().all(supported),
@@ -1574,22 +1581,20 @@ async fn matching_records_for(
         }
         _ => None,
     });
-    let all = match (protein.filter.as_slice(), required_uids.as_ref()) {
-        ([Predicate::UidEq(uid)], _) => store::records::get(&store.pool, uid)
-            .await?
-            .into_iter()
-            .collect(),
-        ([Predicate::SlugEq(slug)], _) => store::records::resolve(&store.pool, slug)
-            .await?
-            .into_iter()
-            .collect(),
-        (_, Some(uids)) => {
-            store::records::get_many(&store.pool, &uids.iter().copied().collect::<Vec<_>>()).await?
-        }
-        (_, None) => store::records::list_all(&store.pool).await?,
+    let uids: Vec<_> = required_uids
+        .as_ref()
+        .into_iter()
+        .flat_map(|uids| uids.iter().copied())
+        .collect();
+    let selection = match (protein.filter.as_slice(), required_uids.as_ref()) {
+        ([Predicate::UidEq(uid)], _) => store::records::RecordSelection::Uid(uid),
+        ([Predicate::SlugEq(slug)], _) => store::records::RecordSelection::Token(slug),
+        (_, Some(_)) => store::records::RecordSelection::Uids(&uids),
+        (_, None) => store::records::RecordSelection::All,
     };
+    let all = store::records::read(&store.pool, selection, with_body).await?;
     let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
-    let mut rows: Vec<store::records::RecordRow> = Vec::new();
+    let mut rows = Vec::new();
     for r in all {
         if required_uids
             .as_ref()
@@ -1615,11 +1620,17 @@ pub async fn matching_among(
     if among.is_empty() {
         return Ok(HashSet::new());
     }
-    Ok(matching_records(store, protein, Some(among))
-        .await?
-        .into_iter()
-        .map(|row| row.uid)
-        .collect())
+    Ok(matching_records_for::<Option<String>>(
+        store,
+        protein,
+        Some(among),
+        None,
+        record_schema::predicates_require_body(&protein.filter),
+    )
+    .await?
+    .into_iter()
+    .map(|row| row.uid)
+    .collect())
 }
 
 pub async fn select_records(
@@ -1627,16 +1638,18 @@ pub async fn select_records(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    select_records_for(store, protein, visible, None).await
+    select_records_for::<String>(store, protein, visible, None, true).await
 }
 
-async fn select_records_for(
+async fn select_records_for<Body: RecordBody>(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
     subject: Option<&str>,
-) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    let mut rows = matching_records_for(store, protein, visible, subject).await?;
+    with_body: bool,
+) -> Result<Vec<store::records::RecordRow<Body>>, ProteinError> {
+    let mut rows =
+        matching_records_for::<Body>(store, protein, visible, subject, with_body).await?;
     rows.retain(|row| row.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
     if protein.aggregate.is_none() {
         rows = order_records(store, rows, &protein.order).await?;
@@ -1664,7 +1677,14 @@ async fn execute_records(
     visible: Option<&HashSet<String>>,
     subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let rows = select_records_for(store, protein, visible, subject).await?;
+    let rows = select_records_for::<Option<String>>(
+        store,
+        protein,
+        visible,
+        subject,
+        record_schema::requires_body(protein),
+    )
+    .await?;
 
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
@@ -1747,7 +1767,7 @@ async fn execute_records(
             row["head"] = json!(r.head);
         }
         if wants("body") {
-            row["body"] = json!(r.body);
+            row["body"] = json!(r.body.required()?);
         }
         if wants("quantity") {
             row["quantity"] = json!(r.quantity.to_string());
@@ -1833,7 +1853,10 @@ fn narrow_to_fields(row: &mut Value, fields: Option<&[String]>) {
     });
 }
 
-fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec<Value> {
+fn aggregate_records<Body>(
+    rows: &[store::records::RecordRow<Body>],
+    agg: &Aggregate,
+) -> Vec<Value> {
     let mut buckets: std::collections::BTreeMap<(String, String), (nucleus::DecimalValue, i64)> =
         std::collections::BTreeMap::new();
     for r in rows {
@@ -1880,11 +1903,19 @@ fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec
         .collect()
 }
 
-async fn order_records(
+async fn order_records<Body: RecordBody>(
     store: &Store,
-    mut rows: Vec<store::records::RecordRow>,
+    mut rows: Vec<store::records::RecordRow<Body>>,
     order: &[Order],
-) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+) -> Result<Vec<store::records::RecordRow<Body>>, ProteinError> {
+    if order.iter().any(|key| {
+        matches!(key, Order::Asc(field) | Order::Desc(field) if field == "body" || field == "description")
+    }) && rows.iter().any(|row| row.body.loaded().is_none())
+    {
+        return Err(store::StoreError::Protocol(
+            "Record body was not loaded for this sort".into(),
+        ));
+    }
     rows.sort_by(|left, right| {
         left.head
             .to_lowercase()
@@ -1918,7 +1949,15 @@ async fn order_records(
             for link in
                 store::assertions::binary_of_predicates(&store.pool, &binding.concept_uids).await?
             {
-                if let Some(person) = store::records::get(&store.pool, &link.object_uid).await? {
+                if let Some(person) = store::records::read::<Option<String>>(
+                    &store.pool,
+                    store::records::RecordSelection::Uid(&link.object_uid),
+                    false,
+                )
+                .await?
+                .into_iter()
+                .next()
+                {
                     assignees.entry(link.subject_uid).or_insert(person.head);
                 }
             }
@@ -1987,7 +2026,7 @@ async fn order_records(
                 };
                 let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
                 let ordered = nucleus::graph::topo_order(&uids, &edges);
-                let mut by_uid: HashMap<String, store::records::RecordRow> =
+                let mut by_uid: HashMap<String, store::records::RecordRow<Body>> =
                     rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
                 rows = ordered
                     .into_iter()
@@ -1999,8 +2038,8 @@ async fn order_records(
     Ok(rows)
 }
 
-fn record_field_is_missing(
-    row: &store::records::RecordRow,
+fn record_field_is_missing<Body>(
+    row: &store::records::RecordRow<Body>,
     field: &str,
     concepts: &HashMap<String, String>,
     assignees: &HashMap<String, String>,
@@ -2028,9 +2067,9 @@ fn record_field_is_missing(
     }
 }
 
-fn record_field_cmp(
-    left: &store::records::RecordRow,
-    right: &store::records::RecordRow,
+fn record_field_cmp<Body: RecordBody>(
+    left: &store::records::RecordRow<Body>,
+    right: &store::records::RecordRow<Body>,
     field: &str,
     concepts: &HashMap<String, String>,
     assignees: &HashMap<String, String>,
@@ -2044,7 +2083,7 @@ fn record_field_cmp(
             (None, None) => std::cmp::Ordering::Equal,
         }
     }
-    let work_date = |row: &store::records::RecordRow, name: &str| {
+    let work_date = |row: &store::records::RecordRow<Body>, name: &str| {
         work.get(&row.uid)
             .and_then(|value| value.get(name))
             .and_then(Value::as_str)
@@ -2056,7 +2095,7 @@ fn record_field_cmp(
             right.created_hlc.map(|hlc| format!("{hlc:020}")),
         ),
         "title" | "head" => left.head.cmp(&right.head),
-        "description" | "body" => left.body.cmp(&right.body),
+        "description" | "body" => left.body.loaded().cmp(&right.body.loaded()),
         "uid" => left.uid.cmp(&right.uid),
         "slug" => optional(left.slug.clone(), right.slug.clone()),
         "kind" => left.kind.cmp(&right.kind),
@@ -2852,10 +2891,10 @@ impl PredicateCtx {
         Ok(())
     }
 
-    async fn matches_record(
+    async fn matches_record<Body: RecordBody>(
         &self,
         store: &Store,
-        r: &store::records::RecordRow,
+        r: &store::records::RecordRow<Body>,
         preds: &[Predicate],
     ) -> Result<bool, ProteinError> {
         for p in preds {
@@ -2866,10 +2905,10 @@ impl PredicateCtx {
         Ok(true)
     }
 
-    fn matches_one<'a>(
+    fn matches_one<'a, Body: RecordBody + 'a>(
         &'a self,
         store: &'a Store,
-        r: &'a store::records::RecordRow,
+        r: &'a store::records::RecordRow<Body>,
         p: &'a Predicate,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<bool, ProteinError>> + Send + 'a>>
     {
@@ -2926,7 +2965,8 @@ impl PredicateCtx {
                     .is_some_and(|records| records.contains(&r.uid)),
                 Predicate::TextContains(query) => {
                     let query = query.to_lowercase();
-                    r.head.to_lowercase().contains(&query) || r.body.to_lowercase().contains(&query)
+                    r.head.to_lowercase().contains(&query)
+                        || r.body.required()?.to_lowercase().contains(&query)
                 }
                 Predicate::WorkDate { field, op, value } => {
                     let date = self

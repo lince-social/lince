@@ -13242,6 +13242,7 @@ dependencies = [
  "chrono",
  "ed25519-dalek 3.0.0",
  "engine",
+ "libc",
  "lince-utils",
  "nucleus",
  "schemars 1.2.2",

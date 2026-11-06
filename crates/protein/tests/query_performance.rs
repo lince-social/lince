@@ -3,11 +3,56 @@ use serde_json::json;
 use std::collections::BTreeMap;
 use std::sync::{
     Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
 use std::time::Instant;
 use tracing::field::{Field, Visit};
 use tracing_subscriber::{Layer, layer::Context, prelude::*};
+
+static DECODED_BODY_BYTES: AtomicU64 = AtomicU64::new(0);
+
+fn observe_reads(reading: nucleus::performance::Reading) {
+    if let nucleus::performance::Reading::Count("record-read-body-bytes", count) = reading {
+        DECODED_BODY_BYTES.fetch_add(count, Ordering::Relaxed);
+    }
+}
+
+#[cfg(unix)]
+fn process_cpu_us() -> Option<u64> {
+    let mut time = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    if unsafe { libc::clock_gettime(libc::CLOCK_PROCESS_CPUTIME_ID, &mut time) } != 0 {
+        return None;
+    }
+    u64::try_from(time.tv_sec)
+        .ok()?
+        .checked_mul(1_000_000)?
+        .checked_add(u64::try_from(time.tv_nsec).ok()? / 1000)
+}
+
+#[cfg(not(unix))]
+fn process_cpu_us() -> Option<u64> {
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn process_reads() -> Option<(u64, u64)> {
+    let text = std::fs::read_to_string("/proc/self/io").ok()?;
+    let value = |key: &str| {
+        text.lines().find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            (name == key).then(|| value.trim().parse().ok()).flatten()
+        })
+    };
+    Some((value("rchar")?, value("syscr")?))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn process_reads() -> Option<(u64, u64)> {
+    None
+}
 
 #[derive(Default)]
 struct Query {
@@ -96,6 +141,7 @@ async fn file_backed_selected_query_probe() {
     let traced = std::env::var("LINCE_QUERY_PROBE_TRACE").as_deref() == Ok("1");
     let queries = Queries::default();
     if traced {
+        assert!(nucleus::performance::install(observe_reads));
         tracing::subscriber::set_global_default(
             tracing_subscriber::registry().with(queries.clone()),
         )
@@ -114,6 +160,14 @@ async fn file_backed_selected_query_probe() {
         .unwrap();
     assert_eq!(journal, "wal");
     assert_eq!(synchronous, 2);
+    let cache_size: i64 = store::sqlx::query_scalar("PRAGMA cache_size")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+    let page_size: i64 = store::sqlx::query_scalar("PRAGMA page_size")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
     let body = "é👩‍💻 paragraph\n".repeat(bytes / "é👩‍💻 paragraph\n".len());
     let mut ids = Vec::new();
     for index in 0..count {
@@ -178,10 +232,21 @@ async fn file_backed_selected_query_probe() {
         let mut samples = Vec::new();
         for _ in 0..3 {
             queries.rows.lock().unwrap().clear();
+            DECODED_BODY_BYTES.store(0, Ordering::Relaxed);
             queries.active.store(true, Ordering::Release);
+            let reads_started = traced.then(process_reads).flatten();
+            let cpu_started = process_cpu_us();
             let started = Instant::now();
             let rows = protein::execute(&store, &query).await.unwrap();
             let elapsed = started.elapsed().as_micros() as u64;
+            let cpu_us = process_cpu_us()
+                .zip(cpu_started)
+                .and_then(|(end, start)| end.checked_sub(start));
+            let reads = traced
+                .then(process_reads)
+                .flatten()
+                .zip(reads_started)
+                .map(|(end, start)| (end.0.saturating_sub(start.0), end.1.saturating_sub(start.1)));
             queries.active.store(false, Ordering::Release);
             assert_eq!(rows, expected);
             let mut statements = BTreeMap::<String, (usize, u64, f64)>::new();
@@ -197,7 +262,7 @@ async fn file_backed_selected_query_probe() {
                 entry.2 += query.elapsed;
             }
             assert!(!traced || !statements.is_empty());
-            samples.push(json!({"elapsed_us":elapsed,"sqlx_completions":statements.values().map(|entry|entry.0).sum::<usize>(),"statements":statements,"response_bytes":serde_json::to_vec(&rows).unwrap().len()}));
+            samples.push(json!({"elapsed_us":elapsed,"cpu_us":cpu_us,"sqlx_completions":statements.values().map(|entry|entry.0).sum::<usize>(),"statements":statements,"response_bytes":serde_json::to_vec(&rows).unwrap().len(),"decoded_body_bytes":traced.then(|| DECODED_BODY_BYTES.load(Ordering::Relaxed)),"logical_read_bytes":reads.map(|value|value.0),"read_calls":reads.map(|value|value.1)}));
         }
         reports.push(json!({"name":name,"samples":samples}));
     }
@@ -213,6 +278,6 @@ async fn file_backed_selected_query_probe() {
         assert_eq!(record.body, body);
     }
     reopened.pool.close().await;
-    let report = json!({"case":"file-backed-selected-query","records":count,"response_rows":original.len(),"body_bytes_each":body.len(),"logs_each":logs,"traced":traced,"debug_assertions":cfg!(debug_assertions),"journal":journal,"synchronous":synchronous,"queries":reports,"cold_reopen_exact":true,"scope":"Direct Protein read/projection; excludes Session sync-history writes. SQLx completions count logged invocations, not SQLite trigger/implicit internal statements. Logging overhead and unoptimized elapsed times are diagnostic; no physical presentation or desktop claim."});
+    let report = json!({"case":"file-backed-selected-query","records":count,"response_rows":original.len(),"body_bytes_each":body.len(),"logs_each":logs,"traced":traced,"debug_assertions":cfg!(debug_assertions),"journal":journal,"synchronous":synchronous,"cache_size":cache_size,"page_size":page_size,"queries":reports,"cold_reopen_exact":true,"scope":"Direct Protein read/projection; excludes Session sync-history writes. CPU is process-wide across the query's threads. Diagnostic Linux logical-read counters include a small procfs-read overhead and are not physical disk reads. SQLx completions count logged invocations, not SQLite trigger/implicit internal statements. Logging overhead and unoptimized elapsed times are diagnostic; no physical presentation or desktop claim."});
     std::fs::write(output, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
 }

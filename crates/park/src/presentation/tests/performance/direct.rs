@@ -1,5 +1,8 @@
 use super::*;
-use crate::graphics::{GpuContext, direct::Prepared};
+use crate::graphics::{
+    GpuContext,
+    direct::{Pool, Prepared},
+};
 use bevy::{
     asset::AssetId,
     render::{Render, RenderSystems},
@@ -20,6 +23,9 @@ struct Targets {
     gpu: Arc<GpuContext>,
     originals: Vec<(AssetId<Image>, GpuImage)>,
     direct: bool,
+    active_direct: bool,
+    pool: Option<Pool>,
+    cached: Vec<(smithay::backend::allocator::dmabuf::Dmabuf, GpuImage)>,
     exported: Vec<smithay::backend::allocator::dmabuf::Dmabuf>,
     epoch: u8,
     setup_ms: f64,
@@ -31,21 +37,53 @@ fn prepare(
     mut commands: Commands,
 ) {
     let start = Instant::now();
-    if targets.direct {
+    let targets = &mut *targets;
+    let prepared = if targets.direct {
         let sources = targets
             .originals
             .iter()
             .map(|(_, image)| wgpu::Texture::clone(&image.texture))
             .collect::<Vec<_>>();
-        let prepared = Prepared::new(&targets.gpu, &sources).unwrap();
-        targets.exported = (0..sources.len())
+        if let Some(pool) = &mut targets.pool {
+            pool.acquire(&targets.gpu, &sources).unwrap()
+        } else {
+            Some(Prepared::new(&targets.gpu, &sources).unwrap())
+        }
+    } else {
+        None
+    };
+    if let Some(pool) = &targets.pool {
+        targets.cached.retain(|(buffer, _)| pool.contains(buffer));
+    }
+    targets.active_direct = prepared.is_some();
+    if let Some(prepared) = prepared {
+        targets.exported = (0..targets.originals.len())
             .map(|index| prepared.dmabuf(index).clone())
             .collect();
         for (index, (id, original)) in targets.originals.iter().enumerate() {
-            let texture = prepared.texture(index);
-            let mut image = original.clone();
-            image.texture = texture.clone().into();
-            image.texture_view = texture.create_view(&Default::default()).into();
+            let buffer = prepared.dmabuf(index);
+            let cached = targets
+                .pool
+                .is_some()
+                .then(|| {
+                    targets
+                        .cached
+                        .iter()
+                        .find(|(cached, _)| cached == buffer)
+                        .map(|(_, image)| image.clone())
+                })
+                .flatten();
+            let image = if let Some(cached) = cached {
+                cached
+            } else {
+                let mut image = original.clone();
+                image.texture = prepared.texture(index).clone().into();
+                image.texture_view = prepared.view(index).clone().into();
+                if targets.pool.is_some() {
+                    targets.cached.push((buffer.clone(), image.clone()));
+                }
+                image
+            };
             images.insert(*id, image);
         }
         commands.insert_resource(prepared);
@@ -141,6 +179,11 @@ fn install(canvas: &mut Presentation) {
             gpu: canvas.renderer.gpu.clone(),
             originals,
             direct: false,
+            active_direct: false,
+            pool: std::env::var_os("LINCE_PARK_DIRECT_POOL")
+                .is_some()
+                .then(|| Pool::new(6, 256 * 1024 * 1024)),
+            cached: Vec::new(),
             exported: Vec::new(),
             epoch: 0,
             setup_ms: 0.0,
@@ -259,7 +302,7 @@ fn render(canvas: &mut Presentation, pixels: bool) -> Frame {
     };
     frame.wait_for_probe().unwrap();
     let targets = canvas.app.sub_app(RenderApp).world().resource::<Targets>();
-    if targets.direct {
+    if targets.active_direct {
         let actual = buffers(&frame);
         assert_eq!(actual.len(), targets.exported.len());
         for ((_, actual), expected) in actual.into_iter().zip(&targets.exported) {
@@ -463,7 +506,7 @@ fn native_direct_targets_preserve_retained_pixels_and_compare_complete_handoff_c
                         .world()
                         .resource::<Targets>()
                         .epoch;
-                    samples.push(serde_json::json!({"block":block,"round":round,"direct":direct,"epoch":epoch,"frame_ready_ms":ready,"native_cpu_ms":native_cpu,"target_setup_ms":canvas.app.sub_app(RenderApp).world().resource::<Targets>().setup_ms,"gles":consumed,"complete_ms":started.elapsed().as_secs_f64()*1000.0,"process_cpu_ms":cpu()-before}));
+                    samples.push(serde_json::json!({"block":block,"round":round,"direct":direct,"epoch":epoch,"frame_ready_ms":ready,"native_cpu_ms":native_cpu,"target_setup_ms":canvas.app.sub_app(RenderApp).world().resource::<Targets>().setup_ms,"actual_direct":canvas.app.sub_app(RenderApp).world().resource::<Targets>().active_direct,"pool":canvas.app.sub_app(RenderApp).world().resource::<Targets>().pool.as_ref().map(Pool::stats),"gles":consumed,"complete_ms":started.elapsed().as_secs_f64()*1000.0,"process_cpu_ms":cpu()-before}));
                     last = Some((epoch, frame));
                 }
                 retained.push((direct, last.unwrap()));
@@ -510,7 +553,7 @@ fn native_direct_targets_preserve_retained_pixels_and_compare_complete_handoff_c
                 .into_iter()
                 .take(count)
                 .collect::<Vec<_>>();
-            let report = serde_json::json!({"outputs":count,"pixels_only":pixels,"samples":samples,"handoffs_during_newer_work":handoffs,"retained_oracle_frames":retained.len(),"format":"Rgba16Float","sizes":sizes});
+            let report = serde_json::json!({"outputs":count,"pixels_only":pixels,"samples":samples,"handoffs_during_newer_work":handoffs,"retained_oracle_frames":retained.len(),"format":"Rgba16Float","pooled":canvas.app.sub_app(RenderApp).world().resource::<Targets>().pool.is_some(),"pool_final":canvas.app.sub_app(RenderApp).world().resource::<Targets>().pool.as_ref().map(Pool::stats),"sizes":sizes});
             std::fs::write(
                 path.join(format!("{name}.json")),
                 serde_json::to_vec_pretty(&report).unwrap(),
@@ -523,7 +566,7 @@ fn native_direct_targets_preserve_retained_pixels_and_compare_complete_handoff_c
             canvas.finish().unwrap();
         }
     }
-    let report = serde_json::json!({"scope":"Private test-profile native full/pixel-frame comparison, one/two physical-size simulated outputs, static visible native fixture with text. Fresh initialized direct RGBA16F output allocations replace RenderAssets before view preparation; old frames retained independently. No pool or production fast path. Captures, replacement/format transitions, SRGB attachments and clients/Records are excluded. Actual compositor canvas import and representative GLES draw/fence are timed; this excludes final color management, DRM/presentation and user input. Initialization/allocation/registration/target replacement are inside candidate timing. Scene pixel oracles compare representative GLES-converted RGBA8; exact HDR/RGB10 storage has a separate GPU gate. Direct frames prove DMA-BUF identity with the prepared target. Retained image and concurrent-handoff pixel readback follows timing. Existing batched-copy control remains unchanged.","reports":reports});
+    let report = serde_json::json!({"scope":"Private test-profile native full/pixel-frame comparison, one/two physical-size simulated outputs, static visible native fixture with text. Fresh initialized direct RGBA16F output allocations replace RenderAssets before view preparation; old frames retained independently. Optional bounded test-only pool with explicit exported-image leases, GPU completion and external reacquisition/clearing; controlled GLES consumers fence before dropping frames. This does not establish every production consumer/teardown contract. No production fast path. Captures, replacement/format transitions, SRGB attachments and clients/Records are excluded. Actual compositor canvas import and representative GLES draw/fence are timed; this excludes final color management, DRM/presentation and user input. Initialization/allocation/registration/target replacement are inside candidate timing. Scene pixel oracles compare representative GLES-converted RGBA8; exact HDR/RGB10 storage has a separate GPU gate. Direct frames prove DMA-BUF identity with the prepared target. Retained image and concurrent-handoff pixel readback follows timing. Existing batched-copy control remains unchanged.","reports":reports});
     std::fs::write(
         path.join("native-direct-targets.json"),
         serde_json::to_vec_pretty(&report).unwrap(),

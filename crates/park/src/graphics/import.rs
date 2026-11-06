@@ -195,6 +195,8 @@ impl VulkanRenderer {
             memory,
             raw_device: self.raw_device.clone(),
             _device: self.device.clone(),
+            #[cfg(all(test, feature = "nested"))]
+            bytes: buffer_size,
         };
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("vulkan_import_bind", error))?;
@@ -370,6 +372,8 @@ impl GpuContext {
             completion: self.completion.track(submission)?,
             dmabuf: target.dmabuf,
             _allocation: target.allocation,
+            #[cfg(all(test, feature = "nested"))]
+            _direct_lease: None,
         })
     }
 
@@ -383,6 +387,8 @@ impl GpuContext {
             completion,
             dmabuf: prepared.target.dmabuf,
             _allocation: prepared.target.allocation,
+            #[cfg(all(test, feature = "nested"))]
+            _direct_lease: None,
         })
     }
 
@@ -432,6 +438,8 @@ impl GpuContext {
                 completion: completion.clone(),
                 dmabuf: target.dmabuf,
                 _allocation: target.allocation,
+                #[cfg(all(test, feature = "nested"))]
+                _direct_lease: None,
             })
             .collect())
     }
@@ -603,11 +611,11 @@ fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
 
     #[cfg(feature = "native-presentation")]
-    mod batches;
+    pub(in crate::graphics) mod batches;
 
     #[test]
     fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats() {

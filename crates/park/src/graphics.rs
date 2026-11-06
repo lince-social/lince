@@ -146,6 +146,8 @@ struct Allocation {
     memory: vk::DeviceMemory,
     raw_device: ash::Device,
     _device: wgpu::Device,
+    #[cfg(all(test, feature = "nested"))]
+    bytes: u64,
 }
 
 impl Drop for Allocation {
@@ -161,6 +163,8 @@ pub(crate) struct ExportedImage {
     completion: completion::Completion,
     pub(crate) dmabuf: Dmabuf,
     _allocation: Arc<Allocation>,
+    #[cfg(all(test, feature = "nested"))]
+    _direct_lease: Option<Arc<()>>,
 }
 
 impl ExportedImage {
@@ -407,6 +411,8 @@ impl GpuContext {
             memory,
             raw_device: self.raw_device.clone(),
             _device: self.device.clone(),
+            #[cfg(all(test, feature = "nested"))]
+            bytes: requirements.size,
         });
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("bind_image_memory", error))?;
@@ -642,6 +648,8 @@ impl GpuContext {
             completion: self.completion.track(submission)?,
             dmabuf: image.dmabuf,
             _allocation: image.allocation,
+            #[cfg(all(test, feature = "nested"))]
+            _direct_lease: None,
         })
     }
 }

@@ -19,7 +19,7 @@ fn interface_checks() {
     );
 }
 
-fn target(renderer: &VulkanRenderer, size: [u32; 2], format: wgpu::TextureFormat) -> wgpu::Texture {
+pub(in crate::graphics) fn target(renderer: &VulkanRenderer, size: [u32; 2], format: wgpu::TextureFormat) -> wgpu::Texture {
     renderer.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("park_export_batch_test"),
         size: wgpu::Extent3d {
@@ -38,7 +38,7 @@ fn target(renderer: &VulkanRenderer, size: [u32; 2], format: wgpu::TextureFormat
     })
 }
 
-fn write(renderer: &VulkanRenderer, source: &wgpu::Texture, pixel: &[u8]) -> Vec<u8> {
+pub(in crate::graphics) fn write(renderer: &VulkanRenderer, source: &wgpu::Texture, pixel: &[u8]) -> Vec<u8> {
     let bytes = pixel.repeat((source.width() * source.height()) as usize);
     renderer.queue.write_texture(
         source.as_image_copy(),
@@ -95,7 +95,7 @@ fn acquire(exported: &ExportedImage) -> Duration {
     waited
 }
 
-fn read(
+pub(in crate::graphics) fn read(
     renderer: &VulkanRenderer,
     exported: &ExportedImage,
     format: wgpu::TextureFormat,

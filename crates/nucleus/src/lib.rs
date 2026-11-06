@@ -19,6 +19,7 @@ pub mod knowledge;
 pub mod location;
 pub mod message;
 pub mod nearby;
+pub mod performance;
 pub mod place;
 pub mod physical_workspace;
 pub mod plugins;

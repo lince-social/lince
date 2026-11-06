@@ -38,6 +38,7 @@ pub async fn append(
     summary: &Summary,
     now: i64,
 ) -> Result<(), StoreError> {
+    let preparing = nucleus::performance::Span::new("sync-history-prepare");
     let mut summary = summary.clone();
     summary.subjects.truncate(32);
     for subject in &mut summary.subjects {
@@ -53,14 +54,25 @@ pub async fn append(
     }
     let summary =
         serde_json::to_string(&summary).map_err(|error| StoreError::Protocol(error.to_string()))?;
-    let mut tx = crate::write_tx(pool).await?;
-    sqlx::query("INSERT INTO sync_activity (at, activity, summary) VALUES (?, ?, ?)")
-        .bind(now)
-        .bind(activity)
-        .bind(summary)
-        .execute(&mut *tx)
-        .await?;
-    prune_tx(&mut tx, now).await?;
+    drop(preparing);
+    let mut tx = {
+        let _begin = nucleus::performance::Span::new("sync-history-begin-await");
+        crate::write_tx(pool).await?
+    };
+    {
+        let _insert = nucleus::performance::Span::new("sync-history-insert-await");
+        sqlx::query("INSERT INTO sync_activity (at, activity, summary) VALUES (?, ?, ?)")
+            .bind(now)
+            .bind(activity)
+            .bind(summary)
+            .execute(&mut *tx)
+            .await?;
+    }
+    {
+        let _prune = nucleus::performance::Span::new("sync-history-prune-await");
+        prune_tx(&mut tx, now).await?;
+    }
+    let _commit = nucleus::performance::Span::new("sync-history-commit-await");
     tx.commit().await
 }
 

@@ -27,7 +27,7 @@ pub mod custom_component;
 pub mod directory;
 pub mod demeter;
 pub mod optimization;
-pub use utils::performance;
+pub use nucleus::performance;
 pub mod effects;
 pub mod enrolment;
 pub mod error;

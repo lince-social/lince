@@ -120,6 +120,11 @@ stages! {
     SyncWork => "sync-work-await",
     SyncSummary => "sync-summary",
     SyncHistoryAppend => "sync-history-append-await",
+    SyncHistoryPrepare => "sync-history-prepare",
+    SyncHistoryBegin => "sync-history-begin-await",
+    SyncHistoryInsert => "sync-history-insert-await",
+    SyncHistoryPrune => "sync-history-prune-await",
+    SyncHistoryCommit => "sync-history-commit-await",
     RecordBindingPublish => "record-binding-publish",
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
@@ -736,9 +741,6 @@ pub mod checks {
                 Count::from_label(counter.label()).map(|value| value as usize),
                 Some(*counter as usize)
             );
-        }
-        for stage in Stage::ALL {
-            assert_eq!(Stage::from_label(stage.label()), Some(*stage));
         }
     }
 

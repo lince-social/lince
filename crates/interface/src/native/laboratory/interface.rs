@@ -56,6 +56,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     );
     crate::native::record_binding::laboratory_cases(&mut cases);
     crate::native::topology::presentation::tests::laboratory_cases(&mut cases);
+    crate::native::description::shader::extent::checks::laboratory_cases(&mut cases);
     cases
 }
 

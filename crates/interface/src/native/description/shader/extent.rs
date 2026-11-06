@@ -3,6 +3,8 @@ use crate::native::topology::surface_budget::{Entry, Grant, Request};
 
 #[cfg(test)]
 mod pressure;
+#[cfg(any(test, feature = "behavior-checks"))]
+pub(crate) mod checks;
 
 #[derive(Clone, Copy)]
 struct Consumer {
@@ -78,6 +80,9 @@ fn material_consumers(world: &mut World, native: &HashMap<Entity, (Request, u8)>
                 .collect()
         })
         .unwrap_or_default();
+    if images.is_empty() {
+        return;
+    }
     let consumers: Vec<_> = world
         .query::<(Entity, &SurfaceConsumer, Option<&Visibility>)>()
         .iter(world)
@@ -229,16 +234,19 @@ pub(crate) fn requests(
         consumers.epoch = epoch;
         consumers.entries = entries.iter().copied().collect();
     }
-    let window_scale = world
-        .query::<&Window>()
-        .iter(world)
-        .next()
-        .map_or(1.0, Window::scale_factor);
     let mut owners: Vec<_> = world
         .get_resource::<EffectAssets>()
         .map(|assets| assets.owned.keys().copied().collect())
         .unwrap_or_default();
     owners.sort_unstable_by_key(|entity| entity.to_bits());
+    if owners.is_empty() {
+        return Vec::new();
+    }
+    let window_scale = world
+        .query::<&Window>()
+        .iter(world)
+        .next()
+        .map_or(1.0, Window::scale_factor);
     owners
         .into_iter()
         .filter_map(|owner| {
@@ -637,17 +645,7 @@ mod tests {
         wait_usage(&mut app, 0);
     }
 
-    fn setup() -> (World, Entity) {
-        let mut world = World::new();
-        world.init_resource::<Assets<Font>>();
-        world.init_resource::<Assets<Shader>>();
-        world.init_resource::<Assets<ShaderMaterial>>();
-        world.init_resource::<Assets<Image>>();
-        world.init_resource::<crate::native::theme::Typography>();
-        let parent = world.spawn(Node::default()).id();
-        let source = effect(&mut world, parent, Effect::default(), Some("1".into()));
-        (world, source)
-    }
+    use super::checks::setup;
 
     #[test]
     fn windowless_consumers_resize_the_same_source_and_release_hidden_and_destroyed_targets() {

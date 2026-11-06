@@ -117,7 +117,15 @@ pub type StoreError = sqlx::Error;
 pub async fn write_tx(
     pool: &SqlitePool,
 ) -> Result<sqlx::Transaction<'static, sqlx::Sqlite>, StoreError> {
-    let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
+    let connection = {
+        let _acquire = nucleus::performance::Span::new("store-write-pool-acquire-await");
+        pool.acquire().await?
+    };
+    let mut tx = {
+        let _begin = nucleus::performance::Span::new("store-write-begin-await");
+        sqlx::Transaction::begin(connection, Some("BEGIN IMMEDIATE".into())).await?
+    };
+    let _sequence = nucleus::performance::Span::new("store-write-sequence-await");
     sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")
         .execute(&mut *tx)
         .await?;

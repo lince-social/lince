@@ -4,6 +4,11 @@ use sqlx::{Row, SqlitePool};
 
 pub const PAGE_SIZE: i64 = 100;
 
+const PRUNE_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT seconds FROM sync_history_policy WHERE id = 1) OR seq < (SELECT seq FROM sync_activity ORDER BY seq DESC LIMIT 1 OFFSET (SELECT max_entries - 1 FROM sync_history_policy WHERE id = 1))";
+
+#[cfg(test)]
+mod tests;
+
 pub async fn retention(pool: &SqlitePool) -> Result<Retention, StoreError> {
     let row = sqlx::query("SELECT seconds, max_entries FROM sync_history_policy WHERE id = 1")
         .fetch_one(pool)
@@ -80,9 +85,10 @@ async fn prune_tx(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     now: i64,
 ) -> Result<(), StoreError> {
-    sqlx::query("DELETE FROM sync_activity WHERE at <= ? - (SELECT seconds FROM sync_history_policy WHERE id = 1)
-        OR seq NOT IN (SELECT seq FROM sync_activity ORDER BY seq DESC LIMIT (SELECT max_entries FROM sync_history_policy WHERE id = 1))")
-        .bind(now).execute(&mut **tx).await?;
+    sqlx::query(PRUNE_QUERY)
+        .bind(now)
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 

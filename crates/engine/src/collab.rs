@@ -374,11 +374,17 @@ impl crate::Engine {
         version: &str,
     ) -> Result<Option<(String, String)>, EngineError> {
         let version = decode_version(version)?;
+        let waiting = crate::performance::Span::new("collab-delta-lock-wait");
         let _serial = self.import_lock.lock().await;
-        let doc = self.accepted_doc(uid).await?;
+        drop(waiting);
+        let doc = {
+            let _lookup = crate::performance::Span::new("collab-delta-document-await");
+            self.accepted_doc(uid).await?
+        };
         if doc.version() == version {
             return Ok(None);
         }
+        let _export = crate::performance::Span::new("collab-delta-export");
         Ok(Some((
             B64.encode(doc.export_updates(&version).map_err(refused)?),
             encode_version(&doc.version()),

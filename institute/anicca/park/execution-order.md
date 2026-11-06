@@ -30,6 +30,8 @@ P118 completed the measured local-owner dependency rejection: three edits now ex
 
 Completed P126 removes unrequested result preparation: metadata/body reads fall from 13 to one SQLx completion, with matched diagnostic metadata gains and mixed full-result/CPU controls retained in 00. P102 is next because native refresh still spends substantial time outside query execution; attribute sync-history/scheduling before selecting its fix. P149 follows current live attribution readiness: large unrequested body reads still leave roughly 30 ms in metadata, while small/log-heavy metadata is much cheaper. P66 remains the first live task when the current optimized traced session is available. Do not project these backend measurements onto external-client FPS.
 
+The latest P102 attribution assigns 93–99% of the non-query refresh remainder to awaited sync-history append, while collaboration costs 1–3 ms per three edits. Next separate encoding/begin/insert/prune/commit through the same optional observer. Whole-edit sync durations alone cannot assign the history cost or justify weakening durability. See refresh-attribution/receipt.json and 00; retain P149 as an independent supported read-cost opportunity.
+
 ## Pending tasks
 
 | Next | Task and full definition | Expected value / activation |

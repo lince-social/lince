@@ -123,6 +123,7 @@ impl Session {
     }
 
     pub async fn subject_may_act(&self) -> bool {
+        let _subject = engine::performance::Span::new("cell-subject-validation-await");
         if let Some(login) = &self.login {
             return login.require(&self.engine).await.is_ok();
         }
@@ -781,6 +782,7 @@ impl Session {
         for (id, protein) in self.subscriptions.clone() {
             out.extend(self.subscribe(id, protein).await);
         }
+        let _collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
         for record_uid in self.collab_records.clone() {
             if self
                 .engine
@@ -1043,6 +1045,7 @@ impl Session {
             return vec![session_expired()];
         }
         let mut out = Vec::new();
+        let collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
         if self.collab_records.contains(&fact.record_uid)
             && self
                 .engine
@@ -1054,6 +1057,7 @@ impl Session {
                 out.push(message);
             }
         }
+        drop(collaboration);
         for (id, protein) in &self.subscriptions {
             if !protein::affects(protein, fact, self.subject.as_deref()) {
                 continue;

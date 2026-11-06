@@ -2,6 +2,16 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## Native refresh remainder attributed on 2026-11-05
+
+P102 now separates existing Cell subject validation, collaboration lock/document/export, query work, sync-summary preparation and awaited history append through the same opt-in numeric reporter. Four private native binding/Cell/file-WAL-Full cases retain six relevant queries and six history rows per three edits, quiet unrelated subscriptions and exact cold reopen. Query/refresh/history totals are respectively 168/215/45, 108/296/186, 145/203/57 and 173/227/50 ms for small head/body and large head/body edits. History append accounts for 93–99% of the non-query refresh remainder; collaboration totals 1–3 ms, with negligible measured import-lock waiting. The residual after these serial phases is 0.6–1.1 ms. These are elapsed diagnostic observations, not on-CPU accounting or a baseline/candidate speedup comparison.
+
+Separate strace controls with zero/one/eight subscriptions pass exact reopen and expected query/history/update counts. Their three-edit windows contain 12/16/21 successful fsync calls totaling approximately 50/74/83 ms of syscall duration. These whole-edit totals include recovery and canonical writes as well as history; they do not assign those sync calls to history or isolate SQL/pool/scheduler waiting. A zero-subscription runner initially incorrectly required an absent sync-service phase after its child passed; the optional-zero assertion was corrected, all three controls repeated, and the initial data retained.
+
+Check and test compilation pass without warnings. The common eight-case native suite passes with Protein Area Add filter first; 21 binding, five monitor/privacy, seven sync-service and 46 document-guard checks pass. P102 remains open: next separate history encoding, begin/acquisition, insert, retention pruning and commit before choosing a fix. Required history ordering, errors, cancellation and durability must remain intact. Current optimized desktop attribution, per-edit CPU/causal publication, actual GPU text paint and formal rule mapping remain unverified.
+
+Receipt, frozen source hashes/patch, executables, raw observations and syscall summaries: target/park-validation/performance-20261105/refresh-attribution/receipt.json. No release build, installation, session restart or Actions polling was performed.
+
 ## Demand-aware Record result projection completed on 2026-11-05
 
 P126's selected-field projection experiment is complete and kept. Record queries load localized names only for named fields/links/relation context, work metadata only for requested work/date fields, and canonical sorting names only when the sort consumes them. Plain metadata queries skip the derived-schema pass. Base JSON constructs requested fields while retaining uid/kind and the existing property order. Work logs are borrowed for calculation and cloned once when requested for output; elapsed-time calculation runs only when requested. Selection, filtering, source visibility, permission checks, full-record loading and relevant sync history remain in their existing paths. No scheduler, cache, permission shortcut or setting was added.

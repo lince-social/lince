@@ -61,21 +61,28 @@ impl SyncService {
         work: impl Future<Output = Result<T, E>>,
         summarize: impl FnOnce(&T) -> Summary,
     ) -> Result<T, E> {
+        let _service = crate::performance::Span::new("sync-service-await");
         let id = nucleus::new_uid("sync");
         self.running
             .lock()
             .unwrap()
             .insert(id.clone(), activity.clone());
         let _running = Running { service: self, id };
-        let result = work.await;
-        let summary = match &result {
-            Ok(value) => summarize(value),
-            Err(error) => Summary {
-                outcome: Outcome::Failed,
-                count: 0,
-                subjects: Vec::new(),
-                message: Some(error.to_string()),
-            },
+        let result = {
+            let _work = crate::performance::Span::new("sync-work-await");
+            work.await
+        };
+        let summary = {
+            let _summary = crate::performance::Span::new("sync-summary");
+            match &result {
+                Ok(value) => summarize(value),
+                Err(error) => Summary {
+                    outcome: Outcome::Failed,
+                    count: 0,
+                    subjects: Vec::new(),
+                    message: Some(error.to_string()),
+                },
+            }
         };
         if summary.count > 0
             || matches!(
@@ -83,6 +90,7 @@ impl SyncService {
                 Outcome::Failed | Outcome::Conflict | Outcome::Refreshed
             )
         {
+            let _history = crate::performance::Span::new("sync-history-append-await");
             if let Err(error) = store::sync_activity::append(
                 &store.pool,
                 &activity,

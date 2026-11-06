@@ -111,6 +111,15 @@ stages! {
     RecordReact => "record-reactions-await",
     CellQuery => "cell-query-execute-await",
     CellRefresh => "cell-refresh-await",
+    CellSubjectValidation => "cell-subject-validation-await",
+    CellRefreshCollaboration => "cell-refresh-collaboration-await",
+    CollabDeltaLockWait => "collab-delta-lock-wait",
+    CollabDeltaDocument => "collab-delta-document-await",
+    CollabDeltaExport => "collab-delta-export",
+    SyncService => "sync-service-await",
+    SyncWork => "sync-work-await",
+    SyncSummary => "sync-summary",
+    SyncHistoryAppend => "sync-history-append-await",
     RecordBindingPublish => "record-binding-publish",
     NativeSurfaceFingerprint => "native-surface-fingerprint",
     NativeExtraction => "native-extraction",
@@ -727,6 +736,9 @@ pub mod checks {
                 Count::from_label(counter.label()).map(|value| value as usize),
                 Some(*counter as usize)
             );
+        }
+        for stage in Stage::ALL {
+            assert_eq!(Stage::from_label(stage.label()), Some(*stage));
         }
     }
 

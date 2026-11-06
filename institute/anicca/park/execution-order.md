@@ -12,7 +12,7 @@ The initial order prioritizes input blocking and local edit amplification, then 
 
 P103 completed identity/specifications ([workloads.json](workloads.json), receipt in 00); P101 completed the input correlation and controlled private pixel checks; P102 adds only missing local-edit/save causal signals and reuses the reporter. P66 consumes that evidence without waiting for every profiler audit to finish. Do not spend the entire first round building observability infrastructure if the current tools already reveal a dominant blocker.
 
-P60 precedes its dependent P61 split/batch work; P62 needs a coherent handoff, not a blind pipeline flag. P67/P70 feed processor/wait experiments. P36 feeds source-wake changes. P109 precedes style representation changes, P78 precedes dirty-consumer application, and P113 supplies the proven boundary for P122. P102 feeds the local-save experiments; P138 analysis constrains P139. A missing dependency is promoted only as far as needed to make the best candidate executable. A conditional premise that is absent is documented and deferred; it does not block the queue.
+P60 precedes its dependent P61 split/batch work; P62 needs a coherent handoff, not a blind pipeline flag. P67/P70 feed processor/wait experiments. P36 feeds source-wake changes. P109 precedes style representation changes, P78 precedes dirty-consumer application, and P113 supplies the proven boundary for P122. P150 removes proven global allocator-statistics contention; its mixed native controls and durable-I/O follow-up promote P116/P117. P102 feeds the local-save experiments; P138 analysis constrains P139. A missing dependency is promoted only as far as needed to make the best candidate executable. A conditional premise that is absent is documented and deferred; it does not block the queue.
 
 P124 inventories the shared feature paths and feeds cost/coverage work. P49 precedes reuse in P84. P86 identifies the concrete obsolete/duplicate/dependency candidate for P87–P90/P92. P93/P104 are promoted when the existing runner/catalogue genuinely blocks the selected experiment; they are not a reason to rewrite tooling before making a useful fix. P134 needs the fixture/inventory and existing case integration. P135 checks combinations at meaningful integration points; final acceptance uses the installed optimized candidate. Compiler experiments retain their own fixed-profile dependencies and use the established release workflow when selected.
 
@@ -36,56 +36,56 @@ P149 is complete: typed partial reads and append-only body layout migration remo
 | --- | --- | --- |
 | 1 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Rank the actual largest causes and immediately update this queue. |
 | 2 | [P102 — Trace one local Record edit through durability and view publication.](01-measurement.md) | Reuse completed backend phases; close causal publication/CPU/wait gaps and justify a safe writer/commit reduction. |
-| 3 | [P43 — Bound input waiting behind the longest native work section.](02-input-and-scheduling.md) | Remove a measured input wait shared by everyday interactions. |
-| 4 | [P105 — Remove the longest unrelated dependency from native text feedback.](02-input-and-scheduling.md) | Make native text feedback independent of unrelated expensive work. |
-| 5 | [P106 — Bound one busy queue drain so control input remains serviceable.](02-input-and-scheduling.md) | Prevent one bulk drain from starving current input/control. |
-| 6 | [P94 — Identify the cause of the database-locked toast.](03-local-edits-and-storage.md) | Promote on actual database-lock errors; otherwise defer missing reproduction. |
-| 7 | [P137 — Remove one document-sized cost from canonical text mutation preparation.](03-local-edits-and-storage.md) | Potential document-sized canonical work per small edit. |
-| 8 | [P138 — Shorten the engine-wide access gate without weakening operation validity.](03-local-edits-and-storage.md) | Potential engine-wide serialization of otherwise unrelated work. |
-| 9 | [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](03-local-edits-and-storage.md) | Potential rules/effects on the local-save acknowledgement path. |
-| 10 | [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](03-local-edits-and-storage.md) | Potential long Cell request blocking every local request. |
-| 11 | [P117 — Shorten the measured SQL transaction critical section for an edit.](03-local-edits-and-storage.md) | Shorten measured SQL acquire/hold/commit delay. |
-| 12 | [P119 — Update a description preview incrementally while typing.](03-local-edits-and-storage.md) | Avoid complete description-tree reconstruction while typing. |
-| 13 | [P67 — Map CPU/GPU responsibilities across the active frame path.](01-measurement.md) | Promote immediately if processor placement, transfers or waits dominate. |
-| 14 | [P70 — Observe GPU execution separately from submission/completion age.](01-measurement.md) | Promote only where missing actual GPU timing prevents a causal choice. |
-| 15 | [P60 — Split the highest-cost exclusive system into derivation and application.](02-input-and-scheduling.md) | Largest currently evidenced exclusive surface-preparation candidate. |
-| 16 | [P61 — Parallelize one sufficiently expensive independent batch.](02-input-and-scheduling.md) | Exploit expensive independent work after the split proves its boundary. |
-| 17 | [P62 — Test coherent main/render overlap.](02-input-and-scheduling.md) | Potential large main/render overlap; include input age and handoff costs. |
-| 18 | [P72 — Remove one avoidable foreground GPU-completion wait.](02-input-and-scheduling.md) | Promote a proven foreground GPU wait; safe readiness already exists. |
-| 19 | [P68 — Compare processor placement for one evidenced misplaced stage.](06-gpu-and-outputs.md) | Move the evidenced misplaced work, including all transfer/wait costs. |
-| 20 | [P107 — Stop preparing one superseded unsubmitted native frame.](02-input-and-scheduling.md) | Stop expensive work on superseded unsubmitted frames. |
-| 21 | [P58 — Compare one versus two frames in flight at the actual bottleneck.](02-input-and-scheduling.md) | Compare bounded overlap after the actual bottleneck is known. |
-| 22 | [P113 — Separate one broad frame invalidation into its real dependency domains.](04-style-layout-and-retention.md) | Separate real dependency domains to avoid repeated whole-frame work. |
-| 23 | [P122 — Resolve only the layout root affected by one ordinary edit.](04-style-layout-and-retention.md) | Solve only the affected constraint closure instead of unrelated layout. |
-| 24 | [P36 — Attribute the remaining native wake stream.](01-measurement.md) | Promote if excess wakes keep the whole native path active. |
-| 25 | [P47 — Remove the worst remaining redundant source wake.](02-input-and-scheduling.md) | Remove the largest attributed redundant source wake. |
-| 26 | [P108 — Replace the editor binding heartbeat with actual readiness and deadlines.](02-input-and-scheduling.md) | Concrete focused-editor heartbeat/readiness candidate. |
-| 27 | [P48 — Define one safe hidden-subtree presentation-demand boundary.](04-style-layout-and-retention.md) | Stop proven unneeded hidden presentation while retaining semantics. |
-| 28 | [P124 — Complete the source-to-workflow inventory for active interface features.](05-feature-costs-and-scaling.md) | Map actual reachable features/owners and the next costly family. |
-| 29 | [P77 — Gate presentation work for one feature family with no live views.](05-feature-costs-and-scaling.md) | Prevent absent views from triggering presentation work. |
-| 30 | [P49 — Virtualize one measured large Record-result list.](05-feature-costs-and-scaling.md) | Make a large result list scale with visible rows. |
-| 31 | [P125 — Retain one costly settings or property panel across ordinary edits.](05-feature-costs-and-scaling.md) | Keep expensive panels/controls instead of repeated reconstruction. |
-| 32 | [P74 — Test a translation-only canvas-pan path.](04-style-layout-and-retention.md) | Retain unchanged content during canvas pan. |
-| 33 | [P75 — Test transform retention during an ordinary item drag.](04-style-layout-and-retention.md) | Retain unchanged content during ordinary item drag. |
-| 34 | [P76 — Test scrolling through one retained presentation transform.](04-style-layout-and-retention.md) | Retain children under one scroll transform. |
-| 35 | [P109 — Measure the read-heavy styling cost before choosing its representation.](04-style-layout-and-retention.md) | Establish actual style read/write cost and reassess rare-write gains. |
-| 36 | [P78 — Narrow one overly broad style or layout invalidation.](04-style-layout-and-retention.md) | Narrow invalidation rather than clearing unrelated style/layout work. |
-| 37 | [P111 — Apply resolved styles only to affected consumers.](04-style-layout-and-retention.md) | Avoid scanning/applying unchanged consumers. |
-| 38 | [P110 — Compare a compact resolved-style read representation.](04-style-layout-and-retention.md) | Make the remaining frequent resolved reads compact and cheap. |
-| 39 | [P112 — Publish expensive style edits as one coherent revision.](04-style-layout-and-retention.md) | Only if read optimization makes style writes too costly/incoherent. |
-| 40 | [P51 — Reduce validation work in the existing native-surface cache.](04-style-layout-and-retention.md) | Avoid expensive validation walks when retaining a raster. |
-| 41 | [P80 — Distinguish texture capability from actual texture updates.](04-style-layout-and-retention.md) | Do not mistake texture capabilities for new pixels. |
-| 42 | [P52 — Retain damage independently for each output.](06-gpu-and-outputs.md) | Avoid forcing the quiet monitor to recomposite. |
-| 43 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | Fix output pacing/callback churn where measured. |
-| 44 | [P55 — Remove one measured redundant render pass or copy.](06-gpu-and-outputs.md) | Remove a demonstrated redundant render pass or transfer. |
-| 45 | [P81 — Retain compatible incoming DMA-BUF import bindings.](06-gpu-and-outputs.md) | Retain actual compatible DMA-BUF imports safely. |
-| 46 | [P54 — Reuse compatible exported/output resources within a bounded budget.](06-gpu-and-outputs.md) | Reuse compatible output resources instead of allocating repeatedly. |
-| 47 | [P56 — Improve one demonstrated draw/upload batching break.](06-gpu-and-outputs.md) | Repair the measured draw/upload batching break. |
-| 48 | [P59 — Reduce measured raster-resolution churn during navigation.](06-gpu-and-outputs.md) | Avoid navigation-time raster replacement churn. |
-| 49 | [P63 — Limit one background job family that delays visible work.](02-input-and-scheduling.md) | Promote on demonstrated background contention with foreground work. |
-| 50 | [P83 — Move one remaining blocking foreground operation off the interaction path.](02-input-and-scheduling.md) | Promote a remaining dominant blocking operation beyond named paths. |
-| 51 | [P73 — Test asynchronous preparation of a stalling shader pipeline.](02-input-and-scheduling.md) | Promote on a traced cold pipeline-compilation freeze. |
-| 52 | [P116 — Amortize one stream of local edit commits without delaying feedback.](03-local-edits-and-storage.md) | Amortize residual commits within the local-durability budget. |
+| 3 | [P116 — Amortize one stream of local edit commits without delaying feedback.](03-local-edits-and-storage.md) | P102 syscall follow-up finds 16/17 sync calls for three edits and up to 610 ms in actual durable I/O; reduce safe boundaries, preserving honest recovery/history. |
+| 4 | [P117 — Shorten the measured SQL transaction critical section for an edit.](03-local-edits-and-storage.md) | Attribute remaining transaction/acquire/hold/commit waits after allocator contention removal; preserve FULL durability and exact authorization/publication. |
+| 5 | [P43 — Bound input waiting behind the longest native work section.](02-input-and-scheduling.md) | Remove a measured input wait shared by everyday interactions. |
+| 6 | [P105 — Remove the longest unrelated dependency from native text feedback.](02-input-and-scheduling.md) | Make native text feedback independent of unrelated expensive work. |
+| 7 | [P106 — Bound one busy queue drain so control input remains serviceable.](02-input-and-scheduling.md) | Prevent one bulk drain from starving current input/control. |
+| 8 | [P94 — Identify the cause of the database-locked toast.](03-local-edits-and-storage.md) | Promote on actual database-lock errors; otherwise defer missing reproduction. |
+| 9 | [P137 — Remove one document-sized cost from canonical text mutation preparation.](03-local-edits-and-storage.md) | Potential document-sized canonical work per small edit. |
+| 10 | [P138 — Shorten the engine-wide access gate without weakening operation validity.](03-local-edits-and-storage.md) | Potential engine-wide serialization of otherwise unrelated work. |
+| 11 | [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](03-local-edits-and-storage.md) | Potential rules/effects on the local-save acknowledgement path. |
+| 12 | [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](03-local-edits-and-storage.md) | Potential long Cell request blocking every local request. |
+| 13 | [P119 — Update a description preview incrementally while typing.](03-local-edits-and-storage.md) | Avoid complete description-tree reconstruction while typing. |
+| 14 | [P67 — Map CPU/GPU responsibilities across the active frame path.](01-measurement.md) | Promote immediately if processor placement, transfers or waits dominate. |
+| 15 | [P70 — Observe GPU execution separately from submission/completion age.](01-measurement.md) | Promote only where missing actual GPU timing prevents a causal choice. |
+| 16 | [P60 — Split the highest-cost exclusive system into derivation and application.](02-input-and-scheduling.md) | Largest currently evidenced exclusive surface-preparation candidate. |
+| 17 | [P61 — Parallelize one sufficiently expensive independent batch.](02-input-and-scheduling.md) | Exploit expensive independent work after the split proves its boundary. |
+| 18 | [P62 — Test coherent main/render overlap.](02-input-and-scheduling.md) | Potential large main/render overlap; include input age and handoff costs. |
+| 19 | [P72 — Remove one avoidable foreground GPU-completion wait.](02-input-and-scheduling.md) | Promote a proven foreground GPU wait; safe readiness already exists. |
+| 20 | [P68 — Compare processor placement for one evidenced misplaced stage.](06-gpu-and-outputs.md) | Move the evidenced misplaced work, including all transfer/wait costs. |
+| 21 | [P107 — Stop preparing one superseded unsubmitted native frame.](02-input-and-scheduling.md) | Stop expensive work on superseded unsubmitted frames. |
+| 22 | [P58 — Compare one versus two frames in flight at the actual bottleneck.](02-input-and-scheduling.md) | Compare bounded overlap after the actual bottleneck is known. |
+| 23 | [P113 — Separate one broad frame invalidation into its real dependency domains.](04-style-layout-and-retention.md) | Separate real dependency domains to avoid repeated whole-frame work. |
+| 24 | [P122 — Resolve only the layout root affected by one ordinary edit.](04-style-layout-and-retention.md) | Solve only the affected constraint closure instead of unrelated layout. |
+| 25 | [P36 — Attribute the remaining native wake stream.](01-measurement.md) | Promote if excess wakes keep the whole native path active. |
+| 26 | [P47 — Remove the worst remaining redundant source wake.](02-input-and-scheduling.md) | Remove the largest attributed redundant source wake. |
+| 27 | [P108 — Replace the editor binding heartbeat with actual readiness and deadlines.](02-input-and-scheduling.md) | Concrete focused-editor heartbeat/readiness candidate. |
+| 28 | [P48 — Define one safe hidden-subtree presentation-demand boundary.](04-style-layout-and-retention.md) | Stop proven unneeded hidden presentation while retaining semantics. |
+| 29 | [P124 — Complete the source-to-workflow inventory for active interface features.](05-feature-costs-and-scaling.md) | Map actual reachable features/owners and the next costly family. |
+| 30 | [P77 — Gate presentation work for one feature family with no live views.](05-feature-costs-and-scaling.md) | Prevent absent views from triggering presentation work. |
+| 31 | [P49 — Virtualize one measured large Record-result list.](05-feature-costs-and-scaling.md) | Make a large result list scale with visible rows. |
+| 32 | [P125 — Retain one costly settings or property panel across ordinary edits.](05-feature-costs-and-scaling.md) | Keep expensive panels/controls instead of repeated reconstruction. |
+| 33 | [P74 — Test a translation-only canvas-pan path.](04-style-layout-and-retention.md) | Retain unchanged content during canvas pan. |
+| 34 | [P75 — Test transform retention during an ordinary item drag.](04-style-layout-and-retention.md) | Retain unchanged content during ordinary item drag. |
+| 35 | [P76 — Test scrolling through one retained presentation transform.](04-style-layout-and-retention.md) | Retain children under one scroll transform. |
+| 36 | [P109 — Measure the read-heavy styling cost before choosing its representation.](04-style-layout-and-retention.md) | Establish actual style read/write cost and reassess rare-write gains. |
+| 37 | [P78 — Narrow one overly broad style or layout invalidation.](04-style-layout-and-retention.md) | Narrow invalidation rather than clearing unrelated style/layout work. |
+| 38 | [P111 — Apply resolved styles only to affected consumers.](04-style-layout-and-retention.md) | Avoid scanning/applying unchanged consumers. |
+| 39 | [P110 — Compare a compact resolved-style read representation.](04-style-layout-and-retention.md) | Make the remaining frequent resolved reads compact and cheap. |
+| 40 | [P112 — Publish expensive style edits as one coherent revision.](04-style-layout-and-retention.md) | Only if read optimization makes style writes too costly/incoherent. |
+| 41 | [P51 — Reduce validation work in the existing native-surface cache.](04-style-layout-and-retention.md) | Avoid expensive validation walks when retaining a raster. |
+| 42 | [P80 — Distinguish texture capability from actual texture updates.](04-style-layout-and-retention.md) | Do not mistake texture capabilities for new pixels. |
+| 43 | [P52 — Retain damage independently for each output.](06-gpu-and-outputs.md) | Avoid forcing the quiet monitor to recomposite. |
+| 44 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | Fix output pacing/callback churn where measured. |
+| 45 | [P55 — Remove one measured redundant render pass or copy.](06-gpu-and-outputs.md) | Remove a demonstrated redundant render pass or transfer. |
+| 46 | [P81 — Retain compatible incoming DMA-BUF import bindings.](06-gpu-and-outputs.md) | Retain actual compatible DMA-BUF imports safely. |
+| 47 | [P54 — Reuse compatible exported/output resources within a bounded budget.](06-gpu-and-outputs.md) | Reuse compatible output resources instead of allocating repeatedly. |
+| 48 | [P56 — Improve one demonstrated draw/upload batching break.](06-gpu-and-outputs.md) | Repair the measured draw/upload batching break. |
+| 49 | [P59 — Reduce measured raster-resolution churn during navigation.](06-gpu-and-outputs.md) | Avoid navigation-time raster replacement churn. |
+| 50 | [P63 — Limit one background job family that delays visible work.](02-input-and-scheduling.md) | Promote on demonstrated background contention with foreground work. |
+| 51 | [P83 — Move one remaining blocking foreground operation off the interaction path.](02-input-and-scheduling.md) | Promote a remaining dominant blocking operation beyond named paths. |
+| 52 | [P73 — Test asynchronous preparation of a stalling shader pipeline.](02-input-and-scheduling.md) | Promote on a traced cold pipeline-compilation freeze. |
 | 53 | [P120 — Eliminate one proven no-op edit write and its downstream publication.](03-local-edits-and-storage.md) | A cheap no-op write/publication elimination can be a useful nearby win. |
 | 54 | [P128 — Keep terminal or Command output from monopolizing interface work.](05-feature-costs-and-scaling.md) | Promote when terminal/Command streams cause current input lag. |
 | 55 | [P127 — Remove one blocking preparation step from opening a native view.](05-feature-costs-and-scaling.md) | Promote a measured cold/warm opening stall. |

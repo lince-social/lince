@@ -2,6 +2,41 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## SQLite allocator-statistics contention removed on 2026-11-06
+
+P150 disables unused process-global SQLite allocator bookkeeping through the shared Cargo setting `LIBSQLITE3_FLAGS = "SQLITE_DEFAULT_MEMSTATUS=0"`. No runtime reconfiguration, new dependency, thread, cache, pool-size change or schema change is introduced. SQLite remains thread safe, with the ordinary allocator, foreign keys, WAL and FULL durability. The existing initial/replacement-connection regression now verifies the actual compiled option and `THREADSAFE=1`. Lince and its SQLx sources have no consumers of the disabled global statistics or their dependent soft/hard heap-limit APIs. Per-connection statistics and OS accounting remain available. This is a deliberate loss of unused global diagnostics/heap-limit capability, not removal of an existing application memory budget.
+
+[SQLite's allocator documentation](https://www.sqlite.org/malloc.html#memory_status) explains that global memory accounting serializes allocations with a mutex; per-connection statistics do not need that global lock. Its [compile-option guidance](https://www.sqlite.org/compile.html#default_memstatus) supports disabling this accounting. Thread-safety and synchronous-durability options are separate and remain unchanged. Cargo's bundled-library build tracks changes in the flag; Nix source packaging retains `.cargo`, and both Linux/Android cache identities already hash this configuration. Cross-target builds were not executed.
+
+The new P102 private diagnostic found first-refresh queries near 0.5 s with new SQLite workers consuming substantial CPU. Actual running-session sampling and then private-child sampling were denied by OS policy; no permission-equivalent sampling workaround or security-setting change was attempted. An independent child probe instead used the exact bundled SQLite 3.46.0 source and flags, the synthetic Lince schema (342 tables, 1,510 triggers, including 969 generated projection triggers), and an optimized `-O3` build. Only memory accounting changes between samples; thread safety stays enabled. The ABBA controls have ten observations per variant/worker count and no concurrent compilation. These are database-library measurements, not optimized Park or desktop percentages.
+
+| Independent connections | Open/query/close wall / process CPU, accounting on | Accounting off | Query-ready wall, on → off |
+| --- | --- | --- | --- |
+| 1 | 33.945 / 33.444 ms | 32.542 / 32.318 ms | 28.548 → 25.548 ms |
+| 2 | 117.635 / 217.126 ms | 31.902 / 62.318 ms | 93.796 → 25.256 ms |
+| 4 | 304.627 / 913.127 ms | 50.664 / 174.310 ms | 252.129 → 41.318 ms |
+
+Warm prepared-query controls exclude schema setup, statement preparation and connection cleanup. Four workers executing 2,000 metadata reads each take 46.180 / 153.556 ms wall/CPU with accounting and 38.322 / 129.777 ms without it; two workers take 22.326 / 41.928 → 17.159 / 32.003 ms. The one-worker control is approximately unchanged. Keep the large proven parallel-allocation saving and smaller warm-query saving without extrapolating their percentages to the desktop.
+
+The preserved P149 native executable and the candidate differ only in this build setting and the added durability-test assertions; production Rust/SQL source is identical. Thirty-two tracing-off, file-backed native binding/Cell runs cover title/body edits at requested body sizes of 1 KiB with one view/no queries, and 1 KiB/64 KiB/1 MiB with eight views/eight subscriptions, in ABBA order. All 96 edits and 32 exact durable reopens pass; both affected queries refresh three times, the six unrelated queries stay quiet, and all six required history rows remain. One-view/no-query runs have zero history rows. This is the deterministic high-entropy adapter, not the complete paragraph S4 workload or physical presentation. Each table cell is a median of two run-level observations; warm values pool four edits. Native builds are unoptimized and process CPU is quantized to 10 ms.
+
+| Eight-view body size / edited field | First settled refresh, baseline → candidate | Subsequent settled refresh, baseline → candidate |
+| --- | --- | --- |
+| 1 KiB / title | 168.347 → 127.157 ms | 55.127 → 50.425 ms |
+| 1 KiB / body | 216.178 → 127.510 ms | 53.769 → 57.784 ms |
+| 64 KiB / title | 164.899 → 192.540 ms | 53.569 → 152.360 ms |
+| 64 KiB / body | 153.989 → 127.494 ms | 58.679 → 65.816 ms |
+| 1 MiB / title | 453.053 → 296.651 ms | 283.695 → 200.720 ms |
+| 1 MiB / body | 496.980 → 410.895 ms | 247.568 → 259.792 ms |
+
+The one-view controls are mixed/small: title settled medians 40.356 → 43.624 ms and body 38.822 → 29.743 ms. Keep all controls and the slower 64 KiB/title result; do not claim every save is faster. Immediate title echo remains around 1–2 ms; eight-view 1 MiB body echo remains about 33–34 ms. Canonical acknowledgement, refresh and physical output are separate from echo.
+
+A targeted four-run straced 64 KiB/title follow-up investigates the large tail without replacing the tracing-off observations. One candidate's 17 nonoverlapping sync calls total 609.55 ms, maximum 84.27 ms, compared with 53.06–64.35 ms across 16/17 calls in the other runs. Each run contains exactly 15 WAL sync calls across three edits, with one/two additional negligible directory syncs; classify their draft/canonical/history ownership before treating calls as transaction counts. Its query-execution sum is 118.37 ms; the first baseline is 426.89 ms and the other candidate 110.24 ms. These are nested asynchronous stage sums, not additive CPU or exclusive latency. The follow-up demonstrates material durable-I/O waits; it does not establish why device latency varied or prove all slow controls harmless. P102/P116/P117 retain attribution and safe write-boundary reduction, preserving FULL durability, recovery, permissions and required history/publication. Do not merely debounce ordinary input when only bursts benefit.
+
+Verification: Store check plus Store/Engine/native test compilation and native check have zero compiler warnings/errors; 69 selected Store cases and 54 Engine access/dependency cases pass. Four Store failures exactly match the frozen pre-change names and normalized panic diagnostics; they remain failures. The common native suite passes all eight cases with the Protein Add filter case first. Seven CI cache-identity tests and owned-file formatting/diff checks pass. P140's full rule mapping and P146's actual GPU glyph-paint proof remain open; CPU layout/glyph-atlas checks are not physical text-paint acceptance. No local release build, real database mutation, session restart, Actions query or physical FPS/input acceptance was performed.
+
+Receipt: /home/user/.local/state/lince/park-validation/performance-20261106/edit-attribution/memstatus-receipt.json. Build/source/C-probe hashes and capability audit are in memstatus-provenance.json; immutable candidate and check/test records are under memstatus-validation/. Raw native controls and summaries are under memstatus-comparison-20261106T141444Z/; the completed syscall follow-up is memstatus-followup-20261106T141950Z/. Incomplete wrapper attempts are excluded from result counts. The running 204b94b6 session does not contain P149/P150, so installed optimized impact remains a later gate.
+
 ## Metadata storage reads completed on 2026-11-06
 
 P149 removes unrequested bodies from Record reads using an explicit unloaded/full representation and dependencies from fields, filters, ordering and includes. Complete public reads still return full bodies; an omitted body cannot become a canonical empty description. Text filters, body/description sorting and unknown dependencies retain full reads. UID-only permission matching uses the same pipeline with fresh visibility and role policies.

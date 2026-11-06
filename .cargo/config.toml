@@ -7,6 +7,7 @@ rustflags = [
 ]
 
 [env]
+LIBSQLITE3_FLAGS = "SQLITE_DEFAULT_MEMSTATUS=0"
 ANDROID_HOME = { value = ".cache-lince-android/sdk", relative = true }
 ANDROID_USER_HOME = { value = ".cache-lince-android/user", relative = true }
 ANDROID_AVD_HOME = { value = ".cache-lince-android/avd", relative = true }

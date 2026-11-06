@@ -10,6 +10,13 @@ fn temp_store(name: &str) -> (std::path::PathBuf, String) {
 }
 
 async fn assert_durable_settings(connection: &mut store::sqlx::SqliteConnection) {
+    let (memory_statistics_disabled, thread_safety_enabled): (i64, i64) = store::sqlx::query_as(
+        "SELECT sqlite_compileoption_used('DEFAULT_MEMSTATUS=0'),
+                sqlite_compileoption_used('THREADSAFE=1')",
+    )
+    .fetch_one(&mut *connection)
+    .await
+    .unwrap();
     let foreign_keys: i64 = store::sqlx::query_scalar("PRAGMA foreign_keys")
         .fetch_one(&mut *connection)
         .await
@@ -27,6 +34,8 @@ async fn assert_durable_settings(connection: &mut store::sqlx::SqliteConnection)
         .await
         .unwrap();
 
+    assert_eq!(memory_statistics_disabled, 1);
+    assert_eq!(thread_safety_enabled, 1);
     assert_eq!(foreign_keys, 1);
     assert_eq!(journal_mode, "wal");
     assert_eq!(synchronous, 2);

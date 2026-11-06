@@ -122,6 +122,8 @@ pub(crate) struct VulkanRenderer {
 }
 
 pub(crate) struct GpuContext {
+    #[cfg(all(test, feature = "native-presentation"))]
+    export_timestamps: Option<Arc<import::tests::timestamps::ExportTimestamps>>,
     completion: completion::Driver,
     pub(crate) _instance: wgpu::Instance,
     pub(crate) adapter: wgpu::Adapter,
@@ -306,6 +308,8 @@ impl VulkanRenderer {
             #[cfg(feature = "native-presentation")]
             reactor,
             gpu: Arc::new(GpuContext {
+                #[cfg(all(test, feature = "native-presentation"))]
+                export_timestamps: None,
                 completion: completion::Driver::new(device.clone())?,
                 _instance: instance,
                 adapter,

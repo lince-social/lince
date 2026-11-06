@@ -402,6 +402,8 @@ impl GpuContext {
         let submission = self.queue.submit(commands);
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-submit", started);
+        #[cfg(all(test, feature = "native-presentation"))]
+        let retained = (retained, self.export_timestamps.clone());
         self.retain(retained);
         self.completion.track(submission)
     }
@@ -504,6 +506,10 @@ impl GpuContext {
                 let encoder = encoder
                     .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
                 let command = encoder.raw_handle();
+                #[cfg(all(test, feature = "native-presentation"))]
+                let timestamp = self.export_timestamps.as_ref()
+                    .map(|timestamps| timestamps.begin(command))
+                    .transpose()?;
                 let range = vk::ImageSubresourceRange::default()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
                     .level_count(1)
@@ -560,6 +566,10 @@ impl GpuContext {
                     &[],
                     &[release],
                 );
+                #[cfg(all(test, feature = "native-presentation"))]
+                if let (Some(timestamps), Some(query)) = (&self.export_timestamps, timestamp) {
+                    timestamps.end(command, query);
+                }
                 Ok::<_, ProbeFailure>(())
             })?;
         }
@@ -616,6 +626,8 @@ pub(super) mod tests {
 
     #[cfg(feature = "native-presentation")]
     pub(in crate::graphics) mod batches;
+    #[cfg(feature = "native-presentation")]
+    pub(in crate::graphics) mod timestamps;
 
     #[test]
     fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats() {

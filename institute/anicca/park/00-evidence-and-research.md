@@ -2,6 +2,33 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## P70: actual export hardware intervals on 2026-11-06
+
+A bounded ignored hardware test now brackets the existing raw Vulkan export initialization, image copy and external queue-family release. The hook and query pool exist only in test builds; production commands, source-initialization pass, submission/completion grouping and image ownership are unchanged. The pool has 512 slots, reserves each pair once, resets it on the GPU and is retained with the originating device through the existing submitted-work completion callback. Host results require availability after export completion and use no query WAIT flag. Unsupported queue precision/period or unavailable results fail explicitly. The delta guard covers unused high bits and queue-counter wrap, including 64-bit wrap.
+
+The Intel Iris Xe Vulkan queue reports 36 valid timestamp bits and approximately 52.083 ns per tick. This conversion and the query reset/availability/stage semantics follow the [Khronos query specification](https://docs.vulkan.org/spec/latest/chapters/queries.html). TOP before initialization through BOTTOM after release measures device elapsed time including dependencies/contention, not a pure-copy busy-time counter. Per-output intervals can overlap. CPU/device clocks are not calibrated; host submission, completion age and device intervals have different boundaries and are not an additive utilization decomposition.
+
+The private unoptimized fixture uses flat synthetic RGBA16F source pixels at 1366×768 and, in the two-output case, 1920×1080 as well. Each output count runs off/on/on/off blocks, four excluded warmups then 24 recorded observations per block: 192 warmed samples total, including 96 timed samples and 336 available hardware queries with warmups. This exercises actual production export commands, not native scene rendering, client video, GLES composition or DRM scanout. Compilation and GPU measurement do not overlap.
+
+| Outputs / block | Host export return wall / owner CPU | Host export through observed completion | Hardware export interval median / p95 |
+| --- | ---: | ---: | ---: |
+| Laptop / first off | 2.505 / 2.493 ms | 4.171 ms | unavailable by design |
+| Laptop / first on | 2.783 / 2.763 ms | 5.871 ms | 1.232 / 3.566 ms |
+| Laptop / second on | 2.045 / 2.031 ms | 4.635 ms | 0.968 / 3.564 ms |
+| Laptop / last off | 2.283 / 2.269 ms | 4.199 ms | unavailable by design |
+| Both / first off | 5.805 / 5.734 ms | 9.625 ms | unavailable by design |
+| Both / first on | 4.449 / 4.387 ms | 8.173 ms | 1.578 / 8.294 ms |
+| Both / second on | 4.354 / 4.233 ms | 8.446 ms | 1.515 / 8.289 ms |
+| Both / last off | 5.514 / 5.444 ms | 9.994 ms | unavailable by design |
+
+These are not optimized desktop timings or a new performance win. Timing-on/off direction varies by block and output count; shared desktop contention, allocation history and thermals remain uncontrolled. Completed query reads cost about 49–61 microseconds median outside the reported host completion interval. Keep overhead visible rather than claiming a clean calibrated cost from this run. The device tails matter: about 8.3 ms p95 for both outputs is material even though their median is about 1.5 ms. Neither this tail nor the larger host duration identifies a specific native-render/driver bottleneck.
+
+All eight block-final groups preserve exact exported bytes immediately and after later source mutations/exports; twelve retained images remain independent. The separate existing gate passes BGRA/RGBA/sRGB/HDR/channel order, zero initialization, aliases, rejected formats/usages and retained lifetimes. Both hardware cases first execute all twelve common interface cases, Protein Add filter first: 24 common case executions. Protein CPU glyph/atlas and Edit panel geometry checks pass; actual Protein GPU glyph acceptance and the full rule map remain P146/P140. Normal feature cargo check and test compilation complete with zero compiler warnings/errors. The initial compiler attempt caught a deprecated atomic method; it was replaced with try_update before any measurement. No application release build, live restart, attached sampling, runtime-profile/clipboard change, Lingua edit or Actions query occurred. The running installed process still identifies as 204b94b6f310 and is not relabelled as this source candidate.
+
+Keep the bounded export probe and exact-pixel guard. P70 remains open: the next useful measurement is actual native GPU passes using pinned Bevy 0.19.1's existing RenderDiagnosticsPlugin/DiagnosticsRecorder and its already-instrumented UI pass, with off controls and explicit asynchronous result/frame identity. Avoid another generic timing framework or replaying this completed copy experiment unchanged. The actual GLES consumer and current optimized/physical frame path still need distinct attribution. These data do not overturn the earlier rejected serial Render or mixed direct-target consumer results.
+
+Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/gpu-timestamps/`, especially `source-v2.json`, `park-check-gpu-v2-result.json`, `park-tests-gpu-v2-result.json`, `timestamps-complete-v2.json`, `timestamp-export-v2/export-hardware-intervals.json`, `summary-v2.json`, `method-v2.json` and `receipt.json`. Source/executable hashes are frozen and checked. The first source generation failed compilation and produced no hardware observation.
+
 ## P67: warmed render work and rejected serial Render scheduler on 2026-11-06
 
 The existing bounded system-body observer now covers selected render preparation/submission functions as well as main systems. A separately labelled 24-frame pixel-only loop uses the real pixel_frame entry point, waits for export completion and proves that native main/UI layout did not execute. It reads the actual last pixel-only frame before running Main again, then verifies the resumed full frame against the same two-output reference. The original first generation checked only the subsequent full frame; it is retained as exploratory timing evidence, not the final pixel-path visual oracle. The final source is the second generation.

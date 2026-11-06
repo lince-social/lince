@@ -2,6 +2,38 @@
 
 [Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
 
+## P70: native pass hardware timing with isolated frame identity on 2026-11-06
+
+The new ignored native hardware case reuses pinned Bevy 0.19.1's RenderDiagnosticsPlugin and DiagnosticsRecorder, including the existing UI pass spans. Its constructor hook is compiled only for tests. It requires hardware timestamp support inside both encoders and passes; CPU-only diagnostics or missing UI intervals cannot satisfy the case. Every recorded CPU span family must have an available GPU counterpart with the same number of observations. Production plugin selection, schedules and shader behavior remain unchanged.
+
+Asynchronous results are isolated rather than assigned to whichever frame happens to be current. After a bounded queue poll, the public recorder processes mapped callbacks and the existing PreUpdate consumer transfers results to DiagnosticsStore. This diagnostic drain and history clearing happen outside the measured frame in both controls. Exactly one presentation frame is submitted before the next drain; the test checks one Main update for full frames and zero for pixel-only frames. This is an isolated private fixture, not normal throughput or physical input latency. Its extra PreUpdate work makes the observation unsuitable for claiming daily cadence or input/save behavior.
+
+The final case uses two simulated 640×480 outputs and sixteen text-bearing native trees, each with 32 children. Twelve full frames and a reference frame precede the observations. The same frozen executable runs diagnostics off/on/off, each process collecting 24 full and 24 pixel-only frames. The instrumented process records 34 distinct diagnostic paths per mode, eight CPU/GPU pass families and 912 available GPU span observations. Some names aggregate several view invocations; they do not identify a physical output. No recorded CPU family lacks its GPU counterpart. The 256-query recorder budget is not treated as unlimited coverage; the counterpart/count guards check this fixture's recorded families.
+
+| GPU span family | Values per frame | Full-frame median / p95 | Pixel-only median / p95 |
+| --- | ---: | ---: | ---: |
+| Light clustering | 2 | 0.151 / 0.207 ms | 0.151 / 0.500 ms |
+| Transparent 3D pass | 2 | 0.071 / 0.111 ms | 0.072 / 0.106 ms |
+| UI | 3 | 0.043 / 0.063 ms | 0.042 / 0.070 ms |
+| Upscaling | 4 | 0.055 / 0.090 ms | 0.056 / 0.105 ms |
+| Early mesh preprocessing | 2 | 0.014 / 0.035 ms | 0.015 / 1.412 ms |
+
+Bin unpacking, opaque 3D and transparent 2D intervals have medians around 0.001–0.002 ms. Preserve the tails: early mesh preprocessing reaches 4.190/4.284 ms in full/pixel observations, and pixel clustering reaches 3.574 ms. Device intervals include dependencies/contention and are not pure shader busy-time counters. They are neither disjoint additive scopes nor calibrated to the host clock. Existing spans do not cover every resource upload, driver operation, full submission envelope, GLES consumer or scanout.
+
+| Process | Full frame wall / owner CPU | Pixel-only wall / owner CPU |
+| --- | ---: | ---: |
+| Diagnostics off, first | 132.222 / 90.208 ms | 41.547 / 15.699 ms |
+| Diagnostics on | 134.435 / 94.024 ms | 44.942 / 17.988 ms |
+| Diagnostics off, last | 136.257 / 95.655 ms | 37.135 / 14.618 ms |
+
+The diagnostic drain adds about 3.365/4.027 ms median outside the instrumented full/pixel frame timers. Collection includes pipeline statistics as well as timestamps. Full-frame direction changes between controls; instrumented pixel frames are slower than both controls and control drift is material. Keep these costs explicit. These debug observations do not give an optimized desktop speedup, a CPU/GPU percentage, or proof that all remaining delay is CPU computation. Together with the measured owner-thread CPU in P60/P67, the small typical draw/compute intervals favor removing the known repeated main/render CPU work before another broad processor migration, serial-render switch or timing framework. P60 is now the next ready task; actual GLES waits and optimized current-path attribution remain P70/P66.
+
+Each process verifies actual reference glyphs, exact full/pixel output bytes and the resumed full frame. The final instrumented and both control processes also save their complete two-output reference bytes, which compare exactly across processes: SHA-256 d56c9b1763de9db69627a1d6f75bcaa2b7e29646f3edaea3a56fd9c726459909. All three first run the twelve-case common suite, Protein Add filter first: 36 final common case executions. Edit panel geometry and CPU Protein glyph/atlas checks pass; actual Protein GPU glyph acceptance and wider rule mapping remain P146/P140. No new input latency or physical FPS acceptance is claimed by this static fixture.
+
+Normal cargo check and test compilation pass without warnings/errors. The first generation's control caught the test invalidating its own retained scene through the public scene-editing accessor; test-only diagnostic access was corrected before the final runs. The second generation supplied exploratory timings but lacked the exact cross-process reference artifact; the third adds that artifact and per-frame CPU/GPU counterpart guards. Keep those distinctions. Source/executable hashes are frozen and checked, and compilation does not overlap GPU measurement. No application release build, live restart, attached sampling, runtime-profile/clipboard change, Lingua edit or Actions query occurred.
+
+Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/native-pass-gpu/`, especially `source-v3.json`, `source-v3-files/`, `park-check-native-gpu-v3-result.json`, `park-tests-native-gpu-v3-result.json`, `native-gpu-complete-v3.json`, `summary-v3.json`, `native-gpu-enabled-v3/native-pass-hardware.json`, all three `native-pass-reference.rgba` files and `receipt.json`. Earlier source/compile/results and the reconstructed second-generation test source remain labelled separately. The useful probe and shared timing/pixel helpers stay in the codebase; P70 remains open for its unmeasured boundaries.
+
 ## P70: actual export hardware intervals on 2026-11-06
 
 A bounded ignored hardware test now brackets the existing raw Vulkan export initialization, image copy and external queue-family release. The hook and query pool exist only in test builds; production commands, source-initialization pass, submission/completion grouping and image ownership are unchanged. The pool has 512 slots, reserves each pair once, resets it on the GPU and is retained with the originating device through the existing submitted-work completion callback. Host results require availability after export completion and use no query WAIT flag. Unsupported queue precision/period or unavailable results fail explicitly. The delta guard covers unused high bits and queue-counter wrap, including 64-bit wrap.

@@ -666,6 +666,10 @@ impl Presentation {
             .map(|(runtime, data)| connect_cell(&mut app, runtime, data))
             .transpose()
             .map_err(|error| input_failure(&error.to_string()))?;
+        #[cfg(test)]
+        if std::env::var_os("LINCE_PARK_GPU_DIAGNOSTICS").is_some() {
+            app.add_plugins(bevy::render::diagnostic::RenderDiagnosticsPlugin);
+        }
         app.finish();
         app.cleanup();
         if lince_interface::host::performance::enabled() {

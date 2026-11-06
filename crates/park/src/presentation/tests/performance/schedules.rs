@@ -15,20 +15,20 @@ use std::{
 mod bodies;
 
 #[derive(Clone, Copy, serde::Serialize)]
-struct Reading {
+pub(super) struct Reading {
     wall_ms: f64,
     process_cpu_ms: f64,
     owner_cpu_ms: f64,
 }
 
-struct Clock {
+pub(super) struct Clock {
     wall: Instant,
     process: rustix::time::Timespec,
     owner: rustix::time::Timespec,
 }
 
 impl Clock {
-    fn start() -> Self {
+    pub(super) fn start() -> Self {
         Self {
             wall: Instant::now(),
             process: rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime),
@@ -36,7 +36,7 @@ impl Clock {
         }
     }
 
-    fn finish(self) -> Reading {
+    pub(super) fn finish(self) -> Reading {
         let process = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
         let owner = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
         let delta = |after: rustix::time::Timespec, before: rustix::time::Timespec| {
@@ -51,7 +51,7 @@ impl Clock {
     }
 }
 
-fn summary(readings: &[Reading]) -> serde_json::Value {
+pub(super) fn summary(readings: &[Reading]) -> serde_json::Value {
     let stats = |field: fn(&Reading) -> f64| {
         let mut values = readings.iter().map(field).collect::<Vec<_>>();
         values.sort_by(f64::total_cmp);
@@ -64,7 +64,7 @@ fn summary(readings: &[Reading]) -> serde_json::Value {
     serde_json::json!({"count":readings.len(),"wall_ms":stats(|r|r.wall_ms),"process_cpu_ms":stats(|r|r.process_cpu_ms),"owner_cpu_ms":stats(|r|r.owner_cpu_ms)})
 }
 
-fn frame_pixels(frame: &Frame) -> Vec<Vec<u8>> {
+pub(super) fn frame_pixels(frame: &Frame) -> Vec<Vec<u8>> {
     (1..=2)
         .map(|id| {
             let image = if frame.output == Some(lince_interface::host::OutputId(id)) {

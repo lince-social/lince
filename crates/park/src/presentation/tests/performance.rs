@@ -5,6 +5,7 @@ use std::time::Instant;
 mod offscreen;
 mod overlap;
 mod schedules;
+mod gpu;
 #[cfg(feature = "nested")]
 mod direct;
 

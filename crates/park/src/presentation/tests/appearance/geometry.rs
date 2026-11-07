@@ -142,7 +142,7 @@ fn workspace_hole_effects_keep_actual_clipped_pixels_and_clicks_at_fractional_sc
             assert!(Instant::now() < deadline, "The actual two-workspace opening did not render its distinct reference colors: {colors:?}");
         };
         for (index, point) in points.iter().enumerate() {
-            let point = point.map(|value| f64::from(value) + 0.5);
+            let point = point.map(|value| (f64::from(value) + 0.5) / output_scale);
             assert_eq!(geometry[0].surface_point(point).is_some(), index == 0);
             assert_eq!(geometry[1].surface_point(point).is_some(), index == 1);
         }
@@ -166,8 +166,12 @@ fn workspace_hole_effects_keep_actual_clipped_pixels_and_clicks_at_fractional_sc
             }
             assert!(Instant::now() < deadline, "Appearance never changed actual clipped boundary pixels: {changed} changed pixels");
         };
+        super::super::layers::capture(&format!("appearance-hole-before-{output_scale}"), size, &off);
+        super::super::layers::capture(&format!("appearance-hole-after-{output_scale}"), size, &on);
         for point in points {
-            assert!(pixel(&off, size, point).iter().zip(pixel(&on, size, point)).all(|(before, after)| before.abs_diff(after) <= 3), "Appearance filled a hole or changed an unrelated uniform interior at {point:?}");
+            let before = pixel(&off, size, point);
+            let after = pixel(&on, size, point);
+            assert!(before.iter().zip(after).all(|(before, after)| before.abs_diff(after) <= 3), "Appearance filled a hole or changed an unrelated uniform interior at {point:?}: {before:?} -> {after:?}");
             press(&mut canvas, point.map(|value| f64::from(value) / output_scale));
         }
         assert_eq!(canvas.app.world().resource::<Clicks>().0, [1, 1]);

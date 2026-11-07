@@ -7,6 +7,7 @@ mod overlap;
 mod schedules;
 mod gpu;
 mod typing;
+mod ui_layout;
 #[cfg(feature = "nested")]
 mod direct;
 

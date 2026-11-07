@@ -15,6 +15,15 @@ const SHADOW: &str = "Shadow radius (0–32 logical units)";
 const BLUR: &str = "Background blur radius (0–24 logical units)";
 const FADE: &str = "Appearance fade (0–200 milliseconds)";
 
+fn saved(path: &Path) -> serde_json::Value {
+    let latest = std::fs::read_dir(path.with_extension("snapshots"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .max()
+        .unwrap();
+    serde_json::from_slice(&std::fs::read(latest).unwrap()).unwrap()
+}
+
 pub(super) fn open(canvas: &mut Presentation) {
     let root = canvas.canvas_root().unwrap();
     native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
@@ -75,7 +84,7 @@ fn rendered_appearance_fields_apply_cancel_and_reload_through_real_workspace_sta
         super::shortcuts::capture(&format!("appearance-controls-{}-{output_scale}", size[0]), size, &frame);
         canvas.finish().unwrap();
         drop(canvas);
-        let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        let saved = saved(&path);
         assert_eq!(saved["shader_settings"]["compositor"]["shadow_radius"].as_f64(), Some(12.0));
         assert_eq!(saved["shader_settings"]["compositor"]["blur_radius"].as_f64(), Some(8.0));
         assert_eq!(saved["shader_settings"]["compositor"]["appearance_fade_ms"].as_u64(), Some(120));
@@ -401,7 +410,7 @@ fn reduced_motion_protection_and_last_output_loss_retire_effects_without_losing_
         assert_eq!(alpha(&canvas, owner), 1.0);
     }
     canvas.finish().unwrap();
-    let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    let saved = saved(&path);
     assert_eq!(saved["shader_settings"]["reduced_motion"].as_bool(), Some(true));
     assert_eq!(saved["shader_settings"]["compositor"]["shadow_radius"].as_f64(), Some(12.0));
     assert_eq!(saved["shader_settings"]["compositor"]["blur_radius"].as_f64(), Some(8.0));

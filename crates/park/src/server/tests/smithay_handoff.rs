@@ -320,3 +320,110 @@ fn smithay_restores_fresh_typed_surface_region_and_scale_data_without_creation_e
             .is_empty()
     );
 }
+
+#[test]
+fn smithay_serial_checkpoint_keeps_wraparound_and_skips_zero_after_restore() {
+    let source = smithay::utils::SerialCounter::new();
+    source.restore_handoff(u32::MAX);
+    assert_eq!(u32::from(source.next_serial()), u32::MAX);
+    assert_eq!(source.handoff_value(), 0);
+    let next = smithay::utils::SerialCounter::new();
+    next.restore_handoff(source.handoff_value());
+    assert_eq!(u32::from(next.next_serial()), 1);
+    assert_eq!(u32::from(next.next_serial()), 2);
+    assert_eq!(next.handoff_value(), 3);
+}
+
+#[test]
+fn smithay_isolated_surface_and_client_checkpoint_preserve_roles_serials_and_queue_allocations() {
+    use smithay::wayland::compositor::handoff;
+    let mut harness = Harness::new();
+    let _window = harness.window();
+    let source = harness.server.state.surfaces.iter().next().unwrap().clone();
+    let checkpoint = handoff::isolated_surface(&source).unwrap();
+    assert_eq!(checkpoint.role.as_deref(), Some(xdg::XDG_TOPLEVEL_ROLE));
+    assert!(checkpoint.next_transaction > 0);
+    let client = source.client().unwrap();
+    let client_state = &client.get_data::<ClientState>().unwrap().compositor;
+    client_state.set_client_scale(1.25);
+    let client_checkpoint = client_state.handoff_state().unwrap();
+    assert!(client_checkpoint.queue.is_some());
+    let restored_client = CompositorClientState::from_handoff(client_checkpoint.clone()).unwrap();
+    let repeated = restored_client.handoff_state().unwrap();
+    assert_eq!(repeated.scale, 1.25);
+    let before = client_checkpoint.queue.as_ref().unwrap();
+    let after = repeated.queue.as_ref().unwrap();
+    assert_eq!(after.transaction_capacity, before.transaction_capacity);
+    assert_eq!(after.seen_capacity, before.seen_capacity);
+    assert_eq!(
+        after.seen_surfaces.iter().collect::<BTreeSet<_>>(),
+        before.seen_surfaces.iter().collect::<BTreeSet<_>>()
+    );
+    let mut invalid = client_checkpoint.clone();
+    invalid.queue.as_mut().unwrap().transaction_capacity = usize::MAX;
+    assert!(CompositorClientState::from_handoff(invalid).is_err());
+    let mut invalid = client_checkpoint;
+    invalid.queue = Some(handoff::EmptyQueueCheckpoint {
+        transaction_capacity: 0,
+        seen_capacity: 4,
+        seen_surfaces: vec![7, 7],
+    });
+    assert!(CompositorClientState::from_handoff(invalid).is_err());
+    let mut server = Server::new([640, 480]).unwrap();
+    let mut handle = server.display.handle();
+    let (stream, _peer) = UnixStream::pair().unwrap();
+    let client = handle
+        .insert_client(stream, Arc::new(RestoreClient))
+        .unwrap();
+    let surface = client
+        .create_resource::<WlSurface, _, State>(
+            &handle,
+            6,
+            smithay::wayland::compositor::SurfaceUserData::for_handoff::<State>(),
+        )
+        .unwrap();
+    server
+        .state
+        .compositor
+        .register_handoff_surface::<State>(&surface)
+        .unwrap();
+    assert!(handoff::restore_isolated_surface(&surface, checkpoint.clone(), |_| None).is_err());
+    handoff::restore_isolated_surface(&surface, checkpoint.clone(), |role| {
+        (role == xdg::XDG_TOPLEVEL_ROLE).then_some(xdg::XDG_TOPLEVEL_ROLE)
+    })
+    .unwrap();
+    let repeated = handoff::isolated_surface(&surface).unwrap();
+    assert_eq!(repeated.role, checkpoint.role);
+    assert_eq!(repeated.next_transaction, checkpoint.next_transaction);
+    assert!(
+        handoff::restore_isolated_surface(&surface, checkpoint, |_| Some(xdg::XDG_TOPLEVEL_ROLE))
+            .is_err()
+    );
+}
+
+#[test]
+fn smithay_checkpoint_refuses_live_transactions_and_source_resumes_when_the_blocker_clears() {
+    use smithay::wayland::compositor::{self, handoff};
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let surface = harness.server.state.surfaces.iter().next().unwrap().clone();
+    let blocker = compositor::Barrier::new(false);
+    compositor::add_blocker(&surface, blocker.clone());
+    assert_eq!(
+        handoff::isolated_surface(&surface).unwrap_err().kind(),
+        io::ErrorKind::WouldBlock
+    );
+    window.surface.commit();
+    harness.sync();
+    let client = surface.client().unwrap();
+    let compositor = &client.get_data::<ClientState>().unwrap().compositor;
+    assert_eq!(
+        compositor.handoff_state().unwrap_err().kind(),
+        io::ErrorKind::WouldBlock
+    );
+    blocker.signal();
+    compositor.blocker_cleared(&mut harness.server.state, &harness.server.display.handle());
+    harness.sync();
+    assert!(compositor.handoff_state().is_ok());
+    assert!(handoff::isolated_surface(&surface).is_ok());
+}

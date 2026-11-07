@@ -1,6 +1,90 @@
 use super::{
-    CompositorState, SurfaceAttributes, SurfaceUserData, erase_commit_hook, erase_destruction_hook,
+    CompositorClientState, CompositorState, SurfaceAttributes, SurfaceUserData, erase_commit_hook,
+    erase_destruction_hook,
 };
+
+#[derive(Clone, Debug)]
+pub struct EmptyQueueCheckpoint {
+    pub transaction_capacity: usize,
+    pub seen_capacity: usize,
+    pub seen_surfaces: Vec<u32>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ClientCheckpoint {
+    pub scale: f64,
+    pub queue: Option<EmptyQueueCheckpoint>,
+}
+
+#[derive(Clone, Debug)]
+pub struct IsolatedSurfaceCheckpoint {
+    pub role: Option<String>,
+    pub next_transaction: u32,
+}
+
+impl CompositorClientState {
+    #[doc(hidden)]
+    pub fn handoff_state(&self) -> io::Result<ClientCheckpoint> {
+        let queue = self
+            .queue
+            .lock()
+            .map_err(|_| io::Error::other("Poisoned compositor client checkpoint lock"))?;
+        Ok(ClientCheckpoint {
+            scale: self.client_scale(),
+            queue: queue
+                .as_ref()
+                .map(|queue| queue.handoff_empty())
+                .transpose()?,
+        })
+    }
+
+    #[doc(hidden)]
+    pub fn from_handoff(checkpoint: ClientCheckpoint) -> io::Result<Self> {
+        if !checkpoint.scale.is_finite() || checkpoint.scale <= 0.0 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid restored client scale",
+            ));
+        }
+        let restored = Self::default();
+        restored.set_client_scale(checkpoint.scale);
+        *restored
+            .queue
+            .lock()
+            .map_err(|_| io::Error::other("Poisoned compositor client restore lock"))? = checkpoint
+            .queue
+            .map(super::TransactionQueue::restore_empty)
+            .transpose()?;
+        Ok(restored)
+    }
+}
+
+pub fn isolated_surface(surface: &WlSurface) -> io::Result<IsolatedSurfaceCheckpoint> {
+    let data = surface.data::<SurfaceUserData>().ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidData, "Surface has no compositor data")
+    })?;
+    data.inner
+        .lock()
+        .map_err(|_| io::Error::other("Poisoned surface checkpoint lock"))?
+        .handoff_isolated(surface)
+}
+
+pub fn restore_isolated_surface(
+    surface: &WlSurface,
+    checkpoint: IsolatedSurfaceCheckpoint,
+    role: impl FnOnce(&str) -> Option<&'static str>,
+) -> io::Result<()> {
+    let data = surface.data::<SurfaceUserData>().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Surface has no restored compositor data",
+        )
+    })?;
+    data.inner
+        .lock()
+        .map_err(|_| io::Error::other("Poisoned surface restore lock"))?
+        .restore_isolated(surface, checkpoint, role)
+}
 use crate::utils::{CallbackIdentity, hook::HandoffCallback};
 use std::io;
 use wayland_server::{DisplayHandle, Resource, protocol::wl_surface::WlSurface};

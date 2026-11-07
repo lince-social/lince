@@ -114,6 +114,44 @@ pub enum TraversalAction<T> {
 
 impl PrivateSurfaceData {
     #[cfg(feature = "handoff")]
+    pub(super) fn handoff_isolated(&self, surface: &WlSurface) -> std::io::Result<super::handoff::IsolatedSurfaceCheckpoint> {
+        if self.parent.is_some() || self.children.len() != 1 || self.children[0] != *surface {
+            return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "Transfer nontrivial surface topology with the tree adapter"));
+        }
+        if !self.pending_transaction.handoff_is_empty()? {
+            return Err(std::io::Error::new(std::io::ErrorKind::WouldBlock, "Pending surface transactions need transfer or a safe boundary"));
+        }
+        Ok(super::handoff::IsolatedSurfaceCheckpoint {
+            role: self.public_data.role.map(str::to_owned),
+            next_transaction: self.current_txid.into(),
+        })
+    }
+
+    #[cfg(feature = "handoff")]
+    pub(super) fn restore_isolated(
+        &mut self,
+        surface: &WlSurface,
+        checkpoint: super::handoff::IsolatedSurfaceCheckpoint,
+        role: impl FnOnce(&str) -> Option<&'static str>,
+    ) -> std::io::Result<()> {
+        let current = self.handoff_isolated(surface)?;
+        if current.role.is_some() || current.next_transaction != 0 {
+            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Restore requires a fresh registered surface"));
+        }
+        let role = match checkpoint.role {
+            Some(name) => {
+                let resolved = role(&name).filter(|resolved| *resolved == name)
+                    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Unknown restored surface role"))?;
+                Some(resolved)
+            }
+            None => None,
+        };
+        self.public_data.role = role;
+        self.current_txid = checkpoint.next_transaction.into();
+        Ok(())
+    }
+
+    #[cfg(feature = "handoff")]
     pub(super) fn initialize_handoff(&mut self, surface: &WlSurface) -> std::io::Result<()> {
         if !self.children.is_empty() || self.parent.is_some() {
             return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Surface tree is already initialized"));

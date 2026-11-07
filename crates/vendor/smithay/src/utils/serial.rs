@@ -79,6 +79,18 @@ impl Default for SerialCounter {
 }
 
 impl SerialCounter {
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn handoff_value(&self) -> u32 {
+        self.serial.load(Ordering::Acquire)
+    }
+
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn restore_handoff(&self, value: u32) {
+        self.serial.store(value, Ordering::Release);
+    }
+
     /// Create a new counter starting at `1`
     pub const fn new() -> Self {
         Self {

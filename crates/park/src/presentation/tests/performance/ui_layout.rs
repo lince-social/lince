@@ -75,6 +75,7 @@ fn idle_editors_record_measurement_and_exact_pixels() {
         .collect::<Vec<_>>();
     let mut updates = [0; 3];
     let mut readings = Vec::new();
+    lince_interface::host::performance::flush();
     for _ in 0..24 {
         let ticks = editors
             .iter()
@@ -90,6 +91,7 @@ fn idle_editors_record_measurement_and_exact_pixels() {
         let clock = Clock::start();
         drop(canvas.probe_frame().unwrap());
         readings.push(clock.finish());
+        lince_interface::host::performance::flush_if_due();
         for (entity, previous) in editors.iter().zip(ticks) {
             let entity = canvas.app.world().entity(*entity);
             let current = [
@@ -102,6 +104,7 @@ fn idle_editors_record_measurement_and_exact_pixels() {
             }
         }
     }
+    lince_interface::host::performance::flush();
     for (index, (entity, size)) in editors.iter().zip(geometry).enumerate() {
         assert_eq!(
             canvas

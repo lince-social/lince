@@ -351,6 +351,7 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
     assert_eq!(main_systems.len(), 1);
     assert!(
         main_systems[0].ends_with("Main::run_main")
+            || main_systems[0].ends_with("presentation::phase_metrics::run")
             || main_systems[0] == "<Enable the debug feature to see the name>",
         "{main_systems:?}"
     );

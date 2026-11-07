@@ -36,6 +36,8 @@ P70's native/export hardware observations and P60's planning/application attribu
 
 The 2026-11-07 P60 idle-editor cache/UI layout gate experiment is answered and removed from runtime code: skipped writes/layouts preserve pixels but do not establish complete-frame improvement, and the combined gate costs more owner CPU. Keep its reusable measurement/transition case and recorded controls; do not repeat the matrix unchanged. Current optimized attribution retains priority over another broad invalidation layer. The restarted session's build-info and executable hash still match 204b94b6, so it is not live acceptance of the newer committed source. P135 explicitly retains the independent fractional-scale appearance pixel failure; P140/P146 remain incomplete.
 
+The next P66/P60 optimized attribution no longer requires the optional Bevy naming build merely to split main phases: normal performance mode now provides phase wall/owner CPU and missing-schedule counts. Source-stamped original/observed/original controls verify exact rendering, a complete 24-frame report cohort and real input/reopen; diagnostic overhead is explicit. Use a newer optimized private nested executable when available, preserving the original optimized/current-workload requirements. This does not close P60/P66 or justify another routine timer expansion, unchanged debug matrix, broad cache or speculative parallel split.
+
 | Next | Task and full definition | Expected value / activation |
 | --- | --- | --- |
 | 1 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Rank the actual largest causes and immediately update this queue. |

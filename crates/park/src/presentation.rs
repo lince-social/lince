@@ -40,6 +40,7 @@ pub mod manipulation;
 mod outputs;
 mod records;
 mod pixels;
+mod phase_metrics;
 pub(crate) use pixels::Sync as PixelSync;
 #[cfg(test)]
 mod color_tests;
@@ -669,6 +670,11 @@ impl Presentation {
         #[cfg(test)]
         if std::env::var_os("LINCE_PARK_GPU_DIAGNOSTICS").is_some() {
             app.add_plugins(bevy::render::diagnostic::RenderDiagnosticsPlugin);
+        }
+        if lince_interface::host::performance::enabled()
+            && let Err(reason) = phase_metrics::install(&mut app)
+        {
+            eprintln!("Park main-phase profiling unavailable: {reason}");
         }
         app.finish();
         app.cleanup();

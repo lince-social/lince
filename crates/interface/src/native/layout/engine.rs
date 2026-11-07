@@ -249,9 +249,16 @@ fn content_intrinsic(world: &World, entity: Entity) -> Vec2 {
 }
 
 pub(super) fn resolve(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutSolve);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutSolve);
     super::records::restore(world);
     super::desktop::resolve(world);
+    let _constraints = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeLayoutConstraints,
+    );
+    let collection = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeLayoutCollection,
+    );
     let mut entries: Vec<_> = world
         .query::<(Entity, &LayoutBox, &CanvasItem)>()
         .iter(world)
@@ -387,11 +394,28 @@ pub(super) fn resolve(world: &mut World) {
     let mut pending: Vec<_> = (0..items.len())
         .filter(|index| items[*index].parent.is_none())
         .collect();
+    crate::host::performance::add(
+        crate::host::performance::Count::NativeConstraintRoots,
+        pending.len() as u64,
+    );
     while let Some(index) = pending.pop() {
         order.push(index);
         pending.extend(items[index].children.iter().rev().copied());
     }
-    solver::solve(&mut items, &order);
+    crate::host::performance::add(
+        crate::host::performance::Count::NativeConstraintItems,
+        order.len() as u64,
+    );
+    drop(collection);
+    {
+        let _solve = crate::host::performance::Span::new(
+            crate::host::performance::Stage::NativeLayoutConstraintSolve,
+        );
+        solver::solve(&mut items, &order);
+    }
+    let _application = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeLayoutApplication,
+    );
     let mut changed = false;
     for &index in &order {
         let entity = entities[index];

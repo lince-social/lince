@@ -32,6 +32,11 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     let size = [1000, 720];
+    let neighbors = std::env::var("LINCE_PARK_LAYOUT_NEIGHBORS")
+        .ok()
+        .map(|value| value.parse::<usize>().unwrap())
+        .unwrap_or(0);
+    assert!(neighbors <= 256);
     for kind in [SandKind::Text, SandKind::EditableText] {
         let path = directory.path().join(kind.name());
         std::fs::create_dir_all(&path).unwrap();
@@ -68,6 +73,23 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
             .unwrap()
             .content
             .unwrap();
+        let neighbors = (0..neighbors)
+            .map(|index| {
+                let entity = native::sand_store::spawn_sand(
+                    canvas.world_mut(),
+                    root,
+                    workspace,
+                    SandKind::Square,
+                    "",
+                    bevy::math::DVec2::new(10000.0 + index as f64 * 400.0, 0.0),
+                );
+                canvas
+                    .world_mut()
+                    .entity_mut(entity)
+                    .insert(native::layout::LayoutBox::new(Vec2::splat(100.0)));
+                entity
+            })
+            .collect::<Vec<_>>();
         let pixels = |canvas: &mut Presentation| {
             let frame = super::super::shortcuts::settle(canvas);
             probe_pixels(frame.dmabuf().unwrap()).unwrap()
@@ -123,6 +145,22 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
             .unwrap()
             .last_changed();
         let geometry = canvas.app.world().get::<SandText>(text).unwrap().clone();
+        let retained = neighbors
+            .iter()
+            .map(|entity| {
+                let world = canvas.app.world();
+                (
+                    *entity,
+                    *world.get::<native::layout::LayoutRuntime>(*entity).unwrap(),
+                    world
+                        .entity(*entity)
+                        .get_ref::<native::layout::LayoutRuntime>()
+                        .unwrap()
+                        .last_changed(),
+                )
+            })
+            .collect::<Vec<_>>();
+        lince_interface::host::performance::flush();
         for _ in 0..4 {
             for pressed in [true, false] {
                 canvas
@@ -142,6 +180,26 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
                     .world()
                     .entity(text)
                     .get_ref::<SandText>()
+                    .unwrap()
+                    .last_changed(),
+                tick
+            );
+        }
+        lince_interface::host::performance::flush();
+        for (entity, value, tick) in retained {
+            assert_eq!(
+                canvas
+                    .app
+                    .world()
+                    .get::<native::layout::LayoutRuntime>(entity),
+                Some(&value)
+            );
+            assert_eq!(
+                canvas
+                    .app
+                    .world()
+                    .entity(entity)
+                    .get_ref::<native::layout::LayoutRuntime>()
                     .unwrap()
                     .last_changed(),
                 tick

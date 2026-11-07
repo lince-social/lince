@@ -51,7 +51,7 @@ macro_rules! expand_test {
 mod interfaces {
     use crate as wayland_backend;
     wayland_scanner::generate_interfaces!(
-        "../wayland-scanner/tests/scanner_assets/test-protocol.xml"
+        "tests/test-protocol.xml"
     );
 }
 

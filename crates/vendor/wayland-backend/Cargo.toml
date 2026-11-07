@@ -125,3 +125,10 @@ version = "1.0"
 version = "1.0.229"
 features = ["derive"]
 optional = true
+
+[dev-dependencies.wayland-scanner]
+version = "=0.31.11"
+
+[dev-dependencies.wayland-sys]
+version = "=0.31.11"
+features = ["client", "server"]

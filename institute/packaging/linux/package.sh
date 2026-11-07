@@ -22,6 +22,7 @@ for mapping in \
     'crates/vendor/smithay/LICENSE.txt:share/licenses/smithay/LICENSE.txt' \
     'crates/vendor/wayland-backend/LICENSE.txt:share/licenses/wayland-backend/LICENSE.txt' \
     'crates/vendor/wayland-server/LICENSE.txt:share/licenses/wayland-server/LICENSE.txt' \
+    'crates/vendor/wayland-server/PROTOCOL-LICENSE.txt:share/licenses/wayland-server/PROTOCOL-LICENSE.txt' \
     'institute/packaging/linux/ufw/lince:etc/ufw/applications.d/lince' \
     'institute/packaging/linux/firewalld/lince.xml:lib/firewalld/services/lince.xml' \
     'institute/packaging/linux/firewalld/lince-test.xml:lib/firewalld/services/lince-test.xml'; do

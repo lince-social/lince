@@ -1039,6 +1039,7 @@
                 install -Dm644 crates/vendor/smithay/LICENSE.txt "$out/share/licenses/smithay/LICENSE.txt"
                 install -Dm644 crates/vendor/wayland-backend/LICENSE.txt "$out/share/licenses/wayland-backend/LICENSE.txt"
                 install -Dm644 crates/vendor/wayland-server/LICENSE.txt "$out/share/licenses/wayland-server/LICENSE.txt"
+                install -Dm644 crates/vendor/wayland-server/PROTOCOL-LICENSE.txt "$out/share/licenses/wayland-server/PROTOCOL-LICENSE.txt"
               '' + installParkSession);
 
               passthru = lib.optionalAttrs withPark { providedSessions = [ "lince" ]; };

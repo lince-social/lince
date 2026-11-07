@@ -65,7 +65,12 @@ fn verify_digest(archive: &Path) -> Result<()> {
         }
         digest.update(&buffer[..count]);
     }
-    if format!("{:x}", digest.finalize()) != fields[0].to_ascii_lowercase() {
+    let actual: String = digest
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    if actual != fields[0].to_ascii_lowercase() {
         return Err("Candidate archive checksum mismatch".into());
     }
     Ok(())
@@ -214,7 +219,10 @@ mod tests {
         let repository = super::super::tests::Repository::new();
         let archive = repository.directory.join(ASSET);
         fs::write(&archive, b"candidate").unwrap();
-        let checksum = format!("{:x}", Sha256::digest(b"candidate"));
+        let checksum: String = Sha256::digest(b"candidate")
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         fs::write(
             archive.with_extension("gz.sha256"),
             format!("{checksum}  {ASSET}\n"),

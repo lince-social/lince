@@ -32,14 +32,14 @@ P149 is complete: typed partial reads and append-only body layout migration remo
 
 ## Pending tasks
 
-P70's native/export hardware observations and P60's planning/application attribution are complete bounded experiments. Empty-source guards remove two unused shader queries; duration controls remain mixed. Surface planning includes semantic upkeep, so it is not a blind worker handoff. P113 is now the next ready prerequisite: prove one real edit/input trigger and separate its necessary consumers before adding another snapshot/cache or broad timer. Static forced frames establish cost, not a production idle/invalidation defect. P60's expensive pure split, actual GLES/driver waits and optimized/physical acceptance remain open.
+P70's native/export hardware observations and P60's planning/application attribution are complete bounded experiments. Empty-source guards remove two unused shader queries; duration controls remain mixed. Surface planning includes semantic upkeep, so it is not a blind worker handoff. P113 is complete: the Edit panel content-only save no longer rewrites unchanged style metadata/geometry, and actual keyboard/glyph/file-backed reopen checks pass. P122 is the next ready dependency step: attribute the remaining affected versus unrelated constraint roots before retaining or parallelizing that work. This narrow repair does not establish the whole desktop bottleneck. Static forced frames establish cost, not a production idle/invalidation defect. P60's expensive pure split, actual GLES/driver waits and optimized/physical acceptance remain open.
 
 | Next | Task and full definition | Expected value / activation |
 | --- | --- | --- |
 | 1 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Rank the actual largest causes and immediately update this queue. |
 | 2 | [P67 — Map CPU/GPU responsibilities across the active frame path.](01-measurement.md) | After the byte-budget win, map actual shipping frame/thread/device/transfer ownership before another debug save-only optimization; do not infer wrong placement from utilization. |
-| 3 | [P113 — Separate one broad frame invalidation into its real dependency domains.](04-style-layout-and-retention.md) | Next ready: trace one real ordinary edit/input trigger through existing revisions, then remove unrelated repeated native work. P60 planning contains semantic upkeep and its larger pure split remains unproved. Preserve expiry, same-frame geometry/input, privacy and total bookkeeping cost; forced static frames alone do not prove a production defect. |
-| 4 | [P60 — Split the highest-cost exclusive system into derivation and application.](02-input-and-scheduling.md) | Planning/application are attributed; two empty-source query scans are removed with coverage from fifteen common cases and equal pixels. No consistent elapsed or whole-frame gain is established. P113 supplies the missing dependency boundary before a costly pure snapshot/worker change. Keep the original optimized/current-input/resource requirements; do not retry the completed small-helper/query-cache/serial experiments unchanged. |
+| 3 | [P122 — Resolve only the layout root affected by one ordinary edit.](04-style-layout-and-retention.md) | Next ready after P113: use real input/geometry evidence to attribute the remaining constraint closure and spare unrelated layout roots where valid. Preserve intrinsic/Fit/Fill, hierarchy, same-frame input and all mixed changes; measure tracking cost before retaining another result. |
+| 4 | [P60 — Split the highest-cost exclusive system into derivation and application.](02-input-and-scheduling.md) | Planning/application are attributed; two empty-source query scans are removed with coverage from fifteen common cases and equal pixels. No consistent elapsed or whole-frame gain is established. P113’s content-only no-op repair is complete; P122 must establish the remaining expensive constraint boundary before a costly pure snapshot/worker change. Keep the original optimized/current-input/resource requirements; do not retry the completed small-helper/query-cache/serial experiments unchanged. |
 | 5 | [P70 — Observe GPU execution separately from submission/completion age.](01-measurement.md) | Native and export hardware comparisons are answered. Preserve tails, missing full-submission/driver coverage and instrumentation drift. Measure the actual GLES consumer when resolving its wait/integration decision; do not replay completed native/copy probes unchanged or postpone P60 for a generic timer framework. Current optimized/physical attribution remains open. |
 | 6 | [P55 — Remove one measured redundant render pass or copy.](06-gpu-and-outputs.md) | Fresh and bounded comparisons are answered. Reuse lowers setup to about 0.6 ms and helps full updates/CPU, but pixel elapsed results are mixed, old-frame GLES handoff is slower and retention costs about 100/150 MB. Activate for a specific supported consumer-wait/integration change after P60, not another unchanged pool matrix. Production copies stay enabled; actual capture/retirement/teardown/color and external device/driver assumptions remain unproved. |
 | 7 | [P62 — Test coherent main/render overlap.](02-input-and-scheduling.md) | Matched planned-input replay is complete: native-owner export hurts sustained latency; worker export gives modest gains at more CPU, with mixed sparse controls. After P55/P60, establish optimized complete-consumer value and remaining client/upload/capture/feedback ownership before shipping. Production scheduling stays serial. |
@@ -60,69 +60,68 @@ P70's native/export hardware observations and P60's planning/application attribu
 | 22 | [P72 — Remove one avoidable foreground GPU-completion wait.](02-input-and-scheduling.md) | Promote a proven foreground GPU wait; safe readiness already exists. |
 | 23 | [P68 — Compare processor placement for one evidenced misplaced stage.](06-gpu-and-outputs.md) | Move the evidenced misplaced work, including all transfer/wait costs. |
 | 24 | [P58 — Compare one versus two frames in flight at the actual bottleneck.](02-input-and-scheduling.md) | Compare bounded overlap after the actual bottleneck is known. |
-| 25 | [P122 — Resolve only the layout root affected by one ordinary edit.](04-style-layout-and-retention.md) | Solve only the affected constraint closure instead of unrelated layout. |
-| 26 | [P36 — Attribute the remaining native wake stream.](01-measurement.md) | Promote if excess wakes keep the whole native path active. |
-| 27 | [P47 — Remove the worst remaining redundant source wake.](02-input-and-scheduling.md) | Remove the largest attributed redundant source wake. |
-| 28 | [P108 — Replace the editor binding heartbeat with actual readiness and deadlines.](02-input-and-scheduling.md) | Concrete focused-editor heartbeat/readiness candidate. |
-| 29 | [P48 — Define one safe hidden-subtree presentation-demand boundary.](04-style-layout-and-retention.md) | Stop proven unneeded hidden presentation while retaining semantics. |
-| 30 | [P124 — Complete the source-to-workflow inventory for active interface features.](05-feature-costs-and-scaling.md) | Map actual reachable features/owners and the next costly family. |
-| 31 | [P77 — Gate presentation work for one feature family with no live views.](05-feature-costs-and-scaling.md) | Prevent absent views from triggering presentation work. |
-| 32 | [P49 — Virtualize one measured large Record-result list.](05-feature-costs-and-scaling.md) | Make a large result list scale with visible rows. |
-| 33 | [P125 — Retain one costly settings or property panel across ordinary edits.](05-feature-costs-and-scaling.md) | Keep expensive panels/controls instead of repeated reconstruction. |
-| 34 | [P74 — Test a translation-only canvas-pan path.](04-style-layout-and-retention.md) | Retain unchanged content during canvas pan. |
-| 35 | [P75 — Test transform retention during an ordinary item drag.](04-style-layout-and-retention.md) | Retain unchanged content during ordinary item drag. |
-| 36 | [P76 — Test scrolling through one retained presentation transform.](04-style-layout-and-retention.md) | Retain children under one scroll transform. |
-| 37 | [P109 — Measure the read-heavy styling cost before choosing its representation.](04-style-layout-and-retention.md) | Establish actual style read/write cost and reassess rare-write gains. |
-| 38 | [P78 — Narrow one overly broad style or layout invalidation.](04-style-layout-and-retention.md) | Narrow invalidation rather than clearing unrelated style/layout work. |
-| 39 | [P111 — Apply resolved styles only to affected consumers.](04-style-layout-and-retention.md) | Avoid scanning/applying unchanged consumers. |
-| 40 | [P110 — Compare a compact resolved-style read representation.](04-style-layout-and-retention.md) | Make the remaining frequent resolved reads compact and cheap. |
-| 41 | [P112 — Publish expensive style edits as one coherent revision.](04-style-layout-and-retention.md) | Only if read optimization makes style writes too costly/incoherent. |
-| 42 | [P51 — Reduce validation work in the existing native-surface cache.](04-style-layout-and-retention.md) | Avoid expensive validation walks when retaining a raster. |
-| 43 | [P80 — Distinguish texture capability from actual texture updates.](04-style-layout-and-retention.md) | Do not mistake texture capabilities for new pixels. |
-| 44 | [P52 — Retain damage independently for each output.](06-gpu-and-outputs.md) | Avoid forcing the quiet monitor to recomposite. |
-| 45 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | Fix output pacing/callback churn where measured. |
-| 46 | [P81 — Retain compatible incoming DMA-BUF import bindings.](06-gpu-and-outputs.md) | Retain actual compatible DMA-BUF imports safely. |
-| 47 | [P54 — Reuse compatible exported/output resources within a bounded budget.](06-gpu-and-outputs.md) | Reuse compatible output resources instead of allocating repeatedly. |
-| 48 | [P59 — Reduce measured raster-resolution churn during navigation.](06-gpu-and-outputs.md) | Avoid navigation-time raster replacement churn. |
-| 49 | [P63 — Limit one background job family that delays visible work.](02-input-and-scheduling.md) | Promote on demonstrated background contention with foreground work. |
-| 50 | [P83 — Move one remaining blocking foreground operation off the interaction path.](02-input-and-scheduling.md) | Promote a remaining dominant blocking operation beyond named paths. |
-| 51 | [P73 — Test asynchronous preparation of a stalling shader pipeline.](02-input-and-scheduling.md) | Promote on a traced cold pipeline-compilation freeze. |
-| 52 | [P120 — Eliminate one proven no-op edit write and its downstream publication.](03-local-edits-and-storage.md) | A cheap no-op write/publication elimination can be a useful nearby win. |
-| 53 | [P128 — Keep terminal or Command output from monopolizing interface work.](05-feature-costs-and-scaling.md) | Promote when terminal/Command streams cause current input lag. |
-| 54 | [P127 — Remove one blocking preparation step from opening a native view.](05-feature-costs-and-scaling.md) | Promote a measured cold/warm opening stall. |
-| 55 | [P129 — Tie one media producer to real consumer presentation demand.](05-feature-costs-and-scaling.md) | Share/limit unnecessary media preparation for actual consumer demand. |
-| 56 | [P130 — Make one Area or physics recomputation depend on changed participants.](05-feature-costs-and-scaling.md) | Avoid all-participant Area/physics work when one input changes. |
-| 57 | [P50 — Compare an incremental spatial index with one expensive canvas scan.](05-feature-costs-and-scaling.md) | Index only a dominant scan where maintenance earns its cost. |
-| 58 | [P85 — Reuse one unchanged pointer-geometry derivation safely.](05-feature-costs-and-scaling.md) | Retain measured unchanged geometry without caching eligibility. |
-| 59 | [P84 — Apply the shared list approach to one other costly native list.](05-feature-costs-and-scaling.md) | Reuse successful list scaling for one other proven costly list. |
-| 60 | [P131 — Publish accessibility changes incrementally for a stable interface.](05-feature-costs-and-scaling.md) | Accessibility export only if it is costly or a simple work removal exists. |
-| 61 | [P132 — Retain one unchanged capture-contributor derivation.](05-feature-costs-and-scaling.md) | Retain unchanged capture contributor structure with current privacy. |
-| 62 | [P133 — Share one repeatedly created immutable asset family.](05-feature-costs-and-scaling.md) | Share a proven repeatedly created immutable asset family. |
-| 63 | [P86 — Rank actual bloat in active paths.](07-unbloat-and-release.md) | Rank actual executed/initialization bloat from the existing evidence. |
-| 64 | [P87 — Remove one proven obsolete active-code path.](07-unbloat-and-release.md) | Delete one proven obsolete active path and wiring. |
-| 65 | [P89 — Consolidate one redundant derived-state cache or resolver layer.](07-unbloat-and-release.md) | Consolidate redundant cache ownership, with invalidation preserved. |
-| 66 | [P88 — Consolidate one duplicated pure coordinate-mapping operation.](07-unbloat-and-release.md) | Share identical coordinate math only when useful and simpler. |
-| 67 | [P92 — Initialize one unused-at-startup resource family on demand.](07-unbloat-and-release.md) | Avoid an unused eager resource while keeping first use responsive. |
-| 68 | [P90 — Remove one unused dependency or redundant feature activation.](07-unbloat-and-release.md) | Remove a proven unnecessary dependency/feature activation. |
-| 69 | [P148 — Repair worker-only test feature gates.](07-unbloat-and-release.md) | Actual optional check failure in unchanged session-only test imports; validation/build benefit, no claimed desktop speedup. |
-| 70 | [P93 — Consolidate the performance-comparison runner around existing fixtures.](01-measurement.md) | Promote if the existing comparison runner blocks the highest-value test. |
-| 71 | [P104 — Expose the existing performance cases as useful Laboratory results.](01-measurement.md) | Promote when selected cases need reusable Laboratory integration. |
-| 72 | [P134 — Generate the finite cross-feature workflow coverage set.](11-acceptance-and-experiments.md) | Close source-stamped finite cross-feature coverage gaps. |
-| 73 | [P135 — Measure the combined candidate and repair one harmful interaction.](11-acceptance-and-experiments.md) | Run at integration boundaries; diagnose/repair harmful interactions. |
-| 74 | [P57 — Test direct scanout for one eligible fullscreen SDR client.](06-gpu-and-outputs.md) | Conditional fullscreen-only win after broader rendering costs. |
-| 75 | [P96 — Compare cross-crate ThinLTO with the current release profile.](07-unbloat-and-release.md) | Broad release-code opportunity after structural source stabilization. |
-| 76 | [P97 — Compare release codegen-units = 1 with the current partition count.](07-unbloat-and-release.md) | Compare codegen partitioning at fixed LTO/profile. |
-| 77 | [P98 — Compare full LTO with the best measured ThinLTO release.](07-unbloat-and-release.md) | Compare full LTO with selected ThinLTO, including build cost. |
-| 78 | [P100 — Compare a deliberate CPU target with the shipping target.](07-unbloat-and-release.md) | Test an intentional supported machine target, not runner-native. |
-| 79 | [P99 — Test representative profile-guided optimization for the selected release profile.](07-unbloat-and-release.md) | Representative PGO last, after hot paths stabilize. |
-| 80 | [P64 — Establish genuinely quiet daily-workspace resource use.](11-acceptance-and-experiments.md) | Reuse current valid quiet-workspace evidence; close installed gate. |
-| 81 | [P65 — Establish prompt visible interaction under normal load.](11-acceptance-and-experiments.md) | Reuse current valid causal input observations; close installed gate. |
-| 82 | [P136 — Demonstrate prompt durable local title and description edits in daily use.](11-acceptance-and-experiments.md) | Close real local title/description durability and feedback acceptance. |
-| 83 | [P16 — Establish near-refresh presentation independently on both monitors.](11-acceptance-and-experiments.md) | Close each physical output’s near-refresh presentation acceptance. |
-| 84 | [P15 — Establish nearly lossless Firefox video under that same load.](11-acceptance-and-experiments.md) | Close matched nearly lossless Firefox video acceptance. |
-| 85 | [P140 — Make rule discovery and hidden-comment coverage explicit.](11-acceptance-and-experiments.md) | Awaiting owner refinement; map body/header requirements to explicit checks. |
-| 86 | [P141 — Reuse a bounded native UI fixture and define the ordered fast suite.](11-acceptance-and-experiments.md) | Needs P140 and refined fixture design; preserve ordinary input and isolation. |
-| 87 | [P142 — Add the first failing regression for the reported Protein Area dropdown.](11-acceptance-and-experiments.md) | Needs P141; mandatory first case verifies visible choices and selection. |
-| 88 | [P145 — Expose the same cases through Laboratory and the default interface check workflow.](11-acceptance-and-experiments.md) | Needs P142–P144; reuse the existing catalogue and P104 integration. |
-| 89 | [P146 — Verify actual text paint with one small offscreen render check.](11-acceptance-and-experiments.md) | Needs P142/P145 and a supported adapter; accessible names are insufficient. |
-| 90 | [P147 — Broaden coverage and optimize the routine suite against measurements.](11-acceptance-and-experiments.md) | Needs P140–P146; retain mandatory visual coverage within a measured runtime budget. |
+| 25 | [P36 — Attribute the remaining native wake stream.](01-measurement.md) | Promote if excess wakes keep the whole native path active. |
+| 26 | [P47 — Remove the worst remaining redundant source wake.](02-input-and-scheduling.md) | Remove the largest attributed redundant source wake. |
+| 27 | [P108 — Replace the editor binding heartbeat with actual readiness and deadlines.](02-input-and-scheduling.md) | Concrete focused-editor heartbeat/readiness candidate. |
+| 28 | [P48 — Define one safe hidden-subtree presentation-demand boundary.](04-style-layout-and-retention.md) | Stop proven unneeded hidden presentation while retaining semantics. |
+| 29 | [P124 — Complete the source-to-workflow inventory for active interface features.](05-feature-costs-and-scaling.md) | Map actual reachable features/owners and the next costly family. |
+| 30 | [P77 — Gate presentation work for one feature family with no live views.](05-feature-costs-and-scaling.md) | Prevent absent views from triggering presentation work. |
+| 31 | [P49 — Virtualize one measured large Record-result list.](05-feature-costs-and-scaling.md) | Make a large result list scale with visible rows. |
+| 32 | [P125 — Retain one costly settings or property panel across ordinary edits.](05-feature-costs-and-scaling.md) | Keep expensive panels/controls instead of repeated reconstruction. |
+| 33 | [P74 — Test a translation-only canvas-pan path.](04-style-layout-and-retention.md) | Retain unchanged content during canvas pan. |
+| 34 | [P75 — Test transform retention during an ordinary item drag.](04-style-layout-and-retention.md) | Retain unchanged content during ordinary item drag. |
+| 35 | [P76 — Test scrolling through one retained presentation transform.](04-style-layout-and-retention.md) | Retain children under one scroll transform. |
+| 36 | [P109 — Measure the read-heavy styling cost before choosing its representation.](04-style-layout-and-retention.md) | Establish actual style read/write cost and reassess rare-write gains. |
+| 37 | [P78 — Narrow one overly broad style or layout invalidation.](04-style-layout-and-retention.md) | Narrow invalidation rather than clearing unrelated style/layout work. |
+| 38 | [P111 — Apply resolved styles only to affected consumers.](04-style-layout-and-retention.md) | Avoid scanning/applying unchanged consumers. |
+| 39 | [P110 — Compare a compact resolved-style read representation.](04-style-layout-and-retention.md) | Make the remaining frequent resolved reads compact and cheap. |
+| 40 | [P112 — Publish expensive style edits as one coherent revision.](04-style-layout-and-retention.md) | Only if read optimization makes style writes too costly/incoherent. |
+| 41 | [P51 — Reduce validation work in the existing native-surface cache.](04-style-layout-and-retention.md) | Avoid expensive validation walks when retaining a raster. |
+| 42 | [P80 — Distinguish texture capability from actual texture updates.](04-style-layout-and-retention.md) | Do not mistake texture capabilities for new pixels. |
+| 43 | [P52 — Retain damage independently for each output.](06-gpu-and-outputs.md) | Avoid forcing the quiet monitor to recomposite. |
+| 44 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | Fix output pacing/callback churn where measured. |
+| 45 | [P81 — Retain compatible incoming DMA-BUF import bindings.](06-gpu-and-outputs.md) | Retain actual compatible DMA-BUF imports safely. |
+| 46 | [P54 — Reuse compatible exported/output resources within a bounded budget.](06-gpu-and-outputs.md) | Reuse compatible output resources instead of allocating repeatedly. |
+| 47 | [P59 — Reduce measured raster-resolution churn during navigation.](06-gpu-and-outputs.md) | Avoid navigation-time raster replacement churn. |
+| 48 | [P63 — Limit one background job family that delays visible work.](02-input-and-scheduling.md) | Promote on demonstrated background contention with foreground work. |
+| 49 | [P83 — Move one remaining blocking foreground operation off the interaction path.](02-input-and-scheduling.md) | Promote a remaining dominant blocking operation beyond named paths. |
+| 50 | [P73 — Test asynchronous preparation of a stalling shader pipeline.](02-input-and-scheduling.md) | Promote on a traced cold pipeline-compilation freeze. |
+| 51 | [P120 — Eliminate one proven no-op edit write and its downstream publication.](03-local-edits-and-storage.md) | A cheap no-op write/publication elimination can be a useful nearby win. |
+| 52 | [P128 — Keep terminal or Command output from monopolizing interface work.](05-feature-costs-and-scaling.md) | Promote when terminal/Command streams cause current input lag. |
+| 53 | [P127 — Remove one blocking preparation step from opening a native view.](05-feature-costs-and-scaling.md) | Promote a measured cold/warm opening stall. |
+| 54 | [P129 — Tie one media producer to real consumer presentation demand.](05-feature-costs-and-scaling.md) | Share/limit unnecessary media preparation for actual consumer demand. |
+| 55 | [P130 — Make one Area or physics recomputation depend on changed participants.](05-feature-costs-and-scaling.md) | Avoid all-participant Area/physics work when one input changes. |
+| 56 | [P50 — Compare an incremental spatial index with one expensive canvas scan.](05-feature-costs-and-scaling.md) | Index only a dominant scan where maintenance earns its cost. |
+| 57 | [P85 — Reuse one unchanged pointer-geometry derivation safely.](05-feature-costs-and-scaling.md) | Retain measured unchanged geometry without caching eligibility. |
+| 58 | [P84 — Apply the shared list approach to one other costly native list.](05-feature-costs-and-scaling.md) | Reuse successful list scaling for one other proven costly list. |
+| 59 | [P131 — Publish accessibility changes incrementally for a stable interface.](05-feature-costs-and-scaling.md) | Accessibility export only if it is costly or a simple work removal exists. |
+| 60 | [P132 — Retain one unchanged capture-contributor derivation.](05-feature-costs-and-scaling.md) | Retain unchanged capture contributor structure with current privacy. |
+| 61 | [P133 — Share one repeatedly created immutable asset family.](05-feature-costs-and-scaling.md) | Share a proven repeatedly created immutable asset family. |
+| 62 | [P86 — Rank actual bloat in active paths.](07-unbloat-and-release.md) | Rank actual executed/initialization bloat from the existing evidence. |
+| 63 | [P87 — Remove one proven obsolete active-code path.](07-unbloat-and-release.md) | Delete one proven obsolete active path and wiring. |
+| 64 | [P89 — Consolidate one redundant derived-state cache or resolver layer.](07-unbloat-and-release.md) | Consolidate redundant cache ownership, with invalidation preserved. |
+| 65 | [P88 — Consolidate one duplicated pure coordinate-mapping operation.](07-unbloat-and-release.md) | Share identical coordinate math only when useful and simpler. |
+| 66 | [P92 — Initialize one unused-at-startup resource family on demand.](07-unbloat-and-release.md) | Avoid an unused eager resource while keeping first use responsive. |
+| 67 | [P90 — Remove one unused dependency or redundant feature activation.](07-unbloat-and-release.md) | Remove a proven unnecessary dependency/feature activation. |
+| 68 | [P148 — Repair worker-only test feature gates.](07-unbloat-and-release.md) | Actual optional check failure in unchanged session-only test imports; validation/build benefit, no claimed desktop speedup. |
+| 69 | [P93 — Consolidate the performance-comparison runner around existing fixtures.](01-measurement.md) | Promote if the existing comparison runner blocks the highest-value test. |
+| 70 | [P104 — Expose the existing performance cases as useful Laboratory results.](01-measurement.md) | Promote when selected cases need reusable Laboratory integration. |
+| 71 | [P134 — Generate the finite cross-feature workflow coverage set.](11-acceptance-and-experiments.md) | Close source-stamped finite cross-feature coverage gaps. |
+| 72 | [P135 — Measure the combined candidate and repair one harmful interaction.](11-acceptance-and-experiments.md) | Run at integration boundaries; diagnose/repair harmful interactions. |
+| 73 | [P57 — Test direct scanout for one eligible fullscreen SDR client.](06-gpu-and-outputs.md) | Conditional fullscreen-only win after broader rendering costs. |
+| 74 | [P96 — Compare cross-crate ThinLTO with the current release profile.](07-unbloat-and-release.md) | Broad release-code opportunity after structural source stabilization. |
+| 75 | [P97 — Compare release codegen-units = 1 with the current partition count.](07-unbloat-and-release.md) | Compare codegen partitioning at fixed LTO/profile. |
+| 76 | [P98 — Compare full LTO with the best measured ThinLTO release.](07-unbloat-and-release.md) | Compare full LTO with selected ThinLTO, including build cost. |
+| 77 | [P100 — Compare a deliberate CPU target with the shipping target.](07-unbloat-and-release.md) | Test an intentional supported machine target, not runner-native. |
+| 78 | [P99 — Test representative profile-guided optimization for the selected release profile.](07-unbloat-and-release.md) | Representative PGO last, after hot paths stabilize. |
+| 79 | [P64 — Establish genuinely quiet daily-workspace resource use.](11-acceptance-and-experiments.md) | Reuse current valid quiet-workspace evidence; close installed gate. |
+| 80 | [P65 — Establish prompt visible interaction under normal load.](11-acceptance-and-experiments.md) | Reuse current valid causal input observations; close installed gate. |
+| 81 | [P136 — Demonstrate prompt durable local title and description edits in daily use.](11-acceptance-and-experiments.md) | Close real local title/description durability and feedback acceptance. |
+| 82 | [P16 — Establish near-refresh presentation independently on both monitors.](11-acceptance-and-experiments.md) | Close each physical output’s near-refresh presentation acceptance. |
+| 83 | [P15 — Establish nearly lossless Firefox video under that same load.](11-acceptance-and-experiments.md) | Close matched nearly lossless Firefox video acceptance. |
+| 84 | [P140 — Make rule discovery and hidden-comment coverage explicit.](11-acceptance-and-experiments.md) | Awaiting owner refinement; map body/header requirements to explicit checks. |
+| 85 | [P141 — Reuse a bounded native UI fixture and define the ordered fast suite.](11-acceptance-and-experiments.md) | Needs P140 and refined fixture design; preserve ordinary input and isolation. |
+| 86 | [P142 — Add the first failing regression for the reported Protein Area dropdown.](11-acceptance-and-experiments.md) | Needs P141; mandatory first case verifies visible choices and selection. |
+| 87 | [P145 — Expose the same cases through Laboratory and the default interface check workflow.](11-acceptance-and-experiments.md) | Needs P142–P144; reuse the existing catalogue and P104 integration. |
+| 88 | [P146 — Verify actual text paint with one small offscreen render check.](11-acceptance-and-experiments.md) | Needs P142/P145 and a supported adapter; accessible names are insufficient. |
+| 89 | [P147 — Broaden coverage and optimize the routine suite against measurements.](11-acceptance-and-experiments.md) | Needs P140–P146; retain mandatory visual coverage within a measured runtime budget. |

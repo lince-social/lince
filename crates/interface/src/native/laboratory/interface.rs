@@ -57,6 +57,17 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::record_binding::laboratory_cases(&mut cases);
     crate::native::topology::presentation::tests::laboratory_cases(&mut cases);
     crate::native::description::shader::extent::checks::laboratory_cases(&mut cases);
+    let mut styles = Vec::new();
+    crate::native::token_style::resolver::tests::laboratory_cases(&mut styles);
+    cases.push(
+        styles
+            .into_iter()
+            .find(|case| {
+                case.name
+                    .ends_with("::text_autosave_retains_unrelated_styles_and_unchanged_geometry")
+            })
+            .expect("Missing native text autosave regression"),
+    );
     cases
 }
 
@@ -129,17 +140,17 @@ fn fast_interface_rules() {
             .name
             .ends_with("::record_projection_preserves_requested_fields_and_exact_values")
     }));
-    assert!(results.get(results.len() - 3).is_some_and(|result| {
+    assert!(results.iter().any(|result| {
         result
             .name
             .ends_with("::record_source_stays_stable_while_paused_and_typing_resumes_at_selection")
     }));
-    assert!(results.get(results.len() - 2).is_some_and(|result| {
+    assert!(results.iter().any(|result| {
         result
             .name
             .ends_with("::splice_preserves_unicode_mutations_and_cursors")
     }));
-    assert!(results.last().is_some_and(|result| {
+    assert!(results.iter().any(|result| {
         result
             .name
             .ends_with("::journal_updates_remain_incremental_across_acknowledgements")

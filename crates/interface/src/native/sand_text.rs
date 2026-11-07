@@ -14,7 +14,7 @@ pub enum TextOverflow {
     Grow,
 }
 
-#[derive(Component, Clone, Debug, Serialize, Deserialize)]
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SandText {
     #[serde(default)]
     pub settings: lince_interface::settings::Values,
@@ -155,13 +155,16 @@ pub fn fit_sand(world: &mut World, sand: Entity) {
     {
         return;
     }
-    let required = snapshot(world, sand).iter().fold(Vec2::ZERO, |size, text| {
-        size.max(
-            Vec2::from_array(text.area.offset)
-                + Vec2::from_array(text.area.size)
-                + Vec2::splat(16.0),
-        )
-    });
+    let required = world
+        .get::<Children>(sand)
+        .into_iter()
+        .flatten()
+        .filter_map(|entity| world.get::<SandText>(*entity))
+        .fold(Vec2::ZERO, |size, area| {
+            size.max(
+                Vec2::from_array(area.offset) + Vec2::from_array(area.size) + Vec2::splat(16.0),
+            )
+        });
     if let Some(mut item) = world.get_mut::<CanvasItem>(sand) {
         let size = item.size.max(required);
         let delta = size - item.size;

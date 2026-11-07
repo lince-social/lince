@@ -6,7 +6,7 @@ use crate::native::{
     theme::Typography,
     workspace::{WorkspaceMember, Workspaces},
 };
-use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
+use bevy::{prelude::*, text::EditableText};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextAction {
@@ -173,7 +173,9 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: TextAction) -> bool
                 if text.value().to_string() != values[0] {
                     text.editor.set_text(&values[0]);
                 }
-            } else if let Some(mut text) = world.get_mut::<Text>(selected) {
+            } else if let Some(mut text) = world.get_mut::<Text>(selected)
+                && text.0 != values[0]
+            {
                 text.0.clone_from(&values[0]);
             }
             world.get_mut::<TextPanel>(panel).unwrap().original = values[0].clone();
@@ -205,12 +207,20 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: TextAction) -> bool
             }
             if !managed {
                 let mut node = world.get_mut::<Node>(selected).unwrap();
-                node.left = px(area.offset[0]);
-                node.top = px(area.offset[1]);
-                node.width = px(area.size[0]);
-                node.height = px(area.size[1]);
+                if node.left != px(area.offset[0])
+                    || node.top != px(area.offset[1])
+                    || node.width != px(area.size[0])
+                    || node.height != px(area.size[1])
+                {
+                    node.left = px(area.offset[0]);
+                    node.top = px(area.offset[1]);
+                    node.width = px(area.size[0]);
+                    node.height = px(area.size[1]);
+                }
             }
-            world.entity_mut(selected).insert(area);
+            if world.get::<SandText>(selected) != Some(&area) {
+                world.entity_mut(selected).insert(area);
+            }
             sand_text::fit_sand(world, sand);
             error(world, panel, "");
         }
@@ -283,6 +293,7 @@ pub(crate) fn set_text(
 fn error(world: &mut World, panel: Entity, message: &str) {
     if let Some(entity) = world.get::<TextPanel>(panel).and_then(|state| state.error)
         && let Some(mut text) = world.get_mut::<Text>(entity)
+        && text.0 != message
     {
         text.0 = message.into();
     }
@@ -395,9 +406,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
         editor.max_characters = Some(if index == 0 { 4096 } else { 16 });
         editor.allow_newlines = index == 0;
         editor.visible_lines = Some(if index == 0 { 3.0 } else { 1.0 });
-        if let Some(mut node) = world.get_mut::<AccessibilityNode>(entity) {
-            node.set_label(name);
-        }
+        crate::native::accessibility::input(world, entity, name, index == 0);
         if index > 0 && managed {
             world.get_mut::<Node>(entity).unwrap().display = Display::None;
         }

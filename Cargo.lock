@@ -9336,6 +9336,7 @@ dependencies = [
  "engine",
  "lince-cell",
  "lince-interface",
+ "lince-refresh",
  "lince-smithay-capture",
  "nucleus",
  "pkg-config",
@@ -9465,6 +9466,18 @@ dependencies = [
  "lince-resources",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "lince-refresh"
+version = "0.8.0"
+dependencies = [
+ "rustix 1.1.4",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "subtle",
+ "tempfile",
 ]
 
 [[package]]

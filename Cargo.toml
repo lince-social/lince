@@ -14,6 +14,7 @@ members = [
     "crates/geist",
     "crates/sandbox",
     "crates/park",
+    "crates/refresh",
     "crates/park-clients",
     "crates/practice",
     "crates/interface",

@@ -42,6 +42,20 @@ fn object_key(id: &InnerObjectId) -> ObjectKey {
     }
 }
 
+impl ClientId {
+    #[doc(hidden)]
+    pub fn handoff_key(&self) -> ClientKey {
+        client_key(&self.id)
+    }
+}
+
+impl ObjectId {
+    #[doc(hidden)]
+    pub fn handoff_key(&self) -> ObjectKey {
+        object_key(&self.id)
+    }
+}
+
 fn globals<D: 'static>(state: &State<D>) -> Vec<Option<GlobalState>> {
     state
         .registry
@@ -459,8 +473,15 @@ impl<D: 'static> InnerBackend<D> {
                         if restored.data.serial != object.serial
                             || restored.version != object.version
                             || protocol_identity(restored.interface) != object.protocol
+                            || restored
+                                .data
+                                .user_data
+                                .downcast_ref::<crate::handoff::DeferredObjectData>()
+                                .is_some()
                         {
-                            return Err(invalid("Finalizer changed resource identity"));
+                            return Err(invalid(
+                                "Finalizer left an incomplete resource or changed its identity",
+                            ));
                         }
                     }
                 }

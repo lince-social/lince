@@ -1002,6 +1002,7 @@ impl Dispatch<wl_surface::WlSurface, FinalizedSurface> for MiniState {
 #[derive(Clone, Copy)]
 enum Finalization {
     Restore,
+    Incomplete,
     Reject,
     QueueEvent,
     FlushEvent,
@@ -1061,6 +1062,9 @@ impl ConnectionDecoder<MiniState> for FinalizingCodec {
         payload: &[u8],
         descriptors: &[OwnedFd],
     ) -> io::Result<Arc<dyn ObjectData<MiniState>>> {
+        if info.interface.name == "wl_surface" {
+            return Ok(wayland_backend::handoff::deferred_object_data());
+        }
         ConnectionDecoder::<MiniState>::object(&mut Codec, key, info, payload, descriptors)
     }
 
@@ -1068,6 +1072,9 @@ impl ConnectionDecoder<MiniState> for FinalizingCodec {
         let handle = DisplayHandle::from(context.backend_handle().clone());
         let mut peer = None;
         for key in &self.surfaces {
+            if matches!(self.mode, Finalization::Incomplete) {
+                continue;
+            }
             let id = context.object(*key)?;
             context
                 .backend_handle()
@@ -1091,7 +1098,7 @@ impl ConnectionDecoder<MiniState> for FinalizingCodec {
         stale.serial = stale.serial.wrapping_add(1);
         assert!(context.object(stale).is_err());
         match self.mode {
-            Finalization::Restore => Ok(()),
+            Finalization::Restore | Finalization::Incomplete => Ok(()),
             Finalization::Reject => Err(io::Error::other("Injected finalization rejection")),
             Finalization::Panic => panic!("Injected finalizer panic"),
             Finalization::QueueEvent | Finalization::FlushEvent => {
@@ -1136,6 +1143,7 @@ fn backend_finalization_rebuilds_typed_resource_references_before_dispatch() {
 #[test]
 fn backend_finalization_errors_panics_and_protocol_io_leave_source_usable_and_allow_retry() {
     for mode in [
+        Finalization::Incomplete,
         Finalization::Reject,
         Finalization::QueueEvent,
         Finalization::FlushEvent,

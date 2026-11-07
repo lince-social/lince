@@ -114,6 +114,19 @@ pub enum TraversalAction<T> {
 
 impl PrivateSurfaceData {
     #[cfg(feature = "handoff")]
+    pub(super) fn discard_handoff(&mut self) {
+        self.parent = None;
+        self.children.clear();
+        self.public_data.role = None;
+        self.public_data.data_map = Default::default();
+        self.public_data.cached_state = MultiCache::new();
+        self.pending_transaction = Default::default();
+        self.pre_commit_hooks.clear();
+        self.post_commit_hooks.clear();
+        self.destruction_hooks.clear();
+    }
+
+    #[cfg(feature = "handoff")]
     pub(super) fn handoff_isolated(&self, surface: &WlSurface) -> std::io::Result<super::handoff::IsolatedSurfaceCheckpoint> {
         if self.parent.is_some() || self.children.len() != 1 || self.children[0] != *surface {
             return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "Transfer nontrivial surface topology with the tree adapter"));
@@ -166,7 +179,22 @@ impl PrivateSurfaceData {
             pre_commit: self.pre_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
             post_commit: self.post_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
             destruction: self.destruction_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
+            capacities: [self.pre_commit_hooks.capacity(), self.post_commit_hooks.capacity(), self.destruction_hooks.capacity()],
         }
+    }
+
+    #[cfg(feature = "handoff")]
+    pub(super) fn reserve_handoff_hooks(&mut self, capacities: [usize; 3]) -> std::io::Result<()> {
+        if capacities.into_iter().any(|capacity| capacity > 65536) {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Surface hook allocation exceeds checkpoint limit"));
+        }
+        if !self.pre_commit_hooks.is_empty() || !self.post_commit_hooks.is_empty() || !self.destruction_hooks.is_empty() {
+            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Surface hooks have already been restored"));
+        }
+        self.pre_commit_hooks = Vec::with_capacity(capacities[0]);
+        self.post_commit_hooks = Vec::with_capacity(capacities[1]);
+        self.destruction_hooks = Vec::with_capacity(capacities[2]);
+        Ok(())
     }
 
     pub fn new() -> Mutex<PrivateSurfaceData> {

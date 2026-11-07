@@ -3,6 +3,8 @@ use super::{
     erase_destruction_hook,
 };
 
+pub use super::tree::SuggestedSurfaceState;
+
 #[derive(Clone, Debug)]
 pub struct EmptyQueueCheckpoint {
     pub transaction_capacity: usize,
@@ -143,6 +145,20 @@ pub struct SurfaceHooks {
     pub pre_commit: Vec<CallbackIdentity>,
     pub post_commit: Vec<CallbackIdentity>,
     pub destruction: Vec<CallbackIdentity>,
+    pub capacities: [usize; 3],
+}
+
+pub fn reserve_hooks(surface: &WlSurface, capacities: [usize; 3]) -> io::Result<()> {
+    let data = surface.data::<SurfaceUserData>().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Surface has no restored compositor data",
+        )
+    })?;
+    data.inner
+        .lock()
+        .map_err(|_| io::Error::other("Poisoned surface hook restore lock"))?
+        .reserve_handoff_hooks(capacities)
 }
 
 pub fn surface_hooks(surface: &WlSurface) -> io::Result<SurfaceHooks> {

@@ -234,6 +234,25 @@ pub struct FractionalScaleState {
 }
 
 impl FractionalScaleState {
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn handoff_parts(&self) -> (Option<wp_fractional_scale_v1::WpFractionalScaleV1>, Option<f64>) {
+        (self.fractional_scale.clone(), self.preferred_scale)
+    }
+
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn from_handoff(
+        fractional_scale: Option<wp_fractional_scale_v1::WpFractionalScaleV1>,
+        preferred_scale: Option<f64>,
+    ) -> std::io::Result<Self> {
+        if preferred_scale.is_some_and(|scale| !scale.is_finite() || scale <= 0.0)
+            || fractional_scale.as_ref().is_some_and(|resource| !resource.is_alive()) {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid restored fractional scale state"));
+        }
+        Ok(Self { fractional_scale, preferred_scale })
+    }
+
     /// Set the preferred scale
     pub fn set_preferred_scale(&mut self, scale: f64) {
         if self.preferred_scale != Some(scale) {

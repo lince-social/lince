@@ -153,6 +153,34 @@ pub struct RestoreContext {
     pub(crate) objects: std::collections::BTreeMap<ObjectKey, ObjectId>,
 }
 
+#[derive(Debug)]
+pub(crate) struct DeferredObjectData;
+
+impl<D: 'static> ObjectData<D> for DeferredObjectData {
+    fn request(
+        self: Arc<Self>,
+        _: &crate::rs::server::Handle,
+        _: &mut D,
+        _: ClientId,
+        _: crate::protocol::Message<ObjectId, OwnedFd>,
+    ) -> Option<Arc<dyn ObjectData<D>>> {
+        None
+    }
+
+    fn destroyed(
+        self: Arc<Self>,
+        _: &crate::rs::server::Handle,
+        _: &mut D,
+        _: ClientId,
+        _: ObjectId,
+    ) {
+    }
+}
+
+pub fn deferred_object_data<D: 'static>() -> Arc<dyn ObjectData<D>> {
+    Arc::new(DeferredObjectData)
+}
+
 impl RestoreContext {
     pub fn object(&self, key: ObjectKey) -> io::Result<ObjectId> {
         self.objects
@@ -210,8 +238,14 @@ pub(crate) fn protocol_identity(interface: &Interface) -> String {
 
 impl Checkpoint {
     pub fn validate(&self) -> io::Result<()> {
+        self.state.validate(self.descriptors.len())
+    }
+}
+
+impl ConnectionState {
+    pub fn validate(&self, descriptor_count: usize) -> io::Result<()> {
         use std::collections::BTreeSet;
-        let state = &self.state;
+        let state = self;
         if state.schema != 1 || state.little_endian != cfg!(target_endian = "little") {
             return Err(invalid("Unsupported checkpoint schema or byte order"));
         }
@@ -219,8 +253,8 @@ impl Checkpoint {
             || state.client_slots > MAX_CLIENTS
             || state.client_capacity < state.client_slots
             || state.client_capacity > MAX_CLIENTS
-            || state.descriptor_count != self.descriptors.len()
-            || self.descriptors.len() > MAX_DESCRIPTORS
+            || state.descriptor_count != descriptor_count
+            || descriptor_count > MAX_DESCRIPTORS
             || state.globals.len() > MAX_OBJECTS
             || state.registries.len() > MAX_OBJECTS
             || state.global_capacity < state.globals.len()
@@ -310,7 +344,7 @@ impl Checkpoint {
                 .chain(&client.socket.incoming_fds)
                 .chain(&client.socket.outgoing_fds)
             {
-                if *index >= self.descriptors.len() || !descriptor_uses.insert(*index) {
+                if *index >= descriptor_count || !descriptor_uses.insert(*index) {
                     return Err(invalid("Invalid or reused connection descriptor index"));
                 }
             }

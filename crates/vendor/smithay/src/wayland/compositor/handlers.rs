@@ -159,6 +159,11 @@ pub struct SurfaceUserData {
 #[cfg(feature = "handoff")]
 impl SurfaceUserData {
     #[doc(hidden)]
+    pub fn discard_handoff(&self) {
+        self.inner.lock().unwrap_or_else(|error| error.into_inner()).discard_handoff();
+    }
+
+    #[doc(hidden)]
     pub fn for_handoff<D: 'static>() -> Self {
         Self {
             inner: PrivateSurfaceData::new(),

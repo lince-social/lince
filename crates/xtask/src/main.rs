@@ -268,6 +268,8 @@ fn dispatch() -> Result<()> {
             version(&root)
         }
         Some("ship") => ship::dispatch(&root, &extra),
+        Some("refresh") => checked(cargo_command().current_dir(&root)
+            .args(["run", "--locked", "-p", "lince-refresh", "--"]).args(&extra)),
         Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
         Some("check") => {
             prune::with_cleanup(&root, || checked(cargo_command().arg("check").args(&extra)))
@@ -374,6 +376,7 @@ fn dispatch() -> Result<()> {
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!("test-interface runs the ordered fast Laboratory interface rules in the local test executable.");
             println!("ship --prepare-only tests and publishes a snapshot, waits for its Linux workflow, and realizes its verified Nix candidate; full session refresh remains unsupported. Use ship --help for options.");
+            println!("refresh <serve|status|shutdown> --runtime ABSOLUTE_DIRECTORY runs the separate workspace coordinator; Park replacement remains unimplemented.");
             println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
             println!(
                 "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."

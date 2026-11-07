@@ -37,6 +37,7 @@ mod windowed_fullscreen;
 mod compact;
 mod scratch;
 mod ordinary;
+mod pacing;
 mod providers;
 #[cfg(feature = "session")]
 mod power;

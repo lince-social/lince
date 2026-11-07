@@ -20,6 +20,13 @@ fn activity() -> Activity {
 
 async fn cell() -> (Engine, String) {
     let engine = Engine::open_memory().await.unwrap();
+    engine
+        .set_sync_history_policy(Retention {
+            enabled: true,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
     let organ = store::organs::ensure_local(&engine.store.pool, "")
         .await
         .unwrap()
@@ -56,6 +63,87 @@ async fn pair(engine: &Engine, organ: &str) {
 }
 
 #[tokio::test]
+async fn disabled_diagnostic_history_needs_no_database_connection_and_preserves_work() {
+    let engine = Engine::open_memory().await.unwrap();
+    let held = engine.store.pool.acquire().await.unwrap();
+    let value = tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        engine.sync_service.run(
+            &engine.store,
+            activity(),
+            async { Ok::<_, String>(42) },
+            |_| panic!("disabled history must not prepare a saved diagnostic summary"),
+        ),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(value, 42);
+    assert!(engine.sync_service.active().is_empty());
+    drop(held);
+    assert!(!engine.sync_overview(None).await.unwrap().retention.enabled);
+    engine
+        .set_sync_history_policy(Retention {
+            enabled: true,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    engine
+        .sync_service
+        .run(
+            &engine.store,
+            activity(),
+            async { Ok::<_, String>(()) },
+            |_| Summary::new(Outcome::Refreshed, 1),
+        )
+        .await
+        .unwrap();
+    assert_eq!(engine.sync_overview(None).await.unwrap().history.len(), 1);
+    engine
+        .set_sync_history_policy(Retention::default())
+        .await
+        .unwrap();
+    engine
+        .sync_service
+        .run(
+            &engine.store,
+            activity(),
+            async { Ok::<_, String>(()) },
+            |_| Summary::new(Outcome::Refreshed, 1),
+        )
+        .await
+        .unwrap();
+    assert_eq!(engine.sync_overview(None).await.unwrap().history.len(), 1);
+}
+
+#[tokio::test]
+async fn file_failures_remain_visible_with_diagnostic_history_disabled() {
+    let engine = Engine::open_memory().await.unwrap();
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("not-a-directory");
+    std::fs::write(&path, "blocked").unwrap();
+    let error = engine
+        .file_sync_tick(&path, &organ, &mut engine::file_sync::FileSyncState::new())
+        .await
+        .unwrap_err();
+    let overview = engine.sync_overview(None).await.unwrap();
+    assert!(!overview.retention.enabled);
+    assert!(overview.history.is_empty());
+    assert!(
+        overview
+            .pending
+            .iter()
+            .any(|pending| pending.message.as_deref() == Some(error.to_string().as_str()))
+    );
+}
+
+#[tokio::test]
 async fn history_expiry_and_clearing_do_not_delete_pending_work_or_content() {
     let (engine, _) = cell().await;
     let (_, peer) = cell().await;
@@ -76,6 +164,7 @@ async fn history_expiry_and_clearing_do_not_delete_pending_work_or_content() {
     store::sync_activity::set_retention(
         &engine.store.pool,
         Retention {
+            enabled: true,
             seconds: 60,
             max_entries: 2,
         },
@@ -132,6 +221,7 @@ async fn history_is_bounded_pageable_and_survives_restart() {
     assert!(queued > 0);
     let now = chrono::Utc::now().timestamp();
     let policy = Retention {
+        enabled: true,
         seconds: 3600,
         max_entries: 120,
     };
@@ -173,6 +263,7 @@ async fn history_is_bounded_pageable_and_survives_restart() {
         store::sync_activity::set_retention(
             &engine.store.pool,
             Retention {
+                enabled: true,
                 seconds: u64::MAX,
                 max_entries: 0
             },

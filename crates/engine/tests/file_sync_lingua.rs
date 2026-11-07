@@ -51,6 +51,353 @@ async fn hello(engine: &Engine) -> store::records::RecordRow {
 }
 
 #[tokio::test]
+async fn restarting_sync_preserves_a_newer_database_quantity() {
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    let uid = hello(&engine).await.uid;
+    engine
+        .act(
+            Action::SetQuantityExact {
+                target: uid.clone(),
+                amount: "-1".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let report = tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    assert!(report.updated_from_disk.is_empty());
+    assert!(report.written_to_disk.contains(&uid));
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn an_accepted_source_hash_preserves_changes_before_the_first_saved_baseline() {
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    store::sqlx::query("DELETE FROM file_sync_baseline")
+        .execute(&engine.store.pool)
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::SetQuantityExact {
+                target: hello(&engine).await.uid,
+                amount: "-1".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let report = tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    assert!(report.updated_from_disk.is_empty());
+    assert!(!report.written_to_disk.is_empty());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn adopting_an_accepted_unchanged_source_saves_its_baseline_for_later_file_edits() {
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    store::sqlx::query("DELETE FROM file_sync_baseline")
+        .execute(&engine.store.pool)
+        .await
+        .unwrap();
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    let count: i64 = store::sqlx::query_scalar("SELECT count(*) FROM file_sync_baseline")
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+    assert_eq!(count, 1);
+    let path = directory.join("test.lingua");
+    let source = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace(": 0,", ": 2,");
+    std::fs::write(&path, source).unwrap();
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    assert_eq!(hello(&engine).await.quantity.to_string(), "2");
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn file_input_is_rechecked_after_waiting_for_karma() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    static WAITING: AtomicBool = AtomicBool::new(false);
+    fn observe(reading: nucleus::performance::Reading) {
+        if matches!(
+            reading,
+            nucleus::performance::Reading::Count("file-sync-input-accept-attempts", _)
+        ) && std::thread::current().name()
+            == Some("file_input_is_rechecked_after_waiting_for_karma")
+        {
+            WAITING.store(true, Ordering::Release);
+        }
+    }
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    let uid = hello(&engine).await.uid;
+    let path = directory.join("test.lingua");
+    let source = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace(": 0,", ": 2,");
+    std::fs::write(&path, &source).unwrap();
+    assert!(nucleus::performance::install(observe));
+    let engine = Arc::new(engine);
+    let work = engine
+        .access_scope(true, async {
+            let work = tokio::spawn({
+                let engine = engine.clone();
+                let directory = directory.clone();
+                let organ = organ.clone();
+                async move {
+                    engine
+                        .file_sync_tick(&directory, &organ, &mut FileSyncState::new())
+                        .await
+                }
+            });
+            tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                while !WAITING.load(Ordering::Acquire) {
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .expect("sync must reach acceptance while Karma owns the mutation lock");
+            engine
+                .act(
+                    Action::SetQuantityExact {
+                        target: uid.clone(),
+                        amount: "-1".into(),
+                    },
+                    None,
+                )
+                .await?;
+            Ok(work)
+        })
+        .await
+        .unwrap();
+    let report = work.await.unwrap().unwrap();
+    assert!(!report.conflicts.is_empty(), "{report:?}");
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn unchanged_lingua_pass_does_not_commit_or_invalidate_data() {
+    use store::sqlx::Connection;
+    let storage = tempfile::tempdir().unwrap();
+    let directory = copy_user_file();
+    let url = format!("sqlite://{}", storage.path().join("idle.sqlite").display());
+    let engine = Engine::open(&url).await.unwrap();
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    engine
+        .act(
+            Action::ConfigureFileSync {
+                protein: String::new(),
+                path: directory.to_string_lossy().into(),
+                format: FileFormat::Lingua,
+                enabled: true,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut state = FileSyncState::new();
+    tick(&engine, &directory, &organ, &mut state).await;
+    let mut observer = store::sqlx::SqliteConnection::connect(&url).await.unwrap();
+    let version: i64 = store::sqlx::query_scalar("PRAGMA data_version")
+        .fetch_one(&mut observer)
+        .await
+        .unwrap();
+    let before: i64 = store::sqlx::query_scalar("SELECT value FROM commit_sequence WHERE id = 1")
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+    tick(&engine, &directory, &organ, &mut state).await;
+    let after: i64 = store::sqlx::query_scalar("SELECT value FROM commit_sequence WHERE id = 1")
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+    assert_eq!(after, before);
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    let next_version: i64 = store::sqlx::query_scalar("PRAGMA data_version")
+        .fetch_one(&mut observer)
+        .await
+        .unwrap();
+    assert_eq!(
+        version, next_version,
+        "idle and restored passes must not commit even direct SQL writes"
+    );
+    engine.store.pool.close().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn file_backed_restart_preserves_karma_changes_and_activation() {
+    let storage = tempfile::tempdir().unwrap();
+    let directory = copy_user_file();
+    let url = format!("sqlite://{}", storage.path().join("karma.sqlite").display());
+    let engine = Engine::open(&url).await.unwrap();
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    engine
+        .act(
+            Action::ConfigureFileSync {
+                protein: String::new(),
+                path: directory.to_string_lossy().into(),
+                format: FileFormat::Lingua,
+                enabled: true,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    let (frequency, rule) = add_automation(&engine).await;
+    engine
+        .install_karma_runtime_config(
+            engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("restart-test".into())
+                .unwrap(),
+        )
+        .unwrap();
+    let handle = store::karma::frequencies::get_handle(&engine.store.pool, &frequency)
+        .await
+        .unwrap()
+        .unwrap();
+    engine
+        .act(
+            Action::ActivateKarmaFrequency {
+                request_id: "activate-before-restart".into(),
+                frequency_uid: frequency.clone(),
+                expected_handle_revision: handle.handle_revision,
+                revision_hash: handle.head_revision_hash,
+                parameter_overrides: Default::default(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let mut state = FileSyncState::new();
+    tick(&engine, &directory, &organ, &mut state).await;
+    let at: chrono::DateTime<chrono::Utc> = "2030-01-01T09:00:00Z".parse().unwrap();
+    engine.advance_karma_time(at).await.unwrap();
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    engine
+        .act(
+            Action::SetRecurrencePaused {
+                recurrence: rule.clone(),
+                expected_revision: 1,
+                request_id: "pause-before-restart".into(),
+                paused: true,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    engine.store.pool.close().await;
+    drop(engine);
+    let engine = Engine::open(&url).await.unwrap();
+    let before = store::karma::frequencies::get_handle(&engine.store.pool, &frequency)
+        .await
+        .unwrap()
+        .unwrap();
+    let report = tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    assert!(report.updated_from_disk.is_empty());
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    assert!(
+        store::recurrence::get(&engine.store.pool, &rule)
+            .await
+            .unwrap()
+            .unwrap()
+            .is_paused()
+    );
+    assert_eq!(
+        store::karma::frequencies::get_handle(&engine.store.pool, &frequency)
+            .await
+            .unwrap()
+            .unwrap(),
+        before
+    );
+    engine.store.pool.close().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn restart_detects_conflicting_edits_instead_of_overwriting_either_side() {
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    tick(&engine, &directory, &organ, &mut FileSyncState::new()).await;
+    engine
+        .act(
+            Action::SetQuantityExact {
+                target: hello(&engine).await.uid,
+                amount: "-1".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let path = directory.join("test.lingua");
+    let source = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace(": 0,", ": 2,");
+    std::fs::write(&path, &source).unwrap();
+    let report = engine
+        .file_sync_tick(&directory, &organ, &mut FileSyncState::new())
+        .await
+        .unwrap();
+    assert!(!report.conflicts.is_empty());
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+async fn an_existing_record_without_a_baseline_requires_explicit_import() {
+    let directory = copy_user_file();
+    let (engine, organ) = configured(&directory).await;
+    engine
+        .act(
+            Action::CreateRecord {
+                slug: Some("hello-my-world".into()),
+                kind: nucleus::RecordKind::Plain,
+                head: "Newer database record".into(),
+                body: String::new(),
+                quantity: -1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let report = engine
+        .file_sync_tick(&directory, &organ, &mut FileSyncState::new())
+        .await
+        .unwrap();
+    assert!(!report.conflicts.is_empty());
+    assert_eq!(hello(&engine).await.quantity.to_string(), "-1");
+    let imported = engine.import_lingua_directory(&directory).await.unwrap();
+    assert!(imported.conflicts.is_empty(), "{imported:?}");
+    assert_eq!(hello(&engine).await.quantity.to_string(), "0");
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
 async fn file_meanings_survive_retired_terms_and_new_homonyms() {
     let path = user_file();
     let directory = path.parent().unwrap();

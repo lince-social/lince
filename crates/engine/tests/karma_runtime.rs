@@ -28,6 +28,76 @@ use store::karma::frequencies::{
 };
 
 #[tokio::test]
+async fn deadline_director_recovers_from_file_backed_sqlite_contention() {
+    use store::sqlx::Connection;
+    let directory = tempfile::tempdir().unwrap();
+    let url = format!(
+        "sqlite://{}",
+        directory.path().join("contended.sqlite").display()
+    );
+    let engine = Arc::new(Engine::open(&url).await.unwrap());
+    support::karma::authorize(&engine).await;
+    let runtime = KarmaDeadlineDirectorConfig::for_host("contention-test".into()).unwrap();
+    let now = Utc::now();
+    let active = create_active_definition(
+        &engine,
+        &runtime,
+        host_paced_frequency(TimestampMs::from_millis(now.timestamp_millis() + 300).unwrap()),
+        "contended",
+        now,
+    )
+    .await;
+    let mut connections = Vec::new();
+    for _ in 0..4 {
+        let mut connection = engine.store.pool.acquire().await.unwrap();
+        store::sqlx::query("PRAGMA busy_timeout = 0")
+            .execute(&mut *connection)
+            .await
+            .unwrap();
+        connections.push(connection);
+    }
+    drop(connections);
+    let mut writer = store::sqlx::SqliteConnection::connect(&url).await.unwrap();
+    store::sqlx::query("BEGIN IMMEDIATE")
+        .execute(&mut writer)
+        .await
+        .unwrap();
+    let runner = engine.clone().start_karma_deadline_director(runtime);
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let status = engine.karma_device_execution().await.unwrap();
+            if status
+                .runtime_failure
+                .is_some_and(|failure| failure.retrying)
+            {
+                break;
+            }
+            assert!(!runner.is_finished());
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("contention must be reported as retryable, not kill Karma");
+    store::sqlx::query("ROLLBACK")
+        .execute(&mut writer)
+        .await
+        .unwrap();
+    wait_for_occurrences(&engine, active.active_activation_hash.as_ref().unwrap(), 2).await;
+    assert!(
+        engine
+            .karma_device_execution()
+            .await
+            .unwrap()
+            .runtime_failure
+            .is_none()
+    );
+    assert!(!runner.is_finished());
+    runner.abort();
+    let _ = runner.await;
+    engine.store.pool.close().await;
+}
+
+#[tokio::test]
 async fn tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat() {
     let engine = Arc::new(support::karma::engine().await);
     let now = Utc::now();
@@ -1021,6 +1091,16 @@ async fn create_active_elapsed(
             maximum: DurationMs::new(interval_ms.max(1_000)),
         },
     );
+    create_active_definition(engine, runtime, definition, request_suffix, now).await
+}
+
+async fn create_active_definition(
+    engine: &Engine,
+    runtime: &KarmaDeadlineDirectorConfig,
+    definition: FrequencyAst,
+    request_suffix: &str,
+    now: chrono::DateTime<Utc>,
+) -> store::karma::frequencies::FrequencyHandleRow {
     let created = committed(
         engine
             .create_karma_frequency(

@@ -440,8 +440,53 @@ impl Engine {
         config: KarmaDeadlineDirectorConfig,
     ) -> tokio::task::JoinHandle<Result<(), EngineError>> {
         let changed = self.karma_deadline_changed.subscribe();
-        tokio::spawn(run_deadline_director(self, config, changed))
+        tokio::spawn(async move {
+            let mut delay = std::time::Duration::from_millis(100);
+            loop {
+                let started = tokio::time::Instant::now();
+                let result =
+                    run_deadline_director(self.clone(), config.clone(), changed.clone()).await;
+                match result {
+                    Err(error) if error.is_retryable_store_error() => {
+                        self.set_karma_runtime_failure(Some(RuntimeFailure {
+                            retrying: true,
+                            message: error.to_string(),
+                        }));
+                        tracing::warn!(%error, "Karma will retry after temporary database contention");
+                        if started.elapsed() >= std::time::Duration::from_secs(60) {
+                            delay = std::time::Duration::from_millis(100);
+                        }
+                        tokio::time::sleep(delay).await;
+                        delay = (delay * 2).min(std::time::Duration::from_secs(5));
+                    }
+                    result => {
+                        self.set_karma_runtime_failure(result.as_ref().err().map(|error| {
+                            RuntimeFailure {
+                                retrying: false,
+                                message: error.to_string(),
+                            }
+                        }));
+                        return result;
+                    }
+                }
+            }
+        })
     }
+
+    fn set_karma_runtime_failure(&self, failure: Option<RuntimeFailure>) {
+        let mut current = self.karma_runtime_failure.lock().unwrap();
+        if *current != failure {
+            *current = failure;
+            drop(current);
+            self.notify_query_changed();
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct RuntimeFailure {
+    pub retrying: bool,
+    pub message: String,
 }
 
 pub struct KarmaStep {
@@ -483,6 +528,7 @@ async fn run_deadline_director(
 ) -> Result<(), EngineError> {
     validate_runtime_identity(&config.worker_id, config.lease_duration)?;
     let mut directory = rebuild_directory(&engine, &config).await?;
+    engine.set_karma_runtime_failure(None);
     let mut lease_recovery_at = directory.lease_recovery_at;
 
     loop {

@@ -204,3 +204,8 @@ required-features = ["native-presentation"]
 name = "transfer_laboratory"
 path = "examples/transfer_laboratory.rs"
 required-features = ["native-presentation"]
+
+[[example]]
+name = "showcase-screenshot"
+path = "examples/showcase_screenshot.rs"
+required-features = ["native-presentation"]

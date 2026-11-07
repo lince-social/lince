@@ -177,6 +177,14 @@ pub(crate) struct Presented {
     pub popups: Vec<PopupScene>,
 }
 
+impl Presented {
+    pub(crate) fn submitted(&self, server: &mut Server, output: Option<OutputId>) {
+        for (_, nodes) in self.callbacks.iter().filter(|(target, _)| output.is_none_or(|output| target.is_none_or(|target| target == output))) {
+            server.frame_started_nodes(nodes);
+        }
+    }
+}
+
 impl Composition {
     pub(crate) fn enable_client_formats(&mut self, renderer: &GlesRenderer, server: &mut Server, frame: &crate::presentation::Frame) -> io::Result<()> {
         use smithay::backend::allocator::{Format, Modifier};
@@ -441,6 +449,7 @@ impl Composition {
             .submit(Some(&[Rect::from_size(size)]))
             .map_err(error)?;
         crate::runtime::trace_frame("nested-submit", started);
+        presented.submitted(server, None);
         backend.window().set_cursor_visible(false);
         Ok(presented)
     }

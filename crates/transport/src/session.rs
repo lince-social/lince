@@ -355,13 +355,7 @@ impl Session {
                 if !self.local_sync {
                     return vec![sync_denied(id)];
                 }
-                match store::sync_activity::set_retention(
-                    &self.engine.store.pool,
-                    retention,
-                    sync_now(),
-                )
-                .await
-                {
+                match self.engine.set_sync_history_policy(retention).await {
                     Ok(()) => self.sync_status(id, None).await,
                     Err(error) => vec![ServerMessage::Error {
                         id,
@@ -1137,13 +1131,6 @@ fn sync_denied(id: String) -> ServerMessage {
         message: "Sync administration is available in the local interface".into(),
         code: Some("sync_local_only".into()),
     }
-}
-
-fn sync_now() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64
 }
 
 fn action_error(id: String, error: EngineError) -> ServerMessage {

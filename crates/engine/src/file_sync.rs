@@ -102,7 +102,8 @@ impl Engine {
         state: &mut FileSyncState,
     ) -> Result<FileSyncReport, EngineError> {
         use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
-        self.sync_service
+        let result = self
+            .sync_service
             .run(
                 &self.store,
                 Activity {
@@ -139,7 +140,20 @@ impl Engine {
                     summary
                 },
             )
-            .await
+            .await;
+        if let Err(error) = &result {
+            self.file_sync_conflicts
+                .lock()
+                .expect("file sync conflicts")
+                .insert(
+                    organ_uid.into(),
+                    vec![FileConflict {
+                        path: dir.display().to_string(),
+                        reason: error.to_string(),
+                    }],
+                );
+        }
+        result
     }
 
     async fn file_sync_pass(

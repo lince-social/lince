@@ -69,6 +69,19 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
             .expect("Missing native text autosave regression"),
     );
     crate::native::time_castle::wake_checks::laboratory_cases(&mut cases);
+    let mut karma = Vec::new();
+    crate::native::karma_castle::tests::laboratory_cases(&mut karma);
+    cases.push(
+        karma
+            .into_iter()
+            .find(|case| {
+                case.name.ends_with(
+                    "::execution_failures_show_retry_and_stopped_status_and_clear_after_recovery",
+                )
+            })
+            .expect("Missing Karma runtime status regression"),
+    );
+    super::showoff::screenshot::laboratory_cases(&mut cases);
     cases
 }
 
@@ -558,8 +571,45 @@ fn shared_dropdown_captions_follow_available_width_and_theme() {
     assert!(!glyphs(app.world(), toggle, "First option"));
 }
 
+#[cfg_attr(test, test)]
+fn sync_history_controls_draw_and_respond_while_live_status_stays_visible() {
+    let (mut app, root) = fixture(UVec2::new(1000, 1000), 1.0);
+    for enabled in [false, true] {
+        crate::native::information::sync::tests::present(app.world_mut(), root, enabled);
+        settle(&mut app);
+        let caption = if enabled {
+            "Save sync history: on"
+        } else {
+            "Save sync history: off"
+        };
+        let button = named(app.world_mut(), root, caption);
+        assert!(
+            glyphs(app.world(), button, caption),
+            "History choice must have visible glyphs"
+        );
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("3 waiting to send")
+                    && text.0.contains("1 need attention"))
+        );
+        click(
+            &mut app,
+            root,
+            caption,
+            UiCondition::Visible(Selector::new(caption).with_role("Button")),
+        );
+        assert_eq!(
+            crate::native::information::sync::tests::connection_error(app.world()),
+            Some("Sync is not connected.")
+        );
+    }
+}
+
 crate::native::laboratory_cases! {
     protein_area_filter_visible_and_selectable,
     shared_dropdown_captions_follow_available_width_and_theme,
     edit_panel_usable_bounds,
+    sync_history_controls_draw_and_respond_while_live_status_stays_visible,
 }

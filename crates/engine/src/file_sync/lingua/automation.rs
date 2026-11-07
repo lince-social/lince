@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use nucleus::karma::{Cadence, CadenceStep, Carry, Consequences, FrequencyAst, Gate};
 use store::karma::frequencies;
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub(super) struct Automation {
     pub frequencies: Vec<ProjectedFrequency>,
     pub rules: Vec<ProjectedRule>,

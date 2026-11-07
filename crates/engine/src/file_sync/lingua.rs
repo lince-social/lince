@@ -8,15 +8,18 @@ use automation::Automation;
 #[derive(Debug, Default)]
 pub(super) struct State {
     files: HashMap<PathBuf, Document>,
+    loaded: bool,
+    unsaved: HashSet<PathBuf>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct Document {
     source: String,
     identified: String,
     records: Vec<ProjectedRecord>,
     extensions: Vec<anicca::ProjectedExtension>,
     automation: Automation,
+    #[serde(skip)]
     missing: u32,
 }
 
@@ -65,6 +68,7 @@ impl Engine {
         &self,
         path: &Path,
         document: &Document,
+        scope: Option<(&str, &str)>,
     ) -> Result<(), EngineError> {
         let uri = lince_resources::Reference::path(path)
             .map_err(invalid)?
@@ -74,6 +78,16 @@ impl Engine {
         for record in &document.records {
             store::source_locations::remember_on(&mut tx, &record.uid, &record.uid, &uri, &hash)
                 .await?;
+        }
+        if let Some((organ, directory)) = scope {
+            store::file_sync_baselines::save_on(
+                &mut tx,
+                organ,
+                directory,
+                &path.to_string_lossy(),
+                &serde_json::to_string(document)?,
+            )
+            .await?;
         }
         tx.commit().await?;
         Ok(())
@@ -265,7 +279,11 @@ impl Engine {
         Ok(extensions)
     }
 
-    async fn apply_lingua_record(&self, record: &ProjectedRecord) -> Result<bool, EngineError> {
+    async fn apply_lingua_record(
+        &self,
+        record: &ProjectedRecord,
+        preserve_quantity: bool,
+    ) -> Result<bool, EngineError> {
         if store::karma::frequencies::get_handle(&self.store.pool, &record.uid)
             .await?
             .is_some()
@@ -368,11 +386,12 @@ impl Engine {
             )
             .await?;
         }
-        if previous
-            .as_ref()
-            .and_then(|p| p.quantity.as_ref())
-            .map(|q| &q.0)
-            != Some(quantity)
+        if !preserve_quantity
+            && previous
+                .as_ref()
+                .and_then(|p| p.quantity.as_ref())
+                .map(|q| &q.0)
+                != Some(quantity)
         {
             self.act(
                 Action::SetQuantityExact {
@@ -453,6 +472,84 @@ impl Engine {
         Ok(created)
     }
 
+    async fn check_lingua_acceptance(
+        &self,
+        document: &Document,
+        known: Option<&Document>,
+        scoped: bool,
+        created: Option<&HashMap<String, ProjectedRecord>>,
+    ) -> Result<(), EngineError> {
+        if !scoped {
+            return Ok(());
+        }
+        for record in &document.records {
+            if store::karma::frequencies::get_handle(&self.store.pool, &record.uid)
+                .await?
+                .is_some()
+            {
+                continue;
+            }
+            if let Some(current) = self.lingua_record(&record.uid).await? {
+                let previous = known
+                    .and_then(|known| {
+                        known
+                            .records
+                            .iter()
+                            .find(|previous| previous.uid == record.uid)
+                    })
+                    .or_else(|| created.and_then(|created| created.get(&record.uid)));
+                if current != *record && Some(&current) != previous {
+                    return Err(invalid(
+                        "The file and Record changed before acceptance; resolve the conflict before syncing",
+                    ));
+                }
+            }
+        }
+        if let Some(known) = known {
+            let current = self.lingua_extensions(&known.records).await?;
+            if current != known.extensions && current != document.extensions {
+                return Err(invalid(
+                    "The file and Record metadata changed before acceptance; resolve the conflict before syncing",
+                ));
+            }
+        } else {
+            for extension in &document.extensions {
+                if let Some(current) = store::records::get_extension(
+                    &self.store.pool,
+                    extension
+                        .target_uid
+                        .as_deref()
+                        .ok_or_else(|| invalid("Missing metadata target"))?,
+                    &extension.namespace,
+                )
+                .await?
+                    && current != extension.fields
+                {
+                    return Err(invalid(
+                        "Record metadata has no accepted baseline; resolve the conflict before syncing",
+                    ));
+                }
+            }
+        }
+        let current = self.current_lingua_automation(document).await?;
+        if current.frequencies.iter().any(|value| {
+            !document.automation.frequencies.contains(value)
+                && !document
+                    .records
+                    .iter()
+                    .any(|record| record.uid == value.uid)
+                && known.is_none_or(|known| !known.automation.frequencies.contains(value))
+        }) || current.rules.iter().any(|value| {
+            !document.automation.rules.contains(value)
+                && known.is_none_or(|known| !known.automation.rules.contains(value))
+        }) {
+            return Err(invalid(
+                "The file and Karma changed before acceptance; resolve the conflict before syncing",
+            ));
+        }
+        Ok(())
+    }
+
     pub(super) async fn lingua_sync_pass(
         &self,
         dir: &Path,
@@ -461,6 +558,19 @@ impl Engine {
         state: &mut State,
     ) -> Result<FileSyncReport, EngineError> {
         let mut report = FileSyncReport::default();
+        let directory = std::fs::canonicalize(dir)?;
+        let dir = directory.as_path();
+        let directory_key = directory.to_string_lossy();
+        let scope = config.map(|_| (organ, directory_key.as_ref()));
+        if scope.is_some() && !state.loaded {
+            for (path, raw) in
+                store::file_sync_baselines::load(&self.store.pool, organ, &directory_key).await?
+            {
+                let document = serde_json::from_str(&raw)?;
+                state.files.insert(PathBuf::from(path), document);
+            }
+            state.loaded = true;
+        }
         let disk = scan_disk(dir, "lingua")?;
         let mut documents = std::collections::BTreeMap::new();
         let mut paths: Vec<_> = disk.keys().cloned().collect();
@@ -471,6 +581,33 @@ impl Engine {
                 .await
             {
                 Ok(document) => {
+                    if scope.is_some()
+                        && !state.files.contains_key(path)
+                        && !document.records.is_empty()
+                    {
+                        let uri = lince_resources::Reference::path(path)
+                            .map_err(invalid)?
+                            .target;
+                        let hash = lince_resources::fingerprint(document.source.as_bytes());
+                        let mut accepted = true;
+                        for record in &document.records {
+                            if !store::source_locations::accepted(
+                                &self.store.pool,
+                                &record.uid,
+                                &uri,
+                                &hash,
+                            )
+                            .await?
+                            {
+                                accepted = false;
+                                break;
+                            }
+                        }
+                        if accepted {
+                            state.files.insert(path.clone(), document.clone());
+                            state.unsaved.insert(path.clone());
+                        }
+                    }
                     documents.insert(path.clone(), document);
                 }
                 Err(error) => conflict(&mut report, path, error),
@@ -610,6 +747,19 @@ impl Engine {
                         }
                     }
                 }
+                if scope.is_some() && !state.files.contains_key(path) {
+                    for extension in &document.extensions {
+                        if let Some(current) = store::records::get_extension(&self.store.pool, extension.target_uid.as_deref().ok_or_else(|| invalid("Missing metadata target"))?, &extension.namespace).await?
+                            && current != extension.fields {
+                            return Err(invalid("This file has no accepted sync baseline and differs from Record metadata; use an explicit import or resolve the conflict"));
+                        }
+                    }
+                    let current = self.current_lingua_automation(document).await?;
+                    if current.frequencies.iter().any(|value| !document.automation.frequencies.contains(value) && !document.records.iter().any(|record| record.uid == value.uid))
+                        || current.rules.iter().any(|value| !document.automation.rules.contains(value)) {
+                        return Err(invalid("This file has no accepted sync baseline and differs from Karma; use an explicit import or resolve the conflict"));
+                    }
+                }
                 for record in &mut document.records {
                     for assertion in &mut record.assertions {
                         if let Some(uri) = &mut assertion.object_uri {
@@ -638,6 +788,10 @@ impl Engine {
                         if row.organ_uid.as_deref() != Some(organ) {
                             return Err(invalid("The Record belongs to another Organ"));
                         }
+                        if scope.is_some() && !state.files.contains_key(path)
+                            && self.lingua_record(&record.uid).await?.as_ref() != Some(record) {
+                            return Err(invalid("This file has no accepted sync baseline and differs from its Record; use an explicit import or resolve the conflict"));
+                        }
                     }
                 }
                 Ok::<_, EngineError>(())
@@ -655,10 +809,21 @@ impl Engine {
                 .get(path)
                 .is_none_or(|known| known.source != document.source)
             {
-                if let Err(error) = self
-                    .apply_lingua_frequencies(&document.automation, &mut report)
-                    .await
-                {
+                nucleus::performance::add("file-sync-input-accept-attempts", 1);
+                let result = self
+                    .access_scope(true, async {
+                        self.check_lingua_acceptance(
+                            document,
+                            state.files.get(path),
+                            scope.is_some(),
+                            None,
+                        )
+                        .await?;
+                        self.apply_lingua_frequencies(&document.automation, &mut report)
+                            .await
+                    })
+                    .await;
+                if let Err(error) = result {
                     if matches!(error, EngineError::ExecutionLimit(_)) {
                         return Err(error);
                     }
@@ -670,6 +835,7 @@ impl Engine {
         for path in failed {
             documents.remove(&path);
         }
+        let mut created = HashMap::new();
         for (path, document) in &documents {
             if state
                 .files
@@ -679,24 +845,33 @@ impl Engine {
                 continue;
             }
             for record in &document.records {
-                if store::records::get(&self.store.pool, &record.uid)
-                    .await?
-                    .is_none()
-                {
-                    self.act(
-                        Action::CreateRecordDraft {
-                            draft: crate::record_creation::Draft {
-                                uid: record.uid.clone(),
-                                head: record.head.clone(),
-                                body: record.body.clone(),
-                                slug: record.slug.clone(),
-                                quantity: record.quantity.as_ref().unwrap().0.clone(),
-                                ..Default::default()
+                let fresh = self
+                    .access_scope(true, async {
+                        if store::records::get(&self.store.pool, &record.uid)
+                            .await?
+                            .is_some()
+                        {
+                            return Ok(None);
+                        }
+                        self.act(
+                            Action::CreateRecordDraft {
+                                draft: crate::record_creation::Draft {
+                                    uid: record.uid.clone(),
+                                    head: record.head.clone(),
+                                    body: record.body.clone(),
+                                    slug: record.slug.clone(),
+                                    quantity: record.quantity.as_ref().unwrap().0.clone(),
+                                    ..Default::default()
+                                },
                             },
-                        },
-                        None,
-                    )
+                            None,
+                        )
+                        .await?;
+                        self.lingua_record(&record.uid).await
+                    })
                     .await?;
+                if let Some(fresh) = fresh {
+                    created.insert(record.uid.clone(), fresh);
                     report.created.push(record.uid.clone());
                 }
             }
@@ -705,147 +880,175 @@ impl Engine {
             let Some(mut document) = documents.remove(path) else {
                 continue;
             };
-            let result = async {
-                let known = state.files.get(path);
-                let disk_changed = known.is_none_or(|known| known.source != document.source);
-                let mut current = Vec::new();
-                for record in &document.records {
-                    current.push(self.lingua_record(&record.uid).await?);
-                }
-                if disk_changed {
-                    for (record, current) in document.records.iter().zip(&current) {
-                        if current.as_ref() == Some(record) {
-                            continue;
-                        }
-                        self.apply_lingua_record(record).await?;
-                        if !report.created.contains(&record.uid) {
-                            report.updated_from_disk.push(record.uid.clone());
-                        }
+            let disk_changed = state
+                .files
+                .get(path)
+                .is_none_or(|known| known.source != document.source);
+            let result = self
+                .access_scope(disk_changed, async {
+                    let known = state.files.get(path);
+                    let mut current = Vec::new();
+                    for record in &document.records {
+                        current.push(self.lingua_record(&record.uid).await?);
                     }
-                    self.apply_lingua_rules(&document.automation, &mut report)
-                        .await?;
-                    for extension in &document.extensions {
-                        self.act(
-                            Action::SetExtension {
-                                target: extension
-                                    .target_uid
-                                    .clone()
-                                    .ok_or_else(|| invalid("Missing metadata target"))?,
-                                namespace: extension.namespace.clone(),
-                                fds: extension.fields.clone(),
-                            },
-                            None,
+                    if disk_changed {
+                        self.check_lingua_acceptance(
+                            &document,
+                            known,
+                            scope.is_some(),
+                            Some(&created),
                         )
                         .await?;
-                    }
-                    if let Some(known) = known {
-                        for extension in &known.extensions {
-                            if !document.extensions.iter().any(|current| {
-                                current.target_uid == extension.target_uid
-                                    && current.namespace == extension.namespace
-                            }) {
-                                self.act(
-                                    Action::SetExtension {
-                                        target: extension
-                                            .target_uid
-                                            .clone()
-                                            .ok_or_else(|| invalid("Missing metadata target"))?,
-                                        namespace: extension.namespace.clone(),
-                                        fds: serde_json::json!({}),
-                                    },
-                                    None,
-                                )
+                        for (record, current) in document.records.iter().zip(&current) {
+                            if current.as_ref() == Some(record) {
+                                continue;
+                            }
+                            self.apply_lingua_record(record, created.contains_key(&record.uid))
                                 .await?;
+                            if !report.created.contains(&record.uid) {
+                                report.updated_from_disk.push(record.uid.clone());
+                            }
+                        }
+                        self.apply_lingua_rules(&document.automation, &mut report)
+                            .await?;
+                        for extension in &document.extensions {
+                            if store::records::get_extension(
+                                &self.store.pool,
+                                extension
+                                    .target_uid
+                                    .as_deref()
+                                    .ok_or_else(|| invalid("Missing metadata target"))?,
+                                &extension.namespace,
+                            )
+                            .await?
+                            .as_ref()
+                                == Some(&extension.fields)
+                            {
+                                continue;
+                            }
+                            self.act(
+                                Action::SetExtension {
+                                    target: extension
+                                        .target_uid
+                                        .clone()
+                                        .ok_or_else(|| invalid("Missing metadata target"))?,
+                                    namespace: extension.namespace.clone(),
+                                    fds: extension.fields.clone(),
+                                },
+                                None,
+                            )
+                            .await?;
+                        }
+                        if let Some(known) = known {
+                            for extension in &known.extensions {
+                                if !document.extensions.iter().any(|current| {
+                                    current.target_uid == extension.target_uid
+                                        && current.namespace == extension.namespace
+                                }) {
+                                    self.act(
+                                        Action::SetExtension {
+                                            target: extension.target_uid.clone().ok_or_else(
+                                                || invalid("Missing metadata target"),
+                                            )?,
+                                            namespace: extension.namespace.clone(),
+                                            fds: serde_json::json!({}),
+                                        },
+                                        None,
+                                    )
+                                    .await?;
+                                }
+                            }
+                        }
+                        if let Some(known) = known {
+                            for old in &known.automation.rules {
+                                if !declared.contains_key(&old.uid) {
+                                    self.act(
+                                        Action::DeleteRecurrence {
+                                            recurrence: old.uid.clone(),
+                                        },
+                                        None,
+                                    )
+                                    .await?;
+                                    report.deleted.push(old.uid.clone());
+                                }
+                            }
+                            for old in &known.automation.frequencies {
+                                if !declared.contains_key(&old.uid) {
+                                    self.act(
+                                        Action::DeleteFrequency {
+                                            frequency: old.uid.clone(),
+                                        },
+                                        None,
+                                    )
+                                    .await?;
+                                    report.deleted.push(old.uid.clone());
+                                }
+                            }
+                        }
+                        if let Some(known) = known {
+                            for old in &known.records {
+                                if !declared.contains_key(&old.uid) {
+                                    self.act(
+                                        Action::DeleteRecord {
+                                            target: old.uid.clone(),
+                                        },
+                                        None,
+                                    )
+                                    .await?;
+                                    report.deleted.push(old.uid.clone());
+                                }
                             }
                         }
                     }
-                    if let Some(known) = known {
-                        for old in &known.automation.rules {
-                            if !declared.contains_key(&old.uid) {
-                                self.act(
-                                    Action::DeleteRecurrence {
-                                        recurrence: old.uid.clone(),
-                                    },
-                                    None,
-                                )
-                                .await?;
-                                report.deleted.push(old.uid.clone());
-                            }
-                        }
-                        for old in &known.automation.frequencies {
-                            if !declared.contains_key(&old.uid) {
-                                self.act(
-                                    Action::DeleteFrequency {
-                                        frequency: old.uid.clone(),
-                                    },
-                                    None,
-                                )
-                                .await?;
-                                report.deleted.push(old.uid.clone());
+                    let mut automation = self.current_lingua_automation(&document).await?;
+                    automation
+                        .rules
+                        .retain(|rule| declared.get(&rule.uid).is_none_or(|owner| owner == path));
+                    let mut records = Vec::new();
+                    for record in &document.records {
+                        if !automation.frequencies.iter().any(|f| f.uid == record.uid) {
+                            if let Some(record) = self.lingua_record(&record.uid).await? {
+                                records.push(record);
                             }
                         }
                     }
-                    if let Some(known) = known {
-                        for old in &known.records {
-                            if !declared.contains_key(&old.uid) {
-                                self.act(
-                                    Action::DeleteRecord {
-                                        target: old.uid.clone(),
-                                    },
-                                    None,
-                                )
-                                .await?;
-                                report.deleted.push(old.uid.clone());
-                            }
+                    let extensions = self.lingua_extensions(&records).await?;
+                    let changed = records != document.records
+                        || automation != document.automation
+                        || extensions != document.extensions;
+                    let typed = automation.uids().next().is_some();
+                    if changed || (typed && disk_changed) {
+                        let text = render_document(
+                            &document.identified,
+                            &records,
+                            &automation,
+                            &extensions,
+                            path,
+                        )?;
+                        if text != document.source {
+                            write_document(path, Some(&document.source), &text)?;
+                            report.written_to_disk.extend(
+                                records
+                                    .iter()
+                                    .map(|r| r.uid.clone())
+                                    .chain(automation.uids().cloned()),
+                            );
                         }
+                        document.source = text.clone();
+                        document.identified = text;
+                        document.records = records;
+                        document.automation = automation;
+                        document.extensions = extensions;
                     }
-                }
-                let mut automation = self.current_lingua_automation(&document).await?;
-                automation
-                    .rules
-                    .retain(|rule| declared.get(&rule.uid).is_none_or(|owner| owner == path));
-                let mut records = Vec::new();
-                for record in &document.records {
-                    if !automation.frequencies.iter().any(|f| f.uid == record.uid) {
-                        if let Some(record) = self.lingua_record(&record.uid).await? {
-                            records.push(record);
-                        }
-                    }
-                }
-                let extensions = self.lingua_extensions(&records).await?;
-                let changed = records != document.records
-                    || automation != document.automation
-                    || extensions != document.extensions;
-                let typed = automation.uids().next().is_some();
-                if changed || (typed && disk_changed) {
-                    let text = render_document(
-                        &document.identified,
-                        &records,
-                        &automation,
-                        &extensions,
-                        path,
-                    )?;
-                    if text != document.source {
-                        write_document(path, Some(&document.source), &text)?;
-                        report.written_to_disk.extend(
-                            records
-                                .iter()
-                                .map(|r| r.uid.clone())
-                                .chain(automation.uids().cloned()),
-                        );
-                    }
-                    document.source = text.clone();
-                    document.identified = text;
-                    document.records = records;
-                    document.automation = automation;
-                    document.extensions = extensions;
-                }
-                Ok::<_, EngineError>(())
-            }
-            .await;
+                    Ok::<_, EngineError>(())
+                })
+                .await;
             match result {
                 Ok(()) => {
-                    self.remember_lingua_source(path, &document).await?;
+                    if state.files.get(path) != Some(&document) || state.unsaved.contains(path) {
+                        self.remember_lingua_source(path, &document, scope).await?;
+                        state.unsaved.remove(path);
+                    }
                     state.files.insert(path.clone(), document);
                 }
                 Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
@@ -920,6 +1123,16 @@ impl Engine {
                 }
             }
             state.files.remove(&path);
+            state.unsaved.remove(&path);
+            if scope.is_some() {
+                store::file_sync_baselines::remove(
+                    &self.store.pool,
+                    organ,
+                    &directory_key,
+                    &path.to_string_lossy(),
+                )
+                .await?;
+            }
         }
         let represented: HashSet<_> = state
             .files
@@ -974,7 +1187,7 @@ impl Engine {
                 write_document(&path, None, &text)?;
                 document.source = text.clone();
                 document.identified = text;
-                self.remember_lingua_source(&path, &document).await?;
+                self.remember_lingua_source(&path, &document, scope).await?;
                 state.files.insert(path.clone(), document);
                 report.written_to_disk.push(uid);
                 Ok::<_, EngineError>(())

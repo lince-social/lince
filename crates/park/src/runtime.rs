@@ -147,11 +147,6 @@ pub struct Completed {
     pub(crate) latency: Option<latency::Frame>,
 }
 
-pub struct Started {
-    pub scene_revision: u64,
-    pub windows: Vec<WindowSnapshot>,
-}
-
 #[derive(bevy::prelude::Resource, Clone, Default)]
 pub(crate) struct InputProgress {
     submitted: Arc<AtomicU64>,
@@ -172,7 +167,6 @@ pub struct CanvasWorker {
     pointer: LatestSender<(u64, [f32; 2], u64, Option<latency::Stamp>)>,
     next_pointer: AtomicU64,
     frames: LatestReceiver<Completed>,
-    started: LatestReceiver<Started>,
     requests: Receiver<HostRequest>,
     failures: Receiver<ProbeFailure>,
     running: Arc<AtomicBool>,
@@ -241,7 +235,6 @@ impl CanvasWorker {
     fn spawn_prepared(configuration: Configuration, notify: Option<WakeSignal>, linear_color: bool, prepare: impl FnOnce(&mut Presentation) + Send + 'static) -> std::io::Result<Self> {
         let (scene, scenes) = latest_channel();
         let (images, frames) = latest_channel();
-        let (starting, started) = latest_channel();
         let (pointer, motion) = latest_channel();
         let (commands, requests) = sync_channel(64);
         let (failed, failures) = sync_channel(1);
@@ -291,7 +284,6 @@ impl CanvasWorker {
                     events,
                     motion,
                     images,
-                    starting,
                     commands,
                     &active,
                     &changed,
@@ -313,7 +305,6 @@ impl CanvasWorker {
             pointer,
             next_pointer: AtomicU64::new(1),
             frames,
-            started,
             requests,
             failures,
             running,
@@ -383,10 +374,6 @@ impl CanvasWorker {
         if self.input_activity.revision() != previous {
             if !active { self.focus_native(false); } else { self.wake(); }
         }
-    }
-
-    pub fn started(&self) -> Option<Started> {
-        self.started.take()
     }
 
     pub fn pointer(&self, position: [f32; 2]) -> std::io::Result<u64> {
@@ -467,7 +454,6 @@ fn run(
     events: input_queue::Receiver,
     motion: LatestReceiver<(u64, [f32; 2], u64, Option<latency::Stamp>)>,
     images: LatestSender<Completed>,
-    starting: LatestSender<Started>,
     commands: SyncSender<HostRequest>,
     active: &Active,
     dirty: &Arc<AtomicU8>,
@@ -870,8 +856,6 @@ fn run(
             lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
             pending = canvas.sync_windows(&windows)?;
         }
-        if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
-        if let Some(notify) = notify { notify.ring(); }
         let pixels = pixel_work && !update && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
         if settling && !pixels { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
         let frame = if pixels { canvas.pixel_frame()? } else {

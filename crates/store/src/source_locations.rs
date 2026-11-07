@@ -3,6 +3,16 @@ use crate::{
     sqlx::{Sqlite, Transaction},
 };
 
+pub async fn accepted(
+    pool: &crate::sqlx::SqlitePool,
+    record: &str,
+    document: &str,
+    hash: &str,
+) -> Result<bool, StoreError> {
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_source_location WHERE record_uid = ? AND source_uid = ? AND uri = ? AND hash = ?)")
+        .bind(record).bind(record).bind(format!("{document}#{record}")).bind(hash).fetch_one(pool).await
+}
+
 pub async fn remember_on(
     tx: &mut Transaction<'_, Sqlite>,
     record: &str,

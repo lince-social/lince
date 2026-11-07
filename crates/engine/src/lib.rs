@@ -159,6 +159,7 @@ pub struct Engine {
     calls: Mutex<calls::Calls>,
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
+    pub(crate) karma_runtime_failure: std::sync::Mutex<Option<karma_runtime::RuntimeFailure>>,
     pub plugins: tokio::sync::OnceCell<std::sync::Arc<::plugins::Host>>,
     pub(crate) plugin_work: tokio::sync::Mutex<()>,
     pub presence: presence::Presence,
@@ -242,6 +243,9 @@ impl Engine {
         let (notifications_changed, _) = watch::channel(0);
         let (config_changed, _) = watch::channel(0);
         let (effects_changed, _) = watch::channel(0);
+        let sync_service = sync_service::SyncService::new(
+            store::sync_activity::retention(&store.pool).await?.enabled,
+        );
         let engine = Engine {
             knowledge: knowledge::Runtime::default(),
             signal_streams: Default::default(),
@@ -260,7 +264,8 @@ impl Engine {
             calls: Mutex::new(calls::Calls::default()),
             access_gate: tokio::sync::RwLock::new(()),
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
-            sync_service: sync_service::SyncService::default(),
+            sync_service,
+            karma_runtime_failure: std::sync::Mutex::new(None),
             plugins: tokio::sync::OnceCell::new(),
             plugin_work: tokio::sync::Mutex::new(()),
             presence: presence::Presence::default(),
@@ -481,7 +486,9 @@ impl Engine {
     }
 
     pub async fn heartbeat(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
-        if let Err(error) = store::sync_activity::prune(&self.store.pool, now.timestamp()).await {
+        if self.sync_service.saves_history()
+            && let Err(error) = store::sync_activity::prune(&self.store.pool, now.timestamp()).await
+        {
             tracing::warn!(%error, "Could not expire sync history");
         }
         let mut facts = self.expire_promises(now).await?;

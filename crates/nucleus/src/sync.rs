@@ -160,6 +160,7 @@ pub struct Change {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Retention {
+    pub enabled: bool,
     pub seconds: u64,
     pub max_entries: u32,
 }
@@ -167,6 +168,7 @@ pub struct Retention {
 impl Default for Retention {
     fn default() -> Self {
         Self {
+            enabled: false,
             seconds: 7 * 24 * 60 * 60,
             max_entries: 1000,
         }

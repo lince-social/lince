@@ -133,8 +133,12 @@ impl Engine {
         let mut facts = match Box::pin(self.execute_rule_event(rule, &event, now)).await {
             Ok(facts) => facts,
             Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+            Err(error) if error.is_retryable_store_error() => return Err(error),
             Err(error) => {
-                if store::karma_schedules::for_rule(&self.store.pool, &rule.uid).await?.is_some() {
+                if store::karma_schedules::for_rule(&self.store.pool, &rule.uid)
+                    .await?
+                    .is_some()
+                {
                     self.record_rule_failure(rule, &event, &error, now).await?;
                     store::karma_schedules::refresh(&self.store.pool, now).await?;
                 }
@@ -320,6 +324,7 @@ impl Engine {
                 let facts = match Box::pin(self.execute_rule_event(rule, &event, now)).await {
                     Ok(facts) => facts,
                     Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+                    Err(error) if error.is_retryable_store_error() => return Err(error),
                     Err(error) => {
                         self.record_rule_failure(rule, &event, &error, now).await?;
                         tracing::warn!(rule = rule.uid, %error, "Karma rule refused a Record change");
@@ -431,6 +436,7 @@ impl Engine {
                             }
                         }
                         Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+                        Err(error) if error.is_retryable_store_error() => return Err(error),
                         Err(error) => {
                             self.record_rule_failure(rule, &event, &error, now).await?;
                             tracing::warn!(rule = rule.uid, %error, "Karma rule refused its occurrence");
@@ -475,6 +481,7 @@ impl Engine {
                     for (record, parent) in roots { facts.extend(self.run_rule_reactions(vec![record], parent, now).await?); }
                 }
                 Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+                Err(error) if error.is_retryable_store_error() => return Err(error),
                 Err(error) => self.record_rule_failure(&rule, &event, &error, now).await?,
             }
         }
@@ -530,14 +537,26 @@ impl Engine {
             && !inputs.contains(frequency) {
             inputs.push(frequency.clone());
         }
-        crate::karma_history::CAPTURE.scope(std::cell::RefCell::new(evidence), async {
-            let result = Box::pin(self.execute_rule_event_inner(rule, event, now)).await;
-            if result.as_ref().err().is_some_and(|error| !matches!(error, EngineError::ExecutionLimit(_) | EngineError::Conflict { code: "karma_query_pending", .. })) {
-                let mut connection = self.store.pool.acquire().await?;
-                crate::karma_history::persist(&mut connection, rule, event).await?;
-            }
-            result
-        }).await
+        crate::karma_history::CAPTURE
+            .scope(std::cell::RefCell::new(evidence), async {
+                let result = Box::pin(self.execute_rule_event_inner(rule, event, now)).await;
+                if result.as_ref().err().is_some_and(|error| {
+                    !error.is_retryable_store_error()
+                        && !matches!(
+                            error,
+                            EngineError::ExecutionLimit(_)
+                                | EngineError::Conflict {
+                                    code: "karma_query_pending",
+                                    ..
+                                }
+                        )
+                }) {
+                    let mut connection = self.store.pool.acquire().await?;
+                    crate::karma_history::persist(&mut connection, rule, event).await?;
+                }
+                result
+            })
+            .await
     }
 
     async fn execute_rule_event_inner(

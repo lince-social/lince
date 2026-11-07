@@ -9,9 +9,13 @@ const INPUT_FEATURES: &str = "nested,server-tests";
 mod showoff;
 #[cfg(target_os = "linux")]
 mod validation;
+#[cfg(target_os = "linux")]
+mod swap;
 
 pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
+        #[cfg(target_os = "linux")]
+        Some("swap-probe") => swap::run(&arguments[1..]),
         Some("release") => release(&arguments[1..]),
         #[cfg(target_os = "linux")]
         Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..])),
@@ -21,6 +25,8 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
         Some("showoff") => showoff::run(&arguments[1..]).map_err(|error| error.to_string()),
         #[cfg(target_os = "linux")]
         Some("showoff-ready") => showoff::ready(&arguments[1..]).map_err(|error| error.to_string()),
+        #[cfg(target_os = "linux")]
+        Some("screenshot") => screenshot(&arguments[1..]),
         Some("ci") if arguments.len() == 1 => {
             for arguments in [
                 vec!["check", "--locked", "-p", "lince", "--features", "park"],
@@ -156,10 +162,12 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
         }
         None | Some("help" | "--help" | "-h") => {
             println!(
-                "cargo xtask park <session|nested|control|clipboard-check|protocol-check|input-check|policy-check|graphics-check|graphics-gate|native-check|native-client-check|worker-check|sync-check>"
+                "cargo xtask park <session|nested|control|swap-probe|clipboard-check|protocol-check|input-check|policy-check|graphics-check|graphics-gate|native-check|native-client-check|worker-check|sync-check>"
             );
             println!("Runs Park protocol regressions and Vulkan/wgpu sharing probes.");
             println!("Use park validate help for isolated, bounded session acceptance runs.");
+            println!("Use park swap-probe for the isolated window-preservation exec experiment and its JSON result.");
+            println!("Use park screenshot to refresh institute/assets/photos/showcase.png from a temporary, offscreen showoff workspace.");
             println!(
                 "Use park showoff --nested for an interactive release session with Firefox and the saved Laboratory showoff workspace."
             );
@@ -172,6 +180,30 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
             Ok(())
         }
         _ => Err("unknown Park task; use cargo xtask park help".into()),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn screenshot(arguments: &[OsString]) -> Result<()> {
+    match arguments {
+        [] => checked(cargo_command().args([
+            "run",
+            "--locked",
+            "-p",
+            "lince-interface",
+            "--features",
+            "native-presentation",
+            "--example",
+            "showcase-screenshot",
+            "--",
+            "institute/assets/photos/showcase.png",
+        ])),
+        [argument] if matches!(argument.to_str(), Some("help" | "--help" | "-h")) => {
+            println!("cargo xtask park screenshot");
+            println!("Renders a fresh 1920×1080 showoff workspace to institute/assets/photos/showcase.png, then removes its temporary data. Your running Park session is untouched; desktop bars and other applications are never captured.");
+            Ok(())
+        }
+        _ => Err("Use cargo xtask park screenshot".into()),
     }
 }
 

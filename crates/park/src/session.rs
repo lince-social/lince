@@ -844,6 +844,7 @@ impl Hardware {
                     screen.prepared = Some(Prepared { frame: queued, sync, _watch: watch });
                 } else {
                     screen.output.queue_frame(queued).map_err(error)?;
+                    presented.submitted(&mut desktop.server, Some(screen.id));
                 }
                 screen.pending = true;
             } else {
@@ -879,10 +880,12 @@ impl Hardware {
             }
             if screen.prepared.as_ref().is_some_and(|prepared| prepared.sync.is_reached()) {
                 let prepared = screen.prepared.take().unwrap();
+                let scene = prepared.frame.scene.clone();
                 if let Err(failure) = screen.output.queue_frame(prepared.frame) {
                     screen.pending = false;
                     return Err(error(failure));
                 }
+                scene.submitted(server, Some(screen.id));
             }
         }
         Ok(invalidated)

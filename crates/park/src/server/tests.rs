@@ -59,6 +59,8 @@ mod gesture_tests;
 mod activation_tests;
 #[path = "tests/control.rs"]
 mod control_tests;
+#[path = "tests/swap.rs"]
+mod swap_tests;
 #[cfg(feature = "nested")]
 #[path = "tests/manipulation.rs"]
 mod manipulation_tests;

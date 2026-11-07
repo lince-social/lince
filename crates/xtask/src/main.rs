@@ -15,6 +15,7 @@ mod hand_models;
 mod maintenance;
 mod park;
 mod prune;
+mod ship;
 mod ui_process;
 mod ui_test;
 #[cfg(any(feature = "authoring", test))]
@@ -266,6 +267,7 @@ fn dispatch() -> Result<()> {
             no_extra(&extra)?;
             version(&root)
         }
+        Some("ship") => ship::dispatch(&root, &extra),
         Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
         Some("check") => {
             prune::with_cleanup(&root, || checked(cargo_command().arg("check").args(&extra)))
@@ -348,7 +350,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-interface|test-store-transactions|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|workspace|park|ship|dev|check|check-instinct|test|test-interface|test-store-transactions|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -371,6 +373,7 @@ fn dispatch() -> Result<()> {
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!("test-interface runs the ordered fast Laboratory interface rules in the local test executable.");
+            println!("ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options.");
             println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
             println!(
                 "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."

@@ -882,6 +882,57 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
     );
 }
 
+#[cfg_attr(test, test)]
+fn execution_failures_show_retry_and_stopped_status_and_clear_after_recovery() {
+    let mut app = App::new();
+    crate::native::laboratory::isolate(app.world_mut());
+    app.add_plugins(MinimalPlugins)
+        .init_resource::<Assets<Font>>()
+        .init_resource::<crate::native::theme::Typography>()
+        .init_resource::<bevy::input_focus::InputFocus>()
+        .add_plugins(KarmaCastlePlugin);
+    let root = app
+        .world_mut()
+        .spawn(crate::native::workspace::Workspaces::default())
+        .id();
+    let owner = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        KarmaCastle::default(),
+    );
+    let label = app.world().get::<View>(owner).unwrap().execution;
+    let mut schedule = Schedule::default();
+    schedule.add_systems(receive);
+    for (failure, expected) in [
+        (
+            json!({"retrying":true,"message":"database is locked"}),
+            "Karma is retrying: database is locked",
+        ),
+        (
+            json!({"retrying":false,"message":"invalid schedule"}),
+            "Karma stopped: invalid schedule",
+        ),
+        (Value::Null, "Karma is running on this Cell."),
+    ] {
+        app.world_mut()
+            .resource_mut::<Requests>()
+            .executions
+            .insert("health".into(), owner);
+        app.world_mut()
+            .write_message(CellMessage(ServerMessage::ActionOk {
+                id: "health".into(),
+                created: None,
+                facts: 0,
+                warnings: Vec::new(),
+                data: Some(json!({"karma":{"executing":true,"runtime_failure":failure}})),
+            }));
+        schedule.run(app.world_mut());
+        assert_eq!(app.world().get::<Text>(label).unwrap().0, expected);
+    }
+}
+
 crate::native::laboratory_cases! {
     header_filter_hides_unmatched_rules_without_changing_the_draft,
     typing_filters_shared_conditions_and_basic_records_without_copying_identity,
@@ -895,4 +946,5 @@ crate::native::laboratory_cases! {
     row_actions_are_hidden_until_hover_and_selection_requires_confirmation,
     auxiliary_panels_start_hidden_and_header_buttons_toggle_them,
     table_text_has_visible_glyphs_and_editing_preserves_cell_bounds,
+    execution_failures_show_retry_and_stopped_status_and_clear_after_recovery,
 }

@@ -23,6 +23,7 @@ pub mod evidence_serving;
 pub mod exact;
 pub mod executor;
 pub mod facts;
+pub mod file_sync_baselines;
 pub mod frequency;
 pub mod identity_roots;
 pub mod invites;

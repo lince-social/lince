@@ -1550,6 +1550,13 @@ async fn record_projection_preserves_requested_fields_and_exact_values() {
 #[cfg_attr(test, tokio::test)]
 async fn local_record_text_refreshes_only_dependent_queries() {
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    engine
+        .set_sync_history_policy(nucleus::sync::Retention {
+            enabled: true,
+            ..Default::default()
+        })
+        .await
+        .unwrap();
     let mut records = Vec::new();
     for head in ["First", "Second"] {
         records.push(

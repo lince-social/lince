@@ -30,6 +30,17 @@ impl fmt::Display for EngineError {
 }
 
 impl EngineError {
+    pub fn is_retryable_store_error(&self) -> bool {
+        match self {
+            Self::Store(store::sqlx::Error::Database(error)) => error
+                .code()
+                .and_then(|code| code.parse::<i32>().ok())
+                .is_some_and(|code| matches!(code & 255, 5 | 6)),
+            Self::Store(store::sqlx::Error::PoolTimedOut) => true,
+            _ => false,
+        }
+    }
+
     pub fn code(&self) -> Option<&'static str> {
         match self {
             Self::Conflict { code, .. } => Some(code),

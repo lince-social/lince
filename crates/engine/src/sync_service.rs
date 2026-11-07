@@ -3,7 +3,10 @@ use nucleus::sync::{Activity, Direction, Instance, Outcome, Overview, Pending, Q
 use std::{
     collections::BTreeMap,
     future::Future,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 type QueueReader = Box<dyn Fn() -> Queue + Send + Sync>;
@@ -22,6 +25,8 @@ impl Drop for QueueRegistration {
 
 #[derive(Default)]
 pub struct SyncService {
+    save_history: AtomicBool,
+    policy_lock: tokio::sync::Mutex<()>,
     running: Mutex<BTreeMap<String, Activity>>,
     history_error: Mutex<Option<String>>,
     queues: QueueReaders,
@@ -39,6 +44,17 @@ impl Drop for Running<'_> {
 }
 
 impl SyncService {
+    pub(crate) fn new(save_history: bool) -> Self {
+        Self {
+            save_history: AtomicBool::new(save_history),
+            ..Default::default()
+        }
+    }
+
+    pub(crate) fn saves_history(&self) -> bool {
+        self.save_history.load(Ordering::Acquire)
+    }
+
     pub fn observe_queue(
         &self,
         read: impl Fn() -> Queue + Send + Sync + 'static,
@@ -72,6 +88,9 @@ impl SyncService {
             let _work = crate::performance::Span::new("sync-work-await");
             work.await
         };
+        if !self.saves_history() {
+            return result;
+        }
         let summary = {
             let _summary = crate::performance::Span::new("sync-summary");
             match &result {
@@ -114,6 +133,26 @@ impl SyncService {
 }
 
 impl Engine {
+    pub async fn set_sync_history_policy(
+        &self,
+        policy: nucleus::sync::Retention,
+    ) -> Result<(), EngineError> {
+        let _guard = self.sync_service.policy_lock.lock().await;
+        store::sync_activity::set_retention(
+            &self.store.pool,
+            policy,
+            nucleus::execution::now().timestamp(),
+        )
+        .await?;
+        self.sync_service
+            .save_history
+            .store(policy.enabled, Ordering::Release);
+        if !policy.enabled {
+            *self.sync_service.history_error.lock().unwrap() = None;
+        }
+        Ok(())
+    }
+
     pub async fn sync_overview(&self, before: Option<i64>) -> Result<Overview, EngineError> {
         let now = nucleus::execution::now().timestamp();
         let retention = store::sync_activity::retention(&self.store.pool).await?;

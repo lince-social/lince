@@ -522,25 +522,6 @@ impl Desktop {
             self.pending_output = Some((serial, None));
             self.pending_focus = Some((serial, None));
         }
-        if let Some(started) = self.worker.started()
-            && started.scene_revision == self.scene_serial
-            && !self.server.locked()
-            && let Some(geometry) = self.current.as_ref().and_then(|current| current.frame.geometry.clone())
-        {
-            for item in &geometry.items {
-                let ItemId::Application(id) = item.id else { continue; };
-                let visible = geometry.outputs.iter().find(|output| output.id == item.output)
-                    .and_then(|output| if self.fullscreen(output.id) { Some(output.bounds) } else { output.usable })
-                    .is_some_and(|clip| (0..2).all(|axis| {
-                        item.mapping.canvas.origin()[axis] < clip.origin()[axis] + clip.size()[axis]
-                            && item.mapping.canvas.origin()[axis] + item.mapping.canvas.size()[axis] > clip.origin()[axis]
-                    }));
-                if visible && let Some(window) = started.windows.iter().find(|window| window.id == id && window.mapped) {
-                    let nodes = self.server.callback_nodes(window);
-                    self.server.frame_started_nodes(&nodes);
-                }
-            }
-        }
         if let Some(failure) = self.worker.failure() {
             return Err(error(failure));
         }

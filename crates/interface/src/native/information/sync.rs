@@ -197,6 +197,7 @@ enum SyncAction {
     Latest,
     Older,
     Retain(u64),
+    RecordHistory,
     Clear,
 }
 
@@ -232,9 +233,26 @@ impl Action for SyncAction {
                 ClientMessage::SyncHistoryPolicy {
                     id: REQUEST.into(),
                     retention: Retention {
+                        enabled: world
+                            .resource::<SyncState>()
+                            .overview
+                            .as_ref()
+                            .is_some_and(|overview| overview.retention.enabled),
                         seconds: days * 86400,
                         max_entries,
                     },
+                }
+            }
+            Self::RecordHistory => {
+                let Some(overview) = world.resource::<SyncState>().overview.as_ref() else {
+                    return;
+                };
+                let mut retention = overview.retention;
+                retention.enabled = !retention.enabled;
+                world.resource_mut::<SyncState>().before = None;
+                ClientMessage::SyncHistoryPolicy {
+                    id: REQUEST.into(),
+                    retention,
                 }
             }
             Self::Clear => {
@@ -312,11 +330,22 @@ fn render(world: &mut World) {
             world,
             panel,
             &format!(
-                "History is kept for {} days, up to {} entries. Pending work is kept separately.",
+                "History limits: {} days, up to {} entries. Pending work is kept separately.",
                 overview.retention.seconds / 86400,
                 overview.retention.max_entries
             ),
             14.0,
+        );
+        super::action_button(
+            world,
+            panel,
+            root,
+            if overview.retention.enabled {
+                "Save sync history: on"
+            } else {
+                "Save sync history: off"
+            },
+            crate::native::actions![SyncAction::RecordHistory],
         );
         if let Some(error) = &overview.history_error {
             label(
@@ -421,6 +450,36 @@ fn render(world: &mut World) {
 pub(crate) mod tests {
     use super::*;
 
+    pub(crate) fn present(world: &mut World, root: Entity, enabled: bool) {
+        world.init_resource::<SyncState>();
+        if world.query::<&SyncPanel>().iter(world).next().is_none() {
+            panel(world, root, root);
+        }
+        let mut state = world.resource_mut::<SyncState>();
+        state.overview = Some(Overview {
+            active: Vec::new(),
+            queues: Vec::new(),
+            history: Vec::new(),
+            pending: Vec::new(),
+            outgoing: 3,
+            incoming: 0,
+            held: 1,
+            retention: Retention {
+                enabled,
+                ..Default::default()
+            },
+            history_error: None,
+        });
+        state.error = None;
+        state.revision += 1;
+        drop(state);
+        render(world);
+    }
+
+    pub(crate) fn connection_error(world: &World) -> Option<&str> {
+        world.resource::<SyncState>().error.as_deref()
+    }
+
     #[cfg_attr(test, test)]
     fn sync_panel_shows_history_limits_pending_work_and_failures() {
         let mut world = World::new();
@@ -460,6 +519,7 @@ pub(crate) mod tests {
         );
         assert!(labels.iter().any(|label| label.contains("Disk full")));
         assert!(labels.iter().any(|label| label == "Clear recent history"));
+        assert!(labels.iter().any(|label| label == "Save sync history: off"));
         world.init_resource::<Messages<CellMessage>>();
         world.write_message(CellMessage(ServerMessage::Error {
             id: REQUEST.into(),

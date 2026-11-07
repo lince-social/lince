@@ -12,6 +12,67 @@ const LEGACY_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT se
 
 type Entry = (i64, i64, String, String);
 
+#[tokio::test]
+async fn disabled_history_does_not_wait_for_the_writer_or_commit() {
+    let directory = tempfile::tempdir().unwrap();
+    let url = format!(
+        "sqlite://{}",
+        directory.path().join("disabled.sqlite").display()
+    );
+    let store = Store::open(&url).await.unwrap();
+    assert!(!retention(&store.pool).await.unwrap().enabled);
+    let mut writer = crate::write_tx(&store.pool).await.unwrap();
+    let activity = Activity {
+        instance: Instance::interface("local", "records"),
+        direction: Direction::Outgoing,
+        update: nucleus::sync::Update::Full,
+    };
+    let summary = Summary::new(Outcome::Refreshed, 10);
+    tokio::time::timeout(std::time::Duration::from_secs(1), async {
+        append(&store.pool, &activity, &summary, 10_000_000)
+            .await
+            .unwrap();
+        prune(&store.pool, 10_000_000).await.unwrap();
+    })
+    .await
+    .expect("disabled diagnostic history must not acquire the writer");
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM sync_activity")
+        .fetch_one(&mut *writer)
+        .await
+        .unwrap();
+    assert_eq!(count, 0);
+    writer.rollback().await.unwrap();
+    store.pool.close().await;
+    let store = Store::open(&url).await.unwrap();
+    assert!(!retention(&store.pool).await.unwrap().enabled);
+    store.pool.close().await;
+}
+
+#[tokio::test]
+async fn enabled_history_does_not_prune_when_nothing_has_expired() {
+    let store = Store::open_memory().await.unwrap();
+    set_retention(
+        &store.pool,
+        Retention {
+            enabled: true,
+            ..Default::default()
+        },
+        10_000_000,
+    )
+    .await
+    .unwrap();
+    let before: i64 = sqlx::query_scalar("SELECT value FROM commit_sequence WHERE id = 1")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+    prune(&store.pool, 10_000_000).await.unwrap();
+    let after: i64 = sqlx::query_scalar("SELECT value FROM commit_sequence WHERE id = 1")
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
+    assert_eq!(after, before);
+}
+
 async fn seed(store: &Store, entries: &[Entry]) {
     let mut tx = crate::write_tx(&store.pool).await.unwrap();
     for (seq, at, activity, summary) in entries {
@@ -38,6 +99,7 @@ async fn retention_preserves_newest_entries_and_exact_age_boundary_with_sequence
                 set_retention(
                     &store.pool,
                     Retention {
+                        enabled: true,
                         seconds,
                         max_entries,
                     },
@@ -123,6 +185,7 @@ async fn file_backed_retention_query_probe() {
         set_retention(
             &store.pool,
             Retention {
+                enabled: true,
                 seconds: 604800,
                 max_entries: limit,
             },

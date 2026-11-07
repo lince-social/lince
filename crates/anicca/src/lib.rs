@@ -30,7 +30,7 @@ pub struct ProjectedImport {
     pub locations: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectedExtension {
     pub target_slug: String,
     pub target_uid: Option<String>,
@@ -38,7 +38,7 @@ pub struct ProjectedExtension {
     pub fields: serde_json::Value,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectedRecord {
     pub uid: String,
     pub slug: Option<String>,
@@ -48,7 +48,7 @@ pub struct ProjectedRecord {
     pub assertions: Vec<ProjectedAssertion>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectedAssertion {
     pub object_uri: Option<String>,
     pub predicate: String,
@@ -59,7 +59,7 @@ pub struct ProjectedAssertion {
     pub unit: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectedFrequency {
     pub uid: String,
     pub slug: String,
@@ -71,7 +71,7 @@ pub struct ProjectedFrequency {
     pub definition: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProjectedRule {
     pub uid: String,
     pub slug: String,

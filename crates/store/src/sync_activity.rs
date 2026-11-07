@@ -10,10 +10,12 @@ const PRUNE_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT sec
 mod tests;
 
 pub async fn retention(pool: &SqlitePool) -> Result<Retention, StoreError> {
-    let row = sqlx::query("SELECT seconds, max_entries FROM sync_history_policy WHERE id = 1")
-        .fetch_one(pool)
-        .await?;
+    let row =
+        sqlx::query("SELECT enabled, seconds, max_entries FROM sync_history_policy WHERE id = 1")
+            .fetch_one(pool)
+            .await?;
     Ok(Retention {
+        enabled: row.get::<bool, _>("enabled"),
         seconds: row.get::<i64, _>("seconds") as u64,
         max_entries: row.get::<i64, _>("max_entries") as u32,
     })
@@ -28,11 +30,14 @@ pub async fn set_retention(
         return Err(StoreError::Protocol("Invalid sync history limits".into()));
     }
     let mut tx = crate::write_tx(pool).await?;
-    sqlx::query("UPDATE sync_history_policy SET seconds = ?, max_entries = ? WHERE id = 1")
-        .bind(policy.seconds as i64)
-        .bind(i64::from(policy.max_entries))
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "UPDATE sync_history_policy SET enabled = ?, seconds = ?, max_entries = ? WHERE id = 1",
+    )
+    .bind(policy.enabled)
+    .bind(policy.seconds as i64)
+    .bind(i64::from(policy.max_entries))
+    .execute(&mut *tx)
+    .await?;
     prune_tx(&mut tx, now).await?;
     tx.commit().await
 }
@@ -43,6 +48,12 @@ pub async fn append(
     summary: &Summary,
     now: i64,
 ) -> Result<(), StoreError> {
+    let enabled: bool = sqlx::query_scalar("SELECT enabled FROM sync_history_policy WHERE id = 1")
+        .fetch_one(pool)
+        .await?;
+    if !enabled {
+        return Ok(());
+    }
     let preparing = nucleus::performance::Span::new("sync-history-prepare");
     let mut summary = summary.clone();
     summary.subjects.truncate(32);
@@ -66,7 +77,7 @@ pub async fn append(
     };
     {
         let _insert = nucleus::performance::Span::new("sync-history-insert-await");
-        sqlx::query("INSERT INTO sync_activity (at, activity, summary) VALUES (?, ?, ?)")
+        sqlx::query("INSERT INTO sync_activity (at, activity, summary) SELECT ?, ?, ? WHERE (SELECT enabled FROM sync_history_policy WHERE id = 1)")
             .bind(now)
             .bind(activity)
             .bind(summary)
@@ -93,6 +104,11 @@ async fn prune_tx(
 }
 
 pub async fn prune(pool: &SqlitePool, now: i64) -> Result<(), StoreError> {
+    let needed: bool = sqlx::query_scalar("SELECT enabled AND (EXISTS(SELECT 1 FROM sync_activity WHERE at <= ? - seconds) OR EXISTS(SELECT 1 FROM sync_activity ORDER BY seq DESC LIMIT 1 OFFSET (SELECT max_entries FROM sync_history_policy WHERE id = 1))) FROM sync_history_policy WHERE id = 1")
+        .bind(now).fetch_one(pool).await?;
+    if !needed {
+        return Ok(());
+    }
     let mut tx = crate::write_tx(pool).await?;
     prune_tx(&mut tx, now).await?;
     tx.commit().await

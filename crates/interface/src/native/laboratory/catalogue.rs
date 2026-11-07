@@ -1,6 +1,7 @@
 pub fn catalogue() -> Vec<super::Case> {
     let mut cases = Vec::new();
     super::interface::laboratory_cases(&mut cases);
+    super::showoff::screenshot::laboratory_cases(&mut cases);
     #[cfg(feature = "test-driver")]
     super::driver::laboratory_cases(&mut cases);
     crate::native::instinct::tests::laboratory_cases(&mut cases);

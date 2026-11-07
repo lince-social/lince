@@ -13,6 +13,8 @@ use crate::{
 use bevy::{math::DVec2, prelude::*};
 use std::io::{self, Write};
 
+pub mod screenshot;
+
 pub const NAME: &str = "showoff";
 pub const MODEL: &[u8] = include_bytes!("../../../fixtures/showoff.glb");
 

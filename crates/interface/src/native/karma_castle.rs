@@ -562,6 +562,21 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 let text = match &message {
                     ServerMessage::ActionOk {
                         data: Some(data), ..
+                    } if data["karma"]["runtime_failure"]["message"].is_string() => {
+                        format!(
+                            "Karma {}: {}",
+                            if data["karma"]["runtime_failure"]["retrying"] == true {
+                                "is retrying"
+                            } else {
+                                "stopped"
+                            },
+                            data["karma"]["runtime_failure"]["message"]
+                                .as_str()
+                                .unwrap()
+                        )
+                    }
+                    ServerMessage::ActionOk {
+                        data: Some(data), ..
                     } if data["karma"]["executing"] == true => {
                         "Karma is running on this Cell.".to_owned()
                     }

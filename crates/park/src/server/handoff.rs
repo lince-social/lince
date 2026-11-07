@@ -64,7 +64,7 @@ impl Server {
             locked: self.locked(),
             supported: false,
             blockers: vec![
-                "wayland-backend 0.3.17 has no connected-client object-map and queued-byte/FD export/import API".into(),
+                "Park client and protocol checkpoint adapters have not been implemented or qualified against the maintained backend handoff API".into(),
                 "Smithay surface caches, protocol user data and registered callbacks have no complete typed checkpoint adapter".into(),
                 "Park display/seat/GPU, native interface and Cell state have no full restore path".into(),
             ],

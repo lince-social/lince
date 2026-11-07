@@ -150,6 +150,8 @@
               --replace-fail "Exec=lince-park-session" "Exec=$out/bin/lince-park-session"
             cp -r share/licenses/lince-smithay-capture "$out/share/licenses/"
             cp -r share/licenses/smithay "$out/share/licenses/"
+            cp -r share/licenses/wayland-backend "$out/share/licenses/"
+            cp -r share/licenses/wayland-server "$out/share/licenses/"
             install -Dm644 ${./institute/packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
             install -Dm644 ${./institute/packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
@@ -1035,6 +1037,8 @@
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
                 install -Dm644 crates/vendor/smithay/LICENSE.txt "$out/share/licenses/smithay/LICENSE.txt"
+                install -Dm644 crates/vendor/wayland-backend/LICENSE.txt "$out/share/licenses/wayland-backend/LICENSE.txt"
+                install -Dm644 crates/vendor/wayland-server/LICENSE.txt "$out/share/licenses/wayland-server/LICENSE.txt"
               '' + installParkSession);
 
               passthru = lib.optionalAttrs withPark { providedSessions = [ "lince" ]; };

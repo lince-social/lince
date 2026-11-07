@@ -11,7 +11,7 @@ autoexamples = false
 [features]
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
 graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
-server = ["dep:lince-interface", "dep:rustix", "dep:serde", "dep:serde_json", "dep:wayland-scanner", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
+server = ["dep:wayland-backend", "dep:lince-interface", "dep:rustix", "dep:serde", "dep:serde_json", "dep:wayland-scanner", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
 server-tests = ["server", "dep:serde_json", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
 clipboard-gate = ["server", "dep:bevy_clipboard", "dep:wayland-client"]
 native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus", "dep:store", "dep:accesskit", "dep:accesskit_unix"]
@@ -25,6 +25,7 @@ session = ["nested", "smithay/backend_drm", "smithay/backend_gbm", "smithay/back
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_render", "bevy_core_pipeline", "bevy_text", "bevy_ui", "bevy_ui_render", "bevy_input_focus", "bevy_ui_widgets", "trace"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+wayland-backend = { version = "=0.3.17", features = ["handoff"], optional = true }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "desktop"] }
 lince-smithay-capture = { path = "../vendor/smithay-capture", features = ["backend_drm"], optional = true }
 bevy_clipboard = { version = "=0.19.1", default-features = false, features = ["system_clipboard", "wayland"], optional = true }

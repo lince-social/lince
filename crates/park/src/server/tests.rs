@@ -63,6 +63,8 @@ mod control_tests;
 mod swap_tests;
 #[path = "tests/handoff.rs"]
 mod handoff_tests;
+#[path = "tests/backend_handoff.rs"]
+mod backend_handoff_tests;
 #[cfg(feature = "nested")]
 #[path = "tests/manipulation.rs"]
 mod manipulation_tests;

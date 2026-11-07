@@ -103,6 +103,8 @@ mod latency;
 mod idle;
 mod ime;
 mod color;
+mod handoff;
+pub use handoff::{HandoffInventory, ProtocolInventory};
 
 pub struct ClientBuffer {
     backing: Arc<BufferBacking>,

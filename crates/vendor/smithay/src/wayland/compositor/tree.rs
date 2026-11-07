@@ -22,8 +22,23 @@ use wayland_server::{
     DisplayHandle, Resource,
 };
 
+#[cfg(not(feature = "handoff"))]
 type CommitHook = dyn Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + Send + Sync;
+#[cfg(not(feature = "handoff"))]
 type DestructionHook = dyn Fn(&mut dyn Any, &WlSurface) + Send + Sync;
+
+#[cfg(feature = "handoff")]
+trait CommitCallback: Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + crate::utils::hook::HandoffCallback {}
+#[cfg(feature = "handoff")]
+impl<T> CommitCallback for T where T: Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + 'static {}
+#[cfg(feature = "handoff")]
+trait DestructionCallback: Fn(&mut dyn Any, &WlSurface) + crate::utils::hook::HandoffCallback {}
+#[cfg(feature = "handoff")]
+impl<T> DestructionCallback for T where T: Fn(&mut dyn Any, &WlSurface) + 'static {}
+#[cfg(feature = "handoff")]
+type CommitHook = dyn CommitCallback + Send + Sync;
+#[cfg(feature = "handoff")]
+type DestructionHook = dyn DestructionCallback + Send + Sync;
 
 /// Node of a subsurface tree, holding some user specified data type U
 /// at each node
@@ -98,6 +113,24 @@ pub enum TraversalAction<T> {
 }
 
 impl PrivateSurfaceData {
+    #[cfg(feature = "handoff")]
+    pub(super) fn initialize_handoff(&mut self, surface: &WlSurface) -> std::io::Result<()> {
+        if !self.children.is_empty() || self.parent.is_some() {
+            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Surface tree is already initialized"));
+        }
+        self.children.push(surface.clone());
+        Ok(())
+    }
+
+    #[cfg(feature = "handoff")]
+    pub(super) fn handoff_hooks(&self) -> super::handoff::SurfaceHooks {
+        super::handoff::SurfaceHooks {
+            pre_commit: self.pre_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
+            post_commit: self.post_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
+            destruction: self.destruction_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
+        }
+    }
+
     pub fn new() -> Mutex<PrivateSurfaceData> {
         Mutex::new(PrivateSurfaceData {
             parent: None,

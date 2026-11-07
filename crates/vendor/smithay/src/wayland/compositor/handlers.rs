@@ -156,6 +156,18 @@ pub struct SurfaceUserData {
     pub(super) user_state_type: (std::any::TypeId, &'static str),
 }
 
+#[cfg(feature = "handoff")]
+impl SurfaceUserData {
+    #[doc(hidden)]
+    pub fn for_handoff<D: 'static>() -> Self {
+        Self {
+            inner: PrivateSurfaceData::new(),
+            alive_tracker: Default::default(),
+            user_state_type: (std::any::TypeId::of::<D>(), std::any::type_name::<D>()),
+        }
+    }
+}
+
 impl<D> Dispatch<WlSurface, SurfaceUserData, D> for CompositorState
 where
     D: Dispatch<WlSurface, SurfaceUserData>,
@@ -377,6 +389,14 @@ impl IsAlive for WlSurface {
 #[derive(Debug)]
 pub struct RegionUserData {
     pub(crate) inner: Mutex<RegionAttributes>,
+}
+
+#[cfg(feature = "handoff")]
+impl RegionUserData {
+    #[doc(hidden)]
+    pub fn from_handoff(attributes: RegionAttributes) -> Self {
+        Self { inner: Mutex::new(attributes) }
+    }
 }
 
 impl<D> Dispatch<WlRegion, RegionUserData, D> for CompositorState

@@ -1,5 +1,30 @@
 use std::sync::Arc;
 
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CallbackIdentity {
+    type_id: std::any::TypeId,
+    pub type_name: &'static str,
+    pub capture_size: usize,
+}
+
+#[cfg(feature = "handoff")]
+pub(crate) trait HandoffCallback {
+    fn handoff_identity(&self) -> CallbackIdentity;
+}
+
+#[cfg(feature = "handoff")]
+impl<T: 'static> HandoffCallback for T {
+    fn handoff_identity(&self) -> CallbackIdentity {
+        CallbackIdentity {
+            type_id: std::any::TypeId::of::<T>(),
+            type_name: std::any::type_name::<T>(),
+            capture_size: std::mem::size_of::<T>(),
+        }
+    }
+}
+
 crate::utils::ids::id_gen!(hooks_id);
 
 /// Unique hook identifier used to unregister commit/descruction hooks

@@ -196,3 +196,127 @@ fn smithay_user_data_capture_requires_the_owner_of_non_send_state() {
     .unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
 }
+
+static NAMED_HOOK_CALLS: AtomicUsize = AtomicUsize::new(0);
+
+fn named_commit_hook(_: &mut State, _: &DisplayHandle, _: &WlSurface) {
+    NAMED_HOOK_CALLS.fetch_add(1, Ordering::SeqCst);
+}
+
+#[test]
+fn smithay_checkpoint_identifies_known_stateless_hooks_and_distinguishes_captures() {
+    use smithay::wayland::compositor::{self, handoff};
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let surface = harness.server.state.surfaces.iter().next().unwrap().clone();
+    let original = handoff::surface_hooks(&surface).unwrap();
+    let xdg_commit = xdg::handoff::toplevel_commit_identity::<State>();
+    assert_eq!(xdg_commit.capture_size, 0);
+    assert!(original.post_commit.contains(&xdg_commit));
+    let named = handoff::commit_callback_identity::<State, _>(named_commit_hook);
+    assert_eq!(named.capture_size, 0);
+    let hook_id = compositor::add_post_commit_hook::<State, _>(&surface, named_commit_hook);
+    let captured = Arc::new(AtomicUsize::new(0));
+    let target = captured.clone();
+    let closure = move |_: &mut State, _: &DisplayHandle, _: &WlSurface| {
+        target.fetch_add(1, Ordering::SeqCst);
+    };
+    let captured_identity = handoff::commit_callback_identity::<State, _>(closure.clone());
+    assert_ne!(named, captured_identity);
+    assert!(captured_identity.capture_size > 0);
+    let captured_id = compositor::add_post_commit_hook::<State, _>(&surface, closure);
+    let hooks = handoff::surface_hooks(&surface).unwrap();
+    assert!(hooks.post_commit.contains(&named));
+    assert!(hooks.post_commit.contains(&captured_identity));
+    let before = NAMED_HOOK_CALLS.load(Ordering::SeqCst);
+    window.surface.commit();
+    harness.sync();
+    assert_eq!(NAMED_HOOK_CALLS.load(Ordering::SeqCst), before + 1);
+    assert_eq!(captured.load(Ordering::SeqCst), 1);
+    compositor::remove_post_commit_hook(&surface, hook_id);
+    compositor::remove_post_commit_hook(&surface, captured_id);
+    assert_eq!(
+        handoff::surface_hooks(&surface).unwrap().post_commit,
+        original.post_commit
+    );
+    let recreated = compositor::add_post_commit_hook::<State, _>(&surface, named_commit_hook);
+    assert!(
+        handoff::surface_hooks(&surface)
+            .unwrap()
+            .post_commit
+            .contains(&named)
+    );
+    window.surface.commit();
+    harness.sync();
+    assert_eq!(NAMED_HOOK_CALLS.load(Ordering::SeqCst), before + 2);
+    assert_eq!(captured.load(Ordering::SeqCst), 1);
+    compositor::remove_post_commit_hook(&surface, recreated);
+}
+
+#[test]
+fn smithay_restores_fresh_typed_surface_region_and_scale_data_without_creation_events() {
+    use smithay::wayland::compositor::{self, RegionUserData, SurfaceUserData};
+    let mut server = Server::new([640, 480]).unwrap();
+    let mut handle = server.display.handle();
+    let (stream, _peer) = UnixStream::pair().unwrap();
+    let client = handle
+        .insert_client(stream, Arc::new(RestoreClient))
+        .unwrap();
+    let surface = client
+        .create_resource::<WlSurface, _, State>(&handle, 6, SurfaceUserData::for_handoff::<State>())
+        .unwrap();
+    assert!(
+        server
+            .state
+            .compositor
+            .register_handoff_surface::<()>(&surface)
+            .is_err()
+    );
+    server
+        .state
+        .compositor
+        .register_handoff_surface::<State>(&surface)
+        .unwrap();
+    assert!(
+        server
+            .state
+            .compositor
+            .register_handoff_surface::<State>(&surface)
+            .is_err()
+    );
+    let mut visited = 0;
+    compositor::with_surface_tree_downward(
+        &surface,
+        (),
+        |_, _, _| TraversalAction::DoChildren(()),
+        |_, _, _| {
+            visited += 1;
+        },
+        |_, _, _| true,
+    );
+    assert_eq!(visited, 1);
+    with_states(&surface, |states| {
+        let mut cache = states.cached_state.get::<SurfaceAttributes>();
+        assert_eq!(cache.pending().handoff_client_scale(), 1.0);
+        cache.pending().restore_client_scale(1.75).unwrap();
+        assert_eq!(cache.pending().handoff_client_scale(), 1.75);
+        assert_eq!(cache.current().handoff_client_scale(), 1.0);
+        assert!(cache.pending().restore_client_scale(f64::NAN).is_err());
+        assert!(cache.pending().restore_client_scale(0.0).is_err());
+    });
+    let mut attributes = RegionAttributes::default();
+    attributes.rects.push((
+        compositor::RectangleKind::Add,
+        Rectangle::new((2, 3).into(), (4, 5).into()),
+    ));
+    let region = client.create_resource::<smithay::reexports::wayland_server::protocol::wl_region::WlRegion, _, State>(&handle, 1, RegionUserData::from_handoff(attributes)).unwrap();
+    let attributes = compositor::get_region_attributes(&region);
+    assert!(attributes.contains((3, 4)));
+    assert!(!attributes.contains((0, 0)));
+    assert!(
+        compositor::handoff::surface_hooks(&surface)
+            .unwrap()
+            .post_commit
+            .is_empty()
+    );
+}

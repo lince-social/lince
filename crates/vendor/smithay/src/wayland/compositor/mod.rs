@@ -110,6 +110,10 @@ mod handlers;
 mod transaction;
 mod tree;
 
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+pub mod handoff;
+
 use std::cell::RefCell;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -466,10 +470,7 @@ where
         user_state_type,
     );
 
-    let hook = move |state: &mut dyn Any, dh: &DisplayHandle, surface: &WlSurface| {
-        let state = state.downcast_mut::<D>().unwrap();
-        hook(state, dh, surface);
-    };
+    let hook = erase_commit_hook::<D, F>(hook);
     PrivateSurfaceData::add_pre_commit_hook(surface, hook)
 }
 
@@ -494,10 +495,7 @@ where
         user_state_type,
     );
 
-    let hook = move |state: &mut dyn Any, dh: &DisplayHandle, surface: &WlSurface| {
-        let state = state.downcast_mut::<D>().unwrap();
-        hook(state, dh, surface);
-    };
+    let hook = erase_commit_hook::<D, F>(hook);
     PrivateSurfaceData::add_post_commit_hook(surface, hook)
 }
 
@@ -521,11 +519,24 @@ where
         user_state_type,
     );
 
-    let hook = move |state: &mut dyn Any, surface: &WlSurface| {
-        let state = state.downcast_mut::<D>().unwrap();
-        hook(state, surface);
-    };
+    let hook = erase_destruction_hook::<D, F>(hook);
     PrivateSurfaceData::add_destruction_hook(surface, hook)
+}
+
+fn erase_commit_hook<D, F>(hook: F) -> impl Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + Send + Sync + 'static
+where
+    F: Fn(&mut D, &DisplayHandle, &WlSurface) + Send + Sync + 'static,
+    D: 'static,
+{
+    move |state, handle, surface| hook(state.downcast_mut::<D>().unwrap(), handle, surface)
+}
+
+fn erase_destruction_hook<D, F>(hook: F) -> impl Fn(&mut dyn Any, &WlSurface) + Send + Sync + 'static
+where
+    F: Fn(&mut D, &WlSurface) + Send + Sync + 'static,
+    D: 'static,
+{
+    move |state, surface| hook(state.downcast_mut::<D>().unwrap(), surface)
 }
 
 /// Unregister a pre-commit hook

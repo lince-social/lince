@@ -142,6 +142,10 @@ use super::PingError;
 pub mod decoration;
 pub mod dialog;
 
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+pub mod handoff;
+
 // handlers for the xdg_shell protocol
 pub(super) mod handlers;
 pub use handlers::{XdgPositionerUserData, XdgShellSurfaceUserData, XdgSurfaceUserData, XdgWmBaseUserData};

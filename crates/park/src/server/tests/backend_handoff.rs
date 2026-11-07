@@ -1099,7 +1099,7 @@ impl ConnectionDecoder<MiniState> for FinalizingCodec {
                     .map_err(io::Error::other)?;
                 shm.format(wl_shm::Format::Argb8888);
                 if matches!(self.mode, Finalization::FlushEvent) {
-                    context.backend_handle().flush(None)?;
+                    context.backend_handle().clone().flush(None)?;
                 }
                 Ok(())
             }

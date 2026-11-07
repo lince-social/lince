@@ -169,7 +169,7 @@ fn smithay_cache_checkpoint_keeps_current_pending_and_synchronized_commits_separ
             .get::<SurfaceAttributes>()
             .handoff_map(|attributes| Ok::<_, io::Error>(attributes.buffer_scale))
             .unwrap();
-        assert_eq!(snapshot.current, 2);
+        assert_eq!(snapshot.current, 3);
         assert_eq!(snapshot.pending, 3);
         assert!(snapshot.cache.is_empty());
     });

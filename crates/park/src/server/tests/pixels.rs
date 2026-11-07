@@ -140,6 +140,124 @@ fn quiet_worker(worker: &crate::runtime::CanvasWorker, updates: &std::sync::atom
 }
 
 #[test]
+#[ignore = "requires hardware Vulkan/EGL; private DMA-BUF producer fence and asynchronous worker"]
+fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completion_progress() {
+    use crate::{graphics::{VulkanRenderer, import_gate}, runtime::{CanvasWorker, Configuration, Input, Scene}};
+    use std::sync::atomic::AtomicU64;
+    let checks = native::laboratory::run_interface_checks().unwrap();
+    assert!(checks.first().unwrap().name.ends_with("::protein_area_filter_visible_and_selectable"));
+    assert!(checks.iter().all(|check| check.error.is_none()), "{checks:?}");
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let mut worker = CanvasWorker::spawn(Configuration {
+        showoff: false, size: [640, 480], directory: directory.path().into(), runtime: runtime.handle().clone(), cell: None,
+    }).unwrap();
+    worker_frame(&worker, |_| true);
+    let updates = Arc::new(AtomicU64::new(0));
+    let counted = updates.clone();
+    let serial = worker.input(Input::Test(Box::new(move |canvas| {
+        let world = canvas.world_mut();
+        let root = world.query_filtered::<Entity, With<native::workspace::Workspaces>>().single(world).unwrap();
+        native::workspace_config::set_physics(world, root, 1, false);
+        world.resource_mut::<Schedules>().get_mut(Update).unwrap().add_systems(move || { counted.fetch_add(1, Ordering::Release); });
+    }))).unwrap();
+    worker_frame(&worker, |frame| frame.input_serial >= serial);
+    let renderer = VulkanRenderer::new().unwrap();
+    let mut harness = Harness::new();
+    use smithay::backend::allocator::{Format, Fourcc, Modifier};
+    harness.server.enable_dmabuf_formats([Format { code: Fourcc::Argb8888, modifier: Modifier::Linear }], || None).unwrap();
+    harness.sync();
+    let held = harness.window();
+    let ready = harness.window();
+    let _initial_held = colored(&mut harness, &held, [0, 255, 0]);
+    let _initial_ready = colored(&mut harness, &ready, [0, 0, 255]);
+    let scene = |harness: &Harness| Scene {
+        revision: 1,
+        outputs: harness.server.output_viewports().into_iter().map(|(name, viewport)| crate::presentation::Output { name, viewport }).collect(),
+        windows: Arc::new(harness.server.windows()), display: None,
+    };
+    worker.scene(scene(&harness)).unwrap();
+    let initial = worker_frame(&worker, |frame| frame.windows.len() == 2);
+    quiet_worker(&worker, &updates);
+    worker.scene(scene(&harness)).unwrap();
+    let retained = worker_frame(&worker, |frame| frame.windows.len() == 2);
+    let held_id = initial.windows.iter().find(|window| smithay::reexports::wayland_server::Resource::id(&window.surface).protocol_id() == held.surface.id().protocol_id()).unwrap().id;
+    let ready_id = initial.windows.iter().find(|window| window.id != held_id).unwrap().id;
+    let old_version = initial.windows.iter().find(|window| window.id == held_id).unwrap().nodes[0].content.version;
+    let before_main = updates.load(Ordering::Acquire);
+    let before_frames = worker.test_activity().1;
+    let (image, gate) = import_gate::pixels(&renderer, wgpu::Color::RED);
+    let buffer = super::dmabuf_tests::buffer(&harness.client, &harness.queue.handle(), &image.dmabuf);
+    let held_done = Arc::new(AtomicBool::new(false));
+    held.surface.frame(&harness.queue.handle(), held_done.clone());
+    held.surface.attach(Some(&buffer), 0, 0);
+    held.surface.damage_buffer(0, 0, 320, 240);
+    held.surface.commit();
+    harness.sync();
+    let expected_held = harness.server.windows().iter().find(|window| window.id == held_id).unwrap().nodes[0].content.version;
+    for _ in 0..4 {
+        worker.scene(scene(&harness)).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(1);
+        let mut quiet = Instant::now();
+        loop {
+            assert!(worker.failure().is_none());
+            if worker.frame().is_some() || !worker.test_activity().0 { quiet = Instant::now(); }
+            if quiet.elapsed() >= Duration::from_millis(30) { break; }
+            assert!(Instant::now() < deadline, "The worker did not idle behind a private producer fence");
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        assert!(!import_gate::ready(&image.dmabuf));
+    }
+    let redundant_frames = worker.test_activity().1 - before_frames;
+    let ready_done = Arc::new(AtomicBool::new(false));
+    ready.surface.frame(&harness.queue.handle(), ready_done.clone());
+    let _next_ready = colored(&mut harness, &ready, [255, 255, 0]);
+    let expected_ready = harness.server.windows().iter().find(|window| window.id == ready_id).unwrap().nodes[0].content.version;
+    worker.scene(scene(&harness)).unwrap();
+    let partial = worker_frame(&worker, |frame| frame.windows.iter().any(|window| window.id == ready_id && window.nodes[0].content.version == expected_ready));
+    assert_eq!(partial.windows.iter().find(|window| window.id == held_id).unwrap().nodes[0].content.version, old_version);
+    assert!(Arc::ptr_eq(&partial.frame.input, &retained.frame.input));
+    for window in partial.windows.iter() {
+        harness.server.frame_started_nodes(&harness.server.callback_nodes(window));
+    }
+    harness.sync();
+    assert!(ready_done.load(Ordering::Acquire));
+    assert!(!held_done.load(Ordering::Acquire));
+    let pixels = crate::presentation::probe_pixels(partial.frame.dmabuf().unwrap()).unwrap();
+    assert!(pixels.chunks_exact(4).filter(|pixel| pixel[0] > 225 && pixel[1] > 225 && pixel[2] < 30).count() > 20_000);
+    assert_eq!(updates.load(Ordering::Acquire), before_main, "Unavailable pixels restarted native semantic work");
+    assert!(!import_gate::ready(&image.dmabuf));
+    gate.release();
+    let completed = worker_frame(&worker, |frame| frame.windows.iter().any(|window| window.id == held_id && window.nodes[0].content.version == expected_held));
+    assert!(import_gate::ready(&image.dmabuf));
+    assert!(Arc::ptr_eq(&completed.frame.input, &retained.frame.input));
+    assert_eq!(updates.load(Ordering::Acquire), before_main, "Producer readiness restarted native semantic work");
+    for window in completed.windows.iter() {
+        harness.server.frame_started_nodes(&harness.server.callback_nodes(window));
+    }
+    harness.sync();
+    assert!(held_done.load(Ordering::Acquire));
+    assert_eq!(completed.windows.iter().find(|window| window.id == ready_id).unwrap().nodes[0].content.version, expected_ready);
+    let (input_image, input_gate) = import_gate::pixels(&renderer, wgpu::Color::GREEN);
+    let input_buffer = super::dmabuf_tests::buffer(&harness.client, &harness.queue.handle(), &input_image.dmabuf);
+    held.surface.attach(Some(&input_buffer), 0, 0);
+    held.surface.damage_buffer(0, 0, 320, 240);
+    held.surface.commit();
+    harness.sync();
+    let expected_input = harness.server.windows().iter().find(|window| window.id == held_id).unwrap().nodes[0].content.version;
+    worker.scene(scene(&harness)).unwrap();
+    let serial = worker.input(Input::Pointer([40.0, 40.0])).unwrap();
+    let input = worker_frame(&worker, |frame| frame.input_serial >= serial);
+    assert_eq!(input.windows.iter().find(|window| window.id == held_id).unwrap().nodes[0].content.version, expected_held);
+    assert!(!import_gate::ready(&input_image.dmabuf));
+    input_gate.release();
+    worker_frame(&worker, |frame| frame.windows.iter().any(|window| window.id == held_id && window.nodes[0].content.version == expected_input));
+    eprintln!("Private unavailable-pixel scenes: 4, redundant published frames: {redundant_frames}; independent ready pixels, callbacks, input and fence wake passed");
+    worker.stop().unwrap();
+    assert_eq!(redundant_frames, 0, "Unavailable client pixels caused redundant native frame preparation");
+}
+
+#[test]
 #[ignore = "requires hardware Vulkan/EGL; real asynchronous worker and private client"]
 fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metadata_and_wakes() {
     use crate::runtime::{CanvasWorker, Configuration, Input, Scene};

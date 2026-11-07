@@ -23,6 +23,8 @@ pub(crate) use import::direct;
 mod completion;
 mod synchronization;
 pub use synchronization::probe as synchronization_probe;
+#[cfg(all(test, feature = "nested", feature = "server-tests"))]
+pub(crate) mod import_gate;
 #[cfg(feature = "native-presentation")]
 pub(crate) mod wait;
 #[cfg(feature = "graphics-gate")]

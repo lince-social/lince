@@ -39,6 +39,7 @@ impl Presentation {
         }
         self.renderer.retain_imports(windows);
         let mut pending = false;
+        let mut changed = false;
         let mut imported = Vec::new();
         for snapshot in windows {
             if !snapshot.mapped { self.painted_windows.insert(snapshot.id, snapshot.clone()); continue; }
@@ -60,6 +61,7 @@ impl Presentation {
                 imported.push((snapshot.id, node, texture, opaque));
             }
             if !ready { imported.clear(); continue; }
+            changed |= !imported.is_empty();
             for (id, node, texture, opaque) in imported.drain(..) {
                 let view = self.windows.get_mut(&id).unwrap().nodes.get_mut(&node.surface).unwrap();
                 if view.texture.as_ref() != Some(&texture) {
@@ -81,7 +83,7 @@ impl Presentation {
             }
             self.painted_windows.insert(snapshot.id, snapshot.clone());
         }
-        Ok(if pending { PixelSync::Pending } else { PixelSync::Ready })
+        Ok(if !pending { PixelSync::Ready } else if changed { PixelSync::Partial } else { PixelSync::Pending })
     }
 
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {

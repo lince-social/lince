@@ -1,6 +1,6 @@
 use crate::{
     graphics::ProbeFailure,
-    presentation::{Frame, Presentation},
+    presentation::{Frame, PixelSync, Presentation},
     server::WindowSnapshot,
 };
 use bevy::{
@@ -551,6 +551,7 @@ fn run(
         let reasons = dirty.swap(0, Ordering::AcqRel);
         let changed = reasons != 0;
         let native_changed = reasons & NATIVE != 0;
+        let mut pixel_attempted = false;
         synchronize_focus(&mut canvas, &mut focus_revision)?;
         if !started {
             canvas.frame()?;
@@ -562,12 +563,13 @@ fn run(
             let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::SceneSync);
             let pixels = !native_changed && !showoff && scene_revision == scene.revision && canvas.pixel_scene(&scene);
             let synchronized = if pixels { canvas.sync_pixels(&scene.windows).ok() } else { None };
+            pixel_attempted = pixels;
             if tracing_frames() {
                 eprintln!("Park scene: native={native_changed}, update={update}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}", scene.revision, canvas.retains_frame(), canvas.pixel_scene(&scene));
             }
-            if matches!(synchronized, Some(crate::presentation::PixelSync::Ready | crate::presentation::PixelSync::Pending)) {
-                pending = synchronized == Some(crate::presentation::PixelSync::Pending);
-                pixel_work = true;
+            if matches!(synchronized, Some(PixelSync::Ready | PixelSync::Partial | PixelSync::Pending)) {
+                pending = synchronized != Some(PixelSync::Ready);
+                pixel_work |= synchronized != Some(PixelSync::Pending);
                 pixel_imports = true;
             } else {
                 if let Some(display) = scene.display { canvas.world_mut().insert_resource(display); }
@@ -826,9 +828,8 @@ fn run(
             pixel_work = false;
             pixel_imports = false;
         }
-        if pending && canvas.imports_ready() {
-            if pixel_imports { pixel_work = true; } else { update = true; }
-        }
+        let retry_pixels = pending && pixel_imports && !pixel_attempted && canvas.imports_ready();
+        if pending && !pixel_imports && canvas.imports_ready() { update = true; }
         if let Some(completed) = awaiting.as_ref() {
             if !completed.frame.ready()? {
                 lince_interface::host::performance::count(lince_interface::host::performance::Count::GpuPark);
@@ -846,6 +847,15 @@ fn run(
             if let Some(notify) = notify { notify.ring(); }
             lince_interface::host::performance::flush_if_due();
         }
+        if retry_pixels {
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
+            match canvas.sync_pixels(&windows) {
+                Ok(PixelSync::Ready) => { pending = false; pixel_work = true; }
+                Ok(PixelSync::Partial) => pixel_work = true,
+                Ok(PixelSync::Pending) => {}
+                _ => { pixel_imports = false; pixel_work = false; update = true; pending = canvas.sync_windows(&windows)?; }
+            }
+        }
         if !update && !pixel_work {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::IdlePark);
             #[cfg(test)]
@@ -854,15 +864,9 @@ fn run(
             continue;
         }
         let settling = !input && !changed && !pending;
-        if pending {
+        if pending && !pixel_imports {
             lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
-            if pixel_imports {
-                match canvas.sync_pixels(&windows) {
-                    Ok(crate::presentation::PixelSync::Ready) => pending = false,
-                    Ok(crate::presentation::PixelSync::Pending) => {},
-                    _ => { pixel_imports = false; pixel_work = false; update = true; pending = canvas.sync_windows(&windows)?; }
-                }
-            } else { pending = canvas.sync_windows(&windows)?; }
+            pending = canvas.sync_windows(&windows)?;
         }
         if starting.publish(Started { scene_revision, windows: canvas.painted_windows() }).is_err() { break; }
         if let Some(notify) = notify { notify.ring(); }

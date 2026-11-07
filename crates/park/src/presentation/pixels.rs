@@ -4,6 +4,7 @@ use super::*;
 pub(crate) enum Sync {
     Incompatible,
     Pending,
+    Partial,
     Ready,
 }
 

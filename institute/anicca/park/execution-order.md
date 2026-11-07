@@ -43,7 +43,7 @@ The optimized producer verifies P56's grouped submission/completion counts. The 
 | Next | Task and full definition | Expected value / activation |
 | --- | --- | --- |
 | 1 | [P66 — Produce one ranked bottleneck report for the current optimized candidate.](01-measurement.md) | Verify the clock/main-phase/grouped-export combined optimized artifact; use matching geometry/graphics and retain physical/input gaps. |
-| 2 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | Separate output demand/callback pacing from eager native preparation; preserve ready/input/semantic progress and independent outputs. |
+| 2 | [P53 — Pace one output from its presentation clock without a redraw loop.](06-gpu-and-outputs.md) | No-progress client-import preparation is removed with real-fence evidence. Next separate output demand/callback pacing from remaining eager native preparation; preserve ready/input/semantic progress and independent outputs. |
 | 3 | [P107 — Stop preparing one superseded unsubmitted native frame.](02-input-and-scheduling.md) | Stop expensive work on superseded unsubmitted frames. |
 | 4 | [P36 — Attribute the remaining native wake stream.](01-measurement.md) | Private clock attribution and its retained source fix are complete. Attribute remaining current daily sources on the new optimized traced candidate. |
 | 5 | [P67 — Map CPU/GPU responsibilities across the active frame path.](01-measurement.md) | After the byte-budget win, map actual shipping frame/thread/device/transfer ownership before another debug save-only optimization; do not infer wrong placement from utilization. |

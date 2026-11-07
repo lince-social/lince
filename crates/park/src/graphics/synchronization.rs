@@ -1,10 +1,10 @@
 use super::*;
 use std::{sync::atomic::{AtomicBool, Ordering}, time::{Duration, Instant}};
 
-struct Event {
-    event: vk::Event,
-    device: ash::Device,
-    _owner: wgpu::Device,
+pub(super) struct Event {
+    pub(super) event: vk::Event,
+    pub(super) device: ash::Device,
+    pub(super) _owner: wgpu::Device,
 }
 
 impl Drop for Event {

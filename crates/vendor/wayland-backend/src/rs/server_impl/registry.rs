@@ -22,7 +22,7 @@ pub(crate) struct Global<D: 'static> {
     pub(super) id: InnerGlobalId,
     pub(super) interface: &'static Interface,
     pub(super) version: u32,
-    handler: Arc<dyn GlobalHandler<D>>,
+    pub(super) handler: Arc<dyn GlobalHandler<D>>,
     pub(super) disabled: bool,
 }
 

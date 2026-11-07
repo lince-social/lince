@@ -28,7 +28,7 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-use downcast_rs::{impl_downcast, Downcast};
+use downcast_rs::{Downcast, impl_downcast};
 use wayland_server::DisplayHandle;
 
 use crate::utils::Serial;
@@ -68,6 +68,45 @@ pub struct CachedState<T> {
     pending: T,
     cache: VecDeque<(Serial, T)>,
     current: T,
+}
+
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct CacheCheckpoint<T> {
+    pub pending: T,
+    pub cache: VecDeque<(Serial, T)>,
+    pub current: T,
+}
+
+#[cfg(feature = "handoff")]
+impl<T> CachedState<T> {
+    #[doc(hidden)]
+    pub fn handoff_map<U, E>(
+        &self,
+        mut map: impl FnMut(&T) -> Result<U, E>,
+    ) -> Result<CacheCheckpoint<U>, E> {
+        let pending = map(&self.pending)?;
+        let current = map(&self.current)?;
+        let mut cache = VecDeque::with_capacity(self.cache.capacity());
+        for (serial, value) in &self.cache {
+            cache.push_back((*serial, map(value)?));
+        }
+        Ok(CacheCheckpoint {
+            pending,
+            cache,
+            current,
+        })
+    }
+
+    #[doc(hidden)]
+    pub fn from_handoff(checkpoint: CacheCheckpoint<T>) -> Self {
+        Self {
+            pending: checkpoint.pending,
+            cache: checkpoint.cache,
+            current: checkpoint.current,
+        }
+    }
 }
 
 impl<T: Default> Default for CachedState<T> {
@@ -120,11 +159,20 @@ impl<T: Cacheable + 'static> Cache for Mutex<CachedState<T>> {
     fn apply_state(&self, commit_id: Serial, dh: &DisplayHandle) {
         let mut me = self.lock().unwrap();
         loop {
-            if me.cache.front().map(|&(s, _)| s > commit_id).unwrap_or(true) {
+            if me
+                .cache
+                .front()
+                .map(|&(s, _)| s > commit_id)
+                .unwrap_or(true)
+            {
                 // if the cache is empty or the next state has a commit_id greater than the requested one
                 break;
             }
-            me.cache.pop_front().unwrap().1.merge_into(&mut me.current, dh);
+            me.cache
+                .pop_front()
+                .unwrap()
+                .1
+                .merge_into(&mut me.current, dh);
         }
     }
 }
@@ -160,6 +208,35 @@ impl std::fmt::Debug for MultiCache {
 }
 
 impl MultiCache {
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn handoff_visit(
+        &self,
+        mut visitor: impl FnMut(&dyn std::any::Any) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
+        for cache in &self.caches {
+            visitor((**cache).as_any())?;
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn restore_handoff<T: Cacheable + Send + 'static>(
+        &self,
+        checkpoint: CacheCheckpoint<T>,
+    ) -> std::io::Result<()> {
+        if self.has::<T>() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "Cache type has already been restored",
+            ));
+        }
+        self.caches
+            .push(Box::new(Mutex::new(CachedState::from_handoff(checkpoint))));
+        Ok(())
+    }
+
     pub(crate) fn new() -> Self {
         Self {
             caches: appendlist::AppendList::new(),

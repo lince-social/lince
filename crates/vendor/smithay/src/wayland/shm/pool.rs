@@ -173,6 +173,14 @@ impl InnerPool {
 }
 
 impl Pool {
+    #[cfg(feature = "handoff")]
+    pub(super) fn handoff_descriptor(&self) -> std::io::Result<(OwnedFd, NonZeroUsize)> {
+        let pool = self.inner.as_ref().ok_or_else(|| std::io::Error::other("SHM pool has retired"))?;
+        let map = pool.map.read().map_err(|_| std::io::Error::other("Poisoned SHM checkpoint lock"))?;
+        let size = NonZeroUsize::new(map.size()).ok_or_else(|| std::io::Error::other("Empty SHM pool"))?;
+        Ok((pool.fd.try_clone()?, size))
+    }
+
     pub fn new(fd: OwnedFd, size: NonZeroUsize) -> Result<Self, OwnedFd> {
         InnerPool::new(fd, size).map(|p| Self { inner: Some(p) })
     }

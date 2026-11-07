@@ -141,6 +141,29 @@ pub trait ConnectionDecoder<D: 'static> {
         payload: &[u8],
         descriptors: &[OwnedFd],
     ) -> io::Result<Arc<dyn ObjectData<D>>>;
+
+    fn finish(&mut self, _: &RestoreContext, _: &[OwnedFd]) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct RestoreContext {
+    pub(crate) handle: crate::rs::server::Handle,
+    pub(crate) objects: std::collections::BTreeMap<ObjectKey, ObjectId>,
+}
+
+impl RestoreContext {
+    pub fn object(&self, key: ObjectKey) -> io::Result<ObjectId> {
+        self.objects
+            .get(&key)
+            .cloned()
+            .ok_or_else(|| invalid("Checkpoint resource reference is missing or stale"))
+    }
+
+    pub fn backend_handle(&self) -> &crate::rs::server::Handle {
+        &self.handle
+    }
 }
 
 pub(crate) fn invalid(message: &str) -> io::Error {

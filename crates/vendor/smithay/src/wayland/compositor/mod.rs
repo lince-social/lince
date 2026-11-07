@@ -116,6 +116,9 @@ use std::sync::Arc;
 use std::{any::Any, sync::Mutex};
 
 pub use self::cache::{Cacheable, CachedState, MultiCache};
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+pub use self::cache::CacheCheckpoint;
 pub use self::handlers::{RegionUserData, SubsurfaceCachedState, SubsurfaceUserData, SurfaceUserData};
 use self::transaction::TransactionQueue;
 pub use self::transaction::{Barrier, Blocker, BlockerState};

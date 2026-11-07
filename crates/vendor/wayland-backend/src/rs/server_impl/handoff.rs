@@ -1,23 +1,29 @@
-use std::{collections::BTreeSet, io, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    io::{self, Read},
+    os::unix::net::UnixStream,
+    sync::Arc,
+};
 
 use rustix::event::epoll;
 
 use super::{
+    ClientId, Data, DumbObjectData, InnerBackend, InnerClientId, InnerObjectId, ObjectId,
     client::{Client, ClientStore},
     handle::State,
-    ClientId, Data, DumbObjectData, InnerBackend, InnerClientId, InnerObjectId, ObjectId,
+    registry::{Global, Registry},
 };
 use crate::{
     core_interfaces::{WL_DISPLAY_INTERFACE, WL_REGISTRY_INTERFACE},
     handoff::{
-        invalid, protocol_identity, Checkpoint, ClientKey, ClientState, ConnectionDecoder,
-        ConnectionEncoder, ConnectionState, GlobalState, ObjectKey, ObjectState, MAX_BYTES,
-        MAX_CLIENTS, MAX_DESCRIPTORS, MAX_OBJECTS, MAX_SLOTS,
+        Checkpoint, ClientKey, ClientState, ConnectionDecoder, ConnectionEncoder, ConnectionState,
+        GlobalState, MAX_BYTES, MAX_CLIENTS, MAX_DESCRIPTORS, MAX_OBJECTS, MAX_SLOTS, ObjectKey,
+        ObjectState, RestoreContext, invalid, protocol_identity,
     },
     protocol::{Interface, ObjectInfo},
     rs::{
         map::{Object, ObjectMap},
-        socket::BufferedSocket,
+        socket::{BufferedSocket, Socket},
     },
 };
 
@@ -329,6 +335,31 @@ impl<D: 'static> InnerBackend<D> {
                 interface: &WL_REGISTRY_INTERFACE,
             });
         }
+        let mut real_sockets = BTreeMap::new();
+        let mut objects = BTreeMap::new();
+        for client in restored.clients.iter_mut().flatten() {
+            let (socket, peer) = UnixStream::pair()?;
+            socket.set_nonblocking(true)?;
+            peer.set_nonblocking(true)?;
+            let placeholder = BufferedSocket::new(Socket::from(socket), None);
+            real_sockets.insert(
+                client_key(&client.id),
+                (std::mem::replace(&mut client.socket, placeholder), peer),
+            );
+            for (id, object) in client.map.all_objects() {
+                let id = InnerObjectId {
+                    id,
+                    serial: object.data.serial,
+                    client_id: client.id.clone(),
+                    interface: object.interface,
+                };
+                objects.insert(object_key(&id), ObjectId { id });
+            }
+        }
+        let context = RestoreContext {
+            handle: self.handle(),
+            objects,
+        };
         let mut state = self
             .state
             .lock()
@@ -343,29 +374,140 @@ impl<D: 'static> InnerBackend<D> {
                 "Backend changed during restore preparation",
             ));
         }
-        let mut registered: Vec<&Client<D>> = Vec::new();
-        for client in restored.clients.iter().flatten() {
-            if let Err(error) = epoll::add(
-                &state.poll_fd,
-                client,
-                epoll::EventData::new_u64(client.id.as_u64()),
-                epoll::EventFlags::IN,
-            ) {
-                for registered_client in registered {
-                    let _ = epoll::delete(&state.poll_fd, registered_client);
-                }
-                return Err(error.into());
-            }
-            registered.push(client);
-        }
-        drop(registered);
-        state.clients = restored;
-        let mut globals = Vec::with_capacity(metadata.global_capacity);
-        globals.extend(std::mem::take(&mut state.registry.globals));
-        state.registry.globals = globals;
+        let saved_registry = Registry {
+            globals: state
+                .registry
+                .globals
+                .iter()
+                .map(|global| {
+                    global.as_ref().map(|global| Global {
+                        id: global.id.clone(),
+                        interface: global.interface,
+                        version: global.version,
+                        handler: global.handler.clone(),
+                        disabled: global.disabled,
+                    })
+                })
+                .collect(),
+            known_registries: Vec::new(),
+            last_serial: state.registry.last_serial,
+        };
+        let saved_clients = std::mem::replace(&mut state.clients, restored);
+        let saved_maximum = state.default_max_buffer_size;
         state.registry.known_registries = registries;
         state.registry.last_serial = metadata.global_serial;
         state.default_max_buffer_size = metadata.default_maximum_buffer;
+        drop(state);
+        let finalization = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            decoder.finish(&context, &checkpoint.descriptors)
+        }));
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let outcome = match finalization {
+            Ok(Ok(())) => (|| {
+                if globals(&state) != metadata.globals
+                    || state.registry.last_serial != metadata.global_serial
+                    || state
+                        .registry
+                        .known_registries
+                        .iter()
+                        .map(object_key)
+                        .collect::<Vec<_>>()
+                        != metadata.registries
+                    || state.clients.clients.len() != metadata.client_slots
+                    || state.clients.last_serial != metadata.client_serial
+                    || state.clients.clients.iter().flatten().count() != metadata.clients.len()
+                    || state.default_max_buffer_size != metadata.default_maximum_buffer
+                    || !state.pending_destructors.is_empty()
+                {
+                    return Err(invalid("Finalizer changed backend topology"));
+                }
+                for expected in &metadata.clients {
+                    let client = state.clients.clients[expected.key.slot as usize]
+                        .as_ref()
+                        .ok_or_else(|| invalid("Finalizer removed a client"))?;
+                    let mut scratch = Vec::new();
+                    let socket = client.socket.checkpoint(&mut scratch)?;
+                    let (_, peer) = real_sockets.get_mut(&expected.key).unwrap();
+                    let mut byte = [0_u8];
+                    let peer_untouched = matches!(peer.read(&mut byte), Err(error) if error.kind() == io::ErrorKind::WouldBlock);
+                    if client_key(&client.id) != expected.key
+                        || client.killed
+                        || client.last_serial != expected.last_serial
+                        || client.map.checkpoint_layout()
+                            != (
+                                expected.client_slots,
+                                expected.server_slots,
+                                expected.client_capacity,
+                                expected.server_capacity,
+                            )
+                        || client.map.all_objects().count() != expected.objects.len()
+                        || !peer_untouched
+                        || !socket.incoming.is_empty()
+                        || !socket.outgoing.is_empty()
+                        || !socket.incoming_fds.is_empty()
+                        || !socket.outgoing_fds.is_empty()
+                    {
+                        return Err(invalid(
+                            "Finalizer dispatched, sent events or changed object topology",
+                        ));
+                    }
+                    for object in &expected.objects {
+                        let restored = client
+                            .map
+                            .find(object.id)
+                            .ok_or_else(|| invalid("Finalizer removed a resource"))?;
+                        if restored.data.serial != object.serial
+                            || restored.version != object.version
+                            || protocol_identity(restored.interface) != object.protocol
+                        {
+                            return Err(invalid("Finalizer changed resource identity"));
+                        }
+                    }
+                }
+                for client in state.clients.clients.iter_mut().flatten() {
+                    let (socket, _) = real_sockets.remove(&client_key(&client.id)).unwrap();
+                    client.socket = socket;
+                }
+                let mut registered: Vec<&Client<D>> = Vec::new();
+                for client in state.clients.clients.iter().flatten() {
+                    if let Err(error) = epoll::add(
+                        &state.poll_fd,
+                        client,
+                        epoll::EventData::new_u64(client.id.as_u64()),
+                        epoll::EventFlags::IN,
+                    ) {
+                        for registered_client in registered {
+                            let _ = epoll::delete(&state.poll_fd, registered_client);
+                        }
+                        return Err(error.into());
+                    }
+                    registered.push(client);
+                }
+                Ok(())
+            })(),
+            Ok(Err(error)) => Err(error),
+            Err(panic) => {
+                let clients = std::mem::replace(&mut state.clients, saved_clients);
+                let registry = std::mem::replace(&mut state.registry, saved_registry);
+                state.default_max_buffer_size = saved_maximum;
+                let destructors = std::mem::take(&mut state.pending_destructors);
+                drop(state);
+                drop((clients, registry, destructors));
+                std::panic::resume_unwind(panic);
+            }
+        };
+        if let Err(error) = outcome {
+            let clients = std::mem::replace(&mut state.clients, saved_clients);
+            let registry = std::mem::replace(&mut state.registry, saved_registry);
+            state.default_max_buffer_size = saved_maximum;
+            let destructors = std::mem::take(&mut state.pending_destructors);
+            drop(state);
+            drop((clients, registry, destructors));
+            return Err(error);
+        }
+        let mut globals = Vec::with_capacity(metadata.global_capacity);
+        globals.extend(std::mem::take(&mut state.registry.globals));
+        state.registry.globals = globals;
         state.pending_destructors = Vec::with_capacity(metadata.destructor_capacity);
         Ok(())
     }

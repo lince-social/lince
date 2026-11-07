@@ -22,7 +22,7 @@ use smithay::reexports::wayland_server::{
     protocol::{wl_callback, wl_compositor, wl_region, wl_shm, wl_shm_pool, wl_surface},
 };
 use wayland_backend::handoff::{
-    Checkpoint, ClientKey, ConnectionDecoder, ConnectionEncoder, ObjectKey,
+    Checkpoint, ClientKey, ConnectionDecoder, ConnectionEncoder, ObjectKey, RestoreContext,
 };
 use wayland_client::{
     self as client, Connection, EventQueue, Proxy, QueueHandle, delegate_noop,
@@ -170,6 +170,7 @@ impl Dispatch<wl_callback::WlCallback, ()> for MiniState {
 struct MiniClient {
     compositor: Option<client_compositor::WlCompositor>,
     shm: Option<client_shm::WlShm>,
+    formats: Vec<u32>,
 }
 
 impl client::Dispatch<wl_registry::WlRegistry, ()> for MiniClient {
@@ -212,7 +213,20 @@ impl client::Dispatch<client_callback::WlCallback, Arc<AtomicBool>> for MiniClie
 }
 
 delegate_noop!(MiniClient: ignore client_compositor::WlCompositor);
-delegate_noop!(MiniClient: ignore client_shm::WlShm);
+impl client::Dispatch<client_shm::WlShm, ()> for MiniClient {
+    fn event(
+        state: &mut Self,
+        _: &client_shm::WlShm,
+        event: client_shm::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let client_shm::Event::Format { format } = event {
+            state.formats.push(format.into());
+        }
+    }
+}
 delegate_noop!(MiniClient: ignore client_surface::WlSurface);
 
 struct Codec;
@@ -954,4 +968,213 @@ fn backend_rejects_duplicate_slots_and_registry_corruption_before_import() {
     surface.commit();
     fixture.exchange();
     assert_eq!(fixture.state.commits, 2);
+}
+
+#[derive(Debug)]
+struct FinalizedSurface {
+    marker: u32,
+    peer: Option<wl_surface::WlSurface>,
+}
+
+impl Dispatch<wl_surface::WlSurface, FinalizedSurface> for MiniState {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        _: &wl_surface::WlSurface,
+        request: wl_surface::Request,
+        data: &FinalizedSurface,
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+        if let wl_surface::Request::Commit = request {
+            assert_eq!(data.marker, 91);
+            if let Some(peer) = &data.peer {
+                assert!(peer.is_alive());
+                assert_eq!(peer.data::<FinalizedSurface>().unwrap().marker, 91);
+                state.commits += 100;
+            } else {
+                state.commits += 10;
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Finalization {
+    Restore,
+    Reject,
+    QueueEvent,
+    FlushEvent,
+    Panic,
+}
+
+struct FinalizingCodec {
+    surfaces: Vec<ObjectKey>,
+    shm: ObjectKey,
+    mode: Finalization,
+}
+
+impl FinalizingCodec {
+    fn new(checkpoint: &Checkpoint, mode: Finalization) -> Self {
+        let mut surfaces = Vec::new();
+        let mut shm = None;
+        for client in &checkpoint.state.clients {
+            for object in &client.objects {
+                let key = ObjectKey {
+                    client: client.key,
+                    id: object.id,
+                    serial: object.serial,
+                };
+                match object.interface.as_str() {
+                    "wl_surface" => surfaces.push(key),
+                    "wl_shm" => shm = Some(key),
+                    _ => {}
+                }
+            }
+        }
+        Self {
+            surfaces,
+            shm: shm.unwrap(),
+            mode,
+        }
+    }
+}
+
+impl ConnectionDecoder<MiniState> for FinalizingCodec {
+    fn interface(&self, name: &str) -> Option<&'static wayland_backend::protocol::Interface> {
+        ConnectionDecoder::<MiniState>::interface(&Codec, name)
+    }
+
+    fn client(
+        &mut self,
+        key: ClientKey,
+        payload: &[u8],
+        descriptors: &[OwnedFd],
+    ) -> io::Result<Arc<dyn ClientData>> {
+        ConnectionDecoder::<MiniState>::client(&mut Codec, key, payload, descriptors)
+    }
+
+    fn object(
+        &mut self,
+        key: ObjectKey,
+        info: wayland_backend::protocol::ObjectInfo,
+        payload: &[u8],
+        descriptors: &[OwnedFd],
+    ) -> io::Result<Arc<dyn ObjectData<MiniState>>> {
+        ConnectionDecoder::<MiniState>::object(&mut Codec, key, info, payload, descriptors)
+    }
+
+    fn finish(&mut self, context: &RestoreContext, _: &[OwnedFd]) -> io::Result<()> {
+        let handle = DisplayHandle::from(context.backend_handle().clone());
+        let mut peer = None;
+        for key in &self.surfaces {
+            let id = context.object(*key)?;
+            context
+                .backend_handle()
+                .set_object_data::<MiniState>(
+                    id.clone(),
+                    Arc::new(
+                        ResourceData::<wl_surface::WlSurface, FinalizedSurface>::new(
+                            FinalizedSurface {
+                                marker: 91,
+                                peer: peer.clone(),
+                            },
+                        ),
+                    ),
+                )
+                .map_err(io::Error::other)?;
+            let surface = wl_surface::WlSurface::from_id(&handle, id).map_err(io::Error::other)?;
+            assert_eq!(surface.data::<FinalizedSurface>().unwrap().marker, 91);
+            peer = Some(surface);
+        }
+        let mut stale = self.shm;
+        stale.serial = stale.serial.wrapping_add(1);
+        assert!(context.object(stale).is_err());
+        match self.mode {
+            Finalization::Restore => Ok(()),
+            Finalization::Reject => Err(io::Error::other("Injected finalization rejection")),
+            Finalization::Panic => panic!("Injected finalizer panic"),
+            Finalization::QueueEvent | Finalization::FlushEvent => {
+                let shm = wl_shm::WlShm::from_id(&handle, context.object(self.shm)?)
+                    .map_err(io::Error::other)?;
+                shm.format(wl_shm::Format::Argb8888);
+                if matches!(self.mode, Finalization::FlushEvent) {
+                    context.backend_handle().flush(None)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+#[test]
+fn backend_finalization_rebuilds_typed_resource_references_before_dispatch() {
+    let mut fixture = Fixture::new();
+    let qh = fixture.queue.handle();
+    let compositor = fixture.client.compositor.as_ref().unwrap();
+    let first = compositor.create_surface(&qh, ());
+    let second = compositor.create_surface(&qh, ());
+    fixture.exchange();
+    let checkpoint = fixture.checkpoint();
+    let mut next = display();
+    next.backend()
+        .restore_connections(
+            &checkpoint,
+            &mut FinalizingCodec::new(&checkpoint, Finalization::Restore),
+        )
+        .unwrap();
+    fixture.display = next;
+    first.commit();
+    second.commit();
+    fixture.exchange();
+    assert_eq!(fixture.state.commits, 110);
+    first.destroy();
+    second.destroy();
+    fixture.exchange();
+}
+
+#[test]
+fn backend_finalization_errors_panics_and_protocol_io_leave_source_usable_and_allow_retry() {
+    for mode in [
+        Finalization::Reject,
+        Finalization::QueueEvent,
+        Finalization::FlushEvent,
+        Finalization::Panic,
+    ] {
+        let mut fixture = Fixture::new();
+        let qh = fixture.queue.handle();
+        let surface = fixture
+            .client
+            .compositor
+            .as_ref()
+            .unwrap()
+            .create_surface(&qh, ());
+        fixture.exchange();
+        let formats = fixture.client.formats.len();
+        let checkpoint = fixture.checkpoint();
+        let mut next = display();
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            next.backend()
+                .restore_connections(&checkpoint, &mut FinalizingCodec::new(&checkpoint, mode))
+        }));
+        assert!(matches!(outcome, Ok(Err(_)) | Err(_)));
+        let mut client_count = 0;
+        next.backend()
+            .handle()
+            .with_all_clients(|_| client_count += 1);
+        assert_eq!(client_count, 0);
+        surface.commit();
+        fixture.exchange();
+        assert_eq!(fixture.state.commits, 1);
+        assert_eq!(fixture.client.formats.len(), formats);
+        let checkpoint = fixture.checkpoint();
+        next.backend()
+            .restore_connections(&checkpoint, &mut Codec)
+            .unwrap();
+        fixture.display = next;
+        surface.commit();
+        fixture.exchange();
+        assert_eq!(fixture.state.commits, 2);
+        assert_eq!(fixture.client.formats.len(), formats);
+    }
 }

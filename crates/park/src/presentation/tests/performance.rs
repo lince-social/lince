@@ -3,6 +3,8 @@ use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
 use std::time::Instant;
 
 mod offscreen;
+#[cfg(all(feature = "nested", feature = "server-tests"))]
+mod combined;
 mod overlap;
 mod schedules;
 mod gpu;

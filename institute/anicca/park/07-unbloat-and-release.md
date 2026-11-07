@@ -2,6 +2,10 @@
 
 [Organization and execution order](Park.md). Targets are in [benchmarks](08-benchmarks.md); interaction coverage is in [workflows](09-workflows.md).
 
+**Stage assignment:** P86/P89/P88/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
+
+All compilation and executable checks below run in CI under [12's delivery contract](12-measurement-and-delivery.md). Do not run local cargo check/test, release-profile comparisons or Nix builds. Compiler choices describe separately source/profile-identified artifacts, not extra production algorithm paths. Execute downloaded matching artifacts without a build fallback, and push-and-stop after the current stage's ready coding.
+
 Rank waste in executed paths first. Remove one obsolete owner/adapter/derivation and its wiring, then measure the corresponding runtime or startup/build cost. Keep semantic functions, feature availability, licenses and declared behavior. This stage is not permission to edit the web crate, migrations already committed, AGENTS, README or owner Records. The source feature inventory P124 and critical path P66 feed the bloat inventory P86.
 
 The user accepts slower production compilation for a better runtime binary. Test release variants with the same frozen source, feature flags and workload after structural changes stabilize; no local release build starts merely because these tasks exist. Codegen units affect compilation partitioning, not runtime worker count. Incremental release compilation is already disabled in the audited shipping recipe; uncommenting that alone adds no runtime optimization.
@@ -11,9 +15,6 @@ The user accepts slower production compilation for a better runtime binary. Test
 
     **Why:** large files and dependency counts alone do not identify wasted work. **Scope:** inspect active feature/dependency reachability, initialization, registered systems, duplicate derivations/adapters and ownership plumbing across interface and the backend paths P66 implicates. **Close with:** a short ranked inventory naming one removable or consolidatable unit per entry, evidence of its current use, and its runtime, startup/build or maintenance cost. Exclude archived/compiled-out code from FPS claims and do not turn this into a rewrite of every crate.
 
-- [ ] **P87 — Remove one proven obsolete active-code path.**
-
-    **Why:** dead or superseded branches increase maintenance and can retain unnecessary initialization/dispatch work. **Scope:** choose one exact P86 entry, trace callers and feature configurations, then remove its obsolete implementation and wiring without preserving unused-version compatibility. **Verify:** declared current capabilities, applicable checks and any measured resource effect. Protected files and migrations remain untouched. If no executed work changes, describe the benefit as simplification/build cleanup rather than a responsiveness fix.
 
 - [ ] **P89 — Consolidate one redundant derived-state cache or resolver layer.**
 

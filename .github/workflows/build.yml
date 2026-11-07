@@ -127,7 +127,7 @@ jobs:
     if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
     name: Linux release
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       BUILD_TARGET: x86_64-unknown-linux-gnu
 
@@ -175,6 +175,41 @@ jobs:
         run: |
           mkdir -p binary-artifacts
           bash institute/packaging/linux/package.sh "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
+
+      - name: Verify performance report accounting
+        run: python3 -B -m unittest discover -s institute/scripts/park -p 'test_*.py'
+
+      - name: Compile matching performance validation artifacts
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+        run: |
+          cargo check --locked --target "$BUILD_TARGET" -p lince-park --features session,server-tests --tests
+          cargo test --locked --profile release --target "$BUILD_TARGET" -p lince-interface -p lince-park --features lince-interface/native-presentation,lince-park/session,lince-park/server-tests --lib --no-run --message-format=json > target/park-validation-tests.jsonl
+          python3 -B institute/scripts/park/performance.py package \
+            --cargo-messages target/park-validation-tests.jsonl \
+            --application "target/$BUILD_TARGET/release/lince" \
+            --revision "$GITHUB_SHA" --profile release --target "$BUILD_TARGET" \
+            --toolchain "$(rustc --version)" --output target/park-validation-bundle
+
+      - name: Run first interface gate and observer checks
+        run: |
+          RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/interface-tests native::laboratory::interface::fast_interface_rules --exact --nocapture --test-threads=1
+          RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/interface-tests host::performance::accounting::tests --nocapture --test-threads=1
+          RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/park-tests presentation::system_metrics::tests --nocapture --test-threads=1
+
+      - name: Archive precompiled performance validation bundle
+        env:
+          VALIDATION_BUNDLE: target/park-validation-bundle.tar.gz
+        run: tar -I 'gzip -1' -cf "$VALIDATION_BUNDLE" -C target park-validation-bundle
+
+      - name: Publish precompiled performance validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: park-validation-${{ env.BUILD_TARGET }}-${{ github.sha }}
+          path: target/park-validation-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

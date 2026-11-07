@@ -22,7 +22,7 @@ nested = ["native-presentation", "smithay/backend_winit", "dep:wayland-client", 
 session = ["nested", "smithay/backend_drm", "smithay/backend_gbm", "smithay/backend_libinput", "smithay/backend_udev", "smithay/backend_session_libseat", "lince-interface/activation", "tokio/signal", "tokio/macros"]
 
 [dependencies]
-bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_render", "bevy_core_pipeline", "bevy_text", "bevy_ui", "bevy_ui_render", "bevy_input_focus", "bevy_ui_widgets"], optional = true }
+bevy = { version = "=0.19.1", default-features = false, features = ["std", "async_executor", "multi_threaded", "bevy_asset", "bevy_log", "bevy_render", "bevy_core_pipeline", "bevy_text", "bevy_ui", "bevy_ui_render", "bevy_input_focus", "bevy_ui_widgets", "trace"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "desktop"] }

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "purpose": "A0 instrumentation delivery. New observations are not claimed runtime speedups; establish a comparable baseline before A1.",
+  "changes": [
+    {
+      "id": "a0-bounded-accounting",
+      "task": "P151",
+      "owner": "measurement-report-accounting",
+      "mechanism": "Classify elapsed/CPU/queue costs and publish source-linked bounded windows with histogram buckets, sequence/loss and final-delivery status.",
+      "expected": "Complete comparable observations; report any capacity, clock or capture overhead. No performance percentage is claimed for new signals.",
+      "primary_metrics": ["counter/timing-capacity-exceeded"],
+      "secondary_metrics": ["stage/native-update", "stage/desktop-dispatch"],
+      "paths": ["crates/interface/src/host/performance.rs", "crates/interface/src/host/performance/accounting.rs"]
+    },
+    {
+      "id": "a0-system-bodies",
+      "task": "P152",
+      "owner": "bevy-system-observation",
+      "mechanism": "Observe existing Bevy system spans on their actual executing threads without replacing their executor; separate inclusive and observed-nested exclusive owner CPU.",
+      "expected": "Actual system-body CPU/wall samples and bounded loss reporting; diagnose capture cost with the same precompiled candidate.",
+      "primary_metrics": ["system/bevy_ui::layout::ui_layout_system/owner_cpu"],
+      "secondary_metrics": ["stage/native-main", "stage/native-update", "stage/render-update"],
+      "paths": ["crates/park/src/presentation/system_metrics.rs", "crates/park/src/runtime.rs", "crates/park/Cargo.toml"]
+    },
+    {
+      "id": "a0-asynchronous-render-diagnostics",
+      "task": "P153",
+      "owner": "completed-native-pass-observation",
+      "mechanism": "Reuse Bevy's asynchronous pass diagnostics in ordinary diagnostic captures, aggregate paths and distinguish completed GPU pass duration from host completion age.",
+      "expected": "Supported completed GPU observations, with exact source-frame linkage explicitly unavailable; no synchronous readback for telemetry.",
+      "primary_metrics": ["stage/gpu-submission-to-completion"],
+      "secondary_metrics": ["stage/render-update", "stage/native-update"],
+      "paths": ["crates/park/src/presentation.rs", "crates/park/src/presentation/phase_metrics.rs"]
+    }
+  ]
+}

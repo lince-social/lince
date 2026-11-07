@@ -41,6 +41,11 @@ mod outputs;
 mod records;
 mod pixels;
 mod phase_metrics;
+mod system_metrics;
+
+pub(crate) fn observe_systems() -> bevy::log::tracing::subscriber::DefaultGuard {
+    system_metrics::enter()
+}
 pub(crate) use pixels::Sync as PixelSync;
 #[cfg(test)]
 mod color_tests;
@@ -667,9 +672,11 @@ impl Presentation {
             .map(|(runtime, data)| connect_cell(&mut app, runtime, data))
             .transpose()
             .map_err(|error| input_failure(&error.to_string()))?;
-        #[cfg(test)]
-        if std::env::var_os("LINCE_PARK_GPU_DIAGNOSTICS").is_some() {
+        if lince_interface::host::performance::enabled()
+            || cfg!(test) && std::env::var_os("LINCE_PARK_GPU_DIAGNOSTICS").is_some()
+        {
             app.add_plugins(bevy::render::diagnostic::RenderDiagnosticsPlugin);
+            app.add_systems(PostUpdate, phase_metrics::render_diagnostics);
         }
         if lince_interface::host::performance::enabled()
             && let Err(reason) = phase_metrics::install(&mut app)

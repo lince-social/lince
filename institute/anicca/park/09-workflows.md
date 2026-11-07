@@ -2,6 +2,23 @@
 
 [Organization](Park.md), [targets](08-benchmarks.md), [inventory task P124](05-feature-costs-and-scaling.md), [coverage task P134](11-acceptance-and-experiments.md). This seed inventory maps the active app's feature families to directly experienced work. P124 must reconcile every reachable registration/control with this inventory and existing selectors before claiming source-complete coverage. No finite plan covers every possible document, timing and feature permutation.
 
+## Stage A daily route
+
+Run these phases against the [same 20–30-item mixed daily load](08-benchmarks.md#stage-a-daily-load-contract) and ordinary external windows. P154 adapts them to one ordered combined suite; [12](12-measurement-and-delivery.md) defines batching, phase measurements and delivery. They select existing workflows, not duplicate suites or alternate optimization modes. Keep existing automated controls where available; identify the physical observations and any unavailable checks separately. Add representative existing 2D/3D content to the private prepared coverage where supported and report its active passes; never inflate or simplify the actual daily scene silently.
+
+| Phase | Existing workflows | Stage A evidence |
+| --- | --- | --- |
+| Settle and resume | W18/W20/W25 | Required clocks, rules and background semantics continue; unchanged presentation sleeps. Reveal a hidden view and receive current complete content promptly. |
+| Type and save locally | W01–W05/W15 | Type/select/undo in a native editor; edit a private title/description with another view open. Echo stays immediate, publication and durable acknowledgement are honest, and ordinary save/sync work does not freeze other controls. Use isolated held-write coverage for the blocking case. |
+| Open, focus and navigate | W06/W08/W11/W13 | Open/reopen a panel and client window, change focus/tiling and use ordinary controls. Current placement, text, target and first useful feedback remain correct. |
+| Scroll, move and reveal | W07/W09/W10/W14/W25 | Scroll a real list/editor, pan/drag an item and switch/reveal workspaces. Measure tails and complete pixels, not just FPS, including the first interaction after reveal. |
+| Share both outputs | W17/W18/W20/W24 | Keep Firefox/client activity on one display while typing/scrolling/dragging native content on the other, then exercise both. Include representative stream/timer/background readiness; check per-output delivery, fairness and input age. |
+| Return to quiet | W25, P64 | Close only temporary test content and stop test producers. Resource use settles without leaked work, while the original daily workspace and required semantics remain live. |
+
+The sync/history, database-lock and Karma bug implementation belongs to the user's other agent. Reuse its source-identified results for affected workflows and test performance after integration; the daily route does not authorize a second parallel implementation. A rule or history bug outside this route can remain separately owned, but a resulting foreground stall or invalid saved-state claim is still a Stage A dependency.
+
+Changed-path text, clipping, selection, focus, privacy, durability and resource-lifetime oracles remain mandatory. Existing suite runs start with Protein Area Add filter. Broader P124/P134 inventory completion, unrelated feature combinations and test-platform expansion need not delay demonstrated Stage A acceptance; do not describe unexecuted coverage as passing.
+
 ## Stable workflow IDs
 
 Each row supplies an action, the actual outcome to observe and performance dimensions. Reuse existing practice/Laboratory tests and normal shared controls; one row is not permission to create a duplicate suite. Automated synthetic input proves the exercised path only. Physical device/scanout, hardware layout and actual-session visibility remain separately identified.

@@ -1,9 +1,12 @@
 use serde::Serialize;
+
+mod accounting;
+pub use accounting::{Coverage, Phase, SystemReading, TimingKind};
 use std::{
     collections::BTreeMap,
     sync::{
         Mutex, OnceLock,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc::{SyncSender, sync_channel},
     },
     time::{Duration, Instant},
@@ -330,6 +333,8 @@ impl Distribution {
             p50_upper_us: self.percentile(50),
             p95_upper_us: self.percentile(95),
             p99_upper_us: self.percentile(99),
+            kind: TimingKind::for_label(stage),
+            buckets: self.buckets,
         }
     }
 }
@@ -337,6 +342,8 @@ impl Distribution {
 #[derive(Serialize)]
 pub struct Reading {
     pub stage: &'static str,
+    pub kind: TimingKind,
+    pub buckets: [u64; LIMITS_US.len()],
     pub count: u64,
     pub total_us: u64,
     pub maximum_us: u64,
@@ -350,12 +357,14 @@ struct Output {
     previous: Option<Duration>,
     hardware_clock: Option<bool>,
     intervals: Distribution,
+    presentations: u64,
     stages: BTreeMap<usize, Distribution>,
 }
 
 #[derive(Serialize)]
 pub struct OutputReading {
     pub output: u64,
+    pub presentations: u64,
     pub clock: &'static str,
     pub interval: Reading,
     pub stages: Vec<Reading>,
@@ -363,6 +372,23 @@ pub struct OutputReading {
 
 #[derive(Serialize)]
 pub struct Report {
+    pub schema_version: u32,
+    pub counter_catalog: Vec<&'static str>,
+    pub histogram_limits_us: &'static [u64],
+    pub process: u32,
+    pub phase: &'static str,
+    pub sequence: u64,
+    pub window_started_us: u64,
+    pub window_ended_us: u64,
+    pub final_report: bool,
+    pub systems: Vec<SystemReading>,
+    pub render_diagnostics: Vec<RenderDiagnostic>,
+    pub spans: Vec<SpanReading>,
+    pub dropped_span_trace: u64,
+    pub dropped_system_samples: u64,
+    pub coverage: Vec<Coverage>,
+    #[serde(skip)]
+    completion: Option<SyncSender<()>>,
     pub elapsed_us: u64,
     pub dropped_reports: u64,
     pub stages: Vec<Reading>,
@@ -401,6 +427,41 @@ pub struct InputTrace {
     pub output: Option<u64>,
 }
 
+#[derive(Serialize)]
+pub struct SpanReading {
+    pub stage: &'static str,
+    pub started_us: u64,
+    pub ended_us: u64,
+    pub start_thread: u64,
+    pub end_thread: u64,
+}
+
+#[derive(Serialize)]
+pub struct RenderDiagnostic {
+    pub path: String,
+    pub unit: &'static str,
+    pub count: u64,
+    pub total: f64,
+    pub maximum: f64,
+    pub published_us: u64,
+    pub source_frame: Option<u64>,
+    pub identity: &'static str,
+}
+
+const SPAN_TRACE_LIMIT: usize = 2048;
+const SYSTEM_LIMIT: usize = 512;
+
+thread_local! {
+    static THREAD_ID: u64 = {
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    };
+}
+
+pub fn thread_id() -> u64 {
+    THREAD_ID.with(|id| *id)
+}
+
 const INPUT_TRACE_LIMIT: usize = 1024;
 
 #[derive(Serialize)]
@@ -411,6 +472,16 @@ pub struct CountReading {
 
 struct Monitor {
     stages: Vec<Mutex<Distribution>>,
+    systems: Mutex<BTreeMap<String, accounting::SystemSample>>,
+    render_diagnostics: Mutex<BTreeMap<String, RenderDiagnostic>>,
+    spans: Mutex<Vec<SpanReading>>,
+    dropped_span_trace: AtomicU64,
+    dropped_system_samples: AtomicU64,
+    snapshot_at_us: AtomicU64,
+    sequence: AtomicU64,
+    flushing: Mutex<()>,
+    finalized: AtomicBool,
+    phase: AtomicU64,
     outputs: Mutex<BTreeMap<u64, Output>>,
     started: Instant,
     reported_at_us: AtomicU64,
@@ -445,6 +516,16 @@ impl Monitor {
                 .map(|_| Mutex::new(Distribution::default()))
                 .collect(),
             outputs: Mutex::new(BTreeMap::new()),
+            systems: Mutex::new(BTreeMap::new()),
+            render_diagnostics: Mutex::new(BTreeMap::new()),
+            spans: Mutex::new(Vec::new()),
+            dropped_span_trace: AtomicU64::new(0),
+            dropped_system_samples: AtomicU64::new(0),
+            snapshot_at_us: AtomicU64::new(0),
+            sequence: AtomicU64::new(0),
+            flushing: Mutex::new(()),
+            finalized: AtomicBool::new(false),
+            phase: AtomicU64::new(0),
             started: Instant::now(),
             reported_at_us: AtomicU64::new(0),
             dropped_reports: AtomicU64::new(0),
@@ -501,10 +582,20 @@ impl Monitor {
             }
             output.intervals.record(timestamp - previous);
         }
+        output.presentations = output.presentations.saturating_add(1);
         output.previous = Some(timestamp);
     }
 
     fn snapshot(&self) -> Report {
+        let ended = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
+        let began = self.snapshot_at_us.swap(ended, Ordering::Relaxed);
+        let systems = self
+            .systems
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .iter_mut()
+            .filter_map(|(name, sample)| sample.take(name))
+            .collect::<Vec<_>>();
         let stages = Stage::ALL
             .iter()
             .filter_map(|stage| {
@@ -520,10 +611,12 @@ impl Monitor {
             .unwrap_or_else(|error| error.into_inner())
             .iter_mut()
             .filter_map(|(id, output)| {
-                (output.intervals.count != 0
+                (output.presentations != 0
+                    || output.intervals.count != 0
                     || output.stages.values().any(|stage| stage.count != 0))
                 .then(|| OutputReading {
                     output: *id,
+                    presentations: std::mem::take(&mut output.presentations),
                     clock: match output.hardware_clock {
                         Some(true) => "drm",
                         Some(false) => "dispatch",
@@ -541,8 +634,38 @@ impl Monitor {
                 })
             })
             .collect();
+        let render_diagnostics = std::mem::take(
+            &mut *self
+                .render_diagnostics
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+        )
+        .into_values()
+        .collect::<Vec<_>>();
+        let observed_gpu = render_diagnostics
+            .iter()
+            .any(|reading| reading.path.ends_with("/elapsed_gpu"));
+        let observed_systems = !systems.is_empty();
         Report {
-            elapsed_us: self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64,
+            schema_version: 2,
+            histogram_limits_us: &LIMITS_US,
+            counter_catalog: Count::ALL.iter().map(|counter| counter.label()).collect(),
+            process: std::process::id(),
+            phase: Phase::ALL[self.phase.load(Ordering::Relaxed) as usize].label(),
+            sequence: self.sequence.fetch_add(1, Ordering::Relaxed) + 1,
+            window_started_us: began,
+            window_ended_us: ended,
+            final_report: false,
+            systems,
+            render_diagnostics,
+            spans: std::mem::take(
+                &mut *self.spans.lock().unwrap_or_else(|error| error.into_inner()),
+            ),
+            dropped_span_trace: self.dropped_span_trace.swap(0, Ordering::Relaxed),
+            dropped_system_samples: self.dropped_system_samples.swap(0, Ordering::Relaxed),
+            coverage: accounting::coverage(observed_systems, observed_gpu),
+            completion: None,
+            elapsed_us: ended,
             dropped_reports: self.dropped_reports.load(Ordering::Relaxed),
             stages,
             outputs,
@@ -577,6 +700,12 @@ impl Monitor {
     }
 
     fn flush(&self) {
+        let Ok(_flushing) = self.flushing.try_lock() else {
+            return;
+        };
+        if self.finalized.load(Ordering::Acquire) {
+            return;
+        }
         if let Some(sender) = &self.sender
             && sender.try_send(self.snapshot()).is_err()
         {
@@ -585,7 +714,7 @@ impl Monitor {
     }
 
     fn flush_if_due(&self) {
-        if self.sender.is_none() {
+        if self.finalized.load(Ordering::Acquire) || self.sender.is_none() {
             return;
         }
         let now = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
@@ -611,22 +740,63 @@ fn monitor() -> Option<&'static Monitor> {
             if !active {
                 return None;
             }
-            let (sender, receiver) = sync_channel::<Report>(1);
+            let mut output = match std::env::var_os("LINCE_PERFORMANCE_LOG") {
+                Some(path) => {
+                    let path = std::path::PathBuf::from(path);
+                    if !path.is_absolute() {
+                        eprintln!("Lince performance log needs an absolute private path");
+                        return None;
+                    }
+                    let mut options = std::fs::OpenOptions::new();
+                    options.write(true).create_new(true);
+                    #[cfg(unix)]
+                    {
+                        use std::os::unix::fs::OpenOptionsExt;
+                        options.mode(0o600);
+                    }
+                    match options.open(path) {
+                        Ok(file) => Some(file),
+                        Err(error) => {
+                            eprintln!("Lince performance log unavailable: {error}");
+                            return None;
+                        }
+                    }
+                }
+                None => None,
+            };
+            let (sender, receiver) = sync_channel::<Report>(4);
             let logger = std::thread::Builder::new()
                 .name("lince-perf-report".into())
                 .spawn(move || {
                     use std::io::Write;
-                    while let Ok(report) = receiver.recv() {
-                        let stderr = std::io::stderr();
-                        let mut stderr = stderr.lock();
-                        if stderr.write_all(b"Lince performance ").is_err() {
+                    loop {
+                        let report = match receiver.recv_timeout(Duration::from_secs(1)) {
+                            Ok(report) => report,
+                            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                                if let Some(monitor) = monitor() {
+                                    monitor.flush_if_due();
+                                }
+                                continue;
+                            }
+                            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                        };
+                        let mut bytes = b"Lince performance ".to_vec();
+                        if serde_json::to_writer(&mut bytes, &report).is_err() {
                             break;
                         }
-                        if serde_json::to_writer(&mut stderr, &report).is_err() {
+                        bytes.push(b'\n');
+                        let written = if let Some(file) = &mut output {
+                            file.write_all(&bytes).and_then(|()| file.flush())
+                        } else {
+                            let stderr = std::io::stderr();
+                            let mut stderr = stderr.lock();
+                            stderr.write_all(&bytes).and_then(|()| stderr.flush())
+                        };
+                        if written.is_err() {
                             break;
                         }
-                        if stderr.write_all(b"\n").is_err() {
-                            break;
+                        if let Some(completion) = report.completion {
+                            let _ = completion.try_send(());
                         }
                     }
                 });
@@ -717,9 +887,129 @@ pub fn flush() {
     }
 }
 
+pub fn record_render_diagnostic(path: &str, unit: &'static str, value: f64) {
+    let Some(monitor) = monitor() else {
+        return;
+    };
+    if !path.starts_with("render/") || path.len() > 512 || !value.is_finite() || value < 0.0 {
+        count(Count::TimingRejected);
+        return;
+    }
+    if let Ok(mut values) = monitor.render_diagnostics.try_lock() {
+        let now = monitor
+            .started
+            .elapsed()
+            .as_micros()
+            .min(u128::from(u64::MAX)) as u64;
+        if let Some(reading) = values.get_mut(path) {
+            if reading.unit != unit {
+                count(Count::TimingRejected);
+                return;
+            }
+            reading.count = reading.count.saturating_add(1);
+            reading.total += value;
+            reading.maximum = reading.maximum.max(value);
+            reading.published_us = now;
+        } else if values.len() < 512 {
+            values.insert(
+                path.to_owned(),
+                RenderDiagnostic {
+                    path: path.to_owned(),
+                    unit,
+                    count: 1,
+                    total: value,
+                    maximum: value,
+                    published_us: now,
+                    source_frame: None,
+                    identity: "last-completed-bevy-diagnostic; publication-time-is-not-gpu-time",
+                },
+            );
+        } else {
+            count(Count::TimingCapacity);
+        }
+    } else {
+        count(Count::TimingCapacity);
+    }
+}
+
+pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
+    let Some(monitor) = monitor() else {
+        return;
+    };
+    if name.len() > 512 || !(name.starts_with("bevy_") || name.starts_with("lince_interface::")) {
+        monitor
+            .dropped_system_samples
+            .fetch_add(1, Ordering::Relaxed);
+        return;
+    }
+    let Ok(mut systems) = monitor.systems.try_lock() else {
+        monitor
+            .dropped_system_samples
+            .fetch_add(1, Ordering::Relaxed);
+        return;
+    };
+    if let Some(sample) = systems.get_mut(name) {
+        sample.record(wall, cpu, exclusive_cpu);
+    } else if systems.len() < SYSTEM_LIMIT {
+        let mut sample = accounting::SystemSample::default();
+        sample.record(wall, cpu, exclusive_cpu);
+        systems.insert(name.to_owned(), sample);
+    } else {
+        monitor
+            .dropped_system_samples
+            .fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+pub fn set_phase(phase: Phase) {
+    if let Some(monitor) = monitor() {
+        let _flushing = monitor
+            .flushing
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if monitor.finalized.load(Ordering::Acquire) {
+            return;
+        }
+        if let Some(sender) = &monitor.sender
+            && sender.try_send(monitor.snapshot()).is_err()
+        {
+            monitor.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        }
+        monitor.phase.store(phase as u64, Ordering::Relaxed);
+    }
+}
+
+pub fn finish(timeout: Duration) -> bool {
+    let Some(monitor) = monitor() else {
+        return true;
+    };
+    let Some(sender) = &monitor.sender else {
+        return true;
+    };
+    let flushing = monitor
+        .flushing
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    if monitor.finalized.load(Ordering::Acquire) {
+        return true;
+    }
+    let (completion, finished) = sync_channel(1);
+    let mut report = monitor.snapshot();
+    report.final_report = true;
+    report.completion = Some(completion);
+    if sender.try_send(report).is_err() {
+        monitor.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        return false;
+    }
+    monitor.finalized.store(true, Ordering::Release);
+    drop(flushing);
+    finished.recv_timeout(timeout).is_ok()
+}
+
 pub struct Span {
     stage: Stage,
     started: Option<Instant>,
+    thread: u64,
 }
 
 impl Span {
@@ -727,6 +1017,7 @@ impl Span {
         Self {
             stage,
             started: start(),
+            thread: if enabled() { thread_id() } else { 0 },
         }
     }
 }
@@ -734,6 +1025,29 @@ impl Span {
 impl Drop for Span {
     fn drop(&mut self) {
         record_since(self.stage, self.started);
+        if let (Some(monitor), Some(started)) = (monitor(), self.started) {
+            let ended = Instant::now();
+            let reading = SpanReading {
+                stage: self.stage.label(),
+                started_us: started
+                    .saturating_duration_since(monitor.started)
+                    .as_micros()
+                    .min(u128::from(u64::MAX)) as u64,
+                ended_us: ended
+                    .saturating_duration_since(monitor.started)
+                    .as_micros()
+                    .min(u128::from(u64::MAX)) as u64,
+                start_thread: self.thread,
+                end_thread: thread_id(),
+            };
+            if let Ok(mut spans) = monitor.spans.try_lock()
+                && spans.len() < SPAN_TRACE_LIMIT
+            {
+                spans.push(reading);
+            } else {
+                monitor.dropped_span_trace.fetch_add(1, Ordering::Relaxed);
+            }
+        }
     }
 }
 

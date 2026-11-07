@@ -270,6 +270,8 @@ impl CanvasWorker {
             .name("park-canvas".into())
             .stack_size(32 * 1024 * 1024)
             .spawn(move || {
+                let _observations = lince_interface::host::performance::enabled()
+                    .then(crate::presentation::observe_systems);
                 let active = Active {
                     running: active,
                     notify: notify.clone(),

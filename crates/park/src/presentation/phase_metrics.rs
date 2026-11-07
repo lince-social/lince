@@ -109,6 +109,39 @@ fn run(world: &mut World, mut initialized: Local<bool>) {
     });
 }
 
+pub(super) fn render_diagnostics(
+    diagnostics: Option<Res<bevy::diagnostic::DiagnosticsStore>>,
+    mut seen: Local<std::collections::BTreeMap<String, Instant>>,
+) {
+    if !performance::enabled() {
+        return;
+    }
+    let Some(diagnostics) = diagnostics else {
+        return;
+    };
+    for diagnostic in diagnostics.iter() {
+        let path = diagnostic.path().to_string();
+        if !path.starts_with("render/") {
+            continue;
+        }
+        let Some(measurement) = diagnostic.measurement() else {
+            continue;
+        };
+        if seen
+            .get(&path)
+            .is_some_and(|previous| *previous >= measurement.time)
+        {
+            continue;
+        }
+        if seen.len() >= 512 && !seen.contains_key(&path) {
+            performance::count(performance::Count::TimingCapacity);
+            continue;
+        }
+        seen.insert(path.clone(), measurement.time);
+        performance::record_render_diagnostic(&path, diagnostic.suffix, measurement.value);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

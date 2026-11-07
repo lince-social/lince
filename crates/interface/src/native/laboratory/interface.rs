@@ -68,6 +68,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
             })
             .expect("Missing native text autosave regression"),
     );
+    crate::native::time_castle::wake_checks::laboratory_cases(&mut cases);
     cases
 }
 

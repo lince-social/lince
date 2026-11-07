@@ -13,6 +13,8 @@ mod timing;
 pub use scene::SchedulePick;
 pub(crate) mod source;
 mod ui;
+#[cfg(any(test, feature = "behavior-checks"))]
+pub(crate) mod wake_checks;
 
 #[cfg(test)]
 mod integration;

@@ -417,8 +417,18 @@ fn segment_distance(point: Vec2, a: Vec2, b: Vec2) -> f32 {
     point.distance(a.lerp(b, fraction))
 }
 
-pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {
+pub(super) fn hand_delay(aperture_ms: i64, pixels: f64) -> std::time::Duration {
+    let milliseconds = if pixels.is_finite() && pixels > 0.0 {
+        (0.025 * aperture_ms as f64 / (std::f64::consts::TAU * pixels * 0.4)).clamp(16.0, 1000.0)
+    } else {
+        16.0
+    };
+    std::time::Duration::from_millis(milliseconds.floor() as u64)
+}
+
+pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDeadline>) {
     if !crate::native::laboratory::normal(world) {
+        deadline.cancel();
         return;
     }
     let now = chrono::Utc::now().timestamp_millis();
@@ -428,6 +438,7 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
         .collect();
     let mut animated = false;
     let mut active = false;
+    let mut delay = std::time::Duration::from_secs(1);
     for owner in owners {
         let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
             continue;
@@ -457,6 +468,13 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
             0.0
         };
         let mut view = world.get_mut::<View>(owner).unwrap();
+        if view
+            .rendered
+            .as_ref()
+            .is_some_and(|stamp| stamp.0.mode != settings.mode)
+        {
+            view.animation_at = std::time::Instant::now();
+        }
         let delta = view.animation_at.elapsed().as_secs_f32().min(0.1) / 0.3;
         view.animation_at = std::time::Instant::now();
         let change = (target - view.unwind).clamp(-delta, delta);
@@ -605,22 +623,29 @@ pub(super) fn update(world: &mut World, mut wake_at: Local<Option<std::time::Ins
         scene::annotations(world, owner, &labels, &palette);
         let hand = round && !chrome::controls_open(world, owner);
         scene::hand(world, owner, &settings, now, size, hand, &palette);
-        animated |= hand;
+        if hand {
+            let hand_delay = if world.get::<View>(owner).unwrap().entries.is_empty() {
+                let density = world
+                    .get::<crate::native::topology::presentation::Surface>(owner)
+                    .map_or(density, |surface| surface.density.max(density));
+                hand_delay(
+                    settings.aperture_ms,
+                    f64::from(size.max_element()) * f64::from(density.max(1.0)),
+                )
+            } else {
+                std::time::Duration::from_millis(16)
+            };
+            delay = delay.min(hand_delay);
+        }
         scene::placement(world, owner, viewport, spatial);
     }
-    let delay = if animated { 16 } else { 1000 };
-    if active && (animated || wake_at.is_none_or(|at| at.elapsed().as_millis() >= 900)) {
-        *wake_at = Some(std::time::Instant::now());
-        if let Some(wake) = world
-            .get_resource::<crate::native::wake::WakeSignal>()
-            .cloned()
-            && let Ok(runtime) = tokio::runtime::Handle::try_current()
-        {
-            runtime.spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
-                wake.ring();
-            });
-        }
+    if animated {
+        delay = std::time::Duration::from_millis(16);
+    }
+    if active && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+        deadline.after(wake, delay);
+    } else {
+        deadline.cancel();
     }
 }
 

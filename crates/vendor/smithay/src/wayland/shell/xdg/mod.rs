@@ -142,6 +142,10 @@ use super::PingError;
 pub mod decoration;
 pub mod dialog;
 
+#[cfg(feature = "handoff")]
+#[doc(hidden)]
+pub mod handoff;
+
 // handlers for the xdg_shell protocol
 pub(super) mod handlers;
 pub use handlers::{XdgPositionerUserData, XdgShellSurfaceUserData, XdgSurfaceUserData, XdgWmBaseUserData};
@@ -195,7 +199,8 @@ macro_rules! xdg_role {
                 /// the client. All pending configures that are older
                 /// than the acknowledged one will be discarded during
                 /// processing xdg_surface.ack_configure.
-                pending_configures: Vec<$configure_name>,
+                #[doc(hidden)]
+                pub pending_configures: Vec<$configure_name>,
                 /// Holds the pending state as set by the server.
                 pub server_pending: Option<$state>,
                 /// Holds the last server_pending state that has been acknowledged
@@ -208,7 +213,8 @@ macro_rules! xdg_role {
                 /// commit. This serial corresponds to the current state.
                 pub current_serial: Option<Serial>,
                 /// Does the surface have a buffer (updated on every commit)
-                has_buffer: bool,
+                #[doc(hidden)]
+                pub has_buffer: bool,
 
                 $(
                     $(#[$attributes_field_meta])*

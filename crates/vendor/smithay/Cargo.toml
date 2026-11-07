@@ -40,7 +40,7 @@ repository = "https://github.com/Smithay/smithay"
 [package.metadata.lince]
 upstream-version = "0.7.0"
 upstream-sha256 = "740cea6927892bc182d5bf70c8f79806c8bc9f68f2fb96e55a30be171b63af98"
-patch-purpose = "Test and prepare mode, VRR, color properties and framebuffer format in the existing atomic owner; preserve precision in GLES readback ranges; retain tablet device/tool identities and retire tool state on proximity loss"
+patch-purpose = "Test and prepare mode, VRR, color properties and framebuffer format in the existing atomic owner; preserve precision in GLES readback ranges; retain tablet identities; add opt-in cold cache, user-data and SHM checkpoint adapters"
 
 [package.metadata.docs.rs]
 features = [
@@ -53,6 +53,7 @@ rustdoc-args = [
 ]
 
 [features]
+handoff = []
 backend_drm = [
     "drm",
     "drm-ffi",

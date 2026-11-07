@@ -112,6 +112,30 @@ pub struct UserDataMap {
 }
 
 impl UserDataMap {
+    #[cfg(feature = "handoff")]
+    #[doc(hidden)]
+    pub fn handoff_visit(
+        &self,
+        mut visitor: impl FnMut(&dyn Any) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
+        for data in &self.list {
+            match data.inner.get() {
+                Some(UserDataInner::ThreadSafe(value)) => visitor(&**value)?,
+                Some(UserDataInner::NonThreadSafe(value, owner)) => {
+                    if *owner != current_thread_id() {
+                        return Err(std::io::Error::new(
+                            std::io::ErrorKind::WouldBlock,
+                            "Checkpoint user data on its owning thread",
+                        ));
+                    }
+                    visitor(&***value)?;
+                }
+                None => {}
+            }
+        }
+        Ok(())
+    }
+
     /// Create a new map
     pub fn new() -> UserDataMap {
         UserDataMap {

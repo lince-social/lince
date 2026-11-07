@@ -103,6 +103,8 @@ mod latency;
 mod idle;
 mod ime;
 mod color;
+mod handoff;
+pub use handoff::{HandoffInventory, ProtocolInventory};
 
 pub struct ClientBuffer {
     backing: Arc<BufferBacking>,
@@ -1166,7 +1168,11 @@ impl State {
     }
 
     fn presentation_changed(&mut self) {
-        self.revision = self.revision.saturating_add(1);
+        #[cfg(all(test, feature = "server-tests", not(feature = "nested")))]
+        let increase = tests::protocol_handoff_tests::revision_step();
+        #[cfg(not(all(test, feature = "server-tests", not(feature = "nested"))))]
+        let increase = 1;
+        self.revision = self.revision.saturating_add(increase);
     }
 
     fn valid_surface(&self, surface: &WlSurface, size: [i32; 2]) -> bool {

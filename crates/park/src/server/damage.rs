@@ -7,8 +7,8 @@ use smithay::{
 
 pub(super) struct Tracked {
     pub(super) damage: DamageBag<i32, Buffer>,
-    layout: SurfaceLayout,
-    size: [i32; 2],
+    pub(super) layout: SurfaceLayout,
+    pub(super) size: [i32; 2],
 }
 
 impl State {

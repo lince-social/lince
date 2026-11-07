@@ -61,6 +61,15 @@ mod activation_tests;
 mod control_tests;
 #[path = "tests/swap.rs"]
 mod swap_tests;
+#[path = "tests/handoff.rs"]
+mod handoff_tests;
+#[path = "tests/backend_handoff.rs"]
+mod backend_handoff_tests;
+#[path = "tests/smithay_handoff.rs"]
+mod smithay_handoff_tests;
+#[cfg(not(feature = "nested"))]
+#[path = "tests/protocol_handoff/mod.rs"]
+pub(super) mod protocol_handoff_tests;
 #[cfg(feature = "nested")]
 #[path = "tests/manipulation.rs"]
 mod manipulation_tests;

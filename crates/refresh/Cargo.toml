@@ -1,0 +1,24 @@
+[package]
+name = "lince-refresh"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Park refresh checkpoints, descriptor escrow and session coordination."
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+subtle = "=2.6.1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "=1.1.4", features = ["event", "fs", "net", "process", "rand", "time"] }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+[lints]
+workspace = true

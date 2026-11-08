@@ -176,6 +176,9 @@ jobs:
           mkdir -p binary-artifacts
           bash institute/packaging/linux/package.sh "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
 
+      - name: Verify target-cache cleanup
+        run: python3 -B -m unittest discover -s institute/scripts -p 'test_target_cache.py'
+
       - name: Verify performance report accounting
         run: python3 -B -m unittest discover -s institute/scripts/park -p 'test_*.py'
 

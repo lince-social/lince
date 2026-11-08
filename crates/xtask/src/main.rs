@@ -268,6 +268,7 @@ fn dispatch() -> Result<()> {
             version(&root)
         }
         Some("ship") => ship::dispatch(&root, &extra),
+        Some("prune-target") => prune::budget::command(&prune::target_directory(&root), &extra),
         Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
         Some("check") => {
             prune::with_cleanup(&root, || checked(cargo_command().arg("check").args(&extra)))
@@ -374,9 +375,10 @@ fn dispatch() -> Result<()> {
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!("test-interface runs the ordered fast Laboratory interface rules in the local test executable.");
             println!("ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options.");
+            println!("prune-target [--dry-run] enforces the 300 GB compiled-artifact budget without building the application.");
             println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
             println!(
-                "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."
+                "dev, check, check-instinct, test and test-all prune superseded incremental snapshots and enforce the 300 GB target-cache budget before and after running."
             );
             Ok(())
         }

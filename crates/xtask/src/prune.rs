@@ -1,3 +1,5 @@
+pub(crate) mod budget;
+
 use std::env;
 use std::fs::{self, File, TryLockError};
 use std::io;
@@ -9,7 +11,7 @@ struct Report {
     skipped: usize,
 }
 
-fn target_directory(root: &Path) -> PathBuf {
+pub(crate) fn target_directory(root: &Path) -> PathBuf {
     root.join(env::var_os("CARGO_TARGET_DIR").unwrap_or_else(|| "target".into()))
 }
 
@@ -41,6 +43,9 @@ fn automatic(target: &Path) {
         }
         Ok(()) => {}
         Err(error) => eprintln!("Could not prune incremental snapshots: {error}"),
+    }
+    if let Err(error) = budget::command(target, &[]) {
+        eprintln!("{error}");
     }
 }
 

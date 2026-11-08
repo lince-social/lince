@@ -1,8 +1,8 @@
 use super::*;
 use std::os::unix::fs::PermissionsExt;
 
-pub(super) struct Repository {
-    pub(super) directory: PathBuf,
+struct Repository {
+    directory: PathBuf,
     root: PathBuf,
     remote: PathBuf,
     gh: PathBuf,
@@ -15,7 +15,7 @@ impl Drop for Repository {
 }
 
 impl Repository {
-    pub(super) fn new() -> Self {
+    fn new() -> Self {
         let directory = std::env::temp_dir().join(format!(
             "lince-ship-test-{}-{}",
             std::process::id(),
@@ -74,6 +74,7 @@ impl Repository {
         let tools = Tools {
             gh: self.gh.clone().into(),
             nix: "must-not-run-nix".into(),
+            sudo: "must-not-run-sudo".into(),
         };
         let result = execute(&self.root, options, &tools, &report, &mut receipt);
         (result, receipt)
@@ -186,7 +187,6 @@ fn workflow_failure_stops_before_installation() {
     repository.workflow("failure");
     let mut options = options();
     options.install = true;
-    options.prepare_only = true;
     let (result, receipt) = repository.run(&options);
     assert!(result.unwrap_err().contains("completed with failure"));
     assert!(receipt.pushed);
@@ -321,6 +321,93 @@ fn unsupported_branch_and_busy_index_are_rejected() {
 }
 
 #[test]
+fn installation_verifies_the_locked_release_before_switching() {
+    let repository = Repository::new();
+    let bundle = repository.directory.join("bundle");
+    fs::create_dir(&bundle).unwrap();
+    fs::write(bundle.join("binary.json"), r#"{"revision":"wanted"}"#).unwrap();
+    let nix = repository.directory.join("nix");
+    let sudo = repository.directory.join("sudo");
+    let marker = repository.directory.join("switched");
+    executable(
+        &nix,
+        &format!(
+            "#!/bin/sh\nif [ \"$1\" = eval ]; then printf '%s' '{}'; fi\n",
+            bundle.display()
+        ),
+    );
+    executable(
+        &sudo,
+        &format!(
+            "#!/bin/sh\nprintf '%s\\n' \"$@\" > '{}'\n",
+            marker.display()
+        ),
+    );
+    let tools = Tools {
+        gh: repository.gh.clone().into(),
+        nix: nix.into(),
+        sudo: sudo.into(),
+    };
+    let mut options = options();
+    options.flake = format!("{}#test-host", repository.directory.display());
+    assert!(
+        install(&tools, &repository.root, &options, "different")
+            .unwrap_err()
+            .contains("does not match")
+    );
+    assert!(!marker.exists());
+    install(&tools, &repository.root, &options, "wanted").unwrap();
+    let invoked = fs::read_to_string(marker).unwrap();
+    assert!(invoked.starts_with("-n\nnixos-rebuild\nswitch\n"));
+    assert!(invoked.contains("--no-update-lock-file"));
+    assert!(invoked.contains("#test-host"));
+}
+
+#[test]
+fn a_successful_install_is_never_reported_as_a_completed_swap() {
+    let repository = Repository::new();
+    let revision = git_text(&repository.root, &["rev-parse", "HEAD"]).unwrap();
+    let bundle = repository.directory.join("bundle");
+    fs::create_dir(&bundle).unwrap();
+    fs::write(
+        bundle.join("binary.json"),
+        serde_json::to_vec(&serde_json::json!({"revision": revision})).unwrap(),
+    )
+    .unwrap();
+    let nix = repository.directory.join("nix");
+    let sudo = repository.directory.join("sudo");
+    executable(
+        &nix,
+        &format!(
+            "#!/bin/sh\nif [ \"$1\" = eval ]; then printf '%s' '{}'; fi\n",
+            bundle.display()
+        ),
+    );
+    executable(&sudo, "#!/bin/sh\nexit 0\n");
+    let tools = Tools {
+        gh: repository.gh.clone().into(),
+        nix: nix.into(),
+        sudo: sudo.into(),
+    };
+    let mut options = options();
+    options.install = true;
+    options.flake = format!("{}#test-host", repository.directory.display());
+    let mut receipt = Receipt {
+        activation: "not_attempted".into(),
+        ..Receipt::default()
+    };
+    let report = repository.directory.join("report.json");
+    execute(&repository.root, &options, &tools, &report, &mut receipt).unwrap();
+    assert_eq!(receipt.stage, "installed_activation_pending");
+    assert!(receipt.installed);
+    assert!(!receipt.swap_complete);
+    assert_eq!(receipt.activation, "not_attempted");
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(report).unwrap()).unwrap();
+    assert_eq!(saved["swap_complete"], false);
+    assert_eq!(saved["stage"], "installed_activation_pending");
+}
+
+#[test]
 fn options_validate_deadlines_and_keep_test_arguments_literal() {
     for args in [
         vec!["--"],
@@ -336,22 +423,4 @@ fn options_validate_deadlines_and_keep_test_arguments_literal() {
         options.test,
         vec![OsString::from("printf"), OsString::from("$(false)")]
     );
-}
-
-#[test]
-fn unsupported_full_refresh_stops_before_testing_committing_or_publishing() {
-    let repository = Repository::new();
-    let head = git_text(&repository.root, &["rev-parse", "HEAD"]).unwrap();
-    fs::write(repository.root.join("tracked"), "leave this uncommitted\n").unwrap();
-    let options = Options::parse(&[]).unwrap();
-    let (result, receipt) = repository.run(&options);
-    assert!(result.unwrap_err().contains("handoff is not implemented"));
-    assert_eq!(receipt.stage, "preflight");
-    assert!(!receipt.pushed);
-    assert!(!receipt.swap_complete);
-    assert_eq!(
-        git_text(&repository.root, &["rev-parse", "HEAD"]).unwrap(),
-        head
-    );
-    assert!(git_text(&repository.remote, &["rev-parse", "refs/heads/main"]).is_err());
 }

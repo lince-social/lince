@@ -138,7 +138,7 @@ pub(super) fn render_diagnostics(
             continue;
         }
         seen.insert(path.clone(), measurement.time);
-        performance::record_render_diagnostic(&path, &diagnostic.suffix, measurement.value);
+        performance::record_render_diagnostic(&path, diagnostic.suffix, measurement.value);
     }
 }
 

@@ -439,7 +439,7 @@ pub struct SpanReading {
 #[derive(Serialize)]
 pub struct RenderDiagnostic {
     pub path: String,
-    pub unit: std::borrow::Cow<'static, str>,
+    pub unit: &'static str,
     pub count: u64,
     pub total: f64,
     pub maximum: f64,
@@ -887,7 +887,7 @@ pub fn flush() {
     }
 }
 
-pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str>, value: f64) {
+pub fn record_render_diagnostic(path: &str, unit: &'static str, value: f64) {
     let Some(monitor) = monitor() else {
         return;
     };
@@ -902,7 +902,7 @@ pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str
             .as_micros()
             .min(u128::from(u64::MAX)) as u64;
         if let Some(reading) = values.get_mut(path) {
-            if &reading.unit != unit {
+            if reading.unit != unit {
                 count(Count::TimingRejected);
                 return;
             }
@@ -915,7 +915,7 @@ pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str
                 path.to_owned(),
                 RenderDiagnostic {
                     path: path.to_owned(),
-                    unit: unit.clone(),
+                    unit,
                     count: 1,
                     total: value,
                     maximum: value,

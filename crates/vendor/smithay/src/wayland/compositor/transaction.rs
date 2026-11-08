@@ -146,21 +146,6 @@ impl Default for PendingTransaction {
 }
 
 impl PendingTransaction {
-    #[cfg(feature = "handoff")]
-    pub(super) fn handoff_is_empty(&self) -> std::io::Result<bool> {
-        let mut next = self.inner.clone();
-        loop {
-            let following = {
-                let state = next.lock().map_err(|_| std::io::Error::other("Poisoned transaction checkpoint lock"))?;
-                match &*state {
-                    TransactionInner::Data(state) => return Ok(state.surfaces.is_empty() && state.blockers.is_empty()),
-                    TransactionInner::Fused(into) => into.clone(),
-                }
-            };
-            next = following;
-        }
-    }
-
     fn with_inner_state<T, F: FnOnce(&mut TransactionState) -> T>(&self, f: F) -> T {
         let mut next = self.inner.clone();
         loop {
@@ -301,36 +286,6 @@ pub(crate) struct TransactionQueue {
 }
 
 impl TransactionQueue {
-    #[cfg(feature = "handoff")]
-    pub(super) fn handoff_empty(&self) -> std::io::Result<super::handoff::EmptyQueueCheckpoint> {
-        if !self.transactions.is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::WouldBlock, "Pending compositor transactions need a typed transfer or a safe boundary"));
-        }
-        Ok(super::handoff::EmptyQueueCheckpoint {
-            transaction_capacity: self.transactions.capacity(),
-            seen_capacity: self.seen_surfaces.capacity(),
-            seen_surfaces: self.seen_surfaces.iter().copied().collect(),
-        })
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn restore_empty(checkpoint: super::handoff::EmptyQueueCheckpoint) -> std::io::Result<Self> {
-        if checkpoint.transaction_capacity > 1048576 || checkpoint.seen_capacity > 1048576
-            || checkpoint.seen_surfaces.len() > checkpoint.seen_capacity {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Compositor transaction scratch exceeds checkpoint limits"));
-        }
-        let mut seen_surfaces = HashSet::with_capacity(checkpoint.seen_capacity);
-        for surface in checkpoint.seen_surfaces {
-            if !seen_surfaces.insert(surface) {
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Duplicate transaction scratch entry"));
-            }
-        }
-        Ok(Self {
-            transactions: Vec::with_capacity(checkpoint.transaction_capacity),
-            seen_surfaces,
-        })
-    }
-
     pub(crate) fn append(&mut self, t: Transaction) {
         self.transactions.push(t);
     }

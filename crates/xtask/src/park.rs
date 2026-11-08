@@ -11,17 +11,11 @@ mod showoff;
 mod validation;
 #[cfg(target_os = "linux")]
 mod swap;
-#[cfg(target_os = "linux")]
-mod backend_handoff;
 
 pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         #[cfg(target_os = "linux")]
         Some("swap-probe") => swap::run(&arguments[1..]),
-        #[cfg(target_os = "linux")]
-        Some("backend-handoff-probe") => backend_handoff::run(&arguments[1..]),
-        #[cfg(target_os = "linux")]
-        Some("protocol-handoff-probe") => backend_handoff::run_protocol(&arguments[1..]),
         Some("release") => release(&arguments[1..]),
         #[cfg(target_os = "linux")]
         Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..])),
@@ -174,8 +168,6 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
             println!("Use park validate help for isolated, bounded session acceptance runs.");
             println!("Use park swap-probe for the isolated window-preservation exec experiment and its JSON result.");
             println!("Use park screenshot to refresh institute/assets/photos/showcase.png from a temporary, offscreen showoff workspace.");
-            println!("Use park backend-handoff-probe for the isolated connection-state proof across distinct test executables; it does not refresh the live session.");
-            println!("Use park protocol-handoff-probe for the isolated production Park/XDG/SHM mapped-window exec proof; full session refresh remains unimplemented.");
             println!(
                 "Use park showoff --nested for an interactive release session with Firefox and the saved Laboratory showoff workspace."
             );

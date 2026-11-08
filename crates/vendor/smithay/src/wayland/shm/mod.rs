@@ -114,10 +114,6 @@ use wayland_server::{
 mod handlers;
 mod pool;
 
-#[cfg(feature = "handoff")]
-#[doc(hidden)]
-pub mod handoff;
-
 use crate::{
     backend::allocator::format::get_bpp,
     utils::{hook::Hook, HookId, UnmanagedResource},

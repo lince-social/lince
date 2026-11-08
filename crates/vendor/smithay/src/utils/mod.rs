@@ -37,9 +37,6 @@ pub use clock::*;
 pub(crate) mod hook;
 #[cfg(feature = "wayland_frontend")]
 pub use hook::HookId;
-#[cfg(feature = "handoff")]
-#[doc(hidden)]
-pub use hook::CallbackIdentity;
 
 /// This resource is not managed by Smithay
 #[derive(Debug)]

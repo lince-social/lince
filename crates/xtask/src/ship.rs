@@ -11,13 +11,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::Result;
 
-mod candidate;
-
 #[derive(Debug)]
 struct Options {
     message: String,
+    flake: String,
     install: bool,
-    prepare_only: bool,
     timeout: Duration,
     interval: Duration,
     report: Option<PathBuf>,
@@ -28,8 +26,8 @@ impl Options {
     fn parse(arguments: &[OsString]) -> Result<Self> {
         let mut options = Self {
             message: "Ship tested workspace snapshot".into(),
+            flake: "/home/user/git/xaviduds/nixos#computer".into(),
             install: true,
-            prepare_only: false,
             timeout: Duration::from_secs(14400),
             interval: Duration::from_secs(15),
             report: None,
@@ -46,9 +44,9 @@ impl Options {
                     break;
                 }
                 Some("--no-install") => options.install = false,
-                Some("--prepare-only") => options.prepare_only = true,
                 Some(
-                    flag @ ("--message" | "--timeout-seconds" | "--poll-seconds" | "--report"),
+                    flag @ ("--message" | "--nixos-flake" | "--timeout-seconds" | "--poll-seconds"
+                    | "--report"),
                 ) => {
                     let value = arguments
                         .next()
@@ -56,6 +54,7 @@ impl Options {
                         .ok_or_else(|| format!("{flag} requires a UTF-8 value"))?;
                     match flag {
                         "--message" => options.message = value.into(),
+                        "--nixos-flake" => options.flake = value.into(),
                         "--report" => options.report = Some(value.into()),
                         _ => {
                             let seconds = value
@@ -82,9 +81,6 @@ impl Options {
         if options.message.trim().is_empty() {
             return Err("the commit message cannot be empty".into());
         }
-        if options.prepare_only && !options.install {
-            return Err("--prepare-only and --no-install are mutually exclusive".into());
-        }
         Ok(options)
     }
 }
@@ -98,7 +94,6 @@ struct Receipt {
     tests: Option<String>,
     pushed: bool,
     installed: bool,
-    candidate: Option<PathBuf>,
     activation: String,
     swap_complete: bool,
     error: Option<String>,
@@ -119,6 +114,7 @@ struct Run {
 struct Tools {
     gh: OsString,
     nix: OsString,
+    sudo: OsString,
 }
 
 impl Default for Tools {
@@ -126,6 +122,7 @@ impl Default for Tools {
         Self {
             gh: "gh".into(),
             nix: "nix".into(),
+            sudo: "sudo".into(),
         }
     }
 }
@@ -200,13 +197,13 @@ impl Drop for Snapshot {
 pub fn dispatch(root: &Path, arguments: &[OsString]) -> Result<()> {
     if arguments.len() == 1 && matches!(arguments[0].to_str(), Some("--help" | "help" | "-h")) {
         println!(
-            "cargo xtask ship [--message TEXT] [--no-install | --prepare-only] [--timeout-seconds N] [--poll-seconds N] [--report PATH] [-- TEST_EXECUTABLE ARGS...]"
+            "cargo xtask ship [--message TEXT] [--nixos-flake PATH#HOST] [--no-install] [--timeout-seconds N] [--poll-seconds N] [--report PATH] [-- TEST_EXECUTABLE ARGS...]"
         );
         println!(
             "Commits all nonignored changes on main using a separate index and detached test worktree. The default test is the placeholder 1 + 1 == 2. A custom test runs in the snapshot with no shell expansion. Concurrent edits remain uncommitted. Git index operations are locked until the tested snapshot is committed."
         );
         println!(
-            "Waits only for this commit's successful build.yml push run and realizes that run's verified artifact in the Nix store. It never switches the NixOS configuration or restarts Park. --prepare-only permits a candidate-ready result; full shipping requires supported session handoff and otherwise fails explicitly. Default receipt: .git/lince-ship.json."
+            "Waits only for this commit's successful build.yml push run. Installation performs the lin equivalent with a revision check before switching and requires existing sudo authorization. It does not restart Park or claim live activation. The JSON receipt distinguishes installed from active; errors exit nonzero. Default receipt: .git/lince-ship.json."
         );
         return Ok(());
     }
@@ -259,10 +256,6 @@ fn execute(
     report: &Path,
     receipt: &mut Receipt,
 ) -> Result<()> {
-    stage(receipt, report, "preflight")?;
-    if options.install && !options.prepare_only {
-        return Err("Full Park session handoff is not implemented. Use --prepare-only explicitly to publish and realize a candidate without activating it; the running session will be preserved".into());
-    }
     stage(receipt, report, "snapshot")?;
     let branch = git_text(root, &["symbolic-ref", "HEAD"])?;
     if branch != "refs/heads/main" {
@@ -397,24 +390,10 @@ fn execute(
     receipt.run_id = Some(run.database_id);
     receipt.workflow_url = Some(run.url);
     if options.install {
-        stage(receipt, report, "realizing_candidate")?;
-        let store_root = PathBuf::from(git_text(
-            root,
-            &["rev-parse", "--path-format=absolute", "--git-common-dir"],
-        )?);
-        receipt.candidate = Some(candidate::realize(
-            tools,
-            &source,
-            &store_root,
-            repository,
-            run.database_id,
-            &revision,
-        )?);
-        stage(receipt, report, "candidate_ready_activation_pending")?;
-        if options.prepare_only {
-            return Ok(());
-        }
-        return Err("The candidate is ready, but complete Park session handoff is unavailable; no active binary was replaced".into());
+        stage(receipt, report, "installing")?;
+        install(tools, root, options, &revision)?;
+        receipt.installed = true;
+        return stage(receipt, report, "installed_activation_pending");
     }
     stage(receipt, report, "complete")
 }
@@ -480,6 +459,60 @@ fn wait(
         }
         std::thread::sleep(options.interval.min(remaining));
     }
+}
+
+fn verify_manifest(path: &Path, revision: &str) -> Result<()> {
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(path).map_err(|error| error.to_string())?)
+            .map_err(|error| error.to_string())?;
+    if manifest["revision"].as_str() != Some(revision) {
+        return Err(format!(
+            "The Nix release revision {:?} does not match tested commit {revision}; refusing to switch",
+            manifest["revision"]
+        ));
+    }
+    Ok(())
+}
+
+fn install(tools: &Tools, root: &Path, options: &Options, revision: &str) -> Result<()> {
+    let (directory, host) = options
+        .flake
+        .rsplit_once('#')
+        .filter(|(directory, host)| !directory.is_empty() && !host.is_empty())
+        .ok_or("--nixos-flake must be a local PATH#HOST")?;
+    let directory = fs::canonicalize(root.join(directory)).map_err(|error| error.to_string())?;
+    let flake = format!("{}#{host}", directory.display());
+    output(
+        Command::new(&tools.nix)
+            .args(["flake", "update", "--refresh", "lince", "--flake"])
+            .arg(&directory),
+    )?;
+    let expression = format!(
+        "(builtins.getFlake {}).inputs.lince.outPath",
+        serde_json::to_string(&directory.to_string_lossy())
+            .map_err(|error| error.to_string())?
+            .replace("${", "\\${")
+    );
+    let resolved = output(Command::new(&tools.nix).args([
+        "eval",
+        "--impure",
+        "--raw",
+        "--expr",
+        &expression,
+    ]))?;
+    verify_manifest(
+        &PathBuf::from(resolved.trim()).join("binary.json"),
+        revision,
+    )?;
+    crate::checked(Command::new(&tools.sudo).args([
+        "-n",
+        "nixos-rebuild",
+        "switch",
+        "--flake",
+        &flake,
+        "--accept-flake-config",
+        "--no-update-lock-file",
+    ]))
 }
 
 #[cfg(test)]

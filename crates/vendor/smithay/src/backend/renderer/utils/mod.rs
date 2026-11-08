@@ -267,42 +267,6 @@ impl<N: Clone, Kind> DamageBag<N, Kind> {
 }
 
 impl<N, Kind> DamageBag<N, Kind> {
-    #[cfg(feature = "handoff")]
-    #[doc(hidden)]
-    pub fn handoff_layout(&self) -> (usize, usize, usize, Vec<usize>) {
-        (self.limit, self.state.commit_counter.0, self.state.damage.capacity(),
-            self.state.damage.iter().map(|set| set.capacity()).collect())
-    }
-
-    #[cfg(feature = "handoff")]
-    #[doc(hidden)]
-    pub fn from_handoff(
-        limit: usize,
-        counter: usize,
-        capacity: usize,
-        sets: Vec<(usize, Vec<Rectangle<N, Kind>>)>,
-    ) -> std::io::Result<Self> {
-        if limit > 4096 || capacity > 65536 || sets.len() > limit || sets.len() > capacity {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid restored damage history layout"));
-        }
-        let mut total = 0_usize;
-        for (capacity, rectangles) in &sets {
-            total = total.checked_add(*capacity).ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Damage allocation overflow"))?;
-            if *capacity < MAX_DAMAGE_RECTS || *capacity > 65536 || rectangles.len() > *capacity || total > 1048576 {
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid restored damage rectangle layout"));
-            }
-        }
-        let mut damage = VecDeque::with_capacity(capacity);
-        for (capacity, rectangles) in sets {
-            let mut set = smallvec::SmallVec::with_capacity(capacity);
-            set.extend(rectangles);
-            damage.push_back(set);
-        }
-        Ok(Self { limit, state: DamageSnapshot {
-            limit, commit_counter: CommitCounter(counter), damage: Arc::new(damage),
-        } })
-    }
-
     /// Get a snapshot of the current damage
     pub fn snapshot(&self) -> DamageSnapshot<N, Kind> {
         self.state.clone()

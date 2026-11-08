@@ -22,23 +22,8 @@ use wayland_server::{
     DisplayHandle, Resource,
 };
 
-#[cfg(not(feature = "handoff"))]
 type CommitHook = dyn Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + Send + Sync;
-#[cfg(not(feature = "handoff"))]
 type DestructionHook = dyn Fn(&mut dyn Any, &WlSurface) + Send + Sync;
-
-#[cfg(feature = "handoff")]
-trait CommitCallback: Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + crate::utils::hook::HandoffCallback {}
-#[cfg(feature = "handoff")]
-impl<T> CommitCallback for T where T: Fn(&mut dyn Any, &DisplayHandle, &WlSurface) + 'static {}
-#[cfg(feature = "handoff")]
-trait DestructionCallback: Fn(&mut dyn Any, &WlSurface) + crate::utils::hook::HandoffCallback {}
-#[cfg(feature = "handoff")]
-impl<T> DestructionCallback for T where T: Fn(&mut dyn Any, &WlSurface) + 'static {}
-#[cfg(feature = "handoff")]
-type CommitHook = dyn CommitCallback + Send + Sync;
-#[cfg(feature = "handoff")]
-type DestructionHook = dyn DestructionCallback + Send + Sync;
 
 /// Node of a subsurface tree, holding some user specified data type U
 /// at each node
@@ -113,90 +98,6 @@ pub enum TraversalAction<T> {
 }
 
 impl PrivateSurfaceData {
-    #[cfg(feature = "handoff")]
-    pub(super) fn discard_handoff(&mut self) {
-        self.parent = None;
-        self.children.clear();
-        self.public_data.role = None;
-        self.public_data.data_map = Default::default();
-        self.public_data.cached_state = MultiCache::new();
-        self.pending_transaction = Default::default();
-        self.pre_commit_hooks.clear();
-        self.post_commit_hooks.clear();
-        self.destruction_hooks.clear();
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn handoff_isolated(&self, surface: &WlSurface) -> std::io::Result<super::handoff::IsolatedSurfaceCheckpoint> {
-        if self.parent.is_some() || self.children.len() != 1 || self.children[0] != *surface {
-            return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "Transfer nontrivial surface topology with the tree adapter"));
-        }
-        if !self.pending_transaction.handoff_is_empty()? {
-            return Err(std::io::Error::new(std::io::ErrorKind::WouldBlock, "Pending surface transactions need transfer or a safe boundary"));
-        }
-        Ok(super::handoff::IsolatedSurfaceCheckpoint {
-            role: self.public_data.role.map(str::to_owned),
-            next_transaction: self.current_txid.into(),
-        })
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn restore_isolated(
-        &mut self,
-        surface: &WlSurface,
-        checkpoint: super::handoff::IsolatedSurfaceCheckpoint,
-        role: impl FnOnce(&str) -> Option<&'static str>,
-    ) -> std::io::Result<()> {
-        let current = self.handoff_isolated(surface)?;
-        if current.role.is_some() || current.next_transaction != 0 {
-            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Restore requires a fresh registered surface"));
-        }
-        let role = match checkpoint.role {
-            Some(name) => {
-                let resolved = role(&name).filter(|resolved| *resolved == name)
-                    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Unknown restored surface role"))?;
-                Some(resolved)
-            }
-            None => None,
-        };
-        self.public_data.role = role;
-        self.current_txid = checkpoint.next_transaction.into();
-        Ok(())
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn initialize_handoff(&mut self, surface: &WlSurface) -> std::io::Result<()> {
-        if !self.children.is_empty() || self.parent.is_some() {
-            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Surface tree is already initialized"));
-        }
-        self.children.push(surface.clone());
-        Ok(())
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn handoff_hooks(&self) -> super::handoff::SurfaceHooks {
-        super::handoff::SurfaceHooks {
-            pre_commit: self.pre_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
-            post_commit: self.post_commit_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
-            destruction: self.destruction_hooks.iter().map(|hook| (*hook.cb).handoff_identity()).collect(),
-            capacities: [self.pre_commit_hooks.capacity(), self.post_commit_hooks.capacity(), self.destruction_hooks.capacity()],
-        }
-    }
-
-    #[cfg(feature = "handoff")]
-    pub(super) fn reserve_handoff_hooks(&mut self, capacities: [usize; 3]) -> std::io::Result<()> {
-        if capacities.into_iter().any(|capacity| capacity > 65536) {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Surface hook allocation exceeds checkpoint limit"));
-        }
-        if !self.pre_commit_hooks.is_empty() || !self.post_commit_hooks.is_empty() || !self.destruction_hooks.is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Surface hooks have already been restored"));
-        }
-        self.pre_commit_hooks = Vec::with_capacity(capacities[0]);
-        self.post_commit_hooks = Vec::with_capacity(capacities[1]);
-        self.destruction_hooks = Vec::with_capacity(capacities[2]);
-        Ok(())
-    }
-
     pub fn new() -> Mutex<PrivateSurfaceData> {
         Mutex::new(PrivateSurfaceData {
             parent: None,

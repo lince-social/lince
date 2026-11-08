@@ -128,6 +128,6 @@ impl IsAlive for XdgWmBase {
 #[derive(Default, Debug)]
 pub struct XdgWmBaseUserData {
     pub(crate) client_data: Mutex<ShellClientData>,
-    pub(crate) known_surfaces: Arc<Mutex<IndexSet<Weak<xdg_surface::XdgSurface>>>>,
+    known_surfaces: Arc<Mutex<IndexSet<Weak<xdg_surface::XdgSurface>>>>,
     alive_tracker: AliveTracker,
 }

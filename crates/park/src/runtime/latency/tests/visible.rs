@@ -42,6 +42,7 @@ fn wait(worker: &CanvasWorker, serial: u64, length: Option<usize>) -> Completed 
 #[test]
 #[ignore = "private Vulkan/EGL input-visible trace; run with tracing on and off without concurrent compilation"]
 fn controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input_origin() {
+    performance::set_phase(performance::Phase::Warmup);
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)
@@ -132,6 +133,7 @@ fn controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input
         .unwrap();
     wait(&worker, setup, Some(0));
     let mut samples = Vec::new();
+    performance::set_phase(performance::Phase::Typing);
     for round in 0..12 {
         let (entered, started) = mpsc::sync_channel(1);
         let (release, resumed) = mpsc::sync_channel(1);
@@ -215,6 +217,5 @@ fn controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input
         )
         .unwrap();
     }
-    performance::flush();
-    std::thread::sleep(Duration::from_millis(50));
+    assert!(performance::finish(Duration::from_secs(2)), "Final input diagnostic report was not delivered");
 }

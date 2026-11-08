@@ -14,6 +14,8 @@ use native::{
 #[test]
 #[ignore = "private hardware text autosave regression with real input and rendered glyph pixels"]
 fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
+    use lince_interface::host::performance::{self, Phase};
+    let _observer = crate::presentation::observe_systems();
     let checks = native::laboratory::run_interface_checks().unwrap();
     assert!(checks.first().is_some_and(|check| {
         check
@@ -38,6 +40,7 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
         .unwrap_or(0);
     assert!(neighbors <= 256);
     for kind in [SandKind::Text, SandKind::EditableText] {
+        performance::set_phase(Phase::Warmup);
         let path = directory.path().join(kind.name());
         std::fs::create_dir_all(&path).unwrap();
         let mut canvas = super::super::appearance::launch(&path.join("workspace.json"), size);
@@ -160,7 +163,7 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
                 )
             })
             .collect::<Vec<_>>();
-        lince_interface::host::performance::flush();
+        performance::set_phase(Phase::Typing);
         for _ in 0..4 {
             for pressed in [true, false] {
                 canvas
@@ -242,6 +245,7 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
         }
         canvas.finish().unwrap();
         drop(canvas);
+        performance::set_phase(Phase::Reopen);
         let mut restored = super::super::appearance::launch(&path.join("workspace.json"), size);
         let contents = restored
             .world_mut()
@@ -253,4 +257,5 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
         assert_eq!(contents, ["iiiiWWWW"]);
         restored.finish().unwrap();
     }
+    assert!(performance::finish(std::time::Duration::from_secs(2)), "Final typing diagnostic report was not delivered");
 }

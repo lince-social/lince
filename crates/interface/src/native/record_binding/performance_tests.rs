@@ -157,6 +157,8 @@ fn body(bytes: usize) -> String {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "private file-backed edit phase measurement"]
 async fn file_backed_local_edit_phase_probe() {
+    use performance::{Phase, Stage};
+    performance::set_phase(Phase::Warmup);
     let bytes: usize = std::env::var("LINCE_EDIT_PROBE_BYTES")
         .unwrap_or_else(|_| "1024".into())
         .parse()
@@ -326,6 +328,7 @@ async fn file_backed_local_edit_phase_probe() {
         assert!(Instant::now() < deadline, "Private queries did not start");
         tokio::time::sleep(Duration::from_millis(2)).await;
     }
+    performance::set_phase(Phase::Quiet);
     let mut idle_us = Vec::new();
     for _ in 0..5 {
         idle_us.push(step(&mut world, &mut probe).await.0);
@@ -337,6 +340,7 @@ async fn file_backed_local_edit_phase_probe() {
         .unwrap();
     let initial_queries = probe.summary();
     let start_epoch_ns = boundary("begin", 0);
+    performance::set_phase(Phase::LocalSave);
     let mut rounds = Vec::new();
     for (index, suffix) in ['x', 'y', 'z'].into_iter().enumerate() {
         let value = if field == "head" {
@@ -356,7 +360,9 @@ async fn file_backed_local_edit_phase_probe() {
             .unwrap()
             .editor
             .set_text(value);
-        let set_text_us = started.elapsed().as_micros() as u64;
+        let set_text_elapsed = started.elapsed();
+        performance::record(Stage::EditProbeSetText, set_text_elapsed);
+        let set_text_us = set_text_elapsed.as_micros() as u64;
         let first_update_us = step(&mut world, &mut probe).await.0;
         for entity in &editors {
             assert_eq!(
@@ -422,7 +428,16 @@ async fn file_backed_local_edit_phase_probe() {
             assert!(updates_us.len() < 1000 && Instant::now() < deadline);
             tokio::time::sleep(Duration::from_millis(2)).await;
         }
-        let settled_observed_us = started.elapsed().as_micros() as u64;
+        let settled_elapsed = started.elapsed();
+        let settled_observed_us = settled_elapsed.as_micros() as u64;
+        for (stage, micros) in [
+            (Stage::EditProbeMirror, mirror_observed_us),
+            (Stage::EditProbeDurable, durable_observed_us.unwrap()),
+            (Stage::EditProbeAcknowledged, acknowledged_observed_us.unwrap()),
+        ] {
+            performance::record(stage, Duration::from_micros(micros));
+        }
+        performance::record(Stage::EditProbeSettled, settled_elapsed);
         let settled_epoch_ns = boundary("settled", index);
         assert_eq!(
             engine.doc_text(&uid).await.unwrap(),
@@ -460,6 +475,8 @@ async fn file_backed_local_edit_phase_probe() {
             .is_none()
     );
     let validated_epoch_ns = boundary("validated", 3);
+    performance::set_phase(Phase::Reopen);
+    let reopen_started = Instant::now();
     drop(world);
     tokio::time::timeout(Duration::from_secs(10), engine.store.pool.close())
         .await
@@ -471,6 +488,7 @@ async fn file_backed_local_edit_phase_probe() {
         (expected_head, expected_body)
     );
     reopened.store.pool.close().await;
+    performance::record(Stage::EditProbeReopen, reopen_started.elapsed());
     let report = serde_json::json!({
         "case": "file-backed-local-edit-phases",
         "field": field,
@@ -498,6 +516,7 @@ async fn file_backed_local_edit_phase_probe() {
         std::fs::write(path, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
     }
     eprintln!("Local edit phase probe {report}");
+    assert!(performance::finish(Duration::from_secs(2)), "Final edit diagnostic report was not delivered");
 }
 
 #[test]

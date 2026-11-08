@@ -9,7 +9,11 @@ use bevy::ecs::{
     query::{Allow, QueryData},
     system::SystemParam,
 };
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicU64, Ordering},
+    time::Instant,
+};
 
 pub(crate) mod tests;
 
@@ -104,6 +108,11 @@ pub(crate) struct Tokens<'w, 's> {
 struct Cache {
     values: HashMap<(Entity, usize), (TokenValue, &'static str)>,
     kinds: HashMap<Entity, Option<SandStyleKind>>,
+    observed: bool,
+    preparation: Option<Instant>,
+    prepared: u64,
+    cached_reads: AtomicU64,
+    direct_reads: AtomicU64,
 }
 
 macro_rules! removals {
@@ -134,6 +143,8 @@ removals! {
 
 impl Tokens<'_, '_> {
     pub(crate) fn refresh(&mut self) {
+        self.cache.observed = crate::host::performance::enabled();
+        self.cache.preparation = crate::host::performance::start();
         let removed = self.removed.changed();
         if removed || self.theme.is_changed() || !self.changed.is_empty() {
             crate::host::performance::count(crate::host::performance::Count::StyleInvalidated);
@@ -148,6 +159,9 @@ impl Tokens<'_, '_> {
             if !self.cache.values.contains_key(&key) {
                 let value = self.resolve_direct(entity, token);
                 self.cache.values.insert(key, value);
+                if self.cache.observed {
+                    self.cache.prepared = self.cache.prepared.saturating_add(1);
+                }
             }
         }
     }
@@ -164,12 +178,17 @@ impl Tokens<'_, '_> {
     }
 
     pub(crate) fn finish_preparing(&mut self) {
+        let started = self.cache.preparation.take();
         if self.cache.values.capacity() > (self.cache.values.len() * 4).max(256) {
             self.cache.values.shrink_to_fit();
         }
         if self.cache.kinds.capacity() > (self.cache.kinds.len() * 4).max(64) {
             self.cache.kinds.shrink_to_fit();
         }
+        crate::host::performance::record_since(
+            crate::host::performance::Stage::NativeTokenPreparation,
+            started,
+        );
     }
 
     pub(crate) fn kind(&self, entity: Entity) -> Option<SandStyleKind> {
@@ -219,11 +238,17 @@ impl Tokens<'_, '_> {
     }
 
     pub(crate) fn resolve(&self, entity: Entity, token: Token) -> (TokenValue, &'static str) {
-        self.cache
-            .values
-            .get(&(entity, token as usize))
-            .copied()
-            .unwrap_or_else(|| self.resolve_direct(entity, token))
+        if let Some(value) = self.cache.values.get(&(entity, token as usize)).copied() {
+            if self.cache.observed {
+                self.cache.cached_reads.fetch_add(1, Ordering::Relaxed);
+            }
+            value
+        } else {
+            if self.cache.observed {
+                self.cache.direct_reads.fetch_add(1, Ordering::Relaxed);
+            }
+            self.resolve_direct(entity, token)
+        }
     }
 
     fn resolve_direct(&self, entity: Entity, token: Token) -> (TokenValue, &'static str) {
@@ -300,5 +325,17 @@ impl Tokens<'_, '_> {
         }
         self.theme
             .resolve(token, style_kind, &TokenOverrides::default())
+    }
+}
+
+impl Drop for Tokens<'_, '_> {
+    fn drop(&mut self) {
+        if !self.cache.observed {
+            return;
+        }
+        use crate::host::performance::{self, Count};
+        performance::add(Count::StyleValuesPrepared, std::mem::take(&mut self.cache.prepared));
+        performance::add(Count::StyleReadCached, self.cache.cached_reads.swap(0, Ordering::Relaxed));
+        performance::add(Count::StyleReadDirect, self.cache.direct_reads.swap(0, Ordering::Relaxed));
     }
 }

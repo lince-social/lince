@@ -2,7 +2,7 @@
 
 [Organization and execution order](Park.md). Targets are in [benchmarks](08-benchmarks.md); interaction coverage is in [workflows](09-workflows.md).
 
-Use [12's broad-cycle method](12-measurement-and-delivery.md): A0 measures actual CPU/wait/queue boundaries; A1 implements all ready independent measured owners together. Serial/parallel or buffering comparisons use source-identified normal candidates, not shipped experiment selectors. Keep real small-work/capability fallbacks where they improve the product. No local compilation; push the completed batch and stop, with executable verification pending for CI/the new binary.
+Use [12's broad-cycle method](12-measurement-and-delivery.md): A0 measures actual CPU/wait/queue boundaries; A1 implements all ready independent measured owners together. Serial/parallel or buffering comparisons use source-identified normal candidates, not shipped experiment selectors. Keep real small-work/capability fallbacks where they improve the product. Code and run useful local checks in Niri; push the reviewed batch, measure the installed candidate in Park, update evidence/next tasks and stop. No compilation during measured runs.
 
 The shared input/state/worker/render path is the target; do not special-case Firefox, a tooltip or one Castle. Shorten proven blocking spans and remove unrelated dependencies from local feedback. Use immutable snapshots and precise component access for useful concurrency. Rendering a stale backlog faster is insufficient. Source anchors: crates/park/src/runtime.rs, runtime/input_queue.rs, native_input/, presentation.rs; crates/interface/src/host/input/ and native/record_binding.rs. P105–P108 are specific gaps beyond the existing demand-driven worker and queue guards.
 

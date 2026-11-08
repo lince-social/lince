@@ -63,6 +63,9 @@ pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
     tokens.refresh();
+    if crate::host::performance::enabled() {
+        crate::host::performance::add(crate::host::performance::Count::IconMetricsVisited, icons.iter().len() as u64);
+    }
     for icon in icons.iter() {
         tokens.prepare_metric(icon.entity, "icon-size", Token::IconSize);
         tokens.prepare_metric(icon.entity, "icon-padding", Token::IconPadding);
@@ -133,6 +136,9 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
     tokens.refresh();
+    if crate::host::performance::enabled() {
+        crate::host::performance::add(crate::host::performance::Count::NodeMetricsVisited, nodes.iter().len() as u64);
+    }
     let mut work = 0;
     for node in nodes.iter() {
         let required = RequiredMetrics::new(node.node, node.metrics, node.font, node.icon);
@@ -156,6 +162,7 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
         }
     }
     tokens.finish_preparing();
+    crate::host::performance::add(crate::host::performance::Count::NodeMetricsActive, work as u64);
     let apply = |LayoutDataItem {
                      entity,
                      mut node,

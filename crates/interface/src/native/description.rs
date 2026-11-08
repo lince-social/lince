@@ -172,7 +172,12 @@ pub fn spawn(world: &mut World, parent: Entity, source: &str, context: Context) 
             ChildOf(parent),
         ))
         .id();
-    markup::render(world, entity, source, &context, Vec::new());
+    {
+        let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionMarkup);
+        crate::host::performance::count(crate::host::performance::Count::DescriptionRenders);
+        crate::host::performance::add(crate::host::performance::Count::DescriptionSourceBytes, source.len() as u64);
+        markup::render(world, entity, source, &context, Vec::new());
+    }
     entity
 }
 
@@ -197,6 +202,9 @@ pub fn set(world: &mut World, entity: Entity, source: &str) {
         }
     }
     world.get_mut::<Description>(entity).unwrap().source = source.into();
+    let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionMarkup);
+    crate::host::performance::count(crate::host::performance::Count::DescriptionRenders);
+    crate::host::performance::add(crate::host::performance::Count::DescriptionSourceBytes, source.len() as u64);
     markup::render(world, entity, source, &context, shaders);
 }
 
@@ -454,10 +462,12 @@ pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &st
 }
 
 fn sync_editors(world: &mut World) {
+    let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionEditors);
     let changes: Vec<_> = world
         .query::<&Editor>()
         .iter(world)
         .filter_map(|editor| {
+            crate::host::performance::count(crate::host::performance::Count::DescriptionEditorsVisited);
             if !editor.editable {
                 return None;
             }
@@ -466,6 +476,7 @@ fn sync_editors(world: &mut World) {
                 .then_some((editor.preview, source))
         })
         .collect();
+    crate::host::performance::add(crate::host::performance::Count::DescriptionRefreshes, changes.len() as u64);
     for (preview, source) in changes {
         set(world, preview, &source);
     }

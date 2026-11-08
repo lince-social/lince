@@ -91,6 +91,11 @@ stages! {
     NativeUpdate => "native-update",
     NativePixels => "native-pixels",
     NativeStyles => "native-styles",
+    NativeTokenPreparation => "native-token-prepare-and-collection",
+    NativeDescriptionMarkup => "native-description-markup",
+    NativeDescriptionEditors => "native-description-editor-scan",
+    NativeCanvasSync => "native-canvas-host-synchronize",
+    NativeCanvasSnapshot => "native-canvas-host-snapshot",
     NativeSandSizes => "native-sand-sizes",
     NativeIconColors => "native-icon-colors",
     NativeIconMetrics => "native-icon-metrics",
@@ -106,6 +111,12 @@ stages! {
     NativeRecordProjection => "native-record-projection",
     NativeRecordPresentation => "native-record-presentation",
     RecordBindingUpdate => "record-binding-update",
+    EditProbeSetText => "edit-probe-set-text",
+    EditProbeMirror => "edit-probe-mirror-observed-await",
+    EditProbeDurable => "edit-probe-durable-recovery-observed-await",
+    EditProbeAcknowledged => "edit-probe-acknowledgement-observed-await",
+    EditProbeSettled => "edit-probe-refresh-settled-observed-await",
+    EditProbeReopen => "edit-probe-cold-reopen-await",
     RecordEditSplice => "record-edit-splice",
     RecordDraftPrepare => "record-draft-prepare",
     RecordDraftQueueWait => "record-draft-queue-wait",
@@ -278,6 +289,26 @@ counts! {
     RecordEditorTextCopies => "record-editor-input-text-copies",
     RecordEditorTextCopiedBytes => "record-editor-input-text-copied-bytes",
     StyleInvalidated => "style-resolver-cache-invalidations",
+    StyleValuesPrepared => "style-values-derived-during-preparation",
+    StyleReadCached => "style-runtime-cache-reads",
+    StyleReadDirect => "style-runtime-direct-resolutions",
+    NodeMetricsVisited => "node-metric-consumers-visited",
+    NodeMetricsActive => "node-metric-consumers-requiring-values",
+    IconMetricsVisited => "icon-metric-consumers-visited",
+    SandSizesVisited => "sand-size-consumers-visited",
+    SandSizesChanged => "sand-size-consumers-changed",
+    DescriptionRenders => "description-markup-renders",
+    DescriptionSourceBytes => "description-markup-source-bytes",
+    DescriptionEditorsVisited => "description-editors-compared",
+    DescriptionRefreshes => "description-previews-refreshed",
+    NativeSurfaceRequests => "native-surface-requests-considered",
+    NativeSurfacesVisible => "native-surface-visible-requests",
+    NativeSurfacesCreated => "native-surface-targets-created",
+    NativeSurfacesReused => "native-surface-targets-reused",
+    NativeSurfacesResized => "native-surface-targets-resized",
+    NativeLayoutRuntimeChanged => "native-layout-runtimes-changed",
+    NativeCanvasSnapshots => "native-canvas-host-snapshots",
+    NativeCanvasCalls => "native-canvas-host-calls-serviced",
     NativeConstraintRoots => "native-layout-constraint-roots",
     NativeConstraintItems => "native-layout-constraint-items",
     FramePrepared => "native-frames-prepared",
@@ -439,7 +470,7 @@ pub struct SpanReading {
 #[derive(Serialize)]
 pub struct RenderDiagnostic {
     pub path: String,
-    pub unit: &'static str,
+    pub unit: std::borrow::Cow<'static, str>,
     pub count: u64,
     pub total: f64,
     pub maximum: f64,
@@ -887,7 +918,7 @@ pub fn flush() {
     }
 }
 
-pub fn record_render_diagnostic(path: &str, unit: &'static str, value: f64) {
+pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str>, value: f64) {
     let Some(monitor) = monitor() else {
         return;
     };
@@ -902,7 +933,7 @@ pub fn record_render_diagnostic(path: &str, unit: &'static str, value: f64) {
             .as_micros()
             .min(u128::from(u64::MAX)) as u64;
         if let Some(reading) = values.get_mut(path) {
-            if reading.unit != unit {
+            if &reading.unit != unit {
                 count(Count::TimingRejected);
                 return;
             }
@@ -915,7 +946,7 @@ pub fn record_render_diagnostic(path: &str, unit: &'static str, value: f64) {
                 path.to_owned(),
                 RenderDiagnostic {
                     path: path.to_owned(),
-                    unit,
+                    unit: unit.clone(),
                     count: 1,
                     total: value,
                     maximum: value,

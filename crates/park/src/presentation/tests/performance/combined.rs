@@ -1,4 +1,5 @@
 use super::*;
+use super::schedules::frame_pixels;
 use bevy::{
     input::keyboard::Key,
     input_focus::{FocusCause, InputFocus},
@@ -149,6 +150,11 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
             ChildOf(viewport),
         ));
     }
+    let description = native::description::spawn(
+        canvas.world_mut(), items[5], "**Measured** description", native::description::Context {
+            owner: items[5], source: native::protein_area::Source::Local,
+        },
+    );
     advance(&mut canvas, 16);
     let first = canvas.probe_frame().unwrap();
     assert_eq!(first.outputs.len() + usize::from(first.output.is_some()), 2);
@@ -170,7 +176,7 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
         query
             .iter(world)
             .find_map(|(entity, text)| {
-                if !text.value().is_empty() {
+                if !text.value().to_string().is_empty() {
                     return None;
                 }
                 let mut current = entity;
@@ -215,7 +221,7 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
                 .world()
                 .get::<bevy::text::EditableText>(editor)
                 .unwrap()
-                .value(),
+                .value().to_string(),
             expected
         );
     }
@@ -272,6 +278,30 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
         native::edit_mode::EditAction::Close.apply(canvas.world_mut(), root);
         advance(&mut canvas, 2);
     }
+    performance::set_phase(Phase::Styling);
+    for index in 0..6 {
+        let mut overrides = TokenOverrides::default();
+        overrides.set(Token::FontSize, TokenValue::Number(if index % 2 == 0 { 16.0 } else { 14.0 }));
+        canvas.world_mut().entity_mut(items[5]).insert(overrides);
+        advance(&mut canvas, 2);
+    }
+    canvas.world_mut().entity_mut(items[5]).remove::<TokenOverrides>();
+    advance(&mut canvas, 2);
+    performance::set_phase(Phase::Resize);
+    for index in 0..8 {
+        let size = Vec2::new(if index % 2 == 0 { 220.0 } else { 200.0 }, 160.0);
+        canvas.world_mut().get_mut::<native::canvas::CanvasItem>(items[5]).unwrap().size = size;
+        canvas.world_mut().get_mut::<native::layout::LayoutBox>(items[5]).unwrap().rules =
+            lince_interface::layout::Rules::fixed(size.to_array());
+        advance(&mut canvas, 2);
+    }
+    performance::set_phase(Phase::Description);
+    for index in 0..8 {
+        let source = format!("**Measured** description {index}\n\nSynthetic local preview.");
+        native::description::set(canvas.world_mut(), description, &source);
+        advance(&mut canvas, 2);
+        assert_eq!(canvas.app.world().get::<native::description::Description>(description).unwrap().source, source);
+    }
     performance::set_phase(Phase::Active);
     advance(&mut canvas, 48);
     let final_pixels = frame_pixels(&canvas.probe_frame().unwrap());
@@ -282,14 +312,14 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
             .world()
             .get::<bevy::text::EditableText>(editor)
             .unwrap()
-            .value(),
+            .value().to_string(),
         expected
     );
     performance::set_phase(Phase::ReturnQuiet);
     std::thread::sleep(std::time::Duration::from_millis(250));
     eprintln!(
         "Park workload {}",
-        serde_json::json!({"identity":"park-a0-combined-v1", "top_level_items":24,"outputs":2,"physical":false,"external_clients":false,"families":["square-scroll-list","plain-text","editable-text","operation","work-timer"],"missing":["file-backed-record-save","external-client-cohort","physical-presentation","3d-in-this-scene"],"pan_scope":"production-transform-derivation; not-device-to-visible-latency","quiet_scope":"no-forced-private-frame; not-installed-worker-idle-acceptance"})
+        serde_json::json!({"identity":"park-a0-combined-v2", "top_level_items":24,"outputs":2,"physical":false,"external_clients":false,"families":["square-scroll-list","plain-text","editable-text","operation","work-timer","description-markup"],"missing":["file-backed-record-save","external-client-cohort","physical-presentation","3d-in-this-scene","description-editor-sync-in-this-scene"],"pan_scope":"production-transform-derivation; not-device-to-visible-latency","quiet_scope":"no-forced-private-frame; not-installed-worker-idle-acceptance"})
     );
     assert!(
         performance::finish(std::time::Duration::from_secs(2)),

@@ -126,8 +126,13 @@ fn update(world: &mut World) {
         world
             .entity_mut(root)
             .insert(Refreshed(std::time::Instant::now()));
+        let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSync);
         let result = (|| {
-            let snapshot = capture(world, root)?;
+            let snapshot = {
+                let _capture = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
+                crate::host::performance::count(crate::host::performance::Count::NativeCanvasSnapshots);
+                capture(world, root)?
+            };
             let mut state = world
                 .get_mut::<Workspaces>(root)
                 .unwrap()
@@ -164,6 +169,7 @@ fn update(world: &mut World) {
                 if call.is_cancelled() {
                     continue;
                 }
+                crate::host::performance::count(crate::host::performance::Count::NativeCanvasCalls);
                 let result = handle_checked(world, root, &call.request, || call.is_cancelled());
                 let _ = call.complete(result);
             }

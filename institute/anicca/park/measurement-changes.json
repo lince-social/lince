@@ -8,9 +8,17 @@
       "owner": "measurement-report-accounting",
       "mechanism": "Classify elapsed/CPU/queue costs and publish source-linked bounded windows with histogram buckets, sequence/loss and final-delivery status.",
       "expected": "Complete comparable observations; report any capacity, clock or capture overhead. No performance percentage is claimed for new signals.",
-      "primary_metrics": ["counter/timing-capacity-exceeded"],
-      "secondary_metrics": ["stage/native-update", "stage/desktop-dispatch"],
-      "paths": ["crates/interface/src/host/performance.rs", "crates/interface/src/host/performance/accounting.rs"]
+      "primary_metrics": [
+        "counter/timing-capacity-exceeded"
+      ],
+      "secondary_metrics": [
+        "stage/native-update",
+        "stage/desktop-dispatch"
+      ],
+      "paths": [
+        "crates/interface/src/host/performance.rs",
+        "crates/interface/src/host/performance/accounting.rs"
+      ]
     },
     {
       "id": "a0-system-bodies",
@@ -18,9 +26,19 @@
       "owner": "bevy-system-observation",
       "mechanism": "Observe existing Bevy system spans on their actual executing threads without replacing their executor; separate inclusive and observed-nested exclusive owner CPU.",
       "expected": "Actual system-body CPU/wall samples and bounded loss reporting; diagnose capture cost with the same precompiled candidate.",
-      "primary_metrics": ["system/bevy_ui::layout::ui_layout_system/owner_cpu"],
-      "secondary_metrics": ["stage/native-main", "stage/native-update", "stage/render-update"],
-      "paths": ["crates/park/src/presentation/system_metrics.rs", "crates/park/src/runtime.rs", "crates/park/Cargo.toml"]
+      "primary_metrics": [
+        "system/bevy_ui::layout::ui_layout_system/owner_cpu"
+      ],
+      "secondary_metrics": [
+        "stage/native-main",
+        "stage/native-update",
+        "stage/render-update"
+      ],
+      "paths": [
+        "crates/park/src/presentation/system_metrics.rs",
+        "crates/park/src/runtime.rs",
+        "crates/park/Cargo.toml"
+      ]
     },
     {
       "id": "a0-asynchronous-render-diagnostics",
@@ -28,9 +46,43 @@
       "owner": "completed-native-pass-observation",
       "mechanism": "Reuse Bevy's asynchronous pass diagnostics in ordinary diagnostic captures, aggregate paths and distinguish completed GPU pass duration from host completion age.",
       "expected": "Supported completed GPU observations, with exact source-frame linkage explicitly unavailable; no synchronous readback for telemetry.",
-      "primary_metrics": ["stage/gpu-submission-to-completion"],
-      "secondary_metrics": ["stage/render-update", "stage/native-update"],
-      "paths": ["crates/park/src/presentation.rs", "crates/park/src/presentation/phase_metrics.rs"]
+      "primary_metrics": [
+        "stage/gpu-submission-to-completion"
+      ],
+      "secondary_metrics": [
+        "stage/render-update",
+        "stage/native-update"
+      ],
+      "paths": [
+        "crates/park/src/presentation.rs",
+        "crates/park/src/presentation/phase_metrics.rs"
+      ]
+    },
+    {
+      "id": "a0-native-family-work",
+      "task": "P152",
+      "owner": "native-family-work-observation",
+      "mechanism": "Count existing token/cache, metric, layout, description, surface and canvas-host work and bound the existing preparation, markup and synchronization stages without replacing production algorithms.",
+      "expected": "Separate visited, changed, prepared, retained and resized work by measured workflow; evaluate diagnostic overhead before interpreting small differences. No runtime speedup is claimed.",
+      "primary_metrics": [
+        "stage/native-token-prepare-and-collection",
+        "stage/native-description-markup",
+        "stage/native-canvas-host-synchronize"
+      ],
+      "secondary_metrics": [
+        "stage/native-main",
+        "stage/native-update",
+        "counter/style-runtime-cache-reads",
+        "counter/native-surface-targets-resized"
+      ],
+      "paths": [
+        "crates/interface/src/native/token_style/resolver.rs",
+        "crates/interface/src/native/token_metrics.rs",
+        "crates/interface/src/native/description.rs",
+        "crates/interface/src/native/layout/engine.rs",
+        "crates/interface/src/native/topology/presentation.rs",
+        "crates/interface/src/native/canvas_host.rs"
+      ]
     }
   ]
 }

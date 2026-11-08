@@ -454,6 +454,7 @@ fn derive(world: &mut World) -> SurfacePlan {
     let maximum = world
         .get_resource::<bevy::render::renderer::RenderDevice>()
         .map_or(4096, |device| device.limits().max_texture_dimension_2d);
+    crate::host::performance::add(crate::host::performance::Count::NativeSurfaceRequests, entries.len() as u64);
     let grants = surface_budget::allocate(&entries, surface_budget::BYTE_BUDGET, maximum);
     let diagnostics = surface_budget::Diagnostics {
         granted_bytes: entries
@@ -563,7 +564,9 @@ fn apply(world: &mut World, plan: SurfacePlan) {
             continue;
         }
         let visible = request.visible && grant.pixels != UVec2::ZERO;
+        if visible { crate::host::performance::count(crate::host::performance::Count::NativeSurfacesVisible); }
         if world.get::<Surface>(entity).is_none() {
+            crate::host::performance::count(crate::host::performance::Count::NativeSurfacesCreated);
             let image = world.resource_mut::<Assets<Image>>().add(image(pixels, format));
             let camera = world
                 .spawn((
@@ -669,12 +672,16 @@ fn apply(world: &mut World, plan: SurfacePlan) {
         if pixels != old_pixels || world.resource::<Assets<Image>>().get(&image_handle)
             .is_none_or(|image| image.texture_descriptor.format != format)
         {
+            crate::host::performance::count(crate::host::performance::Count::NativeSurfacesResized);
             let previous = image_handle.id();
             if let Some(mut retained) = world.get_mut::<RetainedImages>(entity) { retained.0.insert(previous); }
             else { world.entity_mut(entity).insert(RetainedImages(BTreeSet::from([previous]))); }
             image_handle = world.resource_mut::<Assets<Image>>().add(image(pixels, format));
             world.get_mut::<Surface>(entity).unwrap().image = image_handle.clone();
             world.get_mut::<SurfaceCapture>(camera).unwrap().0 = image_handle.clone();
+        }
+        else {
+            crate::host::performance::count(crate::host::performance::Count::NativeSurfacesReused);
         }
         crate::native::app::configure_output_color(world, camera, &image_handle);
         if let Some(retained) = world.get::<RetainedImages>(entity) {

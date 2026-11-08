@@ -462,6 +462,7 @@ pub(super) fn resolve(world: &mut World) {
         };
         if old != runtime || world.get::<LayoutRuntime>(entity).is_none() {
             world.entity_mut(entity).insert(runtime);
+            crate::host::performance::count(crate::host::performance::Count::NativeLayoutRuntimeChanged);
             changed = true;
         }
         if let Some(mut text_scroll) = world.get_mut::<TextScroll>(entity) {

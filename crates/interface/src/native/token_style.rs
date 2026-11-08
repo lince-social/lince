@@ -233,6 +233,7 @@ fn sizes(world: &mut World, mut state: Local<Sizes>) {
                 (entity, item.size, applied.map(|size| size.0), Vec2::ZERO)
             }),
     );
+    crate::host::performance::add(crate::host::performance::Count::SandSizesVisited, sands.len() as u64);
     for &(entity, size, previous, _) in sands.iter() {
         let mut values = overrides(world, entity);
         let baseline = previous.unwrap_or_else(|| {
@@ -274,6 +275,7 @@ fn sizes(world: &mut World, mut state: Local<Sizes>) {
     }
     for &(entity, size, previous, next) in sands.iter() {
         if size != next {
+            crate::host::performance::count(crate::host::performance::Count::SandSizesChanged);
             world.get_mut::<CanvasItem>(entity).unwrap().size = next;
         }
         if previous != Some(next) {

@@ -57,12 +57,19 @@ impl<S: Subscriber + for<'lookup> LookupSpan<'lookup>> tracing_subscriber::Layer
         id: &tracing::span::Id,
         context: Context<'_, S>,
     ) {
-        if attributes.metadata().name() != "system" {
-            return;
-        }
+        let commands = match attributes.metadata().name() {
+            "system" => false,
+            "system_commands" => true,
+            _ => return,
+        };
         let mut name = Name::default();
         attributes.record(&mut name);
-        if (name.0.starts_with("bevy_") || name.0.starts_with("lince_interface::"))
+        if commands {
+            name.0.push_str("::apply_deferred");
+        }
+        if (name.0.starts_with("bevy_")
+            || name.0.starts_with("lince_interface::")
+            || name.0.starts_with("lince_park::"))
             && name.0.len() <= 512
             && let Some(span) = context.span(id)
         {
@@ -179,6 +186,46 @@ mod tests {
             }
             ENTERED.with(|stack| assert_eq!(stack.borrow().len(), 1));
         }
+        ENTERED.with(|stack| assert!(stack.borrow().is_empty()));
+    }
+
+    #[test]
+    fn actual_bevy_system_and_deferred_commands_keep_their_names() {
+        use bevy::prelude::*;
+
+        #[derive(Resource, Default)]
+        struct Runs(u32);
+
+        fn named_body(mut commands: Commands, mut runs: ResMut<Runs>) {
+            ENTERED.with(|stack| {
+                assert!(
+                    stack
+                        .borrow()
+                        .iter()
+                        .any(|entry| entry.name.ends_with("::named_body")),
+                    "actual Bevy span is missing its static system name"
+                );
+            });
+            runs.0 += 1;
+            commands.queue(|world: &mut World| {
+                ENTERED.with(|stack| {
+                    assert!(
+                        stack
+                            .borrow()
+                            .iter()
+                            .any(|entry| entry.name.ends_with("::named_body::apply_deferred")),
+                        "deferred application is missing its owner"
+                    );
+                });
+                world.resource_mut::<Runs>().0 += 1;
+            });
+        }
+
+        let _observer = enter();
+        let mut app = App::new();
+        app.init_resource::<Runs>().add_systems(Update, named_body);
+        app.update();
+        assert_eq!(app.world().resource::<Runs>().0, 2);
         ENTERED.with(|stack| assert!(stack.borrow().is_empty()));
     }
 }

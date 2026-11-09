@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 mod accounting;
-pub use accounting::{Coverage, Phase, SystemReading, TimingKind};
+pub use accounting::{Coverage, Phase, SystemReading, SystemThreadReading, TimingKind};
 use std::{
     collections::BTreeMap,
     sync::{
@@ -96,6 +96,7 @@ stages! {
     NativeDescriptionEditors => "native-description-editor-scan",
     NativeCanvasSync => "native-canvas-host-synchronize",
     NativeCanvasSnapshot => "native-canvas-host-snapshot",
+    NativeAccessibleInputs => "native-accessible-input-values",
     NativeSandSizes => "native-sand-sizes",
     NativeIconColors => "native-icon-colors",
     NativeIconMetrics => "native-icon-metrics",
@@ -247,6 +248,10 @@ counts! {
     WindowPixelsCommit => "window-pixels-only-commits",
     WindowSemanticCommit => "window-semantic-commits",
     WindowCallbackCommit => "window-callback-only-commits",
+    UnchangedFrameDeferred => "output-unchanged-frames-deferred",
+    UnchangedFrameDelivered => "output-unchanged-frames-delivered",
+    AccessibleInputChecked => "accessible-input-values-checked",
+    AccessibleValueBytes => "accessible-input-value-bytes-materialized",
     WindowMetadataChange => "window-metadata-changes",
     ScenePublished => "native-scenes-published",
     SceneReceived => "native-scenes-received",
@@ -332,6 +337,15 @@ struct Distribution {
 }
 
 impl Distribution {
+    fn merge(&mut self, other: Self) {
+        self.count = self.count.saturating_add(other.count);
+        self.total_us = self.total_us.saturating_add(other.total_us);
+        self.maximum_us = self.maximum_us.max(other.maximum_us);
+        for (target, value) in self.buckets.iter_mut().zip(other.buckets) {
+            *target = target.saturating_add(value);
+        }
+    }
+
     fn record(&mut self, duration: Duration) {
         let micros = duration.as_micros().min(u128::from(u64::MAX)) as u64;
         self.count = self.count.saturating_add(1);
@@ -481,6 +495,7 @@ pub struct RenderDiagnostic {
 
 const SPAN_TRACE_LIMIT: usize = 2048;
 const SYSTEM_LIMIT: usize = 512;
+const SYSTEM_SHARDS: usize = 16;
 
 thread_local! {
     static THREAD_ID: u64 = {
@@ -503,7 +518,7 @@ pub struct CountReading {
 
 struct Monitor {
     stages: Vec<Mutex<Distribution>>,
-    systems: Mutex<BTreeMap<String, accounting::SystemSample>>,
+    systems: [Mutex<BTreeMap<String, accounting::SystemSample>>; SYSTEM_SHARDS],
     render_diagnostics: Mutex<BTreeMap<String, RenderDiagnostic>>,
     spans: Mutex<Vec<SpanReading>>,
     dropped_span_trace: AtomicU64,
@@ -547,7 +562,7 @@ impl Monitor {
                 .map(|_| Mutex::new(Distribution::default()))
                 .collect(),
             outputs: Mutex::new(BTreeMap::new()),
-            systems: Mutex::new(BTreeMap::new()),
+            systems: std::array::from_fn(|_| Mutex::new(BTreeMap::new())),
             render_diagnostics: Mutex::new(BTreeMap::new()),
             spans: Mutex::new(Vec::new()),
             dropped_span_trace: AtomicU64::new(0),
@@ -620,10 +635,15 @@ impl Monitor {
     fn snapshot(&self) -> Report {
         let ended = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
         let began = self.snapshot_at_us.swap(ended, Ordering::Relaxed);
-        let systems = self
-            .systems
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
+        let mut combined = BTreeMap::<String, accounting::SystemSample>::new();
+        for shard in &self.systems {
+            let samples =
+                std::mem::take(&mut *shard.lock().unwrap_or_else(|error| error.into_inner()));
+            for (name, sample) in samples {
+                combined.entry(name).or_default().merge(sample);
+            }
+        }
+        let systems = combined
             .iter_mut()
             .filter_map(|(name, sample)| sample.take(name))
             .collect::<Vec<_>>();
@@ -967,13 +987,18 @@ pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: D
     let Some(monitor) = monitor() else {
         return;
     };
-    if name.len() > 512 || !(name.starts_with("bevy_") || name.starts_with("lince_interface::")) {
+    if name.len() > 512
+        || !(name.starts_with("bevy_")
+            || name.starts_with("lince_interface::")
+            || name.starts_with("lince_park::"))
+    {
         monitor
             .dropped_system_samples
             .fetch_add(1, Ordering::Relaxed);
         return;
     }
-    let Ok(mut systems) = monitor.systems.try_lock() else {
+    let Ok(mut systems) = monitor.systems[(thread_id() % SYSTEM_SHARDS as u64) as usize].try_lock()
+    else {
         monitor
             .dropped_system_samples
             .fetch_add(1, Ordering::Relaxed);

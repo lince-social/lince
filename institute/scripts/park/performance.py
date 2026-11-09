@@ -67,6 +67,25 @@ def selected_cases(manifest, requested):
     return [case for case in cases if not requested or case["id"] in requested or case["id"] == "protein-first-interface"]
 
 
+def case_identity(manifest, case):
+    # These are workload sources, not production implementation hashes. A fix
+    # to one fixture must not invalidate independent unchanged controls.
+    source = {
+        "combined-native": "crates/park/src/presentation/tests/performance/combined.rs",
+        "gpu-passes": "crates/park/src/presentation/tests/performance/gpu.rs",
+        "typing-pixels": "crates/park/src/presentation/tests/performance/typing.rs",
+        "input-visible": "crates/park/src/runtime/latency/tests/visible.rs",
+    }.get(case["id"])
+    if case.get("edit_probe"):
+        source = "crates/interface/src/native/record_binding/performance_tests.rs"
+    fingerprint = manifest.get("fixture_sha256", {}).get(source)
+    if not fingerprint:
+        return None
+    return {"selector": case["selector"], "scope": case["scope"],
+            "environment": case.get("environment", {}), "fixture_sha256": {source: fingerprint},
+            "source_scope": "declared-case-fixture; shared-setup-changes-require-workload-version-bump"}
+
+
 def installed_runtime():
     installed = shutil.which("lince")
     if installed is None:
@@ -157,9 +176,38 @@ def runtime_prefix(requested):
     runtime = runtime.resolve(strict=True)
     loader, paths = elf_runtime(runtime)
     paths = paths.replace("${ORIGIN}", str(runtime.parent)).replace("$ORIGIN", str(runtime.parent))
+    # The ELF RUNPATH omits libraries loaded dynamically by Vulkan/EGL. Use the
+    # same declarative metadata as the installed wrapper, never execute/parse it.
+    metadata = runtime.parent.parent / "share/lince/runtime-environment.json"
+    graphics = {}
+    if metadata.is_file():
+        value = load_json(metadata)
+        if value.get("schema_version") != 1 or not isinstance(value.get("library_paths"), str):
+            raise ValueError("Invalid installed graphics runtime metadata")
+        defaults = value.get("defaults", {})
+        if set(defaults) != {"GBM_BACKENDS_PATH", "__EGL_VENDOR_LIBRARY_DIRS"} or any(
+            not isinstance(item, str) or not item for item in defaults.values()
+        ):
+            raise ValueError("Invalid installed graphics runtime defaults")
+        for key, default in defaults.items():
+            graphics[key] = os.environ.get(key, default)
+        libraries = value["library_paths"].split(":")
+        if any(not Path(path).is_absolute() or not Path(path).is_dir() for path in libraries):
+            raise ValueError("Installed graphics runtime library directory is unavailable")
+        paths = ":".join(dict.fromkeys(libraries + os.environ.get("LD_LIBRARY_PATH", "").split(":") + paths.split(":")))
+        paths = ":".join(path for path in paths.split(":") if path)
+        graphics["LD_LIBRARY_PATH"] = paths
     if not Path(loader).is_file() or not paths:
         raise ValueError("Installed runtime has no usable loader/library path")
-    return [loader, "--library-path", paths]
+    # Keep this dictionary attached to the selected runtime, not to the global
+    # Python environment; separate runs must not inherit each other's defaults.
+    return RuntimePrefix([loader, "--library-path", paths], graphics)
+
+
+class RuntimePrefix(list):
+    def __init__(self, command, environment):
+        super().__init__(command)
+        self.environment = environment
 
 
 def process_resources(pid):
@@ -213,6 +261,14 @@ def host_identity():
 
 def phase_observations(path, case):
     values = {phase: summarize(path, phase) for phase in case["phases"]}
+    for value in values.values():
+        value["transport_complete"] = not any(issue in value["issues"] for issue in (
+            "truncated-or-invalid-report", "unsupported-report-schema", "capture-start-missing",
+            "report-sequence-or-window-gap", "report-after-finalization", "no-supported-performance-reports",
+            "final-report-missing", "dropped-reports"))
+        # Lost bounded detail does not erase independent aggregate timings. Its
+        # loss remains explicit and causal/detail conclusions remain unavailable.
+        value["issues"] = list(value["aggregate_issues"])
     for phase, requirements in case.get("required_signals", {}).items():
         value = values[phase]
         for stage in requirements.get("stages", []):
@@ -221,7 +277,18 @@ def phase_observations(path, case):
         for counter in requirements.get("positive_counters", []):
             if value["counters"].get(counter, 0) <= 0:
                 value["issues"].append("required-work-unobserved:" + counter)
-        value["complete"] = not value["issues"]
+        for signal in requirements.get("coverage", []):
+            observed = next((item for item in value["coverage"] if item["signal"] == signal), {})
+            if not observed.get("status", "").startswith("observed"):
+                value["issues"].append("required-coverage-unobserved:" + signal)
+            if signal == "bevy-system-bodies" and not any(
+                key.startswith("system/") and reading.get("count", 0) > 0
+                for key, reading in value["stages"].items()
+            ):
+                value["issues"].append("required-system-rows-unobserved")
+    for value in values.values():
+        value["required_costs_complete"] = not value["issues"]
+        value["complete"] = value["required_costs_complete"]
     return values
 
 
@@ -233,6 +300,7 @@ def execute_case(root, manifest, case, output, prefix, capture):
         command.append("--ignored")
     environment = os.environ.copy()
     environment.update({"RUST_MIN_STACK": "33554432", "LINCE_TRACE_PERFORMANCE": "1" if capture else "0"})
+    environment.update(getattr(prefix, "environment", {}))
     environment.update(case.get("environment", {}))
     for key in ("LINCE_PARK_TEST_ORIGINAL_MAIN", "LINCE_PARK_TRACE_SYSTEMS"):
         environment.pop(key, None)
@@ -317,7 +385,9 @@ def run_suite(arguments):
     if arguments.capture == "on" and any(case.get("edit_probe") for case in cases) and filesystem["type"] in {"tmpfs", "ramfs", "unavailable"}:
         raise ValueError("Local-edit timing requires an identifiable disk-backed output directory; temporary fixture data stays beside the report")
     result = {"schema_version": 1, "revision": manifest["revision"], "manifest_sha256": digest(root / "manifest.json"),
+              "runtime": {"command_prefix": list(prefix), "graphics_environment": getattr(prefix, "environment", {})},
               "comparison_identity": {**manifest["comparison_identity"], "host": host_identity(), "fixture_filesystem": filesystem}, "phases": {}, "checks": [],
+              "case_identities": {case["id"]: identity for case in cases if (identity := case_identity(manifest, case)) is not None},
               "unavailable": manifest.get("unavailable", [])}
     try:
         for case in cases:
@@ -382,6 +452,11 @@ def suite_cases():
                             "LINCE_EDIT_PROBE_FIELD": field, "LINCE_EDIT_PROBE_POSITION": "end",
                             "LINCE_EDIT_PROBE_SUBSCRIPTIONS": str(subscriptions)},
         })
+    for case in cases:
+        if case.get("performance") and not case.get("edit_probe"):
+            for phase in case["phases"]:
+                if phase not in {"quiet", "return-quiet"}:
+                    case.setdefault("required_signals", {}).setdefault(phase, {})["coverage"] = ["bevy-system-bodies"]
     return cases
 
 

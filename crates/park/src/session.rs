@@ -61,6 +61,7 @@ use std::{
 mod display;
 mod devices;
 mod power;
+mod pacing;
 mod readiness;
 #[cfg(all(test, feature = "server-tests"))]
 pub(crate) use power::Frame as PowerFrame;
@@ -109,6 +110,7 @@ struct Screen {
     origin: [i32; 2],
     logical_size: [i32; 2],
     pending: bool,
+    pacing: pacing::Pacing<Queued>,
     texture: Option<GlesTexture>,
     adaptive_sync: lince_interface::host::display::AdaptiveSyncStatus,
     color: display::color::State,
@@ -366,6 +368,12 @@ pub fn run(
                                 }
                             };
                             if let Some(queued) = submitted {
+                                let now = Instant::now();
+                                let observed = if hardware_clock {
+                                    now.checked_sub(crate::desktop::renderer::capture::monotonic()
+                                        .saturating_sub(presentation_time)).unwrap_or(now)
+                                } else { now };
+                                screen.pacing.presented(observed);
                                 lince_interface::host::performance::presented(queued.id, presentation_time, hardware_clock);
                                 if crate::runtime::tracing_frames() {
                                     let observed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
@@ -465,6 +473,7 @@ pub fn run(
             desktop.redraw |= composition.imports_changed();
             desktop.repeat_key(started.elapsed().as_millis() as u32)?;
             if hardware.active {
+                hardware.flush_estimated(&mut desktop, started.elapsed().as_millis() as u32)?;
                 let submission_ready = match hardware.flush_prepared(&mut desktop.server) {
                     Ok(invalidated) => { desktop.redraw |= invalidated; true },
                     Err(failure) => {
@@ -501,7 +510,6 @@ pub fn run(
                         let submitted = match hardware.render(
                             &mut composition,
                             &mut desktop,
-                            started.elapsed().as_millis() as u32,
                         ) {
                             Ok(submitted) => submitted,
                             Err(failure) => {
@@ -535,7 +543,7 @@ pub fn run(
                 let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::EventLoopWait);
                 event_loop
                     .dispatch(desktop.repeat_timeout().into_iter().chain(hardware.configuration_timeout()).chain(hardware.power_timeout()).chain(desktop.server.output_power_timeout()).chain(desktop.server.display_timeout()).chain(desktop.server.control_timeout()).chain(desktop.scene_timeout())
-                        .chain(desktop.server.capture_timeout()).chain(composition.capture_timeout()).chain(readiness.timeout()).min(), &mut events)
+                        .chain(desktop.server.capture_timeout()).chain(composition.capture_timeout()).chain(readiness.timeout()).chain(hardware.callback_timeout()).min(), &mut events)
                     .map_err(error)?;
             }
         }
@@ -560,6 +568,7 @@ impl Hardware {
         vt_keys.clear();
         desktop.server.tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
         for screen in self.screens.values_mut() {
+            screen.pacing.cancel();
             lince_interface::host::performance::retire_output(screen.id);
             screen.power.pause(&mut desktop.server, screen.pending && screen.prepared.is_none());
             if let Some(prepared) = screen.prepared.take() { self.retired.push(prepared); }
@@ -763,7 +772,6 @@ impl Hardware {
         &mut self,
         composition: &mut Composition,
         desktop: &mut Desktop,
-        time: u32,
     ) -> io::Result<bool> {
         let Some(completed) = desktop
             .pending
@@ -810,6 +818,7 @@ impl Hardware {
                 )
                 .map_err(error)?;
             if !frame.is_empty {
+                screen.pacing.cancel();
                 let needs_sync = frame.needs_sync();
                 let rendered_sync = if let smithay::backend::drm::compositor::PrimaryPlaneElement::Swapchain(
                         element,
@@ -848,12 +857,45 @@ impl Hardware {
                 }
                 screen.pending = true;
             } else {
-                screen.protected = presented.locked;
-                desktop.output_presented(screen.id, completed.clone(), presented.clone(), crate::desktop::renderer::capture::monotonic(), time, false)?;
+                drop(frame);
+                if let Some(power) = power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
+                    && power::may_submit(screen, &desktop.server)
+                    && presented.locked == desktop.server.locked()
+                {
+                    screen.pacing.defer(Instant::now(), Queued {
+                        id: screen.id, frame: completed.clone(), scene: presented,
+                        adaptive_sync: None, color: screen.color.submitted(), power,
+                    });
+                    lince_interface::host::performance::count(lince_interface::host::performance::Count::UnchangedFrameDeferred);
+                }
             }
         }
         desktop.redraw = false;
         Ok(true)
+    }
+
+    fn callback_timeout(&self) -> Option<std::time::Duration> {
+        if !self.active { return None; }
+        let now = Instant::now();
+        self.screens.values().filter(|screen| screen.power.on && !screen.pending)
+            .filter_map(|screen| screen.pacing.timeout(now)).min()
+    }
+
+    fn flush_estimated(&mut self, desktop: &mut Desktop, time: u32) -> io::Result<()> {
+        let now = Instant::now();
+        for screen in self.screens.values_mut() {
+            if !screen.power.on { screen.pacing.cancel(); continue; }
+            if screen.pending { continue; }
+            let Some(queued) = screen.pacing.take_due(now) else { continue; };
+            if !queued.power.current(&desktop.server, screen.id, screen.power.epoch)
+                || queued.scene.locked != desktop.server.locked()
+            { continue; }
+            screen.protected = queued.scene.locked;
+            lince_interface::host::performance::count(lince_interface::host::performance::Count::UnchangedFrameDelivered);
+            desktop.output_presented(screen.id, queued.frame, queued.scene,
+                crate::desktop::renderer::capture::monotonic(), time, false)?;
+        }
+        Ok(())
     }
 
     fn flush_prepared(&mut self, server: &mut Server) -> io::Result<bool> {

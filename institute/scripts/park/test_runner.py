@@ -89,6 +89,29 @@ class RunnerTests(unittest.TestCase):
                 "typing": {"stages": ["native-main"], "positive_counters": ["real-work"]}}}
             self.assertTrue(runner.phase_observations(path, case)["typing"]["complete"])
 
+    def test_transport_success_cannot_hide_missing_required_system_bodies(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "performance.jsonl"
+            path.write_text("Lince performance " + json.dumps(window()) + "\n")
+            case = {"phases": ["typing"], "required_signals": {
+                "typing": {"coverage": ["bevy-system-bodies"]}}}
+            value = runner.phase_observations(path, case)["typing"]
+            self.assertTrue(value["transport_complete"])
+            self.assertFalse(value["required_costs_complete"])
+            self.assertIn("required-system-rows-unobserved", value["issues"])
+
+    def test_optional_detail_loss_keeps_aggregate_costs_and_loss_explicit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "performance.jsonl"
+            report = window()
+            report["dropped_span_trace"] = 1
+            path.write_text("Lince performance " + json.dumps(report) + "\n")
+            value = runner.phase_observations(path, {"phases": ["typing"]})["typing"]
+            self.assertTrue(value["complete"])
+            self.assertFalse(value["detailed_traces_complete"])
+            self.assertEqual(value["detail_issues"], ["dropped_span_trace"])
+            self.assertGreater(value["stages"]["stage/native-main"]["count"], 0)
+
     def test_passing_test_processes_cannot_hide_incomplete_measurements(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -145,6 +168,37 @@ class RunnerTests(unittest.TestCase):
             ), patch.object(runner.subprocess, "run") as run:
                 self.assertEqual(runner.runtime_prefix(None), [str(loader), "--library-path", f"{directory}/lib:{directory}/deps"])
                 run.assert_not_called()
+
+    def test_nix_graphics_metadata_reaches_explicit_loader_and_child_environment(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "bin").mkdir()
+            (directory / "share/lince").mkdir(parents=True)
+            libraries = directory / "graphics-libs"
+            libraries.mkdir()
+            elf, loader = directory / "bin/.lince-wrapped", directory / "loader"
+            elf.touch()
+            loader.touch()
+            metadata = {"schema_version": 1, "library_paths": str(libraries), "defaults": {
+                "GBM_BACKENDS_PATH": "/packaged/gbm", "__EGL_VENDOR_LIBRARY_DIRS": "/packaged/egl"}}
+            (directory / "share/lince/runtime-environment.json").write_text(json.dumps(metadata))
+            with patch.dict(runner.os.environ, {"LD_LIBRARY_PATH": "/host/libs", "GBM_BACKENDS_PATH": "/host/gbm"}, clear=True), patch.object(
+                runner, "elf_runtime", return_value=(str(loader), "/elf/libs:/host/libs")
+            ), patch.object(runner.subprocess, "run") as run:
+                prefix = runner.runtime_prefix(elf)
+                self.assertEqual(prefix[2], f"{libraries}:/host/libs:/elf/libs")
+                self.assertEqual(prefix.environment, {"LD_LIBRARY_PATH": prefix[2],
+                    "GBM_BACKENDS_PATH": "/host/gbm", "__EGL_VENDOR_LIBRARY_DIRS": "/packaged/egl"})
+                self.assertNotIn("__EGL_VENDOR_LIBRARY_DIRS", runner.os.environ)
+                run.assert_not_called()
+            with patch.dict(runner.os.environ, {"GBM_BACKENDS_PATH": ""}, clear=True), patch.object(
+                runner, "elf_runtime", return_value=(str(loader), "/elf/libs")
+            ):
+                self.assertEqual(runner.runtime_prefix(elf).environment["GBM_BACKENDS_PATH"], "")
+            libraries.rmdir()
+            with patch.object(runner, "elf_runtime", return_value=(str(loader), "/elf/libs")):
+                with self.assertRaisesRegex(ValueError, "directory is unavailable"):
+                    runner.runtime_prefix(elf)
 
     def test_elf_metadata_reads_interpreter_and_runpath_without_sections_or_external_tools(self):
         with tempfile.TemporaryDirectory() as temporary:

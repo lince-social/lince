@@ -95,6 +95,8 @@ def summarize(path, phase=None):
     outputs = {}
     render = {}
     coverage = {}
+    system_threads = {}
+    unattributed_thread_samples = 0
     reports = 0
     issues = []
     windows = {}
@@ -145,6 +147,12 @@ def summarize(path, phase=None):
             for system in report.get("systems", []):
                 for metric in ("wall", "owner_cpu", "exclusive_owner_cpu"):
                     stages[f"system/{system['system']}/{metric}"].add(system[metric], report["histogram_limits_us"])
+                unattributed_thread_samples += nonnegative(system.get("unattributed_thread_samples", 0), "unattributed thread samples")
+                for thread in system.get("executing_threads", []):
+                    key = (process, system["system"], thread["thread"])
+                    value = system_threads.setdefault(key, {"samples": 0, "owner_cpu_us": 0, "exclusive_owner_cpu_us": 0})
+                    for field in value:
+                        value[field] += nonnegative(thread[field], "system thread " + field)
             for output in report["outputs"]:
                 key = (process, output["output"], output["clock"])
                 value = outputs.setdefault(key, {"interval": Distribution(), "presentations": 0})
@@ -171,6 +179,8 @@ def summarize(path, phase=None):
     if counters["timing-capacity-exceeded"] or counters["timing-timestamps-rejected"]:
         issues.append("timing-capacity-or-clock-rejection")
     duration = sum(durations.values())
+    detail_issues = sorted(set(issues) & {"dropped_input_trace", "dropped_span_trace"})
+    aggregate_issues = sorted(set(issues) - set(detail_issues))
     return {
         "schema_version": 1,
         "scope": "reported-process-windows; inclusive-stages-are-not-additive",
@@ -180,9 +190,17 @@ def summarize(path, phase=None):
         "process_count": len(windows),
         "complete": not issues,
         "issues": sorted(set(issues)),
+        "aggregates_complete": not aggregate_issues,
+        "aggregate_issues": aggregate_issues,
+        "detailed_traces_complete": not issues,
+        "detail_issues": detail_issues,
         "stages": {key: value.result(duration) for key, value in sorted(stages.items())},
         "counters": {name: counters[name] for name in sorted(counter_catalog | counters.keys())},
         "coverage": list(coverage.values()),
+        "system_threads": [{"process": process, "system": name, "thread": thread, **value}
+                           for (process, name, thread), value in sorted(system_threads.items())],
+        "system_thread_scope": "executing-thread-ids-local-to-each-process; not-physical-cores-or-cross-run-identities",
+        "unattributed_system_thread_samples": unattributed_thread_samples,
         "outputs": [{
             "process": process, "output": output, "clock": clock,
             "presentations": value["presentations"],
@@ -256,11 +274,22 @@ def compare(before, after, changes):
         raise ValueError("No measured phases to compare")
     identity_before = before.get("comparison_identity")
     identity_after = after.get("comparison_identity")
+    per_case = bool(before.get("case_identities")) and bool(after.get("case_identities"))
+    if per_case:
+        identity_before = {key: value for key, value in identity_before.items() if key != "workload_sha256"}
+        identity_after = {key: value for key, value in identity_after.items() if key != "workload_sha256"}
     if not identity_before or identity_before != identity_after:
         raise ValueError("Workload, quality, build-profile or observation-scope identity differs")
     rows = []
     missing = []
     for phase in sorted(set(before["phases"]) | set(after["phases"])):
+        if per_case:
+            case = phase.partition("/")[0]
+            a = before["case_identities"].get(case)
+            b = after["case_identities"].get(case)
+            if not a or not b or a != b:
+                missing.append({"phase": phase, "reason": "case-workload-identity-missing-or-different"})
+                continue
         left = before["phases"].get(phase)
         right = after["phases"].get(phase)
         if left is None or right is None:

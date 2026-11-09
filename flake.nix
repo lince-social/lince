@@ -87,6 +87,20 @@
 
       runtimeTools = pkgs: [ pkgs.bash pkgs.dbus pkgs.coreutils pkgs.ffmpeg ];
 
+      graphicsRuntime = pkgs: libraries: {
+        schema_version = 1;
+        library_paths = pkgs.lib.makeLibraryPath libraries;
+        defaults = {
+          GBM_BACKENDS_PATH = "${pkgs.mesa}/lib/gbm";
+          __EGL_VENDOR_LIBRARY_DIRS = "${pkgs.mesa}/share/glvnd/egl_vendor.d";
+        };
+      };
+
+      installGraphicsRuntime = pkgs: libraries: ''
+        install -Dm644 ${pkgs.writeText "lince-graphics-runtime.json" (builtins.toJSON (graphicsRuntime pkgs libraries))} \
+          "$out/share/lince/runtime-environment.json"
+      '';
+
       captureGraphicsEnvironment = pkgs:
         pkgs.lib.concatMapStringsSep "\n" (name: ''
           if [ "${"$" + "{LINCE_HOST_" + name + "+x}"}" != x ]; then
@@ -103,12 +117,12 @@
           esac
         '') [ "LD_LIBRARY_PATH" "GBM_BACKENDS_PATH" "__EGL_VENDOR_LIBRARY_DIRS" ];
 
-      graphicsWrapperArgs = pkgs: libraries:
+      graphicsWrapperArgs = pkgs: libraries: let runtime = graphicsRuntime pkgs libraries; in
         [ "--run" (captureGraphicsEnvironment pkgs) ]
         ++ [
-          "--set-default" "GBM_BACKENDS_PATH" "${pkgs.mesa}/lib/gbm"
-          "--set-default" "__EGL_VENDOR_LIBRARY_DIRS" "${pkgs.mesa}/share/glvnd/egl_vendor.d"
-          "--prefix" "LD_LIBRARY_PATH" ":" (pkgs.lib.makeLibraryPath libraries)
+          "--set-default" "GBM_BACKENDS_PATH" runtime.defaults.GBM_BACKENDS_PATH
+          "--set-default" "__EGL_VENDOR_LIBRARY_DIRS" runtime.defaults.__EGL_VENDOR_LIBRARY_DIRS
+          "--prefix" "LD_LIBRARY_PATH" ":" runtime.library_paths
         ];
 
       installParkSession = ''
@@ -144,6 +158,7 @@
             install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
             install -Dm644 revision "$out/share/lince/revision"
             install -Dm644 build-info.json "$out/share/lince/build-info.json"
+            ${installGraphicsRuntime pkgs libraries}
             install -Dm755 bin/lince-park-session "$out/bin/lince-park-session"
             install -Dm644 share/wayland-sessions/lince.desktop "$out/share/wayland-sessions/lince.desktop"
             substituteInPlace "$out/share/wayland-sessions/lince.desktop" \
@@ -1031,7 +1046,8 @@
                 install -Dm644 institute/packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
                 install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
-              '' + lib.optionalString withPark (''
+              '' + lib.optionalString (pkgs.stdenv.hostPlatform.isLinux && ui) (installGraphicsRuntime pkgs interfaceLinuxRuntimeLibraries)
+              + lib.optionalString withPark (''
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"
                 install -Dm644 crates/vendor/smithay/LICENSE.txt "$out/share/licenses/smithay/LICENSE.txt"
@@ -1286,7 +1302,7 @@
                   lib.any (package: toString package == toString pkgs.hello) config.environment.systemPackages;
               in
               {
-                park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs; };
+                park-launch = import ./institute/packaging/linux/launch-checks.nix { inherit pkgs graphicsWrapperArgs installGraphicsRuntime; };
                 park-session = import ./institute/packaging/linux/park-checks.nix { inherit self nixpkgs pkgs system; };
                 park-source-install = pkgs.runCommand "park-source-install-contract" { nativeBuildInputs = [ pkgs.jq ]; } ''
                   mkdir -p "$out/bin"

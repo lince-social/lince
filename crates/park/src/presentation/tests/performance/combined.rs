@@ -2,7 +2,7 @@ use super::*;
 use super::schedules::frame_pixels;
 use bevy::{
     input::keyboard::Key,
-    input_focus::{FocusCause, InputFocus},
+    input_focus::InputFocus,
     math::DVec2,
 };
 use lince_interface::{
@@ -167,9 +167,6 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
         );
     }
     drop(first);
-    performance::set_phase(Phase::Quiet);
-    std::thread::sleep(std::time::Duration::from_millis(250));
-    performance::set_phase(Phase::Typing);
     let editor = {
         let world = canvas.world_mut();
         let mut query = world.query::<(Entity, &bevy::text::EditableText)>();
@@ -189,12 +186,24 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
             })
             .unwrap()
     };
-    canvas
-        .world_mut()
-        .resource_mut::<InputFocus>()
-        .set(editor, FocusCause::Navigated);
+    let (output, points) = canvas.native_test_points(editor).expect("visible editable Sand");
+    canvas.focus_output(output).unwrap();
+    let center = std::array::from_fn(|axis| {
+        (points.iter().map(|point| point[axis]).sum::<f64>() / 4.0) as f32
+    });
+    canvas.pointer(center).unwrap();
+    advance(&mut canvas, 1);
+    canvas.button(bevy::input::mouse::MouseButton::Left, true).unwrap();
+    advance(&mut canvas, 1);
+    canvas.button(bevy::input::mouse::MouseButton::Left, false).unwrap();
+    advance(&mut canvas, 1);
+    assert_eq!(canvas.app.world().resource::<InputFocus>().get(), Some(editor), "pointer focus handshake");
+    performance::set_phase(Phase::Quiet);
+    std::thread::sleep(std::time::Duration::from_millis(250));
+    performance::set_phase(Phase::Typing);
     let mut expected = String::new();
-    for _ in 0..24 {
+    for round in 0..24 {
+        assert_eq!(canvas.app.world().resource::<InputFocus>().get(), Some(editor), "focus before Unicode key {round}");
         canvas
             .key(
                 KeyCode::KeyE,
@@ -222,7 +231,11 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
                 .get::<bevy::text::EditableText>(editor)
                 .unwrap()
                 .value().to_string(),
-            expected
+            expected,
+            "Unicode key {round}: focus={:?}, pending_edits={:?}, output={:?}",
+            canvas.app.world().resource::<InputFocus>().get(),
+            canvas.app.world().get::<bevy::text::EditableText>(editor).unwrap().pending_edits,
+            canvas.output_state.assignments.focused(),
         );
     }
     performance::set_phase(Phase::Scroll);

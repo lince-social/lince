@@ -1,4 +1,4 @@
-{ pkgs, graphicsWrapperArgs }:
+{ pkgs, graphicsWrapperArgs, installGraphicsRuntime }:
 let
   launcher = pkgs.runCommand "park-launch-fixture" {
     nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -16,6 +16,7 @@ let
     PROGRAM
     chmod +x "$out/bin/lince"
     wrapProgram "$out/bin/lince" ${pkgs.lib.escapeShellArgs (graphicsWrapperArgs pkgs [ pkgs.stdenv.cc.cc.lib ])}
+    ${installGraphicsRuntime pkgs [ pkgs.stdenv.cc.cc.lib ]}
     cp ${./lince-park-session} "$out/bin/lince-park-session"
     substituteInPlace "$out/bin/lince-park-session" --replace-fail \
       'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
@@ -23,7 +24,7 @@ let
     patchShebangs "$out/bin/lince-park-session"
   '';
 in pkgs.runCommand "park-launch-contracts" {
-  nativeBuildInputs = [ pkgs.dbus pkgs.coreutils ];
+  nativeBuildInputs = [ pkgs.dbus pkgs.coreutils pkgs.python3 ];
 } ''
   env -u LD_LIBRARY_PATH -u GBM_BACKENDS_PATH -u __EGL_VENDOR_LIBRARY_DIRS \
     DBUS_SESSION_BUS_ADDRESS=existing-bus ${launcher}/bin/lince-park-session 'literal $(touch unexpected)' > unset
@@ -38,6 +39,15 @@ in pkgs.runCommand "park-launch-contracts" {
     ${launcher}/bin/lince --graphics > normalized-unset
   printf '%s\n' '${pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]}' '${pkgs.mesa}/lib/gbm' '${pkgs.mesa}/share/glvnd/egl_vendor.d' > expected
   cmp normalized-unset expected
+  python3 - '${launcher}/share/lince/runtime-environment.json' normalized-unset <<'PY'
+  import json, pathlib, sys
+  metadata = json.loads(pathlib.Path(sys.argv[1]).read_text())
+  actual = pathlib.Path(sys.argv[2]).read_text().splitlines()
+  assert metadata['schema_version'] == 1
+  assert metadata['library_paths'] == actual[0]
+  assert metadata['defaults']['GBM_BACKENDS_PATH'] == actual[1]
+  assert metadata['defaults']['__EGL_VENDOR_LIBRARY_DIRS'] == actual[2]
+  PY
   env LD_LIBRARY_PATH=/outer/private GBM_BACKENDS_PATH=/outer/gbm __EGL_VENDOR_LIBRARY_DIRS=/outer/egl \
     LINCE_HOST_LD_LIBRARY_PATH=1host-original LINCE_HOST_GBM_BACKENDS_PATH=1 LINCE_HOST___EGL_VENDOR_LIBRARY_DIRS='1host egl' \
     ${launcher}/bin/lince --graphics > normalized-overrides

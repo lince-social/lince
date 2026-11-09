@@ -1,87 +1,116 @@
 {
   "schema_version": 1,
-  "purpose": "A0 instrumentation delivery. New observations are not claimed runtime speedups; establish a comparable baseline before A1.",
+  "purpose": "Performance-only candidate after the 3fdc9356 Park visit: two independent runtime work reductions plus the minimal measurement repairs needed to judge them. No retained optimization toggles and no pre-measurement desktop speedup claim.",
   "changes": [
     {
-      "id": "a0-bounded-accounting",
-      "task": "P151",
-      "owner": "measurement-report-accounting",
-      "mechanism": "Classify elapsed/CPU/queue costs and publish source-linked bounded windows with histogram buckets, sequence/loss and final-delivery status.",
-      "expected": "Complete comparable observations; report any capacity, clock or capture overhead. No performance percentage is claimed for new signals.",
+      "id": "required-cost-coverage",
+      "task": "P151/P155",
+      "owner": "measurement-report-contract",
+      "mechanism": "Require observed real system rows in renderer phases; separate report transport, aggregate costs and bounded optional detail loss; compare independently unchanged case identities.",
+      "expected": "Missing costs remain unavailable rather than a zero-cost success. Unchanged controls survive a repair to another fixture; no runtime speedup is claimed.",
       "primary_metrics": [
         "counter/timing-capacity-exceeded"
       ],
       "secondary_metrics": [
-        "stage/native-update",
-        "stage/desktop-dispatch"
+        "stage/native-update"
       ],
       "paths": [
-        "crates/interface/src/host/performance.rs",
-        "crates/interface/src/host/performance/accounting.rs"
+        "institute/scripts/park/performance.py",
+        "institute/scripts/park/report.py"
       ]
     },
     {
-      "id": "a0-system-bodies",
+      "id": "actual-bevy-system-names",
       "task": "P152",
       "owner": "bevy-system-observation",
-      "mechanism": "Observe existing Bevy system spans on their actual executing threads without replacing their executor; separate inclusive and observed-nested exclusive owner CPU.",
-      "expected": "Actual system-body CPU/wall samples and bounded loss reporting; diagnose capture cost with the same precompiled candidate.",
+      "mechanism": "Retain only bevy_utils static debug names, observe actual system/deferred spans with bounded per-thread producer shards, merge system histograms and retain executing-thread CPU totals; skip the observer completely when diagnostic capture is off.",
+      "expected": "Recognizable body and deferred-owner CPU samples on the executing threads, with capture-on/off cost checked before interpreting small changes.",
       "primary_metrics": [
         "system/bevy_ui::layout::ui_layout_system/owner_cpu"
       ],
       "secondary_metrics": [
         "stage/native-main",
-        "stage/native-update",
         "stage/render-update"
       ],
       "paths": [
+        "crates/park/Cargo.toml",
         "crates/park/src/presentation/system_metrics.rs",
-        "crates/park/src/runtime.rs",
-        "crates/park/Cargo.toml"
+        "crates/interface/src/host/performance.rs",
+        "crates/interface/src/host/performance/accounting.rs",
+        "crates/park/src/presentation.rs",
+        "crates/park/src/runtime.rs"
       ]
     },
     {
-      "id": "a0-asynchronous-render-diagnostics",
-      "task": "P153",
-      "owner": "completed-native-pass-observation",
-      "mechanism": "Reuse Bevy's asynchronous pass diagnostics in ordinary diagnostic captures, aggregate paths and distinguish completed GPU pass duration from host completion age.",
-      "expected": "Supported completed GPU observations, with exact source-frame linkage explicitly unavailable; no synchronous readback for telemetry.",
+      "id": "mixed-fixture-pointer-focus",
+      "task": "P154",
+      "owner": "mixed-fixture-readiness",
+      "mechanism": "Complete real pointer press/release focus frames before the Unicode phase instead of setting InputFocus directly; retain every per-key exact-text assertion and add focus diagnostics.",
+      "expected": "Candidate repair requiring a Park run; if key two still fails, retain the failure and diagnose it. No measured runtime gain or established root cause is claimed.",
       "primary_metrics": [
-        "stage/gpu-submission-to-completion"
+        "stage/native-input-catalog"
       ],
       "secondary_metrics": [
-        "stage/render-update",
         "stage/native-update"
       ],
       "paths": [
-        "crates/park/src/presentation.rs",
-        "crates/park/src/presentation/phase_metrics.rs"
+        "crates/park/src/presentation/tests/performance/combined.rs"
       ]
     },
     {
-      "id": "a0-native-family-work",
-      "task": "P152",
-      "owner": "native-family-work-observation",
-      "mechanism": "Count existing token/cache, metric, layout, description, surface and canvas-host work and bound the existing preparation, markup and synchronization stages without replacing production algorithms.",
-      "expected": "Separate visited, changed, prepared, retained and resized work by measured workflow; evaluate diagnostic overhead before interpreting small differences. No runtime speedup is claimed.",
+      "id": "automatic-nix-graphics-runtime",
+      "task": "P156",
+      "owner": "prepared-test-graphics-runtime",
+      "mechanism": "Generate wrapper and installed graphics metadata from the same Nix values, pass dynamic graphics libraries through the explicit ELF loader, and preserve caller driver overrides.",
+      "expected": "Prepared cases find the installed hardware adapter without the private environment adapter or manual library paths. No runtime speedup is claimed.",
       "primary_metrics": [
-        "stage/native-token-prepare-and-collection",
-        "stage/native-description-markup",
-        "stage/native-canvas-host-synchronize"
+        "counter/native-phase-missing-schedules"
+      ],
+      "secondary_metrics": [],
+      "paths": [
+        "flake.nix",
+        "institute/scripts/park/performance.py"
+      ]
+    },
+    {
+      "id": "unchanged-output-callback-pacing",
+      "task": "P53",
+      "owner": "output-no-damage-callback-demand",
+      "mechanism": "Keep one demand-driven estimated-refresh frame per output; anchor to hardware presentation, preserve the original replacement deadline, retire estimates on actual submission/invalidation, and keep input/capture dispatch independent.",
+      "expected": "No unbounded immediate callback loop on unchanged scanout. Count exercised estimates and compare client work, CPU, frame age and output intervals; an unexercised branch is not a speedup.",
+      "primary_metrics": [
+        "counter/output-unchanged-frames-deferred",
+        "counter/output-unchanged-frames-delivered"
+      ],
+      "secondary_metrics": [
+        "stage/native-pixels",
+        "stage/desktop-dispatch",
+        "counter/window-callback-only-commits"
+      ],
+      "paths": [
+        "crates/park/src/session/pacing.rs",
+        "crates/park/src/session.rs",
+        "crates/park/src/session/display.rs"
+      ]
+    },
+    {
+      "id": "retain-unchanged-accessibility-values",
+      "task": "P131",
+      "owner": "accessible-input-value-materialization",
+      "mechanism": "Use component change state and borrowed SplitString equality before making a new accessibility value; preserve masking, registration and replaced external values, without another cache.",
+      "expected": "Zero materialized value bytes for unchanged inputs, correct Unicode and secret-policy transitions, with total CPU and input tails checked on the candidate.",
+      "primary_metrics": [
+        "stage/native-accessible-input-values",
+        "counter/accessible-input-value-bytes-materialized"
       ],
       "secondary_metrics": [
         "stage/native-main",
         "stage/native-update",
-        "counter/style-runtime-cache-reads",
-        "counter/native-surface-targets-resized"
+        "counter/accessible-input-values-checked"
       ],
       "paths": [
-        "crates/interface/src/native/token_style/resolver.rs",
-        "crates/interface/src/native/token_metrics.rs",
-        "crates/interface/src/native/description.rs",
-        "crates/interface/src/native/layout/engine.rs",
-        "crates/interface/src/native/topology/presentation.rs",
-        "crates/interface/src/native/canvas_host.rs"
+        "crates/interface/src/native/accessibility.rs",
+        "crates/interface/src/host/performance.rs"
       ]
     }
   ]

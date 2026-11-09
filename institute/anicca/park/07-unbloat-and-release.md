@@ -2,7 +2,7 @@
 
 [Organization and execution order](Park.md). Targets are in [benchmarks](08-benchmarks.md); interaction coverage is in [workflows](09-workflows.md).
 
-**Stage assignment:** P86/P89/P88/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
+**Stage assignment:** P86/P89/P88/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148/P157 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
 
 Follow [12's session cycle](12-measurement-and-delivery.md). Useful local checks and test compilation are allowed in Niri; CI normally produces the optimized application. Compiler choices describe source/profile-identified artifacts, not extra production algorithm paths. Park timing runs use explicitly prepared matching artifacts without compilation, then evidence/plan updates end the visit.
 
@@ -55,6 +55,12 @@ The user accepts slower production compilation for a better runtime binary. Test
 - [ ] **P99 — Test representative profile-guided optimization for the selected release profile.**
 
     **Why:** actual branch/call frequency can guide optimization beyond generic compiler settings. **Scope:** after the major runtime changes stabilize, train an instrumented candidate on normal native content, interaction and client activity; merge profiles with a matching LLVM toolchain and evaluate the final non-instrumented artifact. Keep flags/source consistent between training and use. **Verify:** held-out daily workloads, startup and correctness, stale/missing profile diagnostics and repeatability. Do not train solely on the Firefox FPS fixture or benchmark the instrumented binary as the final result. Keep this conditional on a maintainable release workflow and measured benefit.
+
+## Extra delivery work found during the Park visit
+
+- [ ] **P157 — Remove the unused application ELF from the validation download.**
+
+    **Why:** the matching validation ZIP is 914,534,215 bytes and duplicates a 954,940,776-byte uncompressed application ELF, although every selected case executes only interface/Park test artifacts. The application is already delivered separately. This slows each measurement cycle and consumes cache/storage; it is a Stage B delivery gain, not a desktop FPS improvement. **Build:** keep the compiled test/fixture assets and source/profile/build-info/application-digest provenance required to verify them, but omit the unused duplicate payload. Reuse the existing package/manifest/checksum flow; do not weaken source identity or require a build at measurement time. **Verify:** the same nonzero selectors and all hashes/identities validate from the smaller archive, the installed optimized candidate still matches, and byte/download reductions are measured. This must not delay the A0 runtime/coverage repairs.
 
 ## Established release baseline
 

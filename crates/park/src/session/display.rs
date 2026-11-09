@@ -165,6 +165,7 @@ impl Hardware {
                 adaptive_sync::prepare(screen, planned, plan.strict)?;
                 color::prepare(&self.outputs, &mut self.renderer, screen, planned, self.native_color, plan.strict)?;
                 if changed_mode {
+                    screen.pacing = pacing::Pacing::new(smithay::output::Mode::from(planned.mode).refresh);
                     screen.power.reconfigure();
                     screen.pending = false;
                     screen.protected = false;
@@ -181,7 +182,8 @@ impl Hardware {
             ).map_err(error)?;
             self.screens.insert(planned.crtc, Screen { protected: false, prepared: None, id: planned.id, connector: planned.connector,
                 mode: planned.mode, output, origin: planned.monitor.origin,
-                logical_size: planned.rotation.source_size(planned.monitor.size.map(|size| size as u32)).map(|size| (f64::from(size) / planned.scale).round() as i32), pending: false, texture: None,
+                logical_size: planned.rotation.source_size(planned.monitor.size.map(|size| size as u32)).map(|size| (f64::from(size) / planned.scale).round() as i32), pending: false,
+                pacing: pacing::Pacing::new(smithay::output::Mode::from(planned.mode).refresh), texture: None,
                 adaptive_sync: Default::default(), color: Default::default(), power: Default::default() });
             adaptive_sync::prepare(self.screens.get_mut(&planned.crtc).unwrap(), planned, plan.strict)?;
             color::prepare(&self.outputs, &mut self.renderer, self.screens.get_mut(&planned.crtc).unwrap(), planned, self.native_color, plan.strict)?;

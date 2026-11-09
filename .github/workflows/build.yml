@@ -199,6 +199,8 @@ jobs:
           RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/interface-tests native::laboratory::interface::fast_interface_rules --exact --nocapture --test-threads=1
           RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/interface-tests host::performance::accounting::tests --nocapture --test-threads=1
           RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/park-tests presentation::system_metrics::tests --nocapture --test-threads=1
+          RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/park-tests session::pacing::tests --nocapture --test-threads=1
+          RUST_MIN_STACK=33554432 target/park-validation-bundle/bin/interface-tests native::accessibility::tests --nocapture --test-threads=1
 
       - name: Archive precompiled performance validation bundle
         env:

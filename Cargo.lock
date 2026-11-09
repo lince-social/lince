@@ -9333,6 +9333,7 @@ dependencies = [
  "atspi-common",
  "bevy",
  "bevy_clipboard",
+ "bevy_utils",
  "engine",
  "lince-cell",
  "lince-interface",

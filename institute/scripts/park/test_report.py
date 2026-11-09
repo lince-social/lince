@@ -66,6 +66,17 @@ class ReportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             value.add(invalid, [10, 100])
 
+    def test_actual_executing_thread_samples_remain_process_scoped(self):
+        value = window()
+        value["systems"] = [{"system": "lince_park::body", "wall": reading(), "owner_cpu": reading(),
+                             "exclusive_owner_cpu": reading(), "executing_threads": [
+                                 {"thread": 7, "samples": 2, "owner_cpu_us": 20, "exclusive_owner_cpu_us": 10}],
+                             "unattributed_thread_samples": 1}]
+        report = self.summary([value])
+        self.assertEqual(report["system_threads"], [{"process": 1, "system": "lince_park::body", "thread": 7,
+                          "samples": 2, "owner_cpu_us": 20, "exclusive_owner_cpu_us": 10}])
+        self.assertEqual(report["unattributed_system_thread_samples"], 1)
+
     def test_competing_owner_changes_are_rejected_before_batch_delivery(self):
         value = changes()
         value["changes"].append({**value["changes"][0], "id": "second-attempt"})
@@ -95,6 +106,22 @@ class ReportTests(unittest.TestCase):
         phase = self.summary([window()])
         before = {"comparison_identity": {"workload": "normal"}, "phases": {"typing": phase}}
         after = {"comparison_identity": {"workload": "empty"}, "phases": {"typing": phase}}
+        with self.assertRaisesRegex(ValueError, "identity differs"):
+            compare(before, after, changes())
+
+    def test_changed_fixture_does_not_erase_independent_unchanged_case_controls(self):
+        phase = self.summary([window()])
+        before = {"comparison_identity": {"workload": "same", "workload_sha256": "old"},
+                  "case_identities": {"combined-native": {"fixture": "old"}, "typing-pixels": {"fixture": "same"}},
+                  "phases": {"combined-native/typing": phase, "typing-pixels/typing": phase}}
+        after = copy.deepcopy(before)
+        after["comparison_identity"]["workload_sha256"] = "new"
+        after["case_identities"]["combined-native"] = {"fixture": "new"}
+        result = compare(before, after, changes())
+        self.assertFalse(result["complete"])
+        self.assertEqual({row["phase"] for row in result["rows"]}, {"typing-pixels/typing"})
+        self.assertEqual(result["missing"], [{"phase": "combined-native/typing", "reason": "case-workload-identity-missing-or-different"}])
+        after["comparison_identity"]["profile"] = "different"
         with self.assertRaisesRegex(ValueError, "identity differs"):
             compare(before, after, changes())
 

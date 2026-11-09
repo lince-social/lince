@@ -2,9 +2,9 @@ use bevy::{a11y::AccessibilityNode, prelude::*};
 
 mod actions;
 mod text;
+pub use actions::MAX_ACTION_BYTES;
 pub use actions::{Context, context, owner_context, owns_keyboard, perform, supported_actions};
 pub use actions::{reveal_target, revealed};
-pub use actions::MAX_ACTION_BYTES;
 pub use text::text_nodes;
 
 #[derive(Component)]
@@ -23,12 +23,16 @@ pub(crate) struct AccessibilityPlugin;
 
 impl Plugin for AccessibilityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(|event: On<bevy::input_focus::FocusGained>, mut commands: Commands| {
-            if event.cause == bevy::input_focus::FocusCause::Navigated && event.entity == event.original_event_target() {
-                let entity = event.entity;
-                commands.queue(move |world: &mut World| actions::navigated(world, entity));
-            }
-        });
+        app.add_observer(
+            |event: On<bevy::input_focus::FocusGained>, mut commands: Commands| {
+                if event.cause == bevy::input_focus::FocusCause::Navigated
+                    && event.entity == event.original_event_target()
+                {
+                    let entity = event.entity;
+                    commands.queue(move |world: &mut World| actions::navigated(world, entity));
+                }
+            },
+        );
         app.add_systems(
             PostUpdate,
             (sync, inputs)
@@ -85,20 +89,36 @@ fn sync(mut labels: Query<(&Text, &mut AccessibilityNode), (With<LiveText>, Chan
 
 fn inputs(
     mut inputs: Query<(
-        &bevy::text::EditableText,
-        &AccessibleInput,
+        Ref<bevy::text::EditableText>,
+        Ref<AccessibleInput>,
         &mut AccessibilityNode,
     )>,
 ) {
+    use crate::host::performance::{self, Count, Stage};
+    let _timing = performance::Span::new(Stage::NativeAccessibleInputs);
     for (input, policy, mut node) in &mut inputs {
-        let value = if policy.0 {
-            "•".repeat(input.value().chars().count())
-        } else {
-            input.value().to_string()
-        };
-        if node.value() != Some(value.as_str()) {
-            node.set_value(value);
+        if !input.is_changed() && !policy.is_changed() && !node.is_changed() {
+            continue;
         }
+        performance::count(Count::AccessibleInputChecked);
+        let text = input.value();
+        let value = if policy.0 {
+            let characters = text.chars().count();
+            if node.value().is_some_and(|current| {
+                current.len() == characters.saturating_mul('•'.len_utf8())
+                    && current.chars().all(|character| character == '•')
+            }) {
+                continue;
+            }
+            "•".repeat(characters)
+        } else {
+            if node.value().is_some_and(|current| text == current) {
+                continue;
+            }
+            text.to_string()
+        };
+        performance::add(Count::AccessibleValueBytes, value.len() as u64);
+        node.set_value(value);
     }
 }
 
@@ -112,6 +132,66 @@ pub fn secret(world: &mut World, entity: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unchanged_values_are_retained_and_replaced_values_and_secret_policy_are_current() {
+        let mut app = App::new();
+        app.add_plugins(AccessibilityPlugin);
+        let field = app
+            .world_mut()
+            .spawn(crate::native::sand::editable("é界"))
+            .id();
+        input(app.world_mut(), field, "Text", true);
+        app.update();
+        let changed = app
+            .world()
+            .entity(field)
+            .get_ref::<AccessibilityNode>()
+            .unwrap()
+            .last_changed();
+        app.update();
+        assert_eq!(
+            app.world()
+                .entity(field)
+                .get_ref::<AccessibilityNode>()
+                .unwrap()
+                .last_changed(),
+            changed
+        );
+        app.world_mut()
+            .get_mut::<AccessibilityNode>(field)
+            .unwrap()
+            .set_value("stale");
+        app.update();
+        assert_eq!(
+            app.world().get::<AccessibilityNode>(field).unwrap().value(),
+            Some("é界")
+        );
+        secret(app.world_mut(), field);
+        app.update();
+        assert_eq!(
+            app.world().get::<AccessibilityNode>(field).unwrap().value(),
+            Some("••")
+        );
+        app.world_mut()
+            .get_mut::<bevy::text::EditableText>(field)
+            .unwrap()
+            .editor
+            .set_text("é");
+        app.update();
+        assert_eq!(
+            app.world().get::<AccessibilityNode>(field).unwrap().value(),
+            Some("•")
+        );
+        app.world_mut()
+            .entity_mut(field)
+            .insert(AccessibleInput(false));
+        app.update();
+        assert_eq!(
+            app.world().get::<AccessibilityNode>(field).unwrap().value(),
+            Some("é")
+        );
+    }
 
     #[test]
     fn live_status_changes_and_input_labels_are_exposed() {

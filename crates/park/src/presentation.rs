@@ -43,8 +43,8 @@ mod pixels;
 mod phase_metrics;
 mod system_metrics;
 
-pub(crate) fn observe_systems() -> bevy::log::tracing::subscriber::DefaultGuard {
-    system_metrics::enter()
+pub(crate) fn observe_systems() -> Option<bevy::log::tracing::subscriber::DefaultGuard> {
+    lince_interface::host::performance::enabled().then(system_metrics::enter)
 }
 pub(crate) use pixels::Sync as PixelSync;
 #[cfg(test)]

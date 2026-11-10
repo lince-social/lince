@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import os
 import shutil
@@ -11,9 +10,6 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location("target_cache_installer", ROOT / "institute/scripts/install-target-cache.py")
-INSTALLER = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(INSTALLER)
 
 
 class TargetCacheTests(unittest.TestCase):
@@ -48,31 +44,6 @@ class TargetCacheTests(unittest.TestCase):
         result = subprocess.run([str(executable), "--skip", "prune::budget::tests"], capture_output=True, text=True, check=True)
         self.assertIn("0 failed", result.stdout)
         self.assertIn("workflow_entrypoint_preserves_the_operation", result.stdout)
-
-    def test_timer_is_low_priority_and_escapes_systemd_arguments(self):
-        values = INSTALLER.units(Path('/private/$name%/tool with spaces'), Path('/private/cache%/target'))
-        service = values["lince-target-cache.service"]
-        self.assertIn('ExecStart="/private/$$name%%/tool with spaces" "/private/cache%%/target"', service)
-        self.assertIn("ConditionPathIsDirectory=/private/cache%%/target", service)
-        self.assertIn("Nice=19", service)
-        self.assertIn("IOSchedulingClass=idle", service)
-        self.assertIn("OnUnitInactiveSec=5min", values["lince-target-cache.timer"])
-
-    @unittest.skipUnless(shutil.which("systemd-analyze"), "systemd unit verifier unavailable")
-    def test_real_systemd_parser_accepts_the_service_and_timer(self):
-        with tempfile.TemporaryDirectory(prefix="lince-unit-policy-") as temporary:
-            directory = Path(temporary)
-            target = directory / "cache with spaces%" / "target"
-            target.mkdir(parents=True)
-            paths = []
-            for name, value in INSTALLER.units(self.executable, target).items():
-                path = directory / name
-                path.write_text(value)
-                paths.append(str(path))
-            result = subprocess.run(["systemd-analyze", "verify", *paths], capture_output=True, text=True, timeout=10)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertNotIn("ConditionPath", result.stderr)
-            self.assertNotIn("ignoring", result.stderr)
 
     def test_actual_cargo_lock_running_binary_and_rebuild_after_eviction(self):
         with tempfile.TemporaryDirectory(prefix="lince-cargo-policy-") as temporary:

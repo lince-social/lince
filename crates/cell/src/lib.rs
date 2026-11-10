@@ -231,6 +231,29 @@ impl Cell {
             supervisors.push(engine.clone().start_plugin_sync());
         }
         if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
+        if services {
+            match startup_identity() {
+                Ok(identity) => {
+                    let engine = engine.clone();
+                    tasks.push(tokio::spawn(async move {
+                        loop {
+                            match engine.fire_karma_startup(&identity, nucleus::execution::now()).await {
+                                Ok(_) => break,
+                                Err(error) if error.is_retryable_store_error() => {
+                                    tracing::warn!(%error, "Karma startup will retry after database contention");
+                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                }
+                                Err(error) => {
+                                    tracing::warn!(%error, "Karma startup failed");
+                                    break;
+                                }
+                            }
+                        }
+                    }));
+                }
+                Err(error) => tracing::warn!(%error, "Could not read the Karma startup identity"),
+            }
+        }
         if services { tasks.push(transfer::spawn_worker(runtime.clone())); }
         if services { tasks.push(blob_sync::spawn(runtime.clone())); }
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
@@ -365,6 +388,18 @@ async fn seed_cell(
             .map_err(IoError::other)?;
     }
     Ok(())
+}
+
+fn startup_identity() -> Result<String, IoError> {
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    {
+        std::fs::read_to_string("/proc/sys/kernel/random/boot_id")
+            .map(|identity| identity.trim().to_owned())
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
+    {
+        Ok(nucleus::new_uid("startup"))
+    }
 }
 
 fn start_karma(

@@ -4885,6 +4885,14 @@ impl Engine {
                 }
                 Ok(total)
             }
+            "startup" => {
+                let uid = self.resolve(slug).await?;
+                Ok(if crate::rule_runtime::startup_pulse(&uid) {
+                    nucleus::DecimalValue::from_mantissa(0, 1).expect("scale zero is valid")
+                } else {
+                    zero
+                })
+            }
             "freq" => {
                 let uid = self.resolve_frequency_uid(slug).await?;
                 Ok(if crate::rule_runtime::frequency_pulse(&uid) {

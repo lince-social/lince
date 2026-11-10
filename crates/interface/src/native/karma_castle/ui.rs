@@ -708,7 +708,7 @@ pub(super) fn headings(world: &mut World, parent: Entity) {
         node.flex_shrink = 1.0;
         if index > 1 {
             let explanation = [
-                "The condition calculates a quantity from numbers, record quantities and frequencies. For example, @balance * freq(@weekly) uses the balance when the weekly frequency fires.",
+                "The condition calculates a quantity from numbers, record quantities and frequencies. For example, @balance * freq(@weekly) uses the balance when the weekly frequency fires. startup(@local-cell) is 1 when this Cell starts after boot and 0 otherwise.",
                 "The threshold decides whether the calculated quantity should trigger the consequence. Use >0 for positive values, >=10 for at least ten, !=0 for any nonzero value, or always.",
                 "The consequence chooses the record to change. @target sets its quantity to the calculated value; @target: command(\"…\") runs a command on that record.",
             ][index - 2];

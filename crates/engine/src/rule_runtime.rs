@@ -31,6 +31,7 @@ pub struct RuleIndex {
     pub(crate) records: BTreeMap<String, BTreeSet<String>>,
     pub(crate) concept_members: BTreeMap<String, BTreeSet<String>>,
     pub(crate) frequencies: BTreeMap<String, BTreeSet<String>>,
+    pub(crate) startups: BTreeMap<String, BTreeSet<String>>,
     pub(crate) concepts: BTreeMap<String, BTreeSet<String>>,
     pub(crate) signals: BTreeMap<String, BTreeSet<String>>,
     pub(crate) used: BTreeSet<String>,
@@ -56,6 +57,16 @@ pub fn frequency_pulse(uid: &str) -> bool {
         .unwrap_or(false)
 }
 
+pub(crate) fn startup_pulse(uid: &str) -> bool {
+    RULE_EVENT
+        .try_with(|event| {
+            event.id.strip_prefix("startup:")
+                .and_then(|identity| identity.split_once(':'))
+                .is_some_and(|(cell, _)| cell == uid)
+        })
+        .unwrap_or(false)
+}
+
 fn invalid(message: impl Into<String>) -> EngineError {
     EngineError::Conflict {
         code: "karma_rule_invalid",
@@ -64,6 +75,64 @@ fn invalid(message: impl Into<String>) -> EngineError {
 }
 
 impl Engine {
+    pub async fn fire_karma_startup(
+        &self,
+        boot_id: &str,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
+        if boot_id.is_empty()
+            || boot_id.len() > 128
+            || !boot_id.bytes().all(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
+            })
+        {
+            return Err(invalid("Use a startup identity of 1–128 letters, digits, hyphens or underscores"));
+        }
+        if !self.karma_device_execution().await?.executing {
+            return Ok(Vec::new());
+        }
+        let cell = store::cells::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| invalid("Startup requires a local Cell"))?;
+        self.access_scope(true, async {
+            let _guard = self.rule_execution.lock().await;
+            crate::as_one_firing(async {
+                let index = Box::pin(self.rule_dependencies()).await?;
+                let event = RuleEvent {
+                    id: format!("startup:{}:{boot_id}", cell.uid),
+                    frequency: None,
+                    at: now,
+                    attempt: 0,
+                };
+                let mut result = Vec::new();
+                for uid in index.startups.get(&cell.uid).into_iter().flatten() {
+                    let rule = &index.rules[uid];
+                    match Box::pin(self.execute_rule_event(rule, &event, now)).await {
+                        Ok(facts) => {
+                            for fact in &facts {
+                                let _ = self.bus.send(fact.clone());
+                            }
+                            let roots = facts.iter()
+                                .map(|fact| (fact.record_uid.clone(), fact.uid.clone()))
+                                .collect::<BTreeMap<_, _>>();
+                            result.extend(facts);
+                            for (record, parent) in roots {
+                                result.extend(self.run_rule_reactions(vec![record], parent, now).await?);
+                            }
+                        }
+                        Err(error) if error.is_retryable_store_error() => return Err(error),
+                        Err(error @ EngineError::ExecutionLimit(_)) => return Err(error),
+                        Err(error) => {
+                            self.record_rule_failure(rule, &event, &error, now).await?;
+                            tracing::warn!(rule = rule.uid, %error, "Karma startup rule failed");
+                        }
+                    }
+                }
+                Ok(result)
+            }).await
+        }).await
+    }
+
     pub(crate) async fn check_control_quantities(&self, cell: &str, control: &nucleus::execution::control::Control, uid: &str, now: DateTime<Utc>) -> Result<(), EngineError> {
         let Some(record) = store::records::get(&self.store.pool, uid).await? else { return Ok(()) };
         let unit = record.unit_uid.map(|uid| nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Unit, uid))
@@ -805,7 +874,10 @@ impl Engine {
                     .reads()
                 {
                     if token.func == "query_command" { continue; }
-                    if token.func == "freq" {
+                    if token.func == "startup" {
+                        let uid = self.resolve(&token.slug).await?;
+                        index.startups.entry(uid).or_default().insert(rule.uid.clone());
+                    } else if token.func == "freq" {
                         let uid = self.resolve_frequency_uid(&token.slug).await?;
                         index
                             .frequencies

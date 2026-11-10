@@ -283,7 +283,8 @@ impl Condition {
                 Expr::Fn(name, args)
                     if crate::transfer::karma::is_reading(name)
                         || name == "distance"
-                        || name == "query_command" =>
+                        || name == "query_command"
+                        || name == "startup" =>
                 {
                     let count = if crate::transfer::karma::is_agreement_reading(name)
                         || name == "distance"

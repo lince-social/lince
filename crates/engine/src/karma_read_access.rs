@@ -66,6 +66,14 @@ impl Engine {
                     records.insert(self.resolve_frequency_uid(&token.slug).await?);
                     continue;
                 }
+                if token.func == "startup" {
+                    let record = store::records::resolve(&self.store.pool, &token.slug)
+                        .await?
+                        .filter(|record| record.kind == "device")
+                        .ok_or_else(|| invalid("startup() needs a Cell Record"))?;
+                    records.insert(record.uid);
+                    continue;
+                }
                 if actor.is_some()
                     && nucleus::expr::extension_parts(&token.func).is_none()
                     && !matches!(

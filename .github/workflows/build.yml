@@ -139,6 +139,7 @@ jobs:
     timeout-minutes: 120
     env:
       BUILD_TARGET: x86_64-unknown-linux-gnu
+      CARGO_PROFILE_RELEASE_LTO: thin
 
     steps:
       - uses: actions/checkout@v4

@@ -159,6 +159,17 @@ jobs:
           toolchain: ${{ steps.toolchain.outputs.version }}
           targets: ${{ env.BUILD_TARGET }}
 
+      - name: Reserve memory for release linking
+        run: |
+          # These SDKs are unused by the native Linux build; make room for swap.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          sudo fallocate -l 16G /swapfile-lince
+          sudo chmod 600 /swapfile-lince
+          sudo mkswap /swapfile-lince
+          sudo swapon /swapfile-lince
+          free -h
+          df -h /
+
       - name: Prepare Linux compiler and libraries
         run: bash institute/scripts/ci-linux-setup.sh
       - uses: ./.github/actions/rust-artifacts
@@ -174,6 +185,14 @@ jobs:
           BUILD_TARGET: ${{ env.BUILD_TARGET }}
         run: |
           mkdir -p target
+          (
+            while sleep 60; do
+              free -m
+              df -h .
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true' EXIT
           cargo xtask park release --target "$BUILD_TARGET" > target/release-build-info.json
           if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
             bash institute/packaging/linux/check-build-info.sh target/release-build-info.json

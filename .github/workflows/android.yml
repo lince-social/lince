@@ -197,4 +197,4 @@ jobs:
         continue-on-error: true
         with:
           path: ${{ steps.cache.outputs.paths }}
-          key: ${{ steps.cache.outputs.key }}
+          key: ${{ job.status == 'failure' && format('{0}-partial-{1}-{2}', steps.cache.outputs.key, github.run_id, github.run_attempt) || steps.cache.outputs.key }}

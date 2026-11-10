@@ -1,5 +1,5 @@
 name: Restore compatible Rust compilation inputs
-description: Reuse libraries and metadata without caching test results or final executables
+description: Reuse compatible compilation artifacts; validation tests always run again
 inputs:
   scope:
     description: Platform and compilation mode
@@ -15,7 +15,7 @@ outputs:
     description: Compilation inputs included in the cache
     value: ${{ steps.identity.outputs.paths }}
   hit:
-    description: Whether this dependency and configuration cache already exists
+    description: Whether this exact source and build configuration cache already exists
     value: ${{ steps.restore.outputs.cache-hit }}
 runs:
   using: composite
@@ -32,7 +32,7 @@ runs:
       with:
         path: ${{ steps.identity.outputs.paths }}
         key: ${{ steps.identity.outputs.key }}
-        restore-keys: ${{ steps.identity.outputs.prefix }}
+        restore-keys: ${{ steps.identity.outputs.restore-keys }}
     - name: Restore timestamps only for unchanged sources
       shell: bash
       run: python3 -B institute/scripts/ci-source-cache.py

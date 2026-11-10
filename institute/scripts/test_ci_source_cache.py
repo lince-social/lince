@@ -120,6 +120,23 @@ class SourceCacheTests(unittest.TestCase):
         self.assertTrue(artifacts["dependency"])
         self.assertFalse(artifacts["application"])
 
+    def test_lockfile_update_reuses_unchanged_compiled_packages(self):
+        self.prime()
+        self.write(
+            "crates/unrelated/Cargo.toml",
+            '[package]\nname = "unrelated"\nversion = "0.1.0"\nedition = "2024"\n',
+        )
+        self.write("crates/unrelated/src/lib.rs", "pub fn unrelated() {}\n")
+        self.track()
+        before = (self.root / "Cargo.lock").read_bytes()
+        self.checkout()
+        self.restore()
+        artifacts = self.check()
+        self.assertNotEqual(before, (self.root / "Cargo.lock").read_bytes())
+        self.assertTrue(artifacts["dependency"])
+        self.assertTrue(artifacts["application"])
+        self.assertFalse(artifacts["unrelated"])
+
     def test_new_directory_input_reruns_build_script(self):
         self.prime()
         self.write("crates/dependency/data/new.txt", "second\n")

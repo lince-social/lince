@@ -70,7 +70,21 @@ class CacheIdentityTests(unittest.TestCase):
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
             IDENTITY.main()
-        return {line.split('=', 1)[0]: line.split('=', 1)[1] for line in stream.getvalue().splitlines() if '=' in line}
+        outputs = {}
+        lines = iter(stream.getvalue().splitlines())
+        for line in lines:
+            if '<<' in line:
+                name, delimiter = line.split('<<', 1)
+                value = []
+                for entry in lines:
+                    if entry == delimiter:
+                        break
+                    value.append(entry)
+                outputs[name] = '\n'.join(value)
+            else:
+                name, value = line.split('=', 1)
+                outputs[name] = value
+        return outputs
 
     def test_unchanged_bytes_reuse_key_despite_checkout_timestamps(self):
         before = self.identity()
@@ -79,17 +93,18 @@ class CacheIdentityTests(unittest.TestCase):
         os.utime(source, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1000000000))
         self.assertEqual(before, self.identity())
 
-    def test_application_edits_share_dependency_cache_without_per_commit_copies(self):
+    def test_application_edits_advance_snapshot_with_compatible_restore(self):
         before = self.identity()
         source = self.root / 'crates/probe/src/lib.rs'
         source.write_text('pub fn value() -> u32 { 2 }\n')
         changed = self.identity()
-        self.assertEqual(before['key'], changed['key'])
+        self.assertNotEqual(before['key'], changed['key'])
         self.assertEqual(before['prefix'], changed['prefix'])
+        self.assertEqual(before['restore-keys'].splitlines()[1:], changed['restore-keys'].splitlines()[1:])
         added = self.root / 'crates/probe/src/added.rs'
         added.write_text('pub fn added() {}\n')
         subprocess.run(['git', 'add', str(added)], check=True)
-        self.assertEqual(changed['key'], self.identity()['key'])
+        self.assertNotEqual(changed['key'], self.identity()['key'])
         added.unlink()
         self.assertEqual(changed['key'], self.identity()['key'])
 
@@ -100,9 +115,12 @@ class CacheIdentityTests(unittest.TestCase):
         self.assertNotEqual(before['key'], after['key'])
         self.assertEqual(before['prefix'], after['prefix'])
 
-    def test_native_flags_compiler_and_dependencies_isolate_restores(self):
+    def test_native_flags_and_compiler_isolate_restores(self):
         initial = self.identity()
-        for variable, value in (('RUSTFLAGS', '-D warnings -C target-cpu=x86-64'), ('CACHE_SCOPE', 'linux-release')):
+        for variable, value in (
+            ('RUSTFLAGS', '-D warnings -C target-cpu=x86-64'), ('CACHE_SCOPE', 'linux-release'),
+            ('CACHE_TARGET', 'aarch64-unknown-linux-gnu'), ('CARGO_PROFILE_RELEASE_LTO', 'thin'),
+        ):
             with mock.patch.dict(os.environ, {variable: value}):
                 self.assertNotEqual(initial['prefix'], self.identity()['prefix'])
         self.compiler = b'rustc 1.97.0\n'
@@ -110,9 +128,45 @@ class CacheIdentityTests(unittest.TestCase):
         self.compiler = b'rustc 1.96.0\n'
         (self.root / 'native/lince-native-inputs').write_text('new native library ABI\n')
         self.assertNotEqual(initial['prefix'], self.identity()['prefix'])
-        (self.root / 'native/lince-native-inputs').write_text('native compiler and libraries v1\n')
+
+    def test_lock_update_prefers_same_graph_then_restores_compatible_packages(self):
+        initial = self.identity()
         (self.root / 'Cargo.lock').write_text('version = 4\nnew dependency\n')
-        self.assertNotEqual(initial['prefix'], self.identity()['prefix'])
+        changed = self.identity()
+        self.assertNotEqual(initial['key'], changed['key'])
+        self.assertEqual(initial['prefix'], changed['prefix'])
+        source, preferred, fallback = changed['restore-keys'].splitlines()
+        self.assertEqual(source, changed['key'])
+        self.assertTrue(changed['key'].startswith(preferred))
+        self.assertFalse(initial['key'].startswith(preferred))
+        self.assertTrue(initial['key'].startswith(fallback))
+
+    def test_workflow_and_action_orchestration_do_not_invalidate_compilation(self):
+        initial = self.identity()
+        for name in ('.github/workflows/build.yml', '.github/workflows/android.yml', '.github/actions/rust-artifacts/action.yml'):
+            path = self.root / name
+            path.write_text(path.read_text() + '\n# Extra gate or upload step\n')
+        self.assertEqual(initial, self.identity())
+
+    def test_compiled_assets_and_modes_advance_source_snapshot(self):
+        path = self.root / 'institute/assets/fixture.txt'
+        path.parent.mkdir(parents=True)
+        path.write_text('first')
+        subprocess.run(['git', 'add', str(path)], check=True)
+        initial = self.identity()
+        path.write_text('other')
+        self.assertNotEqual(initial['key'], self.identity()['key'])
+        changed = self.identity()
+        path.chmod(0o755)
+        self.assertNotEqual(changed['key'], self.identity()['key'])
+
+    def test_only_validation_scope_caches_test_executables_and_never_results(self):
+        self.assertNotIn('/deps/lince_interface-*', self.identity()['paths'])
+        with mock.patch.dict(os.environ, {'CACHE_SCOPE': 'linux-validation'}):
+            paths = self.identity()['paths']
+        self.assertIn('/deps/lince_interface-*', paths)
+        self.assertIn('/deps/lince_park-*', paths)
+        self.assertNotIn('park-validation-tests', paths)
 
     def test_android_gradle_native_flags_invalidate_compatible_prefix(self):
         with mock.patch.dict(os.environ, {'CACHE_SCOPE': 'android-arm64-package', 'CACHE_TARGET': 'aarch64-linux-android'}):

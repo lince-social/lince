@@ -460,20 +460,61 @@ def suite_cases():
     return cases
 
 
+def cargo_test_artifacts(messages):
+    artifacts = {}
+    with messages.open() as source:
+        for line in source:
+            value = json.loads(line)
+            if value.get("reason") == "compiler-artifact" and value.get("profile", {}).get("test") and value.get("executable"):
+                name = value["target"]["name"]
+                if name in {"lince_interface", "lince_park"}:
+                    if name in artifacts and artifacts[name] != Path(value["executable"]):
+                        raise ValueError("Ambiguous test artifacts in Cargo output")
+                    artifacts[name] = Path(value["executable"])
+    if set(artifacts) != {"lince_interface", "lince_park"}:
+        raise ValueError("Cargo output must contain both interface and Park test executables")
+    return artifacts
+
+
+def stage_tests(arguments):
+    originals = cargo_test_artifacts(arguments.cargo_messages)
+    root = arguments.output.resolve()
+    root.mkdir(parents=True, exist_ok=False)
+    (root / "bin").mkdir()
+    artifacts = {}
+    for name, source in originals.items():
+        target = root / "bin" / {"lince_interface": "interface-tests", "lince_park": "park-tests"}[name]
+        shutil.copy2(source, target)
+        artifacts[name] = {"path": str(target.relative_to(root)), "sha256": digest(target)}
+    first = suite_cases()[0]
+    if first["selector"] not in list_tests(root / "bin/interface-tests"):
+        raise ValueError("Required Protein-first interface selector absent from artifact")
+    save_json(root / "tests.json", {"schema_version": 1, "revision": arguments.revision,
+              "profile": arguments.profile, "target": arguments.target, "toolchain": arguments.toolchain,
+              "artifacts": artifacts})
+
+
+def staged_tests(arguments):
+    metadata = load_json(arguments.tests / "tests.json")
+    if metadata.get("schema_version") != 1 or any(
+        metadata.get(field) != getattr(arguments, field) for field in ("revision", "profile", "target", "toolchain")
+    ):
+        raise ValueError("Precompiled tests differ from requested validation build")
+    artifacts = {}
+    for name in ("lince_interface", "lince_park"):
+        artifact = metadata["artifacts"][name]
+        path = artifact_path(arguments.tests, artifact["path"])
+        if digest(path) != artifact["sha256"]:
+            raise ValueError("Precompiled test checksum mismatch")
+        artifacts[name] = path
+    return artifacts
+
+
 def package(arguments):
-    if arguments.cargo_messages:
-        artifacts_from_cargo = {}
-        with arguments.cargo_messages.open() as source:
-            for line in source:
-                value = json.loads(line)
-                if value.get("reason") == "compiler-artifact" and value.get("profile", {}).get("test") and value.get("executable"):
-                    name = value["target"]["name"]
-                    if name in {"lince_interface", "lince_park"}:
-                        if name in artifacts_from_cargo and artifacts_from_cargo[name] != value["executable"]:
-                            raise ValueError("Ambiguous test artifacts in Cargo output")
-                        artifacts_from_cargo[name] = value["executable"]
-        arguments.interface = Path(artifacts_from_cargo["lince_interface"])
-        arguments.park = Path(artifacts_from_cargo["lince_park"])
+    if arguments.tests or arguments.cargo_messages:
+        artifacts = staged_tests(arguments) if arguments.tests else cargo_test_artifacts(arguments.cargo_messages)
+        arguments.interface = artifacts["lince_interface"]
+        arguments.park = artifacts["lince_park"]
     if arguments.interface is None or arguments.park is None:
         raise ValueError("Supply precompiled interface/Park tests or CI Cargo messages")
     if arguments.output.exists():
@@ -546,11 +587,18 @@ def main():
     bundle = subcommands.add_parser("package")
     for name in ("interface", "park"):
         bundle.add_argument("--" + name, type=Path)
-    bundle.add_argument("--cargo-messages", type=Path)
+    test_source = bundle.add_mutually_exclusive_group()
+    test_source.add_argument("--cargo-messages", type=Path)
+    test_source.add_argument("--tests", type=Path, help="Verified test artifacts from the parallel CI job")
     for name in ("application", "output"):
         bundle.add_argument("--" + name, type=Path, required=True)
     for name in ("revision", "profile", "target", "toolchain"):
         bundle.add_argument("--" + name, required=True)
+    stage = subcommands.add_parser("stage-tests", help="Transfer compiled tests between CI jobs without rebuilding")
+    for name in ("cargo-messages", "output"):
+        stage.add_argument("--" + name, type=Path, required=True)
+    for name in ("revision", "profile", "target", "toolchain"):
+        stage.add_argument("--" + name, required=True)
     arguments = parser.parse_args()
     try:
         if arguments.command == "run":
@@ -562,6 +610,8 @@ def main():
             save_json(arguments.output, result)
             arguments.output.with_suffix(".txt").write_text(readable(result))
             print(readable(result), end="")
+        elif arguments.command == "stage-tests":
+            stage_tests(arguments)
         else:
             package(arguments)
     except (ValueError, KeyError, OSError, subprocess.SubprocessError) as failure:

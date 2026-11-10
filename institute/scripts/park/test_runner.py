@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import struct
+import tarfile
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -15,6 +16,77 @@ spec.loader.exec_module(runner)
 
 
 class RunnerTests(unittest.TestCase):
+    def staged_fixture(self, directory, selectors=None):
+        selectors = selectors if selectors is not None else [case["selector"] for case in runner.suite_cases()]
+        messages = directory / "cargo.jsonl"
+        artifacts = []
+        for name in ("lince_interface", "lince_park"):
+            executable = directory / name
+            executable.write_text('#!/usr/bin/env python3\nprint(' + repr('\n'.join(selector + ': test' for selector in selectors)) + ')\n')
+            executable.chmod(0o755)
+            artifacts.append({"reason": "compiler-artifact", "profile": {"test": True},
+                              "target": {"name": name}, "executable": str(executable)})
+        messages.write_text('\n'.join(json.dumps(value) for value in artifacts) + '\n')
+        return SimpleNamespace(cargo_messages=messages, output=directory / "staged", revision="fixture-revision",
+                               profile="release", target="x86_64-unknown-linux-gnu", toolchain="rustc fixture")
+
+    def test_parallel_artifacts_survive_archive_transfer_and_package_without_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            arguments = self.staged_fixture(directory)
+            runner.stage_tests(arguments)
+            archive = directory / "tests.tar.gz"
+            with tarfile.open(archive, "w:gz") as output:
+                output.add(arguments.output, arcname="tests")
+            destination = directory / "other-job"
+            destination.mkdir()
+            with tarfile.open(archive) as source:
+                source.extractall(destination, filter="data")
+            application = directory / "application"
+            application.write_text('#!/usr/bin/env python3\nprint(\'{"revision":"fixture-revision"}\')\n')
+            application.chmod(0o755)
+            arguments.tests = destination / "tests"
+            arguments.cargo_messages = None
+            arguments.interface = arguments.park = None
+            arguments.application = application
+            arguments.output = directory / "bundle"
+            runner.package(arguments)
+            manifest = runner.check_bundle(arguments.output)
+            self.assertEqual(manifest["revision"], "fixture-revision")
+            self.assertEqual(manifest["cases"][0]["id"], "protein-first-interface")
+            self.assertEqual(manifest["unavailable"][-1]["case"], "physical-daily-S3")
+
+    def test_staged_artifacts_reject_mismatched_build_identity_and_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            arguments = self.staged_fixture(Path(temporary))
+            runner.stage_tests(arguments)
+            arguments.tests = arguments.output
+            for field in ("revision", "profile", "target", "toolchain"):
+                original = getattr(arguments, field)
+                setattr(arguments, field, "different-build")
+                with self.assertRaisesRegex(ValueError, "differ"):
+                    runner.staged_tests(arguments)
+                setattr(arguments, field, original)
+            (arguments.tests / "bin/park-tests").write_bytes(b"modified during transfer")
+            with self.assertRaisesRegex(ValueError, "checksum"):
+                runner.staged_tests(arguments)
+
+    def test_staging_rejects_missing_or_ambiguous_cargo_artifacts_and_missing_first_gate(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            arguments = self.staged_fixture(Path(temporary), selectors=[])
+            messages = arguments.cargo_messages.read_text().splitlines()
+            arguments.cargo_messages.write_text(messages[0] + '\n')
+            with self.assertRaisesRegex(ValueError, "both"):
+                runner.stage_tests(arguments)
+            duplicate = json.loads(messages[0])
+            duplicate["executable"] += "-another"
+            arguments.cargo_messages.write_text('\n'.join(messages + [json.dumps(duplicate)]) + '\n')
+            with self.assertRaisesRegex(ValueError, "Ambiguous"):
+                runner.stage_tests(arguments)
+            arguments.cargo_messages.write_text('\n'.join(messages) + '\n')
+            with self.assertRaisesRegex(ValueError, "Protein-first"):
+                runner.stage_tests(arguments)
+
     def manifest(self, directory):
         artifact = directory / "precompiled-test"
         artifact.write_bytes(b"private fixture, never executed")

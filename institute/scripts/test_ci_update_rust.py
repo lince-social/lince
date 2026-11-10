@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 import subprocess
 import shutil
@@ -55,7 +56,10 @@ if [[ $1 == run && $2 == watch ]]; then
   if [[ -n ${FIXTURE_MAIN_MOVED:-} ]]; then git --git-dir="$FIXTURE_ORIGIN" update-ref refs/heads/main "$FIXTURE_MAIN_MOVED"; fi
 fi
 if [[ $1 == run && $2 == view ]]; then
-  if [[ ${FIXTURE_SKIP_CHECKS:-0} == 1 ]]; then echo false; else echo true; fi
+  if [[ $3 == 101 && -n ${FIXTURE_LINUX_JOB_DATA:-} ]]; then
+    query=${!#}
+    printf '%s' "$FIXTURE_LINUX_JOB_DATA" | "$FIXTURE_REAL_JQ" "$query"
+  elif [[ ${FIXTURE_SKIP_CHECKS:-0} == 1 ]]; then echo false; else echo true; fi
 fi
 ''')
 
@@ -134,6 +138,27 @@ fi
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.main_revision(), self.baseline)
         self.assert_branch_removed()
+
+    def test_both_parallel_linux_compilation_modes_must_actually_run(self):
+        jq = shutil.which('jq')
+        if jq is None:
+            self.skipTest('jq is needed to exercise the GitHub verification query')
+
+        def job(mode, conclusion='success', step='success'):
+            return {'name': f'Linux compile checks ({mode})', 'conclusion': conclusion,
+                    'steps': [{'name': 'Check selected Linux build', 'conclusion': step}]}
+
+        for jobs in ([], [job('desktop')], [job('desktop'), job('headless', 'failure')],
+                     [job('desktop'), job('headless', step='skipped')]):
+            with self.subTest(jobs=jobs):
+                result = self.run_update(FIXTURE_REAL_JQ=jq, FIXTURE_LINUX_JOB_DATA=json.dumps(
+                    {'headSha': self.baseline, 'jobs': jobs}))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.main_revision(), self.baseline)
+        result = self.run_update(FIXTURE_REAL_JQ=jq, FIXTURE_LINUX_JOB_DATA=json.dumps(
+            {'headSha': self.baseline, 'jobs': [job('headless'), job('desktop')]}))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotEqual(self.main_revision(), self.baseline)
 
     def test_wrong_execution_context_is_rejected_before_mutation(self):
         for environment in ({'GITHUB_ACTIONS': 'false'}, {'GITHUB_EVENT_NAME': 'pull_request'}, {'GITHUB_REF': 'refs/heads/dev'}):

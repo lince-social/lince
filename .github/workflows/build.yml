@@ -79,7 +79,11 @@ jobs:
         run: bash institute/scripts/ci-update-rust.sh
   checks:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && !inputs.build_release)
-    name: Linux compile checks
+    name: Linux compile checks (${{ matrix.mode }})
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [desktop, headless]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -103,11 +107,16 @@ jobs:
       - uses: ./.github/actions/rust-artifacts
         id: cache
         with:
-          scope: linux-checks
-      - name: Check Lince, Park and development tools
+          scope: linux-checks-${{ matrix.mode }}
+      - name: Check selected Linux build
+        env:
+          CHECK_MODE: ${{ matrix.mode }}
         run: |
-          cargo check --locked -p lince -p xtask -p lince-park-clients --features lince/instinct,lince/park --timings
-          cargo check --locked -p lince --no-default-features --features instinct --timings
+          case "$CHECK_MODE" in
+            desktop) cargo check --locked -p lince -p xtask -p lince-park-clients --features lince/instinct,lince/park --timings ;;
+            headless) cargo check --locked -p lince --no-default-features --features instinct --timings ;;
+            *) exit 1 ;;
+          esac
       - name: Save compiled inputs
         if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
         uses: actions/cache/save@v4
@@ -119,7 +128,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: linux-check-timings
+          name: linux-check-timings-${{ matrix.mode }}
           path: target/cargo-timings/*.html
           if-no-files-found: ignore
           retention-days: 7
@@ -204,146 +213,33 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  validation:
+  tooling:
     if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
-    name: Linux release validation
+    name: CI tooling checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    env:
-      BUILD_TARGET: x86_64-unknown-linux-gnu
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Restrict compiler candidates to checks
-        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
-        run: exit 1
       - name: Read pinned Rust version
         id: toolchain
         run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}
-          targets: ${{ env.BUILD_TARGET }}
-      - name: Prepare Linux compiler and libraries
-        run: bash institute/scripts/ci-linux-setup.sh
-      - uses: ./.github/actions/rust-artifacts
-        id: cache
-        with:
-          scope: linux-validation
-          target: ${{ env.BUILD_TARGET }}
       - name: Verify CI cache behavior
         run: |
           python3 -B -m unittest discover -s institute/scripts -p 'test_ci_cache_identity.py'
           python3 -B -m unittest discover -s institute/scripts -p 'test_ci_source_cache.py'
+      - name: Verify automatic Rust updates
+        run: python3 -B -m unittest discover -s institute/scripts -p 'test_ci_update_rust.py'
       - name: Verify target-cache cleanup
         run: python3 -B -m unittest discover -s institute/scripts -p 'test_target_cache.py'
-
       - name: Verify performance report accounting
         run: python3 -B -m unittest discover -s institute/scripts/park -p 'test_*.py'
 
-      - name: Compile matching performance validation artifacts
-        env:
-          LINCE_REVISION: ${{ github.sha }}
-        run: |
-          mkdir -p target
-          cargo test --locked --profile release --target "$BUILD_TARGET" -p lince-interface -p lince-park --features lince-interface/native-presentation,lince-park/session,lince-park/server-tests --lib --no-run --timings --message-format=json > target/park-validation-tests.jsonl
-
-      - name: Save compiled inputs
-        if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ steps.cache.outputs.paths }}
-          key: ${{ job.status == 'failure' && format('{0}-partial-{1}-{2}', steps.cache.outputs.key, github.run_id, github.run_attempt) || steps.cache.outputs.key }}
-
-      - name: Stage precompiled tests
-        run: |
-          python3 -B institute/scripts/park/performance.py stage-tests \
-            --cargo-messages target/park-validation-tests.jsonl \
-            --revision "$GITHUB_SHA" --profile release --target "$BUILD_TARGET" \
-            --toolchain "$(rustc --version)" --output target/park-validation-tests
-
-      - name: Run first interface gate and observer checks
-        run: |
-          RUST_MIN_STACK=33554432 target/park-validation-tests/bin/interface-tests native::laboratory::interface::fast_interface_rules --exact --nocapture --test-threads=1
-          RUST_MIN_STACK=33554432 target/park-validation-tests/bin/interface-tests host::performance::accounting::tests --nocapture --test-threads=1
-          RUST_MIN_STACK=33554432 target/park-validation-tests/bin/park-tests presentation::system_metrics::tests --nocapture --test-threads=1
-          RUST_MIN_STACK=33554432 target/park-validation-tests/bin/park-tests session::pacing::tests --nocapture --test-threads=1
-          RUST_MIN_STACK=33554432 target/park-validation-tests/bin/interface-tests native::accessibility::tests --nocapture --test-threads=1
-
-      - name: Archive precompiled tests
-        run: tar -I 'pigz -1' -cf target/park-validation-tests.tar.gz -C target park-validation-tests
-      - name: Upload precompiled tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: park-tests-${{ env.BUILD_TARGET }}-${{ github.sha }}
-          path: target/park-validation-tests.tar.gz
-          if-no-files-found: error
-          retention-days: 1
-          compression-level: 0
-      - name: Upload validation compilation timings
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-timings-linux-${{ env.BUILD_TARGET }}
-          path: target/cargo-timings/*.html
-          if-no-files-found: ignore
-          retention-days: 7
-
-  validation-bundle:
-    needs: [binary, validation]
-    name: Assemble matching validation bundle
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      BUILD_TARGET: x86_64-unknown-linux-gnu
-    steps:
-      - uses: actions/checkout@v4
-      - name: Restrict compiler candidates to checks
-        if: github.event_name == 'workflow_dispatch' && inputs.rust_version != ''
-        run: exit 1
-      - name: Read pinned Rust version
-        id: toolchain
-        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ steps.toolchain.outputs.version }}
-          targets: ${{ env.BUILD_TARGET }}
-      - name: Prepare Linux compiler and libraries
-        run: bash institute/scripts/ci-linux-setup.sh
-      - name: Download matching application
-        uses: actions/download-artifact@v4
-        with:
-          name: lince-binary-artifacts-${{ env.BUILD_TARGET }}
-          path: binary-artifacts
-      - name: Download precompiled tests
-        uses: actions/download-artifact@v4
-        with:
-          name: park-tests-${{ env.BUILD_TARGET }}-${{ github.sha }}
-          path: target
-      - name: Assemble verified validation bundle
-        run: |
-          mkdir -p target/validation-application
-          (cd binary-artifacts && sha256sum --check "lince-$BUILD_TARGET.tar.gz.sha256")
-          tar -xzf "binary-artifacts/lince-$BUILD_TARGET.tar.gz" -C target/validation-application
-          tar -xzf target/park-validation-tests.tar.gz -C target
-          python3 -B institute/scripts/park/performance.py package \
-            --tests target/park-validation-tests \
-            --application target/validation-application/lince/bin/lince \
-            --revision "$GITHUB_SHA" --profile release --target "$BUILD_TARGET" \
-            --toolchain "$(rustc --version)" --output target/park-validation-bundle
-          tar -I 'pigz -1' -cf target/park-validation-bundle.tar.gz -C target park-validation-bundle
-      - name: Publish precompiled performance validation artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: park-validation-${{ env.BUILD_TARGET }}-${{ github.sha }}
-          path: target/park-validation-bundle.tar.gz
-          if-no-files-found: error
-          retention-days: 7
-          compression-level: 0
-
   publish-rolling:
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, validation-bundle]
+    needs: [binary, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -429,7 +325,7 @@ jobs:
 
   publish-main:
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, validation-bundle]
+    needs: [binary, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -490,7 +386,7 @@ jobs:
 
   publish-tag:
     if: ${{ startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, validation-bundle]
+    needs: [binary, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write

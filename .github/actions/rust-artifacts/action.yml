@@ -1,5 +1,5 @@
 name: Restore compatible Rust compilation inputs
-description: Reuse compatible compilation artifacts; validation tests always run again
+description: Reuse compatible compilation artifacts without caching test results
 inputs:
   scope:
     description: Platform and compilation mode

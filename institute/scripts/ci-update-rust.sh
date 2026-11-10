@@ -25,7 +25,7 @@ if [[ ! "$linux_run" =~ ^[0-9]+$ || ! "$android_run" =~ ^[0-9]+$ ]]; then
 fi
 gh run watch "$linux_run" --interval 30 --exit-status
 gh run watch "$android_run" --interval 30 --exit-status
-linux_verified=$(gh run view "$linux_run" --json headSha,jobs --jq ".headSha == \"$baseline\" and ([.jobs[] | select(.name == \"Linux compile checks\" and .conclusion == \"success\") | .steps[] | select(.name == \"Check Lince, Park and development tools\" and .conclusion == \"success\")] | length) == 1")
+linux_verified=$(gh run view "$linux_run" --json headSha,jobs --jq ".headSha == \"$baseline\" and ([.jobs[] | select(.conclusion == \"success\") | select(any(.steps[]; .name == \"Check selected Linux build\" and .conclusion == \"success\")) | .name] | sort) == [\"Linux compile checks (desktop)\", \"Linux compile checks (headless)\"]")
 android_verified=$(gh run view "$android_run" --json headSha,jobs --jq ".headSha == \"$baseline\" and ([.jobs[] | select(.conclusion == \"success\") | select(any(.steps[]; .name == \"Check Android library\" and .conclusion == \"success\")) | .name] | sort) == [\"Android (arm64-v8a)\", \"Android (x86_64)\"]")
 if [[ "$linux_verified" != true || "$android_verified" != true ]]; then
   printf '%s\n' 'Required compilation jobs did not run successfully on the candidate commit.' >&2

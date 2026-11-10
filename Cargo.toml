@@ -160,7 +160,7 @@ warnings = "deny"
 
 [profile.release]
 opt-level = 3          # Maximum optimization
-# lto = true            # Full link-time optimization
+lto = true            # Full link-time optimization
 # codegen-units = 1     # Single compilation unit
 debug = false         # No debug symbols (runtime doesn't care, size smaller)
 # incremental = false   # Better optimization

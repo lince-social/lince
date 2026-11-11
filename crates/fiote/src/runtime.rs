@@ -118,7 +118,7 @@ pub async fn run_streamed(
             error
         } else {
             format!(
-                "{error}\n\nTool results before stopping:\n{}",
+                "{error}\n\nTool call outcomes before stopping:\n{}",
                 receipts.join("\n")
             )
         }
@@ -254,7 +254,16 @@ async fn turn(
                 _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
                 result = tools.run(&call.name, call.arguments) => result,
             };
-            receipts.push(format!("{}: {}", call.name, result));
+            receipts.push(format!(
+                "{} [{}]: {}",
+                call.name.chars().take(64).collect::<String>(),
+                call.id.chars().take(64).collect::<String>(),
+                if result["ok"] == true {
+                    "completed"
+                } else {
+                    "failed"
+                },
+            ));
             messages.push(Message::Tool {
                 id: call.id,
                 name: call.name,

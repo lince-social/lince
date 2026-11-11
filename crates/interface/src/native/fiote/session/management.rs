@@ -530,13 +530,16 @@ impl Action for Connection {
 pub(super) struct OpenTask(pub(super) String);
 impl Action for OpenTask {
     fn apply(&self, world: &mut World, owner: Entity) {
-        let panel = world.get::<Panel>(owner).unwrap();
-        let binding = RecordBinding {
-            uid: panel.view_uid.clone(),
-            ..panel.binding.clone()
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
         };
+        let target = panel.binding.uid.clone();
         super::show(world, owner, Step::Closed);
-        crate::native::thread_castle::select_thread(world, &binding, &self.0);
+        OpenConversation {
+            target,
+            thread: self.0.clone(),
+        }
+        .apply(world, owner);
     }
 }
 

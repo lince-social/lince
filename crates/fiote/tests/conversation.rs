@@ -145,3 +145,70 @@ async fn summary_failure_preserves_history_and_context() {
         serde_json::to_value(original).unwrap()
     );
 }
+
+#[tokio::test]
+async fn follow_up_can_compact_a_large_completed_turn_without_splitting_tool_receipts() {
+    let output = Output {
+        summaries: Default::default(),
+        usages: Default::default(),
+    };
+    let original = vec![
+        Message::User("Complete prior work".into()),
+        Message::Assistant {
+            text: String::new(),
+            calls: vec![fiote::provider::ToolCall {
+                id: "completed-call".into(),
+                name: "read_file".into(),
+                arguments: json!({}),
+                signatures: None,
+            }],
+        },
+        Message::Tool {
+            id: "completed-call".into(),
+            name: "read_file".into(),
+            result: json!({"receipt":"completed-call-result","data":"past".repeat(1200)}),
+        },
+        Message::Assistant {
+            text: "Prior work finished; receipts are saved".into(),
+            calls: vec![],
+        },
+        Message::User(format!("Follow up: {}", "now".repeat(4000))),
+    ];
+    let model = Model {
+        requests: Default::default(),
+        fail: false,
+    };
+    let mut input = original.clone();
+    conversation::prepare(&model, "Pinned owner instructions", &mut input, &output)
+        .await
+        .unwrap();
+    assert_eq!(input.len(), 2);
+    assert!(matches!(&input[0], Message::Summary { covered: 4, .. }));
+    assert_eq!(
+        serde_json::to_value(&input[1]).unwrap(),
+        serde_json::to_value(&original[4]).unwrap()
+    );
+    assert_eq!(output.summaries.lock().unwrap()[0].0, 4);
+    let requests = model.requests.lock().unwrap();
+    let Message::User(text) = &requests[0][0] else {
+        panic!("Missing summary input")
+    };
+    assert!(text.contains("completed-call-result"));
+    assert!(text.contains("Prior work finished"));
+    assert!(!text.contains("Follow up:"));
+    drop(requests);
+    let failed = Model {
+        requests: Default::default(),
+        fail: true,
+    };
+    let mut preserved = original.clone();
+    assert!(
+        conversation::compact(&failed, "Pinned owner instructions", &mut preserved)
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        serde_json::to_value(preserved).unwrap(),
+        serde_json::to_value(original).unwrap()
+    );
+}

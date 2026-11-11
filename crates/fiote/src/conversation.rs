@@ -108,14 +108,17 @@ pub(crate) async fn prepare_with_overhead(
         .filter(|(_, m)| matches!(m, Message::User(_) | Message::RichUser { .. }))
         .map(|(index, _)| index)
         .collect();
-    if users.len() <= 6 {
+    let split = if users.len() > 6 {
+        users[users.len() - 6]
+    } else if size >= budget && users.len() > 1 {
+        *users.last().unwrap()
+    } else {
         crate::runtime::validate_context(system, messages)?;
         if size >= budget {
             return Err("This thread exceeds the context limit. Its recent turns cannot be reduced safely; start another conversation or shorten the inputs.".into());
         }
         return Ok(());
-    }
-    let split = users[users.len() - 6];
+    };
     let previous = if let Some(Message::Summary { covered, .. }) = messages.first() {
         *covered
     } else {

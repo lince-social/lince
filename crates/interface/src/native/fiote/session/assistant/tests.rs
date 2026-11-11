@@ -600,4 +600,20 @@ async fn delegated_stop_control_interrupts_child_and_keeps_parent_selected() {
         .filter(|area| area.name == "Fiote Castle")
         .count();
     assert_eq!(areas, 1);
+    app.world_mut().get_mut::<Panel>(panel).unwrap().binding.uid = delegated.target.clone();
+    super::super::management::OpenTask(child_thread.into()).apply(app.world_mut(), panel);
+    assert_eq!(
+        app.world()
+            .get::<crate::native::thread_castle::RequestedThread>(area)
+            .unwrap()
+            .0
+            .as_str(),
+        child_thread.as_str()
+    );
+    assert!(crate::native::thread_castle::laboratory_visible(
+        app.world(),
+        castle,
+        child_thread,
+        &message.body
+    ));
 }

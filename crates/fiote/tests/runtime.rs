@@ -340,3 +340,98 @@ fn configuration_rejects_insecure_endpoints_and_debug_redacts_keys() {
     };
     assert!(!format!("{request:?}").contains("hidden-key"));
 }
+
+struct LargeResult;
+#[async_trait]
+impl Tool for LargeResult {
+    fn definition(&self) -> ToolDefinition {
+        ToolDefinition {
+            name: "large_result".into(),
+            description: "Return a large fixture".into(),
+            schema: json!({"type":"object"}),
+        }
+    }
+    async fn run(&self, _: Value) -> Result<Value, String> {
+        Ok(json!({"content":"private-fixture-".repeat(5000)}))
+    }
+}
+
+struct LargeResults(std::sync::atomic::AtomicUsize);
+#[async_trait]
+impl Provider for LargeResults {
+    async fn complete(
+        &self,
+        _: &str,
+        _: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        let count = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(Reply {
+            calls: vec![ToolCall {
+                id: count.to_string(),
+                name: "large_result".into(),
+                arguments: json!({}),
+                signatures: None,
+            }],
+            ..Default::default()
+        })
+    }
+}
+
+#[derive(Default)]
+struct Checkpoint(std::sync::Mutex<Vec<Message>>);
+#[async_trait]
+impl fiote::provider::TextOutput for Checkpoint {
+    async fn update(&self, _: &str) -> Result<(), String> {
+        Ok(())
+    }
+    async fn context(&self, messages: &[Message]) -> Result<(), String> {
+        *self.0.lock().unwrap() = messages.to_vec();
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn context_failure_keeps_full_journal_receipts_and_a_savable_error() {
+    let mut tools = Registry::default();
+    tools.register(LargeResult);
+    let output = Checkpoint::default();
+    let provider = LargeResults(std::sync::atomic::AtomicUsize::new(0));
+    let (_stop, receiver) = watch::channel(false);
+    let error = fiote::runtime::run_streamed(
+        &provider,
+        "",
+        vec![Message::User("Test".into())],
+        &tools,
+        receiver,
+        &output,
+    )
+    .await
+    .unwrap_err();
+    assert!(error.contains("context limit"), "{error}");
+    assert!(error.contains("large_result [0]: completed"));
+    assert!(!error.contains("private-fixture"));
+    let encoded = serde_json::to_vec(
+        &json!({"operation":"interrupt","request_id":"test","message_uid":"message","text":error}),
+    )
+    .unwrap();
+    assert!(encoded.len() < 4096);
+    let checkpoint = output.0.lock().unwrap();
+    let receipts: Vec<_> = checkpoint
+        .iter()
+        .filter_map(|message| {
+            if let Message::Tool { result, .. } = message {
+                Some(result)
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert!(receipts.len() > 1);
+    assert!(serde_json::to_vec(&receipts).unwrap().len() > 128 * 1024);
+    assert!(
+        receipts
+            .iter()
+            .all(|result| result["result"]["content"].as_str().unwrap().len() == 80000)
+    );
+}

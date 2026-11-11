@@ -51,7 +51,6 @@ fn config(world: &World, owner: Entity) -> Result<cell::FioteAgentConfig, String
     let fields = &panel.fields;
     let previous = world.get::<Draft>(owner).map(|draft| draft.0.clone());
     Ok(cell::FioteAgentConfig {
-        require_vault: false,
         additional_directories: world
             .get::<Directories>(owner)
             .map(|field| crate::native::directory_list::paths(world, field.0))
@@ -83,7 +82,6 @@ pub(super) fn show(
         .map(|draft| draft.0.clone())
         .or(configured)
         .unwrap_or_else(|| cell::FioteAgentConfig {
-            require_vault: false,
             additional_directories: Vec::new(),
             command: Default::default(),
             args: Vec::new(),

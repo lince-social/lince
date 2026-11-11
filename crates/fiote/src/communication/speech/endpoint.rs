@@ -51,9 +51,7 @@ pub async fn transcribe(
     settings.validate()?;
     super::validate_audio(&audio.0)?;
     if settings.requires_key && credential.as_ref().is_none_or(|key| key.0.is_empty()) {
-        return Err(
-            "Unlock the vault and configure the transcription API key. No audio was sent.".into(),
-        );
+        return Err("Configure the transcription API key. No audio was sent.".into());
     }
     let bytes = BASE64
         .decode(&audio.0)

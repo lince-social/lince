@@ -1597,7 +1597,6 @@ async fn listening_pipeline_uses_normal_fiote_delivery_and_ignored_speech_create
             ..Default::default()
         },
         api_key: Some(::fiote::config::Secret("fixture-key".into())),
-        password: Some(::fiote::config::Secret("fixture-password".into())),
     })
     .await
     .unwrap();

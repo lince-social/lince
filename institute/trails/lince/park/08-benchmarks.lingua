@@ -1,8 +1,34 @@
+Park — 8. Benchmarks for tests, Laboratory and daily use (
+    @park-dev-08-benchmarks: 0,
+    is #chapter,
+    #part-of @park-development: 20,
+    #park-workflow @park-development-cycle
+) { r_7CWV5KN1695FW2KNPGW5X19PJ7
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 # 8. Benchmarks for tests, Laboratory and daily use
 
-[Organization](Park.md), [workflow coverage](09-workflows.md), [measurement tasks](01-measurement.md). These are explicit engineering targets for the combined optimized candidate. They are not measured current results. Historical private-fixture/debug timings cannot establish these physical gates.
+[Organization](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW), [workflow coverage](record:r_33DFSQHTZFRCM758HHPN3KRWNA), [measurement tasks](record:r_3MCKF8DH9AWW9EGKNZANAVS95C). These are explicit engineering targets for the combined optimized candidate. They are not measured current results. Historical private-fixture/debug timings cannot establish these physical gates.
 
-Every Stage A binary is evaluated through the [measurement-and-delivery workflow](12-measurement-and-delivery.md): one ordered suite with phase-level CPU/GPU/wait/work and user-visible results, comparing consecutive identified production candidates. The suite does not select alternate optimization implementations. A0 finishes missing coverage before broad A1 work; Useful checks/test compilation can run in Niri; CI normally supplies optimized artifacts, and timed Park measurements never compile.
+Every Stage A binary is evaluated through the [measurement-and-delivery workflow](record:r_7NBQGTF152S58NPT0Z9EM58C1T): one ordered suite with phase-level CPU/GPU/wait/work and user-visible results, comparing consecutive identified production candidates. The suite does not select alternate optimization implementations. A0 finishes missing coverage before broad A1 work; Useful checks/test compilation can run in Niri; CI normally supplies optimized artifacts, and timed Park measurements never compile.
+
+**Continue through these Records:**
+
+- [Park — Fixed workload identities](record:r_0EZFDVG881GZW5RVWNB134PVD2)
+- [Park — Stage A daily-load contract](record:r_77P1KQBV2GETHEX6BQ2N05WBSJ)
+- [Park — User-visible targets](record:r_13J3JM4H25BR3WRBEAP8G4KHEB)
+- [Park — Internal work and resource targets](record:r_6MTDX5V4SR06443S3JPPTDWNHA)
+- [Park — Correctness oracles that accompany performance](record:r_4KQJN1FJTET53XQ00MD0679FER)
+- [Park — How the evidence is collected](record:r_1PVZ1N99YYCWRD2JKJNK9YQXBP)
+} r_7CWV5KN1695FW2KNPGW5X19PJ7
+
+Park — Fixed workload identities (
+    @park-dev-801889e30f286efb938a: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 7,
+    #park-workflow @park-development-cycle
+) { r_0EZFDVG881GZW5RVWNB134PVD2
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Fixed workload identities
 
@@ -19,6 +45,15 @@ P103 completed the reusable [workload definitions](workloads.json) and a separat
 S1 is a calibration fixture, not a claim that those exact counts describe today's workspace. P124 fills actual concrete feature representatives and records unavailable/gated cases. Keep small, normal and dense controls; report a deliberate change to any fixture instead of silently making it easier. Dense limits are diagnostic scalability goals and must not hide a failure of normal S3.
 
 Each scene has quiet, typing, click/open, scroll, pan/drag, save and background-ready variants. Exercise one active/one quiet output and both active. Cold first-use and warm reuse are separate measurements. Required overlays, clips, transparency and normal quality remain enabled. Device/scale/resolution/refresh and browser zoom are explicit. No new HDR/VRR/XWayland/provider matrix is implied.
+} r_0EZFDVG881GZW5RVWNB134PVD2
+
+Park — Stage A daily-load contract (
+    @park-dev-d94d9e76cb62802ccb65: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 23,
+    #park-workflow @park-development-cycle
+) { r_77P1KQBV2GETHEX6BQ2N05WBSJ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Stage A daily-load contract
 
@@ -26,11 +61,20 @@ S3 must represent sustained daily use, not an empty workspace or only a browser 
 
 Keep the normal external application mix open, including Firefox and Ghostty and other applications present in the selected routine. This is not a two-window cap. Manifest window counts, placement, focus, canvas zoom, browser zoom, output scale/refresh and normal background jobs. Use the same mix and quality for the comparison. No private titles, text, URLs or keystrokes belong in receipts. Do not silently close applications, stop sync/rules or move the user's items to obtain a pass. If the observed session has fewer items or a narrower mix, record a partial result and use a separate agreed/private representative scene for the missing load; do not certify the full gate from that partial result.
 
-Freeze a per-run S3 manifest and identify subsequent variants explicitly. The historical `workloads.json` identity and S0/S1/S2/S4 inputs remain unchanged; the refined daily contract does not rewrite previous results. A private representative scene can diagnose the mixed load, but cannot substitute for physical S3 acceptance. P124 supplies feature representatives and P134 may later broaden combinations; Stage A needs the concrete [daily route](09-workflows.md#stage-a-daily-route), not completion of an exhaustive inventory first.
+Freeze a per-run S3 manifest and identify subsequent variants explicitly. The historical `workloads.json` identity and S0/S1/S2/S4 inputs remain unchanged; the refined daily contract does not rewrite previous results. A private representative scene can diagnose the mixed load, but cannot substitute for physical S3 acceptance. P124 supplies feature representatives and P134 may later broaden combinations; Stage A needs the concrete [daily route](record:r_4FKK58CFNQWTKH280HSN5S17ZY), not completion of an exhaustive inventory first.
 
 Evaluate quiet, one-output-active, both-active and normal background-ready phases. Include opening/revealing views, typing and local saves, scroll, canvas pan/drag, tiling/focus changes and return to quiet. Use short focused comparisons first and repeat only for a named variance/tail uncertainty; no all-day synthetic soak is implied. The combined installed candidate must satisfy P64/P65/P136/P16/P15 without disabling this ordinary load. Follow genuine daily reports with a bounded reproduction when they expose a freeze not covered by the controlled route.
 
 The objective is the maximum useful presentation rate supported by each physical output and the hardware under this workflow, with minimal avoidable drops, stable frame intervals and prompt interaction. At 60 Hz that means aiming for sustained 60 FPS during continuous change, not generating unpresentable extra frames. B01's 57 FPS floor is an initial minimum, not a reason to leave a measured recurring bottleneck. Keep B06's Niri comparison ceiling, but pursue its near-zero-drop stretch target and report every missed/late frame where observable. The unchanged latent-frame/input-age budgets still apply even when average FPS improves. A claimed hardware limit requires attributed CPU/GPU/I/O/thermal costs and a matched reference where available; high utilization alone proves neither optimal placement nor an unavoidable limit.
+} r_77P1KQBV2GETHEX6BQ2N05WBSJ
+
+Park — User-visible targets (
+    @park-dev-afd4bceb702529d34de4: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 35,
+    #park-workflow @park-development-cycle
+) { r_13J3JM4H25BR3WRBEAP8G4KHEB
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## User-visible targets
 
@@ -47,6 +91,15 @@ Let R be the affected output's actual refresh period; at 60 Hz, R = 16.67 ms. Me
 | B14 | Small local semantic actions | Ordinary local Record property changes and control actions reach their required local result within 100 ms p95 / 250 ms p99, with feedback meeting B02/B04. Measure required rule/effect completion separately and keep its status honest; heavy queries/models/imports have prompt feedback/cancel and their own completion metric. No arbitrary network wait or all-feature refresh belongs to a small local action. |
 
 The B02 visible deadline is independent of how long a local commit takes. A slow or deliberately held write must not delay echo, selection, scrolling or unrelated windows. Show pending/failed status honestly. Reopen/recovery tests prove stored contents; an optimistic display does not prove durability.
+} r_13J3JM4H25BR3WRBEAP8G4KHEB
+
+Park — Internal work and resource targets (
+    @park-dev-6b80c468e3017c6bb064: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 51,
+    #park-workflow @park-development-cycle
+) { r_6MTDX5V4SR06443S3JPPTDWNHA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Internal work and resource targets
 
@@ -63,6 +116,15 @@ These catch useless work before an end-to-end benchmark exposes it. They are mea
 | B13 | Style writes versus reads | In steady S1/S2, resolved style reads should be compact and inheritance/rule derivation occur only for actual changes. For a global edit, preserve a coherent frame and target settled visible style within 100 ms p95 / 250 ms p99; normal interaction still meets B02. Interactive sliders show the latest preview and converge within that budget after release. Report initialization, dynamic-rule and continuous-write cases separately. Slower rare writes are acceptable only with measured overall benefit and bounded stalls. |
 
 Per-operation CPU/resource budgets are not additive caps on overlapping stages. If a measured bottleneck calls for a different internal split, change the implementation and explain the accounting; do not claim “CPU moved to GPU” just because CPU fell. Count transfers, waits and total energy/thermal effects where observable.
+} r_6MTDX5V4SR06443S3JPPTDWNHA
+
+Park — Correctness oracles that accompany performance (
+    @park-dev-455fdb89aea26ff7133b: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 67,
+    #park-workflow @park-development-cycle
+) { r_4KQJN1FJTET53XQ00MD0679FER
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Correctness oracles that accompany performance
 
@@ -71,6 +133,15 @@ For an optimization's affected workflows, compare final model state, ordered inp
 A faster incomplete render is a correctness failure. Existing border-only/missing-label and blinking Castles are specifically covered by complete-frame comparisons across quiet time, theme change, live Record refresh, first-open and asynchronous readiness. Do not label a frame complete merely because its outer rectangle is present. Keep exact pixels for deterministic cases and declared tolerances only for nondeterministic animation/AA; label the scope.
 
 File-backed edit tests verify exact text after reopen and recovery at controlled interruption points. Remote/collaborative cases use deterministic private peers/held jobs rather than contacting real users. No benchmark reads private clipboard contents or records real keystroke text. Existing capture/lock isolation and permission checks remain part of affected-path correctness.
+} r_4KQJN1FJTET53XQ00MD0679FER
+
+Park — How the evidence is collected (
+    @park-dev-9937e457cf81678ef551: 0,
+    is #chapter,
+    #part-of @park-dev-08-benchmarks: 75,
+    #park-workflow @park-development-cycle
+) { r_1PVZ1N99YYCWRD2JKJNK9YQXBP
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## How the evidence is collected
 
@@ -85,3 +156,4 @@ Use source-identified prepared baseline/candidate artifacts before timing, norma
 The combined report preserves per-phase absolute times, valid deltas, per-event and per-second work, tails, queue age and resource changes alongside end-to-end outcomes. An unchanged FPS total must not hide opposite costs or an improvement outside the critical path. Attribute primary and collateral effects to measured owners with explicit confidence; one change per owner improves diagnosis but cannot prove independent causality across shared caches/locks/GPU budgets. P151–P156/P93/P104 implement the missing foundation without rewriting prior benchmark identities.
 
 Physical acceptance uses the verified installed prebuilt candidate. Reuse the existing final runner with an absolute executable path and the intended installed scenario; its historical null-executable path can invoke a local release compile and must not be used. P156 makes missing artifacts fail explicitly. A source checkout or Nix activation does not update an already-running compositor. Necessary user/physical actions remain coordinated individually. Laboratory isolates normal workspaces and temporary data; its successful run cannot certify the current physical session.
+} r_1PVZ1N99YYCWRD2JKJNK9YQXBP

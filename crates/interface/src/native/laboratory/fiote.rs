@@ -410,7 +410,7 @@ fn tick(world: &mut World) {
                     fail(
                         &mut live,
                         "authentication",
-                        "Unlock or connect in Lince, or provide --laboratory-vault-password-file",
+                        "Connect your provider in Lince before running this test",
                         "interaction-required",
                     );
                 } else {
@@ -713,7 +713,6 @@ mod tests {
                         ..Default::default()
                     },
                     api_key: Some(cell::FioteSecret("fixture-key".into())),
-                    password: Some(cell::FioteSecret("fixture-password".into())),
                 },
             })
             .await;

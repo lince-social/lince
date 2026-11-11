@@ -33,7 +33,6 @@ async fn configured(path: PathBuf) -> (Host, tokio::net::TcpListener) {
             allow_cloud: false,
         },
         credential: None,
-        password: None,
     })
     .await
     .unwrap();

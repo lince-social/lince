@@ -281,7 +281,6 @@ async fn verify(spoken: bool, stop_during_playback: bool) {
         record: record.clone(),
         settings,
         api_key: Some(credential),
-        password: Some(cell::FioteSecret("fixture-password".into())),
     })
     .await
     .unwrap();

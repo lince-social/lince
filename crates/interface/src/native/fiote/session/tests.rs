@@ -20,7 +20,6 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
         fiotes: Vec::new(),
         tasks: Vec::new(),
         agent: Some(cell::FioteAgentConfig {
-            require_vault: false,
             additional_directories: Vec::new(),
             command: "test-agent".into(),
             args: vec![],
@@ -40,8 +39,6 @@ pub(super) fn fixture_status(record: &str) -> FioteStatus {
         },
         has_key: false,
         running: vec![],
-        vault_exists: true,
-        locked: true,
         login_url: None,
         login_pending: false,
         providers: vec![],
@@ -582,11 +579,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         Choose(0).apply(app.world_mut(), owner);
     }
     let fields = app.world().get::<Panel>(owner).unwrap().fields.clone();
-    for (index, value) in [
-        (0, "test-model"),
-        (1, "private-api-key"),
-        (2, "vault-password"),
-    ] {
+    for (index, value) in [(0, "test-model"), (1, "private-api-key")] {
         app.world_mut()
             .get_mut::<EditableText>(fields[index])
             .unwrap()
@@ -594,7 +587,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
             .set_text(value);
     }
     Continue.apply(app.world_mut(), owner);
-    for index in [1, 2] {
+    for index in [1] {
         assert!(
             app.world()
                 .get::<EditableText>(fields[index])
@@ -612,18 +605,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         app.world().get::<Text>(panel.status).unwrap().0
     );
     assert!(panel.saved.as_ref().unwrap().has_key);
-    assert!(command(app.world_mut(), &binding, "/lock"));
-    deliver(&mut app).await;
-    assert!(!ready(app.world_mut(), &binding));
-    show(app.world_mut(), owner, Step::Unlock);
-    let password = app.world().get::<Panel>(owner).unwrap().fields[0];
-    app.world_mut()
-        .get_mut::<EditableText>(password)
-        .unwrap()
-        .editor
-        .set_text("vault-password");
-    Continue.apply(app.world_mut(), owner);
-    deliver(&mut app).await;
+    assert!(!command(app.world_mut(), &binding, "/lock"));
     assert!(ready(app.world_mut(), &binding));
     let thread = engine
         .act(
@@ -673,7 +655,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
         !app.world_mut()
             .query::<&Text>()
             .iter(app.world())
-            .any(|text| text.0.contains("private-api-key") || text.0.contains("vault-password"))
+            .any(|text| text.0.contains("private-api-key"))
     );
     management::Open.apply(app.world_mut(), owner);
     deliver(&mut app).await;

@@ -154,10 +154,6 @@ pub enum Request {
     ConfigureEndpoint {
         settings: endpoint::Settings,
         credential: Option<Secret>,
-        password: Option<Secret>,
-    },
-    UnlockEndpoint {
-        password: Secret,
     },
     Inspect,
     StartEndpoint {

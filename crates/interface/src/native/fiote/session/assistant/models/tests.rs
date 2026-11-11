@@ -393,7 +393,6 @@ async fn supported_unvalidated_routing_persists_and_identical_retry_bypasses_cha
         record: child.clone(),
         settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();

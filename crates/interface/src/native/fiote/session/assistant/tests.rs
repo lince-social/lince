@@ -156,7 +156,6 @@ pub(super) async fn fixture_named_in(
                 ..Default::default()
             },
             api_key: Some(FioteSecret("fixture-key".into())),
-            password: Some(FioteSecret("fixture-password".into())),
         })
         .await
         .unwrap();
@@ -324,7 +323,6 @@ async fn assistant_controls_preserve_unsent_draft_and_request_identity_on_refusa
         record,
         settings: FioteSettings::default(),
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();
@@ -439,7 +437,6 @@ async fn delegated_stop_control_interrupts_child_and_keeps_parent_selected() {
         record: child.clone(),
         settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();

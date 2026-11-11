@@ -1,6 +1,32 @@
+Park — 10. Architecture for a responsive interface (
+    @park-dev-10-architecture: 0,
+    is #chapter,
+    #part-of @park-development: 22,
+    #park-workflow @park-development-cycle
+) { r_2DZ5H07T9W84B4XEHHMMC2E1GM
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 # 10. Architecture for a responsive interface
 
-[Organization](Park.md), [source evidence](00-evidence-and-research.md), [targets](08-benchmarks.md). This is the direction to test through the atomic stage tasks, not an already implemented replacement renderer. Source locations are entry points; follow their current callers before editing.
+[Organization](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW), [source evidence](record:r_14AZKSVCBTJXY97EXZZ0838FWW), [targets](record:r_7CWV5KN1695FW2KNPGW5X19PJ7). This is the direction to test through the atomic stage tasks, not an already implemented replacement renderer. Source locations are entry points; follow their current callers before editing.
+
+**Continue through these Records:**
+
+- [Park — Shared families and responsibility boundaries](record:r_735VZ3CVA77HK0NXHQ4NXXH5RA)
+- [Park — Intended flow and ownership](record:r_11QEBZQJM581CRG2AGD296AH3X)
+- [Park — Explicit revisions, not universal full updates](record:r_1MHYDK201RDAJ1WEDZ577CFAAE)
+- [Park — Read-heavy style data](record:r_7CYVBZY44ZP05TK81QPT7E1YD0)
+- [Park — Scheduling and processor use](record:r_5E3Q2DWQT7BMMFCAFZ9TM7WK2S)
+- [Park — Refactor as vertical slices](record:r_28FQ0MH7Z1ENXV9GZ6B3X3NXCE)
+} r_2DZ5H07T9W84B4XEHHMMC2E1GM
+
+Park — Shared families and responsibility boundaries (
+    @park-dev-b6d09267ff9aa8c93cfd: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 5,
+    #park-workflow @park-development-cycle
+) { r_735VZ3CVA77HK0NXHQ4NXXH5RA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Shared families and responsibility boundaries
 
@@ -16,6 +42,15 @@
 | Laboratory catalogue/driver, xtask Park validation, host performance and latency reporting | Isolated temporary data, cancellation, exact nonzero selectors, bounded evidence | One fixture manifest and runner, causal event flows, reusable workflow/performance cases: P93/P101–P104/P134. |
 
 Reuse these families. Avoid a new scheduler, cache, worker and serialized state copy for each feature. A new abstraction is justified when it removes competing responsibilities and has concrete callers, a clear invalidation/lifetime contract and measured total cost. Family-specific changes still use the repository's componentree workflow when implementation requires a new grouping; this document does not replace that approval step or an approval already given for the same grouping.
+} r_735VZ3CVA77HK0NXHQ4NXXH5RA
+
+Park — Intended flow and ownership (
+    @park-dev-ce3cfd45597a60b82b1c: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 20,
+    #park-workflow @park-development-cycle
+) { r_11QEBZQJM581CRG2AGD296AH3X
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Intended flow and ownership
 
@@ -37,6 +72,15 @@ flowchart LR
 The graph separates responsibilities; it does not grant permission to bypass the current draft-before-send guarantee. A recovery/canonical-write redesign must demonstrate recoverability at every crash boundary before changing that ordering. For a local source the durable journal and canonical transaction may be able to share work; for a remote source, recoverable local pending intent and origin acknowledgement remain distinct. Preserve operation IDs, ordering, conflict resolution and authorization on both paths.
 
 The external Wayland-client path already handles much input in Park and receives application buffers independently. Keep that path separate from native semantic updates. Where it still waits for native work, establish the actual dependency before coupling or decoupling it. A client buffer commit after a key is not proof of that key's visible response.
+} r_11QEBZQJM581CRG2AGD296AH3X
+
+Park — Explicit revisions, not universal full updates (
+    @park-dev-354216ea573401ce6d94: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 41,
+    #park-workflow @park-development-cycle
+) { r_1MHYDK201RDAJ1WEDZ577CFAAE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Explicit revisions, not universal full updates
 
@@ -47,6 +91,15 @@ A completed presentation references the semantic/style/layout/input/output gener
 One local text edit should affect its editor, dependent intrinsic sizing, the relevant Record/query views and demanded pixels. It should not clear unrelated style caches, regenerate all descriptions or repaint the other monitor. Color-only edits should not reflow text. Moving an unchanged item should update transforms and hit mapping without reshaping its content unless a dependency such as Area inheritance or wrapping really changed.
 
 Producer-maintained dirty sets or revision journals can make work proportional to actual changes. Bevy Changed queries are useful correctness tools but still inspect matching entities; replacing one full traversal with another change-filtered full traversal is not automatically an optimization. Include dirty-index maintenance, component additions/removals, newly opened consumers and memory in the comparison.
+} r_1MHYDK201RDAJ1WEDZ577CFAAE
+
+Park — Read-heavy style data (
+    @park-dev-dd8e4851259fa682fbea: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 51,
+    #park-workflow @park-development-cycle
+) { r_7CYVBZY44ZP05TK81QPT7E1YD0
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Read-heavy style data
 
@@ -55,6 +108,15 @@ Keep persisted authored tokens as the source of truth for editing/import/export.
 Inheritance/rule evaluation belongs on a real source change. Resolve only required properties, intern identical style sets where reuse pays, keep source/origin descriptions on the inspection path, and apply to only affected consumers. Cache memory must retire with its owners. Keep dynamic contexts and explicit icon colors correct. Do not create a global mutable resolver lock that serializes the newly independent systems.
 
 First-open initialization and rare edits may cost more than a cached read. They still need bounded completion and a coherent publication. Theme sliders and animations are write-heavy controls and remain separate test cases. Whether P91's extra scheduling CPU is worthwhile for the common steady case must be judged with measured style-change frequency; faster rare writes alone are not proof of a daily-use win.
+} r_7CYVBZY44ZP05TK81QPT7E1YD0
+
+Park — Scheduling and processor use (
+    @park-dev-a9fd21d3599188fbb325: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 59,
+    #park-workflow @park-development-cycle
+) { r_5E3Q2DWQT7BMMFCAFZ9TM7WK2S
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Scheduling and processor use
 
@@ -63,11 +125,21 @@ Keep short CPU work for semantics, queue admission, dependency decisions and com
 Break a long system at a meaningful boundary: collect immutable inputs, derive independent results, perform one deterministic shared budget decision where required, and narrowly apply current results. Reuse existing workers and a serial path for cheap batches. Run-queue delay, locks, copying and thermal cost count. Worker thread affinity, NonSend resources and GPU ownership are real constraints, not traits to paper over.
 
 Main/render overlap needs an owned coherent snapshot because NativeCanvas consumes geometry/input/images immediately after app.update. A shallow bounded pipeline can improve throughput while making inputs older; choose from measured input-visible latency and per-output presentation. Never add a frame of buffering to every stage independently. Service cancellations, releases, focus/lock changes and pending persistence even while bulk work is busy.
+} r_5E3Q2DWQT7BMMFCAFZ9TM7WK2S
+
+Park — Refactor as vertical slices (
+    @park-dev-03db7ea3381cf5b353d9: 0,
+    is #chapter,
+    #part-of @park-dev-10-architecture: 67,
+    #park-workflow @park-development-cycle
+) { r_28FQ0MH7Z1ENXV9GZ6B3X3NXCE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Refactor as vertical slices
 
 Each slice must carry an actual workflow through input, state, presentation and persistence when relevant. Delete its superseded adapter/storage path once the replacement is checked. Do not keep compatibility for unused older versions. A large internal transformation is appropriate if the critical path supports it; a large simultaneous unmeasured rewrite makes it harder to identify which change helped or broke a workflow.
 
-Vertical slices are code/ownership boundaries, not one-release-per-slice requirements. Follow [12](12-measurement-and-delivery.md): measure first, implement all ready independent measured slices in a broad batch, run useful local checks in Niri and push. Measure the installed candidate in Park, update the evidence/plan and stop for the return to Niri. Keep one coherent mechanism per measured owner in that cycle and name coupled changes honestly. Do not retain old/new algorithm switches or duplicate production paths for comparative testing; real capability fallbacks and serial handling of cheap work remain product decisions.
+Vertical slices are code/ownership boundaries, not one-release-per-slice requirements. Follow [12](record:r_7NBQGTF152S58NPT0Z9EM58C1T): measure first, implement all ready independent measured slices in a broad batch, run useful local checks in Niri and push. Measure the installed candidate in Park, update the evidence/plan and stop for the return to Niri. Keep one coherent mechanism per measured owner in that cycle and name coupled changes honestly. Do not retain old/new algorithm switches or duplicate production paths for comparative testing; real capability fallbacks and serial handling of cheap work remain product decisions.
 
 Evaluate the combined candidate with fixed workloads and the per-phase report in subject 11. If a combination regresses, use its causal trace to repair the affected boundary, or retain the honest tradeoff for the user. Shared resource effects may still require a focused follow-up candidate; do not claim timing alone proves independent contributions. Do not restart a cycle of unrelated microbenchmarks while a known dominant blocker remains.
+} r_28FQ0MH7Z1ENXV9GZ6B3X3NXCE

@@ -1,10 +1,35 @@
+Park — 9. Daily workflows, feature inventory and combinations (
+    @park-dev-09-workflows: 0,
+    is #chapter,
+    #part-of @park-development: 21,
+    #park-workflow @park-development-cycle
+) { r_33DFSQHTZFRCM758HHPN3KRWNA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 # 9. Daily workflows, feature inventory and combinations
 
-[Organization](Park.md), [targets](08-benchmarks.md), [inventory task P124](05-feature-costs-and-scaling.md), [coverage task P134](11-acceptance-and-experiments.md). This seed inventory maps the active app's feature families to directly experienced work. P124 must reconcile every reachable registration/control with this inventory and existing selectors before claiming source-complete coverage. No finite plan covers every possible document, timing and feature permutation.
+[Organization](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW), [targets](record:r_7CWV5KN1695FW2KNPGW5X19PJ7), [inventory task P124](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK), [coverage task P134](record:r_6A97DSEHEM7S2QN47G8QYN7SP3). This seed inventory maps the active app's feature families to directly experienced work. P124 must reconcile every reachable registration/control with this inventory and existing selectors before claiming source-complete coverage. No finite plan covers every possible document, timing and feature permutation.
+
+**Continue through these Records:**
+
+- [Park — Stage A daily route](record:r_4FKK58CFNQWTKH280HSN5S17ZY)
+- [Park — Stable workflow IDs](record:r_6FB7NTCCT87HSMC8C40V3CTJNK)
+- [Park — Source feature-family inventory to complete](record:r_7RD5PQATAM76249CHX70NMXE1S)
+- [Park — Finite combination factors](record:r_5JWVNCA294M6734Y1D4K6MABQJ)
+- [Park — Mandatory combinations beyond pairwise coverage](record:r_6T9355AR1PR61QW5VSDF1W8CDA)
+} r_33DFSQHTZFRCM758HHPN3KRWNA
+
+Park — Stage A daily route (
+    @park-dev-b40af781394d01127947: 0,
+    is #chapter,
+    #part-of @park-dev-09-workflows: 5,
+    #park-workflow @park-development-cycle
+) { r_4FKK58CFNQWTKH280HSN5S17ZY
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Stage A daily route
 
-Run these phases against the [same 20–30-item mixed daily load](08-benchmarks.md#stage-a-daily-load-contract) and ordinary external windows. P154 adapts them to one ordered combined suite; [12](12-measurement-and-delivery.md) defines batching, phase measurements and delivery. They select existing workflows, not duplicate suites or alternate optimization modes. Keep existing automated controls where available; identify the physical observations and any unavailable checks separately. Add representative existing 2D/3D content to the private prepared coverage where supported and report its active passes; never inflate or simplify the actual daily scene silently.
+Run these phases against the [same 20–30-item mixed daily load](record:r_77P1KQBV2GETHEX6BQ2N05WBSJ) and ordinary external windows. P154 adapts them to one ordered combined suite; [12](record:r_7NBQGTF152S58NPT0Z9EM58C1T) defines batching, phase measurements and delivery. They select existing workflows, not duplicate suites or alternate optimization modes. Keep existing automated controls where available; identify the physical observations and any unavailable checks separately. Add representative existing 2D/3D content to the private prepared coverage where supported and report its active passes; never inflate or simplify the actual daily scene silently.
 
 | Phase | Existing workflows | Stage A evidence |
 | --- | --- | --- |
@@ -18,6 +43,15 @@ Run these phases against the [same 20–30-item mixed daily load](08-benchmarks.
 The sync/history, database-lock and Karma bug implementation belongs to the user's other agent. Reuse its source-identified results for affected workflows and test performance after integration; the daily route does not authorize a second parallel implementation. A rule or history bug outside this route can remain separately owned, but a resulting foreground stall or invalid saved-state claim is still a Stage A dependency.
 
 Changed-path text, clipping, selection, focus, privacy, durability and resource-lifetime oracles remain mandatory. Existing suite runs start with Protein Area Add filter. Broader P124/P134 inventory completion, unrelated feature combinations and test-platform expansion need not delay demonstrated Stage A acceptance; do not describe unexecuted coverage as passing.
+} r_4FKK58CFNQWTKH280HSN5S17ZY
+
+Park — Stable workflow IDs (
+    @park-dev-3385362ae3cd1b41d93c: 0,
+    is #chapter,
+    #part-of @park-dev-09-workflows: 22,
+    #park-workflow @park-development-cycle
+) { r_6FB7NTCCT87HSMC8C40V3CTJNK
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Stable workflow IDs
 
@@ -53,6 +87,15 @@ Each row supplies an action, the actual outcome to observe and performance dimen
 | W26 | Change a source/owner/Record identity or revoke access while a job/frame/input is queued | Old results and actions cannot apply to the replacement; required cancellation/retirement/privacy epoch respected without waiting for arbitrary polling. | B02/B03/B12 plus correctness |
 | W27 | Output layout changes while content is busy or the session is locked | Current geometry/focus/input mapping and capture/privacy remain correct; no exposed stale frame, swapped saved workspace or lost reachable window. Reuse existing regression fixtures; physical actions only if separately needed/approved. | B01/B02/B11 plus correctness |
 | W28 | Open Laboratory, run a prepared case, Stop/Close and return to normal workspace | Temporary data/isolation, exact case counts, bounded metrics and truthful pending results; previous workspace/input/drafts recover. | B04/B10/B12 |
+} r_6FB7NTCCT87HSMC8C40V3CTJNK
+
+Park — Source feature-family inventory to complete (
+    @park-dev-68748a455675398ea999: 0,
+    is #chapter,
+    #part-of @park-dev-09-workflows: 57,
+    #park-workflow @park-development-cycle
+) { r_7RD5PQATAM76249CHX70NMXE1S
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Source feature-family inventory to complete
 
@@ -77,6 +120,15 @@ This is a map for P124, not an assertion that every listed feature is exercised 
 | Feature-gated compiled additions | Every extra native/app registration enabled by the actual shipping features, including games where present | Map to existing interaction/media/worker families and a representative start/focus/exit workflow; do not enable optional features solely to inflate the test set. |
 
 Registration alone does not imply a system runs, allocates eagerly or wastes time. For every family, distinguish no instances, visible instances, off-camera instances, inactive workspace, no consumers, active semantic jobs, pending dirty edits and multiple consumers. Record which conditions are applicable rather than pretending every feature supports all of them.
+} r_7RD5PQATAM76249CHX70NMXE1S
+
+Park — Finite combination factors (
+    @park-dev-9a2b3224933e6e8fa448: 0,
+    is #chapter,
+    #part-of @park-dev-09-workflows: 81,
+    #park-workflow @park-development-cycle
+) { r_5JWVNCA294M6734Y1D4K6MABQJ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Finite combination factors
 
@@ -95,6 +147,15 @@ Use deterministic covering sets over valid pairs of these factors. A factor valu
 | Lifecycle/privacy | First open/reopen; hide/reveal; dirty close/recovery; access revoked; lock/capture policy/output epoch change in existing isolated fixtures. |
 
 Start with the cheap headless/work-count pairs, then run timing for representative normal/dense subsets and hardware-only rendering checks where needed. No compilation/private GPU renderer overlaps a measured physical run. Do not contact real peers, trigger a costly model job, alter real Records or fill the user's canvas to generate this set.
+} r_5JWVNCA294M6734Y1D4K6MABQJ
+
+Park — Mandatory combinations beyond pairwise coverage (
+    @park-dev-9fab1599be6472613323: 0,
+    is #chapter,
+    #part-of @park-dev-09-workflows: 99,
+    #park-workflow @park-development-cycle
+) { r_6T9355AR1PR61QW5VSDF1W8CDA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Mandatory combinations beyond pairwise coverage
 
@@ -114,3 +175,4 @@ These are selected high-risk triples/transitions because they cross the exact pr
 | One-output video + other-output drag/type + dense native scene | Measures actual resource sharing and independent output responsiveness rather than empty-workspace FPS. |
 
 P134 records source-complete family assignment, selected pairs, these cross-boundary cases and genuine gaps. P135 evaluates useful optimization combinations against them. New bug reports add a concrete reproducer to the appropriate shared workflow and an atomic repair task if needed; they do not justify redesigning each Castle separately.
+} r_6T9355AR1PR61QW5VSDF1W8CDA

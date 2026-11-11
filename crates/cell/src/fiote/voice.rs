@@ -52,13 +52,13 @@ impl Host {
             return Err("Continuous voice needs a local decision model or an enabled native provider connection.".into());
         }
         self.catalog.validate(&mut configuration.settings)?;
-        let slot = vault::slot(&configuration.settings);
+        let slot = credentials::slot(&configuration.settings);
         let key = if self.catalog.method(&configuration.settings)?.kind
             == fiote::adapters::AuthKind::None
         {
             Secret::default()
         } else {
-            self.vault
+            self.credentials
                 .key(&slot)
                 .await?
                 .ok_or("Sign in to the Fiote connection first.")?
@@ -87,9 +87,8 @@ impl Host {
                 fiote::communication::native::provider(
                     &configuration.settings,
                     &key,
-                    Some(Arc::new(vault::Credential {
-                        vault: self.vault.clone(),
-                        directory: self.directory.clone(),
+                    Some(Arc::new(credentials::Credential {
+                        store: self.credentials.clone(),
                         slot: slot.clone(),
                     })),
                     Some(lock),
@@ -100,7 +99,7 @@ impl Host {
             fiote::communication::decision::dialogue::classify(provider.as_ref(), dialogue, text)
                 .await;
         if let Some(adapter) = adapter {
-            self.vault
+            self.credentials
                 .refreshed(slot, adapter.credential().await, key)
                 .await?;
         }

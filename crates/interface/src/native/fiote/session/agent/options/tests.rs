@@ -28,7 +28,7 @@ fn settings_show_supported_controls_and_explain_missing_ones() {
             {"id":"model","name":"Model","category":"model","type":"select","currentValue":"a","options":[{"value":"a","name":"Model A"},{"value":"b","name":"Model B"}]},
             {"id":"speed","name":"Speed","type":"select","currentValue":"normal","options":[{"value":"normal","name":"Normal"},{"value":"fast","name":"Fast"}]}
         ]},"agent_activity":[],"record":"test","settings":{"enabled":true,"provider":"","model":"","endpoint":"","directory":""},
-        "has_key":false,"running":[],"vault_exists":false,"locked":false,
+        "has_key":false,"running":[],
         "login_url":null,"login_pending":false,"providers":[],"requires_credential":false,"tool_connections":[]
     })).unwrap();
     show(&mut world, owner, owner, Some(&saved));

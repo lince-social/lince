@@ -3,7 +3,7 @@ Park is Lince's native Wayland desktop compositor, hosting ordinary application 
 
 ## Validation scope
 
-The current acceptance scope is native Wayland SDR keyboard/mouse operation. XWayland, accessibility, HDR, VRR, tablet/touch, rotation matrices and the separate workspace refactor are outside this checklist. Existing valid passes retain their original provenance; the remaining work is in institute/anicca/Park.md. Day-to-day use and UX reports continue independently of the finite acceptance checklist.
+The current acceptance scope is native Wayland SDR keyboard/mouse operation. XWayland, accessibility, HDR, VRR, tablet/touch, rotation matrices and the separate workspace refactor are outside this checklist. Existing valid passes retain their original provenance; the remaining work is in [the Park development trail](park/Park.lingua#r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Day-to-day use and UX reports continue independently of the finite acceptance checklist.
 
 ## Completed implementation and observations
 

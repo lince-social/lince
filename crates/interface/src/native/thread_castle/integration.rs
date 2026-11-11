@@ -73,7 +73,6 @@ pub(super) async fn setup(
                 cell::fiote_connection::Request::Select {
                     id: "live-test".into(),
                     api_key: None,
-                    password: None,
                 },
             ),
         ];

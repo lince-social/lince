@@ -1,4 +1,4 @@
-use cell::{Cell, CellOptions, FioteSecret, fiote::Host};
+use cell::{Cell, CellOptions, fiote::Host};
 use fiote::config::Request;
 use std::{io::Error, path::PathBuf};
 use transport::fiote::Service;
@@ -59,32 +59,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .map_err(Error::other)?
         .map_or(selected, |intake| intake.record);
-    let password = FioteSecret(nucleus::new_uid("acceptance-vault"));
-    let password_file = directory.join("vault-password");
-    {
-        use std::io::Write;
-        let mut options = std::fs::OpenOptions::new();
-        options.write(true).create_new(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        options
-            .open(&password_file)?
-            .write_all(password.0.as_bytes())?;
-    }
     host.handle(Request::Configure {
         record: record.clone(),
         settings,
         api_key: Some(credential),
-        password: Some(password),
     })
     .await
     .map_err(Error::other)?;
     host.stop_all().await;
     cell.shutdown().await;
-    let report = serde_json::json!({"record":record,"directory":directory,"password_file":password_file,"credentials":"encrypted access token only; refresh token removed","working_directory":directory.join("workspace")});
+    let report = serde_json::json!({"record":record,"directory":directory,"credentials":"private local access token only; refresh token removed","working_directory":directory.join("workspace")});
     serde_json::to_writer_pretty(
         std::fs::File::create(directory.join("fixture.json"))?,
         &report,

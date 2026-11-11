@@ -8,55 +8,10 @@ mod spoken;
 
 #[cfg(unix)]
 #[tokio::test]
-#[ignore = "Explicit owner maintenance: validates the current schema, takes the application lock and renews the native account through the normal encrypted vault; requires connection environment variables"]
-async fn renew_existing_native_test_connection_through_the_normal_vault() {
-    use std::{
-        hash::{Hash, Hasher},
-        os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
-    };
-    let directory = PathBuf::from(std::env::var_os("LINCE_FIOTE_TEST_DATA").unwrap())
-        .canonicalize()
-        .unwrap();
-    let password_path = PathBuf::from(std::env::var_os("LINCE_FIOTE_TEST_PASSWORD_FILE").unwrap());
-    let password_file = std::fs::File::open(password_path).unwrap();
-    let metadata = password_file.metadata().unwrap();
-    assert!(metadata.is_file() && metadata.len() <= 4096);
-    assert_eq!(metadata.permissions().mode() & 0o077, 0);
-    let mut password = Secret(String::new());
-    std::io::Read::read_to_string(&mut &password_file, &mut password.0).unwrap();
-    let length = password.0.trim_end_matches(['\r', '\n']).len();
-    password.0.truncate(length);
-    let mut hash = std::collections::hash_map::DefaultHasher::new();
-    directory.hash(&mut hash);
-    let control = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join(format!("lince-ui-{}", metadata.uid()));
-    let control_metadata = std::fs::symlink_metadata(&control).unwrap();
-    assert!(control_metadata.is_dir());
-    assert_eq!(control_metadata.uid(), metadata.uid());
-    assert_eq!(control_metadata.permissions().mode() & 0o077, 0);
-    let lock = std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32)
-        .open(control.join(format!("{:016x}.lock", hash.finish())))
-        .unwrap();
-    lock.try_lock()
-        .expect("Close Lince and other owner-data workers before renewing this test connection");
-    let checked = store::Store::open_readonly(&directory.join("lince.db"))
-        .await
-        .unwrap();
-    checked.pool.close().await;
-    let store = store::Store::open_existing_durable(&format!(
-        "sqlite://{}",
-        directory.join("lince.db").display()
-    ))
-    .await
-    .unwrap();
-    let engine = Arc::new(Engine::new(store).await.unwrap());
-    let vault = Arc::new(vault::Vault::new(engine.clone()));
-    vault.unlock(password).await.unwrap();
+#[ignore = "Explicit owner maintenance: renews the selected native account through normal local credential storage; requires connection environment variables"]
+async fn renew_existing_native_test_connection_through_local_credentials() {
+    let directory = PathBuf::from(std::env::var_os("LINCE_FIOTE_TEST_DATA").unwrap());
+    let credentials = Arc::new(credentials::Store::new(directory.join("fiote/credentials")));
     let record = std::env::var("LINCE_FIOTE_TEST_RECORD").unwrap();
     assert!(nucleus::valid_uid(&record, "r"));
     let configuration: serde_json::Value = serde_json::from_slice(
@@ -66,10 +21,9 @@ async fn renew_existing_native_test_connection_through_the_normal_vault() {
     let settings: Settings = serde_json::from_value(configuration["settings"].clone()).unwrap();
     assert!(fiote::communication::native::has_native_login(&settings));
     let session = fiote::communication::native::session(
-        Arc::new(vault::Credential {
-            vault: vault.clone(),
-            slot: vault::slot(&settings),
-            directory: directory.join("fiote"),
+        Arc::new(credentials::Credential {
+            store: credentials.clone(),
+            slot: credentials::slot(&settings),
         }),
         Arc::new(Mutex::new(())),
     )
@@ -103,8 +57,6 @@ async fn renew_existing_native_test_connection_through_the_normal_vault() {
         "normal_session_access_valid_for_seconds={}",
         current.expires_at.saturating_sub(now)
     );
-    vault.lock().await;
-    engine.store.pool.close().await;
 }
 
 mod native_connection {
@@ -120,10 +72,7 @@ use native_connection::existing_connection;
 #[tokio::test]
 #[ignore = "Creates new isolated LINCE_FIOTE_RELEASE_DATA through normal Engine/Fiote APIs with an access-only copy of the explicitly selected native connection"]
 async fn prepare_isolated_native_release_laboratory_data() {
-    use std::{
-        io::Write,
-        os::unix::fs::{DirBuilderExt, OpenOptionsExt},
-    };
+    use std::os::unix::fs::DirBuilderExt;
 
     let destination = PathBuf::from(std::env::var_os("LINCE_FIOTE_RELEASE_DATA").unwrap());
     assert!(destination.is_absolute() && !destination.exists());
@@ -165,24 +114,13 @@ async fn prepare_isolated_native_release_laboratory_data() {
         record: record.clone(),
         settings,
         api_key: Some(credential),
-        password: Some(Secret("release-fixture-password".into())),
     })
     .await
     .unwrap();
-    let password_path = destination.join("vault-password");
-    let mut password = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&password_path)
-        .unwrap();
-    password.write_all(b"release-fixture-password").unwrap();
-    password.sync_all().unwrap();
     std::fs::write(
         destination.join("acceptance.json"),
         serde_json::to_vec_pretty(&serde_json::json!({
             "record":record,
-            "password_file":"vault-password",
             "access_expires_at":account.expires_at,
             "refresh_token_copied":false
         }))
@@ -191,7 +129,7 @@ async fn prepare_isolated_native_release_laboratory_data() {
     .unwrap();
     host.stop_all().await;
     engine.store.pool.close().await;
-    println!("Prepared isolated release data with encrypted access-only credentials.");
+    println!("Prepared isolated release data with private local access-only credentials.");
 }
 
 async fn completed(host: &Host, id: &str) -> fiote::assistant::EntryReceipt {
@@ -271,8 +209,11 @@ async fn actual_native_parent_discovers_a_coding_child_and_delegates_a_verified_
     std::fs::create_dir(&workspace).unwrap();
     settings.directory = workspace.clone();
     settings.enabled = true;
-    host.vault.put(vault::slot(&settings), key).await.unwrap();
-    host.configure(&parent, settings.clone(), None, None)
+    host.credentials
+        .put(credentials::slot(&settings), key)
+        .await
+        .unwrap();
+    host.configure(&parent, settings.clone(), None)
         .await
         .unwrap();
     host.engine
@@ -318,7 +259,7 @@ async fn actual_native_parent_discovers_a_coding_child_and_delegates_a_verified_
         .await
         .unwrap();
     settings.directory = PathBuf::new();
-    host.configure(&child, settings, None, None).await.unwrap();
+    host.configure(&child, settings, None).await.unwrap();
     assert_eq!(
         host.effective_working_directory(&child)
             .await
@@ -380,7 +321,7 @@ async fn actual_native_parent_discovers_a_coding_child_and_delegates_a_verified_
 }
 
 #[tokio::test]
-#[ignore = "Consumes native provider usage; requires explicit LINCE_FIOTE_TEST_DATA, PASSWORD_FILE and RECORD; owner database is read-only and refresh credentials are excluded"]
+#[ignore = "Consumes native provider usage; requires explicit LINCE_FIOTE_TEST_DATA, and RECORD; owner database is read-only and refresh credentials are excluded"]
 async fn actual_native_provider_creates_a_file_continues_the_thread_and_classifies_closing_speech_without_actions()
  {
     let (mut settings, key) = existing_connection().await;
@@ -389,8 +330,11 @@ async fn actual_native_provider_creates_a_file_continues_the_thread_and_classifi
     std::fs::create_dir(&workspace).unwrap();
     settings.directory = workspace.clone();
     settings.enabled = true;
-    host.vault.put(vault::slot(&settings), key).await.unwrap();
-    host.configure(&record, settings, None, None).await.unwrap();
+    host.credentials
+        .put(credentials::slot(&settings), key)
+        .await
+        .unwrap();
+    host.configure(&record, settings, None).await.unwrap();
     let mut host = host.as_ref().clone();
     host.provider = None;
     let request = EntryRequest {

@@ -67,13 +67,10 @@ impl Host {
     ) -> Result<(), String> {
         self.options_available(record).await?;
         config.validate()?;
-        config.require_vault = false;
         {
             let options = self.agents.options.lock().await;
             if options.len() >= 16 && !options.contains_key(record) {
-                return Err(
-                    "Use /lock to close agent connections before loading more settings.".into(),
-                );
+                return Err("Close unused agent connections before loading more settings.".into());
             }
         }
         let connection = acp::Connection::open(&config).await?;

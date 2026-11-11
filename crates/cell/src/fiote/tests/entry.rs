@@ -59,7 +59,6 @@ async fn configured(host: &Host, original: &str, name: &str, parent: Option<&str
         record: record.clone(),
         settings: host.load(original).unwrap().unwrap().settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();
@@ -243,7 +242,6 @@ async fn assistant_continuation_rejects_foreign_threads_changed_targets_and_disa
         record: original.clone(),
         settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();
@@ -572,11 +570,20 @@ async fn assistant_entry_disabled_deleted_and_locked_targets_create_nothing() {
             .is_err()
     );
     assert_eq!(count(&host).await, records);
-    host.vault.lock().await;
+    host.credentials
+        .remove(&credentials::slot(
+            &host.load(&original).unwrap().unwrap().settings,
+        ))
+        .await
+        .unwrap();
     assert!(
-        host.assistant_send(submission("locked-entry", Some(&original), "Hello"))
-            .await
-            .is_err()
+        host.assistant_send(submission(
+            "missing-credential-entry",
+            Some(&original),
+            "Hello"
+        ))
+        .await
+        .is_err()
     );
     assert_eq!(count(&host).await, records);
     assert!(script.observed.lock().unwrap().is_empty());
@@ -723,7 +730,6 @@ async fn assistant_entry_saved_node_launcher_and_login_text_create_no_conversati
     let native = host.load(&original).unwrap().unwrap();
     let mut legacy = native.clone();
     legacy.agent = Some(fiote::acp::Config {
-        require_vault: false,
         command: "node".into(),
         args: vec!["missing-codex-acp.js".into()],
         directory: root.path().into(),

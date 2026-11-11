@@ -47,17 +47,12 @@ impl Host {
             if busy {
                 continue;
             }
-            let (exists, locked) = self.vault.status().await?;
-            if config.agent.is_none() && exists && locked {
-                store::sqlx::query("UPDATE fiote_activation SET state = 'waiting', detail = 'Unlock Fiote credentials to continue' WHERE fiote_uid = ? AND state IN ('queued','waiting')").bind(&record).execute(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
-                continue;
-            }
             if config.agent.is_none() {
                 let ready = match self.catalog.method(&config.settings) {
                     Ok(method) if method.kind == fiote::adapters::AuthKind::None => Ok(()),
                     Ok(_) => self
-                        .vault
-                        .key(&vault::slot(&config.settings))
+                        .credentials
+                        .key(&credentials::slot(&config.settings))
                         .await
                         .and_then(|key| {
                             key.map(|_| ())
@@ -86,7 +81,9 @@ impl Host {
                             .await,
                     );
                 if actor.is_some() {
-                    allowed = Err(engine::EngineError::Forbidden("Fiote execution requires the local interface session".into()));
+                    allowed = Err(engine::EngineError::Forbidden(
+                        "Fiote execution requires the local interface session".into(),
+                    ));
                 }
                 if cause["kind"] == "karma" {
                     let uid = cause["rule"].as_str().unwrap_or_default();

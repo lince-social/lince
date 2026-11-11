@@ -82,8 +82,8 @@ pub async fn probe_with_session(
                     check.stage = Stage::Authentication;
                     if kind != AuthKind::None && credential.is_none() {
                         Err(match kind {
-                            AuthKind::Browser => "Complete this connection's browser login and unlock its credential vault.".into(),
-                            _ => "Unlock the vault and save an API key for this connection.".into(),
+                            AuthKind::Browser => "Complete this connection's browser login.".into(),
+                            _ => "Save an API key for this connection.".into(),
                         })
                     } else if settings.provider.0 == super::auth::PROVIDER {
                         check.capabilities.tools = Support::Supported;

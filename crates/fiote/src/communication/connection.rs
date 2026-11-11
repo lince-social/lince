@@ -165,30 +165,14 @@ impl Profiles {
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Request {
     Inspect,
-    Discover {
-        refresh_registry: bool,
-    },
+    Discover { refresh_registry: bool },
     Deselect,
-    Save {
-        profile: Profile,
-    },
-    Remove {
-        id: String,
-    },
-    Select {
-        id: String,
-        api_key: Option<Secret>,
-        password: Option<Secret>,
-    },
-    Check {
-        id: String,
-    },
-    Test {
-        id: String,
-    },
-    Logout {
-        id: String,
-    },
+    Save { profile: Profile },
+    Remove { id: String },
+    Select { id: String, api_key: Option<Secret> },
+    Check { id: String },
+    Test { id: String },
+    Logout { id: String },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

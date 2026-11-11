@@ -2,18 +2,18 @@
 
 pub mod admin_bootstrap;
 pub mod blob_sync;
-pub mod discovery;
-pub mod configuration;
-pub mod organ;
-pub mod fiote;
-pub mod speech;
-pub mod information;
-pub mod sync_runner;
-pub mod location;
 mod claim_recipes;
-pub mod social_host;
-pub mod owner_backup;
+pub mod configuration;
+pub mod discovery;
+pub mod fiote;
+pub mod information;
 pub mod isolated;
+pub mod location;
+pub mod organ;
+pub mod owner_backup;
+pub mod social_host;
+pub mod speech;
+pub mod sync_runner;
 pub mod transfer;
 pub mod wire_supervisor;
 
@@ -23,28 +23,31 @@ use std::sync::Arc;
 
 use store::Store;
 
-pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
-pub use store::config::InterfaceStorage;
-pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
-pub use transport::protocol::CollabCursor;
-pub use transport::native::Context as FioteContext;
-pub use ::fiote::adapters::{Descriptor as FioteProvider, AuthKind as FioteAuthKind, AuthMethod as FioteAuthMethod};
-pub use ::fiote::tools::Registry as FioteTools;
-pub use ::fiote::connection as fiote_connection;
-pub use ::fiote::communication as fiote_communication;
-pub use ::fiote::assistant as fiote_assistant;
-pub use ::fiote::provider as fiote_provider;
-pub use transport::fiote::Service as FioteService;
 pub use ::fiote::acp::Config as FioteAgentConfig;
 pub use ::fiote::acp::terminal::TerminalRequest as FioteTerminalRequest;
-pub use transport::mcp::bridge_stdio;
-pub use ::fiote::config::{
-    Request as FioteRequest, Secret as FioteSecret,
-    Settings as FioteSettings, Status as FioteStatus, ToolConnection as FioteToolConnection,
+pub use ::fiote::adapters::{
+    AuthKind as FioteAuthKind, AuthMethod as FioteAuthMethod, Descriptor as FioteProvider,
 };
-pub use transport::live_client;
-pub use transport::terminal;
+pub use ::fiote::assistant as fiote_assistant;
+pub use ::fiote::communication as fiote_communication;
+pub use ::fiote::config::{
+    Request as FioteRequest, Secret as FioteSecret, Settings as FioteSettings,
+    Status as FioteStatus, ToolConnection as FioteToolConnection,
+};
+pub use ::fiote::connection as fiote_connection;
+pub use ::fiote::credentials as fiote_credentials;
+pub use ::fiote::provider as fiote_provider;
+pub use ::fiote::tools::Registry as FioteTools;
+pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
+pub use store::config::InterfaceStorage;
 pub use transport::command;
+pub use transport::fiote::Service as FioteService;
+pub use transport::live_client;
+pub use transport::mcp::bridge_stdio;
+pub use transport::native::Context as FioteContext;
+pub use transport::protocol::CollabCursor;
+pub use transport::terminal;
+pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
 };
@@ -99,7 +102,10 @@ impl CellRuntime {
             self.lanes.clone(),
             nucleus::new_uid("local-ui"),
         );
-        let session = match &self.speech { Some(host) => session.with_speech(host.clone()), None => session };
+        let session = match &self.speech {
+            Some(host) => session.with_speech(host.clone()),
+            None => session,
+        };
         match &self.fiote {
             Some(host) => session.with_fiote(host.clone()),
             None => session,
@@ -148,14 +154,15 @@ impl Cell {
         .await?;
 
         if let Some(port) = options.peer_port {
-            store::cells::set_config(&store.pool, "lince.network", &serde_json::json!({"peer_port": port}))
-                .await.map_err(IoError::other)?;
+            store::cells::set_config(
+                &store.pool,
+                "lince.network",
+                &serde_json::json!({"peer_port": port}),
+            )
+            .await
+            .map_err(IoError::other)?;
         }
-        let engine = Arc::new(
-            engine::Engine::new(store)
-                .await
-                .map_err(IoError::other)?,
-        );
+        let engine = Arc::new(engine::Engine::new(store).await.map_err(IoError::other)?);
         let store = engine.store.clone();
         let local_organ = store::organs::local(&store.pool)
             .await
@@ -167,11 +174,17 @@ impl Cell {
             .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
         let key_dir = utils::config::lince_data_dir()
             .ok_or_else(|| IoError::other("Cannot find the Lince data directory"))?;
-        engine.load_plugins(key_dir.join("plugins")).await.map_err(IoError::other)?;
+        engine
+            .load_plugins(key_dir.join("plugins"))
+            .await
+            .map_err(IoError::other)?;
         social_host::configure(&engine).await?;
 
         if services {
-            engine.initialize_blob_sync(&key_dir.join("blob-sync")).await.map_err(IoError::other)?;
+            engine
+                .initialize_blob_sync(&key_dir.join("blob-sync"))
+                .await
+                .map_err(IoError::other)?;
         }
 
         let mut supervisors = Vec::new();
@@ -196,9 +209,28 @@ impl Cell {
         let mut tasks = Vec::new();
         let lanes = Arc::new(LaneHub::new());
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
-        let fiote = if services { Some(Arc::new(fiote::Host::open(engine.clone(), key_dir.join("fiote")).await.map_err(IoError::other)?)) } else { None };
+        let fiote = if services {
+            Some(Arc::new(
+                fiote::Host::open(engine.clone(), key_dir.join("fiote"))
+                    .await
+                    .map_err(IoError::other)?,
+            ))
+        } else {
+            None
+        };
         let runtime = CellRuntime {
-            speech: if services { Some(Arc::new(speech::Host::open_with_vault(key_dir.join("speech.json"), fiote.as_ref().map(|host| host.shared_vault())).map_err(IoError::other)?.with_fiote(fiote.clone()))) } else { None },
+            speech: if services {
+                Some(Arc::new(
+                    speech::Host::open_with_credentials(
+                        key_dir.join("speech.json"),
+                        fiote.as_ref().map(|host| host.shared_credentials()),
+                    )
+                    .map_err(IoError::other)?
+                    .with_fiote(fiote.clone()),
+                ))
+            } else {
+                None
+            },
             commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),
@@ -230,7 +262,9 @@ impl Cell {
             supervisors.push(engine.clone().start_effect_worker());
             supervisors.push(engine.clone().start_plugin_sync());
         }
-        if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
+        if let Some(fiote) = &runtime.fiote {
+            tasks.push(fiote.spawn_assignments());
+        }
         if services {
             match startup_identity() {
                 Ok(identity) => {
@@ -254,8 +288,12 @@ impl Cell {
                 Err(error) => tracing::warn!(%error, "Could not read the Karma startup identity"),
             }
         }
-        if services { tasks.push(transfer::spawn_worker(runtime.clone())); }
-        if services { tasks.push(blob_sync::spawn(runtime.clone())); }
+        if services {
+            tasks.push(transfer::spawn_worker(runtime.clone()));
+        }
+        if services {
+            tasks.push(blob_sync::spawn(runtime.clone()));
+        }
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
         tasks.push(sync_runner::spawn_social(runtime.clone()));
         tasks.push(sync_runner::spawn_mail_delivery(runtime.clone()));
@@ -300,7 +338,9 @@ impl Cell {
             wire.shutdown().await;
         }
         if let Some(blobs) = self.runtime.engine.blobs.get() {
-            if let Err(error) = blobs.shutdown().await { tracing::warn!(%error, "Could not close Blob Sync storage"); }
+            if let Err(error) = blobs.shutdown().await {
+                tracing::warn!(%error, "Could not close Blob Sync storage");
+            }
         }
         self.runtime.store.pool.close().await;
     }
@@ -568,8 +608,25 @@ async fn publish_local_roster(
         .ok_or_else(|| {
             IoError::other("Cannot publish the Cell roster: the local signing key is missing")
         })?;
-    if held.as_ref().is_some_and(|held| !held.roster.cells.iter().any(|member| member.cell_uid == cell.uid)) { return Ok(()); }
-    let capabilities = held.as_ref().and_then(|held| held.roster.cells.iter().find(|member| member.cell_uid == cell.uid)).map(|member| member.capabilities.clone()).unwrap_or_else(engine::roster::full_capabilities);
+    if held.as_ref().is_some_and(|held| {
+        !held
+            .roster
+            .cells
+            .iter()
+            .any(|member| member.cell_uid == cell.uid)
+    }) {
+        return Ok(());
+    }
+    let capabilities = held
+        .as_ref()
+        .and_then(|held| {
+            held.roster
+                .cells
+                .iter()
+                .find(|member| member.cell_uid == cell.uid)
+        })
+        .map(|member| member.capabilities.clone())
+        .unwrap_or_else(engine::roster::full_capabilities);
     let mut cells: Vec<engine::roster::CellEntry> = held
         .as_ref()
         .map(|held| held.roster.cells.clone())

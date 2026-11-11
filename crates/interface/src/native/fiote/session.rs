@@ -22,7 +22,6 @@ enum Step {
     Providers,
     Methods,
     Credentials,
-    Unlock,
     Browser,
 }
 
@@ -266,10 +265,6 @@ fn connection_setup(world: &mut World, owner: Entity) {
             .is_some_and(|agent| !agent.requires_node())
     }) {
         show(world, owner, Step::Agent);
-    } else if saved.is_some_and(|saved| {
-        saved.settings.enabled && saved.requires_credential && saved.locked && saved.has_key
-    }) {
-        show(world, owner, Step::Unlock);
     } else {
         connections::Open.apply(world, owner);
     }
@@ -489,30 +484,6 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 ))
                 .id();
             fields.push(field(world, key_group, "API key", true));
-            let vault_group = world
-                .spawn((
-                    Node {
-                        display: if method.kind == FioteAuthKind::None {
-                            Display::None
-                        } else {
-                            Display::Flex
-                        },
-                        flex_direction: FlexDirection::Column,
-                        ..default()
-                    },
-                    ChildOf(content),
-                ))
-                .id();
-            fields.push(field(
-                world,
-                vault_group,
-                if saved.as_ref().is_some_and(|saved| saved.vault_exists) {
-                    "Vault password"
-                } else {
-                    "Choose a password for the provider vault"
-                },
-                true,
-            ));
             let options = world
                 .spawn((
                     Node {
@@ -568,32 +539,13 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 Continue,
             );
             world.resource_mut::<InputFocus>().set(
-                if provider.model_optional && method.kind != FioteAuthKind::None {
-                    fields[2]
+                if provider.model_optional && method.kind == FioteAuthKind::ApiKey {
+                    fields[1]
                 } else {
                     fields[0]
                 },
                 FocusCause::Navigated,
             );
-        }
-        Step::Unlock => {
-            fields.push(field(
-                world,
-                content,
-                "Unlock the provider vault for this Cell session",
-                true,
-            ));
-            crate::native::description::button(world, content, owner, "Unlock", Continue);
-            crate::native::description::button(
-                world,
-                content,
-                owner,
-                "Choose another provider",
-                Back,
-            );
-            world
-                .resource_mut::<InputFocus>()
-                .set(fields[0], FocusCause::Navigated);
         }
         Step::Browser => {
             crate::native::edit_mode::label(
@@ -729,13 +681,6 @@ impl Action for Choose {
 }
 
 #[derive(Clone)]
-struct Back;
-impl Action for Back {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        show(world, owner, Step::Providers);
-    }
-}
-#[derive(Clone)]
 struct Options(Entity);
 impl Action for Options {
     fn apply(&self, world: &mut World, _: Entity) {
@@ -783,12 +728,6 @@ impl Action for Continue {
         let result = (|| {
             let record = panel.binding.uid.clone();
             let fields = &panel.fields;
-            if panel.step == Step::Unlock {
-                return Ok(FioteRequest::Unlock {
-                    record,
-                    password: FioteSecret(value(world, fields[0])?),
-                });
-            }
             let provider = panel.provider.as_ref().ok_or("Choose a provider.")?;
             let method = panel.method.as_ref().ok_or("Choose a login method.")?;
             let mut settings = FioteSettings {
@@ -796,8 +735,8 @@ impl Action for Continue {
                 provider: provider.id.clone(),
                 auth_method: method.id.clone(),
                 model: value(world, fields[0])?,
-                endpoint: value(world, fields[3])?,
-                directory: value(world, fields[4])?.into(),
+                endpoint: value(world, fields[2])?,
+                directory: value(world, fields[3])?.into(),
                 ..Default::default()
             };
             if method.kind == FioteAuthKind::Browser {
@@ -810,22 +749,13 @@ impl Action for Continue {
                     settings.fast = previous.0.fast;
                     settings.context_budget_bytes = previous.0.context_budget_bytes;
                 }
-                return Ok(FioteRequest::BrowserStart {
-                    record,
-                    password: FioteSecret(value(world, fields[2])?),
-                    settings,
-                });
+                return Ok(FioteRequest::BrowserStart { record, settings });
             }
             let key = value(world, fields[1])?;
             Ok::<_, String>(FioteRequest::Configure {
                 record,
                 settings,
                 api_key: (!key.is_empty()).then_some(FioteSecret(key)),
-                password: if method.kind == FioteAuthKind::None {
-                    None
-                } else {
-                    Some(FioteSecret(value(world, fields[2])?))
-                },
             })
         })();
         match result {
@@ -935,11 +865,6 @@ pub fn command(world: &mut World, binding: &RecordBinding, text: &str) -> bool {
         })
         .map(|(entity, _)| entity);
     let Some(owner) = owner else { return false };
-    if text.trim() == "/lock" {
-        let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
-        request(world, owner, FioteRequest::Lock { record });
-        return true;
-    }
     if text.trim_start().starts_with("/login") {
         if open_setup(world, owner) {
             return true;
@@ -983,7 +908,7 @@ pub fn ready(world: &mut World, binding: &RecordBinding) -> bool {
                 .as_ref()
                 .is_some_and(|agent| agent.requires_node())
                 && (!saved.tool_connections.is_empty()
-                    || (saved.settings.enabled && (!saved.locked || !saved.requires_credential)))
+                    || (saved.settings.enabled && (!saved.requires_credential || saved.has_key)))
         });
     if !ready && panel.pending.is_none() && !open_setup(world, owner) {
         connection_setup(world, owner);
@@ -1156,7 +1081,7 @@ impl Action for CopyTools {
             .get_resource_mut::<bevy::clipboard::Clipboard>()
             .is_some_and(|mut clipboard| clipboard.set_text(value).is_ok());
         world.get_mut::<Text>(status).unwrap().0 = if copied {
-            "Copied MCP connection. It grants your local Lince access until closed, locked, or the Cell stops."
+            "Copied MCP connection. It grants your local Lince access until closed or the Cell stops."
         } else { "Could not copy the connection." }.into();
     }
 }
@@ -1280,7 +1205,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         step
     } else if saved.login_pending {
         Step::Browser
-    } else if saved.settings.enabled && (!saved.locked || !saved.requires_credential) {
+    } else if saved.settings.enabled && (!saved.requires_credential || saved.has_key) {
         Step::Closed
     } else if first {
         Step::Manage
@@ -1316,8 +1241,8 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
                 .iter()
                 .find(|provider| provider.id == saved.settings.provider)
                 .map_or("Provider", |provider| provider.label.as_str()),
-            if saved.locked && saved.requires_credential {
-                "vault locked"
+            if !saved.has_key && saved.requires_credential {
+                "sign in required"
             } else {
                 "connected"
             }
@@ -1496,7 +1421,7 @@ fn receive(
             }
             let success = if control.tools_request {
                 if control.connection.is_some() {
-                    "Agent tools open. Copy the connection for your agent; /lock also closes it."
+                    "Agent tools open. Copy the connection for your agent; Close agent tools disconnects it."
                 } else {
                     "Agent tools closed."
                 }
@@ -1554,7 +1479,7 @@ fn keyboard(world: &mut World) {
         if enter {
             Choose(selection).apply(world, owner);
         }
-    } else if enter && matches!(step, Step::Credentials | Step::Unlock) {
+    } else if enter && matches!(step, Step::Credentials) {
         Continue.apply(world, owner);
     }
 }
@@ -1660,9 +1585,7 @@ pub fn thread_command(
     thread: &str,
     text: &str,
 ) -> bool {
-    if binding.source != Source::Local
-        || !(text.trim() == "/lock" || text.trim_start().starts_with("/login"))
-    {
+    if binding.source != Source::Local || !text.trim_start().starts_with("/login") {
         return false;
     }
     let owner = world

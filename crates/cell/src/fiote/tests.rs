@@ -3,11 +3,11 @@ use fiote::provider::{Reply, ToolCall, ToolDefinition};
 use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
-mod working_directory;
-mod intake;
-mod handoff;
 mod entry;
+mod handoff;
+mod intake;
 mod live_voice;
+mod working_directory;
 
 #[tokio::test]
 async fn physical_workspace_requests_use_existing_fiote_conversations_and_exact_replies() {
@@ -108,16 +108,14 @@ async fn physical_workspace_cancellation_keeps_the_other_fiote_thread_running() 
 #[tokio::test]
 async fn native_refresh_guards_serialize_separate_connections_and_release_on_drop() {
     use fiote::communication::auth::CredentialStore;
-    let (host, _, root, _, _) = fixture(false).await;
-    let first = vault::Credential {
-        vault: host.vault.clone(),
+    let (host, _, _root, _, _) = fixture(false).await;
+    let first = credentials::Credential {
+        store: host.credentials.clone(),
         slot: "same-native-account".into(),
-        directory: root.path().into(),
     };
-    let second = vault::Credential {
-        vault: host.vault.clone(),
+    let second = credentials::Credential {
+        store: host.credentials.clone(),
         slot: "same-native-account".into(),
-        directory: root.path().into(),
     };
     let guard = first.refresh_guard().await.unwrap().unwrap();
     assert!(
@@ -127,10 +125,9 @@ async fn native_refresh_guards_serialize_separate_connections_and_release_on_dro
     );
     drop(guard);
     assert!(second.refresh_guard().await.unwrap().is_some());
-    let other = vault::Credential {
-        vault: host.vault.clone(),
+    let other = credentials::Credential {
+        store: host.credentials.clone(),
         slot: "different-native-account".into(),
-        directory: root.path().into(),
     };
     let _guard = first.refresh_guard().await.unwrap().unwrap();
     assert!(other.refresh_guard().await.unwrap().is_some());
@@ -152,7 +149,10 @@ async fn agent_login_check_and_conversation_workflow() {
         })
         .await
         .unwrap();
-    assert_eq!(status.agent_info.unwrap()["agentInfo"]["name"], "test-agent");
+    assert_eq!(
+        status.agent_info.unwrap()["agentInfo"]["name"],
+        "test-agent"
+    );
     host.handle(Request::AgentAuthenticate {
         record: record.clone(),
         method: "browser".into(),
@@ -645,7 +645,11 @@ impl Provider for Script {
                 calls: vec![ToolCall {
                     id: format!(
                         "call-{}",
-                        messages.iter().filter(|message| matches!(message, Message::Tool { .. })).count() + 1
+                        messages
+                            .iter()
+                            .filter(|message| matches!(message, Message::Tool { .. }))
+                            .count()
+                            + 1
                     ),
                     name: "create_file".into(),
                     arguments: json!({"path":"hello.txt","content":"Hello from Fiote"}),
@@ -737,7 +741,6 @@ async fn fixture(block: bool) -> (Arc<Host>, Arc<Script>, tempfile::TempDir, Str
             ..Default::default()
         },
         api_key: Some(Secret("secret-test-value".into())),
-        password: Some(Secret("test-password".into())),
     })
     .await
     .unwrap();
@@ -774,7 +777,6 @@ async fn saved_node_agent_is_rejected_and_native_configuration_restores_conversa
         record,
         settings: native.settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();
@@ -824,7 +826,7 @@ async fn laboratory_hello_is_persisted_without_changing_fiote_settings() {
 }
 
 #[tokio::test]
-async fn laboratory_separate_target_reuses_credentials_and_locked_vault_requests_setup() {
+async fn laboratory_separate_target_reuses_credentials_and_missing_login_requests_setup() {
     let (host, _, _root, record, _) = fixture(false).await;
     let options = laboratory::Options {
         record: Some(record.clone()),
@@ -845,7 +847,12 @@ async fn laboratory_separate_target_reuses_credentials_and_locked_vault_requests
             .outcome,
         "passed"
     );
-    host.vault.lock().await;
+    host.credentials
+        .remove(&credentials::slot(
+            &host.load(&record).unwrap().unwrap().settings,
+        ))
+        .await
+        .unwrap();
     assert!(matches!(
         host.laboratory_prepare(&options).await.unwrap(),
         laboratory::Preparation::Setup { .. }
@@ -856,7 +863,9 @@ async fn laboratory_separate_target_reuses_credentials_and_locked_vault_requests
 async fn laboratory_profile_override_preserves_disabled_configuration_and_detects_deleted_thread() {
     let (host, _, _root, record, _) = fixture(false).await;
     let mut original = host.load(&record).unwrap().unwrap();
-    host.save_native_profile(&record, &original.settings).await.unwrap();
+    host.save_native_profile(&record, &original.settings)
+        .await
+        .unwrap();
     let profile = host
         .profile_status(&record)
         .unwrap()
@@ -875,10 +884,20 @@ async fn laboratory_profile_override_preserves_disabled_configuration_and_detect
         panic!("Expected ready from the saved native profile");
     };
     assert!(!host.load(&record).unwrap().unwrap().settings.enabled);
-    host.send(prepared.report.thread.as_deref().unwrap(), laboratory::HELLO)
-        .await.unwrap().unwrap();
+    host.send(
+        prepared.report.thread.as_deref().unwrap(),
+        laboratory::HELLO,
+    )
+    .await
+    .unwrap()
+    .unwrap();
     let (_cancel, receiver) = watch::channel(false);
-    assert_eq!(host.laboratory_verify(prepared.report.clone(), receiver).await.outcome, "passed");
+    assert_eq!(
+        host.laboratory_verify(prepared.report.clone(), receiver)
+            .await
+            .outcome,
+        "passed"
+    );
     assert!(!host.load(&record).unwrap().unwrap().settings.enabled);
     host.engine
         .act(
@@ -1262,13 +1281,14 @@ async fn activations_refuse_persisted_remote_actors_even_with_record_authority()
 }
 
 #[tokio::test]
-async fn locked_activations_wait_and_context_inspection_links_reported_children() {
+async fn missing_credentials_delay_activations_and_context_inspection_links_reported_children() {
     let (host, _, _root, record, thread) = fixture(false).await;
-    host.handle(Request::Lock {
-        record: record.clone(),
-    })
-    .await
-    .unwrap();
+    host.credentials
+        .remove(&credentials::slot(
+            &host.load(&record).unwrap().unwrap().settings,
+        ))
+        .await
+        .unwrap();
     host.handle(Request::Activate {
         record: record.clone(),
         value: "1".into(),
@@ -1281,12 +1301,13 @@ async fn locked_activations_wait_and_context_inspection_links_reported_children(
         host.engine.fiote_activations(&record).await.unwrap()[0].state,
         "waiting"
     );
-    host.handle(Request::Unlock {
-        record: record.clone(),
-        password: Secret("test-password".into()),
-    })
-    .await
-    .unwrap();
+    host.credentials
+        .put(
+            credentials::slot(&host.load(&record).unwrap().unwrap().settings),
+            Secret("secret-test-value".into()),
+        )
+        .await
+        .unwrap();
     host.send(&thread, "A general conversation")
         .await
         .unwrap()
@@ -2000,7 +2021,6 @@ async fn enabling_an_empty_prompt_record_inherits_the_editable_default() {
             ..Default::default()
         },
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();
@@ -2121,7 +2141,6 @@ async fn stop_marks_reply_interrupted_and_busy_send_keeps_the_draft_unsent() {
             record,
             settings: Settings::default(),
             api_key: None,
-            password: None,
         })
         .await
         .is_err()
@@ -2246,8 +2265,9 @@ async fn agent_tools_open_without_a_model_provider_and_lock_revokes_them() {
         .await;
     assert!(wrong.is_err());
     let status = host
-        .handle(Request::Lock {
+        .handle(Request::CloseTools {
             record: record.clone(),
+            thread: thread.clone(),
         })
         .await
         .unwrap();
@@ -2353,71 +2373,47 @@ async fn failure_to_save_a_session_keeps_the_sent_message_and_explains_the_failu
 }
 
 #[tokio::test]
-async fn provider_vault_is_shared_encrypted_and_locked_after_restart() {
-    let (host, _, _root, record, thread) = fixture(false).await;
+async fn provider_credentials_are_local_unsynced_and_available_after_restart() {
+    let (host, script, _root, record, thread) = fixture(false).await;
+    let settings = host.load(&record).unwrap().unwrap().settings;
     let bytes = std::fs::read_to_string(host.path(&record).unwrap()).unwrap();
     assert!(!bytes.contains("secret-test-value"));
-    let stored = store::records::resolve(&host.engine.store.pool, "fiote-vault")
-        .await
-        .unwrap()
-        .unwrap();
-    let value =
-        store::records::get_extension(&host.engine.store.pool, &stored.uid, vault::NAMESPACE)
+    assert!(
+        store::records::resolve(&host.engine.store.pool, "fiote-vault")
             .await
             .unwrap()
-            .unwrap();
-    assert!(utils::vault::is_locked(
-        value["ciphertext"].as_str().unwrap()
-    ));
-    let ops = store::sync_ops::all_by_hlc(&host.engine.store.pool)
+            .is_none()
+    );
+    for op in store::sync_ops::all_by_hlc(&host.engine.store.pool)
         .await
-        .unwrap();
-    for op in ops {
+        .unwrap()
+    {
         assert!(!op.value.unwrap_or_default().contains("secret-test-value"));
     }
-    let reopened = Host::open(host.engine.clone(), host.directory.clone())
-        .await
-        .unwrap();
-    assert!(reopened.status(&record).await.unwrap().locked);
-    assert!(
-        reopened
-            .send(&thread, "hello")
+    let reopened = Arc::new(
+        Host::open(host.engine.clone(), host.directory.clone())
             .await
-            .unwrap_err()
-            .contains("Unlock")
+            .unwrap()
+            .with_provider(script),
     );
-    assert!(
+    assert!(reopened.status(&record).await.unwrap().has_key);
+    assert_eq!(
         reopened
-            .handle(Request::Unlock {
-                record: record.clone(),
-                password: Secret("wrong".into())
-            })
+            .credentials
+            .key(&credentials::slot(&settings))
             .await
-            .is_err()
+            .unwrap()
+            .unwrap()
+            .0,
+        "secret-test-value"
     );
     reopened
-        .handle(Request::Unlock {
-            record: record.clone(),
-            password: Secret("test-password".into()),
-        })
-        .await
-        .unwrap();
-    assert!(!reopened.status(&record).await.unwrap().locked);
-    let key = reopened
-        .vault
-        .key(&vault::slot(&host.load(&record).unwrap().unwrap().settings))
+        .send(&thread, "hello after restart")
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(key.0, "secret-test-value");
-    reopened
-        .handle(Request::Lock {
-            record: record.clone(),
-        })
-        .await
-        .unwrap();
-    assert!(reopened.status(&record).await.unwrap().locked);
-    assert!(rows(&host, &thread).await.is_empty());
+    wait(&reopened).await;
+    assert!(!rows(&reopened, &thread).await.is_empty());
 }
 
 #[tokio::test]
@@ -2539,7 +2535,7 @@ done
     let status = host
         .handle(Request::BrowserStart {
             record: record.clone(),
-            password: Secret("browser-password".into()),
+
             settings,
         })
         .await
@@ -2562,7 +2558,7 @@ done
         })
         .await
         .unwrap();
-    assert!(status.settings.enabled && !status.locked && !status.login_pending);
+    assert!(status.settings.enabled && status.has_key && !status.login_pending);
     let predicate = store::concepts::resolve(&host.engine.store.pool, "thread-of")
         .await
         .unwrap()
@@ -2589,8 +2585,8 @@ done
             .any(|row| row.body == "Created the file through a native tool.")
     );
     assert_eq!(
-        host.vault
-            .key(&vault::slot(&status.settings))
+        host.credentials
+            .key(&credentials::slot(&status.settings))
             .await
             .unwrap()
             .unwrap()
@@ -2847,7 +2843,12 @@ async fn agent_assignments_do_not_wake_agents_and_locked_jobs_wait() {
     .unwrap();
     host.assignment_tick().await.unwrap();
     assert!(host.task_sessions(&record).await.unwrap().is_empty());
-    host.vault.lock().await;
+    host.credentials
+        .remove(&credentials::slot(
+            &host.load(&record).unwrap().unwrap().settings,
+        ))
+        .await
+        .unwrap();
     let task = host
         .engine
         .act(create(), None)
@@ -2881,8 +2882,11 @@ async fn agent_assignments_do_not_wake_agents_and_locked_jobs_wait() {
     );
     host.assignment_tick().await.unwrap();
     assert_eq!(rows(&host, &tasks[0].thread).await.len(), 1);
-    host.vault
-        .unlock(Secret("test-password".into()))
+    host.credentials
+        .put(
+            credentials::slot(&host.load(&record).unwrap().unwrap().settings),
+            Secret("secret-test-value".into()),
+        )
         .await
         .unwrap();
     host.assignment_tick().await.unwrap();
@@ -2933,58 +2937,6 @@ async fn native_and_external_tools_keep_instructions_outside_conversation_histor
     assert_eq!(result["result"]["system"], system);
     assert!(host.instruction_snapshot("../../bad").is_err());
     native.close().await;
-}
-
-#[tokio::test]
-async fn assignment_dispatch_and_lock_do_not_deadlock_or_restart_work() {
-    let (host, _, _root, record, _) = fixture(true).await;
-    let task = host
-        .engine
-        .act(
-            Action::CreateRecord {
-                slug: None,
-                kind: RecordKind::Plain,
-                head: "Stop test".into(),
-                body: "Work".into(),
-                quantity: 0.0,
-            },
-            None,
-        )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    host.engine
-        .act(
-            Action::AssertRecord {
-                subject: task,
-                predicate: "assigned-to".into(),
-                object: Some(record.clone()),
-                quantity: None,
-                unit: None,
-            },
-            None,
-        )
-        .await
-        .unwrap();
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        let (tick, stopped) = tokio::join!(
-            host.assignment_tick(),
-            host.handle(Request::Lock {
-                record: record.clone()
-            })
-        );
-        tick.unwrap();
-        stopped.unwrap();
-    })
-    .await
-    .unwrap();
-    wait(&host).await;
-    host.assignment_tick().await.unwrap();
-    let tasks = host.task_sessions(&record).await.unwrap();
-    assert_eq!(tasks.len(), 1);
-    assert!(matches!(tasks[0].state.as_str(), "waiting" | "interrupted"));
-    assert!(host.running.lock().await.is_empty());
 }
 
 #[tokio::test]

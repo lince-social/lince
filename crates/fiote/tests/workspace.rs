@@ -345,3 +345,26 @@ async fn stopping_the_agent_cancels_a_running_shell_tool() {
     tokio::time::sleep(std::time::Duration::from_millis(400)).await;
     assert!(!root.path().join("after-stop").exists());
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn command_can_await_long_build_watchers_without_model_polling() {
+    let root = tempfile::tempdir().unwrap();
+    let command = RunCommand::new(root.path()).unwrap();
+    assert_eq!(
+        command.definition().schema["properties"]["timeout_ms"]["maximum"],
+        21_600_000
+    );
+    let result = command
+        .run(json!({"command":"printf watched","timeout_ms":21_600_000}))
+        .await
+        .unwrap();
+    assert_eq!(result["stdout"], "watched");
+    assert_eq!(result["success"], true);
+    assert!(
+        command
+            .run(json!({"command":"true","timeout_ms":21_600_001}))
+            .await
+            .is_err()
+    );
+}

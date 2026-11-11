@@ -1,6 +1,36 @@
+Park — 12. Measure deeply, implement broadly, deliver one candidate (
+    @park-dev-12-measurement-and-delivery: 0,
+    is #chapter,
+    #part-of @park-development: 24,
+    #park-workflow @park-development-cycle
+) { r_7NBQGTF152S58NPT0Z9EM58C1T
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 # 12. Measure deeply, implement broadly, deliver one candidate
 
-[Organizer](Park.md), [ordered tasks](execution-order.md), [measurement implementation](01-measurement.md), [targets](08-benchmarks.md), [daily route](09-workflows.md#stage-a-daily-route). This is the working method for every future Park Stage A cycle. The owner's 2026-11-08 update allows useful local compilation and checks in Niri. It supersedes the previous local-compilation ban and the attempt to preserve a running terminal through an in-session binary replacement.
+[Organizer](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW), [ordered tasks](record:r_1FMCTGVHF35B6D0T70JEQAMYDW), [measurement implementation](record:r_3MCKF8DH9AWW9EGKNZANAVS95C), [targets](record:r_7CWV5KN1695FW2KNPGW5X19PJ7), [daily route](record:r_4FKK58CFNQWTKH280HSN5S17ZY). This is the working method for every future Park Stage A cycle. The owner's 2026-11-08 update allows useful local compilation and checks in Niri. It supersedes the previous local-compilation ban and the attempt to preserve a running terminal through an in-session binary replacement.
+
+**Continue through these Records:**
+
+- [Park — Session cycle: develop in Niri, measure in Park, record and stop](record:r_6Q6MC9NXZZ7MVQ1APVJ6CCHFCM)
+- [Park — Production code and measurement have distinct responsibilities](record:r_4TRQ1KQ39SV3MYQ4TZTQEGHAJA)
+- [Park — A0: repair the measurements needed for this performance batch](record:r_45PFN9J4QNVND1NEA8WFZ0XM6N)
+- [Park — Performance-only priority for the current round](record:r_26S99EX3WZ86SYXSJTN7065F2B)
+- [Park — Required measurements throughout Stage A](record:r_2VVSD838M8YPNA4TPGQ997B3P0)
+- [Park — A1: implement the broadest justified batch](record:r_1B71DE5H30SKSRW4AB57AJK09H)
+- [Park — Local checks, CI delivery and session boundaries](record:r_6YJWRZ7KDMR1TW0V6WB1T74HAB)
+- [Park — A2: one combined evaluation of each new binary](record:r_2R2579E2KAAG70GWRGAHD1WHCY)
+- [Park — What a combined report can and cannot establish](record:r_5F95TWWZVGDEZ8T6PCB16Z5C5X)
+- [Park — A0 artifact entry point prepared in this batch](record:r_7Z7G626JARG4NFH2YVTQTEBV4Y)
+} r_7NBQGTF152S58NPT0Z9EM58C1T
+
+Park — Session cycle: develop in Niri, measure in Park, record and stop (
+    @park-dev-521825099a666c9e521c: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 5,
+    #park-workflow @park-development-cycle
+) { r_6Q6MC9NXZZ7MVQ1APVJ6CCHFCM
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Session cycle: develop in Niri, measure in Park, record and stop
 
@@ -13,6 +43,15 @@ Push the reviewed batch after useful local checks. CI remains the usual source o
 The Park visit is for the combined measurement route and real daily-workload observations on both monitors. Verify the running revision and telemetry configuration, run prepared matching artifacts without hidden compilation, and compare against a valid baseline captured before the changes. If no comparable baseline exists, this visit establishes it; do not infer an improvement from missing earlier data. Keep compilation and development workloads out of the timed observation. Any necessary user actions remain explicit and individually coordinated.
 
 After collecting data, update the evidence/plan Markdown with what improved, worsened or stayed uncertain; link the source/workload/measurement receipts, close only verified tasks and rank the next coding batch. A failed Park check becomes a concrete diagnosis and next-batch task. Then stop so the user can return to Niri. Do not turn a measurement visit into another coding/rebuilding session unless the user asks for that. Persisted reports and the plan provide continuity across sessions.
+} r_6Q6MC9NXZZ7MVQ1APVJ6CCHFCM
+
+Park — Production code and measurement have distinct responsibilities (
+    @park-dev-8258c22b7aafcbce3e7a: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 17,
+    #park-workflow @park-development-cycle
+) { r_4TRQ1KQ39SV3MYQ4TZTQEGHAJA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Production code and measurement have distinct responsibilities
 
@@ -21,6 +60,15 @@ Implement the best justified production behavior directly. Do not retain old/new
 Useful low-overhead observability is part of the product's diagnosis, not an alternative behavior. Reuse the existing host performance observer, causal input/edit IDs, Bevy/Laboratory infrastructure, GPU queries and bounded reports. Add a crate when it supplies a concrete missing measurement with acceptable maintenance, license, runtime and artifact costs. Do not create a competing framework simply to avoid extending an existing owner. Capture controls may enable diagnostics without selecting a different implementation. Measure their overhead; no blocking export, per-event formatting or unbounded trace buffer belongs on the interaction path. Instrumentation must not serialize Bevy systems or GPU queues, change affinity or force synchronous completion merely to simplify accounting.
 
 One compiled candidate contains one production implementation of each feature. A matching precompiled test artifact may contain deterministic fixtures and fault probes. Those tests must call the actual production families rather than a second optimized implementation. Record differences between test configuration and the shipping executable; private test timing cannot certify the live compositor.
+} r_4TRQ1KQ39SV3MYQ4TZTQEGHAJA
+
+Park — A0: repair the measurements needed for this performance batch (
+    @park-dev-09a870f2d955bfae212e: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 25,
+    #park-workflow @park-development-cycle
+) { r_45PFN9J4QNVND1NEA8WFZ0XM6N
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## A0: repair the measurements needed for this performance batch
 
@@ -29,10 +77,28 @@ Repair the indispensable missing system/runtime/fixture/report observations toge
 The first source-identified binary with sufficient coverage establishes missing parts of the detailed baseline; independent fixes supported by existing evidence need not wait for unrelated measurement work. Old totals cannot reconstruct phases that were never measured. If the installed binary already exposes a comparable signal, collect it now through the existing tools; otherwise record that baseline field as unavailable until the tooling candidate is installed. Do not invent a before/after percentage by comparing a newly observable stage against an older absent counter.
 
 The foundation is usable when the selected daily route produces complete, source-stamped reports; event/frame/edit relationships and clocks are valid; missing hardware signals are explicitly distinguished from zero; capture overhead and report loss are measured; and independent correctness checks accompany the numbers. Unsupported hardware counters need a named alternative or an explicit unresolved coverage entry. They do not justify indefinite platform work or an invented all-green report.
+} r_45PFN9J4QNVND1NEA8WFZ0XM6N
+
+Park — Performance-only priority for the current round (
+    @park-dev-3249d7ea80a6fef92d0b: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 33,
+    #park-workflow @park-development-cycle
+) { r_26S99EX3WZ86SYXSJTN7065F2B
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Performance-only priority for the current round
 
 The owner now defers unrelated features/polish, Laboratory result UI, broad test-platform expansion and delivery-only work until the daily performance gates are met. Keep the minimal named-system/runtime/fixture/coverage repairs necessary to interpret the chosen changes, then include all ready evidence-supported runtime work in the same Niri batch. Do not turn A0 into a requirement to complete every measurement framework idea before fixing demonstrated repeated CPU/GPU/queue work. Existing affected-path correctness and Protein-first checks remain safeguards. Report resource/latency/frame effects and collateral costs; stop only at the agreed push/handoff boundary or a genuine dependency.
+} r_26S99EX3WZ86SYXSJTN7065F2B
+
+Park — Required measurements throughout Stage A (
+    @park-dev-6680c537f2a35a2c7bcb: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 37,
+    #park-workflow @park-development-cycle
+) { r_2VVSD838M8YPNA4TPGQ997B3P0
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Required measurements throughout Stage A
 
@@ -51,6 +117,15 @@ Use stable stage identities tied to real owners and operations. Preserve inclusi
 | Shared resources and contention | Process/thread CPU, bounded worker/input/I/O queues, locks, memory/RSS/VRAM and resource retirement; ordinary sync/history/Karma/media/terminal contention, plus thermal/clock/I/O pressure when observable. | P151/P152/P102/P66/P135 |
 
 Report p50/p95/p99/max, sample counts, full observation duration and unavailable signals. Short samples cannot establish rare-tail behavior. Normalize both per operation/frame and per second, keeping actual event counts and workload identity: a lower average can mean work was moved, skipped, delayed or measured under less demand. Keep exact quality, output geometry, visibility and supported semantics.
+} r_2VVSD838M8YPNA4TPGQ997B3P0
+
+Park — A1: implement the broadest justified batch (
+    @park-dev-03d82770e06a53b45811: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 55,
+    #park-workflow @park-development-cycle
+) { r_1B71DE5H30SKSRW4AB57AJK09H
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## A1: implement the broadest justified batch
 
@@ -63,6 +138,15 @@ For every coded change, keep a concrete attribution entry: task/source change, p
 This rule improves attribution without claiming independence: reducing layout work can change GPU feeding or lock pressure elsewhere. A coherent boundary refactor may necessarily span several measured stages; label it as a coupled change rather than pretending each sub-edit has its own independently proved gain. Do not disguise many competing changes as one “rewrite” to avoid the ownership rule.
 
 Keep changes reviewable by task/owner in version history and record the aggregate candidate's exact source identity, including integrated external-agent work. Do not overwrite or silently include another agent's unfinished edits. Sync/history/DB-lock/Karma implementation remains with the user's other agent; coordinate overlapping storage/effect boundaries and proceed with independent work meanwhile. A source task awaiting binary verification stays pending with an indented implemented/verification-needed note.
+} r_1B71DE5H30SKSRW4AB57AJK09H
+
+Park — Local checks, CI delivery and session boundaries (
+    @park-dev-5c9c004ec7f9342f5687: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 67,
+    #park-workflow @park-development-cycle
+) { r_6YJWRZ7KDMR1TW0V6WB1T74HAB
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Local checks, CI delivery and session boundaries
 
@@ -73,6 +157,15 @@ When the current stage's ready coding is complete, inspect the diff, finish usef
 CI also performs warnings-as-errors checks and produces optimized application/test artifacts with source/features/toolchain/profile identities and case manifests. Tests requiring this GPU/physical session stay pending rather than passed on another machine. The Park measurement runner uses already-built matching artifacts without an implicit rebuild; a missing artifact is prepared explicitly in Niri or reported unavailable.
 
 Documentation-only discussion does not itself start compilation, delivery or a session change. A0 remains the tooling/baseline phase, A1 broad measured improvements and A2 the Park evaluation. Finish ready A0 code and local checks in Niri even while its installed baseline is pending. After the Park visit, updating the Markdown and reporting results is the stopping boundary before the next Niri coding cycle. A new binary can answer the coded batch's included questions together; absent signals remain absent.
+} r_6YJWRZ7KDMR1TW0V6WB1T74HAB
+
+Park — A2: one combined evaluation of each new binary (
+    @park-dev-efb8745e2ec273cb6511: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 77,
+    #park-workflow @park-development-cycle
+) { r_2R2579E2KAAG70GWRGAHD1WHCY
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## A2: one combined evaluation of each new binary
 
@@ -83,6 +176,15 @@ Start every native interface suite run with the Protein Area Add filter regressi
 The report contains a baseline/candidate table for every measured area: duration/CPU/work/bytes/queues/resources, absolute delta, percentage where the denominator is valid, tail changes and missing evidence. It also contains the user-facing result for latency, freezes, FPS/intervals and actual drops on each output. Flag collateral slowdowns even if overall performance improves. Keep small inexpensive wins; present net-positive tradeoffs under the user's existing preference rather than inventing a stricter regression policy. Required correctness failures remain failures.
 
 If a task's deliverable and checks pass, retain the implementation, record evidence and remove its checkbox. If it is already coded but unverified, leave only its exact verification requirement. Remove rejected candidate-only code and close that attempted task once its measured outcome is documented in the evidence ledger; owner-authored Build.lingua is edited only with permission for that exact entry. A missing test or unavailable physical signal is not a rejected hypothesis or a pass. Use the combined report to plan the next broad cycle; stop A when its daily acceptance contract is demonstrated rather than implementing every remaining theory.
+} r_2R2579E2KAAG70GWRGAHD1WHCY
+
+Park — What a combined report can and cannot establish (
+    @park-dev-65d37c398852619899b3: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 87,
+    #park-workflow @park-development-cycle
+) { r_5F95TWWZVGDEZ8T6PCB16Z5C5X
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## What a combined report can and cannot establish
 
@@ -91,7 +193,15 @@ A phase improving by 30% does not imply the desktop improved by 30%. Report abso
 Fine-grained measurements can expose cancellation hidden by a neutral total: one stage saves 4 ms while another adds 4 ms, a wait increases, or a different bottleneck becomes limiting. They do not guarantee causal attribution to individual changes sharing a cache, queue, lock or GPU budget. Even one mechanism per owner cannot eliminate cross-owner interactions. Distinguish **observed phase change**, **supported mechanism** and **unresolved cause** in every conclusion.
 
 First inspect the causal timeline, work counts, unchanged controls and workload/clock/overhead identity; repeat a bounded observation only for a specific uncertainty. If ownership is still ambiguous or opposite changes cancel inside the same measured unit, carry one focused repair or source revert into the next normal CI-built candidate. This exceptional extra cycle is preferable to shipping diagnostic implementation switches or pretending a neutral total proves every idea failed. Version history supplies separation without retaining alternative production paths. Do not default to an exponential matrix or a new binary for every small idea.
+} r_5F95TWWZVGDEZ8T6PCB16Z5C5X
 
+Park — A0 artifact entry point prepared in this batch (
+    @park-dev-6bf6fdcebf32e2eca420: 0,
+    is #chapter,
+    #part-of @park-dev-12-measurement-and-delivery: 96,
+    #park-workflow @park-development-cycle
+) { r_7Z7G626JARG4NFH2YVTQTEBV4Y
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## A0 artifact entry point prepared in this batch
 
@@ -102,6 +212,18 @@ Extract the CI `park-validation-TARGET-REVISION` artifact's `park-validation-bun
 
 Use `--capture off --case combined-native` for a separate whole-process observation-overhead control, keeping the production algorithms and fixture unchanged. `compare BEFORE/run.json AFTER/run.json --changes changes.json --output comparison.json` writes machine-readable and readable per-phase deltas. Preserve an exact change manifest for each future optimization candidate; the checked-in manifest separates two runtime work reductions from the measurement repairs needed to judge them. Newly observable rows have no invented old zero baseline. Individual fixture identities preserve unchanged controls; a shared setup change must bump the workload version, and captures lacking the necessary identity remain incomparable. The installed compositor's phase telemetry currently needs `LINCE_TRACE_PERFORMANCE=1` at startup; use a new absolute private `LINCE_PERFORMANCE_LOG` path to avoid journal line splitting of detailed reports. The precompiled runner configures this file automatically for private cases; installing a binary alone does not activate that signal. Private precompiled cases set their own diagnostic environment. Actual installed S3 remains separate from these private checks.
 
+**Continue through these Records:**
+
+- [Park — Prepared measurement coverage in v2](record:r_53HBC30HVSFWXEX73K5G8P55S0)
+} r_7Z7G626JARG4NFH2YVTQTEBV4Y
+
+Park — Prepared measurement coverage in v2 (
+    @park-dev-daed66d92f93caf36bac: 0,
+    is #chapter,
+    #part-of @park-dev-6bf6fdcebf32e2eca420: 106,
+    #park-workflow @park-development-cycle
+) { r_53HBC30HVSFWXEX73K5G8P55S0
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ### Prepared measurement coverage in v2
 
@@ -121,3 +243,4 @@ Each selected subset still begins with `protein-first-interface`. The runner pro
 The current candidate makes capture-off skip the system observer itself, not merely its report sink. System accounting uses 16 bounded producer shards with at most 512 names each, then merges distributions into one row per system. Reports retain at most 64 executing-thread IDs per system/window with explicit unattributed sample counts; IDs are process-local threads, not physical cores. Recalibrate diagnostic cost on the new optimized binary before interpreting small improvements.
 
 For the next normal Park login, a private, self-removing hook has been armed through the existing UWSM environment loader: `~/.config/uwsm/env.d/90-lince-performance-once.sh`. It matches only `lince_park_session`, leaves the running Niri session untouched and sets the existing diagnostic environment. Receipt and intended private log: `/home/user/.local/state/lince/park-validation/performance-niri-20261109T023740Z/`. Verify the actual Park revision and log before timing; the hook is consumed after that login and is not a new session refresh mechanism.
+} r_53HBC30HVSFWXEX73K5G8P55S0

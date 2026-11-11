@@ -1,0 +1,243 @@
+Park — 6. Use the GPU correctly and present each output independently (
+    @park-dev-06-gpu-and-outputs: 0,
+    is #chapter,
+    #part-of @park-development: 18,
+    #park-workflow @park-development-cycle
+) { r_333RCJBDSGX0Y0W630FWHJAJCB
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+# 6. Use the GPU correctly and present each output independently
+
+[Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
+
+Follow [12](record:r_7NBQGTF152S58NPT0Z9EM58C1T): P153/P70/P67 finish frame/device/consumer measurements in A0, then independent measured GPU/output fixes join the broad A1 batch. One production design per measured owner, without old/new path switches; compare normal source-identified candidates. Local compilation and private GPU checks in Niri are allowed; their host-specific results do not close physical Park gates. Deliver a broad batch, measure in Park, record outcomes and stop.
+
+This stage is coupled to input, retained presentation and output clocks. P67/P70 must distinguish actual software pixel work, CPU submission, hardware execution, synchronization and repeated copies. A low-utilization GPU does not establish wrong processor placement. Client-only native-frame reuse already exists. Reuse valid prior surfaces/resources and present the latest coherent frame without accumulating latency.
+
+Start with the largest traced cost. Direct scanout is conditional late work for eligible fullscreen clients; it cannot solve native editing/saving. Do not make every window eligible by disabling overlays, transformations, capture or color precision. Bevy rendering is already GPU-backed; an entirely new renderer is justified only by evidence that the existing integration cannot meet the shared budgets. Preserve actual GPU/native thread affinity and every submitted consumer lifetime.
+
+**Continue through these Records:**
+
+- [P53 — Pace one output from its presentation clock without a redraw loop.](record:r_3HT09KTMPBS113E9QXKT5ASZGQ)
+- [P55 — Remove one measured redundant render pass or copy.](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J)
+- [P68 — Compare processor placement for one evidenced misplaced stage.](record:r_7NEHBEAZ041VSG76B4TAWJ83PS)
+- [P52 — Retain damage independently for each output.](record:r_0R0MWH247WFE7SYBX74GP66PM8)
+- [P81 — Retain compatible incoming DMA-BUF import bindings.](record:r_3NRE33E28Y9X36N8D8VJ6WC1Z1)
+- [P54 — Reuse compatible exported/output resources within a bounded budget.](record:r_6DMZQYSZSS9119FGZY71NC5TYE)
+- [P59 — Reduce measured raster-resolution churn during navigation.](record:r_6YRB2V4SHY7M6SN3NDXWKJ8YYZ)
+- [P57 — Test direct scanout for one eligible fullscreen SDR client.](record:r_1W82JGD8E7MYX2XM60YYXGMM53)
+} r_333RCJBDSGX0Y0W630FWHJAJCB
+
+P53 — Pace one output from its presentation clock without a redraw loop. (
+    @park-p53: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 12,
+    #park-workflow @park-development-cycle
+) { r_3HT09KTMPBS113E9QXKT5ASZGQ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** coupling outputs or answering undamaged clients too quickly can burn CPU and cause uneven delivery. **Scope:** distinct dirty, queued and waiting states in session/desktop, with callback throttling even when a redraw finds no damage. **Verify:** independent output activity, quiet/off-screen clients, missed deadlines, completion/failure and resume. Compare native frame age and output intervals. Follow Niri's estimated-vblank distinction; do not remove callback service or create a fixed global polling clock.
+
+**Remaining:** validate the implemented estimated-refresh/no-damage throttling on the optimized candidate, then reduce any measured remaining presentation preparation that exceeds actual output demand. Verify independent outputs, quiet/off-screen clients, missed deadlines, failure/resume, held multi-node GPU coherence and ready work while an earlier submission is deliberately stalled. Compare frame age and actual output intervals without delaying input, semantic work, capture or another ready output. A fixed global polling clock is not the intended mechanism.
+
+**Current delivery boundary:** the successful-output callback move and removal of native Started snapshots/channel/wakes are already included in measured 3fdc9356; 00 holds the prior red/green result. The next candidate implements a bounded, per-output estimated-refresh queue for the no-damage branch, anchored to actual presentation, with replacement, pause, mode-change and stale owner retirement. Pure clock checks and compilation precede delivery; Park must verify actual callback traffic, failure/resume and both outputs. The current output texture path may make most renders damaged: if the new no-damage counters stay zero, do not claim this branch improved performance. Measure remaining real output-demand/composition waste before expanding the mechanism. The original no-progress import and clock controls are complete.
+} r_3HT09KTMPBS113E9QXKT5ASZGQ
+
+Extension @park-p53 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P55 — Remove one measured redundant render pass or copy. (
+    @park-p55: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 20,
+    #park-workflow @park-development-cycle
+) { r_7P9VMMCDVV7ZN72MVSTZ3CHF4J
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** the completed direct-target experiments show that removing a copy can expose a larger GLES consumer wait or add allocation/retention cost. **Scope:** select a concrete change that resolves that observed complete-consumer cost or otherwise makes one copy/pass removal worthwhile. Fresh and bounded-pool comparisons are finished and archived in 00/Build.lingua; they are not queued reruns. The production grouped-copy path and its busy fallback remain the baseline.
+
+**Verify before production:** actual native/GLES/per-output DRM/capture retirement, frozen aliases, source/device/driver identity, teardown/error/hotplug and bounded memory. HAL-imported targets need initialization and reacquisition matching wgpu's tracked state. Filtered capture must complete before display storage becomes read-only to native code or use independent storage. Preserve SDR/sRGB/HDR precision, alpha, transforms, lock/privacy and real-client behavior. Simulated capture leases and an explicit private GLES fence do not prove every real consumer has retired. Retain a change for its complete-path net benefit, including small gains with justified ownership cost.
+} r_7P9VMMCDVV7ZN72MVSTZ3CHF4J
+
+Extension @park-p55 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P68 — Compare processor placement for one evidenced misplaced stage. (
+    @park-p68: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 26,
+    #park-workflow @park-development-cycle
+) { r_7NEHBEAZ041VSG76B4TAWJ83PS
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** some image/geometry work may benefit from a different processor, while small transfers may erase the gain. **Scope:** choose exactly one stage from P67 and compare the current path with the justified CPU, batched CPU or GPU alternative using the same inputs and precision. Include preparation, transfer, synchronization and result-consumption cost. **Verify:** complete-path latency/CPU/GPU improvement and output correctness under normal load. Reject an isolated fast kernel that makes the interactive path slower or requires a synchronous GPU round trip for each input event.
+} r_7NEHBEAZ041VSG76B4TAWJ83PS
+
+Extension @park-p68 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P52 — Retain damage independently for each output. (
+    @park-p52: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 30,
+    #park-workflow @park-development-cycle
+) { r_0R0MWH247WFE7SYBX74GP66PM8
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** motion or a client stream on one monitor should not force unnecessary composition on the other. **Scope:** one end-to-end output-damage path through session, composition and retained native/client content; preserve buffer-age history and full-damage reset conditions. **Verify:** one active/one quiet output, partial updates, resize/resume, pointer/overlay changes and lock/capture transitions. Measure actual recomposed work and presentation. Surface content epochs, output damage and protocol callbacks are different signals.
+} r_0R0MWH247WFE7SYBX74GP66PM8
+
+Extension @park-p52 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P81 — Retain compatible incoming DMA-BUF import bindings. (
+    @park-p81: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 34,
+    #park-workflow @park-development-cycle
+) { r_3NRE33E28Y9X36N8D8VJ6WC1Z1
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** import.rs can allocate a Vulkan wrapper/memory binding before copying into a retained destination. **Scope:** measure and reuse that import setup for genuinely identical live buffers, including format/modifier/planes/offsets/strides and producer identity. **Verify:** release/reuse, FD-number recycling, partial/empty damage, resize, unsupported layouts and producer/output retirement. Bound the retained set and wait for all consumers. Existing damaged-region copying/retained destinations already work; this task does not assume that imports currently use CPU software blits.
+} r_3NRE33E28Y9X36N8D8VJ6WC1Z1
+
+Extension @park-p81 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P54 — Reuse compatible exported/output resources within a bounded budget. (
+    @park-p54: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 38,
+    #park-workflow @park-development-cycle
+) { r_6DMZQYSZSS9119FGZY71NC5TYE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** replacing output textures/views/export resources can add driver cost and freezes. **Scope:** one measured allocation site in graphics/session, separate from incoming-buffer imports. Key compatibility by actual device, extent, format, usage and ownership epoch. **Verify:** in-flight scanout/capture/native consumers, replacement, output loss and memory returning to a bound. No reuse before completion or unbounded pool. Measure allocation reduction and end-to-end cost; existing safe reuse is retained.
+} r_6DMZQYSZSS9119FGZY71NC5TYE
+
+Extension @park-p54 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P59 — Reduce measured raster-resolution churn during navigation. (
+    @park-p59: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-06-gpu-and-outputs: 42,
+    #park-workflow @park-development-cycle
+) { r_6YRB2V4SHY7M6SN3NDXWKJ8YYZ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** repeated surface replacement near a threshold may cause allocation spikes and stalls. **Scope:** one observed zoom/resize boundary; compare existing bucketing with bounded hysteresis or compatible resource reuse. **Verify:** text/client sharpness, output density, overview demand, budget limits and memory after navigation settles. Keep exact-pixel consumers exact. Do not obtain better performance by silently lowering normal resolution or retaining every encountered size.
+} r_6YRB2V4SHY7M6SN3NDXWKJ8YYZ
+
+Extension @park-p59 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P57 — Test direct scanout for one eligible fullscreen SDR client. (
+    @park-p57: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-b,
+    #part-of @park-dev-06-gpu-and-outputs: 46,
+    #park-workflow @park-development-cycle
+) { r_1W82JGD8E7MYX2XM60YYXGMM53
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** B.
+
+
+**Why:** it can remove composition when that pass is actually a measured cost. **Scope:** explicit eligibility for geometry, format, synchronization, color, overlays and capture policy, with the current composition fallback. **Verify:** entry/exit, overlay/lock/capture appearance, replacement, buffer release and the other monitor. No feature disabling to manufacture eligibility. This is conditional and does not explain or solve slow native typing by itself; new HDR/VRR/provider matrices are outside this plan.
+} r_1W82JGD8E7MYX2XM60YYXGMM53
+
+Extension @park-p57 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}

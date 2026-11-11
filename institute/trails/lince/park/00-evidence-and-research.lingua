@@ -1,4 +1,73 @@
+Park — 0. Evidence, source findings and primary research (
+    @park-dev-00-evidence-and-research: 0,
+    is #chapter,
+    #part-of @park-development: 12,
+    #park-workflow @park-development-cycle
+) { r_14AZKSVCBTJXY97EXZZ0838FWW
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 # 0. Evidence, source findings and primary research
+
+**Continue through these Records:**
+
+- [Park — Performance-only Niri candidate after 3fdc9356 — 2026-11-09 UTC](record:r_7M3XNE7QSB3KHW34CSYEGG249Q)
+- [Park — A0 Park visit — optimized 3fdc9356, 2026-11-09 UTC](record:r_619SAYW8V26804MDDR9RYB4JMC)
+- [Park — P36/P66: optimized grouped export, visibility and persistent native demand on 2026-11-07](record:r_70P90A5S1SY5KHMPQ3TFPPVJCQ)
+- [Park — P122: repeated constraint roots measured; numerical-solver retention deprioritized on 2026-11-06](record:r_1D0C4M30Y1AG2VCRQ3W5C6BTVN)
+- [Park — P113: content-only text autosave retains style and geometry state on 2026-11-06](record:r_2RGZ2A6RZDGD1DNY4R6KR27WV5)
+- [Park — P60: surface planning boundary and skipped empty shader-source scans on 2026-11-06](record:r_7YGE32CXDXCXPBFSE8VJRRHPXY)
+- [Park — P70: native pass hardware timing with isolated frame identity on 2026-11-06](record:r_1PACA70S4V2V5TGX5NNP3CKEK3)
+- [Park — P70: actual export hardware intervals on 2026-11-06](record:r_1M425JT53V7ZE4RW6AKF0ZPR5D)
+- [Park — P67: warmed render work and rejected serial Render scheduler on 2026-11-06](record:r_6D27AQ3MBZPNAFCGCBTHZGZS63)
+- [Park — P60: warmed main bodies and desktop query reuse on 2026-11-06](record:r_6MKN53RJ5H8K32YS4XCB8X3WHW)
+- [Park — P55: bounded direct-target reuse compared on 2026-11-06](record:r_2F8B4AS14NZPWYGK5N89S94JE0)
+- [Park — P55: fresh direct export targets compared on 2026-11-06](record:r_50H554C4DW5T690X1N26RV6EYV)
+- [Park — P62: matched offered-input replay on 2026-11-06](record:r_6RPQF3JQ5G62GRBXSHQKG7SQR5)
+- [Park — P62: worker export removes the native-owner publication hold on 2026-11-06](record:r_5ZQ3WV3QYNW2R96Q6EMGHRCH6W)
+- [Park — P62: coherent overlap boundary selected on 2026-11-06](record:r_3EWT423FEAQKR6BM399DNP240R)
+- [Park — P60: native main phases attributed on 2026-11-06](record:r_77BK7J6C7AKSG80N8KR1E00QW9)
+- [Park — P56: coherent native output submission kept on 2026-11-06](record:r_367SDDFYTS57JXCQXX89M045R8)
+- [Park — Installed optimized frame ownership measured on 2026-11-06](record:r_2J3V23Y87Y7H2FYAWM8GBE45Y0)
+- [Park — Exact history JSON-size reuse kept on 2026-11-06](record:r_6JSEAFG9AC78KEV14YP3Q9294W)
+- [Park — Canonical preflight Record reuse kept on 2026-11-06](record:r_2K085KENQRAPX3J3ABKJ85DBCC)
+- [Park — SQLite allocator-statistics contention removed on 2026-11-06](record:r_3SF32W2B906FQJ2Q3YCZZZ5ANS)
+- [Park — Metadata storage reads completed on 2026-11-06](record:r_7D0XVGS9Y0PG286JNPXGBQSGRP)
+- [Park — Current optimized session observed on 2026-11-06](record:r_22Q2RQE73HH78Y1YEAKKW7FJJK)
+- [Park — Indexed history retention kept on 2026-11-05](record:r_5DNK2VP08SW72C85NHNAXN6RM6)
+- [Park — Native refresh remainder attributed on 2026-11-05](record:r_4SSMEX7CHVWT50K1GAV57JYZRN)
+- [Park — Demand-aware Record result projection completed on 2026-11-05](record:r_3BWGZ6ATPYAQ112ZE87B5RH2ZJ)
+- [Park — Private CPU sampling on 2026-11-05](record:r_5K4MTJCD8N2DR4PQFFXB92K4HD)
+- [Park — Dependent subscription refresh completed on 2026-11-05](record:r_1X3XBPNSMGN7X8SS7VYNF65VD6)
+- [Park — Populated query/storage attribution on 2026-11-05](record:r_7544RX8XZFRZ1WJ6D6MMEPHKF5)
+- [Park — Borrowed native text splicing completed on 2026-11-05](record:r_0P39A5V1PDWWDVB9TE7WYD9GF7)
+- [Park — Backend phases and accepted-history work reduction on 2026-11-05](record:r_13Z1C9F265JDKD2YTVTCDK02YP)
+- [Park — Incremental recovery completed on 2026-11-05](record:r_5MZZQFDAS3V6ZFKH81MNT1RKDR)
+- [Park — Local-edit investigation and kept fixes on 2026-11-05](record:r_0RAAZ3W76ADVE6N82Y9MKP3S8M)
+- [Park — Source findings from this planning pass](record:r_0HG3PYDE0G92RMEY574SX5TVZK)
+- [Park — Research checked for the new direction](record:r_7QY4ZEFDE2HEQ5S9WN62DWKKJN)
+- [Park — Declared behavior checked for this plan](record:r_3GRG80F86Y02416YVCF9W0BWTQ)
+- [Park — What remains unknown](record:r_3F1NWVTTGQ8C5RJFWP13HH3Y2R)
+- [Park — P101 input correlation completed; implementation kept](record:r_2F1QT5XW8K8GNPQDPXFT5AYCTN)
+- [Park — P103 workload/identity baseline completed on 2026-11-05](record:r_5HQCCPDXVAA2G4ADFGV47QD23H)
+- [Park — Evidence already available; do not repeat completed mechanisms](record:r_3ESQKET1SPF1FWD712EFC4J6B4)
+- [Park — Rejected directions and constraints to retain](record:r_0SN0WCX51KC9RHN4Q5ZGNAKXM1)
+- [Park — Primary research and its application](record:r_0VWFWA1Q5EDMK9KVCGK8ZVKA94)
+- [Park — P60: idle-editor sizing and unchanged UI layout experiments on 2026-11-07](record:r_4H9Z0F9CBS8JED6DZCD7CA7VZK)
+- [Park — P60/P66: normal-build main-phase attribution prepared on 2026-11-07](record:r_1T5N0MHV14AF809BJNM4AWK7XE)
+- [Park — P53 prerequisite: stop pixel frames without ready client progress on 2026-11-07](record:r_58TZPPRZFKC0W6Y01BZY0H18Y4)
+- [Park — Optimized 8c2348ed: current rendering and I/O findings on 2026-11-07](record:r_5ZJBZP4J0G4H8R9T44BTQQ2MA6)
+- [Park — P53/P87: output-submission callbacks and obsolete Started path locally verified on 2026-11-07](record:r_4D5FRN8PZ09WBSXRPH6CD6BNW8)
+- [Park — Archived initial native regression implementation from the acceptance plan](record:r_3M0QCK4SZ1828CRJJDHCWFPR3B)
+- [Park — A0 measurement foundation prepared for CI, 2026-11-07](record:r_1DQXCZJYA0BGS7MDA9EMBBE90F)
+} r_14AZKSVCBTJXY97EXZZ0838FWW
+
+Park — Performance-only Niri candidate after 3fdc9356 — 2026-11-09 UTC (
+    @park-dev-4d7a256ad24ef34d4d77: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 3,
+    #park-workflow @park-development-cycle
+) { r_7M3XNE7QSB3KHW34CSYEGG249Q
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Performance-only Niri candidate after 3fdc9356 — 2026-11-09 UTC
 
@@ -24,6 +93,16 @@ The Nix launch contract evaluates but cannot execute locally: an upstream bootst
 
 
 <a id="a0-3fdc9356-park-visit"></a>
+} r_7M3XNE7QSB3KHW34CSYEGG249Q
+
+Park — A0 Park visit — optimized 3fdc9356, 2026-11-09 UTC (
+    @park-dev-fcb34fcd187d3af8b701: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 27,
+    #park-workflow @park-development-cycle
+) { r_619SAYW8V26804MDDR9RYB4JMC
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 ## A0 Park visit — optimized 3fdc9356, 2026-11-09 UTC
 
 **Identity and scope:** active Park PID 25223 and the CI validation bundle both identify `3fdc93565941fbf90903773d7e739e77c45fe667`, optimized x86_64 Linux. The manifest's artifact hashes and GitHub archive SHA-256 match. Tests execute prepared binaries; no local compilation, user Record edits, clipboard access, workspace rearrangement or physical monitor/lock/VT actions occur. Other agents' dirty cache-policy files are preserved. The installed process has no `LINCE_TRACE_PERFORMANCE`/`LINCE_PERFORMANCE_LOG` startup setting. These are private fixture measurements, not physical S3 acceptance or a before/after source speedup.
@@ -33,6 +112,20 @@ The Nix launch contract evaluates but cannot execute locally: an upstream bootst
 **Outcomes:** the main corrected-environment run passes 11/12 cases: Protein-first interface, hardware GPU, both text/glyph autosave forms and reopen, GLB/WGSL capture/replacement, controlled input/verified pixels and six file-backed title/body cases. The mixed 24-item/two-output route fails at its second Unicode assertion (`é` observed, `éé` expected), identically with capture off. Do not dismiss this as a fixture-only problem or weaken its oracle without identifying target/input/frame ordering. Its later phases are untested. The main run has 31/43 transport-complete observations; one GPU warmup loses a detailed span. A final selected GPU/text repeat passes all checks and all six declared phase windows with no such loss. Actual named Bevy body observations remain absent in every run, explicitly reported unobserved; transport-complete does not mean all required measurements exist.
 
 **P93 completed — runner orchestration and lifecycle:** exact nonzero selectors, mandatory Protein-first ordering, serial execution, per-case isolation, source-stamped artifacts, preserved failures/incomplete reports and no compile fallback work on the installed machine. A deliberate one-second GPU-case timeout records `case-timeout`, fails rather than passing, exits its child with SIGTERM and leaves no matching test process. The unchanged-source typing comparison has 535 rows and zero missing rows. P156's automatic graphics setup and P151/P152/P155's missing coverage/comparison extensions remain separate unfinished work; P93's completed checkbox is removed.
+
+**Continue through these Records:**
+
+- [Park — Timing observations to reuse](record:r_5E2R343MAZ1RW00XJRBXW1308N)
+- [Park — Tooling faults and next Niri batch](record:r_1AXKAEEQBAH9C0S57959MQ1QF9)
+} r_619SAYW8V26804MDDR9RYB4JMC
+
+Park — Timing observations to reuse (
+    @park-dev-5f3a054dccc7093370f7: 0,
+    is #chapter,
+    #part-of @park-dev-fcb34fcd187d3af8b701: 37,
+    #park-workflow @park-development-cycle
+) { r_5E2R343MAZ1RW00XJRBXW1308N
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ### Timing observations to reuse
 
@@ -52,6 +145,15 @@ For eleven unheld synthetic input rounds, median native queue delay is **0.010 m
 The hardware case uses Intel Iris Xe TGL GT2 (`0000:00:02.0`), Mesa 26.2.6/Vulkan. Two capture-on controls have full-frame medians **16.360/15.786 ms** and pixel-only medians **10.884/11.147 ms**; the intervening capture-off control gives **16.208/11.374 ms**. The off control retains this case's explicit hardware query/drain behavior. All exact reference pixels match; every one of its 24 pixel-only timed samples executes zero native main updates. The phase envelope contains subsequent verification/finish full updates and is not that pure sample cohort. UI GPU timestamps are about **0.04 ms per pass**, not whole-frame GPU duration. Clustering/mesh/upscale work and occasional preprocessing spikes up to 5.285 ms remain distinct; timings must not be summed across nested passes. This does not establish a bottleneck in the actual Firefox/GLES/DRM consumer.
 
 In the final private full-frame phase, mean native main is **5.026 ms**, render sub-app **5.177 ms**, native pointer capture **0.945 ms**, custom layout solve **0.185 ms**, surface derivation/application **0.263 ms** and style application **0.029 ms**. Native update and GPU completion-age spans include different/nested scopes; these are not additive CPU shares. The observed style cache derives/resolves no new values, and surfaces/layout runtimes remain stable. Pointer capture is a better evidenced small-scene candidate than repeating the completed numerical-solver experiment; actual system bodies and S3 still need measurement before choosing the largest production refactor.
+} r_5E2R343MAZ1RW00XJRBXW1308N
+
+Park — Tooling faults and next Niri batch (
+    @park-dev-8889e32b3216ce439611: 0,
+    is #chapter,
+    #part-of @park-dev-fcb34fcd187d3af8b701: 56,
+    #park-workflow @park-development-cycle
+) { r_1AXKAEEQBAH9C0S57959MQ1QF9
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ### Tooling faults and next Niri batch
 
@@ -62,7 +164,16 @@ In the final private full-frame phase, mean native main is **5.026 ms**, render 
 
 **Receipts:** `/home/user/.local/state/lince/park-validation/a0-3fdc9356-20261109T012718Z/`. Start with `analysis.json`, `preflight.json`, `archive-integrity.json`, `runtime-launch-adjustment.json`, `cancellation-check.json`, `bevy-name-check.json` and `unchanged-typing-comparison.json`. `capture-on/` is the failed original environment; `capture-on-installed-graphics/` is the full corrected-environment run; `capture-off-control/` and `capture-on-repeat/` are bounded controls. Raw logs, per-phase histograms, GPU frame JSON, synthetic input identities and pixel artifacts remain available. No improvement percentage against the old binary is supported. The Park visit ends after these Markdown updates; return to Niri for the broad coding batch.
 
-[Organization](Park.md). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
+[Organization](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Source findings below describe mechanisms, not a measured fraction of the current desktop lag.
+} r_1AXKAEEQBAH9C0S57959MQ1QF9
+
+Park — P36/P66: optimized grouped export, visibility and persistent native demand on 2026-11-07 (
+    @park-dev-1a1cfbb27dd23efc829e: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 67,
+    #park-workflow @park-development-cycle
+) { r_70P90A5S1SY5KHMPQ3TFPPVJCQ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P36/P66: optimized grouped export, visibility and persistent native demand on 2026-11-07
 
@@ -90,6 +201,19 @@ The original comparison runner mistakenly samples /proc/TID/stat, which supplies
 
 Evidence: /home/user/.local/state/lince/park-validation/performance-20261106/optimized-4e6-comparison/, especially identities.json, analysis.json, receipt-producer.json, complete-motion.json, complete-static.json, complete-disabled.json, terminal-v4-invalid.json and terminal-visible-v5-new/. Source hashes and original stdout/stderr/metadata/passive samples are retained. The release manifest/archive identity is in the adjacent published-release-yjoeypyn/ directory. No Actions query, application release compilation, live restart, owner Record edit, kernel-policy change or attached profiler is performed. P60/P66/P67/P70 and physical/input acceptance remain open; P140/P146's stated coverage gaps and P135's appearance failure are unchanged.
 
+**Continue through these Records:**
+
+- [Park — P47: clock deadlines coalesced and empty-hand demand bounded](record:r_4B6NZ1P1MKH6R8KSDWX4670AMZ)
+} r_70P90A5S1SY5KHMPQ3TFPPVJCQ
+
+Park — P47: clock deadlines coalesced and empty-hand demand bounded (
+    @park-dev-26d81ff0835b5eb07db1: 0,
+    is #chapter,
+    #part-of @park-dev-1a1cfbb27dd23efc829e: 93,
+    #park-workflow @park-development-cycle
+) { r_4B6NZ1P1MKH6R8KSDWX4670AMZ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 ### P47: clock deadlines coalesced and empty-hand demand bounded
 
 The retained native change reuses WakeDeadline for Time Castle's own requests. Multiple unrelated updates keep the earliest pending deadline, removed views and Laboratory suspension cancel it, and replacing the callback retires the previous target. Other source deadlines remain independent. Empty coiled clocks derive a request interval from aperture and conservative raster extent, limiting the additional angular step to approximately 0.025 raster pixel when above the existing sixteen-millisecond floor, with a one-second maximum. A normal empty hour clock requests roughly ten updates per second instead of sixty; larger/short-period clocks request more often. Populated clocks and active transitions retain the fast path. Actual hand positions still use current wall time, rather than accumulated sampling deltas. Mode changes reset the transition origin so idle time is not mistaken for animation progress. No setting, data migration, clock removal, new worker or default profiler is introduced. This is source-demand reduction, not an animation-only renderer or proof that the desktop now meets its FPS/input targets.
@@ -101,6 +225,15 @@ Final V5 cargo check and test-executable compilation pass with no Rust warnings/
 The V2 and V4 failed lifecycle-fixture runs remain archived: clock creation and mode UI changes legitimately issue immediate notifications. The final fixture measures late-deadline absence relative to those notifications instead of suppressing them, and uses actual Laboratory suspension rather than the notification-isolation helper. Initial burst, removal, replacement and fast-deadline assertions remain. Runtime V5 is identical to the measured/check-compiled V4 prefix; the last change corrects only that fixture boundary.
 
 Evidence: /home/user/.local/state/lince/park-validation/performance-20261106/wake-callers/, including complete-v5.json, source-v5.json/source-v5-files/, the frozen executable/compiler receipts, separate logs and idle/typing artifacts. receipt.json records the completed gates and equal output hashes. An optimized binary containing this change is required for the combined two-monitor/Firefox/daily acceptance comparison. Held network fetches and work-log mutations are unchanged paths; no claim is made that every Time Castle workflow or the complete rule map was executed.
+} r_4B6NZ1P1MKH6R8KSDWX4670AMZ
+
+Park — P122: repeated constraint roots measured; numerical-solver retention deprioritized on 2026-11-06 (
+    @park-dev-3d470edf2dbeadebfb56: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 105,
+    #park-workflow @park-development-cycle
+) { r_1D0C4M30Y1AG2VCRQ3W5C6BTVN
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P122: repeated constraint roots measured; numerical-solver retention deprioritized on 2026-11-06
 
@@ -121,6 +254,15 @@ The earlier optimized installed-binary receipts were re-read rather than treatin
 Both source generations pass normal interface/Park checks and test compilation with zero compiler warnings/errors. Five final process runs execute 80 common cases, Protein Add filter first each time. The final phased source has two runs/32 common cases. Generic two-output full/pixel/resumed pixels retain SHA-256 d56c9b1763de9db69627a1d6f75bcaa2b7e29646f3edaea3a56fd9c726459909. Actual Protein GPU glyph coverage and wider rule mapping remain P146/P140. This round adds useful attribution and a scaling/correctness probe; it claims no latency/FPS improvement, no current physical acceptance and no performance optimization shipped from the pending retention task.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/layout-domains/`, including `source-v1.json`, `source-v2.json`, their frozen changed files, compiler/executable receipts, `complete-v1.json`, `complete-v2.json`, `phase-summary-v2.json`, raw reports/logs, `reused-optimized-layout.json` and `receipt.json`. The reused optimized source receipts are identified and hashed there. Sources/executables are frozen and compilation does not overlap GPU observations. No application release build, Actions query, attached sampling, live profile/session/clipboard change or owner Record edit occurred.
+} r_1D0C4M30Y1AG2VCRQ3W5C6BTVN
+
+Park — P113: content-only text autosave retains style and geometry state on 2026-11-06 (
+    @park-dev-b9ce25f472e338c17682: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 125,
+    #park-workflow @park-development-cycle
+) { r_2RGZ2A6RZDGD1DNY4R6KR27WV5
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P113: content-only text autosave retains style and geometry state on 2026-11-06
 
@@ -139,6 +281,15 @@ Keep the deterministic work elimination and the repaired field semantics. No ela
 The final source manifest hashes 3,120 inputs and the test executable is frozen and checked. Compilation and GPU checks do not overlap. Edit panel usable bounds and the mandatory Protein CPU glyph/dropdown cases pass; complete rule mapping and actual Protein GPU glyph acceptance remain P140/P146. No owner Record, live profile, clipboard or session state was changed; no application release build, Actions query or live restart occurred.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/text-autosave/`, especially `red-result.json`, `red.log`, `source-red.json`, `source-green-v4.json`, `source-green-v4-files/`, the three `*-green-v4-result.json` compiler receipts, `green-v4-result.json`, `green-v4-pixels/`, `running-session.json` and `receipt.json`. Earlier source/compile/setup results retain their own identities. Full desktop latency and both physical outputs still require the appropriate installed optimized candidate and coordinated acceptance.
+} r_2RGZ2A6RZDGD1DNY4R6KR27WV5
+
+Park — P60: surface planning boundary and skipped empty shader-source scans on 2026-11-06 (
+    @park-dev-a072da2b01efa791a867: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 143,
+    #park-workflow @park-development-cycle
+) { r_7YGE32CXDXCXPBFSE8VJRRHPXY
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P60: surface planning boundary and skipped empty shader-source scans on 2026-11-06
 
@@ -166,6 +317,15 @@ All eight process references match byte for byte across baseline/candidate and r
 P113 is the next useful prerequisite: trace one real ordinary edit/input trigger through current revisions and separate its necessary semantic upkeep, style/intrinsic/layout, transform/input and pixel/capture consumers. A forced static full-frame benchmark establishes repeated cost, not that production idle demand is wrong or all work may be skipped. Reuse the existing input replay, binding/query and scene revision signals to establish the concrete trigger before adding another cache or event layer. P60 remains open for a justified expensive pure derivation/application change and optimized input/complete-consumer acceptance. Do not force a worker split of this stateful planning phase or retry the completed serial/query-cache experiments unchanged.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/surface-phases/`, especially `source-v1.json`, `source-v2.json`, `source-v1-files/`, `source-v2-files/`, the six compiler result receipts, `surface-phases-complete-v1.json`, `surface-phases-complete-v2.json`, `baseline-stage-reports-v1.json`, `candidate-stage-reports-v2.json`, `baseline-reconstructed-v1.json`, `reversed-profile-complete.json`, `comparison-summary.json`, `method.json` and `receipt.json`. Source and executable hashes are frozen/verified; compilation and GPU timing do not overlap. The two guards and measured boundary remain; larger scheduling/worker claims remain unproved.
+} r_7YGE32CXDXCXPBFSE8VJRRHPXY
+
+Park — P70: native pass hardware timing with isolated frame identity on 2026-11-06 (
+    @park-dev-7d34b222e6f8aa6877c8: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 170,
+    #park-workflow @park-development-cycle
+) { r_1PACA70S4V2V5TGX5NNP3CKEK3
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P70: native pass hardware timing with isolated frame identity on 2026-11-06
 
@@ -198,6 +358,15 @@ Each process verifies actual reference glyphs, exact full/pixel output bytes and
 Normal cargo check and test compilation pass without warnings/errors. The first generation's control caught the test invalidating its own retained scene through the public scene-editing accessor; test-only diagnostic access was corrected before the final runs. The second generation supplied exploratory timings but lacked the exact cross-process reference artifact; the third adds that artifact and per-frame CPU/GPU counterpart guards. Keep those distinctions. Source/executable hashes are frozen and checked, and compilation does not overlap GPU measurement. No application release build, live restart, attached sampling, runtime-profile/clipboard change, Lingua edit or Actions query occurred.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/native-pass-gpu/`, especially `source-v3.json`, `source-v3-files/`, `park-check-native-gpu-v3-result.json`, `park-tests-native-gpu-v3-result.json`, `native-gpu-complete-v3.json`, `summary-v3.json`, `native-gpu-enabled-v3/native-pass-hardware.json`, all three `native-pass-reference.rgba` files and `receipt.json`. Earlier source/compile/results and the reconstructed second-generation test source remain labelled separately. The useful probe and shared timing/pixel helpers stay in the codebase; P70 remains open for its unmeasured boundaries.
+} r_1PACA70S4V2V5TGX5NNP3CKEK3
+
+Park — P70: actual export hardware intervals on 2026-11-06 (
+    @park-dev-7cd2702429a7b49ecc47: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 202,
+    #park-workflow @park-development-cycle
+) { r_1M425JT53V7ZE4RW6AKF0ZPR5D
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P70: actual export hardware intervals on 2026-11-06
 
@@ -225,6 +394,15 @@ All eight block-final groups preserve exact exported bytes immediately and after
 Keep the bounded export probe and exact-pixel guard. P70 remains open: the next useful measurement is actual native GPU passes using pinned Bevy 0.19.1's existing RenderDiagnosticsPlugin/DiagnosticsRecorder and its already-instrumented UI pass, with off controls and explicit asynchronous result/frame identity. Avoid another generic timing framework or replaying this completed copy experiment unchanged. The actual GLES consumer and current optimized/physical frame path still need distinct attribution. These data do not overturn the earlier rejected serial Render or mixed direct-target consumer results.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/gpu-timestamps/`, especially `source-v2.json`, `park-check-gpu-v2-result.json`, `park-tests-gpu-v2-result.json`, `timestamps-complete-v2.json`, `timestamp-export-v2/export-hardware-intervals.json`, `summary-v2.json`, `method-v2.json` and `receipt.json`. Source/executable hashes are frozen and checked. The first source generation failed compilation and produced no hardware observation.
+} r_1M425JT53V7ZE4RW6AKF0ZPR5D
+
+Park — P67: warmed render work and rejected serial Render scheduler on 2026-11-06 (
+    @park-dev-ad8f60fe6a1fe8aead46: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 229,
+    #park-workflow @park-development-cycle
+) { r_6D27AQ3MBZPNAFCGCBTHZGZS63
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P67: warmed render work and rejected serial Render scheduler on 2026-11-06
 
@@ -256,6 +434,15 @@ Final source bytes match source-v2.json after removing the serial candidate. Nam
 P70 is now the next ready prerequisite before a broader render/resource rewrite: collect hardware timestamp intervals at a bounded existing submission/pass boundary, distinguish actual device duration from host queue/driver/worker waits, and report unsupported capabilities. Reuse the measured CPU/ownership map and copy/precision/lifetime gates. Do not add more broad CPU timers, enable a global serial renderer, or interpret the host gaps as GPU execution. Current optimized daily attribution and complete native/GLES/DRM timing remain open.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/render-bodies/`, especially `source-v2.json`, `park-check-render-v2-result.json`, `park-tests-render-v2-result.json`, `render-complete-v2.json`, `body-summary-v2.json`, `park-check-render-normal-v2-result.json`, `source-v3.json`, `render-executor-complete-v3.json`, `render-executor-reversed-complete-v3.json`, `rejected-render-executor-summary-v3.json`, `experimental-v3-source/` and `experimental-v3.patch`. Source/executable hashes are frozen and checked; compilation and GPU observations do not overlap. These remain private debug observations with shared desktop load and uncontrolled thermals.
+} r_6D27AQ3MBZPNAFCGCBTHZGZS63
+
+Park — P60: warmed main bodies and desktop query reuse on 2026-11-06 (
+    @park-dev-8f9018aa74754e97e577: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 260,
+    #park-workflow @park-development-cycle
+) { r_6MKN53RJ5H8K32YS4XCB8X3WHW
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P60: warmed main bodies and desktop query reuse on 2026-11-06
 
@@ -278,6 +465,15 @@ Both candidate main diagnostics preserve reference hash 7066745708592007671, exa
 P60 remains open for the expensive derivation/application boundary and optimized critical-path evidence. Reuse the completed warmed attribution and six-query reduction. Surface synchronization and UI layout now exceed the selected resolver body; inspect their actual repeated work before adding more caches or moving a small helper to workers. Missing deferred-command/validation costs remain explicit. The 9–11 ms optimized main baseline is still a different workload/profile.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/warm-main-bodies/`, including `source-v2.json`, the exact archived baseline observer sources, `warm-complete-v2.json`, `warmed-body-summary-v2.json`, `candidate-source-v1.json`, `query-reuse-complete-v1.json`, `query-reuse-summary-v1.json`, `query-safety-complete-v1.json` and final compiler/receipt files. Both source generations have frozen SHA-256-identified executables; source hashes are checked before execution and compilation does not overlap GPU timings. No release application build, live-session restart, user-data/clipboard mutation, attached sampling or Actions query occurred.
+} r_6MKN53RJ5H8K32YS4XCB8X3WHW
+
+Park — P55: bounded direct-target reuse compared on 2026-11-06 (
+    @park-dev-db38786856ae8fa6f53f: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 282,
+    #park-workflow @park-development-cycle
+) { r_2F8B4AS14NZPWYGK5N89S94JE0
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P55: bounded direct-target reuse compared on 2026-11-06
 
@@ -303,6 +499,15 @@ Keep the prototype as a reproducible candidate and keep the production copy path
 Both compiler feature graphs pass with zero warnings/errors. Six common ten-case interface gates pass with Protein Add filter first, followed by passing production-copy precision/lifetime, private/public one-main-update capture and full showoff guards. The generic GPU labels and CPU Protein checks leave P146's actual Protein GPU-text acceptance and P140's full rule mapping open.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/pooled-targets/`, including `source-v2.json`, `park-check-pooled-v2-result.json`, `park-tests-pooled-v2-result.json`, `pooled-complete-v2.json`, `summary-v2.json`, `park-check-pooled-normal-v2-result.json` and the final safety/receipt files. Source and frozen executable hashes are checked before execution; compilation and timing do not overlap. No release application build, live-session restart, user-data/clipboard mutation, attached sampling or Actions query occurred. These are private test-profile results, with live desktop contention and uncontrolled thermals, not optimized input/FPS acceptance.
+} r_2F8B4AS14NZPWYGK5N89S94JE0
+
+Park — P55: fresh direct export targets compared on 2026-11-06 (
+    @park-dev-b683bcf9b49d4d6fa74b: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 307,
+    #park-workflow @park-development-cycle
+) { r_50H554C4DW5T690X1N26RV6EYV
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P55: fresh direct export targets compared on 2026-11-06
 
@@ -328,6 +533,15 @@ Both final compiler feature graphs have zero warnings/errors. The five final com
 This fresh-target stage established the setup cost and consumer-wait questions for the bounded comparison recorded above. Its explicit GLES fence does not prove the production retirement contract. A display allocation cannot be modified by filtered capture or a later frame after export. Do not subtract nested setup timings to predict a shipping gain. Production direct targets remain disabled.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/direct-targets/`, especially `source-v4.json`, `raw-helper-preservation-v1.json`, `park-check-direct-v4-result.json`, `park-tests-direct-v4-result.json`, `direct-complete-v4.json`, `summary-v4.json`, `safety-complete-v4.json`, `park-check-direct-normal-v4-result.json` and `receipt.json`. Per-condition JSONs include balanced blocks, frame epochs and pending-work handoff flags. Frozen executable/source hashes are verified before runs; no compiler is active during measurements. The first macro compile error, original readback failure and narrower static-oracle generation are retained. No release application build, session restart, real-data/clipboard mutation, attached sampling or Actions query occurred.
+} r_50H554C4DW5T690X1N26RV6EYV
+
+Park — P62: matched offered-input replay on 2026-11-06 (
+    @park-dev-3c2de3187dc34a258d83: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 332,
+    #park-workflow @park-development-cycle
+) { r_6RPQF3JQ5G62GRBXSHQKG7SQR5
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P62: matched offered-input replay on 2026-11-06
 
@@ -351,6 +565,15 @@ The first sustained attempt catches a fixture occlusion: at key 18, the original
 Before deeper production overlap, also measure actual GLES consumption while newer Vulkan work is active. The earlier export reader sometimes needed a DMA-BUF acquire wait after its completion gate; that is a measurement gap, not proof of a production stall. This replay's deferred readbacks cannot answer it. Immutable client pixels/imports and upload leases, saved scene/input/window feedback, output/format replacement, filtered capture, lock/privacy invalidation, lifecycle/failure and all resource affinity requirements remain P62 prerequisites. P140's full rule mapping and P146's actual Protein GPU-text acceptance also stay open.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/render-offered/`, especially `source-v2.json`, `park-tests-offered-v2-result.json`, `park-check-offered-v2-result.json`, `park-check-offered-normal-v2-result.json`, `offered-complete-v2.json`, `summary-v2.json` and `receipt.json`. Per-trial JSONs and complete input/epoch/pixel reports are under each final run directory. The first fixture failure is retained in `attempt-v1-failure.json` and its original logs. Source and executable hashes are verified before timing; no compiler runs during measurements. No release application build, session restart, real-data/clipboard mutation, attached profiling or Actions query occurred.
+} r_6RPQF3JQ5G62GRBXSHQKG7SQR5
+
+Park — P62: worker export removes the native-owner publication hold on 2026-11-06 (
+    @park-dev-97ed3f5805ae9688a1d1: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 355,
+    #park-workflow @park-development-cycle
+) { r_5ZQ3WV3QYNW2R96Q6EMGHRCH6W
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P62: worker export removes the native-owner publication hold on 2026-11-06
 
@@ -372,6 +595,15 @@ A separate lifetime regression drops the native renderer before allowing the wor
 P62 remains open. The next useful experiment compares fixed offered input origins with bounded event-driven handling of both input and ready frames, including the waiting/queue cost. Do not simulate a responsiveness gain by having only one variant ignore ready notifications during an artificial wait. Before production overlap, preserve immutable client pixels/imports and per-frame upload leases, saved scene/input/painted-window feedback, target/output/format replacement, filtered-capture/main-World coordination, privacy/lock invalidation, first-frame readiness, cancellation/failure and shutdown/resource affinity. The context split makes independent export possible; it does not solve those ownership requirements. Production scheduling remains serial.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/render-export/`, including `source-v1.json`, `gpu-helper-preservation-v1.json`, `park-check-export-v1-result.json`, `park-tests-export-v1-result.json`, `overlap-export-complete-v1.json`, `summary-v1.json`, `safety-complete-v1.json`, `park-check-export-normal-v1-result.json` and `receipt.json`. The test executable is frozen and hashed outside Cargo output; all performance runs verify its source identity and absence of a compiler. No application release build, live-session restart, real-data/clipboard mutation, attached profiling or Actions query occurred.
+} r_5ZQ3WV3QYNW2R96Q6EMGHRCH6W
+
+Park — P62: coherent overlap boundary selected on 2026-11-06 (
+    @park-dev-d46fa6dcc89e0071fc64: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 376,
+    #park-workflow @park-development-cycle
+) { r_3EWT423FEAQKR6BM399DNP240R
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P62: coherent overlap boundary selected on 2026-11-06
 
@@ -398,6 +630,15 @@ This supports useful overlap in this debug workload with a CPU cost; it is not a
 Keep the current production path. The next P62 experiment must prevent a busy next main update from holding completed-frame export/publication, using correct ownership of immutable device/export state and saved frame metadata, or a justified bounded interruption boundary. Compare fixed offered input origins as well as sustained frame work. Respect the existing Rc/RefCell import-wait owner; do not hide it in an Arc. A render/export result must reach the compositor with its own scene/input/output/capture epoch, and each upload lease must survive its actual GPU consumer. The client/import, capture/privacy, feedback and replacement requirements above remain mandatory before shipping. This completed native-only experiment does not close P62.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/render-overlap/`, especially `source-v3.json`, `park-tests-overlap-v3-result.json`, `overlap-complete-v2.json`, `summary-v2.json` and `park-check-overlap-normal-v1-result.json`. The first missing Components iterator compile error and the narrower initial one-output-marker run remain separate. The final source adds independent geometry and actual second-output oracles; the scope still excludes external clients, records, active capture, output replacement and production worker feedback. Full P140 mapping and actual Protein GPU-text acceptance P146 remain open. No release application build, live-session change, data/clipboard access, attached profiling or Actions query occurred.
+} r_3EWT423FEAQKR6BM399DNP240R
+
+Park — P60: native main phases attributed on 2026-11-06 (
+    @park-dev-2238cf9125182d0116f2: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 402,
+    #park-workflow @park-development-cycle
+) { r_77BK7J6C7AKSG80N8KR1E00QW9
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P60: native main phases attributed on 2026-11-06
 
@@ -431,6 +672,15 @@ The snapshot candidate passes all ten shared cases in collection-off/on runs, pr
 The broader showoff check initially fails at its overview-input assertion in both frozen baseline and candidate. Source confirms the fixture uses Mod+Space while the current default is Mod+Shift+Space. The fixture now includes Shift; production shortcuts and the modal assertion remain unchanged. The corrected shortcut passes; the next fixture obstacle leaves its note covered after prior pan/zoom, confirmed in the captured frame. The fixture now centers its existing camera on that note before the actual pointer drag, without lowering zoom/resolution or removing assertions. The corrected full showoff flow then passes, including overview, real dragging, tiling, spatial rendering and persistence. The final normal session/server-test check and optional-name/trace check/test compilation pass with zero compiler warnings/errors; the normal check is `park-check-readiness-normal-v1-result.json`. No release application binary was built. Baseline/candidate failures, valid narrower checks and raw timing controls remain in the receipt.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/main-schedules/`, especially `candidate-source-v5.json`, `park-tests-v5-result.json`, `main-attribution-v3/native-main-schedules.json`, `summary-v3.json`, `main-attribution-v3-result.json` and `offscreen-fixture-regression-result.json`. Corrected timing evidence is in `named-system-summary-v2.json`; the kept query comparison is in `readiness-system-summary-v1.json`, with candidate source/executables in `candidate-source-readiness-v1.json` and `park-tests-readiness-v1-result.json`. Final fixture/source checks use `candidate-source-readiness-v3.json`, `park-tests-readiness-v3-result.json` and `readiness-final-complete-v3.json`. Feature/collection variants have separate identities and must not be pooled with tracing-off results. No real data, clipboard, session, kernel policy or Actions queries were involved.
+} r_77BK7J6C7AKSG80N8KR1E00QW9
+
+Park — P56: coherent native output submission kept on 2026-11-06 (
+    @park-dev-31afe02a344d3455ccd6: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 435,
+    #park-workflow @park-development-cycle
+) { r_367SDDFYTS57JXCQXX89M045R8
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P56: coherent native output submission kept on 2026-11-06
 
@@ -459,6 +709,15 @@ The first GPU reader incorrectly assumed a completed historical export implied a
 P56's mechanism/local checks are complete. The next strongest ready task is P60: attribute the 9–11 ms main-schedule remainder rather than splitting the roughly 0.36 ms surface helper. P66/P135 retain verification of the new optimized export path and actual frame/input age; P65/P15/P16 retain daily/physical acceptance. Do not infer a percentage of the desktop improvement from these phase medians.
 
 Receipt and source hashes: /home/user/.local/state/lince/park-validation/performance-20261106/export-batching/receipt.json. The primary frozen artifact is park-tests-v4-lince_park, its identity/checks are in park-tests-v4-result.json and park-check-v5-result.json, raw comparisons are coalesced-comparison-{off,counters}.log/.stderr and coalesced-summary.json. The final source-drop/counter artifact is park-tests-v5-lince_park, with park-check-v6-result.json, coalesced-complete-counters.log/.stderr and complete-counter-proof.json. Earlier controls, first failures and complete command/source manifests remain alongside them. No local optimized application build or Actions polling was performed.
+} r_367SDDFYTS57JXCQXX89M045R8
+
+Park — Installed optimized frame ownership measured on 2026-11-06 (
+    @park-dev-412e2bddf71153b229e5: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 463,
+    #park-workflow @park-development-cycle
+) { r_2J3V23Y87Y7H2FYAWM8GBE45Y0
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Installed optimized frame ownership measured on 2026-11-06
 
@@ -479,6 +738,19 @@ The measured rendering sources are unchanged between installed 204b94b6 and e99a
 | Topology native surface preparation | 0.371 ms | 0.358 ms | 0.274 ms | 0.304 ms |
 
 These are nested wall spans, not additive CPU time or hardware GPU execution. In the populated scene, the full update followed by export already exceeds a 16.67 ms refresh budget. Native main has substantial unattributed work; topology::presentation::synchronize is too small here to remain the leading split candidate on the strength of an older debug ranking. The actual pixel-only path works: terminal/Firefox streams mostly avoid full native main updates. They still pay extraction, render preparation and two output exports. Export allocation is much smaller than copy/submit; allocation pooling alone is not the leading supported remedy. Observed completion age averages about five milliseconds but includes execution, queueing and wake observation.
+
+**Continue through these Records:**
+
+- [Park — CPU/GPU and ownership map](record:r_5GVWHAE5WW00MQD1DJ0J6R4DMT)
+} r_2J3V23Y87Y7H2FYAWM8GBE45Y0
+
+Park — CPU/GPU and ownership map (
+    @park-dev-f807dd793249a95085c9: 0,
+    is #chapter,
+    #part-of @park-dev-412e2bddf71153b229e5: 483,
+    #park-workflow @park-development-cycle
+) { r_5GVWHAE5WW00MQD1DJ0J6R4DMT
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ### CPU/GPU and ownership map
 
@@ -502,6 +774,15 @@ In the first populated run, the native coordinator uses approximately 56% of one
 Primary guidance remains [Niri's redraw state and undamaged-client callback throttling](https://github.com/niri-wm/niri/wiki/Development:-Redraw-Loop): output demand and semantic wake deadlines are separate. This motivates P53/P107 investigation rather than copying a global fixed timer. That ownership report selected P56's per-output export submission break; its completed local outcome is recorded above. Attribute the main schedule for P60 next and assess P62's coherent overlap. P55's direct exportable target comparison has stronger evidence than speculative processor migration. P66/P67 remain open for their missing current daily/physical signals and exact client ownership; no measured desktop improvement or completed performance fix is claimed from this investigation.
 
 Raw receipts and per-condition summary.json files: /home/user/.local/state/lince/park-validation/performance-20261106/frame-ownership/receipt.json and source.json; trial directories named there retain the complete logs, passive observations, launch scripts and Firefox reports. No source, migration or owner Record changed for this observation.
+} r_5GVWHAE5WW00MQD1DJ0J6R4DMT
+
+Park — Exact history JSON-size reuse kept on 2026-11-06 (
+    @park-dev-b7dca59e73fb43e72dcc: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 506,
+    #park-workflow @park-development-cycle
+) { r_6JSEAFG9AC78KEV14YP3Q9294W
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Exact history JSON-size reuse kept on 2026-11-06
 
@@ -537,6 +818,15 @@ Keep sampling limits and unfavorable controls: the small-body baseline includes 
 In one accounting run per variant, three large-title edits reduce JSON-size encoding from 69.098 to 0.237 ms and full synchronous preparation from 224.563 to 181.399 ms; large-body preparation changes 384.809 → 263.263 ms. These diagnostic stage reductions do not imply equal release/desktop gains. Remaining typed-history export/inspection, snapshot import/export, live echo, full-field projection, large replacement/tail behavior and optimized complete-path tests stay under P137/P102. Return to actual shipping frame/input and CPU/GPU ownership evidence in P66/P67 before more debug save micro-optimization; do not sum successive improvements into a desktop prediction.
 
 Receipt, final source manifest and exact check/test/artifact records: /home/user/.local/state/lince/park-validation/performance-20261106/history-budget/receipt.json and source.json. The helper source/build/results and size-probe-summary.json are alongside them. Native raw controls/counters and summary.json are under comparison-20261106T153916Z/. No local release application build, Actions query, real database/clipboard mutation or session restart occurred. No migration or .lingua changed.
+} r_6JSEAFG9AC78KEV14YP3Q9294W
+
+Park — Canonical preflight Record reuse kept on 2026-11-06 (
+    @park-dev-5b946d6c0bca95887ffe: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 541,
+    #park-workflow @park-development-cycle
+) { r_2K085KENQRAPX3J3ABKJ85DBCC
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Canonical preflight Record reuse kept on 2026-11-06
 
@@ -563,6 +853,19 @@ P116's five-write ownership is also clearer: recovery append gates native reques
 
 Receipt and source/artifact manifests: /home/user/.local/state/lince/park-validation/performance-20261106/canonical-preflight/receipt.json and source.json. Exact build/selectors and immutable binaries are alongside them. Raw control/counter data and summary.json are under comparison-20261106T144535Z/. No release build, Actions polling, real database changes, clipboard use or session restart occurred.
 
+**Continue through these Records:**
+
+- [Park — Earlier P137 mechanisms moved from its pending task](record:r_05JFRT1EF27KBTMJT02FGGJ8WN)
+} r_2K085KENQRAPX3J3ABKJ85DBCC
+
+Park — Earlier P137 mechanisms moved from its pending task (
+    @park-dev-c531e4d57ffb495f7fe3: 0,
+    is #chapter,
+    #part-of @park-dev-5b946d6c0bca95887ffe: 566,
+    #park-workflow @park-development-cycle
+) { r_05JFRT1EF27KBTMJT02FGGJ8WN
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 ### Earlier P137 mechanisms moved from its pending task
 
 These are historical implementation/validation notes, not newly repeated checks or closure of the remaining optimized/large-replacement requirements. Original target/ receipts may be unavailable as noted elsewhere in this ledger.
@@ -574,6 +877,15 @@ These are historical implementation/validation notes, not newly repeated checks 
 **Accepted-history work removal implemented and locally checked:** AcceptedDoc retains the exact validated limits and reuses its base validation only with matching limits/revision, committed attached full state and private immutable document ownership. New candidates, deltas and permissions keep their full checks. Four new guard regressions pass, including a shrinking candidate under stricter limits, an invalid candidate under unchanged limits, changed internal revision and fresh/reused equivalence; all 46 guards and 20 native binding cases pass. Twelve size/view/field cases, two matched baselines and eight tracing-off controls reopen exactly. Three edits now validate/encode three complete histories instead of six, about 3.15 MB instead of 6.30 MB at 1 MiB. Receipt: target/park-validation/performance-20261105/accepted-history/receipt.json.
 
 **Needs optimized testing:** repeat matched head/body latency under daily load and investigate the body acknowledgement tail if reproduced. In six tracing-off diagnostic edits per variant, pooled title acknowledgement medians were 255.1 → 139.6 ms and body medians 276.8 → 313.7 ms; individual runs include variable durability/commit waits. Keep the verified work reduction, report the mixed body result, and do not infer shipping responsiveness or attribute all awaited I/O changes to the cache. Snapshot import, fresh-candidate history validation/export, native splicing and the separate large-replacement/tail cases remain.
+} r_05JFRT1EF27KBTMJT02FGGJ8WN
+
+Park — SQLite allocator-statistics contention removed on 2026-11-06 (
+    @park-dev-5f9365d0ff4063db0359: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 578,
+    #park-workflow @park-development-cycle
+) { r_3SF32W2B906FQJ2Q3YCZZZ5ANS
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## SQLite allocator-statistics contention removed on 2026-11-06
 
@@ -609,6 +921,15 @@ A targeted four-run straced 64 KiB/title follow-up investigates the large tail w
 Verification: Store check plus Store/Engine/native test compilation and native check have zero compiler warnings/errors; 69 selected Store cases and 54 Engine access/dependency cases pass. Four Store failures exactly match the frozen pre-change names and normalized panic diagnostics; they remain failures. The common native suite passes all eight cases with the Protein Add filter case first. Seven CI cache-identity tests and owned-file formatting/diff checks pass. P140's full rule mapping and P146's actual GPU glyph-paint proof remain open; CPU layout/glyph-atlas checks are not physical text-paint acceptance. No local release build, real database mutation, session restart, Actions query or physical FPS/input acceptance was performed.
 
 Receipt: /home/user/.local/state/lince/park-validation/performance-20261106/edit-attribution/memstatus-receipt.json. Build/source/C-probe hashes and capability audit are in memstatus-provenance.json; immutable candidate and check/test records are under memstatus-validation/. Raw native controls and summaries are under memstatus-comparison-20261106T141444Z/; the completed syscall follow-up is memstatus-followup-20261106T141950Z/. Incomplete wrapper attempts are excluded from result counts. The running 204b94b6 session does not contain P149/P150, so installed optimized impact remains a later gate.
+} r_3SF32W2B906FQJ2Q3YCZZZ5ANS
+
+Park — Metadata storage reads completed on 2026-11-06 (
+    @park-dev-d06ea5e04a67d6462758: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 613,
+    #park-workflow @park-development-cycle
+) { r_7D0XVGS9Y0PG286JNPXGBQSGRP
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Metadata storage reads completed on 2026-11-06
 
@@ -629,6 +950,15 @@ For traced large-body metadata, decoded body bytes fall from 8,388,480 to zero a
 The corrected reader passes three new regressions plus isolated body-dependency accounting. The final Protein rerun passes 251 cases with 13 explicitly excluded baseline failures; all 13 reproduce with identical normalized panic diagnostics on 204b94b6. Selected storage tests pass 69 cases, including the new migration rollback/preservation test; four other storage failures also reproduce identically on the baseline. The migration checks preserve every table's data, Record row IDs, empty/Unicode/NUL/large and deleted content, history, revisions and authentication state, then check foreign keys, integrity and subsequent authoring. All 43 earlier migrations match their committed checksums, and all seven migration-guard checks pass. Twelve selected engine read/access regressions pass. All eight ordered native interface cases pass, with Protein Area Add filter first. The native library check and test compilation have zero compiler warnings or errors. These checks cover CPU glyph/layout/input behavior. Actual GPU glyph paint and formal rule mapping remain P146/P140.
 
 Evidence, frozen executables, source hashes, compiler graphs, original failures and baseline comparisons: /home/user/.local/state/lince/park-validation/performance-20261106/body-read/. The final performance generation is comparison-20261106T123036Z/reports.json and summary.json; verified-source.json identifies its source. Earlier candidate generations remain separately labelled. The installed 204b94b6 session does not include P149.
+} r_7D0XVGS9Y0PG286JNPXGBQSGRP
+
+Park — Current optimized session observed on 2026-11-06 (
+    @park-dev-fadcf846c7c1bb78903d: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 633,
+    #park-workflow @park-development-cycle
+) { r_22Q2RQE73HH78Y1YEAKKW7FJJK
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Current optimized session observed on 2026-11-06
 
@@ -639,6 +969,15 @@ Two passive five-second observations with no compilation running show substantia
 The process exposes i915 DRM client accounting. Multiple descriptors share one client ID and must be counted once. Active engine-time counters exist for two clients, but their producer/pass mapping and CPU submission/presentation timeline are not established. The later identity snapshot was taken while compilation ran, so it is not a quiet GPU benchmark. [Linux DRM accounting documentation](https://docs.kernel.org/gpu/drm-usage-stats.html) defines client identity, engine active time, capacity and counter regression handling; engine active time is not frequency-normalized utilization, and per-client values must not be added into a whole-GPU utilization claim.
 
 Fresh evidence is outside Cargo output: /home/user/.local/state/lince/park-validation/performance-20261106/session-20261106T112409Z/passive-observation.json, thread-io-20261106T112654Z.json, live-profile-20261106T112749Z/receipt.json and drm-identity-20261106T113821Z.json under that same state directory. P66/P67/P70 remain open. The previous target/ tree was removed externally, including its historical raw receipts and frozen executables; committed summaries below are historical observations whose original files are now unavailable. P149 recreated its comparison from an isolated 204b94b6 checkout and kept new source snapshots/results outside target/.
+} r_22Q2RQE73HH78Y1YEAKKW7FJJK
+
+Park — Indexed history retention kept on 2026-11-05 (
+    @park-dev-3beecdd630c5b1afc2d4: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 643,
+    #park-workflow @park-development-cycle
+) { r_5DNK2VP08SW72C85NHNAXN6RM6
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Indexed history retention kept on 2026-11-05
 
@@ -661,6 +1000,15 @@ P102 also splits the same SQLx write start into pool acquisition, BEGIN IMMEDIAT
 At this stage, P149 was the next local reduction because metadata queries still read full bodies; its completed follow-up is recorded above. This observation used the 9d8c20bc Nix package. P66/P102 still require optimized causal/presentation and CPU/wait/commit evidence. Actual GPU text paint and formal rule mapping remain open (P146/P140).
 
 Receipt, frozen source/executable identities, all controls and native observations: target/park-validation/performance-20261105/history-prune-candidate/receipt.json; preliminary component data and original harness failure: target/park-validation/performance-20261105/history-prune/. No release build, installation, session restart or Actions polling was performed.
+} r_5DNK2VP08SW72C85NHNAXN6RM6
+
+Park — Native refresh remainder attributed on 2026-11-05 (
+    @park-dev-dea0677a02904ffdbe4d: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 665,
+    #park-workflow @park-development-cycle
+) { r_4SSMEX7CHVWT50K1GAV57JYZRN
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Native refresh remainder attributed on 2026-11-05
 
@@ -673,6 +1021,15 @@ Separate strace controls with zero/one/eight subscriptions pass exact reopen and
 Check and test compilation pass without warnings. The common eight-case native suite passes with Protein Area Add filter first; 21 binding, five monitor/privacy, seven sync-service and 46 document-guard checks pass. The later indexed-retention capture above supplies the pool/writer/sequence split; P102 still lacks complete production causal publication and CPU/wait attribution. Required history ordering, errors, cancellation and durability remain intact. Current optimized desktop attribution, actual GPU text paint and formal rule mapping remain unverified.
 
 Receipt, frozen source hashes/patch, executables, raw observations and syscall summaries: target/park-validation/performance-20261105/refresh-attribution/receipt.json. No release build, installation, session restart or Actions polling was performed.
+} r_4SSMEX7CHVWT50K1GAV57JYZRN
+
+Park — Demand-aware Record result projection completed on 2026-11-05 (
+    @park-dev-a519b34efa98c7bcf3ef: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 677,
+    #park-workflow @park-development-cycle
+) { r_3BWGZ6ATPYAQ112ZE87B5RH2ZJ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Demand-aware Record result projection completed on 2026-11-05
 
@@ -689,14 +1046,32 @@ Four candidate-only native binding/Cell/WAL-Full cases cover head/body, 1 KiB/1 
 Large-body metadata still fetches unrequested full bodies through the one remaining Record read, leaving about 30 ms despite a small response. P149 owns pushing proven field dependencies into the storage read while preserving full-read APIs. P137 also has a source-only pinned-Loro fork lead: its fork uses a structured inner Snapshot, so measuring it against public cached-byte import is necessary before assuming either cheap cloning or redundant serialization. No engine change or fork gain is claimed.
 
 Receipt, frozen executables/sources, feature parity, original failures, all controls and native cases: target/park-validation/performance-20261105/query-projection/receipt.json. No release build, installation, real-session restart, clipboard operation or Actions polling was performed.
+} r_3BWGZ6ATPYAQ112ZE87B5RH2ZJ
+
+Park — Private CPU sampling on 2026-11-05 (
+    @park-dev-ee6576d0bb4b8df4d5f2: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 693,
+    #park-workflow @park-development-cycle
+) { r_5K4MTJCD8N2DR4PQFFXB92K4HD
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Private CPU sampling on 2026-11-05
 
 The frozen P101 diagnostic executable now has one CPU-counter run and two userspace stack recordings, with performance tracing disabled. All 36 controlled input responses pass their color-pixel oracle. Current seven-case common rules pass first, with Protein Area Add filter first. Full and predeclared five-second-delayed captures contain 773 and 286 samples, with zero reported sample loss. Bevy compute workers account for 47.35%/37.76% of sampled periods and park-canvas for 40.62%/43.36%; the remainder includes IO and the test thread. This proves worker execution, not useful simultaneous core occupancy, a CPU/GPU division error or a percentage of current desktop lag.
 
-These captures do not supply the required optimized daily bottleneck ranking. Startup includes Naga/shader preparation; the delayed capture still includes EGL/Mesa initialization for readback and the test's pixel loop. Five seconds is not a proven steady-state boundary. Native Rust parent call chains are insufficient to attribute a dominant main system, although some C runtime chains resolve. Do not promote a rendering rewrite or optimize the oracle as if it were product work from these samples. The existing observed frame-preparation span remains a hypothesis to narrow, not an assigned CPU/GPU cause. P66 stays open; use execution-order.md for the next locally supported work.
+These captures do not supply the required optimized daily bottleneck ranking. Startup includes Naga/shader preparation; the delayed capture still includes EGL/Mesa initialization for readback and the test's pixel loop. Five seconds is not a proven steady-state boundary. Native Rust parent call chains are insufficient to attribute a dominant main system, although some C runtime chains resolve. Do not promote a rendering rewrite or optimize the oracle as if it were product work from these samples. The existing observed frame-preparation span remains a hypothesis to narrow, not an assigned CPU/GPU cause. P66 stays open; use [the execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW) for the next locally supported work.
 
 Receipt, raw data, executable/source identities, counter output and analyses: target/park-validation/performance-20261105/frame-cpu/receipt.json. Explicit user-only call chains permit sampling without changing kernel settings. Initial shell/permission/report-option/raw-layout failures and corrections are retained; raw aggregation matches both official sample counts and event-period totals. The executable is the earlier diagnostic fixture, not the current optimized session. CPU geometry/shaping/atlas ink and synthetic color checks do not close actual GPU glyph paint or formal rule mapping (P146/P140). No source optimization was kept from this inconclusive frame attribution, and no real session, clipboard, release build or Actions polling was involved.
+} r_5K4MTJCD8N2DR4PQFFXB92K4HD
+
+Park — Dependent subscription refresh completed on 2026-11-05 (
+    @park-dev-8bbc071637bc4df0a478: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 701,
+    #park-workflow @park-development-cycle
+) { r_1X3XBPNSMGN7X8SS7VYNF65VD6
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Dependent subscription refresh completed on 2026-11-05
 
@@ -709,6 +1084,15 @@ All 16 candidate file-backed cases/48 edits reopen exactly. For three edits with
 The four eight-subscription refresh-scope totals change from 392/411/1332/390 ms to 201/154/255/247 ms across three edits, for 1 KiB head/body and 1 MiB head/body respectively. These unoptimized, traced diagnostic aggregates overlap other awaited scopes and do not establish a shipping percentage, physical latency or FPS. The metadata fixture does not build graphical Protein views; per-edit message bytes and entity churn are unmeasured. Existing graphical regressions verify retained identity separately. P102 retains graphical publication/causal and SQL-statement attribution; P66 retains optimized daily evidence. Actual GPU glyph paint and formal rule mapping remain open under P146/P140.
 
 Receipt, frozen source/executables, expected failing regression, controls and actual sync traces: target/park-validation/performance-20261105/query-invalidation/receipt.json. No release build, installation, real-session restart, clipboard operation or Actions polling was performed.
+} r_1X3XBPNSMGN7X8SS7VYNF65VD6
+
+Park — Populated query/storage attribution on 2026-11-05 (
+    @park-dev-e44e741cd565dff040e4: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 713,
+    #park-workflow @park-development-cycle
+) { r_7544RX8XZFRZ1WJ6D6MMEPHKF5
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Populated query/storage attribution on 2026-11-05
 
@@ -719,6 +1103,15 @@ All 16 file-backed cases/48 edits reopen exactly, covering 1 KiB/1 MiB head/body
 Actual sync calls inside the private three-edit window are 12 without subscriptions, 17 with one and 38 with eight; these include WAL/database/directory syncs, not just canonical commits. Syscall wall sums are 46.2/69.8/159.4 ms under tracing, with no call crossing the window end. Do not use those traced values as normal latency or disk hardware time. Untraced eight-query refresh spans total about 0.39–1.33 seconds across three edits in these diagnostic samples; canonical work and query read/refresh scopes can overlap. Current evidence supports removing unnecessary work, not a shipping percentage.
 
 Receipt and frozen baseline, common-six-case UI checks, raw reports/syscalls and parser: target/park-validation/performance-20261105/query-fanout/receipt.json. The first static check rejected a deprecated Bevy accessor, which was corrected; final source/test compilation has no warnings. P102 still needs SQL-statement counts, production per-operation causal identity/presentation and current optimized daily evidence. Actual GPU paint/formal rule mapping remain open. No release build, installation, real-session restart, clipboard operation or Actions polling was performed.
+} r_7544RX8XZFRZ1WJ6D6MMEPHKF5
+
+Park — Borrowed native text splicing completed on 2026-11-05 (
+    @park-dev-1385a03f82fe45598dee: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 723,
+    #park-workflow @park-development-cycle
+) { r_0P39A5V1PDWWDVB9TE7WYD9GF7
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Borrowed native text splicing completed on 2026-11-05
 
@@ -733,6 +1126,15 @@ The native comparison uses the nearest frozen accepted-history executable/source
 Save acknowledgements are slower in the pooled controls: 280.0 → 350.3 ms at the start and 261.7 → 310.4 ms at the end, with slow candidate tails and variable durability/commit work. Publication totals vary with callback/polling cadence. Keep the verified resource/foreground-input improvement, preserve these regressions explicitly, and use P102/P137/P117 to attribute the remaining acknowledgement delays before claiming a total-save improvement. No optimized daily, physical presentation, GPU timing or FPS acceptance is established. UI geometry/shaping/atlas-ink checks pass; actual GPU glyph paint and formal rule mapping remain open under P146/P140. Common-span scans, the owned current edit value and Loro/storage/projection work remain.
 
 Receipt, frozen inputs/executables, raw controls and harness sources: target/park-validation/performance-20261105/borrowed-splice/receipt.json. No release build, installation, real-session restart, clipboard operation or Actions polling was performed.
+} r_0P39A5V1PDWWDVB9TE7WYD9GF7
+
+Park — Backend phases and accepted-history work reduction on 2026-11-05 (
+    @park-dev-09fa1ae4a8410579adcd: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 737,
+    #park-workflow @park-development-cycle
+) { r_13Z1C9F265JDKD2YTVTCDK02YP
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Backend phases and accepted-history work reduction on 2026-11-05
 
@@ -745,6 +1147,15 @@ Twelve candidate cases span 1 KiB/64 KiB/1 MiB, title/body and one/eight views; 
 Tracing-off acknowledgement medians pooled across six edits per variant are 255.1 → 139.6 ms for title and 276.8 → 313.7 ms for body. Per-run body medians are 284.7/262.3 ms before and 354.8/268.6 ms after. Variable durability/commit waits and desktop drift prevent dependable end-to-end attribution; the slower body control is retained explicitly. Keep this bounded work reduction, with optimized daily head/body validation still required by P137/P66. Do not claim a desktop FPS or latency pass. Native UI checks establish CPU geometry/shaping/atlas ink only; actual GPU text paint and formal rule discovery remain unverified under P146/P140.
 
 Sources, executable hashes, raw traces/controls, failures, checks and decision: target/park-validation/performance-20261105/accepted-history/receipt.json and ../backend-phases/. Source checks and test compilation finish without warnings. No release build, installation, real-session restart, clipboard access or Actions polling was performed.
+} r_13Z1C9F265JDKD2YTVTCDK02YP
+
+Park — Incremental recovery completed on 2026-11-05 (
+    @park-dev-2247f7ec2db6d05f3026: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 749,
+    #park-workflow @park-development-cycle
+) { r_5MZZQFDAS3V6ZFKH81MNT1RKDR
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Incremental recovery completed on 2026-11-05
 
@@ -759,6 +1170,15 @@ The full diagnostic measured 19 file-backed fixtures/57 edits and 16 tracing-off
 These are unoptimized, headless synthetic binding/Cell/engine observations, including polling and ordinary desktop/thermal drift. They are not physical text presentation, optimized daily performance, GPU timing or FPS acceptance. Small-field latency effects remain mixed; do not add percentages from separate experiments. Actual GPU glyph paint and the formal rule manifest remain open. The final source/check identities, earlier failures, matrix, control order, crash test and decision are in target/park-validation/performance-20261105/incremental-recovery/accepted-receipt.json; measured/ freezes the earlier full matrix source/executables, and crash-source.json identifies the later test-only validation extension. No release build, installation, clipboard access or session restart was performed.
 
 The later P79 experiment above removes the whole-buffer splice temporaries; common-span scanning and the remaining projection/feedback work still need optimized attribution. P102 still needs per-edit causal linkage through the backend phases, populated query fanout and presentation; P66 still needs the current optimized daily workspace. A separate whole-text replacement exceeded 180 seconds inside Loro's Myers diff before recovery began; P137 retains that finding and its bounded-diff investigation.
+} r_5MZZQFDAS3V6ZFKH81MNT1RKDR
+
+Park — Local-edit investigation and kept fixes on 2026-11-05 (
+    @park-dev-41efc9250696f4f70b95: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 763,
+    #park-workflow @park-development-cycle
+) { r_0RAAZ3W76ADVE6N82Y9MKP3S8M
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Local-edit investigation and kept fixes on 2026-11-05
 
@@ -773,6 +1193,15 @@ P123 is complete: the borrowed-editor implementation removes unchanged editor-bu
 Tracing-off ABBA controls on the same large eight-view diagnostic showed idle-update medians of 11.1–11.3 ms before the borrowed candidate and 6.3–8.0 ms after it. Initial-edit and settled-save timings did not show a consistent comparable gain. Small controls and ordinary desktop drift remain visible in copy-control-runs.json. Earlier native-only snapshot/copy comparisons likewise had noisy and sometimes worse end-to-end readings; keep their narrower work reductions without presenting them as an FPS improvement. Before the incremental recovery completion above, tiny title edits beside the 1 MiB body still spent roughly 80–100 ms encoding recovery snapshots on the foreground path, supporting P114. This does not establish the cause of lag in external terminals, Firefox or canvas dragging.
 
 The current common suite checks CPU layout, pointer interaction, text colors and glyph-atlas ink. P146's actual GPU paint gate, P140's grammar-backed rule manifest, the full S4/mixed-scene adapters, optimized current-workload attribution and physical daily-workspace acceptance remain missing evidence. The applied rules are protein-readable-text, the hidden protein-laboratory header rule and edit-panel-geometry; their broader coverage must not be called green from these narrow checks.
+} r_0RAAZ3W76ADVE6N82Y9MKP3S8M
+
+Park — Source findings from this planning pass (
+    @park-dev-f2245a1ffa52e770cfe8: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 777,
+    #park-workflow @park-development-cycle
+) { r_0HG3PYDE0G92RMEY574SX5TVZK
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Source findings from this planning pass
 
@@ -795,6 +1224,15 @@ Review context: HEAD b4429a44cf3d20ba18b3f90a131339f64ba14201, 2026-11-04, share
 | The native app registers many feature plugins and Laboratory already gathers shared cases, including tokens/metrics/records/input. | native/app.rs; native/laboratory/catalogue.rs, driver.rs, headless.rs | Registration alone does not prove idle cost. Inventory actual consumers/semantic activity and reuse the existing isolated runner. P124/P77/P93/P104. |
 
 The existing profiler is enabled with LINCE_TRACE_PERFORMANCE=1/true at process initialization; LINCE_PARK_TRACE_FRAMES enables the separate Park frame trace. Its OnceLock state means setting a shell variable after startup does not enable an already-running compositor. Existing host/performance histograms and runtime/latency correlation are the starting tools. Missing causal edit/save traces are work for P101/P102, not already available results.
+} r_0HG3PYDE0G92RMEY574SX5TVZK
+
+Park — Research checked for the new direction (
+    @park-dev-133ced04cf81571353e5: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 799,
+    #park-workflow @park-development-cycle
+) { r_7QY4ZEFDE2HEQ5S9WN62DWKKJN
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Research checked for the new direction
 
@@ -810,14 +1248,41 @@ These primary sources motivate candidates; their architecture and benchmark resu
 | [SQLite WAL](https://www.sqlite.org/wal.html) and [synchronous semantics](https://sqlite.org/pragma.html#pragma_synchronous) | WAL allows reader/writer overlap but only one writer; checkpoints can create long commits. Changing Full to Normal changes power-loss durability. P117 first removes redundant work, shortens lock ownership and measures checkpoint effects without quietly changing saved-data guarantees. |
 | [Niri redraw loop](https://github.com/niri-wm/niri/wiki/Development:-Redraw-Loop) | Per-output redraw/wait state and callback service even without damage motivate P52/P53. A UI semantic deadline and a display repaint clock are different signals. |
 | [Perfetto event flows](https://perfetto.dev/docs/instrumentation/track-events) | Causal cross-thread flows and bounded correlation can distinguish queue wait from execution. P101/P102 extend existing reporting; importing a new tracing stack is conditional, not a prerequisite if current tools can expose the same links. |
+} r_7QY4ZEFDE2HEQ5S9WN62DWKKJN
+
+Park — Declared behavior checked for this plan (
+    @park-dev-2fd7933d9527cb24c00a: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 814,
+    #park-workflow @park-development-cycle
+) { r_3GRG80F86Y02416YVCF9W0BWTQ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Declared behavior checked for this plan
 
 The Lince Record was searched before and after the reorganization for appearance/inheritance, text editing, Records, workspace navigation, composition/Fit/Fill, keyboard/accessibility and Laboratory isolation. Its pipe-prefixed lines contain a quotation and platform-path table; no applicable pipe-prefixed requirement was found for this planning change. Relevant surrounding declared behavior is preserved as workflow oracles: presentation removal does not delete a Record, themes do not export Records, independent input scopes remain valid, and Laboratory uses temporary data with normal workspaces suspended. No owner Record was edited and no runtime behavior was certified by this documentation review.
+} r_3GRG80F86Y02416YVCF9W0BWTQ
+
+Park — What remains unknown (
+    @park-dev-bef7f8fb8e2b477a5f86: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 818,
+    #park-workflow @park-development-cycle
+) { r_3F1NWVTTGQ8C5RJFWP13HH3Y2R
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## What remains unknown
 
 No current daily/physical optimized causal profile assigns a fraction of the reported lag to token lookup, serialization, SQLite, exclusive ECS systems, CPU/GPU placement or missing parallelism. The read-heavy styling hypothesis is well-founded enough to investigate but not a statement that styling dominates. GPU submission/wait is not hardware execution; a busy worker is not proof of enough or too little parallelism. Hidden and inactive content may still require semantic work or demanded capture/overview presentation. The workflow inventory and measured critical path decide which substantial refactor happens first.
+} r_3F1NWVTTGQ8C5RJFWP13HH3Y2R
+
+Park — P101 input correlation completed; implementation kept (
+    @park-dev-02a9836c01833bbff4e4: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 822,
+    #park-workflow @park-development-cycle
+) { r_2F1QT5XW8K8GNPQDPXFT5AYCTN
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P101 input correlation completed; implementation kept
 
@@ -832,6 +1297,15 @@ A native record follows the oldest applied batch origin and high serials, not pr
 The finishing rule audit found the newly declared `protein-laboratory`, `protein-readable-text` and `edit-panel-geometry` requirements, including the Protein header comment. P101 changes reporting and private probes, without changing those product layouts or controls. The required common native suite, mandatory first Protein Area dropdown case and rule-to-case mappings are not implemented: P140–P147 explicitly remain a refinement draft. These checks are unavailable/unmapped, not passed by P101's pixel probes or accessible-name checks. The earlier planning audit above predates these declarations. No owner Record, skill or repository instruction was changed by P101.
 
 The user relogged into optimized 9d8c20bc during this task; that binary does not include these local tracing changes. Live capture with the added records needs a later binary and the existing LINCE_TRACE_PERFORMANCE=1 startup option. No session/configuration change or release build was performed. P65/P66 and final physical acceptance remain open.
+} r_2F1QT5XW8K8GNPQDPXFT5AYCTN
+
+Park — P103 workload/identity baseline completed on 2026-11-05 (
+    @park-dev-65a4565264a93e4c0181: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 836,
+    #park-workflow @park-development-cycle
+) { r_5HQCCPDXVAA2G4ADFGV47QD23H
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P103 workload/identity baseline completed on 2026-11-05
 
@@ -840,6 +1314,15 @@ The reusable [workload recipe](workloads.json) freezes S0/S1/S2/S3/S4, determini
 Current-PID capture found optimized b4429a44cf3d20ba18b3f90a131339f64ba14201 running, while the independent source snapshot is 9d8c20bc44a310552ee083de071aa9bcf55d85b8 (3,802 selected source inputs hashed). Both outputs were logged at their expected geometry: eDP-1 1366×768/60.059 Hz and HDMI-A-1 1920×1080/60 Hz, scale 1. CPU/device/power/governor/thermal metadata and tracing-off status were captured. The completed b442 Linux release job's flags/recipe were checked; no CI watching, compilation, workload launch or session/settings change occurred.
 
 Receipt: target/park-validation/performance-20261105/workload-manifest/receipt.json. It links the frozen run-manifest, per-source hashes, source patch, expanded deterministic fixtures, CI log/excerpt and validation log. Recheck source/executable/output/thermal identity before timing; the observed thermal state was uncontrolled. Actual daily item counts, input-visible causality, complete mixed-scene adapter wiring and new optimized performance remain open under P101/P102/P104/P124/P134 and the acceptance tasks.
+} r_5HQCCPDXVAA2G4ADFGV47QD23H
+
+Park — Evidence already available; do not repeat completed mechanisms (
+    @park-dev-d10088316a847aa6daad: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 844,
+    #park-workflow @park-development-cycle
+) { r_3ESQKET1SPF1FWD712EFC4J6B4
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Evidence already available; do not repeat completed mechanisms
 
@@ -859,6 +1342,15 @@ These are local implementation/regression receipts, not current physical accepta
 | Primary-window query plans and shared capture-source extraction | primary-window/, queries/, allocations/ |
 | Required-property metric preparation and admission before text walks | offscreen/, admission/; runtime source includes 85b464ef and 74dc80f1 |
 | Layout-solver grid scratch allocated only for nonempty grids; 1,280 bit-exact layout comparisons, six full-frame runs and three text/capture checks passed. A 1,024-node Free/Row/Column fixture went from 3,079 allocator requests to 4; physical FPS improvement remains unproven | layout-scratch/receipt.json |
+} r_3ESQKET1SPF1FWD712EFC4J6B4
+
+Park — Rejected directions and constraints to retain (
+    @park-dev-1461a221a213425b4e2e: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 863,
+    #park-workflow @park-development-cycle
+) { r_0SN0WCX51KC9RHN4Q5ZGNAKXM1
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Rejected directions and constraints to retain
 
@@ -870,6 +1362,15 @@ These are local implementation/regression receipts, not current physical accepta
 - Existing text shaping already preserves unrelated glyph/layout storage through targeted edits, inherited font changes and wrap changes. See text/receipt.json. Do not add a blanket second text cache without a new measured defect.
 - Capture ownership cannot be inferred solely from scene ancestry: WindowRecord cards and image aliases can be siblings of metadata. Preserve explicit owner/UID/placement provenance and conservative stale/missing-owner behavior.
 - A shared deadline must retain independent later requests; dropping a task handle is not cancellation. A shallow pipeline and low utilization do not prove there is no GPU wait. An inactive raster camera does not mean CPU layout work has disappeared.
+} r_0SN0WCX51KC9RHN4Q5ZGNAKXM1
+
+Park — Primary research and its application (
+    @park-dev-e8282746e93f91597395: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 874,
+    #park-workflow @park-development-cycle
+) { r_0VWFWA1Q5EDMK9KVCGK8ZVKA94
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Primary research and its application
 
@@ -885,7 +1386,15 @@ These are local implementation/regression receipts, not current physical accepta
 - [Tokio watched changes](https://docs.rs/tokio/1.53.1/tokio/sync/watch/struct.Sender.html), [resettable sleep](https://docs.rs/tokio/latest/tokio/time/struct.Sleep.html), [task lifetime](https://docs.rs/tokio/latest/tokio/task/struct.JoinHandle.html) and [bounded Rust channels](https://doc.rust-lang.org/std/sync/mpsc/fn.sync_channel.html): retain source identity, offsets, explicit cancellation and nonblocking bounded submission. Do not reintroduce polling or unbounded work under a different name.
 - [Loro persistence](https://loro.dev/docs/tutorial/persistence) and [upstream releases](https://github.com/loro-dev/loro/releases): incremental binary updates and periodic snapshots support P114's journal/checkpoint comparison. Upstream 1.17.0 also reports a string/list-arena growth fix for repeated history parsing after exports and changes to known-history comparison and import rollback. Lince is pinned to 1.16.0. Those changes are leads for a separately measured dependency experiment, not proof of the cause of the captured cursor-update stalls; preserve the existing guard corpus and exact reconstruction when evaluating them.
 - [libinput timestamps](https://wayland.freedesktop.org/libinput/doc/latest/timestamps.html): preserve clock-domain distinctions and event ordering when attributing input-visible latency.
+} r_0VWFWA1Q5EDMK9KVCGK8ZVKA94
 
+Park — P60: idle-editor sizing and unchanged UI layout experiments on 2026-11-07 (
+    @park-dev-7cb98997fc3b6480c6bc: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 890,
+    #park-workflow @park-development-cycle
+) { r_4H9Z0F9CBS8JED6DZCD7CA7VZK
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P60: idle-editor sizing and unchanged UI layout experiments on 2026-11-07
 
@@ -911,7 +1420,15 @@ The user's new session is PID 1284, running optimized revision 204b94b6f3106a247
 Evidence: /home/user/.local/state/lince/park-validation/performance-20261106/ui-layout-demand/, especially source-v6.json, source-v6-files/, complete-v6.json, idle-*-v6/idle-editors.json, frozen compiler/executable receipts, fields-baseline-v3-result.json, fields-demand-v3-result.json, complete-v4-remaining.json and holes-baseline-v5.log/captures. The final retained-test generation has separate source/check/test receipts. No application release build, live restart, user-data/clipboard mutation, attached profiling, owner Record edit or Actions query is performed.
 
 The final retained V8 generation passes cargo check for the session/server-test library and tests, test-executable compilation, the new hardware measurement/transition case with all sixteen common cases first, and the corrected appearance apply/cancel/save/fresh-reopen case. Compiler diagnostics contain no warnings or errors. The stronger reparent oracle passes. Rejected gates and startup hooks are absent; P60 and the explicit acceptance gaps remain open.
+} r_4H9Z0F9CBS8JED6DZCD7CA7VZK
 
+Park — P60/P66: normal-build main-phase attribution prepared on 2026-11-07 (
+    @park-dev-3c4e5f5e820be3c55fbf: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 916,
+    #park-workflow @park-development-cycle
+) { r_1T5N0MHV14AF809BJNM4AWK7XE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P60/P66: normal-build main-phase attribution prepared on 2026-11-07
 
@@ -934,7 +1451,15 @@ The next useful P66/P60 evidence is a newer optimized private nested run with th
 Evidence: /home/user/.local/state/lince/park-validation/performance-20261106/main-phase-metrics/, including source-v2.json and source-v2-files/, frozen compiler/executable receipts, complete-v2.json, comparison-v2.json, separate per-case stdout/stderr, original/candidate/control output bytes and keyboard/reopen artifacts. The V1 telemetry failure is retained. No application release build, Actions query, live restart, user-data/clipboard mutation, owner Record edit or kernel-policy change is performed.
 
 The final V3 generation adds an explicit false-condition Main refusal check and passes the two semantic cases again, plus normal library/test checks and test compilation with no warnings/errors. Observer runtime source is byte-for-byte identical to the measured V2 prefix; no additional GPU matrix is run for this test-only addition.
+} r_1T5N0MHV14AF809BJNM4AWK7XE
 
+Park — P53 prerequisite: stop pixel frames without ready client progress on 2026-11-07 (
+    @park-dev-42080ed2350a59d0c14a: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 939,
+    #park-workflow @park-development-cycle
+) { r_58TZPPRZFKC0W6Y01BZY0H18Y4
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P53 prerequisite: stop pixel frames without ready client progress on 2026-11-07
 
@@ -953,7 +1478,15 @@ The initial fixture iterations are retained honestly: one compile stops on the a
 P53 remains open for actual output-clock demand/throttling, callback-only/no-damage service, independent outputs and complete presentation acceptance. P107's superseded-work cancellation is separate and remains open. Held multi-node GPU coherence and preservation of ready work while an earlier native submission is deliberately stalled are not directly controlled in this new fixture; protocol ordering passes, and those integration oracles remain part of closing the broader pacing change. The live desktop remains optimized 204b94b6, so this is local source validation rather than an installed-binary result.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/import-progress/receipt.json`, source manifests and frozen source/executable copies, `count-prefix.json`, corrected baseline/candidate results and `complete-candidate-v1.json`. The invalid visibility repeat is under the existing optimized comparison directory. No application release build, Actions query, installed configuration change, session restart, user Record/clipboard read or mutation, owner Record edit or kernel-policy change is performed. The user's `photo.png` deletion is preserved.
+} r_58TZPPRZFKC0W6Y01BZY0H18Y4
 
+Park — Optimized 8c2348ed: current rendering and I/O findings on 2026-11-07 (
+    @park-dev-80e753ac701c655b66d4: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 958,
+    #park-workflow @park-development-cycle
+) { r_5ZJBZP4J0G4H8R9T44BTQQ2MA6
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Optimized 8c2348ed: current rendering and I/O findings on 2026-11-07
 
@@ -973,7 +1506,15 @@ Preparation and submission are different events; these counts are not a physical
 The three largest identified rendering costs are native main, render preparation/submission and export/consumer work. The client cohort strengthens P53: its native main is mostly bypassed, yet pixel preparation substantially outruns outer submission. Source invites clients at native Started preparation before output submission. P60 remains important for full-native interaction; the current Update/PostUpdate phases contain substantial CPU work. GPU rendering is active, so wrong processor placement is not established. Per-body, complete GLES/driver, controlled native-input, Firefox and physical-output measurements remain open. An offline profiler lookup is uncached and fails with local builds disabled; no profiler is installed/built and no denied attachment is retried.
 
 Evidence: `/home/user/.local/state/lince/park-validation/performance-20261106/optimized-8c2348ed/receipt-v1.json`, `analysis-v1.json`, source/identity manifests, persistent timeout logs and `memory-v1/` raw observations. All reports parse with zero dropped reports/input traces. No application release build, Actions query, real user data/clipboard access or owner Record edit occurred during these measurements.
+} r_5ZJBZP4J0G4H8R9T44BTQQ2MA6
 
+Park — P53/P87: output-submission callbacks and obsolete Started path locally verified on 2026-11-07 (
+    @park-dev-b1e0d12e8836909af84f: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 978,
+    #park-workflow @park-development-cycle
+) { r_4D5FRN8PZ09WBSXRPH6CD6BNW8
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## P53/P87: output-submission callbacks and obsolete Started path locally verified on 2026-11-07
 
@@ -986,7 +1527,15 @@ All eleven targeted checks pass: submission pacing; held-producer/import readine
 The new runtime source is locally verified but remains uncommitted, unpushed and absent from the running 8c2348ed binary because optimization work was paused. No optimized before/after FPS or latency gain is claimed. Source/artifact hashes, exact selectors, the failing control and passing candidate are in `/home/user/.local/state/lince/park-validation/performance-20261106/output-callback-pacing/receipt.json` and adjacent manifests/results. Copy-on-write executable snapshots avoid repeated physical multi-gigabyte archive copies on the available Btrfs filesystem; that is validation-workflow I/O reduction, not an application speedup.
 
 P140's full rule mapping and P146's actual Protein dropdown GPU text paint remain incomplete. The existing P135 fractional-scale appearance failure was not rerun and remains open. The private blue-pixel/capture checks do not close those gates. The audit makes no additional Rust edits, builds, tests, pushes, Actions requests or live-session changes; unrelated screenshot/README edits and the user's photo deletion are preserved.
+} r_4D5FRN8PZ09WBSXRPH6CD6BNW8
 
+Park — Archived initial native regression implementation from the acceptance plan (
+    @park-dev-32330dd1d34073d8ceba: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 991,
+    #park-workflow @park-development-cycle
+) { r_3M0QCK4SZ1828CRJJDHCWFPR3B
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## Archived initial native regression implementation from the acceptance plan
 
@@ -1002,6 +1551,20 @@ The reported Protein Area dropdown bug was reproduced through its real query edi
 
 The Edit panel now starts flush at the usable left/top edges, fills the height above the measured bottom-left controls with deliberate clearance and uses the approved 420-pixel default, clamped on narrow screens. The previous 85%/760-pixel height cap is removed. A manually dragged panel remains movable and fills the remaining height below its chosen top edge. Item-panel spacing, minimizing, retained scroll and the separate 720-pixel Customization width remain covered. The bottom toolbar expands while Edit mode is active under the existing corner-control policy.
 
+**Continue through these Records:**
+
+- [Park — Existing evidence and reusable paths](record:r_061QS6XB7733NZ7Q4QK0ACAP3T)
+- [Park — Completed initial repairs — P143 and P144](record:r_6M6SYC5TFJXY6W869FHJVNWM3W)
+} r_3M0QCK4SZ1828CRJJDHCWFPR3B
+
+Park — Existing evidence and reusable paths (
+    @park-dev-5250dee569039093cea5: 0,
+    is #chapter,
+    #part-of @park-dev-32330dd1d34073d8ceba: 1005,
+    #park-workflow @park-development-cycle
+) { r_061QS6XB7733NZ7Q4QK0ACAP3T
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
 ### Existing evidence and reusable paths
 
 - `crates/interface/src/testing/mod.rs` already supplies bounded `Runner`, `Step`, exact name/role `Selector`, cancellation and metrics. `testing/ui.rs::UiBackend` supplies native snapshots, ordinary pointer/keyboard input, explicit accessibility fallback, manual frame time and stale-target checks. Use these for deterministic interaction without an LLM, remote service or OCR.
@@ -1011,7 +1574,15 @@ The Edit panel now starts flush at the usable left/top edges, fills the height a
 - `native-presentation` enables `behavior-checks`, which enables `test-driver`. Keep native checks on this production feature path. Do not modify the unplugged web crate or introduce a browser harness for this work.
 
 The initial subagent work was a read-only source audit. Subsequent approved implementation added `native/laboratory/interface.rs`, the ordered `cargo xtask test-interface` command and Laboratory's **Interface checks** button. The local command and button use the same `BehaviorRun::start_interface` worker and three case definitions. The command avoids stress workloads and fails on errors, missing results or timeout. Verification covers native layout, pointer interaction, text color and nonempty CPU glyph-atlas pixels; GPU output/occlusion proof remains P146.
+} r_061QS6XB7733NZ7Q4QK0ACAP3T
 
+Park — Completed initial repairs — P143 and P144 (
+    @park-dev-d41a17a01f19ac19aa57: 0,
+    is #chapter,
+    #part-of @park-dev-32330dd1d34073d8ceba: 1016,
+    #park-workflow @park-development-cycle
+) { r_6M6SYC5TFJXY6W869FHJVNWM3W
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ### Completed initial repairs — P143 and P144
 
@@ -1022,7 +1593,15 @@ The source base is `9d8c20bc44a310552ee083de071aa9bcf55d85b8` with a shared dirt
 Three direct runs of the already compiled test executable used no Cargo or compilation and passed: 5.103, 2.213 and 2.162 seconds wall time; median 2.213 seconds. The first run was slower, so this is not a guaranteed five-second upper bound. The executable is `target/debug/deps/lince_interface-7370ff2787a02de5`. Rerun it through `nix develop .#interface --command` with `native::laboratory::interface::fast_interface_rules --exact --nocapture`; use the Cargo command after source changes to refresh the artifact. No new Lince application executable or installed session is needed for local verification. Rebuild the normal Lince executable to use the repaired UI and the new Laboratory button in the application.
 
 An additional 33 related checks passed with nonzero selections: dropdown focus/selection; panel layout/drag/minimize/scroll; Protein editor/backend behavior and Area filtering; metric/style-cache correctness; native driver behavior; Laboratory isolation/restoration; and existing table-glyph layout. The final `cargo check --locked -p lince-interface --features native-presentation` passed through the interface Nix shell with workspace warnings denied; xtask was also compiled successfully. These are targeted regression checks, not a full workspace or physical desktop acceptance run. P140, broader interaction coverage, CI wiring and GPU output verification remain pending above.
+} r_6M6SYC5TFJXY6W869FHJVNWM3W
 
+Park — A0 measurement foundation prepared for CI, 2026-11-07 (
+    @park-dev-784b62e2d0da70e21488: 0,
+    is #chapter,
+    #part-of @park-dev-00-evidence-and-research: 1027,
+    #park-workflow @park-development-cycle
+) { r_1DQXCZJYA0BGS7MDA9EMBBE90F
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 ## A0 measurement foundation prepared for CI, 2026-11-07
 
@@ -1033,3 +1612,4 @@ The private route is two 960×640 outputs, 24 items from square/plain/editable/o
 The runner rejects unknown/zero-case selectors, mismatched artifact/workload/profile identities, truncated/gapped reports and conflicting declared primary owners. It reports timing distributions and work/output/render deltas independently, with no addition of concurrent spans into a desktop percentage. `--capture off` is an observability-overhead control using the same production algorithms; no optimization implementation switch was added. All behavioral/visual, report-accounting and Nix-loader checks remain pending for CI/downloaded artifacts. Only static syntax/format/diff/document checks can be reported locally.
 
 The sync/history/DB-lock/Karma agent's edits are not included. The earlier callback-submission/Started cleanup remains a separate uncommitted working-tree change; this instrumentation candidate does not claim delivery of P53. P140/P146 rule/actual-text coverage and the existing P135 appearance oracle/rendering failure remain explicit. No physical session action, real Record/clipboard access, local build or Actions polling belongs to this delivery.
+} r_1DQXCZJYA0BGS7MDA9EMBBE90F

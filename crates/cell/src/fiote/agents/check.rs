@@ -7,7 +7,6 @@ impl Host {
         mut config: acp::Config,
     ) -> Result<(), String> {
         self.options_available(record).await?;
-        config.require_vault = false;
         let full = {
             let discovery = self.agents.discovery.lock().await;
             discovery.len() >= 16 && !discovery.contains_key(record)

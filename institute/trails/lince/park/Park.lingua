@@ -1,0 +1,252 @@
+Import "Development-cycle.lingua"
+
+Import "execution-order.lingua"
+
+Import "00-evidence-and-research.lingua"
+
+Import "01-measurement.lingua"
+
+Import "02-input-and-scheduling.lingua"
+
+Import "03-local-edits-and-storage.lingua"
+
+Import "04-style-layout-and-retention.lingua"
+
+Import "05-feature-costs-and-scaling.lingua"
+
+Import "06-gpu-and-outputs.lingua"
+
+Import "07-unbloat-and-release.lingua"
+
+Import "08-benchmarks.lingua"
+
+Import "09-workflows.lingua"
+
+Import "10-architecture.lingua"
+
+Import "11-acceptance-and-experiments.lingua"
+
+Import "12-measurement-and-delivery.lingua"
+
+Park: rebuild responsiveness across the whole experience (
+    @park-development: 0,
+    is #chapter,
+    #park-workflow @park-development-cycle
+) { r_0PCR2DTXNGTQGBE6RBWR0ECTXW
+**Owner update, 2026-11-10:** follow [the current development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0) and [the durable checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y). They replace the former manual Niri/Park handoff, push-and-stop and wait-for-login rules preserved below. The performance scope, evidence, task definitions and benchmarks are retained. The owner is preparing boot-triggered Fiote continuation; its successful unattended round trip remains to be verified.
+
+**Native task state:** each P item is an individual task Record, initially quantity 0 (pending), with quantity 1 reserved for verified completion and linked evidence. [The execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW) keeps their existing priority and stage. Internal navigation uses stable Record UIDs, so it survives source-file relocation. The adjacent JSON files remain the unchanged machine-readable fixture and attribution assets.
+
+# Park: rebuild responsiveness across the whole experience
+
+**Latest visit, 2026-11-09 UTC:** optimized 3fdc9356 is measured with matching prepared artifacts: 11/12 private cases pass, but the mixed route fails on its second Unicode key and actual Bevy system bodies are unobserved. The runtime requires a temporary Nix graphics adapter. [Evidence, scoped timings and next batch](record:r_619SAYW8V26804MDDR9RYB4JMC). P93 is closed; P152/P154/P156/P151 lead the next broad Niri tooling batch. Physical S3/FPS/Firefox/daily-response acceptance remains open. This Park visit is finished; code again after returning to Niri.
+
+This directory is the working optimization plan for Park and the active Lince interface/backend paths it uses. **Stage A is smooth daily use:** prompt typing, clicking, scrolling, opening, dragging and local editing with 20–30 varied Lince canvas items plus ordinary external application windows on both monitors. Remove freezes, interaction lag and recurring stutter; approach each output's actual refresh rate with as few missed or dropped frames as possible on this machine. A faster Firefox fixture alone does not finish it. The queue selects the next authorized task; merely editing these documents changes no executable or session.
+
+The owner's [Park Record](../Park.lingua) and [Lince Record](../Lince.lingua) retain authority. The old [plan entry point](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW) links here so existing Record and packaging links remain useful. All unfinished tasks live here, with one checkbox definition per P number. Existing IDs survive the move. Completed mechanisms and rejected experiments belong in the evidence ledger, not the task list.
+
+**Continue through these Records:**
+
+- [Park — Execution order: tooling first, broad measured fixes, one candidate](record:r_1FMCTGVHF35B6D0T70JEQAMYDW)
+- [Park — 0. Evidence, source findings and primary research](record:r_14AZKSVCBTJXY97EXZZ0838FWW)
+- [Park — 1. Measure complete interactions](record:r_3MCKF8DH9AWW9EGKNZANAVS95C)
+- [Park — 2. Make input responsive and shorten the critical path](record:r_36611TNEEWD13GYD69DZHR0H2Y)
+- [Park — 3. Make local editing and saving immediate](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA)
+- [Park — 4. Pay for changes once; make unchanged interface reads cheap](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6)
+- [Park — 5. Scale every feature through shared interface families](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK)
+- [Park — 6. Use the GPU correctly and present each output independently](record:r_333RCJBDSGX0Y0W630FWHJAJCB)
+- [Park — 7. Remove executed bloat and improve the shipping binary](record:r_42C88G596W9EFZ00JTJDWD766E)
+- [Park — 8. Benchmarks for tests, Laboratory and daily use](record:r_7CWV5KN1695FW2KNPGW5X19PJ7)
+- [Park — 9. Daily workflows, feature inventory and combinations](record:r_33DFSQHTZFRCM758HHPN3KRWNA)
+- [Park — 10. Architecture for a responsive interface](record:r_2DZ5H07T9W84B4XEHHMMC2E1GM)
+- [Park — 11. Combine improvements and finish physical acceptance](record:r_6A97DSEHEM7S2QN47G8QYN7SP3)
+- [Park — 12. Measure deeply, implement broadly, deliver one candidate](record:r_7NBQGTF152S58NPT0Z9EM58C1T)
+- [Park — Stage A: daily responsiveness before broader work](record:r_60889XAVG7K2PTG6C39F6EHSJC)
+- [Park — Current mandate: performance only until daily use is smooth](record:r_7X13MAPZD9QCF72NN4P7E15P6K)
+- [Park — Required workflow: code in Niri, measure in Park, record and stop](record:r_7WBVAK618CD9SE93GK8W8W0HKZ)
+- [Park — Outside Stage A by default](record:r_10R64H34JDQYN6H7WK2BMPJVB1)
+- [Park — Execution queue and subject files](record:r_0CHKP8QMMM042D09SG4P38GSAH)
+- [Park — Direction of the overhaul](record:r_557Q5B9H2AGFQWB2GVMHA9WFF9)
+- [Park — Benchmarks and combinations govern experiments](record:r_1G1DS1D04B0FKPN7WXAG5TXBEB)
+- [Park — Closing tasks after the combined run](record:r_6JD560XNKMD66NENJJ0M4GCDFR)
+} r_0PCR2DTXNGTQGBE6RBWR0ECTXW
+
+Park — Stage A: daily responsiveness before broader work (
+    @park-dev-9258fe8b970d55492699: 0,
+    is #chapter,
+    #part-of @park-development: 108,
+    #park-workflow @park-development-cycle
+) { r_60889XAVG7K2PTG6C39F6EHSJC
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Stage A: daily responsiveness before broader work
+
+Use the user's existing machine and both physical monitors, with **20–30 varied top-level Lince items and the normal mix of external windows, including Firefox and Ghostty**. Count nested content and multiple views separately in the manifest; top-level count alone is not a cost model. Include visible, off-camera and inactive items, real timers/background work and ordinary editing/navigation transitions. Do not make the scene cheap by disabling supported effects, required semantics or the other applications. The exact daily-load contract is in [08](record:r_77P1KQBV2GETHEX6BQ2N05WBSJ).
+
+- Continuous activity approaches each output's actual refresh rate, with near-zero avoidable missed presentation deadlines and dropped frames. Measure both outputs, intervals and stale frame age; do not optimize an average FPS counter while pauses persist. The existing 57 FPS floor on a 60 Hz output is a diagnostic minimum, not evidence that the machine's attainable performance has been reached. Static screens need no duplicate frames.
+- Typing, clicks, scroll and drag produce the correct visible response within two refresh periods at p95; p99, worst pauses and queue age are measured separately. Input dispatch and local computation have their own budgets.
+- Local title/description edits echo immediately, update other local views promptly and reach honest durable-save acknowledgement without waiting for network sync. A local save must not trigger document-sized work per character or rebuild the entire interface.
+- Unchanged presentation sleeps. Cost scales with changed data, visible/demanded content and necessary semantics, rather than every registered feature, every stored Record or the whole canvas.
+- The same workflows still function together: live Records, editing/IME, composition, scrolling, focus, accessibility, media, automation, capture and both outputs. Quality, correctness and supported functionality remain part of the result.
+
+Stage A includes any evidenced cause of these failures, even when it is in storage, engine, sync, a feature system or a driver handoff rather than Park's renderer. Prioritize the worst command-to-effect stalls and frame-time tails, then sustained throughput and waste under the same load. Correct CPU/GPU division and parallelism are means to improve those results, not independent utilization targets. Small cheap gains remain welcome after stronger causes and required dependencies.
+
+**Parallel ownership:** the user's other agent owns the ongoing sync/history-saving, database-lock and Karma bug fixes. Do not duplicate or overwrite that work. P94 is reserved for that investigation; related local-save/lock/effect tasks in [03](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA) require a boundary check against its changes before implementation. Stage A still measures the resulting I/O waits, queue stalls, save feedback and background contention, integrates the fixes and retains unmet performance gates. Delegation is not a pass. General sync/history/Karma behavior repairs belong to that other effort; any blocking daily-use impact remains an A integration dependency.
+
+**Stage A ends on evidence, not an empty ideas list.** Reuse P66 for attribution, P135 for the combined candidate and P64/P65/P136/P16/P15 for installed daily acceptance. Evaluate the whole coded batch with each new binary, rather than requesting a binary for each idea. Meet the [latency, frame, save and quiet-work budgets](record:r_7CWV5KN1695FW2KNPGW5X19PJ7), exercise the selected [daily transitions](record:r_4FKK58CFNQWTKH280HSN5S17ZY) and resolve relevant rendering/interaction failures. A laboratory pass alone does not close physical acceptance. Missing visibility, tail or hardware evidence stays explicit; explain a demonstrated hardware limit using matched normal-workflow evidence instead of silently lowering a target.
+} r_60889XAVG7K2PTG6C39F6EHSJC
+
+Park — Current mandate: performance only until daily use is smooth (
+    @park-dev-08a36a67ba9614b05e14: 0,
+    is #chapter,
+    #part-of @park-development: 124,
+    #park-workflow @park-development-cycle
+) { r_7X13MAPZD9QCF72NN4P7E15P6K
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Current mandate: performance only until daily use is smooth
+
+The owner's 2026-11-09 continuation prioritizes low CPU/GPU/memory work, fast input-to-effect, stable near-refresh delivery and the absence of freezes/stutters under normal many-item/two-monitor use. Continue broad performance batches unattended where possible. Do not spend this round on UI polish, new application features, exhaustive test-platform work, Laboratory presentation or delivery-only cleanup. Defer unrelated findings; no extra hunt for work.
+
+Measurement repairs are enabling work, not the end goal. Fix only the probes/gates needed to identify or verify the selected expensive paths, and implement independent evidence-supported runtime improvements in the same candidate. A0 does not require finishing every framework task before removing a demonstrated performance problem. Keep existing Protein-first, glyph/input correctness and affected-path checks; they protect the optimizations without becoming a separate product. Keep rare-write style ideas and inexpensive small wins when measured value justifies them, after larger repeated costs.
+} r_7X13MAPZD9QCF72NN4P7E15P6K
+
+Park — Required workflow: code in Niri, measure in Park, record and stop (
+    @park-dev-0c756da36c8a3df33376: 0,
+    is #chapter,
+    #part-of @park-development: 130,
+    #park-workflow @park-development-cycle
+) { r_7WBVAK618CD9SE93GK8W8W0HKZ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Required workflow: code in Niri, measure in Park, record and stop
+
+Read [12 — Measurement and delivery](record:r_7NBQGTF152S58NPT0Z9EM58C1T) before implementing. It defines this workflow for future agents; chat-turn boundaries do not determine batch size.
+
+1. **A0, measurement foundation:** repair the selected measurement blockers needed for the next runtime changes first. Reuse existing observability and fixtures; add actual Bevy/system/family, CPU/wait, input/save, UI/2D/3D GPU and per-output frame measurements, trustworthy comparisons and matching CI-built artifacts. Establish the missing source-identified baselines before changes that depend on those unknown costs; existing valid evidence can already justify independent runtime work in the same batch.
+2. **A1, broad production improvement:** use the baseline to code all ready, justified Stage A fixes across distinct measured owners, ordered by expected daily benefit. Map each source change to its measured stages, predicted work-count change, reason and secondary impacts. Use one coherent optimization mechanism per measured owner per cycle, with its necessary supporting edits; do not put two competing attempts at the same unexplained cost into one batch. A matched improvement with its predicted work reduction is useful attribution when that owner has only one change. There is no arbitrary number-of-ideas cap and no stop at the first task awaiting a new binary. Record blocked/delegated work and continue independently, maximizing interpretable progress per delivery.
+3. **Niri development and delivery:** finish a broad justified coding batch and useful local checks/test compilation in Niri. Push reviewed task-owned changes; CI normally produces the optimized application and matching validation artifacts. An active Park session or completed Actions run is not required for independent coding. Save the next measurement recipe and hand off for a normal Park login when its binary is ready. No worktrees, Actions polling or in-session compositor replacement.
+4. **A2, Park measurement visit:** verify the running binary and run prepared matching artifacts under the normal two-monitor workload, without compiling during timing. Compare against the last valid baseline, record gains/regressions/uncertainties and receipts in the Markdown, close only verified tasks and rank the next Niri batch. Then stop so the user can return to Niri. A failed check becomes a diagnosis/next-batch task rather than an automatic development session in Park. Missing runtime checks stay explicit.
+
+Ship the best production implementation directly. Do not add optimization toggles, old/new algorithm branches or duplicate paths for this workflow. Useful bounded observability and test fixtures remain legitimate; the reporting tools do not select different product behavior. Comparing consecutive source-identified binaries and their timelines supplies the normal evidence. Shared locks, caches and GPU budgets can still confound attribution; a focused follow-up candidate is the exception when traces cannot distinguish cancellation or collateral effects, not a reason to build every idea separately.
+} r_7WBVAK618CD9SE93GK8W8W0HKZ
+
+Park — Outside Stage A by default (
+    @park-dev-ea9bd0d64d07abf8258a: 0,
+    is #chapter,
+    #part-of @park-development: 141,
+    #park-workflow @park-development-cycle
+) { r_10R64H34JDQYN6H7WK2BMPJVB1
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Outside Stage A by default
+
+Stage B keeps broader work without letting it delay the daily-use goal: release-profile/LTO/codegen/CPU-target/PGO experiments; fullscreen-only direct scanout; build-only dependency/test-feature cleanup; unrelated runner/Laboratory productization beyond the required combined suite; and exhaustive feature/combination or suite expansion. The combined runner and matching prepared measurements remain necessary where they unblock attribution. Laboratory result UI and broad test-platform expansion are deferred until the performance targets are met. Unrelated feature additions, semantic bug fixes and cosmetic redesign are outside this performance effort. A source cleanup belongs in A only when it removes executed work, contention or a needed performance-validation blocker; shorter files alone do not qualify.
+
+Required affected-path correctness checks, the Protein-first regression order, actual visible-text verification and existing relevant failures remain A safeguards. They are not deferred as “polish.” Wider test-platform expansion may wait. A B task can move into A when evidence identifies it as the best remedy for a measured daily bottleneck or a necessary validation blocker; record that reason and re-rank the single queue. No need to complete all B tasks before declaring A's measured outcome.
+
+Exact workloads, targets and measurement limitations are in [08-benchmarks.md](record:r_7CWV5KN1695FW2KNPGW5X19PJ7). They are targets to implement and demonstrate, not claims that the current build passes.
+} r_10R64H34JDQYN6H7WK2BMPJVB1
+
+Park — Execution queue and subject files (
+    @park-dev-d8e7b7e4e9e7aaab5517: 0,
+    is #chapter,
+    #part-of @park-development: 149,
+    #park-workflow @park-development-cycle
+) { r_0CHKP8QMMM042D09SG4P38GSAH
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Execution queue and subject files
+
+| Subject | File | Decision/output |
+| --- | --- | --- |
+| Evidence to reuse | [00 — Evidence and research](record:r_14AZKSVCBTJXY97EXZZ0838FWW) | What is established, what is only a theory, receipts and source anchors; do not repeat completed work. |
+| 1 | [01 — Measurement](record:r_3MCKF8DH9AWW9EGKNZANAVS95C) | Reproducible current workload, causal input/save traces, ranked critical path, CPU/GPU/wait ownership. |
+| 2 | [02 — Input and scheduling](record:r_36611TNEEWD13GYD69DZHR0H2Y) | Short, bounded interaction work; independent rendering and background work; useful parallelism. |
+| 3 | [03 — Local edits and storage](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA) | Cheap local feedback, incremental recovery and writes, short transactions, bounded fanout. |
+| 4 | [04 — Styles, layout and retention](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6) | Read-optimized resolved styles, precise invalidation, local layout and retained transforms. |
+| 5 | [05 — Feature costs and scaling](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK) | Every active feature mapped to shared paths; visible-list scaling, bounded workers and retained panels. |
+| 6 | [06 — GPU and outputs](record:r_333RCJBDSGX0Y0W630FWHJAJCB) | Correct device work, fewer passes/transfers/waits, independent output pacing and damage. |
+| 7 | [07 — Unbloat and release](record:r_42C88G596W9EFZ00JTJDWD766E) | Delete proven waste, simplify ownership and produce a better optimized shipping artifact. |
+| Contract used by both stages | [08 — Benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7) | Stable numerical and work-count targets for Laboratory/tests and real daily use. |
+| Coverage used by both stages | [09 — Workflows and combinations](record:r_33DFSQHTZFRCM758HHPN3KRWNA) | User actions, feature inventory, combinations, oracles and missing coverage. |
+| Architecture used by both stages | [10 — Architecture](record:r_2DZ5H07T9W84B4XEHHMMC2E1GM) | Shared families, intended data ownership, invalidation and handoff boundaries. |
+| 11 | [11 — Acceptance and experiments](record:r_6A97DSEHEM7S2QN47G8QYN7SP3) | Combined candidate evidence, honest physical acceptance, unfinished repairs and rejected directions. |
+| Workflow used by every coding cycle | [12 — Measurement and delivery](record:r_7NBQGTF152S58NPT0Z9EM58C1T) | Develop and run useful local checks in Niri; deliver a broad measured batch, then measure in Park, update evidence/next tasks and stop. No alternate implementation switches or hot-swap work. |
+
+Follow [execution-order.md](record:r_1FMCTGVHF35B6D0T70JEQAMYDW), the single cross-file queue with explicit A0/A1/A2/B assignment. It orders work within a broad coding cycle, not one task per binary. Complete all ready work in the current phase; a delegated boundary waits for its owner while independent work proceeds. Re-rank after each combined report so the next fixes have the greatest supported expected benefit. Subject-file numbers organize details, not priority or sequential delivery stages.
+
+Completed implementations, measurements and rejected experiments are in [00 — Evidence and research](record:r_14AZKSVCBTJXY97EXZZ0838FWW); unpromoted designs are also preserved in the [Build failure museum](../Build.lingua). Completed work is not queued again. Remaining task bodies describe only their unresolved implementation or verification, with short references to the evidence needed to choose the next step.
+
+The latest measured Park binary is optimized 3fdc9356; the user is now in Niri for coding. Its prepared private tests pass 11/12 cases, but the mixed route fails on Unicode key two, real Bevy system bodies are absent, and live startup tracing was unset. [00](record:r_619SAYW8V26804MDDR9RYB4JMC) preserves the valid hardware, glyph, edit and input observations and their limits. Earlier 8c2348ed client preparation/submission divergence remains historical evidence, not a measurement of this candidate. The callback-submission/Started cleanup is already included in 3fdc9356. The current batch repairs the necessary attribution gaps together with P53 estimated callback pacing and a small P131 accessibility allocation reduction. Physical acceptance and the existing appearance/glyph gaps remain explicit; broad UI/platform work is deferred.
+
+Small inexpensive wins are welcome. There is no minimum percentage: a repeatable gain or clearly eliminated work, allocation, copy or wake can justify a simple change with appropriate checks. Record mixed/slower controls and resource costs; combined improvements must be measured, not added arithmetically.
+} r_0CHKP8QMMM042D09SG4P38GSAH
+
+Park — Direction of the overhaul (
+    @park-dev-b4e5794e0f0965fbfa88: 0,
+    is #chapter,
+    #part-of @park-development: 175,
+    #park-workflow @park-development-cycle
+) { r_557Q5B9H2AGFQWB2GVMHA9WFF9
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Direction of the overhaul
+
+Treat input, semantic mutation, presentation derivation, GPU execution, output presentation and durable storage as distinct responsibilities with explicit handoffs. One keystroke must not require every feature to poll, every style to resolve, every subtree to lay out, every document to serialize and every output to repaint before its own effect becomes visible. Reuse the existing ECS, host bridge, source revisions, workers, wake deadlines, retained surfaces and test catalogue; replace a boundary when the evidence shows it is fundamentally wrong. This is permission to plan substantial refactors of active paths, not a requirement to keep an inefficient architecture intact.
+
+**Styling favors reads.** Themes and token assignments are usually edited far less often than their resolved values are consumed. Prefer paying bounded derivation/invalidation cost on actual changes and reading compact, already-resolved values on ordinary frames. Continuous sliders, relation color rules, dynamic inherited contexts and newly opened items still need correct live updates. Persisted JSON/token source representation is a separate concern from the runtime hot representation. No claim of “100% optimized” is credible without workload evidence; the open style tasks explicitly test this gap.
+
+**Local editing is local.** Separate immediate in-memory feedback, recoverable draft persistence, canonical local commit, view publication and remote replication. Keep their status honest. Existing durability and collaboration protections are intentional; replace excessive work with a cheaper correct mechanism rather than removing recovery, authorization, history or synchronization.
+
+**Parallelism must shorten the user-visible path.** Use existing pools for sufficiently large independent immutable batches, retaining dependent parent/child and global-budget decisions in order. Removing a chain between exclusive World systems does not make them concurrent. Include extraction/copy, queues, validation and synchronization in the comparison. Correct CPU/GPU placement is assessed from actual work and transfer/wait cost, not a utilization screenshot.
+
+**Unbloating must reach executed work.** Remove duplicate scans, conversions, subscriptions, writes, ownership adapters, caches and eager initialization where their use/cost is established. Source size alone is not a responsiveness diagnosis. Preserve functionality, attribution, credits and declared behavior; do not touch the unplugged web frontend or protected files as collateral cleanup.
+} r_557Q5B9H2AGFQWB2GVMHA9WFF9
+
+Park — Benchmarks and combinations govern experiments (
+    @park-dev-a785ad90f404b0c383d2: 0,
+    is #chapter,
+    #part-of @park-development: 187,
+    #park-workflow @park-development-cycle
+) { r_1G1DS1D04B0FKPN7WXAG5TXBEB
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Benchmarks and combinations govern experiments
+
+Each experiment names its critical-path hypothesis, shared family, workloads, expected gain, correctness oracle and dependencies before coding. An isolated throughput result does not establish typing latency or whole-desktop benefit. Keep raw observations and compute the same metrics for baseline and candidate, including unchanged controls and baseline drift. Do not add percentages from overlapping spans or multiply independent microbenchmark gains into a desktop prediction.
+
+The user accepts a net performance gain even when some cases become slower. Show the actual gains, costs and affected workflows instead of imposing a new regression policy or automatically rejecting any slowdown. A temporary failure during a staged refactor stays visible with a specific repair task and affected benchmark; it is not a passed result. Try the follow-up optimization that can restore the affected case while retaining the win. Keep benchmark definitions and correctness oracles stable so a worse result cannot be hidden by changing the test. Final acceptance reflects the measured combined candidate and the user's tradeoff decisions.
+
+Use the finite workflow factors and pairwise coverage in 09, plus named high-risk triples and transitions. Enumerating the infinite Cartesian product of every feature, document, layout and event is impossible. Coverage is complete only relative to a source-stamped inventory and an explicit selected set; unknown/uncovered cases are named. Newly reachable UI features extend that inventory through P124, without requiring a new benchmark framework per Castle.
+} r_1G1DS1D04B0FKPN7WXAG5TXBEB
+
+Park — Closing tasks after the combined run (
+    @park-dev-e341e75b6eb52d2f9d2c: 0,
+    is #chapter,
+    #part-of @park-development: 195,
+    #park-workflow @park-development-cycle
+) { r_6JD560XNKMD66NENJJ0M4GCDFR
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+## Closing tasks after the combined run
+
+Keep only one definition of each task. A task may finish with a useful implementation, a measured rejection, or an investigation that has the stated deliverable. Remove it only when that outcome and its required checks are recorded. Missing required evidence stays pending. Record a rejected experiment in the evidence ledger; the user's existing authorization for an exact negative result in Build.lingua does not authorize unrelated Record edits. A successful mechanism need not close the physical acceptance tasks.
+
+Use a frozen source/toolchain/features/profile identity and actual executable hashes. Use matching explicitly prepared artifacts, normally from CI; the timed Park runner never compiles a missing artifact. Local checks/test compilation in Niri remain allowed. Exclude compilation, competing test renderers and uncontrolled benchmark processes during measurement. Reuse existing fixtures and a bounded runner. Start with short observations and extend only to answer a named uncertainty. Do not use worktrees or rebuild the dependency graph for each small hypothesis.
+
+Useful local checks, test compilation and private fixtures are allowed in Niri through the existing repository/Nix/xtask workflow; keep warnings as errors and reuse artifacts. CI normally produces the optimized shipping candidate. Physical Park measurements use prepared artifacts with no concurrent compilation. No cargo clean, code comments, past migration edits or automatic session disruption. Schema changes, if necessary, use new append-only migrations and the repository's migration checks in CI. Preserve concurrent agents' edits. Documentation work does not itself initiate a push, release build, Actions polling, installation, logout or physical monitor/lock/VT actions. The Niri delivery handoff and the Park measure/document/stop boundary are explicit in 12.
+
+The source review for this reorganization was at b4429a44cf3d20ba18b3f90a131339f64ba14201 with a dirty shared worktree. Historical optimized runs and the uncommitted P91 scheduling change have different identities; none is silently a current desktop benchmark.
+} r_6JD560XNKMD66NENJJ0M4GCDFR
+
+Extension @park-development "lince.vocabulary" {
+    definitions {
+        park-performance-task "One atomic Park performance implementation, investigation or verification task. Quantity 0 is pending and 1 is verified complete with outcome evidence."
+        park-workflow "The current owner-authored development and delivery workflow governing this task or chapter; preserved earlier manual handoff instructions are historical."
+        park-stage-a0 "Required measurement or baseline work supporting a selected performance change."
+        park-stage-a1 "Evidence-supported production performance work."
+        park-stage-a2 "Combined and installed daily performance acceptance."
+        park-stage-b "Deferred work unless promoted by an evidenced active performance dependency."
+    }
+}

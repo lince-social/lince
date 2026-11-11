@@ -13,7 +13,7 @@ async fn a_missing_executable_is_a_diagnostic_and_external_tools_do_not_claim_ch
     let catalog = Catalog::load(root.path()).await.unwrap();
     let config = serde_json::from_value(serde_json::json!({
         "command":root.path().join("missing"),"args":[],"directory":root.path(),
-        "environment":{},"session_meta":{},"options":{},"require_vault":false
+        "environment":{},"session_meta":{},"options":{}
     }))
     .unwrap();
     let mut profile = Profile {
@@ -101,8 +101,9 @@ async fn generic_harness_probe_negotiates_settings_and_never_sends_a_prompt() {
     let log = root.path().join("requests");
     let config = serde_json::from_value(serde_json::json!({
         "command":env!("CARGO_BIN_EXE_lince-acp-test-agent"),"args":[],"directory":root.path(),
-        "environment":{"TEST_NO_HTTP":"1","TEST_REQUEST_LOG":log},"session_meta":{},"options":{},"require_vault":false
-    })).unwrap();
+        "environment":{"TEST_NO_HTTP":"1","TEST_REQUEST_LOG":log},"session_meta":{},"options":{}
+    }))
+    .unwrap();
     let profile = Profile {
         id: "harness".into(),
         name: "My harness".into(),
@@ -120,7 +121,7 @@ async fn generic_harness_probe_negotiates_settings_and_never_sends_a_prompt() {
 }
 
 #[tokio::test]
-async fn keyless_compatible_endpoint_can_discover_and_answer_without_a_vault_or_api_key() {
+async fn keyless_compatible_endpoint_can_discover_and_answer_without_an_api_key() {
     use fiote::provider::{GenaiProvider, Message, Provider};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let root = tempfile::tempdir().unwrap();

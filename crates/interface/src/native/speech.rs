@@ -80,7 +80,7 @@ struct Composer {
     input: Entity,
     status: Entity,
     settings_panel: Entity,
-    endpoint_fields: [Entity; 4],
+    endpoint_fields: [Entity; 3],
     local_status: Entity,
     local_import: Entity,
     requires_key: bool,
@@ -206,13 +206,7 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
     let endpoint_fields = [
         panel::field(world, settings_panel, "Full transcription URL", ""),
         panel::field(world, settings_panel, "Transcription model", ""),
-        crate::native::fiote::session::field(
-            world,
-            settings_panel,
-            "Transcription API key (vault)",
-            true,
-        ),
-        crate::native::fiote::session::field(world, settings_panel, "Vault password", true),
+        crate::native::fiote::session::field(world, settings_panel, "Transcription API key", true),
     ];
     let key_label = crate::native::edit_mode::label(
         world,
@@ -233,13 +227,6 @@ pub(crate) fn composer(world: &mut World, owner: Entity, parent: Entity, input: 
         owner,
         "Save transcription endpoint",
         Command::SaveEndpoint,
-    );
-    panel::button(
-        world,
-        settings_panel,
-        owner,
-        "Unlock transcription vault",
-        Command::UnlockEndpoint,
     );
     let cloud_label =
         crate::native::edit_mode::label(world, settings_panel, "Cloud transcription: off", 13.0);
@@ -373,7 +360,6 @@ enum Command {
     Insert,
     Microphones,
     SaveEndpoint,
-    UnlockEndpoint,
     KeyRequired,
 }
 impl Action for Command {
@@ -501,7 +487,6 @@ impl Action for Command {
                     };
                     settings.validate()?;
                     let credential = panel::value(world, fields[2])?;
-                    let password = panel::value(world, fields[3])?;
                     send(
                         world,
                         owner,
@@ -509,7 +494,6 @@ impl Action for Command {
                             settings,
                             credential: (!credential.is_empty())
                                 .then_some(cell::FioteSecret(credential)),
-                            password: (!password.is_empty()).then_some(cell::FioteSecret(password)),
                         },
                     )?;
                     for field in &fields[2..] {
@@ -519,22 +503,6 @@ impl Action for Command {
                             .editor
                             .set_text("");
                     }
-                }
-                Self::UnlockEndpoint => {
-                    let field = composer.endpoint_fields[3];
-                    let password = panel::value(world, field)?;
-                    send(
-                        world,
-                        owner,
-                        Request::UnlockEndpoint {
-                            password: cell::FioteSecret(password),
-                        },
-                    )?;
-                    world
-                        .get_mut::<EditableText>(field)
-                        .unwrap()
-                        .editor
-                        .set_text("");
                 }
                 Self::Microphones => {
                     let parent = composer.microphones;
@@ -1175,15 +1143,23 @@ pub(crate) fn update(
             let now = Instant::now();
             let composer = world.get::<Composer>(owner).unwrap();
             let mut due = now + Duration::from_millis(250);
-            if composer.pending.is_none() && composer.next > now
-                && (composer.job.is_some() || composer.saved.as_ref().and_then(|saved| saved.local.as_ref()).is_some_and(|local| local.busy))
+            if composer.pending.is_none()
+                && composer.next > now
+                && (composer.job.is_some()
+                    || composer
+                        .saved
+                        .as_ref()
+                        .and_then(|saved| saved.local.as_ref())
+                        .is_some_and(|local| local.busy))
             {
                 due = due.min(composer.next);
             }
             next_wake = Some(next_wake.map_or(due, |previous| previous.min(due)));
         }
     }
-    let wake = world.get_resource::<crate::native::wake::WakeSignal>().cloned();
+    let wake = world
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned();
     world.init_resource::<Cadence>();
     let mut cadence = world.resource_mut::<Cadence>();
     if let (Some(due), Some(wake)) = (next_wake, wake) {
@@ -1203,12 +1179,26 @@ mod tests {
         let observed = ready.clone();
         let mut app = App::new();
         app.add_message::<crate::native::cell_bridge::CellMessage>()
-            .insert_resource(crate::native::wake::WakeSignal::new(move || observed.notify_one()))
+            .insert_resource(crate::native::wake::WakeSignal::new(move || {
+                observed.notify_one()
+            }))
             .add_systems(Update, update);
-        waiting(app.world_mut(), "request-a", "job-a", "First unchanged draft");
-        let (second, _) = waiting(app.world_mut(), "request-b", "job-b", "Second unchanged draft");
+        waiting(
+            app.world_mut(),
+            "request-a",
+            "job-a",
+            "First unchanged draft",
+        );
+        let (second, _) = waiting(
+            app.world_mut(),
+            "request-b",
+            "job-b",
+            "Second unchanged draft",
+        );
         app.update();
-        tokio::time::timeout(Duration::from_secs(2), ready.notified()).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2), ready.notified())
+            .await
+            .unwrap();
         let due = Instant::now() + Duration::from_millis(100);
         let mut composer = app.world_mut().get_mut::<Composer>(second).unwrap();
         composer.pending = None;
@@ -1231,13 +1221,27 @@ mod tests {
             .add_systems(Update, update);
         let mut owners = Vec::new();
         for index in 0..4 {
-            owners.push(waiting(app.world_mut(), &format!("request-{index}"), &format!("job-{index}"), "Unchanged draft").0);
+            owners.push(
+                waiting(
+                    app.world_mut(),
+                    &format!("request-{index}"),
+                    &format!("job-{index}"),
+                    "Unchanged draft",
+                )
+                .0,
+            );
         }
-        for _ in 0..32 { app.update(); }
+        for _ in 0..32 {
+            app.update();
+        }
         tokio::time::sleep(Duration::from_millis(300)).await;
         let active_wakes = wakes.swap(0, Ordering::Relaxed);
-        for _ in 0..32 { app.update(); }
-        for owner in owners { app.world_mut().despawn(owner); }
+        for _ in 0..32 {
+            app.update();
+        }
+        for owner in owners {
+            app.world_mut().despawn(owner);
+        }
         app.update();
         tokio::time::sleep(Duration::from_millis(300)).await;
         let retired_wakes = wakes.load(Ordering::Relaxed);
@@ -1245,7 +1249,11 @@ mod tests {
         println!("Wake cadence {report}");
         if let Ok(path) = std::env::var("LINCE_PARK_TEST_ARTIFACTS") {
             std::fs::create_dir_all(&path).unwrap();
-            std::fs::write(std::path::Path::new(&path).join("dictation-wakes.json"), serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+            std::fs::write(
+                std::path::Path::new(&path).join("dictation-wakes.json"),
+                serde_json::to_vec_pretty(&report).unwrap(),
+            )
+            .unwrap();
         }
         assert_eq!(active_wakes, 1);
         assert_eq!(retired_wakes, 0);
@@ -1405,7 +1413,7 @@ mod tests {
                 input,
                 status,
                 settings_panel: unused,
-                endpoint_fields: [input; 4],
+                endpoint_fields: [input; 3],
                 local_status: status,
                 local_import: input,
                 requires_key: false,
@@ -1896,7 +1904,6 @@ mod endpoint_tests {
             .handle(Request::ConfigureEndpoint {
                 settings: changed,
                 credential: None,
-                password: None,
             })
             .await
             .unwrap();

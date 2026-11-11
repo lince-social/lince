@@ -147,7 +147,6 @@ async fn shutdown_closes_pending_transcription_and_prevents_cloned_speech_from_r
         .handle(Request::ConfigureEndpoint {
             settings: settings.clone(),
             credential: None,
-            password: None,
         })
         .await
         .unwrap();

@@ -1,0 +1,378 @@
+Park — 2. Make input responsive and shorten the critical path (
+    @park-dev-02-input-and-scheduling: 0,
+    is #chapter,
+    #part-of @park-development: 14,
+    #park-workflow @park-development-cycle
+) { r_36611TNEEWD13GYD69DZHR0H2Y
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+# 2. Make input responsive and shorten the critical path
+
+[Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
+
+Use [12's broad-cycle method](record:r_7NBQGTF152S58NPT0Z9EM58C1T): A0 measures actual CPU/wait/queue boundaries; A1 implements all ready independent measured owners together. Serial/parallel or buffering comparisons use source-identified normal candidates, not shipped experiment selectors. Keep real small-work/capability fallbacks where they improve the product. Code and run useful local checks in Niri; push the reviewed batch, measure the installed candidate in Park, update evidence/next tasks and stop. No compilation during measured runs.
+
+The shared input/state/worker/render path is the target; do not special-case Firefox, a tooltip or one Castle. Shorten proven blocking spans and remove unrelated dependencies from local feedback. Use immutable snapshots and precise component access for useful concurrency. Rendering a stale backlog faster is insufficient. Source anchors: crates/park/src/runtime.rs, runtime/input_queue.rs, native_input/, presentation.rs; crates/interface/src/host/input/ and native/record_binding.rs. P105–P108 are specific gaps beyond the existing demand-driven worker and queue guards.
+
+**Continue through these Records:**
+
+- [P60 — Split the highest-cost exclusive system into derivation and application.](record:r_4YXRG46DMT22JYM0TFVFYRDGAE)
+- [P43 — Bound input waiting behind the longest native work section.](record:r_5TEM3NBDTK092YB5VBQ7EA80XP)
+- [P107 — Stop preparing one superseded unsubmitted native frame.](record:r_2C6882M66DF10QM0B8NZ8TA899)
+- [P62 — Integrate a justified coherent main/render handoff.](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G)
+- [P105 — Remove the longest unrelated dependency from native text feedback.](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV)
+- [P106 — Bound one busy queue drain so control input remains serviceable.](record:r_7T8XKYGAMN8B6HBBSF413WX2WS)
+- [P61 — Parallelize one sufficiently expensive independent batch.](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ)
+- [P72 — Remove one avoidable foreground GPU-completion wait.](record:r_70G3BRDBJCHJFW1RCC27CWWH99)
+- [P58 — Compare one versus two frames in flight at the actual bottleneck.](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7)
+- [P108 — Replace the editor binding heartbeat with actual readiness and deadlines.](record:r_1K92JXDXHW5573N1AS06VJPEGE)
+- [P63 — Limit one background job family that delays visible work.](record:r_7DW7DZJMVHBTS4EPRPNG4ZS7E1)
+- [P83 — Move one remaining blocking foreground operation off the interaction path.](record:r_11F5Q868V60YDH4M44A10ETC0V)
+- [P73 — Test asynchronous preparation of a stalling shader pipeline.](record:r_0940K6JWSTJRZPPTWJP8KF6T7X)
+} r_36611TNEEWD13GYD69DZHR0H2Y
+
+P60 — Split the highest-cost exclusive system into derivation and application. (
+    @park-p60: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 9,
+    #park-workflow @park-development-cycle
+) { r_4YXRG46DMT22JYM0TFVFYRDGAE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Latest private evidence:** on optimized 3fdc9356, the small full-frame control averages 5.026 ms native main and 5.177 ms render sub-app; pointer capture is 0.945 ms versus 0.185 ms custom layout solve. Actual named system samples are absent, so P152 must identify the real bodies before this split. These scopes are nested and not the installed S3 cost breakdown. Reuse the latest 00 receipt rather than repeating the numerical-solver experiment.
+
+**Why:** the earlier 8c2348ed populated fixture spent about 10.2 ms in native main; Update/PostUpdate accounted for 3.71/3.31 ms of owner CPU. Those historical numbers are not comparable speedup evidence against the newer, smaller 3fd control above. Broad mutable World work can delay every ordinary interaction. **Scope:** identify the expensive body/deferred/scheduling boundary within those phases, then separate one worthwhile immutable derivation from narrow mutation through its existing family. Include snapshot construction, validation and application costs. Preserve source/owner/output revisions, same-tick results and native/GPU thread affinity. Surface synchronization at 0.36–0.38 ms and the entire optimized Lince layout stage at 0.179–0.255 ms are weaker candidates than the unassigned main remainder.
+
+**Verify:** critical-path/input-age and total CPU, memory bounds, stale-result rejection, first-frame readiness, exact text/pixels/input geometry, output replacement and privacy/capture behavior. Treat phase wall time, executing-thread CPU, worker CPU and waits as different measurements. The candidate uses the ordinary `session,server-tests` artifact and existing `LINCE_TRACE_PERFORMANCE=1` capture; static Bevy names come from the narrow `bevy_utils/debug` feature. The old prototype observer flags are obsolete. Executing-thread CPU totals are diagnostic thread IDs rather than physical-core measurements. Reuse the native fixture and its ordered common gate.
+
+**Already answered:** Castle/desktop query-plan reuse and empty-shader-source guards are kept; the surface plan is not wholly pure; idle-editor sizing and blanket UI-layout gates are not retained. Their complete controls are in 00 and the Build failure museum. The next implementation must address a demonstrated remaining body or dependency; those completed experiments are not pending tests.
+} r_4YXRG46DMT22JYM0TFVFYRDGAE
+
+Extension @park-p60 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P43 — Bound input waiting behind the longest native work section. (
+    @park-p43: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 19,
+    #park-workflow @park-development-cycle
+) { r_5TEM3NBDTK092YB5VBQ7EA80XP
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** one frame-sized wait per event turns typing and dragging into a backlog. **Scope:** shorten or make interruptible the single measured blocking section in runtime/native_input/presentation; batch only compatible motion or scroll work with the same target, mapping epoch, source, units, modifiers, gesture phase and order. Preserve the oldest input origin when coalescing. **Verify:** input age and freezes under load, queue pressure and replacement, keyboard transitions, clicks, IME, modal/lock cancellation and output handoff. Increasing queue capacity alone or prioritizing stale frames is not a fix.
+} r_5TEM3NBDTK092YB5VBQ7EA80XP
+
+Extension @park-p43 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P107 — Stop preparing one superseded unsubmitted native frame. (
+    @park-p107: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 23,
+    #park-workflow @park-development-cycle
+) { r_2C6882M66DF10QM0B8NZ8TA899
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** finishing obsolete expensive presentation work can make every current input wait behind the past. **Scope:** at one P66-proven boundary, detect a superseded scene/output revision before its costly pure work starts or between safe chunks. Preserve semantic mutations, durable operations, input order and already-submitted GPU consumer lifetimes; keep an eligible coherent previous frame until the current one is ready. **Verify:** bursts during rendering, source/output replacement, current hit maps, privacy changes, cancellation and failure, with frame-age and wasted-work counts. A latest-value frame channel is already present; establish residual wasted preparation before adding cancellation. Never discard keyboard transitions or pretend a completed old frame used a newer input. **Coordinate with:** P58/P62; this is bounded stale-work avoidance, not extra buffering.
+} r_2C6882M66DF10QM0B8NZ8TA899
+
+Extension @park-p107 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P62 — Integrate a justified coherent main/render handoff. (
+    @park-p62: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 27,
+    #park-workflow @park-development-cycle
+) { r_12ZSCGSGR5ANMWGGYHAK3J2S5G
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** overlapping independent work can shorten the serial critical path, provided ownership and synchronization do not erase the gain. **Scope:** evaluate the retained worker-export prototype on the optimized complete consumer path, including actual GLES consumption while later Vulkan work is active. Integrate one coherent frame-epoch handoff only when that complete-path result justifies CPU, memory and maintenance costs. Native-only direct delivery and the matched offered-input replay are finished; their tradeoffs are in 00 and Build.lingua.
+
+**Verify before production:** immutable client/import/upload ownership; saved scene/input/geometry/painted-window feedback per epoch; output/format replacement; filtered-capture/main-World coordination; privacy/lock invalidation; first-frame readiness; teardown and actual GPU/native affinity. Main trackers clear after extraction. Native Rc/NonSend state, mutable target mappings and global upload vectors require their existing owner. Compare sparse and sustained input age and total resources with the serial path. A faster offered-frame cadence alone does not establish prompt interaction. Production remains serial until the handoff qualifies.
+} r_12ZSCGSGR5ANMWGGYHAK3J2S5G
+
+Extension @park-p62 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P105 — Remove the longest unrelated dependency from native text feedback. (
+    @park-p105: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 33,
+    #park-workflow @park-development-cycle
+) { r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** a letter should become visible without waiting for unrelated semantic or rendering work. **Scope:** use P101 to select the dependency blocking one native editable-text path, then retain immediate local editor state and schedule only its required text/layout/presentation changes before slower publication. Reuse EditableText, focus, TextBinding and the host input family; do not add a second editor or fake an overlay caret/text. This may require separating the native input/state application phase from a full app update, with coherent generations. **Verify:** ordered Unicode/IME composition, paste, selection/undo, same-Record multiple views, read-only/revoked access and saving while the backend is held. Compare end-to-end input p95/p99 and whole-update CPU, including dense scenes. The external client path has separate causality. **Needs:** P101/P66; preserve P43 queue guarantees.
+} r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV
+
+Extension @park-p105 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P106 — Bound one busy queue drain so control input remains serviceable. (
+    @park-p106: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 37,
+    #park-workflow @park-development-cycle
+) { r_7T8XKYGAMN8B6HBBSF413WX2WS
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** processing every ready message or subscription result in one indivisible batch can postpone new input even with spare cores. **Scope:** select the measured drain in runtime, Cell delivery or view publication; introduce a bounded work/time quantum and a real continuation signal, preserving per-source order and transactional groups. Give releases, cancellations, focus/lock changes and ready persistence their required service without starving bulk work. **Verify:** burst plus sustained load, no lost/duplicated events, nonempty continuation, empty-queue sleep, eventual completion and bounded memory; compare queue age and input tails. Do not busy-loop, recursively pump the event loop, or add an arbitrary global polling timer. **Needs:** P101/P102 evidence; queue capacity alone is not the fix.
+} r_7T8XKYGAMN8B6HBBSF413WX2WS
+
+Extension @park-p106 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P61 — Parallelize one sufficiently expensive independent batch. (
+    @park-p61: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 41,
+    #park-workflow @park-development-cycle
+) { r_3YJNV2XSM0QNC1NVE58ZBRE2EZ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** substantial independent derivations may shorten the serial native update. **Scope:** use the completed serial audit/P60 to choose one batch. Choose a demonstrated costly independent derivation; the old surface helper averages only about 0.36 ms in the optimized populated control and is conditional, not the default first target. If per-owner surface requests do become costly, their shared budget decision remains ordered. Use precise immutable inputs, existing workers and chunks large enough to amortize scheduling; keep dependent parent/child phases ordered. **Verify:** best serial versus parallel total cost, input p95/p99, small scenes, determinism and worker/memory bounds. Retain a cheap serial path where batching overhead dominates. No thread per Castle, item or monitor.
+} r_3YJNV2XSM0QNC1NVE58ZBRE2EZ
+
+Extension @park-p61 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P72 — Remove one avoidable foreground GPU-completion wait. (
+    @park-p72: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 45,
+    #park-workflow @park-development-cycle
+) { r_70G3BRDBJCHJFW1RCC27CWWH99
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** a wait can serialize CPU/GPU work even when both processors look lightly used. **Scope:** identify a real interactive caller from P67/P70 and use an existing completion signal/retained valid frame instead of waiting in input or dispatch. Distinguish diagnostic wait_for_probe calls from production callers; the completion driver already exists. **Verify:** not-ready, failure, cancellation, device/output retirement and privacy epochs, plus measured wait/latency reduction. Preserve synchronization and release buffers only after every consumer finishes.
+} r_70G3BRDBJCHJFW1RCC27CWWH99
+
+Extension @park-p72 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P58 — Compare one versus two frames in flight at the actual bottleneck. (
+    @park-p58: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 49,
+    #park-workflow @park-development-cycle
+) { r_0NY0TN6Y1JKQ6058HBRD93XHS7
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** overlap can hide waits, but rendering ahead of input can make every response older. **Scope:** change one ownership-safe queue boundary identified by P67, keeping input admission and output epochs explicit. **Verify:** presented FPS, input-visible p95/p99, stale/superseded frames, memory and texture/scanout/capture retirement. Use bounded backpressure and cancel superseded unsubmitted work safely. Do not increase buffering across every stage or count higher throughput with older frames as success.
+} r_0NY0TN6Y1JKQ6058HBRD93XHS7
+
+Extension @park-p58 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P108 — Replace the editor binding heartbeat with actual readiness and deadlines. (
+    @park-p108: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 53,
+    #park-workflow @park-development-cycle
+) { r_1K92JXDXHW5573N1AS06VJPEGE
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** record_binding currently arms a 150 ms wake while a text binding is focused or work is pending, even though ready storage/Cell events also notify. **Scope:** attribute necessary join retries, inflight retries, presence refresh and view retention, then express their distinct due times through existing source-owned WakeDeadline/producer notifications. Retain earliest and later independent deadlines; emit presence only at its required cadence and after real selection changes/lease refresh. **Verify:** focused-but-unchanged editing sleeps between required deadlines, fast completions appear without the heartbeat, full queues recover, retries/cancellation continue and removed editors retire requests. Measure wakes and unchanged work, including multiple editors. Do not simply remove the heartbeat until all necessary liveness paths have a proven signal. **Relates to:** P36/P47, but targets this concrete binding family.
+} r_1K92JXDXHW5573N1AS06VJPEGE
+
+Extension @park-p108 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P63 — Limit one background job family that delays visible work. (
+    @park-p63: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 57,
+    #park-workflow @park-development-cycle
+) { r_7DW7DZJMVHBTS4EPRPNG4ZS7E1
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** useful background throughput can still steal the capacity needed for dispatch and presentation. **Scope:** choose an observed source of CPU contention or lock pressure, then cap/coalesce its concurrency through the existing worker infrastructure. **Verify:** interaction tails, total CPU, completion fairness, cancellation and bounded queues under the same foreground load. Do not starve semantic operations. Change affinity or priority only if run-queue evidence justifies it; the historical sample alone did not show substantial aggregate scheduler waiting.
+} r_7DW7DZJMVHBTS4EPRPNG4ZS7E1
+
+Extension @park-p63 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P83 — Move one remaining blocking foreground operation off the interaction path. (
+    @park-p83: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 61,
+    #park-workflow @park-development-cycle
+) { r_11F5Q868V60YDH4M44A10ETC0V
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** serialization, storage, decoding or RPC work can dominate a freeze even when average FPS improves. **Scope:** select the largest remaining operation from P66, including any measured profile-snapshot copying that still happens on the caller. Reuse existing bounded workers and completion signals. **Verify:** foreground tail latency, total work, backpressure, source identity, cancellation, explicit save/shutdown durability and error retry. Profile writes already moved to a worker; do not rebuild that mechanism or hide work in an unbounded detached task.
+} r_11F5Q868V60YDH4M44A10ETC0V
+
+Extension @park-p83 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P73 — Test asynchronous preparation of a stalling shader pipeline. (
+    @park-p73: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-02-input-and-scheduling: 65,
+    #park-workflow @park-development-cycle
+) { r_0940K6JWSTJRZPPTWJP8KF6T7X
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_36611TNEEWD13GYD69DZHR0H2Y); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** synchronous pipeline compilation is explicitly enabled and may cause first-use freezes. **Scope:** only after a cold/warm trace attributes a stall to it, compare asynchronous compilation for that pipeline with the current path. Publish readiness and retain a policy-valid previous presentation while preparing. **Verify:** first-open responsiveness, completed shader/text pixels, errors, removal and capture/lock transitions. Do not merely flip a flag and publish an incomplete frame or start a permanent readiness poll.
+} r_0940K6JWSTJRZPPTWJP8KF6T7X
+
+Extension @park-p73 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}

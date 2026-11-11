@@ -1,0 +1,276 @@
+Park — 3. Make local editing and saving immediate (
+    @park-dev-03-local-edits-and-storage: 0,
+    is #chapter,
+    #part-of @park-development: 15,
+    #park-workflow @park-development-cycle
+) { r_0BZMR3P9CJ1WPW82SG9AX5WPVA
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+# 3. Make local editing and saving immediate
+
+[Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
+
+**Stage A ownership boundary:** the user's other agent is fixing sync/history saving, database locks and a Karma bug. P94's bug investigation is reserved for that effort; do not start a competing fix. P116/P117/P137/P138/P139/P120 and P102 may intersect its mutation/history/transaction/effect boundaries: check the owner's current changes and results before implementing an overlap, then retain only the unresolved performance work. Do not assume that agent owns or has finished every optimization below. Interface echo/preview, shared queue latency and combined performance acceptance remain Park work unless explicitly handed off. Record source identity, tests and outstanding waits after integration; remove a checkbox only when its own deliverable is satisfied.
+
+Backend correctness fixes are not substitutes for Stage A's latency proof, and “saving is another agent's task” does not excuse a frozen interface. Keep immediate echo and unrelated input independent of required durable work, measure contention from normal sync/history/Karma activity and preserve truthful save/effect status. General feature/semantic repairs beyond these dependencies stay outside this performance queue.
+
+Continue from the remaining title/description echo and save delays. Borrowed editor reads/splicing, incremental recovery and bounded background checkpoint encoding are complete; their evidence is in 00. Native splicing still scans common text, canonical acknowledgement retains substantial preparation and variable awaited work, Cell handles ordinary requests inline, and description previews can rebuild children. Use P102 to separate the remaining costs and investigate the separately reported database-lock issue before changing its implicated lock boundary. Profile-save JSON already has a background writer and is a separate path.
+
+Preserve immediate draft text, durable recovery, canonical local commit, publication and remote sync as distinct states. Local input must not wait for network acknowledgement. Do not replace durability with a longer debounce alone. Reuse the existing Record mutation, Loro and storage families. Every write experiment must test actual file-backed reopen/recovery, not only an in-memory database. Source anchors: native/record_binding.rs, record_view.rs, description.rs, protein_area; native/cell_bridge.rs; crates/transport/src/session.rs; engine/record_change.rs and store/record_docs.rs.
+
+**Continue through these Records:**
+
+- [P116 — Amortize one stream of local edit commits without delaying feedback.](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH)
+- [P117 — Shorten the measured SQL transaction critical section for an edit.](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357)
+- [P137 — Remove one document-sized cost from canonical text mutation preparation.](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1)
+- [P94 — Identify the cause of the database-locked toast.](record:r_576VQH1YFK5VPC5GM9024714EW)
+- [P138 — Shorten the engine-wide access gate without weakening operation validity.](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4)
+- [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](record:r_6PB6GYZ446CWCNNVS8JENYY414)
+- [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](record:r_5E9VPP06MSXAM46V1MNA6T163P)
+- [P119 — Update a description preview incrementally while typing.](record:r_2C28QTRHSFACYE70MCH58SRPYS)
+- [P120 — Eliminate one proven no-op edit write and its downstream publication.](record:r_5FDXR01ABJBD6FW36MWABGMPZQ)
+} r_0BZMR3P9CJ1WPW82SG9AX5WPVA
+
+P116 — Amortize one stream of local edit commits without delaying feedback. (
+    @park-p116: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 13,
+    #park-workflow @park-development-cycle
+) { r_7W7WPY7YF5B16QZ47SKY0QR6NH
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** one draft/canonical transaction per character or view can multiply durable I/O and backend effects. **Scope:** use P102's write counts to batch compatible pending changes for one local document within a bounded latency window, preserving individual operation IDs, ordering, conflict and undo/history semantics. A canonical transaction may absorb recovery work only if it provides the same recoverability. Keep local echo immediate and explicit save/close/flush as real barriers; do not merge distinct commands, assertions, counter deltas or auditable side effects merely because they are adjacent. **Verify:** concurrent views, typing while a write is blocked, rapid edits then close, failure/replay and bounded journal age. Include p95/p99 durability and effects, not just commits/second. **Needs:** the completed incremental recovery path (00) and honest status boundaries.
+
+**Current evidence/selection:** P150's four-run private follow-up records exactly 15 WAL sync calls during three edits (five per edit), plus one/two negligible directory sync calls. The slow run spends 609.55 ms in these nonoverlapping calls; the other runs spend 53.06–64.35 ms. Reuse this trace and the draft/canonical/history counters to map each required boundary before selecting a reduction. A syscall count is not independently a transaction count. Prefer folding genuinely redundant recovery/cleanup work into an already necessary valid transaction when it preserves the exact draft generation and recovery semantics; bounded batching must help ordinary typing or a named burst workload rather than merely delaying local saves. Keep every required per-query history entry, error, cancellation and publication guarantee. Full optimized/physical impact remains unproved.
+
+**Ownership traced:** native record_binding dispatch waits until its recovery metadata contains the operation ID. Canonical commit persists an actor-scoped exact-payload receipt, and its acknowledgement dirties the journal again alongside the two affected-query history writes. An unconditional recovery-write skip or delayed cleanup would therefore change recovery/replay behavior; receipt ID alone is insufficient without actor, payload, source/generation and stale-save handling. These source constraints retain P116 as open. Short debounce alone does not remove the five boundaries of ordinary sequential edits. Current large-document synchronous preparation is now a better supported ready optimization under P137.
+} r_7W7WPY7YF5B16QZ47SKY0QR6NH
+
+Extension @park-p116 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P117 — Shorten the measured SQL transaction critical section for an edit. (
+    @park-p117: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 21,
+    #park-workflow @park-development-cycle
+) { r_7HD3G5KF1QDXZ5Y766H0WVQ357
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** local writes can still wait behind connection acquisition, broad access snapshots, repeated queries or long transactions. **Scope:** select the dominant P102/P94 database acquire/hold/commit stage in engine record_change/access or store; P138 separately owns the engine-wide access gate. Move safe pure preparation outside its mutable transaction, reuse transaction-local reads or remove a proven duplicate query while keeping authorization, facts/revisions and atomic commit valid at the operation boundary. Inspect file-backed WAL/checkpoint and pool behavior; additional SQLite connections do not create multiple concurrent writers. **Verify:** contention with background work, access revocation, rollback, lock errors, replay and durable reopen. Record acquire/hold/commit separately and use query plans before proposing an index. Raising busy_timeout or weakening synchronous durability is not the fix. **One concrete critical section per experiment.**
+} r_7HD3G5KF1QDXZ5Y766H0WVQ357
+
+Extension @park-p117 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P137 — Remove one document-sized cost from canonical text mutation preparation. (
+    @park-p137: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 25,
+    #park-workflow @park-development-cycle
+) { r_2QC1RKFFQJ09XEE7EP15KJW6E1
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** recovery draft encoding is not the only whole-document path. AcceptedDoc/prepare_delta imports the retained snapshot and prepares a guarded candidate; persist_text updates both head/body, counts the durable delta tail and periodically checkpoints it. **Scope:** use P102 to isolate the dominant snapshot import/export, candidate validation, full-field projection or tail-query cost, then compare one revision-stamped incremental alternative. The canonical path already has sync_op deltas and COMPACT_OPS = 100; do not replace it with another journal or claim it snapshots to SQL on every edit. **Verify:** accepted/rejected malicious and malformed deltas, limits/history/permissions, conflict/undo, idempotent receipts, checkpoint boundaries, stale candidates and exact durable reconstruction. Preserve the guard's isolation and atomic validation; reuse trusted state only under its valid revision/ownership. Measure whole caller/worker/transaction cost and bytes at S4 sizes, not just a faster export function. **Needs:** P102; distinct from the completed frontend recovery journal documented in 00.
+
+**Remaining:** select one actual typed-history traversal/inspection, guarded candidate import/export or full-field projection cost. The latest large-title diagnostic spends 181.399 ms in synchronous preparation across three edits; import/history/export spans overlap. Exact JSON text-size accounting and canonical preflight Record reuse are finished in 00. Preserve isolated base/candidate validation and exact history/permissions/limits while measuring complete optimized caller/worker/transaction cost and bytes.
+
+**Required edge cases:** several sub-threshold edits can accumulate a large tail, so per-mutation checkpointing alone does not prove bounded recovery. A previous 1,048,000-character high-entropy replacement exceeded 180 seconds in Loro's foreground Myers diff before recovery storage; compare a bounded replacement strategy with Unicode, unchanged spans, collaboration/undo and guard equivalence. That diagnostic had concurrent compilation and does not establish ordinary-edit or external-client latency. Retain the original oracle and recorded timeout rather than raising it.
+
+**Acceptance still missing:** matched optimized head/body results under ordinary load, including immediate-echo and acknowledgement tails, large replacements and accumulated-tail recovery. Existing debug results and faster size helpers are not a whole-save or physical-input pass. Loro's public fork still copies a full snapshot and is not a proven cheap replacement.
+} r_2QC1RKFFQJ09XEE7EP15KJW6E1
+
+Extension @park-p137 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P94 — Identify the cause of the database-locked toast. (
+    @park-p94: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 35,
+    #park-workflow @park-development-cycle
+) { r_576VQH1YFK5VPC5GM9024714EW
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · delegated.
+
+
+**Why:** contention may stall operations or expose a correctness failure independently of rendering speed. **Scope:** attribute one occurrence to the responsible database/operation and transaction/connection lifetime, using bounded logs without private values. **Close with:** the cause and one concrete fix target, or an explicit missing reproduction. Do not assume it is the FPS cause, increase timeouts to hide it, relax durability, or alter existing migrations. A subsequent implementation gets its own atomic task once its mechanism is known.
+} r_576VQH1YFK5VPC5GM9024714EW
+
+Extension @park-p94 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P138 — Shorten the engine-wide access gate without weakening operation validity. (
+    @park-p138: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 39,
+    #park-workflow @park-development-cycle
+) { r_6T8CDPK9MX8J93FHM5Q5JE1TA4
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** Engine::access_scope holds a shared read/exclusive write RwLock across the awaited operation, so a write can delay unrelated reads/writes despite spare CPU; nested scopes deliberately reuse the held task-local authority. **Scope:** after P102 attributes gate wait/hold, select one long pure or post-commit phase that can safely leave the gate, or compare a narrower validated generation boundary. Retain atomic permission/revocation, reentrancy, operation ordering and all transaction invariants. Do not add unsafe cached grants, clone a held task-local scope into independent work, or remove the lock as a blind parallelism switch. **Verify:** simultaneous local edits/queries, revocation and session expiry racing preparation/commit, nested actions, cancellation/failure and deterministic final state. Include conflict/revalidation cost and actual wait reduction. **Separate from:** P117's database transaction and P121's Cell request queue; those can serialize independently.
+} r_6T8CDPK9MX8J93FHM5Q5JE1TA4
+
+Extension @park-p138 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P139 — Remove unnecessary post-commit reaction waiting from local save feedback. (
+    @park-p139: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 43,
+    #park-workflow @park-development-cycle
+) { r_6PB6GYZ446CWCNNVS8JENYY414
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** observe_committed_fact publishes the committed fact and awaits react_to_event; local edit paths can await this before returning while still within access_scope. Slow rules/effects can therefore make a committed local edit appear unfinished. **Scope:** measure required versus deferrable post-commit work, then expose truthful local durable completion independently or use an existing recoverable ordered effect queue for the selected deferrable family. If the action contract requires reaction completion, keep that separate status and preserve its semantics instead of falsely returning full success. **Verify:** saved text, facts/history, rule ordering, exactly-once/idempotent effects, crash/restart, effect failure, cancellation and visibility of pending/failed reactions. Do not detach unbounded tasks, lose required automation, or create a new outbox if one already fulfills the contract. Include acknowledgement and other-input p95/p99 plus total work. **Needs:** P102 and the P138 scope analysis; reject decoupling where semantics require the wait.
+} r_6PB6GYZ446CWCNNVS8JENYY414
+
+Extension @park-p139 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P121 — Prevent a slow Cell request from delaying unrelated local edit service. (
+    @park-p121: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 47,
+    #park-workflow @park-development-cycle
+) { r_5E9VPP06MSXAM46V1MNA6T163P
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** the Cell bridge selects requests but awaits ordinary session.handle requests inline; a long request can delay the shared lane despite a multithread runtime. **Scope:** use P102 to identify one long request class, then separate its pure/blocking preparation or provide bounded existing-pool execution while preserving session state, per-Record ordering, access scope and transactional command semantics. Special call/speech/preview task lanes already exist; do not reproduce them or spawn every request independently. **Verify:** local edit/ack and cancellation during the slow request, fairness, session expiry/revocation, failure and bounded pending work. Include shared database lock pressure, because concurrent tasks alone may still serialize on a writer. **Conditional on:** measured head-of-line delay; no claim that the source shape alone proves the live cause.
+} r_5E9VPP06MSXAM46V1MNA6T163P
+
+Extension @park-p121 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P119 — Update a description preview incrementally while typing. (
+    @park-p119: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 51,
+    #park-workflow @park-development-cycle
+) { r_2C28QTRHSFACYE70MCH58SRPYS
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+
+
+**Why:** description::sync_editors reads whole editor strings and set despawns non-shader children before markup::render on source changes. This can couple typing to full preview construction. **Scope:** preserve unchanged parsed blocks and entities for one description-edit path, applying only affected text/markup/assets and retaining the latest revision. Compare a bounded deferred expensive preview against synchronous patching where warranted; raw editor feedback must remain immediate and Pretty/Split must converge promptly. Reuse existing shader/media/transclusion lifetimes. **Verify:** paragraph edits, cross-block syntax, links/images/diagrams, shader preservation, raw/pretty/split switches, selection/scroll, errors and close during work. Count parse bytes, entities churned, allocations and latency for small/large documents. Do not silently disable previews or rebuild all content on every cursor move. **Needs:** P102; no second general text renderer.
+} r_2C28QTRHSFACYE70MCH58SRPYS
+
+Extension @park-p119 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}
+
+P120 — Eliminate one proven no-op edit write and its downstream publication. (
+    @park-p120: 0,
+    is #task,
+    #park-performance-task,
+    #park-stage-a1,
+    #part-of @park-dev-03-local-edits-and-storage: 55,
+    #park-workflow @park-development-cycle
+) { r_5FDXR01ABJBD6FW36MWABGMPZQ
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+
+**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · coordinate.
+
+
+**Why:** focus changes, acknowledgements or unchanged serialized state can repeat writes and invalidations without changing the document. **Scope:** choose one actual path from P102, compare canonical revision/value at the correct boundary, and skip only its redundant encoding/SQL/event. Keep statuses, retry/recovery and remote changes correct; operation equality is not authorization equality. **Verify:** focus/blur without edits, repeated equal setters, save acknowledgement, return-to-original text, simultaneous views and failed-save retry. Count writes, invalidations and native updates, with ordinary real edits as the control. Reuse the existing dirty/revision machinery; a new hash over the entire document per tick can cost more than the saved write. **Keep only the measured no-op removal.**
+} r_5FDXR01ABJBD6FW36MWABGMPZQ
+
+Extension @park-p120 "lince.controls" {
+    quantities [{
+        label "Mark verified"
+        value "1"
+    } {
+        label "Reopen task"
+        value "0"
+    }]
+}

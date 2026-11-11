@@ -1,8 +1,5 @@
 use cell::fiote::laboratory::{Options, Report};
-use std::{
-    io::{self, IsTerminal, Write},
-    path::Path,
-};
+use std::io::{self, Write};
 
 pub fn options(args: &[String]) -> io::Result<Options> {
     let options = Options {
@@ -17,7 +14,6 @@ pub fn options(args: &[String]) -> io::Result<Options> {
         "--laboratory-profile",
         "--laboratory-model",
         "--laboratory-reasoning",
-        "--laboratory-vault-password-file",
         "--laboratory-output",
     ] {
         if super::has_arg(args, flag)
@@ -59,19 +55,6 @@ pub fn headless(args: &[String]) -> io::Result<()> {
                     .block_on(cell::fiote::Host::open(engine, data.join("fiote")))
                     .map_err(io::Error::other)?,
             );
-            let password =
-                if let Some(path) = super::arg_value(args, "--laboratory-vault-password-file") {
-                    Some(password_file(Path::new(&path))?)
-                } else if io::stdin().is_terminal() && io::stderr().is_terminal() {
-                    cell::fiote::laboratory::terminal_password().map_err(io::Error::other)?
-                } else {
-                    None
-                };
-            if let Some(password) = password {
-                runtime
-                    .block_on(host.laboratory_unlock(password))
-                    .map_err(io::Error::other)?;
-            }
             let mut connected = cell.runtime().clone();
             connected.fiote = Some(host.clone());
             let _entered = runtime.enter();
@@ -104,34 +87,6 @@ pub fn headless(args: &[String]) -> io::Result<()> {
     }
 }
 
-fn password_file(path: &Path) -> io::Result<cell::FioteSecret> {
-    let file = std::fs::File::open(path)?;
-    let metadata = file.metadata()?;
-    if !metadata.is_file() || metadata.len() > 4096 {
-        return Err(io::Error::other(
-            "Use a password file of at most 4096 bytes",
-        ));
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if metadata.permissions().mode() & 0o077 != 0 {
-            return Err(io::Error::other(
-                "The password file must be readable only by its owner (chmod 600)",
-            ));
-        }
-    }
-    use io::Read;
-    let mut password = cell::FioteSecret::default();
-    file.take(4097).read_to_string(&mut password.0)?;
-    if password.0.len() > 4096 {
-        return Err(io::Error::other("Password file is too large"));
-    }
-    let length = password.0.trim_end_matches(['\r', '\n']).len();
-    password.0.truncate(length);
-    Ok(password)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,19 +103,5 @@ mod tests {
         .unwrap();
         assert_eq!(parsed.record.as_deref(), Some("r_test"));
         assert!(parsed.separate);
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn password_files_require_private_permissions_and_preserve_spaces() {
-        use std::os::unix::fs::PermissionsExt;
-        let path =
-            std::env::temp_dir().join(format!("lince-password-test-{}", uuid::Uuid::new_v4()));
-        std::fs::write(&path, " secret with spaces \n").unwrap();
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
-        assert!(password_file(&path).is_err());
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
-        assert_eq!(password_file(&path).unwrap().0, " secret with spaces ");
-        std::fs::remove_file(path).unwrap();
     }
 }

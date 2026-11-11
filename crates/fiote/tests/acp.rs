@@ -60,7 +60,6 @@ fn tools() -> ToolConnection {
 async fn fixture() -> (tempfile::TempDir, Config, std::sync::Arc<Connection>) {
     let root = tempfile::tempdir().unwrap();
     let mut config = Config {
-        require_vault: false,
         additional_directories: Vec::new(),
         command: env!("CARGO_BIN_EXE_lince-acp-test-agent").into(),
         args: vec![],

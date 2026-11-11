@@ -107,7 +107,6 @@ async fn child(host: &Host, parent: &str) -> String {
         record: uid.clone(),
         settings,
         api_key: Some(Secret("test-child-key".into())),
-        password: None,
     })
     .await
     .unwrap();
@@ -327,7 +326,6 @@ async fn handoff_refuses_cycles_forged_sources_disabled_targets_and_remote_tools
         record: target.clone(),
         settings,
         api_key: None,
-        password: None,
     })
     .await
     .unwrap();

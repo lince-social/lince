@@ -30,13 +30,18 @@ fn main() -> Result<(), Error> {
         return build_info::print();
     }
     if has_arg(&args, "--park-power") {
-        if args.len() != 3 || args[1] != "--park-power" || !matches!(args[2].as_str(), "on" | "off") {
-            return Err(Error::other("Use lince --park-power on|off through an authorized Park helper"));
+        if args.len() != 3 || args[1] != "--park-power" || !matches!(args[2].as_str(), "on" | "off")
+        {
+            return Err(Error::other(
+                "Use lince --park-power on|off through an authorized Park helper",
+            ));
         }
         #[cfg(all(target_os = "linux", feature = "park"))]
         return lince_park::power_client::run(args[2] == "on");
         #[cfg(not(all(target_os = "linux", feature = "park")))]
-        return Err(Error::other("Display-power helpers require Linux and the park feature"));
+        return Err(Error::other(
+            "Display-power helpers require Linux and the park feature",
+        ));
     }
     if args.get(1).is_some_and(|argument| argument == "lingua") {
         if let Err(error) = lingua::dispatch(&args[2..]) {
@@ -215,8 +220,11 @@ fn main() -> Result<(), Error> {
     };
 
     let staged_setup = read_staged_setup()?;
-    let language = startup_language(&args)?
-        .or_else(|| staged_setup.as_ref().and_then(|setup| setup.language.clone()));
+    let language = startup_language(&args)?.or_else(|| {
+        staged_setup
+            .as_ref()
+            .and_then(|setup| setup.language.clone())
+    });
     let staged_password = initial_admin_password(&args)?.or_else(|| {
         staged_setup
             .as_ref()
@@ -479,7 +487,9 @@ fn print_help() {
     println!("      --directory <path> Override the Lince data directory");
     println!("      --language <en|pt-BR|art-x-ithkuil> Choose the interface language at startup");
     println!("      --park           Run the native Wayland desktop (Linux, park feature)");
-    println!("      --park-power on|off  Confirm display power through an authorized helper connection");
+    println!(
+        "      --park-power on|off  Confirm display power through an authorized helper connection"
+    );
     println!(
         "      --park-nested    Run the same Cell-backed compositor inside the current desktop"
     );
@@ -527,9 +537,6 @@ fn print_help() {
         println!("      --laboratory-profile ID  Native connection saved for that Fiote");
         println!("      --laboratory-model ID    Override the model for this test thread only");
         println!("      --laboratory-reasoning LEVEL  Override reasoning for this test only");
-        println!(
-            "      --laboratory-vault-password-file PATH  Protected password file for headless use"
-        );
     }
     println!("      --server         Headless: run the Cell with no window. Requires an");
     println!("                       admin account — pass one on first run:");
@@ -537,6 +544,9 @@ fn print_help() {
     println!("      --initial-admin-password <password>   Same, but visible in `ps`");
     println!();
     println!("Administering a Cell with no window (run as the Cell's own user):");
+    println!(
+        "  lince credentials import-legacy FILE   Recover old encrypted credentials once; no ongoing vault password"
+    );
     println!("  lince organ list                       Contacts, their trust, their login");
     println!("  lince ailuros inspect                  Hardware devices and their Signals");
     println!("  lince ailuros enroll KEY NAME SLUG EXPIRY  Enroll a disabled JPEG camera");

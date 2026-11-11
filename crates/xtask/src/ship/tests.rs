@@ -103,14 +103,14 @@ fn run(revision: &str, status: &str, conclusion: &str, id: u64) -> Run {
 }
 
 #[test]
-fn snapshot_push_includes_edits_additions_and_deletions_and_preserves_later_edits() {
+fn checkout_push_includes_edits_additions_and_deletions_without_creating_worktrees() {
     let repository = Repository::new();
     fs::write(repository.root.join("tracked"), "tested\n").unwrap();
     fs::write(repository.root.join("new"), "included\n").unwrap();
     fs::remove_file(repository.root.join("deleted")).unwrap();
     git_text(&repository.root, &["add", "new"]).unwrap();
     let mut options = options();
-    options.test = vec!["sh".into(), "-c".into(), "test \"$(cat tracked)\" = tested && test -f new && test ! -e deleted && printf 'later\n' > \"$1/tracked\"".into(), "test".into(), repository.root.clone().into()];
+    options.test = vec!["sh".into(), "-c".into(), "test \"$(cat tracked)\" = tested && test -f new && test ! -e deleted && test \"$(pwd)\" = \"$1\"".into(), "test".into(), repository.root.clone().into()];
     let (result, receipt) = repository.run(&options);
     result.unwrap();
     assert_eq!(receipt.stage, "complete");
@@ -130,7 +130,7 @@ fn snapshot_push_includes_edits_additions_and_deletions_and_preserves_later_edit
     assert!(git_text(&repository.remote, &["show", "main:deleted"]).is_err());
     assert_eq!(
         fs::read_to_string(repository.root.join("tracked")).unwrap(),
-        "later\n"
+        "tested\n"
     );
     assert_eq!(
         git_text(&repository.root, &["diff", "--cached", "--name-only"]).unwrap(),
@@ -138,7 +138,7 @@ fn snapshot_push_includes_edits_additions_and_deletions_and_preserves_later_edit
     );
     assert_eq!(
         git_text(&repository.root, &["diff", "--name-only"]).unwrap(),
-        "tracked"
+        ""
     );
     assert!(!repository.root.join(".git/index.lock").exists());
     assert_eq!(
@@ -177,7 +177,11 @@ fn tests_that_modify_source_are_not_pushed() {
     let mut options = options();
     options.test = vec!["sh".into(), "-c".into(), "echo changed > tracked".into()];
     let (result, receipt) = repository.run(&options);
-    assert!(result.unwrap_err().contains("changed the snapshot"));
+    assert!(
+        result
+            .unwrap_err()
+            .contains("changed during checkout testing")
+    );
     assert!(!receipt.pushed);
 }
 

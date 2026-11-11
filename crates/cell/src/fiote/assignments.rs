@@ -246,8 +246,14 @@ impl Host {
                         },
                         |_| false,
                     );
-                    if requires && self.vault.status().await?.1 {
-                        Some("Unlock the provider vault to start this assignment.")
+                    if requires
+                        && self
+                            .credentials
+                            .key(&credentials::slot(&config.settings))
+                            .await?
+                            .is_none()
+                    {
+                        Some("Connect this provider to start this assignment.")
                     } else {
                         None
                     }

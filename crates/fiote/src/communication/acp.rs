@@ -31,8 +31,6 @@ pub use state::SessionState;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
-    #[serde(default)]
-    pub require_vault: bool,
     pub command: PathBuf,
     pub args: Vec<String>,
     pub directory: PathBuf,

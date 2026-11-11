@@ -315,7 +315,6 @@ impl Host {
             supported?;
         }
         self.prepare(record).await?;
-        config.require_vault = false;
         if self.load(record)?.and_then(|saved| saved.agent).as_ref() != Some(&config) {
             if let Some(info) = self
                 .agents
@@ -479,7 +478,10 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
-                    content: forwarded.as_ref().map(|source| source.content(content)).unwrap_or_else(|| content.to_vec()),
+                    content: forwarded
+                        .as_ref()
+                        .map(|source| source.content(content))
+                        .unwrap_or_else(|| content.to_vec()),
                     thread: thread.into(),
                     body: body.into(),
                     author: forwarded.as_ref().map(|source| source.author.clone()),

@@ -29,7 +29,7 @@ impl Options {
             flake: "/home/user/git/xaviduds/nixos#computer".into(),
             install: true,
             timeout: Duration::from_secs(14400),
-            interval: Duration::from_secs(15),
+            interval: Duration::from_secs(300),
             report: None,
             test: Vec::new(),
         };
@@ -171,22 +171,13 @@ fn save(receipt: &Receipt, report: &Path) -> Result<()> {
 }
 
 struct Snapshot {
-    root: PathBuf,
     directory: PathBuf,
     index_lock: PathBuf,
     lock_held: bool,
-    worktree: bool,
 }
 
 impl Drop for Snapshot {
     fn drop(&mut self) {
-        if self.worktree {
-            let _ = output(
-                git(&self.root)
-                    .args(["worktree", "remove", "--force"])
-                    .arg(self.directory.join("source")),
-            );
-        }
         if self.lock_held {
             let _ = fs::remove_file(&self.index_lock);
         }
@@ -200,7 +191,7 @@ pub fn dispatch(root: &Path, arguments: &[OsString]) -> Result<()> {
             "cargo xtask ship [--message TEXT] [--nixos-flake PATH#HOST] [--no-install] [--timeout-seconds N] [--poll-seconds N] [--report PATH] [-- TEST_EXECUTABLE ARGS...]"
         );
         println!(
-            "Commits all nonignored changes on main using a separate index and detached test worktree. The default test is the placeholder 1 + 1 == 2. A custom test runs in the snapshot with no shell expansion. Concurrent edits remain uncommitted. Git index operations are locked until the tested snapshot is committed."
+            "Commits all nonignored changes on main using a separate index. Tests run in the current checkout; no worktree is created. The default test is the placeholder 1 + 1 == 2. Supply a real custom test command. Source changes during testing are preserved and stop publication. Git index operations are locked until the tested snapshot is committed. Workflow polling defaults to 300 seconds."
         );
         println!(
             "Waits only for this commit's successful build.yml push run. Installation performs the lin equivalent with a revision check before switching and requires existing sudo authorization. It does not restart Park or claim live activation. The JSON receipt distinguishes installed from active; errors exit nonzero. Default receipt: .git/lince-ship.json."
@@ -290,11 +281,9 @@ fn execute(
     ));
     fs::create_dir(&directory).map_err(|error| error.to_string())?;
     let mut snapshot = Snapshot {
-        root: root.into(),
         directory,
         index_lock: git_directory.join("index.lock"),
         lock_held: false,
-        worktree: false,
     };
     let mut index_lock = OpenOptions::new()
         .write(true)
@@ -325,20 +314,12 @@ fn execute(
         )?
     };
     receipt.revision = Some(revision.clone());
-    let source = snapshot.directory.join("source");
-    output(
-        git(root)
-            .args(["worktree", "add", "--detach"])
-            .arg(&source)
-            .arg(&revision),
-    )?;
-    snapshot.worktree = true;
     stage(receipt, report, "testing")?;
     if let Some(program) = options.test.first() {
         crate::checked(
             Command::new(program)
                 .args(&options.test[1..])
-                .current_dir(&source)
+                .current_dir(root)
                 .stdin(Stdio::null()),
         )?;
         receipt.tests = Some("custom".into());
@@ -349,12 +330,14 @@ fn execute(
         }
         receipt.tests = Some("placeholder: 1 + 1 == 2".into());
     }
-    if git_text(
-        &source,
-        &["status", "--porcelain", "--untracked-files=normal"],
-    )? != ""
-    {
-        return Err("Tests changed the snapshot; refusing to push untested source".into());
+    output(
+        git(root)
+            .env("GIT_INDEX_FILE", &index)
+            .args(["add", "--all", "--", "."]),
+    )?;
+    let tested_tree = output(git(root).env("GIT_INDEX_FILE", &index).arg("write-tree"))?;
+    if tested_tree.trim() != tree {
+        return Err("Source changed during checkout testing; edits were preserved and no commit was published".into());
     }
     stage(receipt, report, "committing")?;
     if git_text(root, &["symbolic-ref", "HEAD"])? != branch {

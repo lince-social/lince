@@ -74,7 +74,6 @@ fn main() {
             cell::fiote_connection::Request::Select {
                 id: "live-render".into(),
                 api_key: None,
-                password: None,
             },
         ] {
             let replies = session

@@ -18,8 +18,8 @@ impl Host {
             )
         };
         let name = self
-            .vault
-            .key(&vault::slot(settings))
+            .credentials
+            .key(&credentials::slot(settings))
             .await
             .ok()
             .flatten()
@@ -210,11 +210,7 @@ impl Host {
                 status.profiles.entries.retain(|entry| entry.id != id);
                 save(&self.profile_path(record)?, &status.profiles)?;
             }
-            connection::Request::Select {
-                id,
-                api_key,
-                password,
-            } => {
+            connection::Request::Select { id, api_key } => {
                 let profile = status
                     .profiles
                     .entries
@@ -225,16 +221,16 @@ impl Host {
                     Connection::Model { settings } => {
                         let mut settings = settings.clone();
                         settings.enabled = true;
-                        self.configure(record, settings, api_key, password).await?;
+                        self.configure(record, settings, api_key).await?;
                     }
                     Connection::Harness { config } => {
-                        if api_key.is_some() || password.is_some() {
+                        if api_key.is_some() {
                             return Err("The harness manages its own authentication.".into());
                         }
                         self.configure_agent(record, config.clone()).await?;
                     }
                     Connection::External => {
-                        if api_key.is_some() || password.is_some() {
+                        if api_key.is_some() {
                             return Err("External tool connections use their scoped connection credentials.".into());
                         }
                         if self
@@ -282,7 +278,7 @@ impl Host {
                 if !fiote::communication::native::has_native_login(settings) {
                     return Err("Use the connection's credential editor for API keys.".into());
                 }
-                let slot = vault::slot(settings);
+                let slot = credentials::slot(settings);
                 let lock = self
                     .refresh_locks
                     .lock()
@@ -291,16 +287,15 @@ impl Host {
                     .or_default()
                     .clone();
                 let _guard = lock.lock().await;
-                let credential = vault::Credential {
-                    vault: self.vault.clone(),
-                    directory: self.directory.clone(),
+                let credential = credentials::Credential {
+                    store: self.credentials.clone(),
                     slot: slot.clone(),
                 };
                 let _process_guard =
                     fiote::communication::auth::CredentialStore::refresh_guard(&credential).await?;
                 let key = fiote::communication::auth::CredentialStore::read(&credential).await?;
                 let (key, detail) = fiote::communication::native::logout(settings, &key).await?;
-                self.vault.put(slot, key).await?;
+                self.credentials.put(slot, key).await?;
                 status.check = Some(connection::Check {
                     profile: id,
                     ready: false,
@@ -326,16 +321,16 @@ impl Host {
                     if self.catalog.method(settings)?.kind == fiote::adapters::AuthKind::None {
                         Secret::default()
                     } else {
-                        self.vault
-                            .key(&vault::slot(settings))
+                        self.credentials
+                            .key(&credentials::slot(settings))
                             .await?
-                            .ok_or("Unlock this connection's credential vault.")?
+                            .ok_or("Sign in to this connection.")?
                     };
                 let lock = self
                     .refresh_locks
                     .lock()
                     .await
-                    .entry(vault::slot(settings))
+                    .entry(credentials::slot(settings))
                     .or_default()
                     .clone();
                 let provider: Arc<dyn Provider> =
@@ -349,10 +344,9 @@ impl Host {
                         fiote::communication::native::provider(
                             settings,
                             &credential,
-                            Some(Arc::new(vault::Credential {
-                                vault: self.vault.clone(),
-                                directory: self.directory.clone(),
-                                slot: vault::slot(settings),
+                            Some(Arc::new(credentials::Credential {
+                                store: self.credentials.clone(),
+                                slot: credentials::slot(settings),
                             })),
                             Some(lock),
                         )?
@@ -414,10 +408,8 @@ impl Host {
                     .find(|entry| entry.id == id)
                     .ok_or("This connection no longer exists.")?;
                 let credential = if let Connection::Model { settings } = &profile.connection {
-                    if self.catalog.method(settings)?.kind != fiote::adapters::AuthKind::None
-                        && !self.vault.status().await?.1
-                    {
-                        self.vault.key(&vault::slot(settings)).await?
+                    if self.catalog.method(settings)?.kind != fiote::adapters::AuthKind::None {
+                        self.credentials.key(&credentials::slot(settings)).await?
                     } else {
                         None
                     }
@@ -425,7 +417,7 @@ impl Host {
                     None
                 };
                 let session = if let Connection::Model { settings } = &profile.connection {
-                    let slot = vault::slot(settings);
+                    let slot = credentials::slot(settings);
                     let lock = self
                         .refresh_locks
                         .lock()
@@ -434,9 +426,8 @@ impl Host {
                         .or_default()
                         .clone();
                     Some(fiote::communication::native::session(
-                        Arc::new(vault::Credential {
-                            vault: self.vault.clone(),
-                            directory: self.directory.clone(),
+                        Arc::new(credentials::Credential {
+                            store: self.credentials.clone(),
                             slot,
                         }),
                         lock,
@@ -528,7 +519,6 @@ mod tests {
             Request::Select {
                 id: "local".into(),
                 api_key: None,
-                password: None,
             },
         ] {
             host.handle(fiote::config::Request::Connections {
@@ -543,7 +533,6 @@ mod tests {
             record: record.clone(),
             settings,
             api_key: None,
-            password: None,
         })
         .await
         .unwrap();
@@ -552,7 +541,6 @@ mod tests {
             Request::Select {
                 id: "local".into(),
                 api_key: None,
-                password: None,
             },
         ] {
             host.handle(fiote::config::Request::Connections {
@@ -591,7 +579,6 @@ mod tests {
             command: "own-compatible-harness".into(),
             args: Vec::new(),
             directory: root.path().into(),
-            require_vault: false,
             additional_directories: Vec::new(),
             environment: BTreeMap::new(),
             session_meta: serde_json::Map::new(),
@@ -610,7 +597,6 @@ mod tests {
             Request::Select {
                 id: "harness".into(),
                 api_key: None,
-                password: None,
             },
         ] {
             host.handle(fiote::config::Request::Connections {
@@ -638,7 +624,6 @@ mod tests {
             Request::Select {
                 id: "harness".into(),
                 api_key: None,
-                password: None,
             },
         ] {
             host.handle(fiote::config::Request::Connections {
@@ -701,7 +686,6 @@ mod tests {
                 request: Request::Select {
                     id: "own-ai".into(),
                     api_key: None,
-                    password: None,
                 },
             })
             .await

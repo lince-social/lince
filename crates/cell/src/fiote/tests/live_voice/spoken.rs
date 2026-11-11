@@ -61,8 +61,11 @@ async fn actual_recorded_speech_uses_native_conversation_followups_closing_and_s
     settings.directory = root.path().join("workspace");
     std::fs::create_dir(&settings.directory).unwrap();
     settings.enabled = true;
-    base.vault.put(vault::slot(&settings), key).await.unwrap();
-    base.configure(&record, settings, None, None).await.unwrap();
+    base.credentials
+        .put(credentials::slot(&settings), key)
+        .await
+        .unwrap();
+    base.configure(&record, settings, None).await.unwrap();
     let mut host = base.as_ref().clone();
     host.provider = None;
     let host = Arc::new(host);

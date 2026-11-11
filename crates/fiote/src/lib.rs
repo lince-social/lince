@@ -1,9 +1,10 @@
-pub mod binary;
 pub mod assistant;
+pub mod binary;
 pub mod communication;
 pub mod config;
 pub mod conversation;
 pub mod credential;
+pub mod credentials;
 pub mod cub;
 pub mod prompt;
 pub mod runtime;

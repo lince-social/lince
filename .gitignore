@@ -31,3 +31,6 @@ app-signing.password
 play-upload.password
 /.lince-dev/
 /.cache-lince-hand/
+
+__pycache__/
+*.pyc

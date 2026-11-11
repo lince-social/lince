@@ -55,7 +55,7 @@ tokio = { workspace = true }
 zeroize = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.4", features = ["process"] }
+rustix = { version = "=1.1.4", features = ["process", "fs"] }
 
 [dev-dependencies]
 chrono = { workspace = true }

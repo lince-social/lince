@@ -550,7 +550,7 @@ def package(arguments):
         "crates/park/src/runtime/latency/tests/visible.rs",
     )]
     fixture_sha256 = hashlib.sha256("\n".join(digest(path) for path in fixture_paths).encode()).hexdigest()
-    attribution = Path(__file__).resolve().parents[3] / "institute/anicca/park/measurement-changes.json"
+    attribution = Path(__file__).resolve().parents[3] / "institute/trails/lince/park/measurement-changes.json"
     shutil.copy2(attribution, root / "changes.json")
     source = Path(__file__).parent
     for filename in ("performance.py", "report.py"):

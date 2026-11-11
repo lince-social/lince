@@ -201,8 +201,8 @@ impl Host {
                 Secret::default()
             } else {
                 self
-                    .vault
-                    .key(&vault::slot(&configuration.settings))
+                    .credentials
+                    .key(&credentials::slot(&configuration.settings))
                     .await?
                     .ok_or("Sign in to the chosen Fiote's connection before sending. Your request remains unsent.")?
             };

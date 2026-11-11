@@ -27,7 +27,7 @@ mod wake_tests;
 pub struct Host {
     path: PathBuf,
     state: Mutex<State>,
-    vault: Option<Arc<crate::fiote::vault::Vault>>,
+    credentials: Arc<crate::fiote::credentials::Store>,
     local: Arc<speech::recognition::Recognizer>,
     voice: speech::voice::Service,
     wake_profile: std::sync::Mutex<Option<speech::wake::Profile>>,
@@ -73,12 +73,12 @@ impl Drop for Running {
 
 impl Host {
     pub fn open(path: PathBuf) -> Result<Self, String> {
-        Self::open_with_vault(path, None)
+        Self::open_with_credentials(path, None)
     }
 
-    pub(crate) fn open_with_vault(
+    pub(crate) fn open_with_credentials(
         path: PathBuf,
-        vault: Option<Arc<crate::fiote::vault::Vault>>,
+        credentials: Option<Arc<crate::fiote::credentials::Store>>,
     ) -> Result<Self, String> {
         let endpoint: Option<endpoint::Settings> =
             match std::fs::read(path.with_extension("endpoint.json")) {
@@ -127,12 +127,18 @@ impl Host {
             }
             Err(error) => return Err(error.to_string()),
         };
-        let (wake_profile, wake_error) = match load_wake_profile(&path.with_extension("wake.json")) {
+        let (wake_profile, wake_error) = match load_wake_profile(&path.with_extension("wake.json"))
+        {
             Ok(profile) => (profile, None),
             Err(error) => (None, Some(error)),
         };
+        let credentials = credentials.unwrap_or_else(|| {
+            Arc::new(crate::fiote::credentials::Store::new(
+                path.parent().unwrap().join("fiote/credentials"),
+            ))
+        });
         Ok(Self {
-            vault,
+            credentials,
             path,
             state: Mutex::new(State {
                 mode,
@@ -183,12 +189,22 @@ impl Host {
         }
         self.local.unload();
         let mut state = self.state.lock().await;
-        state.decision = Arc::new(decision::Engine::selected(self.models.clone(), state.decision_selection));
+        state.decision = Arc::new(decision::Engine::selected(
+            self.models.clone(),
+            state.decision_selection,
+        ));
     }
 
     fn available(&self, request: &Request) -> Result<(), String> {
         if self.closing.load(Ordering::Acquire)
-            && !matches!(request, Request::Inspect | Request::Poll { .. } | Request::Cancel { .. } | Request::StopListening { .. } | Request::PauseListening { .. })
+            && !matches!(
+                request,
+                Request::Inspect
+                    | Request::Poll { .. }
+                    | Request::Cancel { .. }
+                    | Request::StopListening { .. }
+                    | Request::PauseListening { .. }
+            )
         {
             return Err("Speech is shutting down. No new work was started.".into());
         }
@@ -202,10 +218,7 @@ impl Host {
         if !endpoint.requires_key {
             return Ok(None);
         }
-        match &self.vault {
-            Some(vault) if !vault.status().await?.1 => vault.key(&endpoint.slot()).await,
-            _ => Ok(None),
-        }
+        self.credentials.key(&endpoint.slot()).await
     }
 }
 
@@ -221,15 +234,39 @@ impl transport::speech::Service for Host {
                 result.listening = self.listening.status().await;
                 return Ok(result);
             }
-            Request::StartListening { mode, owner, target, routing } => {
-                if *mode == ListeningMode::Wake && self.wake_profile.lock().map_err(|_| "Wake setup is unavailable.")?.is_none() {
+            Request::StartListening {
+                mode,
+                owner,
+                target,
+                routing,
+            } => {
+                if *mode == ListeningMode::Wake
+                    && self
+                        .wake_profile
+                        .lock()
+                        .map_err(|_| "Wake setup is unavailable.")?
+                        .is_none()
+                {
                     return Err("Record three Hey Fiote examples or import a compatible wake reference before enabling wake mode. Dictation and addressed requests remain available.".into());
                 }
                 let state = self.state.lock().await;
                 self.available(&request)?;
                 idle(&state)?;
-                let fiote = self.fiote.clone().ok_or("The local Fiote harness is unavailable.")?;
-                self.listening.start(*mode, owner.clone(), target.clone(), *routing, self.local.clone(), state.decision.clone(), fiote).await?;
+                let fiote = self
+                    .fiote
+                    .clone()
+                    .ok_or("The local Fiote harness is unavailable.")?;
+                self.listening
+                    .start(
+                        *mode,
+                        owner.clone(),
+                        target.clone(),
+                        *routing,
+                        self.local.clone(),
+                        state.decision.clone(),
+                        fiote,
+                    )
+                    .await?;
                 let mut result = status(&state, self);
                 result.listening = self.listening.status().await;
                 return Ok(result);
@@ -250,14 +287,28 @@ impl transport::speech::Service for Host {
                 result.listening = self.listening.status().await;
                 return Ok(result);
             }
-            Request::ListeningSegment { owner, generation, segment, audio } => {
-                self.listening.push(owner, *generation, *segment, audio.clone()).await?;
+            Request::ListeningSegment {
+                owner,
+                generation,
+                segment,
+                audio,
+            } => {
+                self.listening
+                    .push(owner, *generation, *segment, audio.clone())
+                    .await?;
                 let mut result = status(&*self.state.lock().await, self);
                 result.listening = self.listening.status().await;
                 return Ok(result);
             }
-            Request::WokenSegment { owner, generation, segment, audio } => {
-                self.listening.push_woken(owner, *generation, *segment, audio.clone()).await?;
+            Request::WokenSegment {
+                owner,
+                generation,
+                segment,
+                audio,
+            } => {
+                self.listening
+                    .push_woken(owner, *generation, *segment, audio.clone())
+                    .await?;
                 let mut result = status(&*self.state.lock().await, self);
                 result.listening = self.listening.status().await;
                 return Ok(result);
@@ -266,7 +317,12 @@ impl transport::speech::Service for Host {
         }
         let mut state = self.state.lock().await;
         self.available(&request)?;
-        if self.listening.active() && !matches!(&request, Request::Inspect | Request::Poll { .. } | Request::Cancel { .. }) {
+        if self.listening.active()
+            && !matches!(
+                &request,
+                Request::Inspect | Request::Poll { .. } | Request::Cancel { .. }
+            )
+        {
             return Err("Stop general listening and wait for its local inference before changing models or starting dictation.".into());
         }
         let include_job = matches!(
@@ -304,13 +360,27 @@ impl transport::speech::Service for Host {
             state.job = None;
         }
         match request {
-            Request::Voice { .. } | Request::StartListening { .. } | Request::StopListening { .. } | Request::PauseListening { .. } | Request::ResumeListening { .. } | Request::ListeningSegment { .. } | Request::WokenSegment { .. } => unreachable!(),
+            Request::Voice { .. }
+            | Request::StartListening { .. }
+            | Request::StopListening { .. }
+            | Request::PauseListening { .. }
+            | Request::ResumeListening { .. }
+            | Request::ListeningSegment { .. }
+            | Request::WokenSegment { .. } => unreachable!(),
             Request::ConfigureWake { profile } => {
                 idle(&state)?;
-                if let Some(profile) = &profile { profile.validate()?; }
+                if let Some(profile) = &profile {
+                    profile.validate()?;
+                }
                 save_value(&self.path.with_extension("wake.json"), &profile)?;
-                *self.wake_profile.lock().map_err(|_| "Wake setup is unavailable.")? = profile;
-                *self.wake_error.lock().map_err(|_| "Wake setup is unavailable.")? = None;
+                *self
+                    .wake_profile
+                    .lock()
+                    .map_err(|_| "Wake setup is unavailable.")? = profile;
+                *self
+                    .wake_error
+                    .lock()
+                    .map_err(|_| "Wake setup is unavailable.")? = None;
             }
             Request::SelectDecision { model } => {
                 idle(&state)?;
@@ -490,42 +560,25 @@ impl transport::speech::Service for Host {
             Request::ConfigureEndpoint {
                 mut settings,
                 credential,
-                password,
             } => {
                 idle(&state)?;
                 settings.validate()?;
-                if let Some(password) = password {
-                    self.vault
-                        .as_ref()
-                        .ok_or("This speech host has no credential vault.")?
-                        .unlock(password)
-                        .await?;
-                }
                 if let Some(credential) = credential {
                     if credential.0.is_empty() || credential.0.len() > 8192 {
                         return Err("Enter a transcription key of at most 8 KiB.".into());
                     }
-                    self.vault
-                        .as_ref()
-                        .ok_or("This speech host has no credential vault.")?
-                        .put(settings.slot(), credential)
-                        .await?;
+                    self.credentials.put(settings.slot(), credential).await?;
                 }
                 if settings.requires_key && self.endpoint_key(&settings).await?.is_none() {
-                    return Err("Unlock the vault and save the transcription key before configuring this endpoint.".into());
+                    return Err(
+                        "Save the transcription key before configuring this endpoint.".into(),
+                    );
                 }
                 save_value(&self.path.with_extension("endpoint.json"), &Some(&settings))?;
                 state.endpoint = Some(settings);
                 state.endpoint_ready = true;
                 save_value(&self.path.with_extension("mode.json"), &Mode::Endpoint)?;
                 state.mode = Mode::Endpoint;
-            }
-            Request::UnlockEndpoint { password } => {
-                self.vault
-                    .as_ref()
-                    .ok_or("This speech host has no credential vault.")?
-                    .unlock(password)
-                    .await?;
             }
             Request::Inspect => {}
             Request::StartEndpoint {
@@ -556,9 +609,7 @@ impl transport::speech::Service for Host {
                 speech::validate_audio(&audio.0)?;
                 let key = self.endpoint_key(&settings).await?;
                 if settings.requires_key && key.is_none() {
-                    return Err(
-                        "Unlock the transcription credential vault. No audio was sent.".into(),
-                    );
+                    return Err("Configure the transcription API key. No audio was sent.".into());
                 }
                 let task = tokio::spawn(async move {
                     endpoint::transcribe(settings, key, audio)
@@ -693,7 +744,7 @@ fn status(state: &State, host: &Host) -> Status {
     } else if state.endpoint.is_none() {
         "Configure a transcription endpoint before recording."
     } else if !state.endpoint_ready {
-        "Unlock the vault and configure the transcription key."
+        "Configure the transcription API key."
     } else {
         "Speech configuration is ready. This check sends no audio and does not verify a billed transcription. Speech usage and cost are not reported by this tool."
     };
@@ -739,12 +790,24 @@ fn load_wake_profile(path: &Path) -> Result<Option<speech::wake::Profile>, Strin
         Err(error) => return Err(format!("Cannot read saved wake references: {error}")),
     };
     let metadata = file.metadata().map_err(|error| error.to_string())?;
-    if !metadata.is_file() || metadata.len() > 524_288 { return Err("Saved wake reference file has an unsupported type or size. Import or record it again.".into()); }
+    if !metadata.is_file() || metadata.len() > 524_288 {
+        return Err(
+            "Saved wake reference file has an unsupported type or size. Import or record it again."
+                .into(),
+        );
+    }
     let mut bytes = Vec::new();
-    file.take(524_289).read_to_end(&mut bytes).map_err(|error| error.to_string())?;
-    if bytes.len() > 524_288 { return Err("Saved wake references exceed their size limit.".into()); }
-    let profile: Option<speech::wake::Profile> = serde_json::from_slice(&bytes).map_err(|_| "Saved wake references are invalid. Import or record them again.")?;
-    if let Some(profile) = &profile { profile.validate()?; }
+    file.take(524_289)
+        .read_to_end(&mut bytes)
+        .map_err(|error| error.to_string())?;
+    if bytes.len() > 524_288 {
+        return Err("Saved wake references exceed their size limit.".into());
+    }
+    let profile: Option<speech::wake::Profile> = serde_json::from_slice(&bytes)
+        .map_err(|_| "Saved wake references are invalid. Import or record them again.")?;
+    if let Some(profile) = &profile {
+        profile.validate()?;
+    }
     Ok(profile)
 }
 
@@ -1009,32 +1072,80 @@ mod decision_tests {
     async fn shutdown_cancels_owned_work_refuses_new_jobs_and_waits_for_native_cpu_return() {
         struct Release(Arc<AtomicBool>);
         impl Drop for Release {
-            fn drop(&mut self) { self.0.store(true, Ordering::Release); }
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::Release);
+            }
         }
         let root = tempfile::tempdir().unwrap();
         let mut host = Host::open(root.path().join("speech.json")).unwrap();
         let started = Arc::new(AtomicBool::new(false));
         let release = Arc::new(AtomicBool::new(false));
         let guard = Release(release.clone());
-        host.state.get_mut().decision = Arc::new(decision::Engine::from_model(Arc::new(BlockingModel { started: started.clone(), release })));
+        host.state.get_mut().decision =
+            Arc::new(decision::Engine::from_model(Arc::new(BlockingModel {
+                started: started.clone(),
+                release,
+            })));
         let host = Arc::new(host);
         let job = nucleus::new_uid("speech");
-        host.handle(Request::InstallDecision { job: job.clone(), source: None }).await.unwrap();
+        host.handle(Request::InstallDecision {
+            job: job.clone(),
+            source: None,
+        })
+        .await
+        .unwrap();
         tokio::time::timeout(Duration::from_secs(2), async {
-            while !started.load(Ordering::Acquire) { tokio::task::yield_now().await; }
-        }).await.unwrap();
-        let shutdown = { let host = host.clone(); tokio::spawn(async move { host.shutdown().await }) };
+            while !started.load(Ordering::Acquire) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        let shutdown = {
+            let host = host.clone();
+            tokio::spawn(async move { host.shutdown().await })
+        };
         tokio::time::timeout(Duration::from_secs(2), async {
-            while !host.closing.load(Ordering::Acquire) { tokio::task::yield_now().await; }
-        }).await.unwrap();
+            while !host.closing.load(Ordering::Acquire) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
         assert!(!shutdown.is_finished());
-        assert!(host.handle(Request::InstallDecision { job: nucleus::new_uid("speech"), source: None }).await.unwrap_err().contains("shutting down"));
-        assert!(host.handle(Request::SelectDecision { model: decision::ModelId::Qwen }).await.unwrap_err().contains("shutting down"));
+        assert!(
+            host.handle(Request::InstallDecision {
+                job: nucleus::new_uid("speech"),
+                source: None
+            })
+            .await
+            .unwrap_err()
+            .contains("shutting down")
+        );
+        assert!(
+            host.handle(Request::SelectDecision {
+                model: decision::ModelId::Qwen
+            })
+            .await
+            .unwrap_err()
+            .contains("shutting down")
+        );
         assert!(!host.handle(Request::Inspect).await.unwrap().ready);
         drop(guard);
-        tokio::time::timeout(Duration::from_secs(2), shutdown).await.unwrap().unwrap();
+        tokio::time::timeout(Duration::from_secs(2), shutdown)
+            .await
+            .unwrap()
+            .unwrap();
         assert!(host.handle(Request::Poll { job }).await.is_err());
-        assert!(!host.handle(Request::Inspect).await.unwrap().decision_model.unwrap().loaded);
+        assert!(
+            !host
+                .handle(Request::Inspect)
+                .await
+                .unwrap()
+                .decision_model
+                .unwrap()
+                .loaded
+        );
         host.shutdown().await;
     }
 
@@ -1150,6 +1261,32 @@ mod decision_tests {
 mod endpoint_tests {
     use super::*;
     use transport::speech::Service;
+
+    #[tokio::test]
+    async fn transcription_credentials_survive_restart_without_unlocking() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("speech.json");
+        let settings = endpoint::Settings {
+            url: "http://127.0.0.1:6174/transcribe".into(),
+            model: "test".into(),
+            requires_key: true,
+            allow_cloud: false,
+        };
+        Host::open(path.clone())
+            .unwrap()
+            .handle(Request::ConfigureEndpoint {
+                settings: settings.clone(),
+                credential: Some(::fiote::config::Secret("local transcription key".into())),
+            })
+            .await
+            .unwrap();
+        let reopened = Host::open(path).unwrap();
+        assert_eq!(
+            reopened.endpoint_key(&settings).await.unwrap().unwrap().0,
+            "local transcription key"
+        );
+        assert!(reopened.handle(Request::Inspect).await.unwrap().ready);
+    }
 
     #[tokio::test]
     async fn unconfigured_speech_reports_setup_without_starting_an_agent() {
@@ -1366,7 +1503,6 @@ mod endpoint_tests {
         host.handle(Request::ConfigureEndpoint {
             settings: endpoint.clone(),
             credential: None,
-            password: None,
         })
         .await
         .unwrap();
@@ -1435,7 +1571,6 @@ mod endpoint_tests {
             .handle(Request::ConfigureEndpoint {
                 settings: endpoint.clone(),
                 credential: None,
-                password: None,
             })
             .await
             .unwrap();

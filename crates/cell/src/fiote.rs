@@ -24,10 +24,11 @@ mod assignments;
 mod behavior;
 mod connections;
 mod context;
-mod history;
-mod handoff;
-mod intake;
+pub(crate) mod credentials;
 mod entry;
+mod handoff;
+mod history;
+mod intake;
 pub mod laboratory;
 mod mentions;
 mod output;
@@ -39,7 +40,6 @@ mod timeline;
 mod usage;
 mod voice;
 mod working_directory;
-pub(crate) mod vault;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Configuration {
@@ -80,7 +80,7 @@ pub struct Host {
     directory: PathBuf,
     running: Arc<Mutex<HashMap<String, Running>>>,
     provider: Option<Arc<dyn Provider>>,
-    vault: Arc<vault::Vault>,
+    credentials: Arc<credentials::Store>,
     login: Arc<Mutex<Option<Login>>>,
     refresh_locks: Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>,
     catalog: Arc<fiote::adapters::Catalog>,
@@ -89,12 +89,12 @@ pub struct Host {
 
 impl Host {
     pub fn with_provider(mut self, provider: Arc<dyn Provider>) -> Self {
-        self.provider=Some(provider);
+        self.provider = Some(provider);
         self
     }
 
-    pub(crate) fn shared_vault(&self) -> Arc<vault::Vault> {
-        self.vault.clone()
+    pub(crate) fn shared_credentials(&self) -> Arc<credentials::Store> {
+        self.credentials.clone()
     }
 
     async fn cancel_login(&self) {
@@ -112,7 +112,7 @@ impl Host {
             assignments: Arc::new(Mutex::new(assignments::Queue::load(&directory)?)),
             activation_dispatch: Arc::new(Mutex::new(())),
             handoff_dispatch: Arc::new(Mutex::new(())),
-            vault: Arc::new(vault::Vault::new(engine.clone())),
+            credentials: Arc::new(credentials::Store::new(directory.join("credentials"))),
             login: Arc::new(Mutex::new(None)),
             refresh_locks: Default::default(),
             catalog: Arc::new(fiote::adapters::Catalog::load(&directory).await?),
@@ -244,7 +244,6 @@ impl Host {
             .filter(|(_, run)| run.record == record)
             .map(|(thread, _)| thread.clone())
             .collect();
-        let (vault_exists, locked) = self.vault.status().await?;
         let (login_url, login_pending) = {
             let login = self.login.lock().await;
             (
@@ -265,6 +264,14 @@ impl Host {
                         method.kind != fiote::adapters::AuthKind::None
                     })
         });
+        let has_key = match config.as_ref().filter(|_| requires_credential) {
+            Some(config) => self
+                .credentials
+                .key(&credentials::slot(&config.settings))
+                .await?
+                .is_some(),
+            None => false,
+        };
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
             assistant_reply: None,
@@ -296,12 +303,10 @@ impl Host {
             agent_activity: self.agents.activity(record).await,
             tool_connections: self.tool_connections(record).await,
             record: record.into(),
-            has_key: requires_credential && vault_exists,
+            has_key,
             requires_credential,
             provider_diagnostics: self.catalog.diagnostics.clone(),
             providers: self.catalog.descriptors.clone(),
-            vault_exists,
-            locked,
             login_url,
             login_pending,
             settings: config.map(|config| config.settings).unwrap_or_default(),
@@ -314,11 +319,10 @@ impl Host {
         record: &str,
         settings: Settings,
         key: Option<Secret>,
-        password: Option<Secret>,
     ) -> Result<(), String> {
         self.engine
             .access_scope(true, async {
-                self.configure_inner(record, settings, key, password)
+                self.configure_inner(record, settings, key)
                     .await
                     .map_err(engine::EngineError::Consequence)
             })
@@ -331,7 +335,6 @@ impl Host {
         record: &str,
         mut settings: Settings,
         key: Option<Secret>,
-        password: Option<Secret>,
     ) -> Result<(), String> {
         self.record(record).await?;
         let running = self.running.lock().await;
@@ -350,17 +353,20 @@ impl Host {
             self.catalog.validate(&mut settings)?;
         }
         self.prepare(record).await?;
-        if let Some(password) = password {
-            self.vault.unlock(password).await?;
-        }
         if let Some(key) = key {
             if key.0.is_empty() || key.0.len() > 65_536 {
                 return Err("Enter a credential of at most 64 KiB.".into());
             }
-            self.vault.put(vault::slot(&settings), key).await?;
+            self.credentials
+                .put(credentials::slot(&settings), key)
+                .await?;
         }
         if self.catalog.method(&settings)?.kind != fiote::adapters::AuthKind::None
-            && self.vault.key(&vault::slot(&settings)).await?.is_none()
+            && self
+                .credentials
+                .key(&credentials::slot(&settings))
+                .await?
+                .is_none()
         {
             return Err("Use /login to save a credential for this provider.".into());
         }
@@ -406,7 +412,6 @@ impl Host {
             open.connection.close().await;
         }
         self.cancel_login().await;
-        self.vault.lock().await;
         drop(running);
     }
 
@@ -491,11 +496,19 @@ fn save(path: &Path, value: &impl Serialize) -> Result<(), String> {
 
 #[async_trait::async_trait]
 impl Service for Host {
-    async fn discover(&self, offset: usize, limit: usize) -> Result<fiote::assistant::Directory, String> {
+    async fn discover(
+        &self,
+        offset: usize,
+        limit: usize,
+    ) -> Result<fiote::assistant::Directory, String> {
         self.assistant_directory(offset, limit).await
     }
 
-    async fn delegate(&self, source: fiote::assistant::Source, request: fiote::assistant::Delegate) -> Result<fiote::assistant::Handoff, String> {
+    async fn delegate(
+        &self,
+        source: fiote::assistant::Source,
+        request: fiote::assistant::Delegate,
+    ) -> Result<fiote::assistant::Handoff, String> {
         self.delegate_request(source, request).await
     }
 
@@ -516,7 +529,11 @@ impl Service for Host {
             status.assistant_request = Some(receipt);
             return Ok(status);
         }
-        if let Request::AssistantContinue { request, conversation } = request {
+        if let Request::AssistantContinue {
+            request,
+            conversation,
+        } = request
+        {
             let receipt = self.assistant_continue(request, conversation).await?;
             let mut status = self.status(&receipt.target).await?;
             status.assistant_request = Some(receipt);
@@ -545,11 +562,17 @@ impl Service for Host {
             _ => None,
         };
         let record = match request {
-            Request::AssistantDirectory { record, offset, limit } => {
+            Request::AssistantDirectory {
+                record,
+                offset,
+                limit,
+            } => {
                 assistant_directory = Some(self.assistant_directory(offset, limit).await?);
                 record
             }
-            Request::AssistantSend { .. } | Request::AssistantContinue { .. } | Request::AssistantInspect { .. } => unreachable!(),
+            Request::AssistantSend { .. }
+            | Request::AssistantContinue { .. }
+            | Request::AssistantInspect { .. } => unreachable!(),
             Request::Delete { record } => {
                 if !self
                     .running
@@ -770,20 +793,8 @@ impl Service for Host {
                 self.prepare(&record).await?;
                 record
             }
-            Request::Unlock { record, password } => {
-                self.record(&record).await?;
-                self.vault.unlock(password).await?;
-                record
-            }
-            Request::Lock { record } => {
-                self.stop_all().await;
-                self.cancel_login().await;
-                self.vault.lock().await;
-                record
-            }
             Request::BrowserStart {
                 record,
-                password,
                 mut settings,
             } => {
                 self.record(&record).await?;
@@ -798,12 +809,11 @@ impl Service for Host {
                         "A browser login is already pending. Cancel it or finish it first.".into(),
                     );
                 }
-                self.vault.unlock(password).await?;
                 let (url, task) = if fiote::communication::native::has_native_login(&settings) {
                     let previous = if settings.account.is_empty() {
                         None
                     } else {
-                        self.vault.key(&vault::slot(&settings)).await?
+                        self.credentials.key(&credentials::slot(&settings)).await?
                     };
                     let attempt = fiote::communication::native::login(
                         &mut settings,
@@ -846,7 +856,7 @@ impl Service for Host {
                     let key = pending.task.await.map_err(|_| "Browser login stopped.")??;
                     let mut settings = pending.settings;
                     if fiote::communication::native::has_native_login(&settings) {
-                        self.configure(&record, settings.clone(), Some(key.clone()), None)
+                        self.configure(&record, settings.clone(), Some(key.clone()))
                             .await?;
                         self.save_native_profile(&record, &settings).await?;
                         if !fiote::communication::native::account_ready(&settings, &key)? {
@@ -859,10 +869,9 @@ impl Service for Host {
                         let provider = fiote::communication::native::provider(
                             &settings,
                             &key,
-                            Some(Arc::new(vault::Credential {
-                                vault: self.vault.clone(),
-                                directory: self.directory.clone(),
-                                slot: vault::slot(&settings),
+                            Some(Arc::new(credentials::Credential {
+                                store: self.credentials.clone(),
+                                slot: credentials::slot(&settings),
                             })),
                             None,
                         )?;
@@ -875,8 +884,7 @@ impl Service for Host {
                         settings.model = model.id;
                         settings.context_budget_bytes = model.context_budget_bytes;
                     }
-                    self.configure(&record, settings.clone(), Some(key), None)
-                        .await?;
+                    self.configure(&record, settings.clone(), Some(key)).await?;
                     self.save_native_profile(&record, &settings).await?;
                 }
                 record
@@ -893,9 +901,8 @@ impl Service for Host {
                 record,
                 settings,
                 api_key,
-                password,
             } => {
-                self.configure(&record, settings, api_key, password).await?;
+                self.configure(&record, settings, api_key).await?;
                 self.remember_connection_configuration(&record).await?;
                 record
             }
@@ -908,13 +915,23 @@ impl Service for Host {
                 run.record.clone()
             }
             Request::StopChild { record, thread } => {
-                if !self.handoff_receipts(None, Some(&record)).await?.iter()
-                    .any(|receipt| receipt.thread.as_deref() == Some(&thread)) {
-                    return Err("This child conversation was not delegated by the selected Fiote.".into());
+                if !self
+                    .handoff_receipts(None, Some(&record))
+                    .await?
+                    .iter()
+                    .any(|receipt| receipt.thread.as_deref() == Some(&thread))
+                {
+                    return Err(
+                        "This child conversation was not delegated by the selected Fiote.".into(),
+                    );
                 }
                 let running = self.running.lock().await;
-                let run = running.get(&thread).ok_or("No turn is running in this child conversation.")?;
-                run.stop.send(true).map_err(|_| "The child conversation has already stopped.")?;
+                let run = running
+                    .get(&thread)
+                    .ok_or("No turn is running in this child conversation.")?;
+                run.stop
+                    .send(true)
+                    .map_err(|_| "The child conversation has already stopped.")?;
                 record
             }
         };
@@ -1005,13 +1022,21 @@ impl Host {
             store::records::get_extension(&self.engine.store.pool, thread, "lince.fiote-task")
                 .await
                 .map_err(|e| e.to_string())?;
-        let mentioned = if forwarded.is_some() || pin_recipient.is_some() { None } else { self.mentioned_fiote(body).await? };
-        let laboratory = store::records::get_extension(&self.engine.store.pool, thread, laboratory::NAMESPACE)
-            .await.map_err(|error| error.to_string())?;
+        let mentioned = if forwarded.is_some() || pin_recipient.is_some() {
+            None
+        } else {
+            self.mentioned_fiote(body).await?
+        };
+        let laboratory =
+            store::records::get_extension(&self.engine.store.pool, thread, laboratory::NAMESPACE)
+                .await
+                .map_err(|error| error.to_string())?;
         let is_mention = mentioned.is_some();
         let mut selected = mentioned;
         for record in parents {
-            if pin_recipient.is_some_and(|target| target != record.uid) { continue; }
+            if pin_recipient.is_some_and(|target| target != record.uid) {
+                continue;
+            }
             if is_mention {
                 break;
             }
@@ -1023,7 +1048,10 @@ impl Host {
                 continue;
             }
             if let Some(config) = self.load(&record.uid)?
-                && (config.settings.enabled || laboratory.as_ref().is_some_and(|policy| policy["record"] == record.uid))
+                && (config.settings.enabled
+                    || laboratory
+                        .as_ref()
+                        .is_some_and(|policy| policy["record"] == record.uid))
             {
                 if selected.is_some() {
                     return Err("This thread belongs to more than one enabled Fiote.".into());
@@ -1035,9 +1063,12 @@ impl Host {
             return Ok(None);
         };
         if let Some(policy) = &laboratory {
-            if policy["record"] != record.uid { return Err("Laboratory thread belongs to another Fiote.".into()); }
-            config.settings=serde_json::from_value(policy["settings"].clone()).map_err(|_| "Invalid Laboratory connection settings.")?;
-            config.agent=None;
+            if policy["record"] != record.uid {
+                return Err("Laboratory thread belongs to another Fiote.".into());
+            }
+            config.settings = serde_json::from_value(policy["settings"].clone())
+                .map_err(|_| "Invalid Laboratory connection settings.")?;
+            config.agent = None;
             self.catalog.validate(&mut config.settings)?;
         }
         if self.record(thread).await?.kind != RecordKind::Thread.as_str() {
@@ -1089,7 +1120,9 @@ impl Host {
         });
         let system = self.session_instructions(&record.uid, thread).await?;
         let mut tools = Registry::default();
-        if laboratory.is_none() && let Some((directory, _)) = self.effective_working_directory(&record.uid).await? {
+        if laboratory.is_none()
+            && let Some((directory, _)) = self.effective_working_directory(&record.uid).await?
+        {
             tools.register_workspace(&directory)?;
         }
         let native = transport::Session::local(
@@ -1106,14 +1139,20 @@ impl Host {
         let native = native.with_fiote_service(Arc::new(self.clone()));
         native.register(&mut tools);
         let laboratory_tools = laboratory.as_ref().map(|_| Registry::default());
-        self.save_context(thread, &record.uid, &[], laboratory_tools.as_ref().unwrap_or(&tools)).await?;
+        self.save_context(
+            thread,
+            &record.uid,
+            &[],
+            laboratory_tools.as_ref().unwrap_or(&tools),
+        )
+        .await?;
         let driver = self.catalog.driver(&config.settings.provider).cloned();
         let key = if self.catalog.method(&config.settings)?.kind == fiote::adapters::AuthKind::None
         {
             Secret::default()
         } else {
-            self.vault
-                .key(&vault::slot(&config.settings))
+            self.credentials
+                .key(&credentials::slot(&config.settings))
                 .await?
                 .ok_or("Use /login to configure this provider.")?
         };
@@ -1128,7 +1167,7 @@ impl Host {
             (Some(provider), _) => provider.clone(),
             (_, Some(provider)) => provider.clone(),
             _ => {
-                let slot = vault::slot(&config.settings);
+                let slot = credentials::slot(&config.settings);
                 let lock = self
                     .refresh_locks
                     .lock()
@@ -1139,9 +1178,8 @@ impl Host {
                 fiote::communication::native::provider(
                     &config.settings,
                     &key,
-                    Some(Arc::new(vault::Credential {
-                        vault: self.vault.clone(),
-                        directory: self.directory.clone(),
+                    Some(Arc::new(credentials::Credential {
+                        store: self.credentials.clone(),
                         slot,
                     })),
                     Some(lock),
@@ -1161,7 +1199,10 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
-                    content: forwarded.as_ref().map(|source| source.content(content)).unwrap_or_else(|| content.to_vec()),
+                    content: forwarded
+                        .as_ref()
+                        .map(|source| source.content(content))
+                        .unwrap_or_else(|| content.to_vec()),
                     thread: thread.into(),
                     body: body.into(),
                     author: forwarded.as_ref().map(|source| source.author.clone()),
@@ -1267,8 +1308,8 @@ impl Host {
         );
         let active = self.running.clone();
         let thread = thread.to_string();
-        let vault = self.vault.clone();
-        let slot = vault::slot(&config.settings);
+        let credentials = self.credentials.clone();
+        let slot = credentials::slot(&config.settings);
         let attached = native.attach_message(&reply).await;
         let usage_path = usage::path(&self.directory, &thread);
         let context_path = self.directory.join(format!("context-{thread}.json"));
@@ -1300,7 +1341,9 @@ impl Host {
                 Err(error) => Err(error),
             };
             let refreshed = if let Some(adapter) = adapter {
-                vault.refreshed(slot, adapter.credential().await, key).await
+                credentials
+                    .refreshed(slot, adapter.credential().await, key)
+                    .await
             } else {
                 Ok(())
             };

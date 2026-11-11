@@ -244,7 +244,6 @@ impl Search {
                 .as_deref()
                 .is_some_and(|runtime| self.find(runtime).is_none());
             let candidate_config = executable.clone().map(|command| acp::Config {
-                require_vault: false,
                 command,
                 args,
                 directory: self.directory.clone(),

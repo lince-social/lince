@@ -219,16 +219,8 @@ pub enum Request {
     Prepare {
         record: String,
     },
-    Unlock {
-        record: String,
-        password: Secret,
-    },
-    Lock {
-        record: String,
-    },
     BrowserStart {
         record: String,
-        password: Secret,
         settings: Settings,
     },
     BrowserPoll {
@@ -244,7 +236,6 @@ pub enum Request {
         record: String,
         settings: Settings,
         api_key: Option<Secret>,
-        password: Option<Secret>,
     },
     Stop {
         thread: String,
@@ -289,8 +280,6 @@ pub struct Status {
     pub settings: Settings,
     pub has_key: bool,
     pub running: Vec<String>,
-    pub vault_exists: bool,
-    pub locked: bool,
     pub login_url: Option<String>,
     pub login_pending: bool,
     pub providers: Vec<crate::adapters::Descriptor>,

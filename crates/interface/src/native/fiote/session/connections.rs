@@ -12,7 +12,6 @@ struct Form {
     route: Route,
     fields: Vec<Entity>,
     credential: Entity,
-    password: Entity,
     original: Option<Profile>,
 }
 
@@ -214,7 +213,6 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 Request::Select {
                     id: profile.id.clone(),
                     api_key: None,
-                    password: None,
                 },
             ),
             (
@@ -528,13 +526,16 @@ impl Action for Edit {
                 );
             }
         }
-        let credential = field(world, content, "API key (optional; saved in vault)", true);
-        let password = field(world, content, "Vault password (when needed)", true);
+        let credential = field(
+            world,
+            content,
+            "API key (optional; saved on this device)",
+            true,
+        );
         world.entity_mut(owner).insert(Form {
             route: self.route,
             fields,
             credential,
-            password,
             original: profile,
         });
         if self.route == Route::Model {
@@ -572,13 +573,7 @@ impl Action for Edit {
         }
         crate::native::description::button(world, content, owner, "Save profile", Save);
         crate::native::description::button(world, content, owner, "Check saved profile", Check);
-        crate::native::description::button(
-            world,
-            content,
-            owner,
-            "Connect saved profile / unlock",
-            Connect,
-        );
+        crate::native::description::button(world, content, owner, "Connect saved profile", Connect);
         crate::native::description::button(world, content, owner, "Back to connections", Open);
     }
 }
@@ -608,7 +603,6 @@ fn profile(world: &World, owner: Entity) -> Result<Profile, String> {
                     additional_directories: Vec::new(),
                     session_meta: Default::default(),
                     options: Default::default(),
-                    require_vault: false,
                 });
             config.command = text(2)?.into();
             config.args = serde_json::from_str(&text(3)?)
@@ -670,11 +664,9 @@ impl Action for Connect {
                 .get::<Form>(owner)
                 .ok_or("Connection editor is closed.")?;
             let key = value(world, form.credential)?;
-            let password = value(world, form.password)?;
             Ok::<_, String>(Request::Select {
                 id: value(world, form.fields[0])?,
                 api_key: (!key.is_empty()).then_some(FioteSecret(key)),
-                password: (!password.is_empty()).then_some(FioteSecret(password)),
             })
         })();
         match result {
@@ -685,7 +677,7 @@ impl Action for Connect {
                     .is_some_and(|panel| panel.pending.is_some())
                     && let Some(form) = world.get::<Form>(owner)
                 {
-                    for field in [form.credential, form.password] {
+                    for field in [form.credential] {
                         world
                             .get_mut::<EditableText>(field)
                             .unwrap()
@@ -1014,7 +1006,7 @@ mod tests {
         }
         click(app.world_mut(), "Save profile");
         deliver(&mut app).await;
-        click(app.world_mut(), "Connect saved profile / unlock");
+        click(app.world_mut(), "Connect saved profile");
         deliver(&mut app).await;
         assert!(
             app.world()
@@ -1074,13 +1066,11 @@ mod tests {
             .map(|value| world.spawn(EditableText::new(value)).id())
             .collect();
         let credential = world.spawn(EditableText::new("api-secret")).id();
-        let password = world.spawn(EditableText::new("vault-secret")).id();
         world
             .spawn(Form {
                 route,
                 fields,
                 credential,
-                password,
                 original: None,
             })
             .id()
@@ -1365,7 +1355,6 @@ impl Action for NativeSetting {
                 record,
                 settings,
                 api_key: None,
-                password: None,
             },
         );
     }

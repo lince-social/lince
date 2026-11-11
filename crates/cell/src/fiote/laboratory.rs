@@ -79,10 +79,6 @@ impl Host {
         self.fiote_choices().await
     }
 
-    pub async fn laboratory_unlock(&self, password: Secret) -> Result<(), String> {
-        self.vault.unlock(password).await
-    }
-
     pub async fn laboratory_prepare(&self, options: &Options) -> Result<Preparation, String> {
         let record = match &options.record {
             Some(record) => record.clone(),
@@ -132,13 +128,13 @@ impl Host {
         let mut settings = selected_settings.unwrap_or(config.settings);
         let requires_credential =
             self.catalog.method(&settings)?.kind != fiote::adapters::AuthKind::None;
-        if requires_credential && status.locked {
-            return Ok(Preparation::Setup {
-                record,
-                detail: "Unlock the provider vault; the saved login is retained.".into(),
-            });
-        }
-        if requires_credential && self.vault.key(&vault::slot(&settings)).await?.is_none() {
+        if requires_credential
+            && self
+                .credentials
+                .key(&credentials::slot(&settings))
+                .await?
+                .is_none()
+        {
             return Ok(Preparation::Setup {
                 record,
                 detail: "Connect this account before running the test.".into(),
@@ -177,8 +173,7 @@ impl Host {
                 )
                 .await
                 .map_err(|error| error.to_string())?;
-            self.configure(&created, settings.clone(), None, None)
-                .await?;
+            self.configure(&created, settings.clone(), None).await?;
             created
         } else {
             record
@@ -233,9 +228,6 @@ impl Host {
         if status.login_pending {
             return Ok(status.login_url);
         }
-        let Some(password) = self.vault.unlocked_password().await else {
-            return Ok(None);
-        };
         let profile_settings = profile
             .map(|id| {
                 self.profile_status(record)?
@@ -281,7 +273,6 @@ impl Host {
         let status = self
             .handle(Request::BrowserStart {
                 record: record.into(),
-                password,
                 settings,
             })
             .await?;
@@ -433,51 +424,4 @@ pub fn open_browser(url: &str) -> std::io::Result<()> {
                 let _ = child.wait();
             });
         })
-}
-
-pub fn terminal_password() -> Result<Option<Secret>, String> {
-    use crossterm::{
-        event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
-        terminal,
-    };
-    use std::io::Write;
-    struct Restore;
-    impl Drop for Restore {
-        fn drop(&mut self) {
-            let _ = terminal::disable_raw_mode();
-        }
-    }
-    eprint!("Provider vault password (Enter to skip): ");
-    std::io::stderr()
-        .flush()
-        .map_err(|_| "Cannot prompt for vault password")?;
-    terminal::enable_raw_mode().map_err(|_| "Cannot hide terminal password input")?;
-    let _restore = Restore;
-    let mut password = Secret::default();
-    loop {
-        if let Event::Key(key) = event::read().map_err(|_| "Cannot read vault password")? {
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            match key.code {
-                KeyCode::Enter => {
-                    eprintln!("\r");
-                    return Ok((!password.0.is_empty()).then_some(password));
-                }
-                KeyCode::Esc => return Err("Password entry cancelled".into()),
-                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    return Err("Password entry cancelled".into());
-                }
-                KeyCode::Backspace => {
-                    password.0.pop();
-                }
-                KeyCode::Char(value)
-                    if !value.is_control() && password.0.len() + value.len_utf8() <= 4096 =>
-                {
-                    password.0.push(value)
-                }
-                _ => {}
-            }
-        }
-    }
 }

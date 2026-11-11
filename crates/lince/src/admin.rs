@@ -3,10 +3,12 @@ use std::io::Error;
 use store::Store;
 
 mod ailuros;
+mod credentials;
 
 pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
     let verbs = positional(args);
     match verbs.split_first() {
+        Some((&"credentials", rest)) => Some(credentials::dispatch(rest).await),
         Some((&"ailuros", rest)) => Some(ailuros::dispatch(rest).await),
         Some((&"organ", rest)) => Some(organ(rest).await),
         Some((&"discovery", rest)) => Some(discovery(rest).await),

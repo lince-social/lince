@@ -337,7 +337,6 @@ fn configuration_rejects_insecure_endpoints_and_debug_redacts_keys() {
         record: "record".into(),
         settings,
         api_key: Some(fiote::config::Secret("hidden-key".into())),
-        password: None,
     };
     assert!(!format!("{request:?}").contains("hidden-key"));
 }

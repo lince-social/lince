@@ -14,6 +14,7 @@ use tokio::{
 };
 
 const OUTPUT_LIMIT: usize = 32 * 1024;
+const MAX_TIMEOUT_MS: u64 = 21_600_000;
 
 pub struct RunCommand {
     directory: PathBuf,
@@ -70,8 +71,8 @@ impl Tool for RunCommand {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition {
             name: "run_command".into(),
-            description: "Execute a shell command in the configured working directory. Supports pipelines, sed, git, tests and other installed command-line tools. Runs with Lince's operating-system permissions, not a filesystem sandbox. Standard input is closed. Returns exit code, stdout and stderr (up to 32 KiB each). timeout_ms defaults to 120000 and must be between 1 and 600000. Commands may modify files; use only for the user's requested work.".into(),
-            schema: json!({"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer","minimum":1,"maximum":600000}},"required":["command"],"additionalProperties":false}),
+            description: "Execute a shell command in the configured working directory. Supports pipelines, sed, git, tests and other installed command-line tools. Runs with Lince's operating-system permissions, not a filesystem sandbox. Standard input is closed. Returns exit code, stdout and stderr (up to 32 KiB each). timeout_ms defaults to 120000 and must be between 1 and 21600000. Commands may modify files; use only for the user's requested work.".into(),
+            schema: json!({"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer","minimum":1,"maximum":MAX_TIMEOUT_MS}},"required":["command"],"additionalProperties":false}),
         }
     }
 
@@ -83,8 +84,8 @@ impl Tool for RunCommand {
         {
             return Err("Provide a nonempty command of at most 64 KiB without NUL bytes.".into());
         }
-        if !(1..=600_000).contains(&args.timeout_ms) {
-            return Err("timeout_ms must be between 1 and 600000.".into());
+        if !(1..=MAX_TIMEOUT_MS).contains(&args.timeout_ms) {
+            return Err("timeout_ms must be between 1 and 21600000.".into());
         }
         let mut command = if cfg!(windows) {
             let mut command = Command::new("cmd.exe");

@@ -7,14 +7,15 @@ use {
 #[serde(rename_all = "kebab-case")]
 pub enum CredentialSource {
     Environment,
-    VaultRecord,
+    #[serde(alias = "vault-record")]
+    LocalStore,
 }
 
 impl CredentialSource {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Environment => "environment",
-            Self::VaultRecord => "vault Record",
+            Self::LocalStore => "local credential storage",
         }
     }
 }

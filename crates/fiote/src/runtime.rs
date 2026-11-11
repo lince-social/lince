@@ -81,8 +81,6 @@ pub fn validate_context(system: &str, messages: &[Message]) -> Result<(), String
     }
     Ok(())
 }
-pub const MAX_MODEL_REQUESTS: usize = 32;
-pub const MAX_TOOL_CALLS: usize = 64;
 
 pub async fn run(
     provider: &dyn Provider,
@@ -118,7 +116,7 @@ pub async fn run_streamed(
             error
         } else {
             format!(
-                "{error}\n\nTool call outcomes before stopping:\n{}",
+                "{error}\n\nRecent tool call outcomes before stopping (complete receipts remain in the journal):\n{}",
                 receipts.join("\n")
             )
         }
@@ -163,7 +161,7 @@ async fn turn(
     let tool_bytes = serde_json::to_vec(&definitions)
         .map_err(|_| "Cannot encode tool descriptions.")?
         .len();
-    let previous_calls: HashSet<String> = messages
+    let mut previous_calls: HashSet<String> = messages
         .iter()
         .filter_map(|m| {
             if let Message::Tool { id, .. } = m {
@@ -173,15 +171,18 @@ async fn turn(
             }
         })
         .collect();
+    previous_calls.extend(output.executed_calls().await?);
     let mut call_ids = HashSet::new();
     let mut text = String::new();
-    for _ in 0..MAX_MODEL_REQUESTS {
+    let mut force_compact = false;
+    let mut overflow_retried = false;
+    loop {
         if *stop.borrow() {
             return Err("Stopped by you.".into());
         }
         tokio::select! {
             _ = stop.changed() => return Err("Stopped by you.".into()),
-            result = tokio::time::timeout(Duration::from_secs(120), crate::conversation::prepare_with_overhead(provider, system, &mut messages, output, tool_bytes)) => { result.map_err(|_| "Automatic summary timed out; original history is preserved.")??; }
+            result = crate::conversation::prepare_context(provider, system, &mut messages, output, tool_bytes, force_compact) => { result?; }
         }
         validate_context(system, &messages)?;
         output.context(&messages).await?;
@@ -192,9 +193,34 @@ async fn turn(
         let reply = tokio::select! {
             _ = stop.changed() => return Err("Stopped by you.".into()),
             result = tokio::time::timeout(Duration::from_secs(120), provider.stream(system, &messages, &definitions, &progress)) => {
-                result.map_err(|_| "The provider did not reply within two minutes.".to_string())??
+                result.map_err(|_| "The provider did not reply within two minutes.".to_string())?
             }
         };
+        let reply = match reply {
+            Ok(reply) => reply,
+            Err(error)
+                if !overflow_retried
+                    && (error.contains("context_window_exceeded")
+                        || error.contains("context_length_exceeded")) =>
+            {
+                overflow_retried = true;
+                force_compact = true;
+                continue;
+            }
+            Err(error) => return Err(error),
+        };
+        overflow_retried = false;
+        force_compact = reply.usage.as_ref().is_some_and(|usage| {
+            let used = usage.context_used.or(usage.total_tokens).or_else(|| {
+                usage
+                    .input_tokens
+                    .map(|input| input.saturating_add(usage.output_tokens.unwrap_or(0)))
+            });
+            let capacity = usage
+                .context_capacity
+                .unwrap_or((provider.context_budget_bytes().min(MAX_CONTEXT_BYTES) / 3) as u64);
+            used.is_some_and(|used| used >= capacity.saturating_mul(4) / 5)
+        });
         progress.update(&reply.text).await?;
         if !reply.text.is_empty() {
             if !text.is_empty() {
@@ -224,11 +250,6 @@ async fn turn(
                 Ok(text)
             };
         }
-        if call_ids.len() + reply.calls.len() > MAX_TOOL_CALLS {
-            return Err(format!(
-                "Stopped at the limit of {MAX_TOOL_CALLS} tool calls."
-            ));
-        }
         for call in &reply.calls {
             if call.id.is_empty()
                 || previous_calls.contains(&call.id)
@@ -254,6 +275,9 @@ async fn turn(
                 _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
                 result = tools.run(&call.name, call.arguments) => result,
             };
+            if receipts.len() == 64 {
+                receipts.remove(0);
+            }
             receipts.push(format!(
                 "{} [{}]: {}",
                 call.name.chars().take(64).collect::<String>(),
@@ -272,7 +296,4 @@ async fn turn(
             output.context(&messages).await?;
         }
     }
-    Err(format!(
-        "Stopped at the limit of {MAX_MODEL_REQUESTS} model requests. Completed Record and file operations remain saved."
-    ))
 }

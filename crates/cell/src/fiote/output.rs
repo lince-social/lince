@@ -56,20 +56,39 @@ impl TextOutput for Output<'_> {
         }
         Ok(())
     }
-    async fn summary(&self, covered: usize, text: &str) -> Result<(), String> {
+    async fn executed_calls(&self) -> Result<Vec<String>, String> {
+        Ok(self
+            .original_messages
+            .iter()
+            .filter_map(|message| match message {
+                Message::Tool { id, .. } => Some(id.clone()),
+                _ => None,
+            })
+            .collect())
+    }
+    async fn compacted(&self, before: &[Message], after: &[Message]) -> Result<(), String> {
+        let mut original = self.original_messages.clone();
+        let journal = if let Some(path) = &self.journal_path {
+            history::checkpoint(path, before)?;
+            history::load(path)?
+        } else {
+            None
+        };
+        if let (Some(path), Some(journal)) = (&self.journal_path, &journal) {
+            original.extend(history::frames(path, journal)?);
+        }
         if let Some(path) = &self.summary_path {
-            let prefix = self
-                .original_messages
-                .get(..covered)
-                .ok_or("Invalid conversation summary coverage.")?;
             save(
                 path,
-                &fiote::conversation::Summary {
-                    covered,
-                    fingerprint: fiote::conversation::fingerprint(prefix)?,
-                    text: text.into(),
+                &fiote::conversation::Checkpoint {
+                    covered: original.len(),
+                    fingerprint: fiote::conversation::fingerprint(&original)?,
+                    replacement: after.to_vec(),
                 },
             )?;
+        }
+        if let Some(path) = &self.journal_path {
+            history::replace_context(path, before, after)?;
         }
         Ok(())
     }
@@ -91,5 +110,71 @@ impl TextOutput for Output<'_> {
     async fn update(&self, text: &str) -> Result<(), String> {
         *self.text.lock().await = text.into();
         self.write("update", text).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn active_turn_checkpoint_restores_archived_context_without_losing_receipts() {
+        let root = tempfile::tempdir().unwrap();
+        let journal_path = history::path(root.path(), "fixture");
+        let summary_path = root.path().join("summary.json");
+        let original = vec![Message::User("Complete work without reboot".into())];
+        let mut before = original.clone();
+        before.push(Message::Assistant {
+            text: String::new(),
+            calls: vec![fiote::provider::ToolCall {
+                id: "saved-effect".into(),
+                name: "write_file".into(),
+                arguments: serde_json::json!({}),
+                signatures: None,
+            }],
+        });
+        before.push(Message::Tool {
+            id: "saved-effect".into(),
+            name: "write_file".into(),
+            result: serde_json::json!({"ok":true,"receipt":"saved"}),
+        });
+        let tools = Registry::default();
+        let output = Output {
+            context_path: None,
+            journal_path: Some(journal_path.clone()),
+            summary_path: Some(summary_path.clone()),
+            original_messages: original.clone(),
+            source_message: Some("fixture-user".into()),
+            usage_path: None,
+            tools: &tools,
+            message: "fixture",
+            text: Default::default(),
+        };
+        output.context(&before).await.unwrap();
+        let after = vec![Message::Replay {
+            provider: "chatgpt".into(),
+            items: vec![serde_json::json!({"type":"compaction","encrypted_content":"opaque"})],
+        }];
+        output.compacted(&before, &after).await.unwrap();
+        let mut continuing = after.clone();
+        continuing.push(Message::Assistant {
+            text: "Finished".into(),
+            calls: vec![],
+        });
+        output.context(&continuing).await.unwrap();
+        let journal = history::load(&journal_path).unwrap().unwrap();
+        assert_eq!(journal.archives.len(), 1);
+        let mut raw = original;
+        raw.extend(history::frames(&journal_path, &journal).unwrap());
+        let checkpoint: fiote::conversation::Checkpoint =
+            serde_json::from_slice(&std::fs::read(summary_path).unwrap()).unwrap();
+        assert_eq!(checkpoint.covered, 3);
+        let restored = checkpoint.apply(&raw).unwrap().unwrap();
+        assert_eq!(
+            fiote::conversation::fingerprint(&restored).unwrap(),
+            fiote::conversation::fingerprint(&continuing).unwrap()
+        );
+        assert!(raw.iter().any(|m| matches!(m, Message::Tool { id, result, .. } if id == "saved-effect" && result["receipt"] == "saved")));
+        raw[0] = Message::User("Edited goal".into());
+        assert!(checkpoint.apply(&raw).unwrap().is_none());
     }
 }

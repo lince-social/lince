@@ -18,7 +18,7 @@ pub struct Model {
     pub context_budget_bytes: Option<usize>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToolCall {
     pub id: String,
     pub name: String,
@@ -26,7 +26,7 @@ pub struct ToolCall {
     pub signatures: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Message {
     Summary {
         covered: usize,
@@ -78,6 +78,15 @@ pub trait TextOutput: Send + Sync {
     async fn summary(&self, _covered: usize, _text: &str) -> Result<(), String> {
         Ok(())
     }
+    async fn compacted(&self, _before: &[Message], after: &[Message]) -> Result<(), String> {
+        if let Some(Message::Summary { covered, text }) = after.first() {
+            self.summary(*covered, text).await?;
+        }
+        Ok(())
+    }
+    async fn executed_calls(&self) -> Result<Vec<String>, String> {
+        Ok(Vec::new())
+    }
     async fn tool_pending(&self, _call: &ToolCall) -> Result<(), String> {
         Ok(())
     }
@@ -104,6 +113,14 @@ impl TextOutput for DiscardText {
 pub trait Provider: Send + Sync {
     fn replay_provider(&self) -> Option<&str> {
         None
+    }
+    async fn compact(
+        &self,
+        _system: &str,
+        _messages: &[Message],
+        _output: &dyn TextOutput,
+    ) -> Result<Option<Vec<Message>>, String> {
+        Ok(None)
     }
     async fn models(&self) -> Result<Vec<Model>, String> {
         Err("This provider does not expose model discovery.".into())

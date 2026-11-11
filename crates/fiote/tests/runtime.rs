@@ -253,6 +253,12 @@ impl Provider for Endless {
         _: &[ToolDefinition],
     ) -> Result<Reply, String> {
         let count = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if count == 100 {
+            return Ok(Reply {
+                text: "Completed long turn".into(),
+                ..Default::default()
+            });
+        }
         Ok(Reply {
             usage: None,
             replay: Vec::new(),
@@ -268,24 +274,20 @@ impl Provider for Endless {
 }
 
 #[tokio::test]
-async fn turn_and_context_limits_stop_before_more_provider_calls() {
+async fn long_turn_continues_past_old_limits_but_context_limits_prevent_requests() {
     let provider = Endless(std::sync::atomic::AtomicUsize::new(0));
     let (_stop, receiver) = watch::channel(false);
-    let error = run(
+    let text = run(
         &provider,
         "",
-        vec![],
+        vec![Message::User("Complete work".into())],
         &Registry::default(),
         receiver.clone(),
     )
     .await
-    .unwrap_err();
-    assert!(error.contains("model requests"));
-    assert_eq!(
-        provider.0.load(std::sync::atomic::Ordering::SeqCst),
-        fiote::runtime::MAX_MODEL_REQUESTS
-    );
-    assert!(error.contains("unavailable"));
+    .unwrap();
+    assert_eq!(text, "Completed long turn");
+    assert_eq!(provider.0.load(std::sync::atomic::Ordering::SeqCst), 101);
     let error = run(
         &provider,
         &"x".repeat(fiote::runtime::MAX_CONTEXT_BYTES + 1),
@@ -304,10 +306,7 @@ async fn turn_and_context_limits_stop_before_more_provider_calls() {
             .unwrap_err()
             .contains("context limit")
     );
-    assert_eq!(
-        provider.0.load(std::sync::atomic::Ordering::SeqCst),
-        fiote::runtime::MAX_MODEL_REQUESTS
-    );
+    assert_eq!(provider.0.load(std::sync::atomic::Ordering::SeqCst), 101);
 }
 
 #[test]
@@ -366,6 +365,9 @@ impl Provider for LargeResults {
         _: &[ToolDefinition],
     ) -> Result<Reply, String> {
         let count = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if count == 5 {
+            return Err("fixture provider failed".into());
+        }
         Ok(Reply {
             calls: vec![ToolCall {
                 id: count.to_string(),
@@ -392,7 +394,7 @@ impl fiote::provider::TextOutput for Checkpoint {
 }
 
 #[tokio::test]
-async fn context_failure_keeps_full_journal_receipts_and_a_savable_error() {
+async fn provider_failure_keeps_full_journal_receipts_and_a_savable_error() {
     let mut tools = Registry::default();
     tools.register(LargeResult);
     let output = Checkpoint::default();
@@ -408,7 +410,7 @@ async fn context_failure_keeps_full_journal_receipts_and_a_savable_error() {
     )
     .await
     .unwrap_err();
-    assert!(error.contains("context limit"), "{error}");
+    assert!(error.contains("fixture provider failed"), "{error}");
     assert!(error.contains("large_result [0]: completed"));
     assert!(!error.contains("private-fixture"));
     let encoded = serde_json::to_vec(
@@ -434,4 +436,284 @@ async fn context_failure_keeps_full_journal_receipts_and_a_savable_error() {
             .iter()
             .all(|result| result["result"]["content"].as_str().unwrap().len() == 80000)
     );
+}
+
+struct LongProvider {
+    requests: std::sync::atomic::AtomicUsize,
+    summaries: std::sync::atomic::AtomicUsize,
+    repeat: bool,
+}
+#[async_trait]
+impl Provider for LongProvider {
+    fn context_budget_bytes(&self) -> usize {
+        16384
+    }
+    async fn complete(
+        &self,
+        system: &str,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        assert!(fiote::runtime::context_bytes(messages)? + system.len() < 16384);
+        if tools.is_empty() {
+            self.summaries
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            return Ok(Reply { text: "Continue the original work. Completed tools have receipts; do not repeat effects.".into(), ..Default::default() });
+        }
+        assert_eq!(system, "Original permissions; never reboot");
+        let count = self
+            .requests
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if count == 100 {
+            return Ok(Reply {
+                text: "Completed".into(),
+                ..Default::default()
+            });
+        }
+        Ok(Reply {
+            calls: vec![ToolCall {
+                id: if self.repeat && count == 75 {
+                    "0".into()
+                } else {
+                    count.to_string()
+                },
+                name: "large_result".into(),
+                arguments: json!({}),
+                signatures: None,
+            }],
+            ..Default::default()
+        })
+    }
+}
+#[derive(Default)]
+struct Archives(std::sync::Mutex<Vec<Vec<Message>>>);
+#[async_trait]
+impl fiote::provider::TextOutput for Archives {
+    async fn update(&self, _: &str) -> Result<(), String> {
+        Ok(())
+    }
+    async fn compacted(&self, before: &[Message], _: &[Message]) -> Result<(), String> {
+        self.0.lock().unwrap().push(before.to_vec());
+        Ok(())
+    }
+}
+#[tokio::test]
+async fn long_single_turn_repeatedly_compacts_without_repeating_effects() {
+    for repeat in [false, true] {
+        let provider = LongProvider {
+            requests: Default::default(),
+            summaries: Default::default(),
+            repeat,
+        };
+        let mut tools = Registry::default();
+        tools.register(LargeResult);
+        let (_stop, receiver) = watch::channel(false);
+        let output = Archives::default();
+        let result = fiote::runtime::run_streamed(
+            &provider,
+            "Original permissions; never reboot",
+            vec![Message::User("Complete this whole task".into())],
+            &tools,
+            receiver,
+            &output,
+        )
+        .await;
+        if repeat {
+            assert!(
+                result
+                    .unwrap_err()
+                    .contains("repeated a tool call identifier")
+            );
+        } else {
+            assert_eq!(result.unwrap(), "Completed");
+            assert_eq!(
+                provider.requests.load(std::sync::atomic::Ordering::SeqCst),
+                101
+            );
+        }
+        assert!(provider.summaries.load(std::sync::atomic::Ordering::SeqCst) > 20);
+        let archives = output.0.lock().unwrap();
+        let ids: Vec<_> = archives
+            .iter()
+            .flat_map(|frames| frames.iter())
+            .filter_map(|frame| match frame {
+                Message::Tool { id, result, .. }
+                    if result["result"]["content"]
+                        .as_str()
+                        .is_some_and(|text| text.len() == 80000) =>
+                {
+                    Some(id.clone())
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ids.len(), if repeat { 75 } else { 100 });
+        assert_eq!(
+            ids.iter().collect::<std::collections::HashSet<_>>().len(),
+            ids.len()
+        );
+    }
+}
+
+struct Overflow(std::sync::atomic::AtomicUsize);
+#[async_trait]
+impl Provider for Overflow {
+    async fn complete(
+        &self,
+        system: &str,
+        _: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        match self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst) {
+            0 => Err("HTTP 400, context_window_exceeded".into()),
+            1 => {
+                assert!(system.contains("Summarize"));
+                Ok(Reply {
+                    text: "Continue owner task without reboot".into(),
+                    ..Default::default()
+                })
+            }
+            2 => {
+                assert_eq!(system, "Owner permissions");
+                Ok(Reply {
+                    text: "Recovered".into(),
+                    ..Default::default()
+                })
+            }
+            _ => panic!("Overflow retry must be bounded"),
+        }
+    }
+}
+#[tokio::test]
+async fn provider_context_overflow_compacts_and_retries_without_tools() {
+    let provider = Overflow(Default::default());
+    let (_stop, receiver) = watch::channel(false);
+    assert_eq!(
+        run(
+            &provider,
+            "Owner permissions",
+            vec![Message::User("Complete original goal".into())],
+            &Registry::default(),
+            receiver
+        )
+        .await
+        .unwrap(),
+        "Recovered"
+    );
+    assert_eq!(provider.0.load(std::sync::atomic::Ordering::SeqCst), 3);
+}
+
+struct UsageTrigger(std::sync::atomic::AtomicUsize);
+#[async_trait]
+impl Provider for UsageTrigger {
+    async fn compact(
+        &self,
+        system: &str,
+        _: &[Message],
+        _: &dyn fiote::provider::TextOutput,
+    ) -> Result<Option<Vec<Message>>, String> {
+        assert_eq!(system, "Pinned owner instructions");
+        Ok(Some(vec![
+            Message::Summary {
+                covered: 3,
+                text: "Goal and completed receipt".into(),
+            },
+            Message::User("Continue task".into()),
+        ]))
+    }
+    async fn complete(
+        &self,
+        system: &str,
+        messages: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        assert_eq!(system, "Pinned owner instructions");
+        if self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0 {
+            let mut usage = nucleus::operation::Usage::request(
+                "fixture".into(),
+                Some(200000),
+                Some(1),
+                Some(200001),
+            );
+            usage.context_used = Some(200001);
+            return Ok(Reply {
+                usage: Some(usage),
+                calls: vec![ToolCall {
+                    id: "first".into(),
+                    name: "unavailable".into(),
+                    arguments: json!({}),
+                    signatures: None,
+                }],
+                ..Default::default()
+            });
+        }
+        assert!(matches!(messages.first(), Some(Message::Summary { .. })));
+        Ok(Reply {
+            text: "Continued after measured token threshold".into(),
+            ..Default::default()
+        })
+    }
+}
+#[tokio::test]
+async fn reported_usage_triggers_compaction_before_the_next_request() {
+    let provider = UsageTrigger(Default::default());
+    let (_stop, receiver) = watch::channel(false);
+    let result = run(
+        &provider,
+        "Pinned owner instructions",
+        vec![Message::User("Continue task".into())],
+        &Registry::default(),
+        receiver,
+    )
+    .await
+    .unwrap();
+    assert_eq!(result, "Continued after measured token threshold");
+}
+
+struct CancelLong {
+    count: std::sync::atomic::AtomicUsize,
+    stop: watch::Sender<bool>,
+}
+#[async_trait]
+impl Provider for CancelLong {
+    async fn complete(
+        &self,
+        _: &str,
+        _: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
+        let index = self.count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if index == 75 {
+            self.stop.send(true).unwrap();
+        }
+        Ok(Reply {
+            calls: vec![ToolCall {
+                id: index.to_string(),
+                name: "unavailable".into(),
+                arguments: json!({}),
+                signatures: None,
+            }],
+            ..Default::default()
+        })
+    }
+}
+#[tokio::test]
+async fn owner_can_still_cancel_after_the_old_turn_limit() {
+    let (stop, receiver) = watch::channel(false);
+    let provider = CancelLong {
+        count: Default::default(),
+        stop,
+    };
+    let result = run(
+        &provider,
+        "",
+        vec![Message::User("Long task".into())],
+        &Registry::default(),
+        receiver,
+    )
+    .await
+    .unwrap_err();
+    assert!(result.contains("Stopped by you"));
+    assert_eq!(provider.count.load(std::sync::atomic::Ordering::SeqCst), 76);
+    assert!(result.len() < 8192);
 }

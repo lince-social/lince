@@ -9,11 +9,13 @@ use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use serde_json::{Value, json};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ChatGpt {
     settings: Settings,
     session: Session,
     endpoint: String,
+    compact_available: AtomicBool,
 }
 
 impl ChatGpt {
@@ -30,6 +32,7 @@ impl ChatGpt {
             settings,
             session,
             endpoint: validated.endpoint,
+            compact_available: AtomicBool::new(true),
         })
     }
     pub async fn models(&self) -> Result<Vec<Model>, String> {
@@ -105,10 +108,10 @@ impl ChatGpt {
             match message {
                 Message::Replay { provider, items } if provider == auth::PROVIDER => {
                     for item in items {
-                        if !matches!(item["type"].as_str(), Some("message" | "function_call" | "reasoning")) { return Err("Unsupported saved provider replay item.".into()); }
+                        if !matches!(item["type"].as_str(), Some("message" | "function_call" | "function_call_output" | "reasoning" | "compaction")) { return Err("Unsupported saved provider replay item.".into()); }
                         input.push(item.clone());
                     }
-                    replayed = true;
+                    replayed = !items.iter().any(|item| item["type"] == "compaction");
                 }
                 Message::Replay { .. } => {}
                 Message::Assistant { text, calls } => {
@@ -151,10 +154,22 @@ impl ChatGpt {
         Ok(request)
     }
     async fn response(&self, request: &Value) -> Result<reqwest::Response, String> {
+        self.response_at("responses", "text/event-stream", request)
+            .await
+    }
+    async fn response_at(
+        &self,
+        path: &str,
+        accept: &str,
+        request: &Value,
+    ) -> Result<reqwest::Response, String> {
         for attempt in 0..3 {
             let token = self.session.token().await?;
-            let response = self.session.auth.http.post(format!("{}responses", self.endpoint)).bearer_auth(&token.0).header(reqwest::header::ACCEPT, "text/event-stream").json(request).send().await.map_err(|_| "The ChatGPT request could not connect. No tool action was executed; retry explicitly.")?;
-            if response.status().is_success() {
+            let response = self.session.auth.http.post(format!("{}{path}", self.endpoint)).bearer_auth(&token.0).header(reqwest::header::ACCEPT, accept).json(request).send().await.map_err(|_| "The ChatGPT request could not connect. No tool action was executed; retry explicitly.")?;
+            if response.status().is_success()
+                || (path == "responses/compact"
+                    && matches!(response.status().as_u16(), 404 | 405 | 501))
+            {
                 return Ok(response);
             }
             let retry = attempt < 2
@@ -301,6 +316,79 @@ fn content_part(part: &nucleus::message::MessagePart) -> Result<Value, String> {
 impl Provider for ChatGpt {
     fn replay_provider(&self) -> Option<&str> {
         Some(auth::PROVIDER)
+    }
+    async fn compact(
+        &self,
+        system: &str,
+        messages: &[Message],
+        output: &dyn TextOutput,
+    ) -> Result<Option<Vec<Message>>, String> {
+        if !self.compact_available.load(Ordering::Relaxed) {
+            return Ok(None);
+        }
+        let request = self.request(system, messages, &[])?;
+        if serde_json::to_vec(&request["input"])
+            .map_err(|_| "Cannot encode compaction input.")?
+            .len()
+            > crate::runtime::MAX_CONTEXT_BYTES
+        {
+            return Ok(None);
+        }
+        let response = match self
+            .response_at(
+                "responses/compact",
+                "application/json",
+                &json!({
+                    "model": self.settings.model, "instructions": system, "input": request["input"],
+                }),
+            )
+            .await
+        {
+            Ok(response) => response,
+            Err(error) if error.ends_with("(HTTP 401, hardened_oauth_rule_missing)") => {
+                self.compact_available.store(false, Ordering::Relaxed);
+                return Ok(None);
+            }
+            Err(error) => return Err(error),
+        };
+        if matches!(response.status().as_u16(), 404 | 405 | 501) {
+            self.compact_available.store(false, Ordering::Relaxed);
+            return Ok(None);
+        }
+        let value = auth::json(response).await?;
+        let items = value["output"]
+            .as_array()
+            .filter(|items| !items.is_empty())
+            .ok_or("ChatGPT compaction returned no replacement context.")?;
+        if !items.iter().any(|item| {
+            item["type"] == "compaction"
+                && item["encrypted_content"]
+                    .as_str()
+                    .is_some_and(|s| !s.is_empty())
+        }) || items.iter().any(|item| {
+            !matches!(
+                item["type"].as_str(),
+                Some(
+                    "message"
+                        | "function_call"
+                        | "function_call_output"
+                        | "reasoning"
+                        | "compaction"
+                )
+            )
+        }) || items.iter().any(|item| {
+            item["type"] == "message"
+                && !matches!(item["role"].as_str(), Some("user" | "assistant"))
+        }) {
+            return Err("ChatGPT compaction returned invalid replacement context; original history is preserved.".into());
+        }
+        let mut usage = usage(&self.settings.model, &value["usage"]);
+        usage.scope = "summary".into();
+        output.usage(usage).await?;
+        Ok(Some(vec![Message::Replay {
+            provider: auth::PROVIDER.into(),
+            items: items.clone(),
+        }]))
     }
     fn context_budget_bytes(&self) -> usize {
         self.settings

@@ -483,14 +483,17 @@ impl Host {
 }
 
 fn save(path: &Path, value: &impl Serialize) -> Result<(), String> {
-    let mut file =
-        tempfile::NamedTempFile::new_in(path.parent().ok_or("Settings directory is missing.")?)
-            .map_err(|e| e.to_string())?;
+    let directory = path.parent().ok_or("Settings directory is missing.")?;
+    let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|e| e.to_string())?;
     serde_json::to_writer(file.as_file_mut(), value).map_err(|e| e.to_string())?;
     file.flush()
         .and_then(|()| file.as_file().sync_all())
         .map_err(|e| e.to_string())?;
     file.persist(path).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    std::fs::File::open(directory)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -1186,6 +1189,8 @@ impl Host {
                 )?
             }
         };
+        let original_messages = messages.clone();
+        let messages = self.summarized_history(thread, &messages, provider.replay_provider())?;
         for message in &messages {
             if let Message::RichUser { content, .. } | Message::RichAssistant { content, .. } =
                 message
@@ -1193,8 +1198,6 @@ impl Host {
                 provider.validate_content(content)?;
             }
         }
-        let original_messages = messages.clone();
-        let messages = self.summarized_history(thread, &messages)?;
         let mut outcome = self
             .engine
             .act(

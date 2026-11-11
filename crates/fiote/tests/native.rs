@@ -521,3 +521,126 @@ async fn native_stream_cancels_after_partial_text_without_requiring_a_terminal_e
     assert_eq!(*output.text.lock().await, "Hello");
     server.abort();
 }
+
+#[tokio::test]
+async fn native_compaction_replays_the_exact_canonical_window_with_pinned_instructions() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!("http://{}/v1/", listener.local_addr().unwrap());
+    let canonical = json!([
+        {"type":"message","role":"user","content":[{"type":"input_text","text":"Finish original goal"}]},
+        {"type":"compaction","id":"cmp_fixture","encrypted_content":"opaque-state-must-stay-exact"}
+    ]);
+    let expected = canonical.clone();
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let (headers, request) = read(&mut socket).await;
+        assert!(headers.starts_with("POST /v1/responses/compact "));
+        assert!(
+            headers
+                .to_lowercase()
+                .contains("authorization: bearer fixture-access")
+        );
+        assert_eq!(request["instructions"], "Owner permissions; never reboot");
+        assert_eq!(request["model"], "fixture-model");
+        assert!(request.get("stream").is_none());
+        assert!(request.get("tools").is_none());
+        let body = json!({"object":"response.compaction","output":canonical,"usage":{"input_tokens":8000,"output_tokens":120,"total_tokens":8120}}).to_string();
+        socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).as_bytes()).await.unwrap();
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let (_, request) = read(&mut socket).await;
+        assert_eq!(request["input"], expected);
+        assert_eq!(request["instructions"], "Owner permissions; never reboot");
+        let body = event(completed("Continued", false));
+        socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
+    });
+    let provider = provider(&endpoint);
+    let compacted = provider
+        .compact(
+            "Owner permissions; never reboot",
+            &[Message::User("Finish original goal".into())],
+            &fiote::provider::DiscardText,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    let reply = provider
+        .complete("Owner permissions; never reboot", &compacted, &[])
+        .await
+        .unwrap();
+    assert_eq!(reply.text, "Continued");
+    server.await.unwrap();
+}
+
+#[tokio::test]
+async fn native_compaction_falls_back_only_for_unsupported_endpoints_and_rejects_invalid_output() {
+    for (status, value, fallback) in [
+        (404, json!({"error":{"code":"not_found"}}), true),
+        (
+            401,
+            json!({"error":{"code":"hardened_oauth_rule_missing"}}),
+            true,
+        ),
+        (401, json!({"error":{"code":"invalid_token"}}), false),
+        (200, json!({"output":[]}), false),
+        (
+            200,
+            json!({"output":[{"type":"compaction","encrypted_content":"opaque"},{"type":"message","role":"system","content":[]}]}),
+            false,
+        ),
+    ] {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}/v1/", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            read(&mut socket).await;
+            let body = value.to_string();
+            socket.write_all(format!("HTTP/1.1 {status} Fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).as_bytes()).await.unwrap();
+        });
+        let provider = provider(&endpoint);
+        let result = provider
+            .compact(
+                "Permissions",
+                &[Message::User("Goal".into())],
+                &fiote::provider::DiscardText,
+            )
+            .await;
+        if fallback {
+            assert!(result.unwrap().is_none());
+            assert!(
+                provider
+                    .compact(
+                        "Permissions",
+                        &[Message::User("Goal".into())],
+                        &fiote::provider::DiscardText
+                    )
+                    .await
+                    .unwrap()
+                    .is_none()
+            );
+        } else {
+            assert!(result.is_err());
+        }
+        server.await.unwrap();
+    }
+}
+
+#[tokio::test]
+async fn native_compaction_keeps_large_attachments_on_the_portable_path() {
+    let content = vec![nucleus::message::MessagePart::Attachment {
+        name: "synthetic.png".into(),
+        mime_type: "image/png".into(),
+        data: "AAAA".repeat(200000),
+    }];
+    let result = provider("http://127.0.0.1:1/v1/")
+        .compact(
+            "Instructions",
+            &[Message::RichUser {
+                text: "Current image".into(),
+                content,
+            }],
+            &fiote::provider::DiscardText,
+        )
+        .await
+        .unwrap();
+    assert!(result.is_none());
+}

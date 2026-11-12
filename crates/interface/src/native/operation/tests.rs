@@ -190,7 +190,7 @@ fn ctrl_k_focuses_one_popup_and_escape_restores_focus() {
 fn suggestions_narrow_complete_and_refresh_without_mutating_records() {
     let (mut app, root, window) = fixture();
     app.world_mut()
-        .write_message(CellMessage(ServerMessage::Snapshot {
+        .write_message(CellMessage::new(ServerMessage::Snapshot {
             id: RECORDS.into(),
             rows: vec![
                 serde_json::json!({"uid":"one", "slug":"apple", "head":"Apple"}),
@@ -227,7 +227,7 @@ fn suggestions_narrow_complete_and_refresh_without_mutating_records() {
     assert!(app.world().get::<Popup>(root).is_some());
     enter(&mut app, sand, "@apple");
     app.world_mut()
-        .write_message(CellMessage(ServerMessage::Update {
+        .write_message(CellMessage::new(ServerMessage::Update {
             id: RECORDS.into(),
             rows: vec![],
         }));
@@ -498,7 +498,7 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
         .unwrap();
     let (mut app, root, _) = fixture();
     app.world_mut().insert_non_send(bridge);
-    app.world_mut().write_message(CellMessage(initial));
+    app.world_mut().write_message(CellMessage::new(initial));
     OpenOperation.apply(app.world_mut(), root);
     let sand = app.world().get::<Popup>(root).unwrap().panel;
     enter(&mut app, sand, "@app");
@@ -546,7 +546,7 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
             updated = true;
         }
         confirmed |= matches!(&message, ServerMessage::ActionOk { .. });
-        app.world_mut().write_message(CellMessage(message));
+        app.world_mut().write_message(CellMessage::new(message));
         app.update();
     }
     assert!(notice(&app, sand).contains("quantity set to zero"));
@@ -559,7 +559,7 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
     );
     OperationAction::Submit.apply(app.world_mut(), sand);
     app.world_mut()
-        .write_message(CellMessage(ServerMessage::Error {
+        .write_message(CellMessage::new(ServerMessage::Error {
             id: crate::native::cell_bridge::CONNECTION.into(),
             message: "Disconnected".into(),
             code: None,

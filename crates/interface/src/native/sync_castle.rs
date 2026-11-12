@@ -493,12 +493,13 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive_message(world, message);
     }
 }
 
-fn receive_message(world: &mut World, message: ServerMessage) {
+fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<SyncCastle>>()
         .iter(world)

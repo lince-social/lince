@@ -274,7 +274,7 @@ pub(crate) fn receive(
         .read(messages)
         .map(|message| message.0.clone())
         .collect();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         if let cell::ServerMessage::Error { id, message, .. } = &event
             && id == crate::native::cell_bridge::CONNECTION
         {
@@ -291,18 +291,18 @@ pub(crate) fn receive(
             continue;
         }
         let (id, result) = match event {
-            cell::ServerMessage::Fiote { id, status } => (id, Ok(status.record)),
+            cell::ServerMessage::Fiote { id, status } => (id, Ok(status.record.clone())),
             cell::ServerMessage::ActionOk { id, created, .. } => (
                 id,
-                created.ok_or_else(|| "The Organ did not return the new Record.".to_string()),
+                created.clone().ok_or_else(|| "The Organ did not return the new Record.".to_string()),
             ),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let area = world
             .query::<(Entity, &Creating)>()
             .iter(world)
-            .find(|(_, pending)| pending.0 == id)
+            .find(|(_, pending)| pending.0 == *id)
             .map(|(entity, _)| entity);
         let Some(entity) = area else { continue };
         world.entity_mut(entity).remove::<Creating>();

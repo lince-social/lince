@@ -141,7 +141,7 @@ fn publish(app: &mut App, owner: Entity, mut status: cell::speech::Status) {
     let id = nucleus::new_uid("voice-response");
     app.world_mut().get_mut::<Listening>(owner).unwrap().pending = Some(id.clone());
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech { id, status },
         ));
     app.update();
@@ -407,7 +407,7 @@ async fn settle(app: &mut App) {
             .try_recv();
         if let Ok(message) = incoming {
             app.world_mut()
-                .write_message(crate::native::cell_bridge::CellMessage(message));
+                .write_message(crate::native::cell_bridge::CellMessage::new(message));
         }
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
@@ -486,7 +486,7 @@ async fn status_polling_accepts_one_utterance_and_ignores_the_stale_inspection_r
     let status = host.handle(Request::Inspect).await.unwrap();
     assert!(!status.listening.enabled);
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: inspection,
                 status,
@@ -814,7 +814,7 @@ async fn hidden_or_inactive_workspace_cancels_pending_start_and_ignores_its_late
         status.listening.enabled = true;
         status.listening.generation = 1;
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::Speech {
                     id: "late-start".into(),
                     status,
@@ -1056,7 +1056,7 @@ async fn ownership_changes_stop_this_capture_without_stopping_the_other_listener
     status.listening.enabled = true;
     status.listening.owner = Some(nucleus::new_uid("voice"));
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: "ownership-response".into(),
                 status,
@@ -1164,7 +1164,7 @@ async fn microphone_changes_require_stopping_and_connection_loss_preserves_the_d
     );
     assert!(!stopped.load(Ordering::Acquire));
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Error {
                 id: crate::native::cell_bridge::CONNECTION.into(),
                 message: "Disconnected".into(),
@@ -1321,7 +1321,7 @@ async fn stop_before_activation_acknowledgment_invalidates_the_owner_and_suppres
     status.listening.owner = Some(session);
     status.listening.generation = 1;
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: "old-start".into(),
                 status,
@@ -1388,7 +1388,7 @@ async fn changing_recipient_closes_pending_listening_and_preserves_the_draft() {
     status.listening.owner = Some(session);
     status.listening.generation = 1;
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: "old-start".into(),
                 status,

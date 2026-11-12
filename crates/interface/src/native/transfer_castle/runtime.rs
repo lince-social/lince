@@ -193,13 +193,13 @@ pub(super) fn receive(
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         if audience::receive(world, &message) || karma::receive(world, &message) {
             continue;
         }
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let Some((owner, kind)) = world.resource::<Requests>().0.get(&id).cloned() else {
+                let Some((owner, kind)) = world.resource::<Requests>().0.get(id).cloned() else {
                     continue;
                 };
                 if world.get::<View>(owner).is_none() {
@@ -214,7 +214,7 @@ pub(super) fn receive(
                             .cloned();
                         let fresh: Vec<_> = rows
                             .into_iter()
-                            .filter(|row| row["kind"] != "transfer_context")
+                            .filter(|row| row["kind"] != "transfer_context").cloned()
                             .collect();
                         let view = world.get::<View>(owner).unwrap();
                         if view.ready
@@ -266,11 +266,11 @@ pub(super) fn receive(
                         if kind == "records" {
                             view.records
                                 .retain(|row| row["transfer_picker_unit"] == true);
-                            view.records.extend(rows);
+                            view.records.extend(rows.iter().cloned());
                         } else {
                             view.records
                                 .retain(|row| row["transfer_picker_unit"] != true);
-                            view.records.extend(rows.into_iter().map(|mut row| {
+                            view.records.extend(rows.iter().cloned().map(|mut row| {
                                 row["transfer_picker_unit"] = json!(true);
                                 row
                             }));
@@ -280,7 +280,7 @@ pub(super) fn receive(
                         if world.get::<View>(owner).unwrap().preview_request.as_ref() != Some(&id) {
                             continue;
                         }
-                        world.get_mut::<View>(owner).unwrap().preview = rows.into_iter().next();
+                        world.get_mut::<View>(owner).unwrap().preview = rows.first().cloned();
                         forms::render_preview(world, owner);
                     }
                     _ => {}
@@ -299,7 +299,7 @@ pub(super) fn receive(
                     .find(|(_, view)| {
                         view.pending
                             .as_ref()
-                            .is_some_and(|pending| pending.id == id)
+                            .is_some_and(|pending| pending.id == *id)
                     })
                     .map(|(owner, _)| owner);
                 let Some(owner) = owner else { continue };
@@ -339,7 +339,7 @@ pub(super) fn receive(
                         | "create-reversing-transfer-draft"
                 ) && let Some(created) = created
                 {
-                    castle.selected = created;
+                    castle.selected = created.clone();
                 }
                 if action == "transfer-receipt" {
                     let mut view = world.get_mut::<View>(owner).unwrap();
@@ -400,11 +400,11 @@ pub(super) fn receive(
                     .filter(|(owner, view)| {
                         view.pending
                             .as_ref()
-                            .is_some_and(|pending| pending.id == id)
+                            .is_some_and(|pending| pending.id == *id)
                             || world
                                 .resource::<Requests>()
                                 .0
-                                .get(&id)
+                                .get(id)
                                 .is_some_and(|(target, _)| target == owner)
                             || (id == crate::native::cell_bridge::CONNECTION
                                 && crate::native::practice_cells::source(world, *owner).is_none())
@@ -415,11 +415,11 @@ pub(super) fn receive(
                     let lane = world
                         .resource::<Requests>()
                         .0
-                        .get(&id)
+                        .get(id)
                         .map(|(_, kind)| kind.clone());
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     let receipt_failure = view.pending.as_ref().is_some_and(|pending| {
-                        pending.id == id
+                        pending.id == *id
                             && matches!(
                                 pending.form.data["action"].as_str(),
                                 Some("transfer-receipt" | "identity")
@@ -432,7 +432,7 @@ pub(super) fn receive(
                     if view
                         .pending
                         .as_ref()
-                        .is_some_and(|pending| pending.id == id)
+                        .is_some_and(|pending| pending.id == *id)
                         || id == crate::native::cell_bridge::CONNECTION
                     {
                         view.pending = None;
@@ -451,7 +451,7 @@ pub(super) fn receive(
                     } else {
                         message.clone()
                     };
-                    status(world, owner, &message);
+                    status(world, owner, message);
                     if receipt_failure {
                         ui::render(world, owner);
                     }

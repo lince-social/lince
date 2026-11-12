@@ -29,6 +29,13 @@ fn main() -> Result<(), Error> {
     if has_arg(&args, "--build-info") {
         return build_info::print();
     }
+    if has_arg(&args, "--park-performance-check") {
+        if args.len() != 2 { return Err(Error::other("Use lince --park-performance-check without a personal data directory")); }
+        #[cfg(all(target_os = "linux", feature = "park"))]
+        return std::thread::Builder::new().name("park-performance-check".into()).stack_size(32 * 1024 * 1024).spawn(lince_park::responsiveness::run)?.join().map_err(|_| Error::other("Park performance suite panicked"))?;
+        #[cfg(not(all(target_os = "linux", feature = "park")))]
+        return Err(Error::other("Park performance checks require Linux and the park feature"));
+    }
     if has_arg(&args, "--park-power") {
         if args.len() != 3 || args[1] != "--park-power" || !matches!(args[2].as_str(), "on" | "off")
         {
@@ -493,6 +500,7 @@ fn print_help() {
     println!(
         "      --park-nested    Run the same Cell-backed compositor inside the current desktop"
     );
+    println!("      --park-performance-check  Run isolated, strict native responsiveness checks");
     println!("      --park-duration N  Limit a nested session to N seconds");
     println!("      --park-outputs N   Simulate N outputs in a nested session");
     println!("      --showoff        Open the saved Laboratory showoff workspace");

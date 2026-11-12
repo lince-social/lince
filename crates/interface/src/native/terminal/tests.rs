@@ -63,7 +63,7 @@ async fn native_terminal_opens_renders_output_and_closes_after_removal() {
         let messages = app
             .world()
             .resource::<Messages<crate::native::cell_bridge::CellMessage>>();
-        if cursor.read(messages).any(|message| matches!(&message.0, ServerMessage::Error { id: error_id, message, .. } if error_id == &id && message.contains("was not found"))) { return; }
+        if cursor.read(messages).any(|message| matches!(message.0.as_ref(), ServerMessage::Error { id: error_id, message, .. } if error_id == &id && message.contains("was not found"))) { return; }
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
     }
     panic!("Removed terminal still accepted input");

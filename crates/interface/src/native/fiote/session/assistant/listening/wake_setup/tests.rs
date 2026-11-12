@@ -124,7 +124,7 @@ async fn settle(app: &mut App, owner: Entity) {
             .try_recv()
         {
             app.world_mut()
-                .write_message(crate::native::cell_bridge::CellMessage(message));
+                .write_message(crate::native::cell_bridge::CellMessage::new(message));
         }
         app.update();
         if !busy(app.world(), owner) {

@@ -293,7 +293,7 @@ fn receive(world: &mut World) {
             .incoming
             .try_recv();
         let Ok(message) = message else { break };
-        world.write_message(crate::native::cell_bridge::CellMessage(message));
+        world.write_message(crate::native::cell_bridge::CellMessage::new(message));
     }
 }
 

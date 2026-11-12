@@ -21,7 +21,7 @@ fn observe(app: &mut Toolkit) -> Replies {
             .add_systems(
                 (move |mut messages: MessageReader<native::cell_bridge::CellMessage>| {
                     for message in messages.read() {
-                        if let cell::ServerMessage::Snapshot { id, rows } = &message.0
+                        if let cell::ServerMessage::Snapshot { id, rows } = message.0.as_ref()
                             && id.starts_with("protein-area-")
                         {
                             let mut replies = observed.lock().unwrap();

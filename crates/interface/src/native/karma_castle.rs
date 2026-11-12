@@ -549,7 +549,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         let execution_id = match &message {
             ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => Some(id),
             _ => None,
@@ -615,7 +615,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 let Some((owner, index)) =
-                    world.resource::<Requests>().subscriptions.get(&id).copied()
+                    world.resource::<Requests>().subscriptions.get(id).copied()
                 else {
                     continue;
                 };
@@ -627,7 +627,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     0 => {
                         match rows
                             .into_iter()
-                            .map(serde_json::from_value)
+                            .map(|row| serde_json::from_value(row.clone()))
                             .collect::<Result<Vec<Rule>, _>>()
                         {
                             Ok(rules) => {
@@ -649,18 +649,18 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         }
                     }
                     1 => {
-                        if view.records == rows {
+                        if view.records == *rows {
                             continue;
                         }
                         view.record_lookup = lookup(&rows);
-                        view.records = rows;
+                        view.records = rows.clone();
                     }
                     2 => {
-                        if view.frequencies == rows {
+                        if view.frequencies == *rows {
                             continue;
                         }
                         view.frequency_lookup = lookup(&rows);
-                        view.frequencies = rows;
+                        view.frequencies = rows.clone();
                     }
                     _ => {
                         let acting = rows
@@ -670,7 +670,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             .map(str::to_owned);
                         let transfers: Vec<_> = rows
                             .into_iter()
-                            .filter(|row| row["kind"] != "transfer_context")
+                            .filter(|row| row["kind"] != "transfer_context").cloned()
                             .collect();
                         if view.transfers == transfers && view.acting_person == acting {
                             continue;
@@ -696,7 +696,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 }
             }
             ServerMessage::ActionOk { id, data, .. } => {
-                let reading = world.resource_mut::<Requests>().readings.remove(&id);
+                let reading = world.resource_mut::<Requests>().readings.remove(id);
                 if let Some(entity) = reading {
                     ui::reading_reply(
                         world,
@@ -770,9 +770,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 }
             }
             ServerMessage::Error { id, message, .. } => {
-                let reading = world.resource_mut::<Requests>().readings.remove(&id);
+                let reading = world.resource_mut::<Requests>().readings.remove(id);
                 if let Some(entity) = reading {
-                    ui::reading_reply(world, entity, message);
+                    ui::reading_reply(world, entity, message.clone());
                     continue;
                 }
                 let owners: Vec<_> = world
@@ -783,7 +783,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             || world
                                 .resource::<Requests>()
                                 .subscriptions
-                                .get(&id)
+                                .get(id)
                                 .is_some_and(|(entity, _)| entity == owner)
                             || id == crate::native::cell_bridge::CONNECTION
                     })
@@ -799,7 +799,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     view.pausing.clear();
                     ui::render_form(world, owner);
                     ui::render_list(world, owner);
-                    status(world, owner, &message);
+                    status(world, owner, message);
                 }
             }
             _ => {}

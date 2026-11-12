@@ -303,15 +303,15 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let Some(owner) = world.resource::<Requests>().0.get(&id).copied() else {
+                let Some(owner) = world.resource::<Requests>().0.get(id).copied() else {
                     continue;
                 };
                 let rows = match rows
                     .into_iter()
-                    .map(serde_json::from_value)
+                    .map(|row| serde_json::from_value(row.clone()))
                     .collect::<Result<Vec<Frequency>, _>>()
                 {
                     Ok(rows) => rows,
@@ -351,7 +351,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     .filter(|(_, view)| {
                         view.pending
                             .as_ref()
-                            .is_some_and(|pending| pending.id == id)
+                            .is_some_and(|pending| pending.id == *id)
                     })
                     .map(|(owner, _)| owner)
                     .collect();
@@ -392,15 +392,15 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     .filter(|(owner, view)| {
                         view.pending
                             .as_ref()
-                            .is_some_and(|pending| pending.id == id)
-                            || world.resource::<Requests>().0.get(&id) == Some(owner)
+                            .is_some_and(|pending| pending.id == *id)
+                            || world.resource::<Requests>().0.get(id) == Some(owner)
                             || id == crate::native::cell_bridge::CONNECTION
                     })
                     .map(|(owner, _)| owner)
                     .collect();
                 for owner in owners {
                     world.get_mut::<View>(owner).unwrap().pending = None;
-                    status(world, owner, &message);
+                    status(world, owner, message);
                 }
             }
             _ => {}

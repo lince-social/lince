@@ -236,7 +236,7 @@ mod tests {
         let mut schedule = Schedule::default();
         schedule.add_systems(notifications::cell_connection);
         for occurrence in 1..=2 {
-            world.write_message(CellMessage(message.clone()));
+            world.write_message(CellMessage::new(message.clone()));
             for owner in [first, second] {
                 receive(&mut world, owner, message.clone());
                 let state = &world.resource::<Runtime>().areas[&owner];

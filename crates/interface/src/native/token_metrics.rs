@@ -1,5 +1,8 @@
 use crate::native::{token_style::Tokens, tokens::Token};
-use bevy::{ecs::query::QueryData, prelude::*};
+use bevy::{
+    ecs::{entity::EntityHashSet, query::QueryData},
+    prelude::*,
+};
 
 #[derive(Component, Clone, Copy)]
 pub(crate) struct WidthToken(pub Token, pub bool);
@@ -64,9 +67,18 @@ pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
     tokens.refresh();
     if crate::host::performance::enabled() {
-        crate::host::performance::add(crate::host::performance::Count::IconMetricsVisited, icons.iter().len() as u64);
+        crate::host::performance::add(
+            crate::host::performance::Count::IconMetricsVisited,
+            icons.iter().len() as u64,
+        );
     }
-    for icon in icons.iter() {
+    let mut pending = EntityHashSet::default();
+    for icon in icons.iter_mut() {
+        if !tokens.invalidated(icon.entity) && !icon.style.is_changed() && !icon.metrics.is_added()
+        {
+            continue;
+        }
+        pending.insert(icon.entity);
         tokens.prepare_metric(icon.entity, "icon-size", Token::IconSize);
         tokens.prepare_metric(icon.entity, "icon-padding", Token::IconPadding);
     }
@@ -93,10 +105,14 @@ pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
         }
         metrics.set_if_neq(next);
     };
-    if icons.iter().len() >= 1024 {
-        icons.par_iter_mut().for_each(apply);
+    if pending.len() >= 1024 {
+        icons.par_iter_many_unique_mut(&pending).for_each(apply);
     } else {
-        icons.iter_mut().for_each(apply);
+        for entity in pending {
+            if let Ok(icon) = icons.get_mut(entity) {
+                apply(icon);
+            }
+        }
     }
 }
 
@@ -107,8 +123,8 @@ pub(crate) struct LayoutData {
     node: &'static mut Node,
     font: Option<&'static mut TextFont>,
     metrics: &'static mut Metrics,
-    width: Option<&'static WidthToken>,
-    radius: Option<&'static RadiusToken>,
+    width: Option<Ref<'static, WidthToken>>,
+    radius: Option<Ref<'static, RadiusToken>>,
     icon: Has<crate::native::icons::IconButton>,
 }
 
@@ -132,16 +148,39 @@ impl RequiredMetrics {
     }
 }
 
-pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
+pub(crate) fn layout(
+    mut tokens: Tokens,
+    mut nodes: Query<LayoutData>,
+    mut removed_icons: RemovedComponents<crate::native::icons::IconButton>,
+) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
     tokens.refresh();
     if crate::host::performance::enabled() {
-        crate::host::performance::add(crate::host::performance::Count::NodeMetricsVisited, nodes.iter().len() as u64);
+        crate::host::performance::add(
+            crate::host::performance::Count::NodeMetricsVisited,
+            nodes.iter().len() as u64,
+        );
     }
     let mut work = 0;
-    for node in nodes.iter() {
-        let required = RequiredMetrics::new(node.node, node.metrics, node.font, node.icon);
+    let mut pending: EntityHashSet = removed_icons.read().collect();
+    for node in nodes.iter_mut() {
+        if !tokens.invalidated(node.entity)
+            && !node.node.is_changed()
+            && !node.metrics.is_added()
+            && !node.font.as_ref().is_some_and(|font| font.is_changed())
+            && !node.width.as_ref().is_some_and(|width| width.is_changed())
+            && !node
+                .radius
+                .as_ref()
+                .is_some_and(|radius| radius.is_changed())
+            && !pending.contains(&node.entity)
+        {
+            continue;
+        }
+        pending.insert(node.entity);
+        let required =
+            RequiredMetrics::new(&node.node, &node.metrics, node.font.as_deref(), node.icon);
         if required.any() || node.width.is_some() || node.radius.is_some() {
             work += 1;
         }
@@ -162,7 +201,10 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
         }
     }
     tokens.finish_preparing();
-    crate::host::performance::add(crate::host::performance::Count::NodeMetricsActive, work as u64);
+    crate::host::performance::add(
+        crate::host::performance::Count::NodeMetricsActive,
+        work as u64,
+    );
     let apply = |LayoutDataItem {
                      entity,
                      mut node,
@@ -230,9 +272,13 @@ pub(crate) fn layout(mut tokens: Tokens, mut nodes: Query<LayoutData>) {
         metrics.set_if_neq(next);
     };
     if work >= 1024 {
-        nodes.par_iter_mut().for_each(apply);
+        nodes.par_iter_many_unique_mut(&pending).for_each(apply);
     } else {
-        nodes.iter_mut().for_each(apply);
+        for entity in pending {
+            if let Ok(node) = nodes.get_mut(entity) {
+                apply(node);
+            }
+        }
     }
 }
 
@@ -240,7 +286,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::native::tokens::{ThemeSettings, TokenValue};
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn initially_empty_metrics_follow_late_fields_bindings_and_reparenting() {
         let mut world = World::new();
         world.init_resource::<ThemeSettings>();
@@ -307,7 +353,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn zero_theme_ratios_keep_authored_bases_and_zero_bound_controls_still_update() {
         let mut world = World::new();
         world.init_resource::<ThemeSettings>();
@@ -594,6 +640,8 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        initially_empty_metrics_follow_late_fields_bindings_and_reparenting,
+        zero_theme_ratios_keep_authored_bases_and_zero_bound_controls_still_update,
         spacing_padding_and_type_scale_without_compounding_or_losing_authored_changes,
         metrics_follow_reparenting_authored_bindings_and_late_nodes_without_dirtying_steady_state,
         icon_metrics_retain_state_and_follow_theme_and_authored_edits,

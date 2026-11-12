@@ -30,7 +30,7 @@ pub(super) fn receive(
 ) {
     for message in messages.read() {
         for mut feed in &mut feeds {
-            match &message.0 {
+            match message.0.as_ref() {
                 ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                     if id == &feed.id =>
                 {

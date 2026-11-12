@@ -58,7 +58,7 @@ async fn settle(app: &mut App) {
             .try_recv();
         if let Ok(message) = incoming {
             app.world_mut()
-                .write_message(crate::native::cell_bridge::CellMessage(message));
+                .write_message(crate::native::cell_bridge::CellMessage::new(message));
         }
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
@@ -192,7 +192,7 @@ async fn native_download_cancel_survives_queue_pressure_and_ignores_a_late_setup
         error: None,
     });
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech { id: start, status },
         ));
     app.update();
@@ -211,7 +211,7 @@ async fn native_download_cancel_survives_queue_pressure_and_ignores_a_late_setup
         matches!(request, cell::ClientMessage::Speech { id, request: Request::Cancel { job: canceled } } if id == pending && canceled == job)
     );
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: pending,
                 status: host.handle(Request::Inspect).await.unwrap(),
@@ -446,7 +446,7 @@ async fn supported_unvalidated_routing_persists_and_identical_retry_bypasses_cha
         }),
     });
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: pending,
                 status,
@@ -593,7 +593,7 @@ async fn failed_destination_routing_falls_back_once_and_ignores_a_late_decision(
         .unwrap();
     let status = speech.handle(Request::Inspect).await.unwrap();
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: pending,
                 status,
@@ -670,7 +670,7 @@ async fn changing_recipient_cancels_pending_routing_without_delivery() {
     );
     settle(&mut app).await;
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             cell::ServerMessage::Speech {
                 id: pending,
                 status,
@@ -832,7 +832,7 @@ async fn actual_native_download_and_invalid_reimport_preserve_verified_assets_wi
                 .try_recv()
             {
                 app.world_mut()
-                    .write_message(crate::native::cell_bridge::CellMessage(message));
+                    .write_message(crate::native::cell_bridge::CellMessage::new(message));
             }
             let settings = app.world().get::<Settings>(owner).unwrap();
             if settings.pending.is_none() && settings.job.is_none() {

@@ -241,18 +241,18 @@ pub(super) fn receive(
         .cloned()
         .collect();
     for message in messages {
-        let (id, result) = match message.0 {
-            cell::ServerMessage::ActionOk { id, data, .. } => (id, Ok(data.unwrap_or_default())),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+        let (id, result) = match message.0.as_ref() {
+            cell::ServerMessage::ActionOk { id, data, .. } => (id, Ok(data.clone().unwrap_or_default())),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let owner = world
             .query::<(Entity, &Feed)>()
             .iter(world)
-            .find(|(_, feed)| feed.pending.contains_key(&id))
+            .find(|(_, feed)| feed.pending.contains_key(id))
             .map(|(entity, _)| entity);
         let Some(owner) = owner else { continue };
-        let Some((record, kind, sent)) = world.get_mut::<Feed>(owner).unwrap().pending.remove(&id)
+        let Some((record, kind, sent)) = world.get_mut::<Feed>(owner).unwrap().pending.remove(id)
         else {
             continue;
         };
@@ -464,7 +464,7 @@ pub(super) mod tests {
             Some("22".repeat(32))
         );
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::ActionOk {
                     id: "old".into(),
                     created: None,
@@ -544,7 +544,7 @@ pub(super) mod tests {
                     }
                 };
                 app.world_mut()
-                    .write_message(crate::native::cell_bridge::CellMessage(message));
+                    .write_message(crate::native::cell_bridge::CellMessage::new(message));
             }
             app.world_mut().entity_mut(owner).insert(Feed {
                 pending,
@@ -617,7 +617,7 @@ pub(super) mod tests {
                 (evidence.record_uid.clone(), Kind::Live, Instant::now()),
             );
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::Error {
                     id: "family-revoked".into(),
                     message: evidence.family_live_denial,
@@ -685,7 +685,7 @@ pub(super) mod tests {
                 authority: None,
             });
             app.world_mut()
-                .write_message(crate::native::cell_bridge::CellMessage(if index < 2 {
+                .write_message(crate::native::cell_bridge::CellMessage::new(if index < 2 {
                     cell::ServerMessage::ActionOk {
                         id,
                         created: None,
@@ -728,7 +728,7 @@ pub(super) mod tests {
                 (record.clone(), Kind::Live, Instant::now()),
             );
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::Error {
                     id: "revoked".into(),
                     message: "Location is private".into(),

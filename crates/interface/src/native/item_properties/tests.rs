@@ -49,7 +49,7 @@ async fn settle(app: &mut App, done: impl Fn(&World) -> bool) {
             .get_non_send_mut::<cell_bridge::CellBridge>()
         {
             while let Ok(message) = bridge.incoming.try_recv() {
-                messages.push(CellMessage(message));
+                messages.push(CellMessage::new(message));
             }
         }
         app.world_mut().write_message_batch(messages);

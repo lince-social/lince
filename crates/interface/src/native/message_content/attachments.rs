@@ -361,12 +361,12 @@ pub(super) fn receive(
         .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
         .map(|messages| cursor.read(messages).map(|event| event.0.clone()).collect())
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|event| event.as_ref()) {
         let (id, result) = match event {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
                 (id, Ok(rows))
             }
-            ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let owner = world
@@ -377,9 +377,9 @@ pub(super) fn receive(
         let Some(owner) = owner else { continue };
         if let Some(sender) = world
             .get_resource_mut::<Subscriptions>()
-            .and_then(|mut subs| subs.0.remove(&id))
+            .and_then(|mut subs| subs.0.remove(id))
         {
-            let _ = sender.try_send(ClientMessage::Unsubscribe { id });
+            let _ = sender.try_send(ClientMessage::Unsubscribe { id: id.clone() });
         }
         let result = result.and_then(|rows| {
             let mut card = world.get_mut::<Attachment>(owner).unwrap();

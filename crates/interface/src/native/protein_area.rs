@@ -81,6 +81,22 @@ pub(crate) fn feed_ready(world: &World, owner: Entity) -> bool {
         .is_some_and(|state| state.ready && state.subscription.is_some())
 }
 
+#[derive(serde::Serialize)]
+pub struct ProjectionStats {
+    pub ready: bool,
+    pub records: usize,
+    pub materialized: usize,
+}
+
+pub fn projection_stats(world: &World, owner: Entity) -> Option<ProjectionStats> {
+    let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
+    Some(ProjectionStats {
+        ready: state.ready && state.subscription.is_some(),
+        records: state.data.len(),
+        materialized: state.row_entities.len(),
+    })
+}
+
 pub(crate) fn thread_load_error(world: &World, owner: Entity) -> Option<&str> {
     let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
     state.thread_error.as_deref()
@@ -336,8 +352,8 @@ fn laboratory_pump(
         .iter(world)
         .collect();
     for owner in owners {
-        for message in &messages {
-            receive(world, owner, message.clone());
+        for message in messages.iter().map(|message| message.as_ref()) {
+            receive(world, owner, message);
         }
         let Some(mut state) = world.resource_mut::<Runtime>().areas.remove(&owner) else {
             continue;
@@ -771,7 +787,7 @@ fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
                 .or_default()
                 .insert(uid.clone());
         }
-        world.write_message(CellMessage(message.clone()));
+        world.write_message(CellMessage::new(message.clone()));
     }
     if matches!(source, Source::Organ(_)) {
         crate::native::workspace_sync::receive(world, source, message);
@@ -793,11 +809,12 @@ fn observe(world: &mut World, source: &Source, message: &ServerMessage) {
     crate::native::thread_castle::mentions::receive_message(world, message);
     if matches!(source, Source::Organ(_)) {
         crate::native::assertion_editor::receive(world, message);
-        crate::native::record_binding::receive(world, source.clone(), message.clone());
+        crate::native::record_binding::receive(world, source.clone(), message);
     }
 }
 
-fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
+fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
     let snapshot = matches!(&message, ServerMessage::Snapshot { .. });
     let mut runtime = world.resource_mut::<Runtime>();
     let Some(state) = runtime.areas.get_mut(&owner) else {
@@ -805,13 +822,19 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
     };
     match message {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
-            if state.subscription.as_ref() == Some(&id) && !state.login =>
+            if state.subscription.as_ref() == Some(id) && !state.login =>
         {
             crate::host::performance::count(crate::host::performance::Count::RecordRowsReceived);
             state.refreshing = false;
             if snapshot {
                 state.thread_requests = state.thread_requests.saturating_sub(1);
                 state.thread_error = None;
+            }
+            if state.ready && state.data == *rows {
+                state.status = "Live".into();
+                drop(runtime);
+                mirror_editor(world, owner);
+                return;
             }
             state.revision = state.revision.wrapping_add(1);
             if rows.len() > 100_000
@@ -839,7 +862,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                         .filter_map(|row| row["uid"].as_str().map(str::to_string))
                         .collect(),
                 );
-                state.data = rows;
+                state.data = rows.clone();
                 date_order::sort(state);
                 state.dirty = true;
                 state.status = "Live".into();
@@ -874,7 +897,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             data,
             ..
         } => {
-            if let Some(editor) = state.actions.remove(&id) {
+            if let Some(editor) = state.actions.remove(id) {
                 let message = if warnings.is_empty() {
                     "Saved".into()
                 } else {
@@ -886,7 +909,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 history::finished(
                     world,
                     &id,
-                    created,
+                    created.clone(),
                     data.as_ref()
                         .and_then(|data| data["changed"].as_bool())
                         .unwrap_or(true),
@@ -896,15 +919,15 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             }
         }
         ServerMessage::Error { id, message, code } => {
-            if state.subscription.as_ref() == Some(&id) && state.thread_requests > 0 {
+            if state.subscription.as_ref() == Some(id) && state.thread_requests > 0 {
                 state.thread_requests -= 1;
-                state.thread_error = Some(message);
+                state.thread_error = Some(message.clone());
                 return;
             }
             if id != "connection"
                 && id != crate::native::cell_bridge::CONNECTION
-                && state.subscription.as_ref() != Some(&id)
-                && !state.actions.contains_key(&id)
+                && state.subscription.as_ref() != Some(id)
+                && !state.actions.contains_key(id)
             {
                 return;
             }
@@ -927,7 +950,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             let alert = message.clone();
             if id == "connection"
                 || id == crate::native::cell_bridge::CONNECTION
-                || state.subscription.as_ref() == Some(&id)
+                || state.subscription.as_ref() == Some(id)
             {
                 state.ready = false;
                 state.data.clear();
@@ -935,10 +958,10 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 state.dirty = true;
                 state.pending.clear();
             }
-            if let Some(editor) = state.actions.remove(&id) {
+            if let Some(editor) = state.actions.remove(id) {
                 drop(runtime);
                 history::finished(world, &id, None, false, false);
-                rows::action_finished(world, editor, Some(message));
+                rows::action_finished(world, editor, Some(message.clone()));
             }
             if id != "connection" {
                 crate::native::notifications::report(world, "Protein Area", &alert);
@@ -1070,7 +1093,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in &local {
+    for message in local.iter().map(|message| message.as_ref()) {
         observe(world, &Source::Local, message);
     }
     sessions::update(world);
@@ -1088,8 +1111,8 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             .as_ref()
             .is_some_and(|config| matches!(config.source, Source::Local))
         {
-            for message in &local {
-                receive(world, owner, message.clone());
+            for message in local.iter().map(|message| message.as_ref()) {
+                receive(world, owner, message);
             }
         }
     }

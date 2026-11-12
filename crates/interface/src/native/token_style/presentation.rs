@@ -51,14 +51,41 @@ fn text_token(tokens: &Tokens, entity: Entity, binding: Token) -> Token {
 
 pub(super) fn apply(
     mut tokens: Tokens,
-    mut styles: Query<StyleData, Styled>,
+    mut queries: ParamSet<(
+        Query<StyleData, Styled>,
+        Query<
+            Entity,
+            Or<(
+                Changed<BackgroundToken>,
+                Changed<TextToken>,
+                Changed<BorderToken>,
+                Changed<OutlineToken>,
+                Changed<CursorToken>,
+                Changed<BackgroundColor>,
+                Changed<TextColor>,
+                Changed<BorderColor>,
+                Changed<Outline>,
+                Changed<TextCursorStyle>,
+                Changed<ImageNode>,
+                Changed<Node>,
+                Added<IconButton>,
+            )>,
+        >,
+    )>,
     mut commands: Commands,
 ) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeStyles);
     tokens.refresh();
+    let changed: std::collections::HashSet<_> = queries.p1().iter().collect();
+    let mut styles = queries.p0();
+    let mut pending = Vec::new();
     for style in styles.iter() {
         let entity = style.entity;
+        if !tokens.invalidated(entity) && !changed.contains(&entity) {
+            continue;
+        }
+        pending.push(entity);
         if style.item && tokens.kind(entity).is_some() {
             tokens.prepare(
                 entity,
@@ -99,7 +126,10 @@ pub(super) fn apply(
         }
     }
     tokens.finish_preparing();
-    for mut style in &mut styles {
+    for entity in pending {
+        let Ok(mut style) = styles.get_mut(entity) else {
+            continue;
+        };
         let entity = style.entity;
         if style.item && tokens.kind(entity).is_some() {
             let clock = tokens.clock(entity);

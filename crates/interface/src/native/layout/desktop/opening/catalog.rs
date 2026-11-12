@@ -188,7 +188,7 @@ pub(super) fn update(world: &mut World) {
     let messages: Vec<_> = world.get_resource::<Messages<CellMessage>>().map(|messages| catalog.cursor.read(messages).map(|message| message.0.clone()).collect()).unwrap_or_default();
     let next_sender = sender(world);
     let changed = match (&catalog.sender, &next_sender) { (Some(old), Some(new)) => !old.same_channel(new), (None, None) => false, _ => true };
-    let authentication = messages.iter().any(|message| matches!(message, ServerMessage::SessionChallenge { .. } | ServerMessage::SessionAuthenticated { .. }));
+    let authentication = messages.iter().any(|message| matches!(message.as_ref(), ServerMessage::SessionChallenge { .. } | ServerMessage::SessionAuthenticated { .. }));
     if changed || authentication {
         catalog.advance();
         ui::context_changed(world);
@@ -199,15 +199,15 @@ pub(super) fn update(world: &mut World) {
         }
     }
     catalog.sender = next_sender;
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let changed = if catalog.rules.id.as_ref() == Some(&id) { accept(&mut catalog.rules, rows) }
-                    else if catalog.windows.id.as_ref() == Some(&id) { accept(&mut catalog.windows, rows) } else { false };
+                let changed = if catalog.rules.id.as_ref() == Some(&id) { accept(&mut catalog.rules, rows.clone()) }
+                    else if catalog.windows.id.as_ref() == Some(&id) { accept(&mut catalog.windows, rows.clone()) } else { false };
                 if changed { catalog.advance(); }
             }
             ServerMessage::Error { id, message, .. } => {
-                if let Some(pending) = catalog.pending.remove(&id) { finish(world, &mut catalog, pending, Err(message)); }
+                if let Some(pending) = catalog.pending.remove(id) { finish(world, &mut catalog, pending, Err(message.clone())); }
                 else {
                     for feed in [&mut catalog.rules, &mut catalog.windows] {
                         if feed.id.as_ref() == Some(&id) {
@@ -220,7 +220,7 @@ pub(super) fn update(world: &mut World) {
                 }
             }
             ServerMessage::ActionOk { id, created, .. } => {
-                if let Some(mut pending) = catalog.pending.remove(&id) {
+                if let Some(mut pending) = catalog.pending.remove(id) {
                     if pending.creating {
                         if created.as_deref() != Some(pending.uid.as_str()) {
                             finish(world, &mut catalog, pending, Err("Record creation returned a different identity.".into()));

@@ -366,7 +366,7 @@ fn poll(
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, &Source::Local, &message);
     }
     if world.resource::<PollClock>().0.elapsed() < std::time::Duration::from_millis(250) {

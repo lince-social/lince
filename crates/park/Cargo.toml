@@ -86,6 +86,10 @@ name = "worker_probe"
 required-features = ["worker-gate"]
 
 [[example]]
+name = "responsiveness"
+required-features = ["native-presentation"]
+
+[[example]]
 name = "nested"
 required-features = ["nested", "worker-gate"]
 

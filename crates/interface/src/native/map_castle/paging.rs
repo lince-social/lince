@@ -226,12 +226,12 @@ pub(super) fn receive(
         .collect();
     for message in messages {
         if matches!(
-            message.0,
+            message.0.as_ref(),
             cell::ServerMessage::SessionAuthenticated { .. }
                 | cell::ServerMessage::LiveHello {
                     login_required: true
                 }
-        ) || matches!(&message.0, cell::ServerMessage::Error { id, .. } if id == "connection")
+        ) || matches!(message.0.as_ref(), cell::ServerMessage::Error { id, .. } if id == "connection")
         {
             settings::cancel_pending(world);
             let owners: Vec<_> = world
@@ -253,8 +253,8 @@ pub(super) fn receive(
             }
             continue;
         }
-        let (id, data) = match message.0 {
-            cell::ServerMessage::ActionOk { id, data, .. } => (id, data),
+        let (id, data) = match message.0.as_ref() {
+            cell::ServerMessage::ActionOk { id, data, .. } => (id, data.as_ref()),
             cell::ServerMessage::Error { id, .. } => (id, None),
             _ => continue,
         };
@@ -265,7 +265,7 @@ pub(super) fn receive(
                 pages
                     .pending
                     .as_ref()
-                    .is_some_and(|(pending, _)| *pending == id)
+                    .is_some_and(|(pending, _)| pending == id)
             })
             .map(|(entity, _)| entity);
         let Some(owner) = owner else {
@@ -394,7 +394,7 @@ mod tests {
         }
         app.world_mut().get_mut::<Pages>(owner).unwrap().pending =
             Some((id.clone(), Instant::now()));
-        app.world_mut().write_message(crate::native::cell_bridge::CellMessage(cell::ServerMessage::ActionOk {id,created:None,facts:0,warnings:vec![],data:Some(json!({"generation":"test-generation","features":features,"next_after":format!("cursor-{index}")}))}));
+        app.world_mut().write_message(crate::native::cell_bridge::CellMessage::new(cell::ServerMessage::ActionOk {id,created:None,facts:0,warnings:vec![],data:Some(json!({"generation":"test-generation","features":features,"next_after":format!("cursor-{index}")}))}));
         app.update();
     }
 

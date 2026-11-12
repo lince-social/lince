@@ -84,7 +84,7 @@ fn has(world: &mut World, needle: &str) -> bool {
 
 fn responses(mut messages: MessageReader<lince_sandbox::cell_bridge::CellMessage>) {
     for message in messages.read() {
-        match &message.0 {
+        match message.0.as_ref() {
             cell::ServerMessage::ActionOk { id, data, .. } => println!(
                 "Workspace Sync smoke acknowledgement {id}: {}",
                 data.as_ref()

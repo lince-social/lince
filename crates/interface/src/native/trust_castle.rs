@@ -1033,17 +1033,17 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             .collect::<Vec<_>>();
         for owner in owners {
             let reset = matches!(
-                &message.0,
+                message.0.as_ref(),
                 cell::ServerMessage::SessionAuthenticated { .. }
                     | cell::ServerMessage::LiveHello {
                         login_required: true
                     }
-            ) || matches!(&message.0,cell::ServerMessage::Error {id,..} if id=="connection");
+            ) || matches!(message.0.as_ref(),cell::ServerMessage::Error {id,..} if id=="connection");
             if reset {
                 let root = world.get::<View>(owner).unwrap().root;
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 clear_scope(&mut view);
-                view.person = match &message.0 {
+                view.person = match message.0.as_ref() {
                     cell::ServerMessage::SessionAuthenticated { person, .. } => person.clone(),
                     _ => String::new(),
                 };
@@ -1074,7 +1074,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 continue;
             };
             if generation != world.get::<View>(owner).unwrap().generation {
-                if matches!(&message.0,cell::ServerMessage::ActionOk {id,..}|cell::ServerMessage::Error {id,..} if *id==pending)
+                if matches!(message.0.as_ref(),cell::ServerMessage::ActionOk {id,..}|cell::ServerMessage::Error {id,..} if *id==pending)
                 {
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     view.pending = None;
@@ -1086,7 +1086,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 }
                 continue;
             }
-            match &message.0 {
+            match message.0.as_ref() {
                 cell::ServerMessage::ActionOk { id, data, .. } if *id == pending => {
                     let result = data
                         .as_ref()

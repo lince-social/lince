@@ -1925,7 +1925,7 @@ fn update(
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, &Source::Local, &message);
     }
     let cards = world

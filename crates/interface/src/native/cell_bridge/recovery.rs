@@ -27,7 +27,7 @@ pub fn reconnect(world: &mut World) -> Result<bool, String> {
 }
 
 pub(super) fn disconnected() -> CellMessage {
-    CellMessage(ServerMessage::Error {
+    CellMessage::new(ServerMessage::Error {
         id: CONNECTION.into(),
         message: "The connection to this Cell stopped. Your drafts are still here.".into(),
         code: Some("connection_closed".into()),

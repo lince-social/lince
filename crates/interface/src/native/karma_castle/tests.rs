@@ -921,7 +921,7 @@ fn execution_failures_show_retry_and_stopped_status_and_clear_after_recovery() {
             .executions
             .insert("health".into(), owner);
         app.world_mut()
-            .write_message(CellMessage(ServerMessage::ActionOk {
+            .write_message(CellMessage::new(ServerMessage::ActionOk {
                 id: "health".into(),
                 created: None,
                 facts: 0,

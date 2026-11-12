@@ -89,7 +89,6 @@ impl Target {
             && self.geometry.iter().zip(&other.geometry).all(|(original, current)| original.same_hit(current))
     }
 
-    #[cfg(all(test, feature = "server-tests"))]
     pub(crate) fn contains(&self, entity: Entity) -> bool {
         self.geometry.iter().any(|geometry| geometry.lineage.contains(&entity))
     }

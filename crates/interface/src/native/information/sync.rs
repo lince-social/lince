@@ -171,20 +171,20 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(messages)
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         let mut state = world.resource_mut::<SyncState>();
         match message {
             ServerMessage::SyncStatus { id, overview } if id == REQUEST => {
                 state.waiting = None;
-                if state.overview.as_ref() != Some(&overview) || state.error.is_some() {
-                    state.overview = Some(overview);
+                if state.overview.as_ref() != Some(overview) || state.error.is_some() {
+                    state.overview = Some(overview.clone());
                     state.error = None;
                     state.revision += 1;
                 }
             }
             ServerMessage::Error { id, message, .. } if id == REQUEST => {
                 state.waiting = None;
-                state.error = Some(message);
+                state.error = Some(message.clone());
                 state.revision += 1;
             }
             _ => {}
@@ -521,7 +521,7 @@ pub(crate) mod tests {
         assert!(labels.iter().any(|label| label == "Clear recent history"));
         assert!(labels.iter().any(|label| label == "Save sync history: off"));
         world.init_resource::<Messages<CellMessage>>();
-        world.write_message(CellMessage(ServerMessage::Error {
+        world.write_message(CellMessage::new(ServerMessage::Error {
             id: REQUEST.into(),
             message: "Disconnected".into(),
             code: None,

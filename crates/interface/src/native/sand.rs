@@ -124,6 +124,14 @@ fn button_borders(
     >,
     mut commands: Commands,
 ) {
+    let border = UiRect::all(px(settings
+        .resolve(
+            crate::native::tokens::Token::ControlBorder,
+            None,
+            &Default::default(),
+        )
+        .0
+        .number()));
     for (entity, mut node, color, outline) in &mut buttons {
         if let Some(mut outline) = outline
             && outline.width != px(0)
@@ -131,14 +139,6 @@ fn button_borders(
         {
             outline.width = px(0);
         }
-        let border = UiRect::all(px(settings
-            .resolve(
-                crate::native::tokens::Token::ControlBorder,
-                None,
-                &Default::default(),
-            )
-            .0
-            .number()));
         if node.border != border {
             node.border = border;
         }
@@ -152,28 +152,31 @@ fn button_borders(
     }
 }
 
-fn button_roundness(world: &mut World) {
-    let buttons: Vec<_> = world
-        .query_filtered::<Entity, (
-            With<Node>,
+fn button_roundness(
+    mut tokens: crate::native::token_style::Tokens,
+    mut buttons: Query<
+        (Entity, &mut Node),
+        (
             Without<crate::native::canvas_controls::corner::ControlsCorner>,
             Without<FixedGeometry>,
             Or<(
                 With<WidgetButton>,
                 With<crate::native::actions::ActionButton>,
             )>,
-        )>()
-        .iter(world)
-        .collect();
-    for entity in buttons {
-        let radius = BorderRadius::all(px(crate::native::token_style::resolve(
-            world,
-            entity,
-            crate::native::tokens::Token::ControlRoundness,
-        )
-        .0
-        .number()));
-        let mut node = world.get_mut::<Node>(entity).unwrap();
+        ),
+    >,
+) {
+    use crate::native::tokens::Token;
+    tokens.refresh();
+    for (entity, _) in &buttons {
+        tokens.prepare(entity, [Token::ControlRoundness]);
+    }
+    tokens.finish_preparing();
+    for (entity, mut node) in &mut buttons {
+        let radius = BorderRadius::all(px(tokens
+            .resolve(entity, Token::ControlRoundness)
+            .0
+            .number()));
         if node.border_radius != radius {
             node.border_radius = radius;
         }

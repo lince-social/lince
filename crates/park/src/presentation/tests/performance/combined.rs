@@ -1,10 +1,6 @@
-use super::*;
 use super::schedules::frame_pixels;
-use bevy::{
-    input::keyboard::Key,
-    input_focus::InputFocus,
-    math::DVec2,
-};
+use super::*;
+use bevy::{input::keyboard::Key, input_focus::InputFocus, math::DVec2};
 use lince_interface::{
     host::{
         DesktopAction, OutputId, WorkspaceLayout,
@@ -58,6 +54,8 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
                 .collect(),
         )
         .unwrap();
+    canvas.move_workspace_to_output(1, OutputId(1)).unwrap();
+    canvas.move_workspace_to_output(2, OutputId(2)).unwrap();
     for workspace in 1..=3 {
         native::workspace_config::set_physics(canvas.world_mut(), root, workspace, false);
     }
@@ -151,8 +149,12 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
         ));
     }
     let description = native::description::spawn(
-        canvas.world_mut(), items[5], "**Measured** description", native::description::Context {
-            owner: items[5], source: native::protein_area::Source::Local,
+        canvas.world_mut(),
+        items[5],
+        "**Measured** description",
+        native::description::Context {
+            owner: items[5],
+            source: native::protein_area::Source::Local,
         },
     );
     advance(&mut canvas, 16);
@@ -186,24 +188,32 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
             })
             .unwrap()
     };
-    let (output, points) = canvas.native_test_points(editor).expect("visible editable Sand");
-    canvas.focus_output(output).unwrap();
-    let center = std::array::from_fn(|axis| {
-        (points.iter().map(|point| point[axis]).sum::<f64>() / 4.0) as f32
-    });
+    let center = crate::responsiveness::input_point(&mut canvas, editor).unwrap();
     canvas.pointer(center).unwrap();
     advance(&mut canvas, 1);
-    canvas.button(bevy::input::mouse::MouseButton::Left, true).unwrap();
+    canvas
+        .button(bevy::input::mouse::MouseButton::Left, true)
+        .unwrap();
     advance(&mut canvas, 1);
-    canvas.button(bevy::input::mouse::MouseButton::Left, false).unwrap();
+    canvas
+        .button(bevy::input::mouse::MouseButton::Left, false)
+        .unwrap();
     advance(&mut canvas, 1);
-    assert_eq!(canvas.app.world().resource::<InputFocus>().get(), Some(editor), "pointer focus handshake");
+    assert_eq!(
+        canvas.app.world().resource::<InputFocus>().get(),
+        Some(editor),
+        "pointer focus handshake"
+    );
     performance::set_phase(Phase::Quiet);
     std::thread::sleep(std::time::Duration::from_millis(250));
     performance::set_phase(Phase::Typing);
     let mut expected = String::new();
     for round in 0..24 {
-        assert_eq!(canvas.app.world().resource::<InputFocus>().get(), Some(editor), "focus before Unicode key {round}");
+        assert_eq!(
+            canvas.app.world().resource::<InputFocus>().get(),
+            Some(editor),
+            "focus before Unicode key {round}"
+        );
         canvas
             .key(
                 KeyCode::KeyE,
@@ -230,20 +240,22 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
                 .world()
                 .get::<bevy::text::EditableText>(editor)
                 .unwrap()
-                .value().to_string(),
+                .value()
+                .to_string(),
             expected,
             "Unicode key {round}: focus={:?}, pending_edits={:?}, output={:?}",
             canvas.app.world().resource::<InputFocus>().get(),
-            canvas.app.world().get::<bevy::text::EditableText>(editor).unwrap().pending_edits,
+            canvas
+                .app
+                .world()
+                .get::<bevy::text::EditableText>(editor)
+                .unwrap()
+                .pending_edits,
             canvas.output_state.assignments.focused(),
         );
     }
     performance::set_phase(Phase::Scroll);
-    let (output, points) = canvas.native_test_points(viewport).unwrap();
-    canvas.focus_output(output).unwrap();
-    let center = std::array::from_fn(|axis| {
-        (points.iter().map(|point| point[axis]).sum::<f64>() / 4.0) as f32
-    });
+    let center = crate::responsiveness::input_point(&mut canvas, viewport).unwrap();
     canvas.pointer(center).unwrap();
     for _ in 0..24 {
         canvas
@@ -294,18 +306,31 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
     performance::set_phase(Phase::Styling);
     for index in 0..6 {
         let mut overrides = TokenOverrides::default();
-        overrides.set(Token::FontSize, TokenValue::Number(if index % 2 == 0 { 16.0 } else { 14.0 }));
+        overrides.set(
+            Token::FontSize,
+            TokenValue::Number(if index % 2 == 0 { 16.0 } else { 14.0 }),
+        );
         canvas.world_mut().entity_mut(items[5]).insert(overrides);
         advance(&mut canvas, 2);
     }
-    canvas.world_mut().entity_mut(items[5]).remove::<TokenOverrides>();
+    canvas
+        .world_mut()
+        .entity_mut(items[5])
+        .remove::<TokenOverrides>();
     advance(&mut canvas, 2);
     performance::set_phase(Phase::Resize);
     for index in 0..8 {
         let size = Vec2::new(if index % 2 == 0 { 220.0 } else { 200.0 }, 160.0);
-        canvas.world_mut().get_mut::<native::canvas::CanvasItem>(items[5]).unwrap().size = size;
-        canvas.world_mut().get_mut::<native::layout::LayoutBox>(items[5]).unwrap().rules =
-            lince_interface::layout::Rules::fixed(size.to_array());
+        canvas
+            .world_mut()
+            .get_mut::<native::canvas::CanvasItem>(items[5])
+            .unwrap()
+            .size = size;
+        canvas
+            .world_mut()
+            .get_mut::<native::layout::LayoutBox>(items[5])
+            .unwrap()
+            .rules = lince_interface::layout::Rules::fixed(size.to_array());
         advance(&mut canvas, 2);
     }
     performance::set_phase(Phase::Description);
@@ -313,7 +338,15 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
         let source = format!("**Measured** description {index}\n\nSynthetic local preview.");
         native::description::set(canvas.world_mut(), description, &source);
         advance(&mut canvas, 2);
-        assert_eq!(canvas.app.world().get::<native::description::Description>(description).unwrap().source, source);
+        assert_eq!(
+            canvas
+                .app
+                .world()
+                .get::<native::description::Description>(description)
+                .unwrap()
+                .source,
+            source
+        );
     }
     performance::set_phase(Phase::Active);
     advance(&mut canvas, 48);
@@ -325,7 +358,8 @@ fn mixed_daily_phases_publish_measured_work_and_complete_pixels() {
             .world()
             .get::<bevy::text::EditableText>(editor)
             .unwrap()
-            .value().to_string(),
+            .value()
+            .to_string(),
         expected
     );
     performance::set_phase(Phase::ReturnQuiet);

@@ -1356,7 +1356,8 @@ pub fn attach(
     ));
 }
 
-pub fn receive(world: &mut World, source: Source, message: ServerMessage) {
+pub fn receive(world: &mut World, source: Source, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
     let Some(mut bindings) = world.get_resource_mut::<Bindings>() else {
         return;
     };
@@ -1430,7 +1431,7 @@ fn local_messages(
         .read(messages)
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, Source::Local, message);
     }
 }

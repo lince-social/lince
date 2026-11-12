@@ -465,7 +465,7 @@ fn setup_responses(
         .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, &message);
     }
 }

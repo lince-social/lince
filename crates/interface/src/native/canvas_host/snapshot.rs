@@ -284,6 +284,8 @@ pub(super) fn record_references(value: &serde_json::Value) -> Vec<String> {
 }
 
 pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String> {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
+    crate::host::performance::count(crate::host::performance::Count::NativeCanvasSnapshots);
     let entities: Vec<_> = world
         .get::<Children>(root)
         .map(|children| {

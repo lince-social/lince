@@ -435,13 +435,77 @@ fn text_autosave_retains_unrelated_styles_and_unchanged_geometry() {
         super::super::set_overrides(world, text, values);
         let mut tokens = state.get(world).unwrap();
         tokens.refresh();
-        assert!(tokens.cache.values.is_empty());
+        assert!(
+            !tokens
+                .cache
+                .values
+                .keys()
+                .any(|(entity, _)| *entity == text)
+        );
+        assert!(
+            tokens
+                .cache
+                .values
+                .keys()
+                .any(|(entity, _)| *entity == unrelated)
+        );
         tokens.prepare(text, [Token::FontSize]);
         assert_eq!(tokens.resolve(text, Token::FontSize).0.number(), 31.0);
     }
 }
 
+#[cfg_attr(test, test)]
+fn edits_invalidate_descendants_and_preview_dependents_without_flushing_other_trees() {
+    let mut world = World::new();
+    world.init_resource::<ThemeSettings>();
+    let root = world.spawn(Node::default()).id();
+    let leaf = world.spawn((Node::default(), ChildOf(root))).id();
+    let unrelated = world.spawn(Node::default()).id();
+    let preview = world.spawn((Node::default(), PreviewSource(leaf))).id();
+    let preview_leaf = world.spawn((Node::default(), ChildOf(preview))).id();
+    let mut state = SystemState::<Tokens>::new(&mut world);
+    {
+        let mut tokens = state.get(&world).unwrap();
+        tokens.refresh();
+        for entity in [root, leaf, unrelated, preview, preview_leaf] {
+            tokens.prepare(entity, [Token::FontSize]);
+        }
+    }
+    world.increment_change_tick();
+    let mut overrides = TokenOverrides::default();
+    assert!(overrides.set(Token::FontSize, TokenValue::Number(31.0)));
+    world.entity_mut(root).insert(overrides);
+    {
+        let mut tokens = state.get(&world).unwrap();
+        tokens.refresh();
+        assert_eq!(tokens.cache.values.len(), 1);
+        assert!(
+            tokens
+                .cache
+                .values
+                .contains_key(&(unrelated, Token::FontSize as usize))
+        );
+        assert!(!tokens.invalidated(unrelated));
+        for entity in [root, leaf, preview, preview_leaf] {
+            assert!(tokens.invalidated(entity));
+            tokens.prepare(entity, [Token::FontSize]);
+            assert_eq!(tokens.resolve(entity, Token::FontSize).0.number(), 31.0);
+        }
+    }
+    world.increment_change_tick();
+    world.entity_mut(leaf).insert(ChildOf(unrelated));
+    {
+        let mut tokens = state.get(&world).unwrap();
+        tokens.refresh();
+        for entity in [leaf, preview, preview_leaf] {
+            tokens.prepare(entity, [Token::FontSize]);
+            assert_eq!(tokens.resolve(entity, Token::FontSize).0.number(), 16.0);
+        }
+    }
+}
+
 crate::native::laboratory_cases! {
+    edits_invalidate_descendants_and_preview_dependents_without_flushing_other_trees,
     typed_resolution_tracks_inheritance_sources_rules_and_removals,
     typed_metric_bindings_follow_authored_replacement_and_removal,
     cached_values_follow_same_frame_edits_and_retire_removed_entities,

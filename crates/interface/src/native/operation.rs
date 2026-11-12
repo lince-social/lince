@@ -824,7 +824,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         let owners: Vec<_> = world.query::<(Entity, &ScopedCatalog)>().iter(world)
             .filter(|(_, catalog)| matches!(&message, ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } | ServerMessage::Error { id, .. } if id == &catalog.subscription))
             .map(|(owner, _)| owner).collect();
@@ -877,7 +877,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 catalog.error = None;
                 catalog.revision += 1;
             }
-            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings)),
+            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings.clone())),
             ServerMessage::Error { id, message, .. } => {
                 if id == RECORDS || id == crate::native::cell_bridge::CONNECTION {
                     let mut catalog = world.resource_mut::<Catalog>();
@@ -886,7 +886,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     catalog.error = Some(message.clone());
                     catalog.revision += 1;
                 }
-                acknowledge(world, &id, Err(message));
+                acknowledge(world, &id, Err(message.clone()));
             }
             _ => {}
         }

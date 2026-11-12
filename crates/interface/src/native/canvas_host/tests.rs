@@ -254,7 +254,7 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
 
 #[test]
 fn video_castle_refreshes_saved_canvas_registry_before_sync_and_requests() {
-    for via_update in [false, true] {
+    for via_persist in [false, true] {
         let (mut app, root) = fixture();
         let entity = crate::native::sand_store::spawn_sand(
             app.world_mut(),
@@ -290,8 +290,8 @@ fn video_castle_refreshes_saved_canvas_registry_before_sync_and_requests() {
                 ..default()
             },
         );
-        if via_update {
-            update(app.world_mut());
+        if via_persist {
+            synchronize_saved_state(app.world_mut(), root).unwrap();
             assert!(app.world().get::<Failure>(root).is_none());
         } else {
             let api::Response::Registry { components } =
@@ -354,7 +354,7 @@ fn canvas_refreshes_saved_layout_schema_without_replacing_the_layout() {
         .get_mut::<Workspaces>(root)
         .unwrap()
         .canvas_state = Some(state);
-    update(app.world_mut());
+    synchronize_saved_state(app.world_mut(), root).unwrap();
     assert!(app.world().get::<Failure>(root).is_none());
     let state = app
         .world()
@@ -375,7 +375,7 @@ fn canvas_refreshes_saved_layout_schema_without_replacing_the_layout() {
 }
 
 #[test]
-fn persistent_canvas_failure_reports_once_and_reports_again_after_recovery() {
+fn idle_canvas_does_not_capture_but_real_requests_validate_and_recover() {
     let (mut app, root) = fixture();
     let entity = crate::native::sand_store::spawn_sand(
         app.world_mut(),
@@ -390,31 +390,28 @@ fn persistent_canvas_failure_reports_once_and_reports_again_after_recovery() {
         .unwrap()
         .source = "x".repeat(40000);
     for _ in 0..100 {
-        app.world_mut().entity_mut(root).remove::<Refreshed>();
         update(app.world_mut());
     }
-    let log = app
-        .world()
-        .resource::<crate::native::notifications::Notifications>()
-        .log
-        .clone();
-    assert_eq!(log.snapshot().1.len(), 1);
-    assert_eq!(log.snapshot().1[0].occurrences, 1);
+    assert!(
+        app.world()
+            .get::<Workspaces>(root)
+            .unwrap()
+            .canvas_state
+            .is_none()
+    );
+    assert!(app.world().get::<Failure>(root).is_none());
+    assert!(handle(app.world_mut(), root, &api::Request::Registry).is_err());
     app.world_mut()
         .get_mut::<crate::native::video_castle::Settings>(entity)
         .unwrap()
         .source
         .clear();
-    app.world_mut().entity_mut(root).remove::<Refreshed>();
-    update(app.world_mut());
-    assert!(app.world().get::<Failure>(root).is_none());
+    assert!(handle(app.world_mut(), root, &api::Request::Registry).is_ok());
     app.world_mut()
         .get_mut::<crate::native::video_castle::Settings>(entity)
         .unwrap()
         .source = "x".repeat(40000);
-    app.world_mut().entity_mut(root).remove::<Refreshed>();
-    update(app.world_mut());
-    assert_eq!(log.snapshot().1[0].occurrences, 2);
+    assert!(synchronize_saved_state(app.world_mut(), root).is_err());
 }
 
 #[test]
@@ -1173,6 +1170,7 @@ async fn engine_request_is_acknowledged_after_native_application_without_cell_ca
     assert_eq!(engine.connected_canvases().len(), 1);
     let placement = nucleus::new_uid("placement");
     let id = placement.clone();
+    handle(app.world_mut(), root, &api::Request::Registry).unwrap();
     let revision = app
         .world()
         .get::<Workspaces>(root)
@@ -1260,6 +1258,7 @@ fn disk_restart_keeps_canvas_identity_placements_protection_and_saved_receipts()
         (app, root)
     }
     let (mut app, root) = open(path.clone());
+    handle(app.world_mut(), root, &api::Request::Registry).unwrap();
     let canvas_id = app
         .world()
         .get::<Workspaces>(root)

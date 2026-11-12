@@ -15,9 +15,6 @@ pub struct Content(pub ContentKind);
 struct Host(engine::canvas::Receiver);
 
 #[derive(Component)]
-struct Refreshed(std::time::Instant);
-
-#[derive(Component)]
 struct Failure(String);
 
 pub struct Plugin;
@@ -103,72 +100,67 @@ fn handle_checked(
     Ok(response)
 }
 
+pub(crate) fn synchronize_saved_state(world: &mut World, root: Entity) -> Result<(), String> {
+    if world
+        .get::<Workspaces>(root)
+        .is_none_or(|spaces| spaces.canvas_state.is_none())
+    {
+        return Ok(());
+    }
+    crate::native::topology::rooms::synchronize(world);
+    let snapshot = capture(world, root)?;
+    let saved = crate::native::workspace::saved_canvas_revision(world, root);
+    let state = world
+        .get_mut::<Workspaces>(root)
+        .unwrap()
+        .into_inner()
+        .canvas_state
+        .as_mut()
+        .unwrap();
+    state.refresh_registry(registry())?;
+    state.synchronize(snapshot)?;
+    state.mark_saved_through(saved);
+    Ok(())
+}
+
 fn update(world: &mut World) {
     if !crate::native::laboratory::normal(world) {
         return;
     }
-    crate::native::topology::rooms::synchronize(world);
     let roots: Vec<_> = world
         .query_filtered::<Entity, (With<crate::native::container::BoxRoot>, With<Workspaces>)>()
         .iter(world)
         .filter(|root| !crate::native::laboratory::blocked(world, *root))
         .collect();
     for root in roots {
-        if world
-            .get::<Host>(root)
-            .is_none_or(|host| !host.0.has_pending())
-            && world.get::<Refreshed>(root).is_some_and(|refreshed| {
-                refreshed.0.elapsed() < std::time::Duration::from_millis(200)
-            })
-        {
-            continue;
-        }
-        world
-            .entity_mut(root)
-            .insert(Refreshed(std::time::Instant::now()));
-        let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSync);
         let result = (|| {
-            let snapshot = {
-                let _capture = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
-                crate::host::performance::count(crate::host::performance::Count::NativeCanvasSnapshots);
-                capture(world, root)?
-            };
-            let mut state = world
-                .get_mut::<Workspaces>(root)
-                .unwrap()
-                .canvas_state
-                .clone()
-                .map(Ok)
-                .unwrap_or_else(|| api::State::new(snapshot.clone(), registry()))?;
-            state.refresh_registry(registry())?;
-            state.synchronize(snapshot)?;
-            state.mark_saved_through(crate::native::workspace::saved_canvas_revision(world, root));
-            world.get_mut::<Workspaces>(root).unwrap().canvas_state = Some(state);
             if world.get::<Host>(root).is_none() {
-                if let Some(runtime) = world.get_resource::<crate::native::app::CellHandle>() {
-                    let id = world.get::<Workspaces>(root).unwrap().canvas_id.clone();
-                    let receiver =
-                        runtime
-                            .0
-                            .engine
-                            .register_canvas(id, "Lince canvas".into(), registry())?;
-                    if let Some(wake) = world
-                        .get_resource::<crate::native::wake::WakeSignal>()
-                        .cloned()
-                    {
-                        receiver.set_wake(move || wake.ring());
-                    }
-                    world.entity_mut(root).insert(Host(receiver));
+                let Some(runtime) = world.get_resource::<crate::native::app::CellHandle>() else {
+                    return Ok(());
+                };
+                let id = world.get::<Workspaces>(root).unwrap().canvas_id.clone();
+                let receiver =
+                    runtime
+                        .0
+                        .engine
+                        .register_canvas(id, "Lince canvas".into(), registry())?;
+                if let Some(wake) = world
+                    .get_resource::<crate::native::wake::WakeSignal>()
+                    .cloned()
+                {
+                    receiver.set_wake(move || wake.ring());
                 }
+                world.entity_mut(root).insert(Host(receiver));
             }
-            for _ in 0..8 {
-                let call = world
-                    .get_mut::<Host>(root)
-                    .and_then(|mut host| host.0.try_recv().ok());
-                let Some(call) = call else { break };
-                if call.is_cancelled() {
-                    continue;
-                }
+            let call = world
+                .get_mut::<Host>(root)
+                .and_then(|mut host| host.0.try_recv().ok());
+            if let Some(call) = call
+                && !call.is_cancelled()
+            {
+                let _measurement = crate::host::performance::Span::new(
+                    crate::host::performance::Stage::NativeCanvasSync,
+                );
                 crate::host::performance::count(crate::host::performance::Count::NativeCanvasCalls);
                 let result = handle_checked(world, root, &call.request, || call.is_cancelled());
                 let _ = call.complete(result);

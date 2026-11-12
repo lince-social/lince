@@ -32,13 +32,15 @@ use bevy::{
     },
 };
 use std::{
-    collections::{HashMap, HashSet, hash_map::DefaultHasher},
-    hash::{Hash, Hasher},
+    collections::{HashMap, HashSet},
+    hash::{BuildHasher, Hash, Hasher},
     sync::{
         Mutex,
         atomic::{AtomicBool, Ordering},
     },
 };
+
+type Fingerprint = <bevy::platform::hash::FixedHasher as BuildHasher>::Hasher;
 
 mod origins;
 mod order;
@@ -48,7 +50,7 @@ pub(crate) use origins::{CaptureOrigins, CompletedCaptures};
 struct CaptureCache {
     external: bool,
     pending: AtomicBool,
-    fingerprints: HashMap<Entity, DefaultHasher>,
+    fingerprints: HashMap<Entity, Fingerprint>,
     dirty: HashSet<Entity>,
     blocked: HashSet<Entity>,
     skipped: HashSet<Entity>,
@@ -227,13 +229,13 @@ fn extract_captures(
     }
 }
 
-fn floats(hash: &mut DefaultHasher, values: impl IntoIterator<Item = f32>) {
+fn floats(hash: &mut Fingerprint, values: impl IntoIterator<Item = f32>) {
     for value in values {
         hash.write_u32(value.to_bits());
     }
 }
 
-fn rectangle(hash: &mut DefaultHasher, rect: Rect) {
+fn rectangle(hash: &mut Fingerprint, rect: Rect) {
     floats(hash, [rect.min.x, rect.min.y, rect.max.x, rect.max.y]);
 }
 
@@ -261,7 +263,7 @@ fn fingerprint_captures(
         .unwrap()
         .retain(|entity, _| captures.contains(*entity));
     for (entity, camera) in &captures {
-        let mut hash = DefaultHasher::new();
+        let mut hash = bevy::platform::hash::FixedHasher.build_hasher();
         if let Some(view) = camera.and_then(|camera| views.get(camera.0).ok()) {
             floats(&mut hash, view.clip_from_view.to_cols_array());
             floats(&mut hash, view.world_from_view.to_matrix().to_cols_array());
@@ -376,7 +378,7 @@ fn prepare_captures(
 }
 
 fn capture_hash(
-    mut fingerprint: DefaultHasher,
+    mut fingerprint: Fingerprint,
     image: &GpuImage,
     phase: &SortedRenderPhase<TransparentUi>,
 ) -> u64 {
@@ -424,7 +426,7 @@ fn reuse_captures(
             continue;
         }
         let fingerprint = capture_hash(
-            cache.fingerprints.get(&entity).cloned().unwrap_or_default(),
+            cache.fingerprints.get(&entity).cloned().unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
             image,
             phase,
         );
@@ -515,7 +517,7 @@ fn render_surface(
                 && pipelines.get_render_pipeline(item.pipeline).is_some()
         });
         let fingerprint = capture_hash(
-            cache.fingerprints.get(&entity).cloned().unwrap_or_default(),
+            cache.fingerprints.get(&entity).cloned().unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
             image,
             phase,
         );
@@ -596,15 +598,14 @@ fn render_surface(
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use bevy::{
         math::Affine2,
         ui_render::{ExtractedGlyph, ExtractedUiNode},
     };
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn capture_fingerprint_tracks_camera_text_clipping_and_changed_images() {
         let mut app = App::new();
         app.init_resource::<CompletedCaptures>()
@@ -713,4 +714,6 @@ mod tests {
                 .is_empty()
         );
     }
+    crate::native::laboratory_cases! { capture_fingerprint_tracks_camera_text_clipping_and_changed_images, }
+
 }

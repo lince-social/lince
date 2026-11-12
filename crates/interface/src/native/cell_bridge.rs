@@ -22,7 +22,11 @@ pub const RECORDS: &str = "interface-records";
 pub const CONNECTION: &str = "interface-connection";
 
 #[derive(Message, Clone)]
-pub struct CellMessage(pub ServerMessage);
+pub struct CellMessage(pub Arc<ServerMessage>);
+
+impl CellMessage {
+    pub fn new(message: ServerMessage) -> Self { Self(Arc::new(message)) }
+}
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReceiveCell;
@@ -392,7 +396,7 @@ fn drain(
             }
         };
         crate::host::performance::count(crate::host::performance::Count::CellMessageDrained);
-        messages.write(CellMessage(message));
+        messages.write(CellMessage::new(message));
     }
     wake.ring_reason(crate::host::performance::Count::CellDrainContinuation);
 }
@@ -402,7 +406,7 @@ fn start(world: &mut World) {
     let wake = world.resource::<WakeSignal>().clone();
     let bridge = connect(runtime, wake);
     if let Err(error) = bridge.outgoing.try_send(records_subscription()) {
-        world.write_message(CellMessage(ServerMessage::Error {
+        world.write_message(CellMessage::new(ServerMessage::Error {
             id: RECORDS.into(),
             message: format!("Could not request Records: {error}"),
             code: Some("connection_closed".into()),
@@ -412,6 +416,31 @@ fn start(world: &mut World) {
 }
 
 pub(crate) mod tests {
+    #[cfg_attr(test, test)]
+    fn independent_consumers_share_payloads_and_preserve_message_order() {
+        use super::*;
+        let mut messages = Messages::<CellMessage>::default();
+        for id in ["snapshot", "acknowledgement", "later-snapshot"] {
+            messages.write(CellMessage::new(if id == "acknowledgement" {
+                ServerMessage::ActionOk { id: id.into(), created: None, facts: 1, warnings: vec![], data: None }
+            } else {
+                ServerMessage::Snapshot { id: id.into(), rows: vec![serde_json::json!({"body":"x".repeat(65536)})] }
+            }));
+        }
+        let mut first = bevy::ecs::message::MessageCursor::<CellMessage>::default();
+        let mut second = bevy::ecs::message::MessageCursor::<CellMessage>::default();
+        let owned: Vec<_> = first.read(&messages).cloned().collect();
+        for (index, message) in second.read(&messages).enumerate() {
+            assert!(Arc::ptr_eq(&message.0, &owned[index].0));
+            let id = match message.0.as_ref() { ServerMessage::Snapshot { id, .. } | ServerMessage::ActionOk { id, .. } => id, _ => panic!("Missing ordered message") };
+            assert_eq!(id, ["snapshot", "acknowledgement", "later-snapshot"][index]);
+        }
+        assert_eq!(owned.len(), 3);
+        assert_eq!(first.read(&messages).count(), 0);
+        messages.update();
+        messages.update();
+        assert!(matches!(owned[0].0.as_ref(), ServerMessage::Snapshot { rows, .. } if rows[0]["body"].as_str().unwrap().len() == 65536));
+    }
     use super::*;
     use engine::{Engine, actions::Action};
     use std::sync::{
@@ -891,7 +920,7 @@ pub(crate) mod tests {
         app.world_mut().insert_non_send(bridge);
         let mut cursor = bevy::ecs::message::MessageCursor::<CellMessage>::default();
         app.update();
-        assert_eq!(cursor.read(app.world().resource::<Messages<CellMessage>>()).filter(|message| matches!(&message.0, ServerMessage::Error { id, .. } if id == CONNECTION)).count(), 1);
+        assert_eq!(cursor.read(app.world().resource::<Messages<CellMessage>>()).filter(|message| matches!(message.0.as_ref(), ServerMessage::Error { id, .. } if id == CONNECTION)).count(), 1);
         app.update();
         assert_eq!(
             cursor
@@ -1276,6 +1305,7 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        independent_consumers_share_payloads_and_preserve_message_order,
         async stopped_bridge_wakes_the_interface_and_reports_disconnect_once,
         async subscription_action_and_external_changes_wake_the_interface,
         async lanes_share_the_wake_channel_and_invalid_actions_return_errors,

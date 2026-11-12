@@ -446,8 +446,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     }
 }
 
-fn receive_message(world: &mut World, message: ServerMessage) {
-    let id = match &message {
+fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
+    let id = match message {
         ServerMessage::Snapshot { id, .. }
         | ServerMessage::Update { id, .. }
         | ServerMessage::ActionOk { id, .. }
@@ -464,7 +465,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
     if world.get::<View>(owner).is_none() {
         return;
     }
-    match message {
+    match message.clone() {
         ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => match kind {
             RequestKind::Results => {
                 let columns: BTreeSet<_> = rows

@@ -795,7 +795,7 @@ pub(in crate::native::fiote::session) fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         match &event {
             cell::ServerMessage::Speech { id, status } => {
                 wake_setup::response(world, id, Ok(status))
@@ -828,8 +828,8 @@ pub(in crate::native::fiote::session) fn update(
             continue;
         }
         let (id, result) = match event {
-            cell::ServerMessage::Speech { id, status } => (id, Ok(status)),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            cell::ServerMessage::Speech { id, status } => (id, Ok(status.clone())),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let owners: Vec<_> = world

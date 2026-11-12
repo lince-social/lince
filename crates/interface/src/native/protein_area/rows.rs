@@ -682,6 +682,28 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
     }
+    let parent = world.get::<ChildOf>(owner).map(ChildOf::parent);
+    let workspace = world.get::<WorkspaceMember>(owner).map_or(1, |member| member.0);
+    if state.ready && parent.is_some_and(|root| !crate::native::output_views::presents(world, root, workspace)) {
+        if let Some(config) = &state.applied {
+            let current: std::collections::HashSet<_> = state.data.iter()
+                .filter_map(|row| row["uid"].as_str()).collect();
+            state.row_entities.retain(|uid, entity| {
+                let same_source = world.get::<Row>(*entity)
+                    .is_some_and(|row| row.config.source == config.source);
+                if (same_source && current.contains(uid.as_str()))
+                    || super::availability::retain(world, *entity, config)
+                {
+                    true
+                } else {
+                    let _ = world.despawn(*entity);
+                    false
+                }
+            });
+        }
+        world.resource_mut::<Runtime>().areas.insert(owner, state);
+        return;
+    }
     crate::native::record_presentation::remember(world, owner);
     let Some(config) = state.applied.clone() else {
         world.resource_mut::<Runtime>().areas.insert(owner, state);

@@ -536,7 +536,7 @@ fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, &message);
     }
     let stale: Vec<_> = world

@@ -10,7 +10,7 @@ use bevy::ecs::{
     system::SystemParam,
 };
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::atomic::{AtomicU64, Ordering},
     time::Instant,
 };
@@ -74,11 +74,13 @@ impl InputsItem<'_, '_> {
 #[derive(SystemParam)]
 pub(crate) struct Tokens<'w, 's> {
     inputs: Query<'w, 's, Inputs, Allow<Disabled>>,
+    children: Query<'w, 's, &'static Children, Allow<Disabled>>,
+    previews: Query<'w, 's, (Entity, &'static PreviewSource), Allow<Disabled>>,
     theme: Res<'w, ThemeSettings>,
     changed: Query<
         'w,
         's,
-        (),
+        Entity,
         (
             Allow<Disabled>,
             Or<(
@@ -108,6 +110,9 @@ pub(crate) struct Tokens<'w, 's> {
 struct Cache {
     values: HashMap<(Entity, usize), (TokenValue, &'static str)>,
     kinds: HashMap<Entity, Option<SandStyleKind>>,
+    invalidated: HashSet<Entity>,
+    initialized: bool,
+    all_invalidated: bool,
     observed: bool,
     preparation: Option<Instant>,
     prepared: u64,
@@ -122,10 +127,8 @@ macro_rules! removals {
             $($field: RemovedComponents<'w, 's, $component>,)*
         }
         impl Removed<'_, '_> {
-            fn changed(&mut self) -> bool {
-                let mut changed = false;
-                $(changed |= self.$field.read().count() != 0;)*
-                changed
+            fn collect(&mut self, entities: &mut Vec<Entity>) {
+                $(entities.extend(self.$field.read());)*
             }
         }
     };
@@ -139,18 +142,59 @@ removals! {
     maps: crate::native::map_castle::MapSand, clocks: crate::native::time_castle::TimeSettings,
     nodes: Node, icons: crate::native::icons::IconStyle, backgrounds: BackgroundToken,
     labels: TextToken, borders: BorderToken, outlines: OutlineToken, cursors: CursorToken,
+    icon_buttons: crate::native::icons::IconButton, border_colors: BorderColor,
 }
 
 impl Tokens<'_, '_> {
     pub(crate) fn refresh(&mut self) {
         self.cache.observed = crate::host::performance::enabled();
         self.cache.preparation = crate::host::performance::start();
-        let removed = self.removed.changed();
-        if removed || self.theme.is_changed() || !self.changed.is_empty() {
+        let mut pending: Vec<_> = self.changed.iter().collect();
+        self.removed.collect(&mut pending);
+        self.cache.invalidated.clear();
+        self.cache.all_invalidated = !self.cache.initialized || self.theme.is_changed();
+        self.cache.initialized = true;
+        if self.cache.all_invalidated {
             crate::host::performance::count(crate::host::performance::Count::StyleInvalidated);
             self.cache.values.clear();
             self.cache.kinds.clear();
+            return;
         }
+        if pending.is_empty() {
+            return;
+        }
+        loop {
+            while let Some(entity) = pending.pop() {
+                if !self.cache.invalidated.insert(entity) {
+                    continue;
+                }
+                if let Ok(children) = self.children.get(entity) {
+                    pending.extend(children.iter());
+                }
+            }
+            for (preview, source) in &self.previews {
+                if self.cache.invalidated.contains(&source.0)
+                    && !self.cache.invalidated.contains(&preview)
+                {
+                    pending.push(preview);
+                }
+            }
+            if pending.is_empty() {
+                break;
+            }
+        }
+        crate::host::performance::count(crate::host::performance::Count::StyleInvalidated);
+        let cache = &mut *self.cache;
+        cache
+            .values
+            .retain(|(entity, _), _| !cache.invalidated.contains(entity));
+        cache
+            .kinds
+            .retain(|entity, _| !cache.invalidated.contains(entity));
+    }
+
+    pub(crate) fn invalidated(&self, entity: Entity) -> bool {
+        self.cache.all_invalidated || self.cache.invalidated.contains(&entity)
     }
 
     pub(crate) fn prepare(&mut self, entity: Entity, tokens: impl IntoIterator<Item = Token>) {
@@ -334,8 +378,17 @@ impl Drop for Tokens<'_, '_> {
             return;
         }
         use crate::host::performance::{self, Count};
-        performance::add(Count::StyleValuesPrepared, std::mem::take(&mut self.cache.prepared));
-        performance::add(Count::StyleReadCached, self.cache.cached_reads.swap(0, Ordering::Relaxed));
-        performance::add(Count::StyleReadDirect, self.cache.direct_reads.swap(0, Ordering::Relaxed));
+        performance::add(
+            Count::StyleValuesPrepared,
+            std::mem::take(&mut self.cache.prepared),
+        );
+        performance::add(
+            Count::StyleReadCached,
+            self.cache.cached_reads.swap(0, Ordering::Relaxed),
+        );
+        performance::add(
+            Count::StyleReadDirect,
+            self.cache.direct_reads.swap(0, Ordering::Relaxed),
+        );
     }
 }

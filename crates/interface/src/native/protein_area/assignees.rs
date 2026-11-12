@@ -408,7 +408,7 @@ pub(super) fn update(
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         let mut outgoing = Vec::new();
         for mut picker in world.query::<&mut Picker>().iter_mut(world) {
             match &message {

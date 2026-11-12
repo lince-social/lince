@@ -290,7 +290,7 @@ async fn confirmation_populates_the_same_pending_card_only_after_an_actual_cell_
             .incoming
             .try_recv()
         {
-            incoming.push(CellMessage(message));
+            incoming.push(CellMessage::new(message));
         }
         app.world_mut().write_message_batch(incoming);
         app.update();

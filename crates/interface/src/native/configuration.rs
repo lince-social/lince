@@ -857,7 +857,7 @@ fn update(
                 Err(error) => panel::status(world, status, error),
             }
         }
-        for message in &messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             let view = world.get::<ConfigurationSand>(owner).unwrap();
             let Some(pending) = view.pending.as_ref() else {
                 continue;
@@ -1004,7 +1004,7 @@ mod tests {
             .for_each(drop);
         Command::Refresh.apply(app.world_mut(), owner);
         assert!(!replacement.same_channel(&app.world().non_send::<CellBridge>().outgoing));
-        assert_eq!(cursor.read(app.world().resource::<Messages<crate::native::cell_bridge::CellMessage>>()).filter(|message| matches!(&message.0, ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)).count(), 1);
+        assert_eq!(cursor.read(app.world().resource::<Messages<crate::native::cell_bridge::CellMessage>>()).filter(|message| matches!(message.0.as_ref(), ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)).count(), 1);
     }
 
     #[tokio::test]

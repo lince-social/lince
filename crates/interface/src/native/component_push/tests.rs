@@ -466,7 +466,7 @@ fn repeated_pushes_reuse_one_instance_and_changed_state_replaces_it() {
         start_call: None,
     });
     app.world_mut()
-        .write_message(CellMessage(ServerMessage::PresentComponent {
+        .write_message(CellMessage::new(ServerMessage::PresentComponent {
             presentation: state.clone(),
         }));
     app.update();
@@ -650,7 +650,7 @@ async fn backend_push_reaches_the_native_component_area_through_the_cell_bridge(
         .unwrap();
     assert!(matches!(message, ServerMessage::PresentComponent { .. }));
     let (mut app, _) = setup();
-    app.world_mut().write_message(CellMessage(message));
+    app.world_mut().write_message(CellMessage::new(message));
     app.update();
     let placed = app
         .world_mut()

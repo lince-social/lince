@@ -494,7 +494,7 @@ pub struct RenderDiagnostic {
 }
 
 const SPAN_TRACE_LIMIT: usize = 2048;
-const SYSTEM_LIMIT: usize = 512;
+const SYSTEM_LIMIT: usize = 2048;
 const SYSTEM_SHARDS: usize = 16;
 
 thread_local! {

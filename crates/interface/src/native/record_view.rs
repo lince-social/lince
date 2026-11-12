@@ -139,14 +139,14 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                 if id == RECORDS =>
             {
-                snapshot(world, rows)
+                snapshot(world, rows.clone())
             }
-            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings)),
+            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings.clone())),
             ServerMessage::Error { id, message, .. } => {
                 if id == crate::native::cell_bridge::CONNECTION {
                     let pending: Vec<_> = world
@@ -590,7 +590,7 @@ pub(crate) mod tests {
         world.get_mut::<RecordEditor>(editor).unwrap().pending =
             Some(("pending".into(), "Sent version".into()));
         world.init_resource::<Messages<CellMessage>>();
-        world.write_message(CellMessage(ServerMessage::Error {
+        world.write_message(CellMessage::new(ServerMessage::Error {
             id: crate::native::cell_bridge::CONNECTION.into(),
             message: "Connection stopped".into(),
             code: None,

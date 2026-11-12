@@ -627,7 +627,7 @@ pub(super) fn tick(
         .collect();
     for owner in owners {
         capture(world, owner);
-        for message in &messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             receive(world, owner, message);
         }
         let record = world.get::<State>(owner).unwrap().record.clone();

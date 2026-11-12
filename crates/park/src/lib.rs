@@ -23,6 +23,9 @@ pub mod presentation;
 pub mod runtime;
 
 #[cfg(all(target_os = "linux", feature = "native-presentation"))]
+pub mod responsiveness;
+
+#[cfg(all(target_os = "linux", feature = "native-presentation"))]
 pub mod native_input;
 
 #[cfg(all(target_os = "linux", feature = "nested"))]

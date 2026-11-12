@@ -531,7 +531,7 @@ fn stop_pending(world: &mut World, pending: &Pending, message: &str) {
     }
 }
 
-fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) {
+fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, records: &[Record]) {
     let retries: Vec<_> = world
         .resource_mut::<Mutations>()
         .pending
@@ -540,11 +540,11 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
         .collect();
     for (id, preview) in retries {
         if let Some(pending) = world.resource_mut::<Mutations>().pending.remove(&id) {
-            submit(world, records, id, pending, preview);
+            submit(world, records, id.clone(), pending, preview);
         }
     }
-    for message in messages {
-        if let ServerMessage::Error { ref id, .. } = message
+    for message in messages.iter().map(|message| message.as_ref()) {
+        if let ServerMessage::Error { id, .. } = message
             && id == crate::native::cell_bridge::CONNECTION
         {
             let areas: Vec<_> = world
@@ -568,7 +568,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             ServerMessage::Error { id, message, .. } => (id, Err(message)),
             _ => continue,
         };
-        let Some(pending) = world.resource_mut::<Mutations>().pending.remove(&id) else {
+        let Some(pending) = world.resource_mut::<Mutations>().pending.remove(id) else {
             continue;
         };
         let data = match result {
@@ -599,7 +599,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             }
             continue;
         }
-        let preview = data.and_then(|data| serde_json::from_value::<TransitionPreview>(data).ok());
+        let preview = data.as_ref().and_then(|data| serde_json::from_value::<TransitionPreview>(data.clone()).ok());
         let Some(preview) = preview.filter(|preview| preview.target == pending.target) else {
             stop_pending(
                 world,
@@ -608,7 +608,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             );
             continue;
         };
-        submit(world, records, id, pending, preview);
+        submit(world, records, id.clone(), pending, preview);
     }
 }
 

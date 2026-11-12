@@ -646,7 +646,7 @@ fn update(
         .map(|message| message.0.clone())
         .collect();
     for owner in owners {
-        for message in &messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             receive(world, owner, message);
         }
         let view = world.get::<TodoSand>(owner).unwrap();

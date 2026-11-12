@@ -366,7 +366,7 @@ pub(super) fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         let (id, result) = match event {
             cell::ServerMessage::Snapshot { id, rows }
             | cell::ServerMessage::Update { id, rows } => (id, Ok(rows)),
@@ -378,8 +378,8 @@ pub(super) fn update(
             .active
             .iter()
             .filter(|(_, (subscription, _))| {
-                subscription == &id
-                    || format!("{subscription}-concepts") == id
+                subscription == id
+                    || format!("{subscription}-concepts") == *id
                     || id == crate::native::cell_bridge::CONNECTION
             })
             .map(|(form, _)| *form)
@@ -389,16 +389,16 @@ pub(super) fn update(
                 search.signature.clear();
                 match &result {
                     Ok(rows) if id.ends_with("-concepts") => {
-                        search.concepts = rows.clone();
+                        search.concepts = (*rows).clone();
                     }
                     Ok(rows) => {
-                        search.rows = rows.clone();
+                        search.rows = (*rows).clone();
                         search.message.clear();
                     }
                     Err(error) => {
                         search.rows.clear();
                         search.concepts.clear();
-                        search.message = error.clone();
+                        search.message = (*error).clone();
                     }
                 }
             }

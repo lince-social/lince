@@ -127,7 +127,7 @@ async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_dis
     observe(&mut world, &Source::Organ("other-cell".into()), &message);
     let messages = world.resource::<Messages<CellMessage>>();
     assert_eq!(messages.len(), 1);
-    assert!(messages.iter_current_update_messages().any(|message| matches!(&message.0, ServerMessage::Speech { id, .. } if id == "speech-practice-result")));
+    assert!(messages.iter_current_update_messages().any(|message| matches!(message.0.as_ref(), ServerMessage::Speech { id, .. } if id == "speech-practice-result")));
     speech.shutdown().await;
     world
         .resource_mut::<Runtime>()
@@ -1353,7 +1353,59 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
     assert!(!app.world().resource::<Runtime>().areas[&owner].ready);
 }
 
+#[cfg_attr(test, test)]
+fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
+    use crate::native::{output_views::OutputViews, workspace::WorkspaceMember};
+    use crate::host::{OutputId, OutputViewport, Rectangle};
+    let (mut app, root, owner) = fixture();
+    let world = app.world_mut();
+    world.entity_mut(owner).insert(WorkspaceMember(2));
+    world.resource_mut::<Runtime>().areas.insert(owner, State {
+        applied: Some(Config { enabled: true, ..default() }),
+        subscription: Some("demand".into()),
+        ..default()
+    });
+    let snapshot = |head: &str| ServerMessage::Snapshot {
+        id: "demand".into(), rows: vec![json!({"uid":"record-1","head":head,"body":"Details"})],
+    };
+    receive(world, owner, snapshot("Old"));
+    rows::reconcile(world, owner);
+    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    receive(world, owner, snapshot("Latest"));
+    rows::reconcile(world, owner);
+    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    let bounds = Rectangle::new([0.0; 2], [800.0,600.0]).unwrap();
+    world.insert_resource(OutputViews::new(vec![OutputViewport {
+        id: OutputId(1), workspace: 2, bounds, usable: Some(bounds), physical_size: [800,600],
+        raster: crate::host::raster::RasterMapping { origin: [0.0;2], scale: [1.0;2] },
+        rotation: Default::default(),
+    }], OutputId(1)).unwrap());
+    rows::reconcile(world, owner);
+    let row = world.resource::<Runtime>().areas[&owner].row_entities["record-1"];
+    assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Latest");
+    let revision = world.resource::<Runtime>().areas[&owner].revision;
+    receive(world, owner, snapshot("Latest"));
+    assert!(!world.resource::<Runtime>().areas[&owner].dirty);
+    assert_eq!(world.resource::<Runtime>().areas[&owner].revision, revision);
+    world.remove_resource::<OutputViews>();
+    receive(world, owner, ServerMessage::Update { id: "demand".into(), rows: vec![] });
+    rows::reconcile(world, owner);
+    assert!(world.get_entity(row).is_err());
+    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    world.entity_mut(root).insert(crate::native::topology::holes::Layers(vec![crate::native::topology::holes::Layer {
+        workspace: 2, depth: 1, openings: vec![], cuts: vec![],
+    }]));
+    receive(world, owner, snapshot("Through portal"));
+    rows::reconcile(world, owner);
+    assert_eq!(world.resource::<Runtime>().areas[&owner].row_entities.len(), 1);
+    world.entity_mut(root).remove::<crate::native::topology::holes::Layers>();
+    receive(world, owner, ServerMessage::Error { id: "connection".into(), message: "Revoked".into(), code: None });
+    rows::reconcile(world, owner);
+    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+}
+
 crate::native::laboratory_cases! {
+    inactive_rows_defer_materialization_but_follow_visibility_and_revocation,
     async local_record_text_refreshes_only_dependent_queries,
     async record_projection_preserves_requested_fields_and_exact_values,
     record_source_stays_stable_while_paused_and_typing_resumes_at_selection,

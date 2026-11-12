@@ -31,7 +31,7 @@ impl Transport {
     }
 
     fn deliver(app: &mut App, messages: Vec<ServerMessage>) {
-        for message in messages { app.world_mut().write_message(CellMessage(message)); }
+        for message in messages { app.world_mut().write_message(CellMessage::new(message)); }
         app.update();
     }
 

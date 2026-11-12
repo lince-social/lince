@@ -552,10 +552,10 @@ pub(in crate::native::fiote::session) fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         let (id, status) = match event {
-            cell::ServerMessage::Speech { id, status } => (id, Ok(status.voice)),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            cell::ServerMessage::Speech { id, status } => (id, Ok(status.voice.clone())),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let owners: Vec<_> = world
@@ -679,7 +679,7 @@ mod tests {
                 .try_recv()
             {
                 app.world_mut()
-                    .write_message(crate::native::cell_bridge::CellMessage(message));
+                    .write_message(crate::native::cell_bridge::CellMessage::new(message));
             }
             app.update();
             let spoken = app.world().get::<Spoken>(owner).unwrap();

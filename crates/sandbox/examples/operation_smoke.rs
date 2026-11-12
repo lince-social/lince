@@ -195,7 +195,7 @@ async fn main() {
         .insert_resource(WinitSettings::continuous())
         .add_systems(Startup, |mut commands: Commands, mut messages: MessageWriter<lince_sandbox::cell_bridge::CellMessage>| {
             commands.spawn(lince_sandbox::container::BoxRoot);
-            messages.write(lince_sandbox::cell_bridge::CellMessage(cell::ServerMessage::Snapshot {
+            messages.write(lince_sandbox::cell_bridge::CellMessage::new(cell::ServerMessage::Snapshot {
                 id: lince_sandbox::cell_bridge::RECORDS.into(),
                 rows: vec![
                     serde_json::json!({"uid":"apple", "slug":"apple", "head":"Apples"}),

@@ -32,7 +32,7 @@ fn timeout_releases_import_controls_and_ignores_a_late_result() {
     assert!(state.request.is_none());
     assert!(state.message.contains("may still finish"));
     app.world_mut()
-        .write_message(crate::native::cell_bridge::CellMessage(
+        .write_message(crate::native::cell_bridge::CellMessage::new(
             ServerMessage::ActionOk {
                 id: "submitted".into(),
                 created: None,

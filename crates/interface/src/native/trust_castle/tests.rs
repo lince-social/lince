@@ -140,14 +140,14 @@ fn viewer_changes_clear_private_drafts_and_late_trust_replies() {
         view.pending = Some(("old-result".into(), 0));
     }
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::SessionAuthenticated {
+        .write_message(CellMessage::new(cell::ServerMessage::SessionAuthenticated {
             id: "new-login".into(),
             session_id: "new-session".into(),
             person: nucleus::new_uid("r"),
             key_id: "new-key".into(),
         }));
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-result".into(),
             created: None,
             facts: 0,
@@ -221,7 +221,7 @@ fn edited_drafts_cannot_restore_a_late_confirmation() {
         reviewed_at: 1000,
         profiles: Vec::new(),
     };
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk {id:"old-preview".into(),created:None,facts:0,warnings:Vec::new(),data:Some(json!({"trust":{"kind":"contact_review","review":review,"hash":review.hash().unwrap()}}))}));
+    app.world_mut().write_message(CellMessage::new(cell::ServerMessage::ActionOk {id:"old-preview".into(),created:None,facts:0,warnings:Vec::new(),data:Some(json!({"trust":{"kind":"contact_review","review":review,"hash":review.hash().unwrap()}}))}));
     app.add_systems(Update, receive);
     app.update();
     let view = app.world().get::<View>(owner).unwrap();
@@ -309,7 +309,7 @@ fn reader_query_roundtrip_keeps_independent_filters_weights_budgets_and_exclusio
         Some(("local-refresh".into(), generation));
     Command::QueryPage(1).apply(app.world_mut(), owner);
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "local-refresh".into(),
             created: None,
             facts: 0,
@@ -395,7 +395,7 @@ fn claim_controls_separate_publisher_amount_from_visible_support_and_clear_priva
         .unwrap()
         .editor_mut()
         .set_text("200");
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk {
+    app.world_mut().write_message(CellMessage::new(cell::ServerMessage::ActionOk {
         id: "old-claim-preview".into(), created: None, facts: 0, warnings: Vec::new(),
         data: Some(json!({"trust":{"kind":"claim_review","review":review,"hash":review.hash().unwrap()}})),
     }));
@@ -409,7 +409,7 @@ fn claim_controls_separate_publisher_amount_from_visible_support_and_clear_priva
     view.pending = Some(("fresh-claim-check".into(), view.generation));
     drop(view);
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "fresh-claim-check".into(),
             created: None,
             facts: 0,
@@ -460,7 +460,7 @@ fn activity_selection_without_history_ignores_a_response_after_the_draft_changes
         view.pending = Some(("activity-selection".into(), 0));
     }
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "activity-selection".into(),
             created: None,
             facts: 0,
@@ -481,7 +481,7 @@ fn activity_selection_without_history_ignores_a_response_after_the_draft_changes
     view.generation = view.generation.wrapping_add(1);
     drop(view);
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "stale-selection".into(),
             created: None,
             facts: 0,
@@ -596,7 +596,7 @@ fn recipe_controls_default_paused_bind_public_scope_and_reject_late_edited_revie
         .unwrap()
         .editor_mut()
         .set_text("90");
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk {id:"old-recipe-review".into(),created:None,facts:0,warnings:Vec::new(),data:Some(json!({"trust":{"kind":"recipe_review","review":review,"hash":review.hash().unwrap()}}))}));
+    app.world_mut().write_message(CellMessage::new(cell::ServerMessage::ActionOk {id:"old-recipe-review".into(),created:None,facts:0,warnings:Vec::new(),data:Some(json!({"trust":{"kind":"recipe_review","review":review,"hash":review.hash().unwrap()}}))}));
     app.add_systems(Update, receive);
     app.update();
     let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
@@ -835,7 +835,7 @@ fn organ_root_controls_require_exact_independent_review_clear_on_viewer_change_a
     );
     assert!(app.world().get::<View>(owner).unwrap().result.is_null());
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-root-preview".into(),
             created: None,
             facts: 0,
@@ -1001,7 +1001,7 @@ fn serving_controls_default_private_review_exact_conditions_and_clear_late_viewe
     Command::Serving(serving_controls::UiCommand::Publish).apply(app.world_mut(), owner);
     assert!(app.world().get::<View>(owner).unwrap().result.is_null());
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "serving-old-preview".into(),
             created: None,
             facts: 0,
@@ -1086,7 +1086,7 @@ fn remote_controls_review_exact_questions_keep_local_policy_and_ignore_changed_v
         view.person = nucleus::new_uid("r");
     }
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "remote-late".into(),
             created: None,
             facts: 0,
@@ -1317,7 +1317,7 @@ fn rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_l
         .is_err()
     );
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-rolling-review".into(),
             created: None,
             facts: 0,
@@ -1402,7 +1402,7 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
         view.pending = Some(("old-merged-result".into(), generation));
     }
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-merged-result".into(),
             created: None,
             facts: 0,

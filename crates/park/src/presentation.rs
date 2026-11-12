@@ -776,7 +776,6 @@ impl Presentation {
         self.last_geometry.as_ref()
     }
 
-    #[cfg(all(test, feature = "nested", feature = "server-tests"))]
     pub(crate) fn native_test_points(&mut self, entity: Entity) -> Option<(lince_interface::host::OutputId, [[f64; 2]; 4])> {
         let geometry = self.last_geometry.clone();
         let focused = self.output_state.assignments.focused();

@@ -382,7 +382,7 @@ pub(super) fn receive(
             drop(state);
             reader::render(world, owner);
         }
-        for message in &messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             let request = world
                 .get::<Import>(owner)
                 .and_then(|state| state.request.as_ref());

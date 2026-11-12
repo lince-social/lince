@@ -513,7 +513,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         if crate::native::instinct::practice::active_source(world, root).is_some() {
             continue;
         }
-        for message in &messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             let library = world.get::<Library>(root).unwrap();
             if library.organ.is_none()
                 || matches!(message, ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } if id == &library.contacts_id)

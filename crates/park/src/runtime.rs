@@ -405,7 +405,12 @@ impl CanvasWorker {
         self.requests.try_recv().ok()
     }
     pub fn failure(&self) -> Option<ProbeFailure> {
-        self.failures.try_recv().ok()
+        self.failures.try_recv().ok().or_else(|| {
+            self.join.as_ref().filter(|join| join.is_finished()).map(|_| ProbeFailure {
+                stage: "native_worker".into(),
+                detail: "The Park canvas worker stopped before shutdown".into(),
+            })
+        })
     }
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Acquire)

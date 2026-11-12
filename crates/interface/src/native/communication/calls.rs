@@ -1056,13 +1056,13 @@ fn update(
                 controller.media = None;
                 disconnected = Some((controller.status, message.clone()));
             }
-            messages.push(message);
+            messages.push(std::sync::Arc::new(message));
         }
     }
     if let Some((status, message)) = disconnected {
         panel::status(world, status, message);
     }
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, &message);
     }
     let due: Vec<_> = world

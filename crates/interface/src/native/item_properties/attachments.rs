@@ -212,11 +212,11 @@ fn synchronize(world: &mut World) {
         .map(|messages| streams.cursor.read(messages).cloned().collect())
         .unwrap_or_default();
     for message in messages {
-        match message.0 {
+        match message.0.as_ref() {
             cell::ServerMessage::Snapshot { id, rows, .. }
             | cell::ServerMessage::Update { id, rows, .. } => {
                 for (item, stream) in &mut streams.active {
-                    if stream.id == id {
+                    if stream.id == *id {
                         let row = rows.iter().find(|row| row["uid"] == stream.uid).cloned();
                         apply(world, *item, stream, row);
                     }
@@ -224,7 +224,7 @@ fn synchronize(world: &mut World) {
             }
             cell::ServerMessage::Error { id, message, .. } => {
                 for (item, stream) in &mut streams.active {
-                    if stream.id == id {
+                    if stream.id == *id {
                         restore(world, *item, stream);
                         stream.message = message.chars().take(1024).collect();
                     }

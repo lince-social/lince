@@ -605,7 +605,7 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
         .selected
         .clone();
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-organ-action".into(),
             created: Some(nucleus::new_uid("r")),
             facts: 0,

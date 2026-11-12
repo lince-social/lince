@@ -643,7 +643,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|m| m.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         if matches!(&message, ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)
         {
             world.resource_mut::<Requests>().pending.clear();
@@ -699,7 +699,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             ServerMessage::Error { message, .. } => {
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.setup = false;
-                view.status = message;
+                view.status = message.clone();
             }
             _ => {}
         }

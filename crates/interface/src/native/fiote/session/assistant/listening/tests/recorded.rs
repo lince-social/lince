@@ -20,7 +20,7 @@ fn tick(app: &mut App) {
         .try_recv();
     if let Ok(message) = incoming {
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(message));
+            .write_message(crate::native::cell_bridge::CellMessage::new(message));
     }
     app.update();
     live::trace(app);

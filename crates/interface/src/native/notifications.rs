@@ -167,7 +167,7 @@ pub(crate) fn cell_connection(
     };
     let closed: Vec<_> = cursor
         .read(messages)
-        .filter_map(|message| match &message.0 {
+        .filter_map(|message| match message.0.as_ref() {
             cell::ServerMessage::Error { id, message, .. }
                 if id == crate::native::cell_bridge::CONNECTION =>
             {

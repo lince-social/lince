@@ -44,11 +44,11 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in presentations {
+    for message in presentations.iter().map(|message| message.as_ref()) {
         composition::receive(world, &message);
         crate::native::canvas_host::composition::receive(world, &message);
         if let ServerMessage::PresentComponent { presentation } = message {
-            if let Err(message) = present(world, presentation) {
+            if let Err(message) = present(world, presentation.clone()) {
                 crate::native::notifications::report(world, "interface::components", &message);
             }
         }

@@ -281,7 +281,7 @@ mod tests {
         app.add_message::<crate::native::cell_bridge::CellMessage>();
         app.update();
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::Snapshot {
                     id: crate::native::cell_bridge::RECORDS.into(),
                     rows: vec![

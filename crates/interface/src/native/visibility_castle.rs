@@ -118,11 +118,11 @@ fn receive(
         .map(|messages| cursor.read(messages).cloned().collect())
         .unwrap_or_default();
     for message in messages {
-        match message.0 {
+        match message.0.as_ref() {
             cell::ServerMessage::ActionOk { id, data, .. } => {
-                ui::receive(world, &id, Ok(data.unwrap_or_default()))
+                ui::receive(world, &id, Ok(data.clone().unwrap_or_default()))
             }
-            cell::ServerMessage::Error { id, message, .. } => ui::receive(world, &id, Err(message)),
+            cell::ServerMessage::Error { id, message, .. } => ui::receive(world, &id, Err(message.clone())),
             _ => {}
         }
     }

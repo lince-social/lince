@@ -608,13 +608,13 @@ fn receive(
         .read(messages)
         .map(|message| message.0.clone())
         .collect();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         let (id, result) = match event {
             cell::ServerMessage::ActionOk { id, created, .. } => (
                 id,
-                created.ok_or_else(|| "The Organ did not return the new Record".to_string()),
+                created.clone().ok_or_else(|| "The Organ did not return the new Record".to_string()),
             ),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
         let forms: Vec<_> = world
@@ -622,7 +622,7 @@ fn receive(
             .iter(world)
             .filter(|(_, form)| {
                 form.pending.as_ref().is_some_and(|pending| {
-                    pending == &id || id == crate::native::cell_bridge::CONNECTION
+                    pending == id || id == crate::native::cell_bridge::CONNECTION
                 })
             })
             .map(|(entity, _)| entity)

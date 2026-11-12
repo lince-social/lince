@@ -856,7 +856,7 @@ pub(crate) fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         if let cell::ServerMessage::Error { id, message, .. } = &event {
             if id == crate::native::cell_bridge::CONNECTION {
                 let owners: Vec<_> = world
@@ -976,7 +976,7 @@ pub(crate) fn update(
                             },
                         );
                     }
-                    world.get_mut::<Composer>(owner).unwrap().saved = Some(saved);
+                    world.get_mut::<Composer>(owner).unwrap().saved = Some(saved.clone());
                 } else {
                     let cloud_label = composer.cloud_label;
                     composer.cloud = saved
@@ -1432,7 +1432,7 @@ mod tests {
     }
 
     fn result(request: &str, job: &str) -> crate::native::cell_bridge::CellMessage {
-        crate::native::cell_bridge::CellMessage(cell::ServerMessage::Speech {
+        crate::native::cell_bridge::CellMessage::new(cell::ServerMessage::Speech {
             id: request.into(),
             status: Status {
                 wake_profile: None,
@@ -1516,7 +1516,7 @@ mod tests {
             "New draft"
         );
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(
+            .write_message(crate::native::cell_bridge::CellMessage::new(
                 cell::ServerMessage::Error {
                     id: crate::native::cell_bridge::CONNECTION.into(),
                     message: "Disconnected".into(),
@@ -1546,7 +1546,7 @@ mod tests {
             "Keep this draft",
         );
         let mut event = result("install-request", "install-job");
-        if let cell::ServerMessage::Speech { status, .. } = &mut event.0 {
+        if let cell::ServerMessage::Speech { status, .. } = std::sync::Arc::make_mut(&mut event.0) {
             let job = status.job.as_mut().unwrap();
             job.purpose = cell::speech::Purpose::ModelSetup;
             job.text = Some("Local English speech model installed and verified.".into());

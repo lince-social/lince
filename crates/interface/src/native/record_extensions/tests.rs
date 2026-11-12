@@ -72,7 +72,7 @@ async fn pump(app: &mut App, ready: impl Fn(&World) -> bool) {
         };
         for message in messages {
             app.world_mut()
-                .write_message(crate::native::cell_bridge::CellMessage(message));
+                .write_message(crate::native::cell_bridge::CellMessage::new(message));
         }
         app.update();
         if ready(app.world()) {

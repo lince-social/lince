@@ -10,6 +10,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     for name in [
         "::layout_snapshots_track_optional_components_commands_and_removals",
         "::presented_castles_keep_their_surface_while_replacement_content_settles",
+        "::repeated_glyph_pages_still_require_every_atlas_and_follow_removal",
     ] {
         let case = readiness
             .iter()
@@ -34,6 +35,8 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     for name in [
         "::local_record_text_refreshes_only_dependent_queries",
         "::record_projection_preserves_requested_fields_and_exact_values",
+        "::inactive_rows_defer_materialization_but_follow_visibility_and_revocation",
+        "::remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded",
     ] {
         let query = records
             .iter()
@@ -59,15 +62,22 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::description::shader::extent::checks::laboratory_cases(&mut cases);
     let mut styles = Vec::new();
     crate::native::token_style::resolver::tests::laboratory_cases(&mut styles);
+    cases.extend(styles);
+    crate::native::token_metrics::tests::laboratory_cases(&mut cases);
+    crate::native::sand::tests::laboratory_cases(&mut cases);
+    crate::native::topology::surface_render::tests::laboratory_cases(&mut cases);
+    let mut delivery = Vec::new();
+    crate::native::cell_bridge::tests::laboratory_cases(&mut delivery);
     cases.push(
-        styles
+        delivery
             .into_iter()
             .find(|case| {
                 case.name
-                    .ends_with("::text_autosave_retains_unrelated_styles_and_unchanged_geometry")
+                    .ends_with("::independent_consumers_share_payloads_and_preserve_message_order")
             })
-            .expect("Missing native text autosave regression"),
+            .expect("Missing shared delivery regression"),
     );
+    crate::native::workspace::storage::tests::laboratory_cases(&mut cases);
     crate::native::time_castle::wake_checks::laboratory_cases(&mut cases);
     let mut karma = Vec::new();
     crate::native::karma_castle::tests::laboratory_cases(&mut karma);
@@ -178,13 +188,10 @@ fn fast_interface_rules() {
             .all(|(result, case)| result.name == case.name)
     );
     let catalogue = super::catalogue();
-    assert!(results.iter().all(|result| {
-        catalogue
-            .iter()
-            .filter(|case| case.name == result.name)
-            .count()
-            == 1
-    }));
+    let missing_or_duplicate: Vec<_> = results.iter().filter(|result| {
+        catalogue.iter().filter(|case| case.name == result.name).count() != 1
+    }).map(|result| result.name.as_str()).collect();
+    assert!(missing_or_duplicate.is_empty(), "{missing_or_duplicate:?}");
     let failures: Vec<_> = results
         .iter()
         .filter(|result| result.error.is_some())

@@ -435,7 +435,7 @@ fn update(
             .read(messages)
             .map(|message| message.0.clone())
             .collect();
-        for message in messages {
+        for message in messages.iter().map(|message| message.as_ref()) {
             receive(world, &message);
         }
     }

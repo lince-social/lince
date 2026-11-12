@@ -72,7 +72,7 @@ pub(super) async fn responses(app: &mut App) {
         .unwrap()
         .unwrap();
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(response));
+            .write_message(crate::native::cell_bridge::CellMessage::new(response));
         app.update();
     }
     panic!("Assistant controls did not settle");

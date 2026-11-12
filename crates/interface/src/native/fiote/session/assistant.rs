@@ -472,7 +472,7 @@ pub(super) fn update(
                 .collect()
         })
         .unwrap_or_default();
-    for event in events {
+    for event in events.iter().map(|message| message.as_ref()) {
         let (id, result) = match event {
             cell::ServerMessage::Fiote { id, status } => (id, Ok(status)),
             cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),

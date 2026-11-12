@@ -177,8 +177,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     }
 }
 
-fn receive_message(world: &mut World, message: ServerMessage) {
-    let id = match &message {
+fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
+    let id = match message {
         ServerMessage::Snapshot { id, .. }
         | ServerMessage::Update { id, .. }
         | ServerMessage::ActionOk { id, .. }
@@ -191,7 +192,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
         .find(|(_, catalog)| catalog.0.subscription.as_ref() == Some(id))
         .map(|(owner, _)| owner);
     if let Some(owner) = scoped {
-        match message {
+        match message.clone() {
             ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
                 let mut catalog = world.get_mut::<ScopedCatalog>(owner).unwrap();
                 let changed = !catalog.0.ready || catalog.0.rows != rows;
@@ -229,7 +230,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
         return;
     }
     if world.resource::<Catalog>().subscription.as_ref() == Some(id) {
-        match message {
+        match message.clone() {
             ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
                 let mut catalog = world.resource_mut::<Catalog>();
                 let changed = !catalog.ready || catalog.rows != rows;
@@ -267,7 +268,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
     let Some((owner, kind)) = owner else {
         return;
     };
-    match message {
+    match message.clone() {
         ServerMessage::ActionOk {
             created,
             warnings,

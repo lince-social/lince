@@ -77,6 +77,31 @@ impl OutputViews {
     }
 }
 
+pub(crate) fn presents(world: &World, mut root: Entity, workspace: u64) -> bool {
+    let spaces = loop {
+        if let Some(spaces) = world.get::<Workspaces>(root) {
+            break spaces;
+        }
+        let Some(parent) = world.get::<ChildOf>(root) else {
+            return true;
+        };
+        root = parent.parent();
+    };
+    let live = |visible| crate::native::topology::holes::live_in(world, root, visible, workspace);
+    live(spaces.active)
+        || world.get_resource::<OutputViews>().is_some_and(|views| {
+            views.applies_to(root) && views.outputs.iter().any(|output| live(output.workspace))
+        })
+        || world
+            .get_resource::<crate::native::topology::previews::Previews>()
+            .is_some_and(|previews| {
+                previews
+                    .0
+                    .iter()
+                    .any(|preview| preview.root == root && live(preview.workspace))
+            })
+}
+
 pub fn canvas(world: &World, root: Entity, workspace: u64) -> CanvasView {
     if let Some(spaces) = world.get::<Workspaces>(root) {
         if spaces.active == workspace {
@@ -99,7 +124,8 @@ mod tests {
 
     fn output(id: u64, workspace: u64) -> OutputViewport {
         let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
-        OutputViewport { rotation: Default::default(),
+        OutputViewport {
+            rotation: Default::default(),
             id: OutputId(id),
             bounds,
             usable: Some(bounds),

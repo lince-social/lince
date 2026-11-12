@@ -173,6 +173,9 @@ impl Storage {
     }
 
     fn save(&mut self, document: &Document, now: u64) -> SaveResult {
+        if let Some(error) = document.validation_error() {
+            return Err(format!("Could not save workspaces: {error}"));
+        }
         let bytes = serde_json::to_vec_pretty(document)
             .map_err(|error| format!("Could not save workspaces: {error}"))?;
         if self.last.as_ref() != Some(&bytes) {
@@ -468,6 +471,23 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn storage_worker_rejects_invalid_state_and_preserves_the_last_durable_snapshot() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let writer = Writer::start(path.clone(), None, Default::default(), None).unwrap();
+        writer.save(document("Durable"), true).unwrap();
+        let mut invalid = document("Invalid");
+        invalid.workspaces.clear();
+        assert!(writer.save(invalid, true).is_err());
+        assert_eq!(load(&path).unwrap().unwrap().workspaces[0].name, "Durable");
+        writer.save(document("Next valid state"), true).unwrap();
+        assert_eq!(
+            load(&path).unwrap().unwrap().workspaces[0].name,
+            "Next valid state"
+        );
+    }
+
+    #[cfg_attr(test, test)]
     fn timer_wakes_an_idle_interface_and_quit_flushes_a_snapshot() {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("interface.json");
@@ -533,6 +553,7 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        storage_worker_rejects_invalid_state_and_preserves_the_last_durable_snapshot,
         one_snapshot_stream_keeps_spaced_history_and_does_not_rewrite_unchanged_state,
         loading_recovers_from_a_broken_latest_snapshot_and_never_accepts_invalid_state,
         timer_wakes_an_idle_interface_and_quit_flushes_a_snapshot,

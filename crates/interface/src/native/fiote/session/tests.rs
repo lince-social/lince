@@ -431,7 +431,7 @@ pub(super) async fn deliver(app: &mut App) {
                 .unwrap()
                 .unwrap();
         app.world_mut()
-            .write_message(crate::native::cell_bridge::CellMessage(message));
+            .write_message(crate::native::cell_bridge::CellMessage::new(message));
         app.update();
         let panels = app
             .world_mut()

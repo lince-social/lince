@@ -318,7 +318,7 @@ fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
     rows.extend((0..1000).map(|index| json!({"kind":"transfer","uid":format!("t-{index}"),"head":format!("Transfer {index}"),"revision":1,
         "inbox_facets":{"mine":index % 2 == 0,"active":true},"parties":[],"promises":[],"occurrences":[]})));
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::Snapshot {
+        .write_message(CellMessage::new(cell::ServerMessage::Snapshot {
             id: "test-transfers".into(),
             rows,
         }));
@@ -1007,7 +1007,7 @@ fn receipt_results_survive_refresh_and_clear_when_the_acting_person_changes() {
             form,
         });
     }
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::ActionOk {
+    app.world_mut().write_message(CellMessage::new(cell::ServerMessage::ActionOk {
         id:"receipt-result".into(),created:Some("review".into()),facts:0,warnings:Vec::new(),
         data:Some(json!({"receipt":{"record":"review","version":2,"state":"private_review","document":{"kind":"review","value":{
             "scope":{"source":{"origin":"organ"},"giver":"organ","receiver":"other","expires_at":1_900_000_000},"approvals":[],"authorities":[]
@@ -1027,7 +1027,7 @@ fn receipt_results_survive_refresh_and_clear_when_the_acting_person_changes() {
         ),
     });
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::Error {
+        .write_message(CellMessage::new(cell::ServerMessage::Error {
             id: "receipt-withheld".into(),
             message: "Receipt signing authority has been revoked".into(),
             code: Some("transfer_receipt_authority_withheld".into()),
@@ -1079,13 +1079,13 @@ fn receipt_results_survive_refresh_and_clear_when_the_acting_person_changes() {
         .resource_mut::<Requests>()
         .0
         .insert("receipt-viewer-change".into(), (owner, "transfers".into()));
-    app.world_mut().write_message(CellMessage(cell::ServerMessage::Snapshot {
+    app.world_mut().write_message(CellMessage::new(cell::ServerMessage::Snapshot {
         id:"receipt-viewer-change".into(),rows:vec![json!({"kind":"transfer_context","viewer":{"local":false,"person":"beto"},"organ":"organ"})],
     }));
     app.update();
     assert!(app.world().get::<View>(owner).unwrap().pending.is_none());
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "stale-receipt-reply".into(),
             created: None,
             facts: 0,
@@ -1618,7 +1618,7 @@ fn person_key_comparison_is_reviewed_and_late_results_do_not_cross_person_views(
         view.receipt_export = Some("earlier receipt export".into());
     }
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "identity-preview".into(),
             created: None,
             facts: 0,
@@ -1656,7 +1656,7 @@ fn person_key_comparison_is_reviewed_and_late_results_do_not_cross_person_views(
             .is_none()
     );
     app.world_mut()
-        .write_message(CellMessage(cell::ServerMessage::ActionOk {
+        .write_message(CellMessage::new(cell::ServerMessage::ActionOk {
             id: "old-identity".into(),
             created: None,
             facts: 0,

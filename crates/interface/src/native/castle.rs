@@ -303,6 +303,67 @@ pub(crate) mod tests {
         nested_castles_wait_for_every_image_without_hiding_unrelated_sands,
         new_members_and_pending_work_hold_the_whole_group,
         presented_castles_keep_their_surface_while_replacement_content_settles,
+        repeated_glyph_pages_still_require_every_atlas_and_follow_removal,
+    }
+
+    #[cfg_attr(test, test)]
+    fn repeated_glyph_pages_still_require_every_atlas_and_follow_removal() {
+        let mut world = World::new();
+        crate::native::laboratory::isolate(&mut world);
+        world.init_resource::<Layouts>();
+        world.init_resource::<PreparedImages>();
+        let mut images = Assets::<Image>::default();
+        let handles: Vec<_> = (0..3).map(|_| images.add(Image::default())).collect();
+        let pages: Vec<_> = handles.iter().map(Handle::id).collect();
+        let root = world.spawn((Castle, InheritedVisibility::VISIBLE)).id();
+        world.spawn((
+            Node::default(),
+            TextLayoutInfo {
+                glyphs: [0, 0, 1, 1, 0, 2, 2, 0]
+                    .into_iter()
+                    .map(|index| bevy::text::PositionedGlyph {
+                        position: Vec2::ZERO,
+                        atlas_info: bevy::text::GlyphAtlasInfo {
+                            texture: pages[index],
+                            rect: Rect::default(),
+                            offset: Vec2::ZERO,
+                            is_alpha_mask: true,
+                        },
+                        section_index: 0,
+                        line_index: 0,
+                    })
+                    .collect(),
+                ..default()
+            },
+            ChildOf(root),
+        ));
+        remember_layout(&mut world);
+        for missing in &pages {
+            *world.resource::<PreparedImages>().0.write().unwrap() = pages
+                .iter()
+                .copied()
+                .filter(|page| page != missing)
+                .collect();
+            present(&mut world);
+            assert!(
+                world
+                    .get::<StartupStatus>(root)
+                    .unwrap()
+                    .0
+                    .iter()
+                    .any(|issue| issue.reason
+                        == "Waiting for text preparation on the graphics device")
+            );
+            world
+                .resource::<PreparedImages>()
+                .0
+                .write()
+                .unwrap()
+                .insert(*missing);
+            present(&mut world);
+            assert!(world.get::<StartupStatus>(root).unwrap().0.is_empty());
+        }
+        assert!(world.get::<Presented>(root).is_some());
     }
 
     #[cfg_attr(test, test)]
@@ -540,10 +601,15 @@ fn present(world: &mut World) {
                     }
                 }
                 if let Some(text) = world.get::<TextLayoutInfo>(entity) {
-                    let prepared = text
-                        .glyphs
-                        .iter()
-                        .all(|glyph| images.contains(&glyph.atlas_info.texture));
+                    let mut previous = None;
+                    let prepared = text.glyphs.iter().all(|glyph| {
+                        let texture = glyph.atlas_info.texture;
+                        if previous == Some(texture) {
+                            return true;
+                        }
+                        previous = Some(texture);
+                        images.contains(&texture)
+                    });
                     ready &= prepared;
                     if !prepared {
                         issue(

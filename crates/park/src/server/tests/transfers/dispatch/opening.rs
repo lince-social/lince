@@ -45,10 +45,10 @@ pub(super) fn ready(fixture: &mut Fixture) {
         let sender = world.get_non_send::<native::cell_bridge::CellBridge>().unwrap().outgoing.clone();
         world.resource_mut::<Schedules>().get_mut(Update).unwrap().add_systems((move |mut messages: MessageReader<native::cell_bridge::CellMessage>| {
             for message in messages.read() {
-                if let cell::ServerMessage::Snapshot { id, rows } | cell::ServerMessage::Update { id, rows } = &message.0
+                if let cell::ServerMessage::Snapshot { id, rows } | cell::ServerMessage::Update { id, rows } = message.0.as_ref()
                     && rows.iter().any(|row| row.get("extension").is_some())
                 { eprintln!("Opening fixture projected rows {id}: {rows:?}"); }
-                match &message.0 {
+                match message.0.as_ref() {
                     cell::ServerMessage::Snapshot { id, .. } if id == &request => { let _ = sent.try_send(Ok(())); }
                     cell::ServerMessage::Error { id, message, .. } if id == &request => { let _ = sent.try_send(Err(message.clone())); }
                     _ => {}

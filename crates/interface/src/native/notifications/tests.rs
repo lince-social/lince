@@ -146,7 +146,7 @@ fn recommendations_for_a_cell_disconnect_are_reported_once_without_record_views(
     let mut schedule = Schedule::default();
     schedule.add_systems(cell_connection);
     for occurrence in 1..=2 {
-        world.write_message(CellMessage(cell::ServerMessage::Error {
+        world.write_message(CellMessage::new(cell::ServerMessage::Error {
             id: CONNECTION.into(),
             message: "The connection to this Cell stopped. Your drafts are still here.".into(),
             code: Some("connection_closed".into()),

@@ -98,13 +98,13 @@ fn changing_catalogues_discards_previous_organ_responses() {
     update(
         app.world_mut(),
         root,
-        &[ServerMessage::ActionOk {
+        &[std::sync::Arc::new(ServerMessage::ActionOk {
             id: "old-request".into(),
             created: None,
             facts: 0,
             warnings: vec![],
             data: Some(serde_json::to_value(response).unwrap()),
-        }],
+        })],
     );
     assert!(app.world().get::<State>(root).unwrap().package.is_none());
     assert_eq!(
@@ -164,13 +164,13 @@ fn inspecting_a_received_package_does_not_place_it_before_explicit_enable() {
     update(
         world,
         root,
-        &[ServerMessage::ActionOk {
+        &[std::sync::Arc::new(ServerMessage::ActionOk {
             id: "inspect".into(),
             created: None,
             facts: 0,
             warnings: vec![],
             data: Some(data.clone()),
-        }],
+        })],
     );
     assert_eq!(
         world
@@ -184,13 +184,13 @@ fn inspecting_a_received_package_does_not_place_it_before_explicit_enable() {
     update(
         world,
         root,
-        &[ServerMessage::ActionOk {
+        &[std::sync::Arc::new(ServerMessage::ActionOk {
             id: "enable".into(),
             created: None,
             facts: 0,
             warnings: vec![],
             data: Some(data),
-        }],
+        })],
     );
     assert_eq!(
         world
@@ -230,7 +230,7 @@ fn switching_sources_discards_pending_enable_even_when_the_new_request_cannot_se
     update(
         app.world_mut(),
         root,
-        &[ServerMessage::ActionOk {
+        &[std::sync::Arc::new(ServerMessage::ActionOk {
             id: "old-enable".into(),
             created: None,
             facts: 0,
@@ -243,7 +243,7 @@ fn switching_sources_discards_pending_enable_even_when_the_new_request_cannot_se
                 })
                 .unwrap(),
             ),
-        }],
+        })],
     );
     let state = app.world().get::<State>(root).unwrap();
     assert_eq!(state.organ.as_deref(), Some(next.as_str()));

@@ -338,7 +338,7 @@ fn update(
         .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
-    for message in messages {
+    for message in messages.iter().map(|message| message.as_ref()) {
         receive(world, message);
     }
     let removed: Vec<_> = world
@@ -486,7 +486,8 @@ fn update(
     }
 }
 
-fn receive(world: &mut World, message: ServerMessage) {
+fn receive(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
+    let message = message.borrow();
     if login_view::receive(world, &message) || run_view::receive(world, &message) {
         return;
     }

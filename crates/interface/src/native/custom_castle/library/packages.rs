@@ -255,13 +255,13 @@ fn runnable(package: &Package) -> Result<CustomCastle, String> {
     decode(&json!({"kind":"sand","head":package.manifest.name,"body":package.payload}))
 }
 
-pub(super) fn update(world: &mut World, root: Entity, messages: &[ServerMessage]) {
+pub(super) fn update(world: &mut World, root: Entity, messages: &[std::sync::Arc<ServerMessage>]) {
     if world.get::<State>(root).is_none() {
         return;
     }
     let contacts_id = world.get::<Library>(root).unwrap().contacts_id.clone();
-    if messages.iter().any(|message| matches!(message, ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } if id == &contacts_id)) { world.get_mut::<State>(root).unwrap().dirty = true; }
-    for message in messages {
+    if messages.iter().any(|message| matches!(message.as_ref(), ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } if id == &contacts_id)) { world.get_mut::<State>(root).unwrap().dirty = true; }
+    for message in messages.iter().map(|message| message.as_ref()) {
         let pending = world.get::<State>(root).unwrap().pending.clone();
         let Some((pending_id, command)) = pending else {
             continue;

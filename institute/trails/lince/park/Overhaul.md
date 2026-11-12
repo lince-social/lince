@@ -64,6 +64,9 @@ The relevant problem is work amplification on the serial native owner. A visuall
 | Canvas API and persistence | A 200 ms refresh repeatedly captured, cloned, indexed and validated the canvas. Up to eight API operations could run in one update. | Register the host cheaply; capture at an actual API request or persistence boundary. Admit one API operation per native update and wake again while work remains. Keep receipts, undo, schema refresh and recovery state. Move serialized-document validation to the existing storage worker before writing. | Invalid documents leave the last durable snapshot intact; quit still waits for flush. A single large API request or save capture can still occupy the owner: this change bounds admission, not the cost of an individual operation. |
 | Surface reuse fingerprint | All glyph/geometry/image inputs were fed through the standard SipHash implementation. | Use Bevy's existing fast hasher for this non-cryptographic render fingerprint; keep every original input and the separate privacy/geometry fences. | Sensitivity regression checks camera, glyphs, clipping and changed images. No new dependency, reduced visual quality or omitted dirty field. |
 | Castle readiness | Every glyph repeated a hash lookup for its atlas image, including consecutive glyphs on the same page. | Check a consecutive atlas page once while still visiting all glyphs and validating every page transition. No persistent readiness cache or weakened presentation gate. | Regression removes each page in a multi-page, repeating layout and requires readiness to fail until that page returns. Existing replacement-content stability remains mandatory. Measured mean owner CPU falls from 55.068 to 14.771 ms/call in the follow-up recordings. |
+| Retained status/history panels | Sync overview changes destroyed and reconstructed the whole panel, including unchanged long subject labels and controls. Render also cloned the overview before discovering there was nothing to update. | One shared keyed-child reconciler preserves entities, unchanged text, control focus, order and independent child ownership. Sync describes rows only for dirty, presented panels, then changes only different values. | The regression holds 160 long history entries, reorders/removes rows, changes a button caption, preserves focus and unchanged text change-ticks, and checks hidden/reveal behavior. This is not a claim that every feature now uses keyed reconciliation. |
+| Panel and inspection demand | Hidden Sync panels continued requesting overviews and rebuilding text. Information panels also rebuilt while hidden. Opening Edit walked the hierarchy for inspection even with every inspection overlay off. | Shared ancestor/workspace demand includes every physical output, overview and portal, without depending on stale layout readiness. Defer hidden presentation, stop hidden Sync inspection requests, refresh on reveal, and skip inspection traversal when it has no output to draw. | Existing logical synchronization and in-flight results continue. Tests cover inactive/secondary-output/preview/portal demand, disabled or display-none parents, reveal before layout, and inspection disable/cleanup. |
+| Measurement delivery | Concurrent producers could lose a span or input sample merely because another thread held the recorder mutex, even far below its capacity. | Use Crossbeam's bounded concurrent queue for these two streams, preserving the existing capacity and explicit overflow counters. Text-invalidations get opt-in cause/byte counters. | Eight concurrent producers retain every one of 1,024 unique samples; deliberate overflow is counted exactly. Final representative capture has no lost reports, systems, spans or input traces and includes its final drain. Capture-off does not install the text diagnostic system. |
 | Worker failure | A native thread panic could leave a fixture waiting without an immediately visible error. | Recognize an already-finished native worker before shutdown even if its error channel is empty. | The private fixture initially exposed this during a Bevy query conflict. This is failure reporting, not a claimed cause of the original CPU incident. |
 
 Most changed files are consumers of the one shared-message representation. They are not separate feature rewrites. No optimization switches, alternative production renderer, private per-feature scheduler, compositor hot-restart mechanism or credential changes are introduced.
@@ -116,6 +119,43 @@ Final-source follow-up (`owner-after-atlas` and `owner-after-atlas-off`), after 
 This is an 84.2% mean and 48.7% median reduction for the common twelve-command debug cohort. It is **not** an 84.2% claim for Park as a whole. The final capture-off soak has 44 further actions: mean 438.179 ms, median 377.752 ms, p95 1,108.481 ms and worst 1,130.932 ms. Its mean and median are worse than the preceding candidate soak, while its tail improves. The capture-on soak is also worse than that preceding candidate: 42 actions, mean 471.562 ms, median 450.668 ms, p95 1,206.962 ms and worst 1,485.652 ms. Keep those contrary observations; do not select only the favorable common cohort.
 
 The final capture-on common cohort has mean 559.382 ms, median 370.845 ms and worst 2,627.638 ms. Its complete recording has 144 native updates and zero lost reports/system samples/spans/input traces. Readiness CPU is 14.771 ms/call, versus 55.068 before the final change; text measurement remains 21.446 ms/call with a 695.423 ms outlier, UI layout 23.753 ms/call, and surface fingerprinting 26.668 ms/call. The narrower atlas change is retained for its measured CPU reduction and unchanged readiness semantics. It does not establish a uniform action-latency gain: background timing and different update counts remain coupled. Input waiting behind ongoing work and text/layout tails still need optimized attribution.
+
+### Recurring text stalls attributed and removed from the representative replay
+
+The follow-up begins at `4f2f9dea`. Its owner traces expose approximately 670–700 ms text-measurement calls recurring about eight seconds apart while other calls take only a few milliseconds. Opt-in invalidation counters and temporary component-owner attribution identify 160 Sync history subject labels carrying approximately 115,830 bytes, rebuilt together with hundreds of other panel nodes. The activity panel was on an inactive workspace. Source inspection confirms a full child-tree replacement on each changed overview, plus an unnecessary overview clone on ordinary render calls. This is a concrete trigger for repeated text/layout work in a visually empty workspace, not evidence that all of the reported minute-long delay has one cause. Temporary owner logging was removed; no Record contents were printed.
+
+The retained-panel implementation follows an established rendering principle: keep stable display objects and invalidate changed content instead of reconstructing unchanged trees. Chromium's current paint documentation describes retained display items and invalidation at affected objects/subtrees; that is the relevant precedent, rather than replacing Bevy with another toolkit. Bevy already retains its ECS/text state; our panel builder was throwing that state away. [Chromium paint architecture](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/paint/README.md).
+
+The same immutable saved-workspace fixture, graphics environment, debug profile and twelve-command protocol were used again. Each run gets a fresh copy, no services or credentials, no network access, and no competing compiler. A preserved `4f2f9dea` executable was repeated after the first candidate run. The final candidate was then measured with capture both on and off. These are matched private source comparisons, not optimized physical desktop measurements.
+
+| Capture-off observation | Repeated `4f2f9dea` | Retained-panel final source |
+| --- | --- | --- |
+| Twelve Edit commands: mean | 497.106 ms | 341.986 ms |
+| Twelve Edit commands: median | 308.333 ms | 213.760 ms |
+| Twelve Edit commands: worst | 2,597.513 ms | 1,731.808 ms |
+| Subsequent 30-second soak: samples | 45 | 63 |
+| Soak mean | 419.329 ms | 231.519 ms |
+| Soak median | 370.388 ms | 222.444 ms |
+| Soak p95 | 1,030.429 ms | 283.334 ms |
+| Soak worst | 1,141.146 ms | 373.418 ms |
+| Cold initial readiness, separately | 3,901.031 ms | 3,692.870 ms |
+
+The common twelve-command mean is 31.2% lower. Soak median is 39.9% lower and p95 72.5% lower. Soak sample counts differ because the duration is fixed; do not add these percentages to earlier changes or call them an overall Park speedup. The first retained-panel candidate independently measured a 223.346 ms soak median and 298.489 ms p95. The final repeat supports the same direction, but all of these latencies remain unacceptable.
+
+The final capture-on run has 192 native updates, 40 reports, zero lost reports/system samples/spans/inputs and a final report. Its twelve-command mean/median/worst are 394.870/268.053/1,813.678 ms. Its 55-action soak has mean 302.099 ms, median 300.398 ms, p95 350.737 ms and worst 375.610 ms. Capture overhead remains material; performance claims above therefore use capture-off timings.
+
+| Attributed native owner | Earlier `4f2f9dea` mean CPU/call | Retained-panel final mean CPU/call | Final maximum |
+| --- | --- | --- | --- |
+| Text measurement | 21.446 ms | 2.448 ms | 103.866 ms |
+| UI layout | 23.753 ms | 20.659 ms | 39.618 ms |
+| Surface fingerprinting | 26.668 ms | 4.108 ms | 8.060 ms |
+| Castle readiness | 14.771 ms | 9.887 ms | 16.767 ms |
+| Sync panel render | — | 0.085 ms | 0.213 ms |
+| Inspection draw | — | 0.077 ms | 0.231 ms |
+
+These are exclusive owner-CPU observations from different-duration runs, not isolated causal percentages. No fingerprint algorithm changed in this follow-up: fewer hidden history glyphs also reduce downstream fingerprint and readiness work. The final text diagnostics observe 1,815 invalidation candidates, 29,963 source bytes and 1,168 new blocks across the complete recording. They distinguish observed text/style/scale/unit/addition changes; Bevy's private missing-font retry flag is not exposed, so the counters must not be advertised as complete accounting of every possible text-measurement cause. A zero-size or inherited-invisible node before layout is not, by itself, proof of absent presentation demand.
+
+The largest remaining recorded first-use stalls include synchronous pipeline processing at 1,224.574 ms owner CPU and initial upscaling pipeline preparation at 712.018 ms. Park explicitly enables synchronous pipeline compilation. Bevy 0.19.1 supports asynchronous preparation, but simply turning it on would allow missing pipelines to produce incomplete frames. Keep this as a separate cold-path obligation: readiness, completion-driven wakeup, shader errors, correct pixels and policy-valid prior-frame retention must be implemented together. It does not explain the sustained warm latency. Whole-scene layout, readiness, remaining per-frame system scans and input waiting behind that work remain candidates for further reduction.
 
 ### Strict suite and retained failures
 
@@ -175,11 +215,36 @@ These failures are retained so they cannot become fabricated performance evidenc
 - The broader test build caught a malformed expression inside a new `serde_json::json!` test fixture. It was corrected before shipping; a normal application check alone would not have checked that `cfg(test)` code.
 - The first final `fast_interface_rules` wrapper run passes all 42 bodies but fails catalogue membership: the renderer-fingerprint case had been added to the fast list without registering it in the full Laboratory catalogue. Registration was fixed, the assertion now names any missing/duplicate cases, and the entire wrapper rerun passes.
 
+### Retained-panel verification and recorder correction
+
+The final native executable passes all 48 fast functional cases, including the mandatory Protein dropdown first, readable glyphs, Edit bounds, retained Sync controls/focus, keyed child ownership, output demand, inspection cleanup and concurrent trace retention. The separate hardware graphics proof passes exact rendering, independent output views, shared captures, reconnects and GPU export with the compatible existing Mesa development driver. The five pure performance-recorder tests pass, including bounded overflow, concurrent distributions and report backpressure. The preceding 47-case native test wrapper also verifies exact Laboratory registration; the added recorder wrapper is registered through the same local case macro used by both lists. Both Main scheduling tests pass with the preserved startup/deferred/custom-order behavior.
+
+The first retained-panel capture lost one span despite a maximum of only 171 spans in a report and a 2,048-span bound. The old producer used `try_lock`, so mutex contention could discard a sample without a full queue. That capture remains incomplete evidence. The final bounded-queue implementation retains all samples in both its concurrent regression and the representative replay, without relaxing any acceptance limit. The queue crate was already in `Cargo.lock`; only the direct interface dependency edge was added. No package version was upgraded.
+
+The final application passes locked/offline `cargo check -p lince --features instinct,park`. No local release build is part of this validation.
+
+The final strict run, `retained-final-strict`, again passes all 48 functional cases and every exact interaction outcome in the completed cohorts. It fails the response gates and exits 124 at the unchanged five-minute deadline during the final graphics proof. The separately completed graphics proof above passes; the combined suite remains **failed and incomplete**.
+
+| Retained-panel final strict debug cohort, 120 samples each | p50 | p95 | Worst |
+| --- | --- | --- | --- |
+| Empty, Edit | 89.232 ms | 100.209 ms | 107.448 ms |
+| Empty active workspace, populated inactive areas | 101.847 ms | 111.898 ms | 119.662 ms |
+| Thirty native items, Edit | 297.698 ms | 312.152 ms | 346.770 ms |
+| Mixed scene, Unicode input under query pressure | 360.810 ms | 522.440 ms | 540.523 ms |
+| Mixed scene, scrolling | 288.650 ms | 364.793 ms | 539.814 ms |
+| Mixed scene, dragging | 335.369 ms | 354.514 ms | 358.146 ms |
+| Mixed scene, pan | 284.537 ms | 331.918 ms | 361.190 ms |
+| Empty worker, input to completed publication | 144.853 ms | 167.912 ms | 173.855 ms |
+
+Do not generalize the saved-history replay improvement to this entire synthetic scene. Mixed Edit tails improve, but several other timings are similar or worse than the preceding strict run. Scrolling p95, for example, is 364.793 ms versus 351.744 ms. The synthetic Sync panel does not contain the saved fixture's long history; this follow-up has not solved the broad mixed-workload cost. The private empty worker's quiet CPU is 0.099% of one core, not a populated-desktop idle result.
+
+The interrupted trace has 294 reports, all seven required phases, hardware GPU intervals, 1,193 native-main/post-update-CPU/GPU-completion observations and 1,055 query-execution observations. Emitted reports lose zero systems, spans, inputs or reports, but there is no final drain because of the deadline. That is incomplete coverage, irrespective of the passing complete representative capture. `retained-final-validation.json` in the private evidence directory records source hashes and check results. All 16 archived source hashes remain exact. Delivery uses a source push for CI; no Actions wait, binary installation or session change is part of this batch.
+
 ### Remaining acceptance obligations
 
 This report replaces the old execution queues, not their unproved guarantees. The archive remains exact historical evidence. These are unresolved obligations within this same report, not a new round of unrelated feature work:
 
-- Text measurement/layout remains a major source of long-tail owner CPU in the representative replay. Attribute the invalidation trigger before altering font/layout correctness; do not hide the tail behind an average or blame physics without measurements.
+- The recurring hidden Sync-history text rebuild has been attributed and removed from the representative replay. Whole-scene layout and the remaining per-frame scans still cost too much, and cold text/pipeline preparation still stalls. Preserve the invalidation/readiness guarantees while reducing those actual owners; do not infer that physics or GPU offload explains the remaining delay without measurements.
 - Building a newly visible large Protein area is still synchronous, and previously built hidden row trees remain allocated. Visible paging/virtualization and bounded construction are not claimed complete.
 - The real optimized daily workload, Firefox/Ghostty client latency, DRM presentation deadlines, twenty–thirty varied items on both physical monitors, and long-running resource stability remain unmeasured for this batch. The user must not be told the whole desktop is fixed because a private fixture improves.
 - Ordered backend bursts and large individual API requests still need latency attribution under realistic contention. The shared-message change removes redundant payload copies; it does not prove every consumer is bounded.

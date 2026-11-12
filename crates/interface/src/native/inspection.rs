@@ -567,6 +567,9 @@ fn draw(world: &mut World) {
             .selected
             .filter(|entity| state.click && world.get_entity(*entity).is_ok())
             .or(if state.hover { state.hovered } else { None });
+        if focus.is_none() && !state.contours && !state.events && !state.hidden {
+            continue;
+        }
         let related = focus
             .map(|entity| family(world, root, entity))
             .unwrap_or_default();

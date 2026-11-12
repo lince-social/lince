@@ -102,6 +102,40 @@ pub(crate) fn presents(world: &World, mut root: Entity, workspace: u64) -> bool 
             })
 }
 
+pub(crate) fn presents_entity(world: &World, mut entity: Entity) -> bool {
+    let mut workspace = None;
+    loop {
+        if world.get_entity(entity).is_err()
+            || world
+                .get::<bevy::ecs::entity_disabling::Disabled>(entity)
+                .is_some()
+            || world
+                .get::<Node>(entity)
+                .is_some_and(|node| node.display == Display::None)
+            || world
+                .get::<crate::native::layout::desktop::Suppressed>(entity)
+                .is_some()
+        {
+            return false;
+        }
+        if workspace.is_none() {
+            workspace = world
+                .get::<crate::native::workspace::WorkspaceMember>(entity)
+                .map(|member| member.0);
+        }
+        if world.get::<Workspaces>(entity).is_some()
+            && let Some(workspace) = workspace.take()
+            && !presents(world, entity, workspace)
+        {
+            return false;
+        }
+        let Some(parent) = world.get::<ChildOf>(entity) else {
+            return true;
+        };
+        entity = parent.parent();
+    }
+}
+
 pub fn canvas(world: &World, root: Entity, workspace: u64) -> CanvasView {
     if let Some(spaces) = world.get::<Workspaces>(root) {
         if spaces.active == workspace {
@@ -117,8 +151,7 @@ pub fn canvas(world: &World, root: Entity, workspace: u64) -> CanvasView {
     CanvasView::default()
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::host::Rectangle;
 
@@ -159,5 +192,63 @@ mod tests {
         assert_eq!(canvas(&world, root, 2).center.to_array(), [25.0, 90.0]);
         assert_eq!(canvas(&world, root, 2).zoom, 1.5);
         assert_eq!(world.get::<Workspaces>(root).unwrap().active, 1);
+    }
+
+    #[cfg_attr(test, test)]
+    fn panel_demand_follows_every_output_preview_and_portal_without_waiting_for_layout() {
+        use crate::native::{
+            topology::{holes, previews},
+            workspace::WorkspaceMember,
+        };
+        let mut world = World::new();
+        crate::native::laboratory::isolate(&mut world);
+        let root = world.spawn(Workspaces::default()).id();
+        let owner = world
+            .spawn((WorkspaceMember(2), Node::default(), ChildOf(root)))
+            .id();
+        let panel = world.spawn((Node::default(), ChildOf(owner))).id();
+        assert!(!presents_entity(&world, panel));
+        world.insert_resource(
+            OutputViews::new(vec![output(1, 1), output(2, 2)], OutputId(1)).unwrap(),
+        );
+        assert!(presents_entity(&world, panel));
+        world.get_mut::<Node>(owner).unwrap().display = Display::None;
+        assert!(!presents_entity(&world, panel));
+        world.get_mut::<Node>(owner).unwrap().display = Display::Flex;
+        world.remove_resource::<OutputViews>();
+        world.insert_resource(previews::Previews(vec![previews::Preview {
+            id: owner,
+            root,
+            workspace: 2,
+            view: CanvasView::default(),
+            pixels: UVec2::splat(100),
+            image: default(),
+        }]));
+        assert!(presents_entity(&world, panel));
+        world.remove_resource::<previews::Previews>();
+        world
+            .entity_mut(root)
+            .insert(holes::Layers(vec![holes::Layer {
+                workspace: 2,
+                depth: 1,
+                openings: Vec::new(),
+                cuts: Vec::new(),
+            }]));
+        assert!(presents_entity(&world, panel));
+        world
+            .entity_mut(owner)
+            .insert(bevy::ecs::entity_disabling::Disabled);
+        assert!(!presents_entity(&world, panel));
+        world
+            .entity_mut(owner)
+            .remove::<bevy::ecs::entity_disabling::Disabled>();
+        world.entity_mut(root).remove::<holes::Layers>();
+        assert!(!presents_entity(&world, panel));
+        world.get_mut::<Workspaces>(root).unwrap().active = 2;
+        assert!(presents_entity(&world, panel));
+    }
+
+    crate::native::laboratory_cases! {
+        panel_demand_follows_every_output_preview_and_portal_without_waiting_for_layout,
     }
 }

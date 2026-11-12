@@ -243,7 +243,8 @@ fn render(world: &mut World) {
     let panels: Vec<_> = world
         .query::<(Entity, &InformationPanel)>()
         .iter(world)
-        .filter(|(_, panel)| panel.revision != Some(revision))
+        .filter(|(entity, panel)| panel.revision != Some(revision)
+            && crate::native::output_views::presents_entity(world, *entity))
         .map(|(entity, panel)| (entity, panel.root))
         .collect();
     if panels.is_empty() {

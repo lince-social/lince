@@ -115,6 +115,7 @@ instinct = ["native-presentation", "engine/instinct"]
 native-media = ["native-presentation", "dep:lince-media", "lince-media/native"]
 
 [dependencies]
+crossbeam-queue = "0.3.14"
 lince-resources.workspace = true
 anicca = { workspace = true, optional = true }
 lince-i18n = { workspace = true }

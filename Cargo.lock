@@ -9174,6 +9174,7 @@ dependencies = [
  "cc",
  "chrono",
  "cpal",
+ "crossbeam-queue",
  "engine",
  "flexbuffers",
  "fontique 0.9.0",

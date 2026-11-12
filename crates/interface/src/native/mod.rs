@@ -42,6 +42,9 @@ pub mod notifications;
 pub mod information;
 
 #[cfg(feature = "native-presentation")]
+pub(crate) mod retained;
+
+#[cfg(feature = "native-presentation")]
 pub mod icons;
 
 #[cfg(feature = "native-presentation")]

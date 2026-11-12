@@ -66,6 +66,14 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::token_metrics::tests::laboratory_cases(&mut cases);
     crate::native::sand::tests::laboratory_cases(&mut cases);
     crate::native::topology::surface_render::tests::laboratory_cases(&mut cases);
+    crate::native::information::sync::tests::laboratory_cases(&mut cases);
+    crate::native::retained::tests::laboratory_cases(&mut cases);
+    crate::native::output_views::tests::laboratory_cases(&mut cases);
+    let mut inspection = Vec::new();
+    crate::native::inspection::tests::laboratory_cases(&mut inspection);
+    cases.push(inspection.into_iter().find(|case| case.name.ends_with(
+        "::click_off_hides_inspection_even_when_canvas_selection_sets_a_target"
+    )).expect("Missing inspection demand regression"));
     let mut delivery = Vec::new();
     crate::native::cell_bridge::tests::laboratory_cases(&mut delivery);
     cases.push(
@@ -93,6 +101,12 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     );
     super::showoff::screenshot::laboratory_cases(&mut cases);
     cases
+}
+
+#[cfg_attr(test, test)]
+fn performance_traces_preserve_concurrent_samples_and_report_overflow() {
+    crate::host::performance::checks::concurrent_trace_producers_preserve_every_sample_until_capacity();
+    crate::host::performance::checks::input_traces_are_bounded_nonblocking_and_report_loss_without_payloads();
 }
 
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
@@ -619,4 +633,5 @@ crate::native::laboratory_cases! {
     shared_dropdown_captions_follow_available_width_and_theme,
     edit_panel_usable_bounds,
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,
+    performance_traces_preserve_concurrent_samples_and_report_overflow,
 }

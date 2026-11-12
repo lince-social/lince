@@ -50,6 +50,8 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::native::icons::tests::laboratory_cases(&mut cases);
     crate::native::information::tests::laboratory_cases(&mut cases);
     crate::native::information::sync::tests::laboratory_cases(&mut cases);
+    crate::native::retained::tests::laboratory_cases(&mut cases);
+    crate::native::output_views::tests::laboratory_cases(&mut cases);
     crate::native::sync_castle::tests::laboratory_cases(&mut cases);
     crate::native::inspection::tests::laboratory_cases(&mut cases);
     crate::native::instance::tests::laboratory_cases(&mut cases);

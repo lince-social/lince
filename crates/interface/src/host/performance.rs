@@ -1,3 +1,4 @@
+use crossbeam_queue::ArrayQueue;
 use serde::Serialize;
 
 mod accounting;
@@ -245,6 +246,14 @@ counts! {
     TimingRejected => "timing-timestamps-rejected",
     TimingCapacity => "timing-capacity-exceeded",
     NativePhaseMissing => "native-phase-missing-schedules",
+    TextMeasureCandidates => "native-text-measure-candidates",
+    TextMeasureBytes => "native-text-measure-source-bytes",
+    TextMeasureNew => "native-text-measure-new-blocks",
+    TextMeasureChanged => "native-text-measure-changed-text",
+    TextMeasureStyle => "native-text-measure-style-or-span-changes",
+    TextMeasureScale => "native-text-measure-scale-changes",
+    TextMeasureUnits => "native-text-measure-viewport-or-rem-changes",
+    TextMeasureInvisible => "native-text-measure-zero-size-or-invisible-before-layout",
     WindowPixelsCommit => "window-pixels-only-commits",
     WindowSemanticCommit => "window-semantic-commits",
     WindowCallbackCommit => "window-callback-only-commits",
@@ -520,7 +529,7 @@ struct Monitor {
     stages: Vec<Mutex<Distribution>>,
     systems: [Mutex<BTreeMap<String, accounting::SystemSample>>; SYSTEM_SHARDS],
     render_diagnostics: Mutex<BTreeMap<String, RenderDiagnostic>>,
-    spans: Mutex<Vec<SpanReading>>,
+    spans: ArrayQueue<SpanReading>,
     dropped_span_trace: AtomicU64,
     dropped_system_samples: AtomicU64,
     snapshot_at_us: AtomicU64,
@@ -534,7 +543,7 @@ struct Monitor {
     dropped_reports: AtomicU64,
     sender: Option<SyncSender<Report>>,
     counters: Vec<AtomicU64>,
-    input_trace: Mutex<Vec<InputTrace>>,
+    input_trace: ArrayQueue<InputTrace>,
     dropped_input_trace: AtomicU64,
 }
 
@@ -564,7 +573,7 @@ impl Monitor {
             outputs: Mutex::new(BTreeMap::new()),
             systems: std::array::from_fn(|_| Mutex::new(BTreeMap::new())),
             render_diagnostics: Mutex::new(BTreeMap::new()),
-            spans: Mutex::new(Vec::new()),
+            spans: ArrayQueue::new(SPAN_TRACE_LIMIT),
             dropped_span_trace: AtomicU64::new(0),
             dropped_system_samples: AtomicU64::new(0),
             snapshot_at_us: AtomicU64::new(0),
@@ -577,7 +586,7 @@ impl Monitor {
             dropped_reports: AtomicU64::new(0),
             sender,
             counters: Count::ALL.iter().map(|_| AtomicU64::new(0)).collect(),
-            input_trace: Mutex::new(Vec::new()),
+            input_trace: ArrayQueue::new(INPUT_TRACE_LIMIT),
             dropped_input_trace: AtomicU64::new(0),
         }
     }
@@ -709,9 +718,9 @@ impl Monitor {
             final_report: false,
             systems,
             render_diagnostics,
-            spans: std::mem::take(
-                &mut *self.spans.lock().unwrap_or_else(|error| error.into_inner()),
-            ),
+            spans: std::iter::from_fn(|| self.spans.pop())
+                .take(SPAN_TRACE_LIMIT)
+                .collect(),
             dropped_span_trace: self.dropped_span_trace.swap(0, Ordering::Relaxed),
             dropped_system_samples: self.dropped_system_samples.swap(0, Ordering::Relaxed),
             coverage: accounting::coverage(observed_systems, observed_gpu),
@@ -730,24 +739,23 @@ impl Monitor {
                     })
                 })
                 .collect(),
-            input_trace: std::mem::take(
-                &mut *self
-                    .input_trace
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner()),
-            ),
+            input_trace: std::iter::from_fn(|| self.input_trace.pop())
+                .take(INPUT_TRACE_LIMIT)
+                .collect(),
             dropped_input_trace: self.dropped_input_trace.swap(0, Ordering::Relaxed),
         }
     }
 
     fn trace_input(&self, reading: InputTrace) {
-        if let Ok(mut trace) = self.input_trace.try_lock()
-            && trace.len() < INPUT_TRACE_LIMIT
-        {
-            trace.push(reading);
-            return;
+        if self.input_trace.push(reading).is_err() {
+            self.dropped_input_trace.fetch_add(1, Ordering::Relaxed);
         }
-        self.dropped_input_trace.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn trace_span(&self, reading: SpanReading) {
+        if self.spans.push(reading).is_err() {
+            self.dropped_span_trace.fetch_add(1, Ordering::Relaxed);
+        }
     }
 
     fn flush(&self) {
@@ -1096,13 +1104,7 @@ impl Drop for Span {
                 start_thread: self.thread,
                 end_thread: thread_id(),
             };
-            if let Ok(mut spans) = monitor.spans.try_lock()
-                && spans.len() < SPAN_TRACE_LIMIT
-            {
-                spans.push(reading);
-            } else {
-                monitor.dropped_span_trace.fetch_add(1, Ordering::Relaxed);
-            }
+            monitor.trace_span(reading);
         }
     }
 }
@@ -1161,10 +1163,7 @@ pub mod checks {
             frame: 0,
             output: None,
         };
-        {
-            let _held = monitor.input_trace.lock().unwrap();
-            monitor.trace_input(reading);
-        }
+        monitor.trace_input(reading);
         let workers = (0..4)
             .map(|_| {
                 let monitor = monitor.clone();
@@ -1179,7 +1178,7 @@ pub mod checks {
             worker.join().unwrap();
         }
         let report = monitor.snapshot();
-        assert!(report.input_trace.len() <= INPUT_TRACE_LIMIT);
+        assert_eq!(report.input_trace.len(), INPUT_TRACE_LIMIT);
         assert_eq!(
             report.input_trace.len() as u64 + report.dropped_input_trace,
             4001
@@ -1190,6 +1189,72 @@ pub mod checks {
         assert_eq!(serialized.as_object().unwrap().len(), 8);
         assert!(monitor.snapshot().input_trace.is_empty());
         assert_eq!(monitor.snapshot().dropped_input_trace, 0);
+    }
+
+    #[cfg_attr(test, test)]
+    pub fn concurrent_trace_producers_preserve_every_sample_until_capacity() {
+        let monitor = std::sync::Arc::new(Monitor::new(None));
+        let workers = (0..8)
+            .map(|worker| {
+                let monitor = monitor.clone();
+                std::thread::spawn(move || {
+                    for sample in 0..128 {
+                        let serial = worker * 128 + sample;
+                        monitor.trace_input(InputTrace {
+                            stage: InputStage::NativeDequeued,
+                            origin: 1,
+                            origin_us: serial,
+                            observed_us: serial,
+                            input_serial: serial,
+                            pointer_serial: 0,
+                            frame: 0,
+                            output: None,
+                        });
+                        monitor.trace_span(SpanReading {
+                            stage: Stage::NativeMain.label(),
+                            started_us: serial,
+                            ended_us: serial + 1,
+                            start_thread: worker,
+                            end_thread: worker,
+                        });
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        let report = monitor.snapshot();
+        assert_eq!(report.dropped_input_trace, 0);
+        assert_eq!(report.dropped_span_trace, 0);
+        let mut inputs = report
+            .input_trace
+            .iter()
+            .map(|reading| reading.input_serial)
+            .collect::<Vec<_>>();
+        let mut spans = report
+            .spans
+            .iter()
+            .map(|reading| reading.started_us)
+            .collect::<Vec<_>>();
+        inputs.sort_unstable();
+        spans.sort_unstable();
+        assert_eq!(inputs, (0..1024).collect::<Vec<_>>());
+        assert_eq!(spans, inputs);
+        for serial in 0..SPAN_TRACE_LIMIT + 1 {
+            monitor.trace_span(SpanReading {
+                stage: Stage::NativeMain.label(),
+                started_us: serial as u64,
+                ended_us: serial as u64 + 1,
+                start_thread: 1,
+                end_thread: 1,
+            });
+        }
+        let report = monitor.snapshot();
+        assert_eq!(report.spans.len(), SPAN_TRACE_LIMIT);
+        assert_eq!(report.dropped_span_trace, 1);
+        assert!(monitor.snapshot().spans.is_empty());
+        assert_eq!(monitor.snapshot().dropped_span_trace, 0);
     }
 
     #[cfg_attr(test, test)]

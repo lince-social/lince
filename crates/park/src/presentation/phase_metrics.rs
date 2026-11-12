@@ -39,7 +39,76 @@ pub(super) fn install(app: &mut App) -> Result<(), &'static str> {
     observed.set_executor(SingleThreadedExecutor::new());
     observed.add_systems(run);
     schedules.insert(observed);
+    drop(schedules);
+    app.add_systems(
+        PostUpdate,
+        text_work
+            .in_set(bevy::ui::UiSystems::Content)
+            .after(bevy::text::detect_text_needs_rerender)
+            .before(bevy::ui::widget::measure_text_system),
+    );
     Ok(())
+}
+
+fn text_work(
+    blocks: Query<
+        (
+            Ref<Text>,
+            Ref<bevy::ui::ContentSize>,
+            &bevy::text::ComputedTextBlock,
+            Ref<ComputedUiRenderTargetInfo>,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        With<Node>,
+    >,
+    spans: Query<&TextSpan>,
+    rem: Option<Res<bevy::text::RemSize>>,
+) {
+    use performance::Count;
+    let mut counts = [0u64; 8];
+    for (text, size, computed, target, node, visible) in &blocks {
+        let scale = (target.scale_factor() - node.inverse_scale_factor().recip()).abs() > 1e-5;
+        let style = computed.needs_rerender(false, false);
+        let units = !style
+            && computed.needs_rerender(
+                target.is_changed(),
+                rem.as_ref().is_some_and(|rem| rem.is_changed()),
+            );
+        if !(size.is_added() || text.is_changed() || scale || style || units) {
+            continue;
+        }
+        let bytes = text.0.len()
+            + computed
+                .entities()
+                .iter()
+                .filter_map(|span| spans.get(span.entity).ok())
+                .map(|span| span.0.len())
+                .sum::<usize>();
+        counts[0] += 1;
+        counts[1] += bytes as u64;
+        counts[2] += u64::from(size.is_added());
+        counts[3] += u64::from(text.is_changed());
+        counts[4] += u64::from(style);
+        counts[5] += u64::from(scale);
+        counts[6] += u64::from(units);
+        counts[7] += u64::from(!visible.get() || node.is_empty());
+    }
+    for (count, value) in [
+        Count::TextMeasureCandidates,
+        Count::TextMeasureBytes,
+        Count::TextMeasureNew,
+        Count::TextMeasureChanged,
+        Count::TextMeasureStyle,
+        Count::TextMeasureScale,
+        Count::TextMeasureUnits,
+        Count::TextMeasureInvisible,
+    ]
+    .into_iter()
+    .zip(counts)
+    {
+        performance::add(count, value);
+    }
 }
 
 fn stages(label: InternedScheduleLabel) -> (Stage, Stage) {

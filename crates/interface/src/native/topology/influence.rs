@@ -150,20 +150,20 @@ pub fn update(world: &mut World) {
             continue;
         }
         let point = super::participation_point(world, entity, &item);
-        let record = world.get::<RecordProperties>(entity).cloned();
+        let record = world.get::<RecordProperties>(entity);
         let binding = world.get::<crate::native::protein_area::RecordBinding>(entity);
         let group = world
             .get::<crate::native::canvas_selection::SandGroup>(entity)
             .copied();
         let matches = |id, area: &InfluenceArea, all: bool| {
             if area.filter.is_some() {
-                record.as_ref().is_some_and(|r| {
+                record.is_some_and(|r| {
                     world
                         .get::<crate::native::protein_area::filter::Matches>(id)
                         .is_some_and(|f| f.allows(r, binding))
                 })
             } else {
-                all && area.rules.is_empty() || record.as_ref().is_some_and(|r| area.matches(r))
+                all && area.rules.is_empty() || record.is_some_and(|r| area.matches(r))
             }
         };
         let mut total = DVec3::ZERO;

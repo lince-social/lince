@@ -792,9 +792,6 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
         .iter()
         .map(|c| area(world, owner, &c.area))
         .collect();
-    let data = crate::native::protein_area::calendar_feed(world, source)
-        .map(|(rows, _)| rows.to_vec())
-        .unwrap_or_default();
     let orders: Vec<_> = board
         .columns
         .iter()
@@ -804,6 +801,22 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
                 .map(|(_, ids)| ids)
         })
         .collect();
+    let ranks: Vec<HashMap<_, _>> = orders.iter().map(|order| {
+        let mut ranks = HashMap::new();
+        if let Some(ids) = order {
+            for (index, id) in ids.iter().enumerate() {
+                ranks.entry(id.as_str()).or_insert(index);
+            }
+        }
+        ranks
+    }).collect();
+    let counts: Vec<_> = {
+        let rows = crate::native::protein_area::calendar_feed(world, source)
+            .map_or(&[][..], |(rows, _)| rows);
+        ranks.iter().map(|ranks| {
+            rows.iter().filter(|row| row["uid"].as_str().is_some_and(|uid| ranks.contains_key(uid))).count()
+        }).collect()
+    };
     for (index, column) in columns.iter().enumerate() {
         let Some(column) = *column else {
             continue;
@@ -839,16 +852,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
                 .remove::<crate::native::canvas_selection::SandGroup>();
         }
         refresh_attachment(world, part, column);
-        let count = data
-            .iter()
-            .filter(|data| {
-                data["uid"].as_str().is_some_and(|uid| {
-                    orders[index]
-                        .as_ref()
-                        .is_some_and(|ids| ids.iter().any(|id| id == uid))
-                })
-            })
-            .count();
+        let count = counts[index];
         let area = world.get::<InfluenceArea>(column).unwrap();
         let title = format!(
             "{}: {}",
@@ -913,9 +917,13 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
                     .get::<crate::native::protein_area::placement::Pending>(*e)
                     .is_none()
         })
-        .map(|(e, _, r)| (e, r.0.clone()))
+        .map(|(e, _, r)| (
+            e,
+            r.0["uid"].as_str().unwrap_or_default().to_owned(),
+            r.0["quantity"].to_string(),
+        ))
         .collect();
-    for (entity, properties) in cards {
+    for (entity, uid, quantity) in cards {
         if crate::native::topology::rooms::owned(world, entity) {
             world.entity_mut(entity).remove::<Card>();
             continue;
@@ -930,7 +938,6 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             }
             world.entity_mut(entity).remove::<HeldMembership>();
         }
-        let uid = properties["uid"].as_str().unwrap_or_default();
         let matching: Vec<_> = columns
             .iter()
             .enumerate()
@@ -955,7 +962,6 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             .collect();
         let index = (matching.len() == 1).then(|| matching[0]);
         let column = index.and_then(|i| columns[i]);
-        let quantity = properties["quantity"].to_string();
         let old = world.get::<Card>(entity);
         let returned = released
             && column.is_some_and(|column| {
@@ -983,8 +989,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             world.entity_mut(entity).insert(Card { column, quantity });
         }
         let order = index
-            .and_then(|index| orders[index].as_ref())
-            .and_then(|ids| ids.iter().position(|id| id == uid))
+            .and_then(|index| ranks[index].get(uid.as_str()).copied())
             .unwrap_or(0) as i32;
         if world
             .get::<LayoutBox>(entity)

@@ -240,13 +240,67 @@ Do not generalize the saved-history replay improvement to this entire synthetic 
 
 The interrupted trace has 294 reports, all seven required phases, hardware GPU intervals, 1,193 native-main/post-update-CPU/GPU-completion observations and 1,055 query-execution observations. Emitted reports lose zero systems, spans, inputs or reports, but there is no final drain because of the deadline. That is incomplete coverage, irrespective of the passing complete representative capture. `retained-final-validation.json` in the private evidence directory records source hashes and check results. All 16 archived source hashes remain exact. Delivery uses a source push for CI; no Actions wait, binary installation or session change is part of this batch.
 
+### Optimized private acceptance on `4f2f9dea`
+
+The first broad overhaul's completed CI artifact was tested privately in Niri. Its archive checksum, embedded full revision, target and optimized flag were verified; a private copy uses the installed Nix runtime's loader and library paths. No installed binary, user session or personal database was changed. This revision precedes the retained Sync-history fix at `8dde455c` and the readiness changes below. These results are neither a before/after shipping comparison nor measurements of the current source.
+
+The complete strict run finishes within its five-minute deadline. All 42 functional cases in that revision pass, as do the exact typing/scroll/drag outcomes, worker publication, and GPU pixel/resize/output-mapping checks. The **overall result is failed**: the mixed scene misses its latency and motion budgets, and the old recorder loses 24 span observations. There are 68 reports, a final drain, all required phases and system bodies, hardware GPU observations, and no lost reports, system samples or input traces. The previously implemented bounded span queue addresses the old contention-loss path, but does not retrospectively make this recording complete.
+
+| Optimized private cohort, 120 samples each | p50 | p95 | Worst |
+| --- | --- | --- | --- |
+| Empty, Edit response | 16.418 ms | 19.500 ms | 21.439 ms |
+| Empty active workspace, eight populated inactive areas | 18.013 ms | 24.356 ms | 31.194 ms |
+| Thirty native items, Edit response | 38.471 ms | 49.914 ms | 82.799 ms |
+| Mixed scene, Unicode input under query pressure | 42.697 ms | 52.587 ms | 95.085 ms |
+| Mixed scene, scrolling | 34.895 ms | 47.066 ms | 84.731 ms |
+| Mixed scene, dragging | 37.787 ms | 44.727 ms | 50.423 ms |
+| Mixed scene, pan to GPU completion | 33.882 ms | 40.821 ms | 45.197 ms |
+| Empty worker, input to completed publication | 26.989 ms | 32.363 ms | 37.153 ms |
+
+Cold readiness is 2,050.797 ms for the empty scene, 1,101.584 ms for populated inactive workspaces and 1,997.701 ms for the mixed scene. Quiet empty-worker CPU is 0.0257% of one core. The latency table measures private native publication/GPU completion, not physical input-to-screen latency or Firefox performance. In particular, the 33.882 ms pan median does not establish actual display FPS.
+
+The optimized typing phase attributes 4.456 ms of exclusive CPU per native update to Bevy UI layout, 1.885 ms to Protein update, 1.133 ms to Castle readiness, 1.097 ms to UI border extraction and 0.954 ms to text extraction. The named native-update interval averages 33.372 ms; its main schedule averages 21.109 ms and render update 7.442 ms. GPU submission-to-observed-completion averages 7.247 ms and includes queue/wait time. These intervals overlap and must not be added as independent CPU costs. The recorded GPU diagnostic paths are much shorter than that completion interval, but do not establish a complete, additive GPU budget. Main-thread work, repeated scene processing and serialized handoff remain stronger candidates than an unsupported blanket CPU-to-GPU migration.
+
+A measurement-boundary flaw was also found: construction of the next worker inherited the previous pan phase, and the final graphics proof inherited the worker's input phase. The suite now marks both preparation boundaries as warmup. The old pan phase's 124 updates therefore include transition work; its aggregate cannot be described as 120 purely warmed pan updates. Its explicit 120-sample interaction timings above remain intact. Evidence: `ci-4f2/receipt.json`, `ci-4f2-strict.log`, `ci-4f2-strict.jsonl` and `ci-4f2-strict-summary.json` in the private evidence directory.
+
+### Readiness bookkeeping and Record-copy removal after `8dde455c`
+
+The retained implementation updates the existing layout-stamp map only for changed components, removals and disable/re-enable transitions. It no longer allocates and rebuilds the complete map on every update. Bevy's periodic `CheckChangeTicks` event clears these retained raw counters; the next post-layout snapshot rebuilds the complete map once. Without that reset, a long-running process could compare rebased component ticks with old cached values and hold readiness indefinitely. This issue was found in final review before shipping; the regression checks reset with only part of the tree otherwise changed. Castle traversal uses cached typed ECS queries instead of repeatedly resolving individual components through `World`; it still checks the entire relevant subtree, current text layout, every required image page and layout readiness. Capture-ready and presented markers are written only when their values change. These are query and bookkeeping changes, not a cache that declares old content ready.
+
+Kanban now borrows source rows, retains only UID/quantity data needed across mutation, and builds one UID-to-first-position map per column. It avoids copying complete Record JSON and repeated linear position searches while preserving duplicate-row counts and first-duplicate ordering. Spatial influence similarly borrows Record properties during its read-only calculation. Hidden logical effects, ordinary Record changes and room/column behavior remain enabled.
+
+A more elaborate ready-root cache was implemented, tested and removed. Maintaining its invalidation dependencies cost more than the traversal it replaced: readiness plus its change observer averaged 10.020 ms of exclusive CPU per update, against 7.333 ms with the simpler typed traversal. Its captured soak median was 305.544 ms versus 290.999 ms. Passing functional checks did not justify retaining that extra state. The reparenting, visibility and late-layout regressions written during the experiment remain useful and are kept; no alternate runtime path remains.
+
+The final representative capture (`readiness-reset-on`) has 207 native updates, 39 reports, a final drain and zero lost reports/system samples/spans/inputs. Against the earlier `8dde455c` captured replay, Castle readiness averages 6.363 rather than 9.887 ms of exclusive CPU per call, layout-stamp bookkeeping 0.669 rather than 1.165 ms, and Kanban update 4.235 rather than 4.963 ms. These are observations from separate private debug recordings, not isolated shipping speedup percentages. UI layout remains 18.312 ms per call, area-force preparation 5.696 ms and physics preparation/simulation 6.492 ms in this fixture. Unchanged owners also run faster in this later recording; do not attribute all of the difference to these edits or to the counter-reset safeguard.
+
+The preserved `8dde455c` executable was repeated with capture off against a fresh copy of the same fixture. The final candidate was then measured with capture off; no compiler or other test ran during either measurement.
+
+| Capture-off matched debug replay | Repeated `8dde455c` | Final candidate |
+| --- | --- | --- |
+| Twelve Edit commands: mean | 321.815 ms | 313.263 ms |
+| Twelve Edit commands: median | 204.256 ms | 189.929 ms |
+| Twelve Edit commands: worst | 1,636.997 ms | 1,677.974 ms |
+| Subsequent 30-second soak: samples | 67 | 67 |
+| Soak mean | 201.936 ms | 200.323 ms |
+| Soak median | 190.882 ms | 192.407 ms |
+| Soak p95 | 258.029 ms | 266.016 ms |
+| Soak worst | 360.819 ms | 296.890 ms |
+| Cold readiness, separately | 3,919.043 ms | 3,560.365 ms |
+
+The common twelve-command median is 7.0% lower, but its worst sample is worse. Soak mean falls only 0.8%; median and p95 are slightly worse, while the worst sample improves. The earlier matched pair measured a 221.694 → 212.040 ms soak median with p95 273.641 → 279.854 ms. Thus a steady-state latency improvement is not consistently demonstrated. Retain the straightforward CPU/copy reductions, but do not describe these results as a broad responsiveness fix or hide the contrary tails. Before the counter-reset safeguard, the captured soak measured 291.982/413.080/514.415 ms median/p95/worst; the final capture measures 255.851/344.738/356.669 ms. The final baseline is also faster than its earlier repeat, so this cross-run difference is not a measured benefit of the safeguard. Capture overhead and asynchronous work remain material. Acceptance is still failed.
+
+An initial follow-up capture lost one system observation. The system aggregator still used `try_lock` and could discard an otherwise valid sample during a reporter swap or shard collision. Its existing small critical section now takes the mutex; the reporter only swaps the map while holding it and serializes outside the lock. Name/capacity bounds and explicit loss accounting remain. This opt-in observer change is not a production speedup. The regression records 16,000 observations across 32 producers while snapshots drain concurrently and verifies exact counts and exclusive CPU totals. The final captured replay loses no observations.
+
+Verification: all 51 mandatory fast interface cases pass with Protein Add filter first, including the final cache-reset regression; all six Castle cases, fourteen Kanban cases and six spatial-influence cases pass. The six focused performance-recorder checks pass. GPU rendering, independent outputs, shared captures, reconnects and export checks pass. The full application passes locked/offline checking with `instinct` and `park`. The strict-suite warmup-marker edits are compiled; rerunning the optimized suite remains required. The final private replay and graphics checks exercise the edited runtime paths. Final evidence is in `readiness-reset-{on,off,control}/`, `readiness-reset-interface.log`, `readiness-reset-pixels.log` and `readiness-final-validation.json`. No local release build, personal-data Engine, live Park session, installation or reboot was performed.
+
 ### Remaining acceptance obligations
 
 This report replaces the old execution queues, not their unproved guarantees. The archive remains exact historical evidence. These are unresolved obligations within this same report, not a new round of unrelated feature work:
 
-- The recurring hidden Sync-history text rebuild has been attributed and removed from the representative replay. Whole-scene layout and the remaining per-frame scans still cost too much, and cold text/pipeline preparation still stalls. Preserve the invalidation/readiness guarantees while reducing those actual owners; do not infer that physics or GPU offload explains the remaining delay without measurements.
+- The recurring hidden Sync-history text rebuild has been attributed and removed from the representative replay. The next architectural priority is to stop unchanged scene processing across layout, extraction and input-geometry derivation: the optimized mixed scene still misses its budgets. Preserve constraint dependencies, current pixels, capture privacy and hit mapping. Do not repeat the rejected blanket layout gate or ready-root cache unchanged; their bookkeeping failed to earn its cost. Parallel scheduling should follow this work elimination and preserve frame/resource ownership, rather than merely moving redundant work to more threads.
+- Cold text/pipeline preparation still stalls. Implement asynchronous preparation only together with readiness, completion-driven wakeup, shader-failure handling and a policy-valid prior-frame fallback. The optimized release evidence does not justify disabling readiness or pretending submission-to-completion is GPU execution time.
 - Building a newly visible large Protein area is still synchronous, and previously built hidden row trees remain allocated. Visible paging/virtualization and bounded construction are not claimed complete.
-- The real optimized daily workload, Firefox/Ghostty client latency, DRM presentation deadlines, twenty–thirty varied items on both physical monitors, and long-running resource stability remain unmeasured for this batch. The user must not be told the whole desktop is fixed because a private fixture improves.
+- Recheck the current source in an optimized binary: the completed optimized suite above is the earlier `4f2f9dea` artifact. The real optimized saved-workspace/daily workload, Firefox/Ghostty client latency, DRM presentation deadlines, twenty–thirty varied items on both physical monitors, and long-running resource stability remain unmeasured for this batch. The user must not be told the whole desktop is fixed because a private fixture improves.
 - Ordered backend bursts and large individual API requests still need latency attribution under realistic contention. The shared-message change removes redundant payload copies; it does not prove every consumer is bounded.
 - Existing privacy, IME, clipboard, output/hotplug, remote authorization, durable local edits and accessibility obligations remain in force. This batch's focused checks do not re-certify every archived hardware or daily-use test.
 

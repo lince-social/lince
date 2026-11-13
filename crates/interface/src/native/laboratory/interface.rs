@@ -11,6 +11,9 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
         "::layout_snapshots_track_optional_components_commands_and_removals",
         "::presented_castles_keep_their_surface_while_replacement_content_settles",
         "::repeated_glyph_pages_still_require_every_atlas_and_follow_removal",
+        "::nested_castles_wait_for_every_image_without_hiding_unrelated_sands",
+        "::new_members_and_pending_work_hold_the_whole_group",
+        "::readiness_follows_reparenting_visibility_and_late_layout_changes",
     ] {
         let case = readiness
             .iter()
@@ -107,6 +110,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
 fn performance_traces_preserve_concurrent_samples_and_report_overflow() {
     crate::host::performance::checks::concurrent_trace_producers_preserve_every_sample_until_capacity();
     crate::host::performance::checks::input_traces_are_bounded_nonblocking_and_report_loss_without_payloads();
+    crate::host::performance::checks::system_samples_survive_concurrent_snapshots_and_shard_reuse();
 }
 
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {

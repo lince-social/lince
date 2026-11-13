@@ -641,6 +641,31 @@ impl Monitor {
         output.previous = Some(timestamp);
     }
 
+    fn record_system(&self, name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
+        if name.len() > 512
+            || !(name.starts_with("bevy_")
+                || name.starts_with("lince_interface::")
+                || name.starts_with("lince_park::"))
+        {
+            self.dropped_system_samples
+                .fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+        let mut systems = self.systems[(thread_id() % SYSTEM_SHARDS as u64) as usize]
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if let Some(sample) = systems.get_mut(name) {
+            sample.record(wall, cpu, exclusive_cpu);
+        } else if systems.len() < SYSTEM_LIMIT {
+            let mut sample = accounting::SystemSample::default();
+            sample.record(wall, cpu, exclusive_cpu);
+            systems.insert(name.to_owned(), sample);
+        } else {
+            self.dropped_system_samples
+                .fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
     fn snapshot(&self) -> Report {
         let ended = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
         let began = self.snapshot_at_us.swap(ended, Ordering::Relaxed);
@@ -992,36 +1017,8 @@ pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str
 }
 
 pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
-    let Some(monitor) = monitor() else {
-        return;
-    };
-    if name.len() > 512
-        || !(name.starts_with("bevy_")
-            || name.starts_with("lince_interface::")
-            || name.starts_with("lince_park::"))
-    {
-        monitor
-            .dropped_system_samples
-            .fetch_add(1, Ordering::Relaxed);
-        return;
-    }
-    let Ok(mut systems) = monitor.systems[(thread_id() % SYSTEM_SHARDS as u64) as usize].try_lock()
-    else {
-        monitor
-            .dropped_system_samples
-            .fetch_add(1, Ordering::Relaxed);
-        return;
-    };
-    if let Some(sample) = systems.get_mut(name) {
-        sample.record(wall, cpu, exclusive_cpu);
-    } else if systems.len() < SYSTEM_LIMIT {
-        let mut sample = accounting::SystemSample::default();
-        sample.record(wall, cpu, exclusive_cpu);
-        systems.insert(name.to_owned(), sample);
-    } else {
-        monitor
-            .dropped_system_samples
-            .fetch_add(1, Ordering::Relaxed);
+    if let Some(monitor) = monitor() {
+        monitor.record_system(name, wall, cpu, exclusive_cpu);
     }
 }
 
@@ -1255,6 +1252,56 @@ pub mod checks {
         assert_eq!(report.dropped_span_trace, 1);
         assert!(monitor.snapshot().spans.is_empty());
         assert_eq!(monitor.snapshot().dropped_span_trace, 0);
+    }
+
+    #[cfg_attr(test, test)]
+    pub fn system_samples_survive_concurrent_snapshots_and_shard_reuse() {
+        let monitor = std::sync::Arc::new(Monitor::new(None));
+        let done = std::sync::Arc::new(AtomicU64::new(0));
+        let reports = {
+            let monitor = monitor.clone();
+            let done = done.clone();
+            std::thread::spawn(move || {
+                let mut count = 0;
+                let mut cpu = 0;
+                loop {
+                    let finished = done.load(Ordering::Acquire) == 32;
+                    let report = monitor.snapshot();
+                    assert_eq!(report.dropped_system_samples, 0);
+                    for system in report.systems {
+                        assert_eq!(system.system, "lince_interface::test::concurrent");
+                        count += system.wall.count;
+                        cpu += system.exclusive_owner_cpu.total_us;
+                    }
+                    if finished {
+                        return (count, cpu);
+                    }
+                    std::thread::yield_now();
+                }
+            })
+        };
+        let workers = (0..32)
+            .map(|_| {
+                let monitor = monitor.clone();
+                let done = done.clone();
+                std::thread::spawn(move || {
+                    for _ in 0..500 {
+                        monitor.record_system(
+                            "lince_interface::test::concurrent",
+                            Duration::from_micros(12),
+                            Duration::from_micros(8),
+                            Duration::from_micros(5),
+                        );
+                    }
+                    done.fetch_add(1, Ordering::Release);
+                })
+            })
+            .collect::<Vec<_>>();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        assert_eq!(reports.join().unwrap(), (16_000, 80_000));
+        assert!(monitor.snapshot().systems.is_empty());
     }
 
     #[cfg_attr(test, test)]

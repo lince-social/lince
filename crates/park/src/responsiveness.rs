@@ -702,6 +702,7 @@ fn scene(
 
 fn worker_idle(runtime: &tokio::runtime::Runtime) -> io::Result<Value> {
     use crate::runtime::{CanvasWorker, Configuration, Input};
+    performance::set_phase(Phase::Warmup);
     let directory = tempfile::tempdir()?;
     let engine = Arc::new(
         runtime
@@ -827,6 +828,7 @@ pub fn run() -> io::Result<()> {
     let idle = worker_idle(&runtime).unwrap_or_else(|failure| json!({"case":"worker-idle-and-input", "passed":false, "error":failure.to_string()}));
     println!("{idle}");
     results.push(idle);
+    performance::set_phase(Phase::Warmup);
     let pixels = match crate::presentation::probe() {
         Ok(()) => json!({"case":"native-pixels-resize-and-output-mapping", "passed":true}),
         Err(failure) => {

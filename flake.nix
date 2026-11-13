@@ -1047,6 +1047,10 @@
                 install -Dm644 institute/packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
                 install -Dm644 institute/packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
               '' + lib.optionalString (pkgs.stdenv.hostPlatform.isLinux && ui) (installGraphicsRuntime pkgs interfaceLinuxRuntimeLibraries)
+              + lib.optionalString ui ''
+                install -Dm644 crates/vendor/bevy-ui/LICENSE-MIT "$out/share/licenses/bevy-ui/LICENSE-MIT"
+                install -Dm644 crates/vendor/bevy-ui/LICENSE-APACHE "$out/share/licenses/bevy-ui/LICENSE-APACHE"
+              ''
               + lib.optionalString withPark (''
                 install -Dm644 crates/vendor/smithay-capture/LICENSE.txt "$out/share/licenses/lince-smithay-capture/LICENSE.txt"
                 install -Dm644 crates/vendor/smithay-capture/CREDITS.md "$out/share/licenses/lince-smithay-capture/CREDITS.md"

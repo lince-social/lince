@@ -632,10 +632,147 @@ fn sync_history_controls_draw_and_respond_while_live_status_stays_visible() {
     }
 }
 
+#[cfg_attr(test, test)]
+fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
+    let (mut app, root) = fixture(UVec2::new(1000, 700), 1.0);
+    let mut panels = Vec::new();
+    for left in [20.0, 420.0] {
+        panels.push(
+            app.world_mut()
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: px(left),
+                        top: px(20),
+                        width: px(300),
+                        height: px(200),
+                        overflow: bevy::ui::Overflow::scroll(),
+                        ..default()
+                    },
+                    ChildOf(root),
+                ))
+                .id(),
+        );
+    }
+    let body = app
+        .world_mut()
+        .spawn((
+            Node {
+                width: px(250),
+                height: px(700),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(panels[0]),
+        ))
+        .id();
+    let mut controls = Vec::new();
+    for _ in 0..2 {
+        controls.push(
+            app.world_mut()
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        width: px(80),
+                        height: px(30),
+                        ..default()
+                    },
+                    ChildOf(body),
+                ))
+                .id(),
+        );
+    }
+    settle(&mut app);
+    let original = app
+        .world()
+        .get::<UiGlobalTransform>(body)
+        .unwrap()
+        .translation;
+    let original_clip = app
+        .world()
+        .get::<bevy::ui::CalculatedClip>(body)
+        .unwrap()
+        .clip;
+    app.world_mut()
+        .entity_mut(panels[0])
+        .insert(ScrollPosition(Vec2::new(0.0, 40.0)));
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<ComputedNode>(panels[0])
+            .unwrap()
+            .scroll_position,
+        Vec2::new(0.0, 40.0)
+    );
+    assert_eq!(
+        app.world()
+            .get::<UiGlobalTransform>(body)
+            .unwrap()
+            .translation,
+        original - Vec2::new(0.0, 40.0)
+    );
+    assert_eq!(
+        app.world()
+            .get::<bevy::ui::CalculatedClip>(body)
+            .unwrap()
+            .clip,
+        original_clip
+    );
+    app.world_mut().entity_mut(body).insert(ChildOf(panels[1]));
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<UiGlobalTransform>(body)
+            .unwrap()
+            .translation,
+        original + Vec2::new(400.0, 0.0)
+    );
+    assert_eq!(
+        app.world()
+            .get::<bevy::ui::CalculatedClip>(body)
+            .unwrap()
+            .clip,
+        Rect {
+            min: original_clip.min + Vec2::new(400.0, 0.0),
+            max: original_clip.max + Vec2::new(400.0, 0.0)
+        }
+    );
+    let order = |world: &World, entity| {
+        world
+            .resource::<bevy::ui::UiStack>()
+            .uinodes
+            .iter()
+            .position(|candidate| *candidate == entity)
+    };
+    assert!(order(app.world(), controls[0]) < order(app.world(), controls[1]));
+    app.world_mut().entity_mut(controls[0]).insert(ZIndex(100));
+    app.update();
+    assert!(order(app.world(), controls[0]) > order(app.world(), controls[1]));
+    app.world_mut().entity_mut(controls[0]).remove::<ZIndex>();
+    app.update();
+    assert!(order(app.world(), controls[0]) < order(app.world(), controls[1]));
+    app.world_mut()
+        .entity_mut(panels[1])
+        .insert(bevy::ecs::entity_disabling::Disabled);
+    app.update();
+    assert_eq!(order(app.world(), controls[0]), None);
+    app.world_mut().get_mut::<Node>(body).unwrap().width = px(190);
+    app.world_mut()
+        .entity_mut(panels[1])
+        .remove::<bevy::ecs::entity_disabling::Disabled>();
+    app.update();
+    assert!(order(app.world(), controls[0]).is_some());
+    assert_eq!(
+        app.world().get::<ComputedNode>(body).unwrap().size().x,
+        190.0
+    );
+}
+
 crate::native::laboratory_cases! {
     protein_area_filter_visible_and_selectable,
     shared_dropdown_captions_follow_available_width_and_theme,
     edit_panel_usable_bounds,
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,
     performance_traces_preserve_concurrent_samples_and_report_overflow,
+    retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

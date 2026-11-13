@@ -293,11 +293,69 @@ An initial follow-up capture lost one system observation. The system aggregator 
 
 Verification: all 51 mandatory fast interface cases pass with Protein Add filter first, including the final cache-reset regression; all six Castle cases, fourteen Kanban cases and six spatial-influence cases pass. The six focused performance-recorder checks pass. GPU rendering, independent outputs, shared captures, reconnects and export checks pass. The full application passes locked/offline checking with `instinct` and `park`. The strict-suite warmup-marker edits are compiled; rerunning the optimized suite remains required. The final private replay and graphics checks exercise the edited runtime paths. Final evidence is in `readiness-reset-{on,off,control}/`, `readiness-reset-interface.log`, `readiness-reset-pixels.log` and `readiness-final-validation.json`. No local release build, personal-data Engine, live Park session, installation or reboot was performed.
 
+### Affected UI roots: retained layout, clipping and stacking work
+
+The optimized mixed typing recording places UI layout at 4.456 ms of exclusive CPU per update, clipping at 0.708 ms and stacking at 0.754 ms. The representative debug replay places layout at 18.312 ms. Source inspection identifies work beyond numerical solving: the existing driver walks every tree to synchronize hierarchy and then walks every tree again to refresh geometry, even when Taffy reuses its numerical result. Clipping and stacking also traverse unchanged trees. These observations justify changing this shared boundary; skipped-work counts alone will not establish a full-frame gain.
+
+The candidate patches the pinned Bevy UI driver. It still uses the same Taffy solver, layout rules, rounding, geometry calculation, clipping and stable sibling ordering. Component changes and removals identify affected roots; hierarchy synchronization visits changed parents, and geometry/clipping traverse affected roots. Structural disable/re-enable transitions conservatively refresh layout. Stacking is retained until hierarchy, ordering, membership or an externally changed computed index requires rebuilding. There is no alternative runtime mode, replacement renderer or feature-specific cache. The two root sets are reusable scratch storage, not a persistent tree of copied layout inputs. A rare root carrying both Node and GhostNode retains conservative hierarchy synchronization because the two root roles share Taffy children.
+
+`crates/vendor/bevy-ui` preserves the published 0.19.1 source and its MIT/Apache licenses. The cached registry archive SHA-256 is `8a2f97c39dadfef97dbe295fc1ce212825bb9fda2becc8f558d1d7e7d7dbbedf`; all thirty copied upstream files were compared against that archive before editing. The package is a workspace member so its engine regressions can run directly. The original layout, clipping and stack entry points remain only as test oracles, excluded from production builds. The numerical layout and recursive geometry/clipping calculations remain unchanged. The patch must earn the maintenance cost of a pinned engine override.
+
+All 68 engine unit checks currently pass. The added differential case compares geometry, transforms, clips and stack order over 320 transitions and their subsequent stable updates, including nested sizing, scale, scroll, reparenting, component removal/re-addition, z-order, overrides and external computed-value changes. The original reference is forced to fully synchronize Node/Children inputs: its own stale parent-layout result after Node removal must not become the acceptance oracle. Separate cases cover disable/re-enable, replaced layout storage and eleven ghost-hierarchy transitions. A static 2,080-node scene performs zero additional geometry visits over twenty updates; changing one of its thirty-two roots visits its own sixty-five nodes. Those are correctness/work-elimination checks, not latency measurements.
+
+The normal native interface suite gains a scroll/reparent/clip/input-order/disable-re-enable check while keeping Protein Add filter first. All 52 fast interface cases pass on the final executable. The full application passes locked/offline checking with `instinct` and `park`. The final hardware-GPU probe passes rendering, independent output views, shared captures, reconnects and export. The declared Protein glyph/selection and Laboratory-first requirements and Edit-panel geometry requirement remain covered by mandatory cases. No hardware or day-to-day requirement is inferred from those focused checks.
+
+The preserved `a3e3ca59` executable and the candidate use the same debug profile, graphics environment and verified saved-state reference described above. Each replay receives a fresh private copy, with no services, credentials, networking or live database access. No compiler or other test runs during a measurement. The final paired capture-off replay, after all source and packaging cleanup, gives:
+
+| Final capture-off saved-state replay | Repeated `a3e3ca59` | Final candidate |
+| --- | --- | --- |
+| Twelve Edit commands: mean | 327.089 ms | 305.370 ms |
+| Twelve Edit commands: median | 196.846 ms | 178.756 ms |
+| Twelve Edit commands: worst | 1,672.832 ms | 1,677.072 ms |
+| Subsequent 30-second soak: samples | 66 | 71 |
+| Soak mean | 208.566 ms | 178.902 ms |
+| Soak median | 201.680 ms | 167.264 ms |
+| Soak p95 | 289.874 ms | 269.978 ms |
+| Soak worst | 313.299 ms | 274.121 ms |
+| Cold initial readiness, separately | 3,885.973 ms | 3,638.275 ms |
+
+The final soak mean is 14.2% lower, median 17.1% lower and p95 6.9% lower. Its worst sample improves, while the twelve-command worst is slightly worse. An earlier capture-off candidate has a 164.933 ms soak median and 228.662 ms p95, compared with 192.343/266.657 ms before and 187.126/258.866 ms in a repeated baseline control. Its worst sample was 342.174 ms against about 321.5 ms in both controls, approximately 6.4% worse. Both matched comparisons support lower typical steady processing time, but neither proves every tail improves. Earlier baseline cold readiness also beat the candidate, so a reliable cold-start improvement is not established. The earlier measurements remain in the evidence; they are not replaced by the more favorable final tail. These are private debug source comparisons, not release latency or physical FPS claims.
+
+A separate paired capture-on run attributes the changed boundary directly. Both recordings include a final drain and lose no reports, systems, spans or inputs. Per-call exclusive owner CPU is:
+
+| Shared owner | `a3e3ca59`, 171 calls | Candidate, 173 calls |
+| --- | --- | --- |
+| UI layout | 23.059 ms | 17.924 ms |
+| UI stacking | 4.074 ms | 2.200 ms |
+| UI clipping | 4.145 ms | 2.269 ms |
+| Combined exclusive CPU of these three systems | 31.279 ms | 22.393 ms |
+
+The three systems together use 28.4% less mean exclusive CPU in this recording. This sum is restricted to distinct exclusive system CPU observations; it is not a sum of nested wall/GPU spans. The captured whole-run soak does **not** improve: mean 378.960 → 380.839 ms, median 364.206 → 377.813 ms and p95 472.912 → 479.998 ms, with worst 655.917 → 589.635 ms. Other preparation owners remain substantial and some get slower in the recording: physics 8.397 → 8.871 ms, Castle readiness 7.874 → 7.958 ms, area forces 7.453 → 7.450 ms and Kanban 5.373 → 5.617 ms per call. The opt-in phase observer itself costs about 12 ms per update. Capture changes the workload and the captured and uncaptured pairs were taken at different times; do not derive a precise observation-overhead percentage from them. Retain the simpler traversal reduction because the functional checks and repeated capture-off comparisons support it, not because lower owner CPU guarantees better end-to-end latency.
+
+The broad strict debug run is still **failed and incomplete**. All 52 mandatory correctness cases and the exact interaction outcomes completed through the mixed scene. Each cohort below has 120 responses:
+
+| Strict debug cohort | p50 | p95 | p99 | Worst |
+| --- | --- | --- | --- | --- |
+| Empty: Edit | 95.143 ms | 103.442 ms | 112.966 ms | 114.266 ms |
+| Empty with eight inactive areas: Edit | 106.538 ms | 117.639 ms | 123.622 ms | 126.478 ms |
+| Thirty mixed items under query pressure: Edit | 282.820 ms | 303.058 ms | 321.715 ms | 323.626 ms |
+| Mixed: typing | 359.749 ms | 545.667 ms | 559.411 ms | 560.601 ms |
+| Mixed: scrolling | 265.272 ms | 328.211 ms | 431.026 ms | 514.750 ms |
+| Mixed: dragging | 316.257 ms | 348.821 ms | 364.998 ms | 375.590 ms |
+| Mixed: pan | 263.190 ms | 315.684 ms | 351.386 ms | 352.741 ms |
+| Worker input to completed publication | 152.241 ms | 175.243 ms | 181.039 ms | 183.108 ms |
+
+Cold readiness is 5,300.111/5,353.625/14,368.444 ms for the empty/inactive/mixed fixtures, respectively. Quiet worker CPU is 0.102% of one core. The final pixel case rejects the local EGL environment for missing `EGL_EXT_device_base`: this invocation omitted the matching Nix Mesa paths, mixing the debug build's Mesa 26.1/glibc 2.42 environment with the host Mesa 26.2/glibc 2.43. The standalone final GPU probe uses the matching paths and passes; that does not convert the strict run into a pass. The process hits its unchanged five-minute deadline and exits 124 without the final suite coverage/result object. The performance stream does finish its own final drain with zero lost observations. A final performance report and a completed, passing test-suite report are distinct. The suite also rejects debug executables for acceptance; neither debug timings nor a graphics-environment failure justify weakening its limits.
+
+Final packaging preserves and installs both Bevy UI licenses in UI packages. The vendored code replaces the legacy `core::f32` import with primitive constants, and six existing test literals get explicit `f32` types, so the newly local dependency does not introduce fatal warnings under the application's warnings-as-errors build. These edits do not change runtime layout calculations. All 68 engine unit tests pass after those warning fixes; Nix syntax validation and the final full application check pass. The final native and GPU checks and capture-off pair use executables rebuilt after the complete cleanup. The pinned engine override is a maintenance obligation when updating Bevy, not an invitation to fork unrelated toolkit behavior.
+
+Private evidence: `layout-upstream.json`, `layout-baseline-source.json`, `layout-candidate-source.json`, `layout-final-source.json`; `layout-{before,after,control}-off/`, `layout-{before,after}-on/`, `layout-final-{control-off,off}/`; `layout-strict-debug.{log,jsonl}`, `layout-strict-debug-summary.json`, `layout-final-interface.log`, `layout-final-pixels.log`, and `layout-final-validation.json`. Source/executable hashes distinguish the measured versions. Acceptance remains failed until the optimized saved-workspace and physical daily workload meet the existing targets.
+
 ### Remaining acceptance obligations
 
 This report replaces the old execution queues, not their unproved guarantees. The archive remains exact historical evidence. These are unresolved obligations within this same report, not a new round of unrelated feature work:
 
-- The recurring hidden Sync-history text rebuild has been attributed and removed from the representative replay. The next architectural priority is to stop unchanged scene processing across layout, extraction and input-geometry derivation: the optimized mixed scene still misses its budgets. Preserve constraint dependencies, current pixels, capture privacy and hit mapping. Do not repeat the rejected blanket layout gate or ready-root cache unchanged; their bookkeeping failed to earn its cost. Parallel scheduling should follow this work elimination and preserve frame/resource ownership, rather than merely moving redundant work to more threads.
+- The recurring hidden Sync-history text rebuild has been attributed and removed from the representative replay. Layout, clipping and stacking now avoid unaffected trees, with differential correctness and repeated capture-off gains; dirty-tree work and per-node change scans still remain. The next architectural priority is to stop unchanged scene extraction and input-geometry derivation and bound the remaining native preparation: the optimized mixed scene still misses its budgets. Preserve constraint dependencies, current pixels, capture privacy and hit mapping. Do not repeat the rejected blanket layout gate or ready-root cache unchanged; their bookkeeping failed to earn its cost. Parallel scheduling should follow this work elimination and preserve frame/resource ownership, rather than merely moving redundant work to more threads.
 - Cold text/pipeline preparation still stalls. Implement asynchronous preparation only together with readiness, completion-driven wakeup, shader-failure handling and a policy-valid prior-frame fallback. The optimized release evidence does not justify disabling readiness or pretending submission-to-completion is GPU execution time.
 - Building a newly visible large Protein area is still synchronous, and previously built hidden row trees remain allocated. Visible paging/virtualization and bounded construction are not claimed complete.
 - Recheck the current source in an optimized binary: the completed optimized suite above is the earlier `4f2f9dea` artifact. The real optimized saved-workspace/daily workload, Firefox/Ghostty client latency, DRM presentation deadlines, twenty–thirty varied items on both physical monitors, and long-running resource stability remain unmeasured for this batch. The user must not be told the whole desktop is fixed because a private fixture improves.

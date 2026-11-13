@@ -42,6 +42,7 @@ members = [
     "crates/vendor/flexaudio-mic",
     "crates/vendor/wake-reference",
     "crates/vendor/smithay-capture",
+    "crates/vendor/bevy-ui",
 ]
 
 # `cargo build` / `cargo run` operate on `default-members` (the lince binary),
@@ -147,6 +148,7 @@ zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
+bevy_ui = { path = "crates/vendor/bevy-ui" }
 gemm-common = { path = "crates/vendor/gemm-common" }
 bevy_interleave_macros = { path = "crates/vendor/bevy-interleave-macros" }
 parley = { path = "crates/vendor/parley" }

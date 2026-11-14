@@ -58,6 +58,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err("Interface checks failed".into())
         };
     }
+    if std::env::args().nth(1).as_deref() == Some("--projection-reveal") {
+        return std::thread::Builder::new()
+            .name("park-projection-reveal".into())
+            .stack_size(32 * 1024 * 1024)
+            .spawn(lince_park::responsiveness::projection_reveal)?
+            .join()
+            .map_err(|_| "Projection reveal probe panicked")?
+            .map_err(Into::into);
+    }
     let directory = PathBuf::from(
         std::env::args_os()
             .nth(1)

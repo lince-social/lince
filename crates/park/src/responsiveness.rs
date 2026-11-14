@@ -18,6 +18,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod projection;
+pub use projection::run as projection_reveal;
+
 fn error(value: impl std::fmt::Display) -> io::Error {
     io::Error::other(value.to_string())
 }
@@ -281,6 +284,7 @@ fn scene(
     name: &str,
     hidden: bool,
     mixed: bool,
+    reveal: Option<usize>,
 ) -> io::Result<Value> {
     performance::set_phase(Phase::Warmup);
     let directory = tempfile::tempdir()?;
@@ -391,9 +395,9 @@ fn scene(
         .map_err(error)?;
     let mut inactive = Vec::new();
     if hidden {
-        for index in 0..8 {
+        for index in 0..if reveal.is_some() { 1 } else { 8 } {
             let mut config = native::protein_area::Config::records();
-            config.draft.query["limit"] = json!(300);
+            config.draft.query["limit"] = json!(reveal.unwrap_or(300));
             let area = native::area::InfluenceArea {
                 name: format!("Synthetic inactive area {index}"),
                 protein: Some(config),
@@ -481,7 +485,7 @@ fn scene(
     let ready_deadline = Instant::now() + Duration::from_secs(30);
     while !inactive.iter().all(|owner| {
         native::protein_area::projection_stats(canvas.world_mut(), *owner)
-            .is_some_and(|stats| stats.ready && stats.records >= 300)
+            .is_some_and(|stats| stats.ready && stats.records >= reveal.unwrap_or(300))
     }) {
         if Instant::now() >= ready_deadline {
             return Err(error(
@@ -500,6 +504,9 @@ fn scene(
         ));
     }
     let cold_ms = cold.elapsed().as_secs_f64() * 1000.0;
+    if let Some(count) = reveal {
+        return projection::measure(&mut canvas, root, inactive[0], count, cold_ms);
+    }
     performance::set_phase(Phase::OpenReveal);
     let mut samples = Vec::with_capacity(120);
     for _ in 0..120 {
@@ -840,7 +847,7 @@ pub fn run() -> io::Result<()> {
         ("mixed-content-under-query-pressure", true, true),
     ] {
         eprintln!("Starting private workload: {name}");
-        let result = match scene(&runtime, name, hidden, mixed) {
+        let result = match scene(&runtime, name, hidden, mixed, None) {
             Ok(result) => result,
             Err(failure) => json!({"case":name, "passed":false, "error":failure.to_string()}),
         };

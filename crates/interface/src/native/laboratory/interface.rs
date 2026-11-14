@@ -145,6 +145,139 @@ fn workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits() {
 }
 
 #[cfg_attr(test, test)]
+fn hidden_text_defers_visual_work_and_reveals_current_edits_and_styles() {
+    use bevy::text::{EditableText, FontHinting, FontSize, TextEdit, TextLayoutInfo};
+    use bevy::ui::widget::TextScroll;
+
+    fn pair(app: &mut App, parent: Entity, display: Display, visibility: Visibility) -> [Entity; 2] {
+        let font = app.world().resource::<crate::native::theme::Typography>().text(18.0);
+        let node = Node {
+            position_type: PositionType::Absolute,
+            width: px(280),
+            height: px(120),
+            display,
+            ..default()
+        };
+        [
+            app.world_mut().spawn((
+                node.clone(), Text::new("Initial café title"), font.clone(),
+                visibility, ChildOf(parent),
+            )).id(),
+            app.world_mut().spawn((
+                node, EditableText::new("Initial café title"), font,
+                TextLayoutInfo::default(), TextScroll::default(), visibility, ChildOf(parent),
+            )).id(),
+        ]
+    }
+
+    fn assert_layout(actual: &TextLayoutInfo, expected: &TextLayoutInfo) {
+        assert_eq!(actual.size, expected.size);
+        assert_eq!(actual.scale_factor, expected.scale_factor);
+        assert_eq!(actual.glyphs.len(), expected.glyphs.len());
+        assert!(!actual.glyphs.is_empty());
+        for (a, b) in actual.glyphs.iter().zip(&expected.glyphs) {
+            assert_eq!(a.position, b.position);
+            assert_eq!(a.section_index, b.section_index);
+            assert_eq!(a.line_index, b.line_index);
+            assert_eq!(a.atlas_info.texture, b.atlas_info.texture);
+            assert_eq!(a.atlas_info.rect, b.atlas_info.rect);
+            assert_eq!(a.atlas_info.offset, b.atlas_info.offset);
+        }
+        assert_eq!(actual.selection_rects, expected.selection_rects);
+        assert_eq!(actual.preedit_underline_rects, expected.preedit_underline_rects);
+    }
+
+    fn replace(app: &mut App, pair: [Entity; 2], text: &str, size: f32) {
+        app.world_mut().get_mut::<Text>(pair[0]).unwrap().0 = text.into();
+        let mut editable = app.world_mut().get_mut::<EditableText>(pair[1]).unwrap();
+        editable.queue_edit(TextEdit::SelectAll);
+        editable.queue_edit(TextEdit::Insert(text.into()));
+        for entity in pair {
+            app.world_mut().get_mut::<TextFont>(entity).unwrap().font_size = FontSize::Px(size);
+        }
+    }
+
+    let (mut app, root) = fixture(UVec2::new(800, 600), 1.0);
+    let parent = app.world_mut().spawn((Node {
+        position_type: PositionType::Absolute,
+        width: px(400),
+        height: px(300),
+        display: Display::None,
+        ..default()
+    }, ChildOf(root))).id();
+    let ghost = app.world_mut().spawn((bevy::ui::experimental::GhostNode, ChildOf(parent))).id();
+    let inherited = pair(&mut app, ghost, Display::Flex, Visibility::Inherited);
+    let direct = pair(&mut app, root, Display::None, Visibility::Inherited);
+    let preparing = pair(&mut app, root, Display::Flex, Visibility::Hidden);
+    let reference = pair(&mut app, root, Display::Flex, Visibility::Inherited);
+    for _ in 0..4 { app.update(); }
+    for entity in inherited.into_iter().chain(direct) {
+        assert!(app.world().get::<TextLayoutInfo>(entity).unwrap().glyphs.is_empty(),
+            "Display::None text prepared glyphs before its first reveal");
+    }
+    for entity in preparing.into_iter().chain(reference) {
+        assert!(!app.world().get::<TextLayoutInfo>(entity).unwrap().glyphs.is_empty(),
+            "Visibility::Hidden must still prepare Castle text");
+    }
+
+    let current = "A changed café title wraps with several more words";
+    for group in [inherited, direct, reference] {
+        replace(&mut app, group, current, 22.0);
+        for entity in group {
+            app.world_mut().entity_mut(entity).insert(FontHinting::Disabled);
+        }
+    }
+    for _ in 0..4 { app.update(); }
+    for group in [inherited, direct] {
+        assert_eq!(app.world().get::<EditableText>(group[1]).unwrap().value(), current);
+        for entity in group {
+            assert!(app.world().get::<TextLayoutInfo>(entity).unwrap().glyphs.is_empty());
+        }
+    }
+    app.world_mut().get_mut::<Node>(parent).unwrap().display = Display::Flex;
+    for entity in direct {
+        app.world_mut().get_mut::<Node>(entity).unwrap().display = Display::Flex;
+    }
+    for _ in 0..2 { app.update(); }
+    for group in [inherited, direct] {
+        for (actual, expected) in group.into_iter().zip(reference) {
+            assert_layout(app.world().get::<TextLayoutInfo>(actual).unwrap(),
+                app.world().get::<TextLayoutInfo>(expected).unwrap());
+        }
+    }
+
+    let retained = inherited.map(|entity| app.world().get::<TextLayoutInfo>(entity).unwrap().clone());
+    app.world_mut().get_mut::<Node>(parent).unwrap().display = Display::None;
+    app.update();
+    for entity in inherited.into_iter().chain(reference) {
+        app.world_mut().entity_mut(entity).insert(FontHinting::Enabled);
+    }
+    for _ in 0..4 { app.update(); }
+    for (entity, layout) in inherited.into_iter().zip(&retained) {
+        assert_layout(app.world().get::<TextLayoutInfo>(entity).unwrap(), layout);
+    }
+    app.world_mut().get_mut::<Node>(parent).unwrap().display = Display::Flex;
+    for _ in 0..2 { app.update(); }
+    for (actual, expected) in inherited.into_iter().zip(reference) {
+        assert_layout(app.world().get::<TextLayoutInfo>(actual).unwrap(),
+            app.world().get::<TextLayoutInfo>(expected).unwrap());
+    }
+
+    app.world_mut().get_mut::<Node>(parent).unwrap().display = Display::None;
+    for group in [inherited, reference] {
+        replace(&mut app, group, "Reparented résumé", 28.0);
+    }
+    for _ in 0..4 { app.update(); }
+    assert_eq!(app.world().get::<EditableText>(inherited[1]).unwrap().value(), "Reparented résumé");
+    for entity in inherited { app.world_mut().entity_mut(entity).insert(ChildOf(root)); }
+    for _ in 0..2 { app.update(); }
+    for (actual, expected) in inherited.into_iter().zip(reference) {
+        assert_layout(app.world().get::<TextLayoutInfo>(actual).unwrap(),
+            app.world().get::<TextLayoutInfo>(expected).unwrap());
+    }
+}
+
+#[cfg_attr(test, test)]
 fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live() {
     use bevy::{
         input_focus::{FocusCause, InputFocus},
@@ -815,6 +948,8 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
                 .id(),
         );
     }
+    let font = app.world().resource::<crate::native::theme::Typography>().text(16.0);
+    app.world_mut().entity_mut(controls[0]).insert((Text::new("Scroll"), font));
     settle(&mut app);
     let original = app
         .world()
@@ -909,6 +1044,7 @@ crate::native::laboratory_cases! {
     performance_traces_preserve_concurrent_samples_and_report_overflow,
     retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
     workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits,
+    hidden_text_defers_visual_work_and_reveals_current_edits_and_styles,
     untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live,
     retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

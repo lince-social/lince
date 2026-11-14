@@ -1,6 +1,6 @@
 use crate::{
-    ComputedNode, ComputedUiRenderTargetInfo, ContentSize, FixedMeasure, Measure, MeasureArgs,
-    Node, NodeMeasure,
+    ComputedNode, ComputedUiRenderTargetInfo, ContentSize, Display, FixedMeasure, Measure,
+    MeasureArgs, Node, NodeMeasure,
 };
 use bevy_asset::Assets;
 use bevy_color::Color;
@@ -9,6 +9,7 @@ use bevy_ecs::{
     change_detection::DetectChanges,
     component::Component,
     entity::Entity,
+    hierarchy::ChildOf,
     query::With,
     reflect::ReflectComponent,
     system::{Query, Res, ResMut},
@@ -25,6 +26,24 @@ use bevy_text::{
 };
 use taffy::{style::AvailableSpace, MaybeMath, ResolveOrZero};
 use tracing::error;
+
+pub(super) fn has_display_box(
+    mut entity: Entity,
+    nodes: &Query<(Option<&Node>, Option<&ChildOf>)>,
+) -> bool {
+    loop {
+        let Ok((node, parent)) = nodes.get(entity) else {
+            return false;
+        };
+        if node.is_some_and(|node| node.display == Display::None) {
+            return false;
+        }
+        let Some(parent) = parent else {
+            return true;
+        };
+        entity = parent.parent();
+    }
+}
 
 /// UI text system flags.
 ///
@@ -274,6 +293,7 @@ pub fn measure_text_system(
         ),
         With<Node>,
     >,
+    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
     mut text_reader: TextUiReader,
     mut text_pipeline: ResMut<TextPipeline>,
     mut font_system: ResMut<FontCx>,
@@ -300,6 +320,13 @@ pub fn measure_text_system(
             || text_flags.needs_measure_fn
             || content_size.is_added())
         {
+            continue;
+        }
+
+        if !has_display_box(entity, &nodes) {
+            if !text_flags.needs_measure_fn {
+                text_flags.needs_measure_fn = true;
+            }
             continue;
         }
 
@@ -360,6 +387,7 @@ pub fn text_system(
     mut font_atlas_set: ResMut<FontAtlasSet>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
+        Entity,
         Ref<ComputedNode>,
         &TextLayout,
         &mut TextLayoutInfo,
@@ -367,14 +395,22 @@ pub fn text_system(
         &mut ComputedTextBlock,
         Ref<FontHinting>,
     )>,
+    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
     mut scale_cx: ResMut<ScaleCx>,
 ) {
-    for (node, block, mut text_layout_info, mut text_flags, mut computed, hinting) in
+    for (entity, node, block, mut text_layout_info, mut text_flags, mut computed, hinting) in
         &mut text_query
     {
         if node.is_changed() || text_flags.needs_recompute || hinting.is_changed() {
             // Skip the text node if it is waiting for a new measure func
             if text_flags.needs_measure_fn {
+                continue;
+            }
+
+            if !has_display_box(entity, &nodes) {
+                if !text_flags.needs_recompute {
+                    text_flags.needs_recompute = true;
+                }
                 continue;
             }
 

@@ -1,13 +1,16 @@
 use core::hash::BuildHasher;
 use core::time::Duration;
 
-use crate::{ComputedNode, ComputedUiRenderTargetInfo, ContentSize, NodeMeasure};
+use super::text::has_display_box;
+use crate::{ComputedNode, ComputedUiRenderTargetInfo, ContentSize, Node, NodeMeasure};
 use bevy_asset::Assets;
 
 use bevy_ecs::{
     change_detection::{DetectChanges, DetectChangesMut},
     component::Component,
-    entity::Entity,
+    entity::{Entity, EntityHashSet},
+    hierarchy::ChildOf,
+    lifecycle::RemovedComponents,
     reflect::ReflectComponent,
     system::{Local, Query, Res, ResMut},
     world::Ref,
@@ -273,12 +276,18 @@ pub fn update_editable_text_layout(
         Ref<ComputedNode>,
         &mut EditableTextGeneration,
     )>,
+    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
+    mut removed: RemovedComponents<EditableText>,
+    mut deferred_hinting: Local<EntityHashSet>,
     rem_size: Res<RemSize>,
     input_focus: Option<Res<InputFocus>>,
     mut cursor_timer: Local<Duration>,
     time: Res<Time<Real>>,
 ) {
     *cursor_timer += time.delta();
+    for entity in removed.read() {
+        deferred_hinting.remove(&entity);
+    }
 
     for (
         entity,
@@ -291,6 +300,22 @@ pub fn update_editable_text_layout(
         mut generation,
     ) in input_field_query.iter_mut()
     {
+        let hinting_deferred = deferred_hinting.contains(&entity);
+        if (computed_node.is_changed()
+            || editable_text.editor.try_layout().is_none()
+            || editable_text.editor.generation() != **generation
+            || hinting.is_changed()
+            || hinting_deferred)
+            && !has_display_box(entity, &nodes)
+        {
+            if hinting.is_changed() {
+                deferred_hinting.insert(entity);
+            }
+            continue;
+        }
+        if hinting_deferred {
+            deferred_hinting.remove(&entity);
+        }
         let cursor_width = editable_text.cursor_width;
         let cursor_blink_period = editable_text.cursor_blink_period;
 
@@ -313,7 +338,7 @@ pub fn update_editable_text_layout(
             **generation = editable_text.editor.generation();
         }
 
-        if layout_changed || hinting.is_changed() {
+        if layout_changed || hinting.is_changed() || hinting_deferred {
             let layout = editable_text.editor.try_layout().unwrap();
 
             info.scale_factor = layout.scale();

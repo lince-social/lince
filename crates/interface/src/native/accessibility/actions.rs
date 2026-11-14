@@ -262,5 +262,4 @@ pub fn perform(world: &mut World, entity: Entity, captured: &Context, request: &
     Ok(())
 }
 
-#[cfg(test)]
-mod tests;
+pub(super) mod tests;

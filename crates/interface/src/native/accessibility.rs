@@ -7,6 +7,10 @@ pub use actions::{Context, context, owner_context, owns_keyboard, perform, suppo
 pub use actions::{reveal_target, revealed};
 pub use text::text_nodes;
 
+pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
+    actions::tests::laboratory_cases(cases);
+}
+
 #[derive(Component)]
 struct LiveText;
 

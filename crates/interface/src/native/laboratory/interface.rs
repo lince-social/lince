@@ -5,6 +5,7 @@ use bevy::{a11y::AccessibilityNode, math::DVec2, prelude::*};
 pub(super) fn fast_cases() -> Vec<super::Case> {
     let mut cases = Vec::new();
     laboratory_cases(&mut cases);
+    crate::native::accessibility::laboratory_cases(&mut cases);
     let mut readiness = Vec::new();
     crate::native::castle::tests::laboratory_cases(&mut readiness);
     for name in [

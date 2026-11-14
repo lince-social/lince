@@ -22,7 +22,7 @@ fn request(action: Action, data: Option<ActionData>) -> ActionRequest {
     ActionRequest { action, target_tree: TreeId::ROOT, target_node: NodeId(5), data }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership() {
     let (mut world, _, field) = fixture("Home");
     world.get_mut::<EditableText>(field).unwrap().max_characters = Some(8);
@@ -38,7 +38,7 @@ fn accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership(
     assert!(!owns_keyboard(&world));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn activity_loss_and_return_retire_captured_accessibility_edits_before_a_delayed_host_status_and_fresh_edits_recover() {
     let (mut world, _, field) = fixture("Retain this");
     world.insert_resource(crate::host::control::Status { available: true, active: true, locked: false, ..default() });
@@ -63,7 +63,7 @@ fn activity_loss_and_return_retire_captured_accessibility_edits_before_a_delayed
     assert!(context(&world, field, true).is_some());
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn changed_canvas_hidden_lock_and_replaced_modal_reject_queued_control_actions() {
     let (mut world, root, field) = fixture("Keep me");
     let captured = context(&world, field, true).unwrap();
@@ -82,7 +82,7 @@ fn changed_canvas_hidden_lock_and_replaced_modal_reject_queued_control_actions()
     assert_eq!(world.get::<EditableText>(field).unwrap().value(), "Keep me");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn disabled_controls_remain_describable_and_protected_fields_never_export_plain_text_runs() {
     let (mut world, _, field) = fixture("private API key");
     world.entity_mut(field).insert(bevy::ui::InteractionDisabled);
@@ -97,7 +97,7 @@ fn disabled_controls_remain_describable_and_protected_fields_never_export_plain_
     assert!(!supported_actions(&world, field).contains(&Action::SetTextSelection));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn text_runs_and_selection_come_from_the_existing_editor_layout() {
     let (mut world, _, field) = fixture("Café 世界");
     let mut node = world.get::<AccessibilityNode>(field).unwrap().0.clone();
@@ -110,7 +110,7 @@ fn text_runs_and_selection_come_from_the_existing_editor_layout() {
     assert!(update.nodes.iter().all(|(_, node)| node.character_lengths().iter().map(|length| usize::from(*length)).sum::<usize>() == node.value().unwrap_or_default().len()));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn keyboard_reveal_uses_one_captured_intent_and_retires_it_on_focus_canvas_or_lock_loss() {
     let (mut world, root, field) = fixture("Keep typing");
     world.insert_resource(crate::host::magnification::Snapshot { available: true, ..default() });
@@ -138,7 +138,7 @@ fn keyboard_reveal_uses_one_captured_intent_and_retires_it_on_focus_canvas_or_lo
     assert_eq!(world.resource::<InputFocus>().get(), Some(field));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn accessibility_export_does_not_mark_text_changed_and_dirty_layout_retires_old_selection_actions() {
     let (mut world, _, field) = fixture("aé界 repeated words");
     let export = |world: &mut World| {
@@ -169,7 +169,7 @@ fn viewport(id: u64, workspace: u64, x: f64) -> crate::host::OutputViewport {
         raster: crate::host::raster::RasterMapping { origin: bounds.origin(), scale: [1.0; 2] }, workspace }
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn visible_companion_controls_keep_their_output_owner_and_do_not_capture_the_other_output_keyboard() {
     let (mut world, root, field) = fixture("Companion editor");
     let mut second = world.get::<Workspaces>(root).unwrap().entries[0].clone();
@@ -194,7 +194,7 @@ fn visible_companion_controls_keep_their_output_owner_and_do_not_capture_the_oth
     assert!(!owns_keyboard(&world));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn world_camera_and_item_motion_do_not_retarget_semantic_actions_but_final_mapping_changes_retire_them() {
     let (mut world, root, field) = fixture("Moving editor");
     world.entity_mut(root).insert(crate::native::canvas::CanvasView::default());
@@ -212,7 +212,7 @@ fn world_camera_and_item_motion_do_not_retarget_semantic_actions_but_final_mappi
     assert_eq!(world.get::<EditableText>(field).unwrap().value(), "Moving editor");
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn descriptions_of_presented_text_remain_valid_while_an_older_edit_request_is_rejected() {
     let (mut world, _, field) = fixture("Presented value");
     let captured = context(&world, field, true).unwrap();
@@ -225,7 +225,7 @@ fn descriptions_of_presented_text_remain_valid_while_an_older_edit_request_is_re
     assert!(!captured.describes(&world, field));
 }
 
-#[test]
+#[cfg_attr(test, test)]
 fn protecting_an_existing_field_retires_its_older_plain_text_description() {
     let (mut world, _, field) = fixture("Previously visible");
     let captured = context(&world, field, false).unwrap();
@@ -233,4 +233,18 @@ fn protecting_an_existing_field_retires_its_older_plain_text_description() {
     assert!(!captured.describes(&world, field));
     assert!(context(&world, field, false).is_some());
     assert!(perform(&mut world, field, &captured, &request(Action::Focus, None)).is_err());
+}
+
+crate::native::laboratory_cases! {
+    accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership,
+    activity_loss_and_return_retire_captured_accessibility_edits_before_a_delayed_host_status_and_fresh_edits_recover,
+    changed_canvas_hidden_lock_and_replaced_modal_reject_queued_control_actions,
+    disabled_controls_remain_describable_and_protected_fields_never_export_plain_text_runs,
+    text_runs_and_selection_come_from_the_existing_editor_layout,
+    keyboard_reveal_uses_one_captured_intent_and_retires_it_on_focus_canvas_or_lock_loss,
+    accessibility_export_does_not_mark_text_changed_and_dirty_layout_retires_old_selection_actions,
+    visible_companion_controls_keep_their_output_owner_and_do_not_capture_the_other_output_keyboard,
+    world_camera_and_item_motion_do_not_retarget_semantic_actions_but_final_mapping_changes_retire_them,
+    descriptions_of_presented_text_remain_valid_while_an_older_edit_request_is_rejected,
+    protecting_an_existing_field_retires_its_older_plain_text_description,
 }

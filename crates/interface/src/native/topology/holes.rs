@@ -234,6 +234,7 @@ fn basis(placement: super::Spatial) -> DMat2 {
 }
 
 pub(crate) fn refresh(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeHoleLayers);
     world.init_resource::<Contexts>();
     let roots: Vec<_> = world
         .query::<(Entity, &Workspaces)>()

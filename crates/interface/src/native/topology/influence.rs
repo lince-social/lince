@@ -13,7 +13,7 @@ pub struct Forces {
 }
 
 struct Destination {
-    area: InfluenceArea,
+    area: std::sync::Arc<InfluenceArea>,
     placement: Spatial,
     point: DVec3,
     strength: f64,
@@ -31,36 +31,61 @@ pub fn contains(area: &InfluenceArea, placement: Spatial, point: DVec3) -> bool 
 }
 
 pub fn update(world: &mut World) {
+    crate::native::area_effects::refresh(world);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeSpatialForces);
+    world
+        .run_system_cached(update_forces)
+        .expect("update spatial Area effects");
+}
+
+fn update_forces(
+    world: &mut World,
+    sources: &mut QueryState<
+        (
+            Entity,
+            &'static InfluenceArea,
+            &'static ChildOf,
+            &'static crate::native::workspace::WorkspaceMember,
+        ),
+        (
+            Without<crate::native::component_push::composition::Generated>,
+            Without<crate::native::canvas_host::composition::Generated>,
+        ),
+    >,
+    items: &mut QueryState<
+        (
+            Entity,
+            &'static crate::native::canvas::CanvasItem,
+            &'static ChildOf,
+            &'static crate::native::workspace::WorkspaceMember,
+        ),
+        (
+            Without<InfluenceArea>,
+            Without<super::terrain::Effect>,
+            Without<crate::native::canvas_item::Ephemeral>,
+        ),
+    >,
+    effects: &mut QueryState<
+        Entity,
+        Or<(
+            With<crate::native::area_effects::AreaScale>,
+            With<crate::native::area::AreaForces>,
+        )>,
+    >,
+) {
     world.init_resource::<Forces>();
     let mut forces = world.remove_resource::<Forces>().unwrap();
     forces.totals.clear();
-    let areas: Vec<_> = world
-        .query_filtered::<(
-            Entity,
-            &InfluenceArea,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-        ), (
-            Without<crate::native::component_push::composition::Generated>,
-            Without<crate::native::canvas_host::composition::Generated>,
-        )>()
+    let areas: Vec<_> = sources
         .iter(world)
-        .filter(|(e, a, _, _)| {
-            a.validate()
-                || world
-                    .get::<crate::native::protein_area::grouping::GeneratedGroup>(*e)
-                    .is_some()
-        })
-        .map(|(e, a, p, m)| {
-            (
+        .filter_map(|(e, _, p, m)| {
+            let area = world
+                .resource::<crate::native::area_effects::Influences>()
+                .definition(e)?;
+            Some((
                 e,
-                {
-                    let mut area = a.clone();
-                    if !area.attraction_enabled {
-                        area.strength = 0.0;
-                    }
-                    area
-                },
+                area,
                 p.parent(),
                 m.0,
                 spatial(world, e),
@@ -76,30 +101,16 @@ pub fn update(world: &mut World) {
                             })
                     })
                     .copied(),
-            )
+            ))
         })
         .collect();
-    let sands: Vec<_> = world
-        .query_filtered::<(
-            Entity,
-            &crate::native::canvas::CanvasItem,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-        ), (
-            Without<InfluenceArea>,
-            Without<super::terrain::Effect>,
-            Without<crate::native::canvas_item::Ephemeral>,
-        )>()
+    let sands: Vec<_> = items
         .iter(world)
         .map(|(e, i, p, m)| (e, *i, p.parent(), m.0))
         .collect();
     let mut retained = std::collections::HashSet::new();
     let living: std::collections::HashSet<_> = sands.iter().map(|(entity, ..)| *entity).collect();
-    let stale: Vec<_> = world
-        .query_filtered::<Entity, Or<(
-            With<crate::native::area_effects::AreaScale>,
-            With<crate::native::area::AreaForces>,
-        )>>()
+    let stale: Vec<_> = effects
         .iter(world)
         .filter(|entity| !living.contains(entity))
         .collect();
@@ -332,7 +343,9 @@ pub fn update(world: &mut World) {
                     strength: area.strength * sign,
                 };
                 let cached = forces.simple.entry(*id).or_insert_with(create);
-                if cached.area != *area || cached.placement != *placement {
+                if !std::sync::Arc::ptr_eq(&cached.area, area) && cached.area != *area
+                    || cached.placement != *placement
+                {
                     *cached = create();
                 }
                 let target = sorting_target
@@ -410,8 +423,7 @@ fn display_force(forces: &mut crate::native::area::AreaForces, area: Entity, for
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn fixture() -> (World, Entity, Entity, Entity) {
@@ -445,7 +457,7 @@ mod tests {
         (world, root, owner, sand)
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn disabled_area_and_attraction_toggle_remove_cached_forces() {
         let (mut world, _, owner, sand) = fixture();
         update(&mut world);
@@ -483,7 +495,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn simple_destinations_steer_in_three_dimensions_and_follow_area_edits() {
         let (mut world, _, owner, sand) = fixture();
         world.get_mut::<InfluenceArea>(owner).unwrap().reach.mode = ReachMode::Unlimited;
@@ -538,7 +550,7 @@ mod tests {
         assert!(world.resource::<Forces>().simple.is_empty());
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn depth_gates_reach_scale_sorting_and_immunity_in_the_rotated_volume() {
         let (mut world, root, owner, sand) = fixture();
         let placement = Spatial {
@@ -622,7 +634,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn containment_follows_the_rotated_boundary_and_its_depth() {
         let (mut world, root, owner, sand) = fixture();
         let placement = Spatial {
@@ -661,7 +673,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn area_depth_and_rotation_control_actual_membership() {
         let mut area = InfluenceArea::new(
             crate::native::area::AreaShape::Square,
@@ -692,7 +704,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn an_attached_area_cannot_drive_its_group_but_can_drive_another_sand() {
         let mut world = World::new();
         let root = world
@@ -731,6 +743,15 @@ mod tests {
         update(&mut world);
         assert_eq!(world.resource::<Forces>().totals[&sands[0]], DVec3::ZERO);
         assert!(world.resource::<Forces>().totals[&sands[1]].x < 0.0);
+    }
+
+    crate::native::laboratory_cases! {
+        disabled_area_and_attraction_toggle_remove_cached_forces,
+        simple_destinations_steer_in_three_dimensions_and_follow_area_edits,
+        depth_gates_reach_scale_sorting_and_immunity_in_the_rotated_volume,
+        containment_follows_the_rotated_boundary_and_its_depth,
+        area_depth_and_rotation_control_actual_membership,
+        an_attached_area_cannot_drive_its_group_but_can_drive_another_sand,
     }
 }
 

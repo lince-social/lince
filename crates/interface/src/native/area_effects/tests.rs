@@ -323,6 +323,196 @@ crate::native::laboratory_cases! {
     containment_limits_forces_without_blocking_record_transitions,
     size_effects_combine_restore_and_leave_authored_sizes_untouched,
     independent_sorting_steers_existing_sands_and_immunity_stops_it,
+    retained_queries_follow_late_entities_filters_pins_and_workspace_moves,
+    unchanged_definitions_and_equal_filter_updates_preserve_force_derivations,
+    validation_follows_edits_recovery_and_generated_group_removal,
+}
+
+#[cfg_attr(test, test)]
+fn validation_follows_edits_recovery_and_generated_group_removal() {
+    let (mut world, root, owner, _) = fixture();
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_some());
+    world.get_mut::<InfluenceArea>(owner).unwrap().name.clear();
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_none());
+    world.get_mut::<InfluenceArea>(owner).unwrap().name = "Restored Area".into();
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_some());
+    world.get_mut::<InfluenceArea>(owner).unwrap().name.clear();
+    world.entity_mut(owner).insert(GeneratedGroup {
+        owner: root,
+        horizontal: true,
+        index: 0,
+        targets: HashMap::new(),
+    });
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_some());
+    world.entity_mut(owner).remove::<GeneratedGroup>();
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_none());
+    world.get_mut::<InfluenceArea>(owner).unwrap().name = "Replaced Area".into();
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_some());
+    world.despawn(owner);
+    refresh(&mut world);
+    assert!(world.resource::<Influences>().definition(owner).is_none());
+    assert!(world.resource::<Influences>().indices.is_empty());
+}
+
+#[cfg_attr(test, test)]
+fn unchanged_definitions_and_equal_filter_updates_preserve_force_derivations() {
+    let (mut world, _, owner, sand) = fixture();
+    world.get_mut::<InfluenceArea>(owner).unwrap().filter =
+        Some(crate::native::protein_area::Config::default());
+    world.entity_mut(owner).insert(Matches {
+        source: Source::Local,
+        uids: ["r_one".into()].into(),
+        current: true,
+    });
+    update(&mut world);
+    let definition = world.resource::<Influences>().fields[0].area.clone();
+    let revision = world.resource::<Influences>().revision;
+    let evaluations = world.resource::<Influences>().evaluations;
+    for _ in 0..8 {
+        update(&mut world);
+        assert!(Arc::ptr_eq(
+            &definition,
+            &world.resource::<Influences>().fields[0].area
+        ));
+        assert_eq!(world.resource::<Influences>().revision, revision);
+        assert_eq!(world.resource::<Influences>().evaluations, evaluations);
+        assert_eq!(
+            world.get::<AreaForces>(sand).unwrap().total(),
+            DVec2::new(-100.0, 0.0)
+        );
+    }
+    world.get_mut::<Matches>(owner).unwrap().current = true;
+    update(&mut world);
+    assert_eq!(world.resource::<Influences>().revision, revision);
+    assert_eq!(world.resource::<Influences>().evaluations, evaluations);
+    world.get_mut::<Matches>(owner).unwrap().current = false;
+    update(&mut world);
+    assert_ne!(world.resource::<Influences>().revision, revision);
+    assert_eq!(world.get::<AreaForces>(sand).unwrap().total(), DVec2::ZERO);
+    world.get_mut::<Matches>(owner).unwrap().current = true;
+    world.get_mut::<InfluenceArea>(owner).unwrap().strength = 250.0;
+    update(&mut world);
+    assert!(!Arc::ptr_eq(
+        &definition,
+        &world.resource::<Influences>().fields[0].area
+    ));
+    assert_eq!(
+        world.get::<AreaForces>(sand).unwrap().total(),
+        DVec2::new(-250.0, 0.0)
+    );
+    world
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .attraction_enabled = false;
+    update(&mut world);
+    assert_eq!(world.get::<AreaForces>(sand).unwrap().total(), DVec2::ZERO);
+    world.get_mut::<InfluenceArea>(owner).unwrap().strength = 500.0;
+    update(&mut world);
+    assert_eq!(world.get::<AreaForces>(sand).unwrap().total(), DVec2::ZERO);
+    world
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .attraction_enabled = true;
+    update(&mut world);
+    assert_eq!(
+        world.get::<AreaForces>(sand).unwrap().total(),
+        DVec2::new(-500.0, 0.0)
+    );
+}
+
+#[cfg_attr(test, test)]
+fn retained_queries_follow_late_entities_filters_pins_and_workspace_moves() {
+    use bevy::ecs::entity_disabling::Disabled;
+    for spatial in [false, true] {
+        let mut world = World::new();
+        if spatial {
+            world.init_resource::<crate::native::topology::physics::Runtime>();
+        }
+        update(&mut world);
+        let root = world.spawn(Workspaces::default()).id();
+        let other_root = world.spawn(Workspaces::default()).id();
+        let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));
+        area.strength = 100.0;
+        area.scale = 1.5;
+        area.reach.mode = ReachMode::Unlimited;
+        area.rules.push(PropertyRule {
+            property: Property::Quantity,
+            value: "-3".into(),
+        });
+        let owner = spawn_area(&mut world, root, 1, area).unwrap();
+        let sand = world
+            .spawn((
+                CanvasItem {
+                    position: DVec2::new(20.0, 0.0),
+                    size: Vec2::splat(10.0),
+                },
+                RecordProperties(json!({"uid":"r_late", "quantity":-3})),
+                ChildOf(root),
+                WorkspaceMember(1),
+            ))
+            .id();
+        let force = |world: &World| {
+            world
+                .get::<AreaForces>(sand)
+                .map_or(DVec2::ZERO, AreaForces::total)
+        };
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::new(-40.0, 0.0));
+        assert_eq!(world.get::<AreaScale>(sand), Some(&AreaScale(1.5)));
+        world.entity_mut(sand).insert(Pinned {
+            anchor: [0.0; 2],
+            scale: 1.0,
+        });
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::ZERO);
+        assert!(world.get::<AreaScale>(sand).is_none());
+        world.entity_mut(sand).remove::<Pinned>();
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::new(-40.0, 0.0));
+        world.entity_mut(sand).insert(WorkspaceMember(2));
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::ZERO);
+        world
+            .entity_mut(sand)
+            .insert((WorkspaceMember(1), ChildOf(other_root)));
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::ZERO);
+        world.entity_mut(owner).insert(ChildOf(other_root));
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::new(-40.0, 0.0));
+        world.get_mut::<InfluenceArea>(owner).unwrap().filter =
+            Some(crate::native::protein_area::Config::default());
+        world.entity_mut(owner).insert(Matches {
+            source: Source::Local,
+            uids: ["r_late".into()].into(),
+            current: true,
+        });
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::new(-40.0, 0.0));
+        world.entity_mut(owner).remove::<Matches>();
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::ZERO);
+        world.get_mut::<InfluenceArea>(owner).unwrap().filter = None;
+        world.entity_mut(owner).insert(Disabled);
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::ZERO);
+        world.entity_mut(owner).remove::<Disabled>();
+        update(&mut world);
+        assert_eq!(force(&world), DVec2::new(-40.0, 0.0));
+        world.entity_mut(sand).remove::<CanvasItem>();
+        update(&mut world);
+        assert!(world.get::<AreaScale>(sand).is_none());
+        assert!(world.get::<AreaForces>(sand).is_none());
+        world.despawn(owner);
+        update(&mut world);
+        assert!(world.resource::<Influences>().fields.is_empty());
+    }
 }
 
 #[cfg_attr(test, test)]

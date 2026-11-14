@@ -1565,15 +1565,24 @@ pub(crate) fn ordered_records(
     world: &mut World,
     owner: Entity,
 ) -> Option<(Source, std::sync::Arc<Vec<String>>)> {
+    world
+        .run_system_cached_with(read_order, owner)
+        .expect("read Protein order")
+}
+
+fn read_order(
+    In(owner): In<Entity>,
+    world: &mut World,
+    subscriptions: &mut QueryState<(Entity, &'static filter::Subscription)>,
+) -> Option<(Source, std::sync::Arc<Vec<String>>)> {
     let area = world.get::<InfluenceArea>(owner)?;
     let (config, filter) = if let Some(config) = &area.filter {
-        (config.clone(), true)
+        (config, true)
     } else {
-        (area.protein.as_ref()?.clone(), false)
+        (area.protein.as_ref()?, false)
     };
     let entity = if filter {
-        world
-            .query::<(Entity, &filter::Subscription)>()
+        subscriptions
             .iter(world)
             .find(|(_, s)| s.0 == owner && !s.1)
             .map(|(e, _)| e)
@@ -1582,8 +1591,8 @@ pub(crate) fn ordered_records(
     };
     let ids = entity
         .and_then(|e| world.get_resource::<Runtime>()?.areas.get(&e))
-        .filter(|state| config.enabled && state.ready && state.applied.as_ref() == Some(&config))
+        .filter(|state| config.enabled && state.ready && state.applied.as_ref() == Some(config))
         .map(|state| state.order.clone())
         .unwrap_or_default();
-    Some((config.source, ids))
+    Some((config.source.clone(), ids))
 }

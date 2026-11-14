@@ -582,6 +582,7 @@ pub fn resolve_bindings(world: &mut World) {
 }
 
 pub fn prepare(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeTerrainPrepare);
     if !world.contains_resource::<Terrain>() {
         return;
     }

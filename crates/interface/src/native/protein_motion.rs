@@ -61,6 +61,7 @@ pub(crate) struct Motion {
 }
 
 pub(crate) fn prepare(world: &mut World) {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeProteinMotionPrepare);
     let mut motion = world.remove_resource::<Motion>().unwrap_or_default();
     motion.forces.clear();
     let sources: HashMap<_, _> = world

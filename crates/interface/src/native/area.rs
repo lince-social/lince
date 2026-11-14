@@ -150,6 +150,7 @@ impl InfluenceArea {
     }
 
     pub fn validate(&self) -> bool {
+        let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeAreaValidation);
         let size = DVec2::from_array(self.size);
         self.records.len() <= 100_000
             && self

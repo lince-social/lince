@@ -67,20 +67,35 @@ impl Default for Sorting {
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct AreaScale(pub f32);
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 struct Field {
     entity: Entity,
     root: Entity,
     workspace: u64,
-    area: InfluenceArea,
+    area: Arc<InfluenceArea>,
     activity: crate::native::influence_report::Outcome,
     filter: Option<Arc<Matches>>,
-    filter_tick: Option<u32>,
     group: Option<GeneratedGroup>,
     targets: HashMap<Entity, DVec2>,
     ranks: HashMap<Entity, usize>,
     order: Option<(Source, Arc<Vec<String>>)>,
     members: Vec<(Entity, Vec2, String)>,
+}
+
+impl PartialEq for Field {
+    fn eq(&self, other: &Self) -> bool {
+        self.entity == other.entity
+            && self.root == other.root
+            && self.workspace == other.workspace
+            && (Arc::ptr_eq(&self.area, &other.area) || self.area == other.area)
+            && self.activity == other.activity
+            && self.filter == other.filter
+            && self.group == other.group
+            && self.targets == other.targets
+            && self.ranks == other.ranks
+            && self.order == other.order
+            && self.members == other.members
+    }
 }
 
 impl Field {
@@ -178,6 +193,7 @@ struct Cached {
 #[derive(Resource, Default)]
 pub(crate) struct Influences {
     fields: Vec<Field>,
+    indices: HashMap<Entity, usize>,
     revision: u64,
     cache: HashMap<Entity, Cached>,
     evaluations: u64,
@@ -230,24 +246,63 @@ pub(crate) fn blocked(
 }
 
 pub(crate) fn refresh(world: &mut World) {
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeAreaFields);
     crate::native::topology::holes::refresh(world);
-    world.init_resource::<Influences>();
-    let mut runtime = world.remove_resource::<Influences>().unwrap();
-    let previous: HashMap<_, _> = runtime.fields.iter().map(|f| (f.entity, f)).collect();
-    let mut fields: Vec<_> = world
-        .query_filtered::<(
+    world
+        .run_system_cached(refresh_fields)
+        .expect("refresh Area inputs");
+}
+
+fn refresh_fields(
+    world: &mut World,
+    areas: &mut QueryState<
+        (
             Entity,
-            &InfluenceArea,
-            &ChildOf,
-            &WorkspaceMember,
-            Option<Ref<Matches>>,
-            Option<&GeneratedGroup>,
-        ), (
+            Ref<'static, InfluenceArea>,
+            &'static ChildOf,
+            &'static WorkspaceMember,
+            Option<Ref<'static, Matches>>,
+            Option<&'static GeneratedGroup>,
+        ),
+        (
             Without<crate::native::component_push::composition::Generated>,
             Without<crate::native::canvas_host::composition::Generated>,
-        )>()
+        ),
+    >,
+    items: &mut QueryState<
+        (
+            Entity,
+            &'static CanvasItem,
+            &'static ChildOf,
+            &'static WorkspaceMember,
+            Option<&'static RecordProperties>,
+            Option<&'static RecordBinding>,
+        ),
+        (
+            Without<InfluenceArea>,
+            Without<crate::native::topology::terrain::Effect>,
+            Without<Pinned>,
+            Without<crate::native::canvas_item::Ephemeral>,
+            Without<crate::native::time_castle::AttachedCard>,
+        ),
+    >,
+    canvas: &mut QueryState<Entity, With<CanvasItem>>,
+) {
+    world.init_resource::<Influences>();
+    let mut runtime = world.remove_resource::<Influences>().unwrap();
+    let mut definitions_reused = 0;
+    let mut definitions_rebuilt = 0;
+    let mut fields: Vec<_> = areas
         .iter(world)
-        .filter(|(_, area, _, _, _, group)| area.validate() || group.is_some())
+        .filter(|(entity, area, _, _, _, group)| {
+            group.is_some()
+                || !area.is_changed()
+                    && runtime
+                        .field(*entity)
+                        .is_some_and(|old| old.group.is_none())
+                || area.validate()
+        })
         .map(|(entity, area, parent, member, filter, group)| Field {
             entity,
             root: parent.parent(),
@@ -255,25 +310,27 @@ pub(crate) fn refresh(world: &mut World) {
             activity: crate::native::influence_report::activity(
                 world,
                 entity,
-                area,
+                &area,
                 parent.parent(),
                 member.0,
             ),
             area: {
-                let mut area = area.clone();
-                if !area.attraction_enabled {
-                    area.strength = 0.0;
+                if let Some(old) = runtime.field(entity).filter(|_| !area.is_changed()) {
+                    definitions_reused += 1;
+                    old.area.clone()
+                } else {
+                    definitions_rebuilt += 1;
+                    let mut area = (*area).clone();
+                    if !area.attraction_enabled {
+                        area.strength = 0.0;
+                    }
+                    Arc::new(area)
                 }
-                area
             },
-            filter_tick: filter.as_ref().map(|f| f.last_changed().get()),
             filter: filter.as_ref().map(|f| {
-                previous
-                    .get(&entity)
-                    .filter(|old| {
-                        old.filter_tick == Some(f.last_changed().get())
-                            && old.filter.as_deref() == Some(&**f)
-                    })
+                runtime
+                    .field(entity)
+                    .filter(|old| !f.is_changed() || old.filter.as_deref() == Some(&**f))
                     .and_then(|old| old.filter.clone())
                     .unwrap_or_else(|| Arc::new((**f).clone()))
             }),
@@ -284,6 +341,14 @@ pub(crate) fn refresh(world: &mut World) {
             members: Vec::new(),
         })
         .collect();
+    crate::host::performance::add(
+        crate::host::performance::Count::NativeAreaDefinitionsReused,
+        definitions_reused,
+    );
+    crate::host::performance::add(
+        crate::host::performance::Count::NativeAreaDefinitionsRebuilt,
+        definitions_rebuilt,
+    );
     fields.sort_by(|a, b| a.area.id.cmp(&b.area.id).then(a.entity.cmp(&b.entity)));
     for field in &mut fields {
         if field.activity != crate::native::influence_report::Outcome::Active {
@@ -293,21 +358,7 @@ pub(crate) fn refresh(world: &mut World) {
             continue;
         };
         let ordered = crate::native::protein_area::ordered_records(world, field.entity);
-        let mut sands: Vec<_> = world
-            .query_filtered::<(
-                Entity,
-                &CanvasItem,
-                &ChildOf,
-                &WorkspaceMember,
-                Option<&RecordProperties>,
-                Option<&RecordBinding>,
-            ), (
-                Without<InfluenceArea>,
-                Without<crate::native::topology::terrain::Effect>,
-                Without<Pinned>,
-                Without<crate::native::canvas_item::Ephemeral>,
-                Without<crate::native::time_castle::AttachedCard>,
-            )>()
+        let mut sands: Vec<_> = items
             .iter(world)
             .filter(|(_, _, parent, member, record, binding)| {
                 parent.parent() == field.root
@@ -331,8 +382,8 @@ pub(crate) fn refresh(world: &mut World) {
         sands.sort_by_key(|(entity, _, _)| *entity);
         field.members = sands.clone();
         field.order = ordered;
-        if let Some(old) = previous.get(&field.entity)
-            && old.area == field.area
+        if let Some(old) = runtime.field(field.entity)
+            && (Arc::ptr_eq(&old.area, &field.area) || old.area == field.area)
             && old.filter == field.filter
             && old.root == field.root
             && old.workspace == field.workspace
@@ -383,11 +434,13 @@ pub(crate) fn refresh(world: &mut World) {
             field.ranks.insert(entity, rank);
         }
     }
-    let living: std::collections::HashSet<_> = world
-        .query_filtered::<Entity, With<CanvasItem>>()
-        .iter(world)
-        .collect();
+    let living: std::collections::HashSet<_> = canvas.iter(world).collect();
     if runtime.fields != fields {
+        runtime.indices = fields
+            .iter()
+            .enumerate()
+            .map(|(index, field)| (field.entity, index))
+            .collect();
         runtime.shields = fields
             .iter()
             .enumerate()
@@ -414,6 +467,14 @@ pub(crate) fn refresh(world: &mut World) {
 }
 
 impl Influences {
+    fn field(&self, entity: Entity) -> Option<&Field> {
+        self.indices.get(&entity).map(|index| &self.fields[*index])
+    }
+
+    pub(crate) fn definition(&self, entity: Entity) -> Option<Arc<InfluenceArea>> {
+        self.field(entity).map(|field| field.area.clone())
+    }
+
     pub(crate) fn layout_input(
         &self,
         sand: Entity,
@@ -763,24 +824,38 @@ fn bounded_total(forces: &AreaForces) -> DVec2 {
 }
 
 pub(crate) fn update(world: &mut World) {
-    refresh(world);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeAreaEffects);
     if world.contains_resource::<crate::native::topology::physics::Runtime>() {
         crate::native::topology::influence::update(world);
         return;
     }
-    let sands: Vec<_> = world
-        .query_filtered::<(
+    refresh(world);
+    world
+        .run_system_cached(update_sands)
+        .expect("update Area effects");
+}
+
+fn update_sands(
+    world: &mut World,
+    items: &mut QueryState<
+        (
             Entity,
-            &CanvasItem,
-            &ChildOf,
-            &WorkspaceMember,
-            Option<&RecordProperties>,
-            Option<&RecordBinding>,
+            &'static CanvasItem,
+            &'static ChildOf,
+            &'static WorkspaceMember,
+            Option<&'static RecordProperties>,
+            Option<&'static RecordBinding>,
             Has<Pinned>,
-        ), (
+        ),
+        (
             Without<InfluenceArea>,
             Without<crate::native::canvas_item::Ephemeral>,
-        )>()
+        ),
+    >,
+    effects: &mut QueryState<Entity, Or<(With<AreaScale>, With<AreaForces>)>>,
+) {
+    let sands: Vec<_> = items
         .iter(world)
         .map(|(entity, item, parent, member, record, binding, pinned)| {
             (
@@ -795,8 +870,7 @@ pub(crate) fn update(world: &mut World) {
         })
         .collect();
     let retained: std::collections::HashSet<_> = sands.iter().map(|(entity, ..)| *entity).collect();
-    let stale: Vec<_> = world
-        .query_filtered::<Entity, Or<(With<AreaScale>, With<AreaForces>)>>()
+    let stale: Vec<_> = effects
         .iter(world)
         .filter(|entity| !retained.contains(entity))
         .collect();

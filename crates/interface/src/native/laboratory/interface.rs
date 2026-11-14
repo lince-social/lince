@@ -40,6 +40,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
         "::record_projection_preserves_requested_fields_and_exact_values",
         "::inactive_rows_defer_materialization_but_follow_visibility_and_revocation",
         "::remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded",
+        "::independent_sorting_uses_live_protein_order_without_spawning_and_clears_on_stop",
     ] {
         let query = records
             .iter()
@@ -71,6 +72,9 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::topology::surface_render::tests::laboratory_cases(&mut cases);
     crate::native::information::sync::tests::laboratory_cases(&mut cases);
     crate::native::retained::tests::laboratory_cases(&mut cases);
+    crate::native::area_effects::tests::laboratory_cases(&mut cases);
+    crate::native::influence_report::tests::laboratory_cases(&mut cases);
+    crate::native::topology::influence::tests::laboratory_cases(&mut cases);
     crate::native::output_views::tests::laboratory_cases(&mut cases);
     let mut inspection = Vec::new();
     crate::native::inspection::tests::laboratory_cases(&mut inspection);

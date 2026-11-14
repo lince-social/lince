@@ -247,6 +247,7 @@ pub(crate) fn room_transform(
 }
 
 pub fn synchronize(world: &mut World) -> bool {
+    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeBodiesSynchronize);
     if world
         .query_filtered::<Entity, With<super::rooms::Member>>()
         .iter(world)

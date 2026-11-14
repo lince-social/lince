@@ -658,6 +658,12 @@ impl Session {
     }
 
     async fn sync_event_inner(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
+        engine::performance::add(match &event {
+            crate::SyncEvent::Fact(_) => "cell-refresh-fact-events",
+            crate::SyncEvent::Refresh => "cell-refresh-global-events",
+            crate::SyncEvent::Ephemeral => "cell-refresh-ephemeral-events",
+            crate::SyncEvent::Presence => "cell-refresh-presence-events",
+        }, 1);
         match event {
             crate::SyncEvent::Fact(fact) => self.on_fact(&fact).await,
             crate::SyncEvent::Refresh => self.refresh_inner(false).await,

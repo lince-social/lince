@@ -366,6 +366,17 @@ fn measure(
     let mut dirty_since = None;
     let mut longest_dirty = Duration::ZERO;
     performance::set_phase(Phase::LocalSave);
+    let cpu_ms = || {
+        let time = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
+        time.tv_sec as f64 * 1000.0 + time.tv_nsec as f64 / 1_000_000.0
+    };
+    let projection_counts = || {
+        let metrics = &engine.projection.metrics;
+        [&metrics.snapshots, &metrics.steps, &metrics.hits]
+            .map(|count| count.load(std::sync::atomic::Ordering::Relaxed))
+    };
+    let projection_before = projection_counts();
+    let cpu_before = cpu_ms();
     let started = Instant::now();
     loop {
         let before = receipts.len();
@@ -475,6 +486,10 @@ fn measure(
         }
         std::thread::sleep(Duration::from_millis(1));
     }
+    let process_cpu_ms = cpu_ms() - cpu_before;
+    let cohort_elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
+    let projection_after = projection_counts();
+    let projection_work: [u64; 3] = std::array::from_fn(|index| projection_after[index] - projection_before[index]);
     if expected != replacement || receipts.len() < 120 {
         return Err(error("Incomplete Record edit cohort"));
     }
@@ -539,6 +554,9 @@ fn measure(
     Ok(
         json!({"surface":if surface==Surface::Fiote {"fiote"} else {"kanban"},"mixed":mixed,
         "interval_ms":interval.as_secs_f64()*1000.0,"logical_inputs":receipts.len(),"frames":frames,
+        "process_cpu_ms":process_cpu_ms,"cohort_elapsed_ms":cohort_elapsed_ms,
+        "resource_scope":"scheduled editing until local acknowledgement; all process threads including recorder and probe; excludes setup, reopen and unfinished background work",
+        "projection_snapshots_started":projection_work[0],"projection_steps":projection_work[1],"projection_cache_hits":projection_work[2],
         "settling_frames":settling_frames,"settling_ms":settling_ms,"awake_frames":awake_frames,
         "scheduled_delivery":summary(&delivery),"scheduled_visible_response":summary(&echo),
         "scheduled_durable_recovery":durable_summary,"scheduled_canonical_acknowledgement":acknowledged_summary,

@@ -199,13 +199,16 @@ impl Engine {
                                 .await
                                 {
                                     Ok(true) => {
+                                        crate::performance::add("schedule-projection-publications", 1);
                                         arm_expiry(&expiry, calculated.expires_ms, changed.clone())
                                     }
-                                    Ok(false) => {}
+                                    Ok(false) => { crate::performance::add("schedule-projection-superseded", 1); }
                                     Err(error) => {
                                         tracing::warn!(%error, "projection publication failed")
                                     }
                                 }
+                            } else {
+                                crate::performance::add("schedule-projection-superseded", 1);
                             }
                         }
                         Err(error) => {
@@ -223,6 +226,7 @@ impl Engine {
                             arm_expiry(&expiry, base + 60_000, changed.clone());
                         }
                     }
+                    crate::performance::add("schedule-projection-notifications", 1);
                     changed.send_modify(|revision| *revision = revision.wrapping_add(1));
                     let next = {
                         let mut queue = queue.lock().expect("projection queue");
@@ -299,6 +303,7 @@ fn arm_expiry(
             ))
             .await;
         }
+        crate::performance::add("schedule-projection-notifications", 1);
         changed.send_modify(|revision| *revision = revision.wrapping_add(1));
     });
     *expiry = Some((deadline, task));
@@ -311,6 +316,7 @@ pub async fn calculate(
     config: Option<crate::karma_runtime::KarmaDeadlineDirectorConfig>,
     metrics: &Metrics,
 ) -> Result<Calculated, EngineError> {
+    let _calculation = crate::performance::Span::new("schedule-projection-calculation-await");
     context
         .window
         .validate()
@@ -338,7 +344,10 @@ pub async fn calculate(
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("projection.sqlite");
     metrics.snapshots.fetch_add(1, Ordering::Relaxed);
+    crate::performance::add("schedule-projection-snapshots", 1);
+    let snapshot = crate::performance::Span::new("schedule-projection-snapshot-await");
     source.snapshot_into(&path).await?;
+    drop(snapshot);
     let private =
         store::Store::open_existing_durable(&format!("sqlite://{}", path.display())).await?;
     result.source_revision = store::projection::revision(&private.pool).await?;

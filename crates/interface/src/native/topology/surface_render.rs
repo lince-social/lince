@@ -271,29 +271,30 @@ fn fingerprint_captures(
         }
         cache.fingerprints.insert(entity, hash);
     }
+    let CaptureCache { fingerprints, dirty, blocked, .. } = &mut *cache;
     for node in &nodes.uinodes {
         let entity = node.extracted_camera_entity;
-        if !cache.fingerprints.contains_key(&entity) {
+        let Some(hash) = fingerprints.get_mut(&entity) else {
             continue;
-        }
-        if node.image != AssetId::default() && images.get(node.image).is_none() {
-            cache.blocked.insert(entity);
+        };
+        let image = images.get(node.image);
+        if node.image != AssetId::default() && image.is_none() {
+            blocked.insert(entity);
         }
         if changed.modified.contains(&node.image)
             || changed.added.contains(&node.image)
-            || images.get(node.image).is_some_and(|image| {
+            || image.is_some_and(|image| {
                 image
                     .texture
                     .usage()
                     .intersects(TextureUsages::RENDER_ATTACHMENT | TextureUsages::STORAGE_BINDING)
             })
         {
-            cache.dirty.insert(entity);
+            dirty.insert(entity);
         }
-        let hash = cache.fingerprints.get_mut(&entity).unwrap();
         node.main_entity.hash(hash);
         node.image.hash(hash);
-        if let Some(image) = images.get(node.image) {
+        if let Some(image) = image {
             image.texture.id().hash(hash);
         }
         floats(hash, [node.z_order]);
@@ -657,6 +658,44 @@ pub(crate) mod tests {
         let first = fingerprint(&app);
         app.update();
         assert_eq!(fingerprint(&app), first);
+        let other = app.world_mut().spawn((SurfaceCapture(Handle::default()), UiCameraView(view))).id();
+        {
+            let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
+            nodes.glyphs.push(ExtractedGlyph {
+                color: LinearRgba::WHITE,
+                translation: Vec2::ZERO,
+                rect: Rect::from_corners(Vec2::ZERO, Vec2::splat(16.0)),
+            });
+            nodes.uinodes.push(ExtractedUiNode {
+                z_order: 1.0,
+                image: AssetId::default(),
+                clip: None,
+                extracted_camera_entity: other,
+                item: ExtractedUiItem::Glyphs { range: 1..2 },
+                main_entity: source.into(),
+                render_entity: source,
+                transform: Affine2::IDENTITY,
+            });
+        }
+        app.update();
+        let other_fingerprint = app.world().resource::<CaptureCache>().fingerprints[&other].finish();
+        for (color, translation) in [(LinearRgba::BLACK, Vec2::ZERO), (LinearRgba::WHITE, Vec2::new(0.5, 1.5))] {
+            {
+                let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
+                nodes.glyphs[0].color = color;
+                nodes.glyphs[0].translation = translation;
+            }
+            app.update();
+            assert_ne!(fingerprint(&app), first);
+            assert_eq!(app.world().resource::<CaptureCache>().fingerprints[&other].finish(), other_fingerprint);
+        }
+        {
+            let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
+            nodes.glyphs[0].color = LinearRgba::WHITE;
+            nodes.glyphs[0].translation = Vec2::ZERO;
+        }
+        app.update();
+        assert_eq!(fingerprint(&app), first);
         app.world_mut()
             .get_mut::<ExtractedView>(view)
             .unwrap()
@@ -706,6 +745,7 @@ pub(crate) mod tests {
                 .contains(&camera)
         );
         app.world_mut().despawn(camera);
+        app.world_mut().despawn(other);
         app.update();
         assert!(
             app.world()

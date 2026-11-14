@@ -12,6 +12,7 @@ use std::collections::HashSet;
 mod blobs;
 mod offers;
 mod plugins;
+mod snapshots;
 
 pub(crate) use blobs::{accept_copy, prepare_copy, send_copy, transfer as copy_state};
 

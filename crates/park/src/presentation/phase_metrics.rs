@@ -63,7 +63,10 @@ fn ui_layout_work(reading: bevy::ui::UiLayoutReading) {
         (Count::NativeUiEmptyMeasures, reading.empty_measures),
         (Count::NativeUiImageMeasures, reading.image_measures),
         (Count::NativeUiFixedMeasures, reading.fixed_measures),
-        (Count::NativeUiTextInputMeasures, reading.text_input_measures),
+        (
+            Count::NativeUiTextInputMeasures,
+            reading.text_input_measures,
+        ),
         (Count::NativeUiTextMeasures, reading.text_measures),
         (Count::NativeUiCustomMeasures, reading.custom_measures),
         (Count::NativeUiMeasureNoops, reading.measure_noops),
@@ -80,6 +83,7 @@ fn ui_layout_work(reading: bevy::ui::UiLayoutReading) {
 fn text_work(
     blocks: Query<
         (
+            Entity,
             Ref<Text>,
             Ref<bevy::ui::ContentSize>,
             &bevy::text::ComputedTextBlock,
@@ -90,11 +94,14 @@ fn text_work(
         With<Node>,
     >,
     spans: Query<&TextSpan>,
+    parents: Query<&ChildOf>,
+    owners: Query<&lince_interface::native::sand_store::StoredSand>,
     rem: Option<Res<bevy::text::RemSize>>,
 ) {
     use performance::Count;
     let mut counts = [0u64; 8];
-    for (text, size, computed, target, node, visible) in &blocks {
+    let mut sources = [0u64; Count::ALL.len()];
+    for (entity, text, size, computed, target, node, visible) in &blocks {
         let scale = (target.scale_factor() - node.inverse_scale_factor().recip()).abs() > 1e-5;
         let style = computed.needs_rerender(false, false);
         let units = !style
@@ -115,6 +122,35 @@ fn text_work(
         counts[0] += 1;
         counts[1] += bytes as u64;
         counts[2] += u64::from(size.is_added());
+        if size.is_added() {
+            use lince_interface::native::sand_store::SandKind;
+            let owner = std::iter::successors(Some(entity), |entity| {
+                parents.get(*entity).ok().map(ChildOf::parent)
+            })
+            .take(64)
+            .find_map(|entity| owners.get(entity).ok().map(|owner| owner.kind));
+            let source = match owner {
+                Some(SandKind::Square) => Count::TextMeasureNewSquare,
+                Some(SandKind::Text) => Count::TextMeasureNewPlain,
+                Some(SandKind::EditableText) => Count::TextMeasureNewEditable,
+                Some(SandKind::Operation) => Count::TextMeasureNewOperation,
+                Some(SandKind::Overview) => Count::TextMeasureNewOverview,
+                Some(SandKind::WorkTimer) => Count::TextMeasureNewTimer,
+                Some(SandKind::AccessControl) => Count::TextMeasureNewAccess,
+                Some(SandKind::Visibility) => Count::TextMeasureNewVisibility,
+                Some(SandKind::Trust) => Count::TextMeasureNewTrust,
+                Some(SandKind::HandCamera) => Count::TextMeasureNewCamera,
+                Some(SandKind::Video) => Count::TextMeasureNewVideo,
+                Some(SandKind::Sync) => Count::TextMeasureNewSync,
+                Some(SandKind::Terminal) => Count::TextMeasureNewTerminal,
+                Some(SandKind::Configuration) => Count::TextMeasureNewConfiguration,
+                Some(SandKind::Organ) => Count::TextMeasureNewOrgan,
+                Some(SandKind::Todo) => Count::TextMeasureNewTodo,
+                Some(SandKind::Ontology) => Count::TextMeasureNewOntology,
+                _ => Count::TextMeasureNewOther,
+            };
+            sources[source as usize] += 1;
+        }
         counts[3] += u64::from(text.is_changed());
         counts[4] += u64::from(style);
         counts[5] += u64::from(scale);
@@ -135,6 +171,11 @@ fn text_work(
     .zip(counts)
     {
         performance::add(count, value);
+    }
+    for &count in Count::ALL {
+        if sources[count as usize] != 0 {
+            performance::add(count, sources[count as usize]);
+        }
     }
 }
 

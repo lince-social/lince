@@ -15,14 +15,14 @@ pub enum SnapshotSource {
     Schedule,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DocumentFormat {
     pub source: SnapshotSource,
     pub extension: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum FieldType {
     Text,
@@ -31,7 +31,7 @@ pub enum FieldType {
     Json,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Field {
     pub id: String,
@@ -43,7 +43,7 @@ pub struct Field {
     pub default: Value,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "feature", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Contribution {
     Sync {
@@ -92,7 +92,7 @@ impl Contribution {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     pub format: String,
@@ -110,7 +110,7 @@ pub struct Manifest {
     pub credits: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Compatibility {
     pub publisher: String,
@@ -302,7 +302,7 @@ pub fn validate_values(fields: &[Field], value: &Value) -> Result<(), String> {
     Ok(())
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct Package {
     pub manifest: Manifest,
     pub digest: String,
@@ -343,7 +343,7 @@ fn default_interval() -> u64 {
     60
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Binding {
     pub uid: String,
@@ -363,7 +363,7 @@ pub struct Binding {
     pub revision: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BindingStatus {
     pub binding: Binding,
     pub status: String,
@@ -371,7 +371,7 @@ pub struct BindingStatus {
     pub failed: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Catalog {
     pub packages: Vec<Package>,
     pub diagnostics: Vec<String>,
@@ -380,7 +380,7 @@ pub struct Catalog {
     pub deliveries: Vec<Delivery>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Delivery {
     pub uid: String,
     pub binding: String,

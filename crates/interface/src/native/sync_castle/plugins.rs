@@ -756,8 +756,8 @@ pub(super) fn update(world: &mut World) {
                     let mut timer = tokio::time::interval(std::time::Duration::from_secs(5));
                     loop {
                         tokio::select! { _=timer.tick()=>{},result=changed.changed()=>{if result.is_err(){break;}} }
-                        if sender.send(Some(runtime.engine.plugin_catalog().await.map_err(|error| error.to_string()))).is_err() { break; }
-                        if let Some(wake) = &wake { wake.ring(); }
+                        let result = runtime.engine.plugin_catalog().await.map_err(|error| error.to_string());
+                        if !super::snapshots::publish(&sender, result, wake.as_ref()) { break; }
                     }
                 });
                 world.entity_mut(owner).insert(Watch { receiver, task });

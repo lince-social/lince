@@ -197,8 +197,7 @@ fn start(world: &mut World, owner: Entity) {
         loop {
             tokio::select! {_=timer.tick()=>{},result=changed.changed()=>{if result.is_err(){break;}}}
             let result=runtime.engine.act(Backend::PendingOffers,None).await.map(|o|o.data.unwrap_or(Value::Null)).map_err(|e|e.to_string());
-            if sender.send(Some(result)).is_err(){break;}
-            if let Some(wake)=&wake {wake.ring();}
+            if !super::snapshots::publish(&sender, result, wake.as_ref()) { break; }
         }
     });
     world.entity_mut(owner).insert(Watch { receiver, task });

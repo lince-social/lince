@@ -463,10 +463,11 @@ fn start_watch(world: &mut World, owner: Entity) {
     let (sender, receiver) = tokio::sync::watch::channel(None);
     let task = handle.spawn(async move {
         let Ok(blobs) = runtime.engine.blob_sync() else {
-            let _ = sender.send(Some(Err("Blob Sync is unavailable on this Cell".into())));
-            if let Some(wake) = &wake {
-                wake.ring();
-            }
+            super::snapshots::publish(
+                &sender,
+                Err("Blob Sync is unavailable on this Cell".into()),
+                wake.as_ref(),
+            );
             return;
         };
         let mut changes = blobs.watch();
@@ -492,11 +493,8 @@ fn start_watch(world: &mut World, owner: Entity) {
                 Ok(Snapshot { targets, transfers })
             }
             .await;
-            if sender.send(Some(result)).is_err() {
+            if !super::snapshots::publish(&sender, result, wake.as_ref()) {
                 break;
-            }
-            if let Some(wake) = &wake {
-                wake.ring();
             }
         }
     });

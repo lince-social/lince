@@ -311,6 +311,24 @@ counts! {
     TextMeasureCandidates => "native-text-measure-candidates",
     TextMeasureBytes => "native-text-measure-source-bytes",
     TextMeasureNew => "native-text-measure-new-blocks",
+    TextMeasureNewSquare => "native-text-measure-new-square",
+    TextMeasureNewPlain => "native-text-measure-new-plain-text",
+    TextMeasureNewEditable => "native-text-measure-new-editable-text",
+    TextMeasureNewOperation => "native-text-measure-new-operation",
+    TextMeasureNewOverview => "native-text-measure-new-overview",
+    TextMeasureNewTimer => "native-text-measure-new-work-timer",
+    TextMeasureNewAccess => "native-text-measure-new-access-control",
+    TextMeasureNewVisibility => "native-text-measure-new-visibility",
+    TextMeasureNewTrust => "native-text-measure-new-trust",
+    TextMeasureNewCamera => "native-text-measure-new-hand-camera",
+    TextMeasureNewVideo => "native-text-measure-new-video",
+    TextMeasureNewSync => "native-text-measure-new-sync",
+    TextMeasureNewTerminal => "native-text-measure-new-terminal",
+    TextMeasureNewConfiguration => "native-text-measure-new-configuration",
+    TextMeasureNewOrgan => "native-text-measure-new-organ",
+    TextMeasureNewTodo => "native-text-measure-new-todo",
+    TextMeasureNewOntology => "native-text-measure-new-ontology",
+    TextMeasureNewOther => "native-text-measure-new-other-or-unresolved",
     TextMeasureChanged => "native-text-measure-changed-text",
     TextMeasureStyle => "native-text-measure-style-or-span-changes",
     TextMeasureScale => "native-text-measure-scale-changes",
@@ -363,6 +381,8 @@ counts! {
     CellQueryRows => "cell-query-rows",
     CellQueryBatchReuses => "cell-query-batch-reuses",
     CellQueryResultsUnchanged => "cell-query-results-unchanged",
+    SyncSnapshotPublished => "sync-ui-snapshots-published",
+    SyncSnapshotUnchanged => "sync-ui-snapshots-unchanged",
     ProteinLinkGraphLoads => "protein-link-graph-loads",
     ProteinLinkEdgesVisited => "protein-link-edges-visited",
     ProteinThreadSelections => "protein-thread-selections",
@@ -717,8 +737,7 @@ impl Monitor {
                 || name.starts_with("lince_interface::")
                 || name.starts_with("lince_park::"))
         {
-            self.dropped_system_samples
-                .fetch_add(1, Ordering::Relaxed);
+            self.dropped_system_samples.fetch_add(1, Ordering::Relaxed);
             return;
         }
         let mut systems = self.systems[(thread_id() % SYSTEM_SHARDS as u64) as usize]
@@ -731,8 +750,7 @@ impl Monitor {
             sample.record(wall, cpu, exclusive_cpu);
             systems.insert(name.to_owned(), sample);
         } else {
-            self.dropped_system_samples
-                .fetch_add(1, Ordering::Relaxed);
+            self.dropped_system_samples.fetch_add(1, Ordering::Relaxed);
         }
     }
 
@@ -1193,7 +1211,10 @@ pub mod checks {
             "cell-query-batch-await",
             Duration::from_micros(30),
         ));
-        monitor.backend(engine::performance::Reading::Count("cell-query-batch-reuses", 7));
+        monitor.backend(engine::performance::Reading::Count(
+            "cell-query-batch-reuses",
+            7,
+        ));
         monitor.backend(engine::performance::Reading::Elapsed(
             "private Record contents",
             Duration::from_secs(1),

@@ -310,6 +310,7 @@ counts! {
     NativePointerOwners => "native-pointer-owner-reads",
     NativePointerLineages => "native-pointer-lineages",
     NativePointerTargets => "native-pointer-targets-built",
+    NativePointerClipped => "native-pointer-clipped-nodes-skipped",
     NativeInputRetired => "native-input-retired",
     NativeInputBatches => "native-input-frame-batches",
     NativeInputPresented => "native-input-batches-presented-per-output",

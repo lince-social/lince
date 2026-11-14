@@ -100,3 +100,31 @@ fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source
     assert!(!target.hit([1300.0, 275.0]));
     assert!(!target.hit([f64::NAN, 0.0]));
 }
+
+#[test]
+fn clipped_snapshot_rejection_preserves_possible_hits_under_transform_and_clip_changes() {
+    let clip = Rect::from_corners(Vec2::ZERO, Vec2::splat(100.0));
+    let shape = ComputedNode { size: Vec2::splat(60.0), inverse_scale_factor: 1.0, ..default() };
+    for scale in [Vec2::ONE, Vec2::splat(0.01), Vec2::new(-2.0, 0.5)] {
+        for angle in [0.0, std::f32::consts::FRAC_PI_4] {
+            for center in [Vec2::splat(50.0), Vec2::new(129.99999, 50.0), Vec2::new(500.0, 50.0)] {
+                let transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(scale, angle, center));
+                let rejected = clipped_out(&shape, transform, clip);
+                if angle == 0.0 && center.x == 500.0 { assert!(rejected); }
+                for x in 0..=40 {
+                    for y in 0..=40 {
+                        let point = Vec2::new(x as f32, y as f32) * 2.5;
+                        if shape.contains_point(transform, point) && clip.contains(point) {
+                            assert!(!rejected, "a clipped snapshot lost a possible recipient");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let transform = UiGlobalTransform::from_translation(Vec2::splat(500.0));
+    assert!(clipped_out(&shape, transform, clip));
+    assert!(!clipped_out(&shape, transform, Rect::from_corners(Vec2::splat(450.0), Vec2::splat(550.0))));
+    assert!(!clipped_out(&shape, UiGlobalTransform::from_translation(Vec2::splat(f32::NAN)), clip));
+    assert!(!clipped_out(&shape, transform, Rect { min: Vec2::splat(f32::NEG_INFINITY), max: Vec2::splat(f32::INFINITY) }));
+}

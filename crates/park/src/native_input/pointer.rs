@@ -16,6 +16,7 @@ struct Timings {
     active: bool,
     elapsed: [Duration; 5],
     counts: [u64; 5],
+    clipped: u64,
 }
 
 impl Timings {
@@ -39,6 +40,7 @@ impl Drop for Timings {
             performance::record(stage, self.elapsed[index]);
             performance::add(count, self.counts[index]);
         }
+        performance::add(Count::NativePointerClipped, self.clipped);
     }
 }
 
@@ -231,17 +233,34 @@ impl Snapshot {
 }
 
 fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity) -> Option<Geometry> {
-    measured_candidate(world, view, geometry, entity, &mut Timings::default())
+    let mut timings = Timings::default();
+    measured_candidate(world, view, geometry, entity, false, timings.begin())
 }
 
-fn measured_candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, timings: &mut Timings) -> Option<Geometry> {
-    let mut timing = timings.begin();
+fn clipped_out(node: &ComputedNode, transform: UiGlobalTransform, clip: Rect) -> bool {
+    if transform.matrix2.x_axis.y != 0.0 || transform.matrix2.y_axis.x != 0.0 { return false; }
+    let half = node.size() * 0.5;
+    let a = transform.transform_point2(-half);
+    let b = transform.transform_point2(half);
+    if !a.is_finite() || !b.is_finite() || !clip.min.is_finite() || !clip.max.is_finite() { return false; }
+    let padding = a.abs().max(b.abs()).max(clip.min.abs()).max(clip.max.abs()).max(Vec2::ONE) * (32.0 * f32::EPSILON);
+    let low = a.min(b) - padding;
+    let high = a.max(b) + padding;
+    high.cmplt(clip.min).any() || low.cmpgt(clip.max).any()
+}
+
+fn measured_candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, exclude_clipped: bool, mut timing: Timing<'_>) -> Option<Geometry> {
     let node = *world.get::<ComputedNode>(entity)?;
     if node.size().min_element() <= 0.0 || world.get::<InheritedVisibility>(entity).is_none_or(|visible| !visible.get())
         || world.get::<Pickable>(entity).is_some_and(|pickable| !pickable.should_block_lower && !pickable.is_hoverable)
     { return None; }
     let clip = world.get::<bevy::ui::CalculatedClip>(entity).map(|clip| clip.clip);
     if clip.is_some_and(|clip| clip.size().min_element() <= 0.0) { return None; }
+    let transform = *world.get::<UiGlobalTransform>(entity)?;
+    if exclude_clipped && clip.is_some_and(|clip| clipped_out(&node, transform, clip)) {
+        if timing.totals.active { timing.totals.clipped += 1; }
+        return None;
+    }
     let camera = world.get::<bevy::ui::ComputedUiTargetCamera>(entity)?.get()?;
     let active = world.get::<Camera>(camera)?.is_active;
     let bevy::camera::RenderTarget::Image(target) = world.get::<bevy::camera::RenderTarget>(camera)? else { return None; };
@@ -291,7 +310,7 @@ fn measured_candidate(world: &World, view: &View, geometry: Option<&GeometrySnap
     timing.next(Part::Result);
     Some(Geometry { entity, output: view.output, bounds: view.viewport.as_ref().map(|viewport| viewport.bounds), image, lineage, actions, owner, eligible,
         blocks: world.get::<Pickable>(entity).is_none_or(|pickable| pickable.should_block_lower),
-        modal: native::shortcuts::keyboard_owner(world), node, transform: *world.get::<UiGlobalTransform>(entity)?,
+        modal: native::shortcuts::keyboard_owner(world), node, transform,
         clip, projection })
 }
 
@@ -308,7 +327,7 @@ pub(crate) fn capture(world: &World, views: &[View], geometry: Option<&GeometryS
             snapshot.backgrounds.push(Background { root, output: view.output, image: view.image, bounds: viewport.bounds, owner });
         }
         for entity in stack.uinodes.iter().rev() {
-            let Some(target) = measured_candidate(world, view, geometry, *entity, &mut timings) else { continue; };
+            let Some(target) = measured_candidate(world, view, geometry, *entity, true, timings.begin()) else { continue; };
             if snapshot.targets.len() == MAX_TARGETS { snapshot.overflowed = true; return snapshot; }
             snapshot.targets.push(target);
         }

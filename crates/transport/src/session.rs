@@ -10,6 +10,11 @@ use protein::Protein;
 use crate::lane::{LaneEvent, LaneHub};
 use crate::protocol::{ClientMessage, ServerMessage};
 
+struct Subscription {
+    query: Protein,
+    rows: Option<Arc<Vec<serde_json::Value>>>,
+}
+
 pub struct Session {
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
@@ -17,9 +22,8 @@ pub struct Session {
     login: Option<engine::login::LoginSession>,
     connection_id: String,
     workspace_participant: String,
-    subscriptions: HashMap<String, Protein>,
+    subscriptions: HashMap<String, Subscription>,
     workspace_subscriptions: HashMap<String, (String, engine::workspace_sync::Client)>,
-    last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
     joined_rooms: Vec<String>,
     collab_records: HashSet<String>,
     collab_versions: std::sync::Mutex<HashMap<String, String>>,
@@ -55,7 +59,6 @@ impl Session {
             workspace_participant: nucleus::new_uid("participant"),
             subscriptions: HashMap::new(),
             workspace_subscriptions: HashMap::new(),
-            last_ephemeral: HashMap::new(),
             joined_rooms: Vec::new(),
             collab_records: HashSet::new(),
             collab_versions: std::sync::Mutex::new(HashMap::new()),
@@ -177,6 +180,7 @@ impl Session {
 
     pub async fn handle(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             self.workspace_subscriptions.clear();
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
@@ -188,7 +192,10 @@ impl Session {
             let engine = self.engine.clone();
             if let Some(login) = self.login.clone() {
                 return login.run_unlocked(&engine, async { Ok(self.handle_inner(msg).await) }).await
-                    .unwrap_or_else(|_| vec![session_expired()]);
+                    .unwrap_or_else(|_| {
+                        self.clear_subscription_rows();
+                        vec![session_expired()]
+                    });
             }
             return self.handle_inner(msg).await;
         }
@@ -217,7 +224,10 @@ impl Session {
         } else {
             engine.access_scope(write, operation).await
         };
-        result.unwrap_or_else(|_| vec![session_expired()])
+        result.unwrap_or_else(|_| {
+            self.clear_subscription_rows();
+            vec![session_expired()]
+        })
     }
 
     fn handle_inner(&mut self, msg: ClientMessage) -> std::pin::Pin<
@@ -384,7 +394,6 @@ impl Session {
             ClientMessage::Unsubscribe { id } => {
                 self.subscriptions.remove(&id);
                 if let Some((workspace, _)) = self.workspace_subscriptions.remove(&id) && !self.workspace_subscriptions.values().any(|(other, _)| other == &workspace) && self.engine.workspace_presence.leave(Some(&workspace), &self.workspace_participant) { self.engine.notify_query_changed(); }
-                self.last_ephemeral.remove(&id);
                 vec![]
             }
             message @ (ClientMessage::Act { .. } | ClientMessage::SignedAct { .. }) => {
@@ -629,6 +638,7 @@ impl Session {
 
     pub async fn on_sync_event(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             self.workspace_subscriptions.clear();
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
@@ -641,13 +651,16 @@ impl Session {
         } else {
             engine.access_scope(false, operation).await
         };
-        result.unwrap_or_else(|_| vec![session_expired()])
+        result.unwrap_or_else(|_| {
+            self.clear_subscription_rows();
+            vec![session_expired()]
+        })
     }
 
     async fn sync_event_inner(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
         match event {
             crate::SyncEvent::Fact(fact) => self.on_fact(&fact).await,
-            crate::SyncEvent::Refresh => self.refresh().await,
+            crate::SyncEvent::Refresh => self.refresh_inner(false).await,
             crate::SyncEvent::Ephemeral => self.tick_ephemeral().await,
             crate::SyncEvent::Presence => self.tick_cursors().await,
         }
@@ -657,8 +670,8 @@ impl Session {
         &self,
         id: &str,
         protein: &Protein,
-        reused: Option<&[serde_json::Value]>,
-    ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
+        reused: Option<&Arc<Vec<serde_json::Value>>>,
+    ) -> Result<Arc<Vec<serde_json::Value>>, protein::ProteinError> {
         use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
         self.engine
             .sync_service
@@ -672,9 +685,9 @@ impl Session {
                 async {
                     if let Some(rows) = reused {
                         engine::performance::add("cell-query-batch-reuses", 1);
-                        Ok(rows.to_vec())
+                        Ok(rows.clone())
                     } else {
-                        self.execute(protein).await
+                        self.execute(protein).await.map(Arc::new)
                     }
                 },
                 |rows| {
@@ -690,38 +703,70 @@ impl Session {
             .await
     }
 
-    async fn update_subscriptions(&self, fact: Option<&Fact>) -> Vec<ServerMessage> {
+    async fn update_subscriptions(
+        &mut self,
+        fact: Option<&Fact>,
+        full_snapshot: bool,
+    ) -> Vec<ServerMessage> {
         let _batch = engine::performance::Span::new("cell-query-batch-await");
         let subscriptions: Vec<_> = self
             .subscriptions
             .iter()
-            .filter(|(_, query)| {
-                fact.is_none_or(|fact| protein::affects(query, fact, self.subject.as_deref()))
+            .filter(|(_, subscription)| {
+                fact.is_none_or(|fact| {
+                    protein::affects(&subscription.query, fact, self.subject.as_deref())
+                })
             })
+            .map(|(id, subscription)| (id.clone(), subscription.query.clone()))
             .collect();
         let mut out = Vec::with_capacity(subscriptions.len());
+        let mut results: Vec<Option<Arc<Vec<serde_json::Value>>>> =
+            Vec::with_capacity(subscriptions.len());
         for (index, (id, query)) in subscriptions.iter().enumerate() {
-            let reused = subscriptions[..index].iter().zip(&out).find_map(
-                |((_, previous), message)| match message {
-                    ServerMessage::Update { rows, .. } if previous == query => {
-                        Some(rows.as_slice())
-                    }
-                    _ => None,
+            let reused = subscriptions[..index].iter().zip(&results).find_map(
+                |((_, previous), rows)| {
+                    if previous == query { rows.as_ref() } else { None }
                 },
             );
-            out.push(match self.execute_sync(id, query, reused).await {
-                Ok(rows) => ServerMessage::Update {
-                    id: (*id).clone(),
-                    rows,
-                },
-                Err(error) => ServerMessage::Error {
-                    id: (*id).clone(),
-                    message: error.to_string(),
-                    code: protein::error_code(&error),
-                },
-            });
+            match self.execute_sync(id, query, reused).await {
+                Ok(rows) => {
+                    let subscription = self.subscriptions.get_mut(id).unwrap();
+                    let rows = match subscription.rows.as_ref() {
+                        Some(previous) if Arc::ptr_eq(previous, &rows)
+                            || previous.as_ref() == rows.as_ref() => previous.clone(),
+                        _ => rows,
+                    };
+                    let changed = subscription.rows.as_ref()
+                        .is_none_or(|previous| !Arc::ptr_eq(previous, &rows));
+                    if full_snapshot || changed {
+                        out.push(ServerMessage::Update {
+                            id: id.clone(),
+                            rows: rows.as_ref().clone(),
+                        });
+                    } else {
+                        engine::performance::add("cell-query-results-unchanged", 1);
+                    }
+                    subscription.rows = Some(rows.clone());
+                    results.push(Some(rows));
+                }
+                Err(error) => {
+                    self.subscriptions.get_mut(id).unwrap().rows = None;
+                    out.push(ServerMessage::Error {
+                        id: id.clone(),
+                        message: error.to_string(),
+                        code: protein::error_code(&error),
+                    });
+                    results.push(None);
+                }
+            }
         }
         out
+    }
+
+    fn clear_subscription_rows(&mut self) {
+        for subscription in self.subscriptions.values_mut() {
+            subscription.rows = None;
+        }
     }
 
     async fn execute(
@@ -805,24 +850,38 @@ impl Session {
         }
         match self.execute_sync(&id, &protein, None).await {
             Ok(rows) => {
-                if protein::is_ephemeral(&protein) {
-                    self.last_ephemeral.insert(id.clone(), rows.clone());
-                } else {
-                    self.last_ephemeral.remove(&id);
-                }
-                self.subscriptions.insert(id.clone(), protein);
-                vec![ServerMessage::Snapshot { id, rows }]
+                let rows = self.subscriptions.values()
+                    .filter(|subscription| subscription.query == protein)
+                    .filter_map(|subscription| subscription.rows.as_ref())
+                    .find(|previous| previous.as_ref() == rows.as_ref())
+                    .cloned()
+                    .unwrap_or(rows);
+                let message = ServerMessage::Snapshot {
+                    id: id.clone(),
+                    rows: rows.as_ref().clone(),
+                };
+                self.subscriptions.insert(id, Subscription {
+                    query: protein,
+                    rows: Some(rows),
+                });
+                vec![message]
             }
-            Err(e) => vec![ServerMessage::Error {
-                id,
-                message: e.to_string(),
-                code: protein::error_code(&e),
-            }],
+            Err(e) => {
+                if let Some(subscription) = self.subscriptions.get_mut(&id) {
+                    subscription.rows = None;
+                }
+                vec![ServerMessage::Error {
+                    id,
+                    message: e.to_string(),
+                    code: protein::error_code(&e),
+                }]
+            }
         }
     }
 
     pub fn has_ephemeral_subscriptions(&self) -> bool {
-        !self.collab_records.is_empty() || self.subscriptions.values().any(protein::is_ephemeral)
+        !self.collab_records.is_empty()
+            || self.subscriptions.values().any(|subscription| protein::is_ephemeral(&subscription.query))
     }
 
     pub fn presence_changes(&self) -> tokio::sync::watch::Receiver<u64> {
@@ -830,8 +889,13 @@ impl Session {
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
+        self.refresh_inner(true).await
+    }
+
+    async fn refresh_inner(&mut self, full_snapshot: bool) -> Vec<ServerMessage> {
         let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             self.workspace_subscriptions.clear();
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
@@ -840,11 +904,8 @@ impl Session {
         for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
             out.extend(self.subscribe_workspace(id, workspace, client).await);
         }
-        for message in self.update_subscriptions(None).await {
+        for message in self.update_subscriptions(None, full_snapshot).await {
             if let ServerMessage::Update { id, rows } = message {
-                if self.subscriptions.get(&id).is_some_and(protein::is_ephemeral) {
-                    self.last_ephemeral.insert(id.clone(), rows.clone());
-                }
                 out.push(ServerMessage::Snapshot { id, rows });
             } else {
                 out.push(message);
@@ -880,6 +941,7 @@ impl Session {
 
     async fn tick_cursors(&mut self) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             self.engine.presence.leave_cursor(None, &self.connection_id);
             return vec![session_expired()];
         }
@@ -929,28 +991,33 @@ impl Session {
     pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
         let mut out = self.tick_cursors().await;
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             return out;
         }
         let ephemeral: Vec<(String, Protein)> = self
             .subscriptions
             .iter()
-            .filter(|(_, protein)| protein::is_ephemeral(protein))
-            .map(|(id, protein)| (id.clone(), protein.clone()))
+            .filter(|(_, subscription)| protein::is_ephemeral(&subscription.query))
+            .map(|(id, subscription)| (id.clone(), subscription.query.clone()))
             .collect();
         for (id, protein) in ephemeral {
             match self.execute(&protein).await {
                 Ok(rows) => {
-                    if self.last_ephemeral.get(&id) == Some(&rows) {
+                    let subscription = self.subscriptions.get_mut(&id).unwrap();
+                    if subscription.rows.as_ref().is_some_and(|previous| previous.as_ref() == &rows) {
                         continue;
                     }
-                    self.last_ephemeral.insert(id.clone(), rows.clone());
+                    subscription.rows = Some(Arc::new(rows.clone()));
                     out.push(ServerMessage::Update { id, rows });
                 }
-                Err(e) => out.push(ServerMessage::Error {
-                    id,
-                    message: e.to_string(),
-                    code: protein::error_code(&e),
-                }),
+                Err(e) => {
+                    self.subscriptions.get_mut(&id).unwrap().rows = None;
+                    out.push(ServerMessage::Error {
+                        id,
+                        message: e.to_string(),
+                        code: protein::error_code(&e),
+                    });
+                }
             }
         }
         out
@@ -960,6 +1027,9 @@ impl Session {
         let protein = match load_saved(&self.engine, &name).await {
             Ok(protein) => protein,
             Err(e) => {
+                if let Some(subscription) = self.subscriptions.get_mut(&id) {
+                    subscription.rows = None;
+                }
                 return vec![ServerMessage::Error {
                     id,
                     message: e,
@@ -1106,9 +1176,10 @@ impl Session {
         self.engine.signer_actor_uid().await
     }
 
-    pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
+    pub async fn on_fact(&mut self, fact: &Fact) -> Vec<ServerMessage> {
         let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
+            self.clear_subscription_rows();
             if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
             return vec![session_expired()];
         }
@@ -1126,7 +1197,7 @@ impl Session {
             }
         }
         drop(collaboration);
-        out.extend(self.update_subscriptions(Some(fact)).await);
+        out.extend(self.update_subscriptions(Some(fact), false).await);
         out
     }
 
@@ -1207,4 +1278,46 @@ async fn load_saved(engine: &Engine, name: &str) -> Result<Protein, String> {
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("{name} has no protein AST"))?;
     serde_json::from_value(ast).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn subscription_aliases_share_exact_retained_rows_and_release_them_on_unsubscribe() {
+        let engine = Arc::new(Engine::open_memory().await.unwrap());
+        let uid = engine.act(engine::actions::Action::CreateRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Plain,
+            head: "Private shared result".into(),
+            body: "Shared retained body ".repeat(4096),
+            quantity: 0.0,
+        }, None).await.unwrap().created.unwrap();
+        let query: Protein = serde_json::from_value(serde_json::json!({
+            "source": "record", "where": [{"uid_eq": uid}],
+            "fields": ["uid", "head", "body"]
+        })).unwrap();
+        let mut session = Session::local(engine, Arc::new(LaneHub::new()), "retention");
+        for id in ["a", "b"] {
+            let response = session.handle(ClientMessage::Subscribe {
+                id: id.into(), protein: query.clone(),
+            }).await;
+            assert!(matches!(response.as_slice(), [ServerMessage::Snapshot { rows, .. }] if rows.len() == 1));
+        }
+        let retained = Arc::downgrade(session.subscriptions["a"].rows.as_ref().unwrap());
+        assert_eq!(retained.strong_count(), 2);
+        assert!(Arc::ptr_eq(
+            session.subscriptions["a"].rows.as_ref().unwrap(),
+            session.subscriptions["b"].rows.as_ref().unwrap(),
+        ));
+        for _ in 0..3 {
+            assert!(session.on_sync_event(crate::SyncEvent::Refresh).await.is_empty());
+            assert_eq!(retained.strong_count(), 2);
+        }
+        session.handle(ClientMessage::Unsubscribe { id: "a".into() }).await;
+        assert_eq!(retained.strong_count(), 1);
+        session.handle(ClientMessage::Unsubscribe { id: "b".into() }).await;
+        assert!(retained.upgrade().is_none());
+    }
 }

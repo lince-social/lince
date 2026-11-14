@@ -1059,10 +1059,10 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             feed.next = Instant::now() + Duration::from_secs(5);
         }
     }
-    let (id, result) = match message {
-        ServerMessage::Snapshot { id, rows } => (id, Ok(json!(rows))),
-        ServerMessage::ActionOk { id, data, .. } => (id, Ok(data.clone().unwrap_or(Value::Null))),
-        ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
+    let id = match message {
+        ServerMessage::Snapshot { id, .. }
+        | ServerMessage::ActionOk { id, .. }
+        | ServerMessage::Error { id, .. } => id,
         _ => return,
     };
     if !world
@@ -1073,6 +1073,12 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     {
         return;
     }
+    let result = match message {
+        ServerMessage::Snapshot { rows, .. } => Ok(json!(rows)),
+        ServerMessage::ActionOk { data, .. } => Ok(data.clone().unwrap_or(Value::Null)),
+        ServerMessage::Error { message, .. } => Err(message.clone()),
+        _ => unreachable!(),
+    };
     let pending = world.resource_mut::<Runtime>().pending.remove(id).unwrap();
     match pending.kind {
         PendingKind::Picker(owner) => {

@@ -362,6 +362,7 @@ counts! {
     CellQueries => "cell-queries",
     CellQueryRows => "cell-query-rows",
     CellQueryBatchReuses => "cell-query-batch-reuses",
+    CellQueryResultsUnchanged => "cell-query-results-unchanged",
     ProteinLinkGraphLoads => "protein-link-graph-loads",
     ProteinLinkEdgesVisited => "protein-link-edges-visited",
     ProteinThreadSelections => "protein-thread-selections",

@@ -1,6 +1,55 @@
 use super::*;
 use std::sync::Arc;
 
+#[test]
+fn replies_keep_request_and_source_ownership_and_connection_errors_revoke_only_their_source() {
+    let mut world = World::new();
+    world.init_resource::<Runtime>();
+    let remote = Source::Organ(nucleus::new_uid("r"));
+    let owner = world.spawn(View {
+        picker: Some(Picker {
+            key: InputKey::Search,
+            rows: vec![],
+            request: Some("picker".into()),
+        }),
+        ..default()
+    }).id();
+    world.resource_mut::<Runtime>().pending.insert("picker".into(), Pending {
+        source: Source::Local,
+        kind: PendingKind::Picker(owner),
+        started: Instant::now(),
+    });
+    for (key, source) in [("local", Source::Local), ("remote", remote.clone())] {
+        world.resource_mut::<Runtime>().feeds.insert(key.into(), Feed {
+            schemas: vec![], source, target: None, catalog: false,
+            data: Some(Inspection::default()), error: String::new(), version: 1,
+            next: Instant::now(), pending: None,
+        });
+    }
+    let unrelated = ServerMessage::Snapshot {
+        id: "another-view".into(),
+        rows: (0..300).map(|index| json!({"uid": index, "body": "x".repeat(4096)})).collect(),
+    };
+    for _ in 0..64 {
+        receive(&mut world, &Source::Local, &unrelated);
+    }
+    let answer = ServerMessage::Snapshot {
+        id: "picker".into(),
+        rows: vec![json!({"uid": "choice", "name": "Correct result"})],
+    };
+    receive(&mut world, &remote, &answer);
+    assert!(world.resource::<Runtime>().pending.contains_key("picker"));
+    assert!(world.get::<View>(owner).unwrap().picker.as_ref().unwrap().rows.is_empty());
+    receive(&mut world, &Source::Local, &answer);
+    assert!(!world.resource::<Runtime>().pending.contains_key("picker"));
+    assert_eq!(world.get::<View>(owner).unwrap().picker.as_ref().unwrap().rows[0]["name"], "Correct result");
+    receive(&mut world, &remote, &ServerMessage::Error {
+        id: "connection".into(), message: "expired".into(), code: Some("session_expired".into()),
+    });
+    assert!(world.resource::<Runtime>().feeds["remote"].data.is_none());
+    assert!(world.resource::<Runtime>().feeds["local"].data.is_some());
+}
+
 async fn fixture() -> (App, Arc<engine::Engine>, String, Entity) {
     let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
     let organ = store::organs::ensure_local(&engine.store.pool, "http://extension-ui")

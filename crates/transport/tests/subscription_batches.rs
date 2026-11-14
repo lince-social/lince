@@ -102,6 +102,114 @@ async fn expected(
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn automatic_refreshes_only_deliver_changed_rows_and_explicit_reload_stays_complete() {
+    let _measurement = MEASUREMENT.lock().await;
+    observe();
+    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let ids = records(&engine, 4, 4096).await;
+    let mut session = Session::local(engine.clone(), Arc::new(LaneHub::new()), "delivery");
+    let mut queries = BTreeMap::new();
+    for index in 0..8 {
+        queries.insert(format!("alias-{index}"), query());
+    }
+    let mut identifiers = query();
+    identifiers.fields = Some(vec!["uid".into()]);
+    queries.insert("identifiers".into(), identifiers);
+    let initial = expected(&engine, &queries).await;
+    for (id, protein) in &queries {
+        assert_eq!(
+            rows(session.handle(ClientMessage::Subscribe {
+                id: id.clone(), protein: protein.clone(),
+            }).await, true)[id],
+            initial[id]
+        );
+    }
+    QUERIES.store(0, Ordering::Relaxed);
+    REUSES.store(0, Ordering::Relaxed);
+    for _ in 0..4 {
+        assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    }
+    assert_eq!(QUERIES.load(Ordering::Relaxed), 8);
+    assert_eq!(REUSES.load(Ordering::Relaxed), 28);
+    assert_eq!(rows(session.refresh().await, true), initial);
+    let response = session.handle(ClientMessage::Act {
+        id: "edit".into(),
+        action: engine::actions::Action::SetQuantityExact {
+            target: ids[0].clone(), amount: "7".into(),
+        },
+    }).await;
+    assert!(matches!(response.as_slice(), [ServerMessage::ActionOk { id, facts, .. }] if id == "edit" && *facts > 0));
+    let current = expected(&engine, &queries).await;
+    let changed = current.iter().filter(|(id, value)| initial[*id] != **value)
+        .map(|(id, value)| (id.clone(), value.clone())).collect::<BTreeMap<_, _>>();
+    assert_eq!(changed.len(), 8);
+    assert_eq!(rows(session.on_sync_event(SyncEvent::Refresh).await, true), changed);
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    assert_eq!(rows(session.refresh().await, true), current);
+    session.handle(ClientMessage::Unsubscribe { id: "alias-7".into() }).await;
+    queries.remove("alias-7");
+    let mut replacement = query();
+    replacement.filter = vec![protein::Predicate::UidEq(ids[0].clone())];
+    queries.insert("alias-0".into(), replacement.clone());
+    let replaced = rows(session.handle(ClientMessage::Subscribe {
+        id: "alias-0".into(), protein: replacement,
+    }).await, true);
+    assert_eq!(replaced["alias-0"].len(), 1);
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    assert_eq!(rows(session.refresh().await, true), expected(&engine, &queries).await);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn query_denial_and_errors_remove_stale_rows_and_recovery_delivers_them_again() {
+    let _measurement = MEASUREMENT.lock().await;
+    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let ids = records(&engine, 2, 64).await;
+    let role = store::auth::ensure_role(&engine.store.pool, "delivery-reader").await.unwrap();
+    let permission = store::auth::ensure_permission(&engine.store.pool, "record", "read").await.unwrap();
+    store::auth::grant(&engine.store.pool, role, permission).await.unwrap();
+    let person = store::auth::create_person_login(&engine.store.pool, "Reader", "delivery-reader", "unused", role).await.unwrap().to_string();
+    for uid in &ids {
+        store::visibility::grant(&engine.store.pool, "actor", Some(&person), uid).await.unwrap();
+    }
+    let mut session = Session::new(engine.clone(), Arc::new(LaneHub::new()), "reader", Some(person));
+    let mut initial = BTreeMap::new();
+    for id in ["a", "b"] {
+        initial.extend(rows(session.handle(ClientMessage::Subscribe { id: id.into(), protein: query() }).await, true));
+    }
+    assert!(initial.values().all(|rows| rows.len() == 2));
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    store::auth::revoke(&engine.store.pool, role, permission).await.unwrap();
+    let denied = rows(session.on_sync_event(SyncEvent::Refresh).await, true);
+    assert_eq!(denied.len(), 2);
+    assert!(denied.values().all(Vec::is_empty));
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    store::auth::grant(&engine.store.pool, role, permission).await.unwrap();
+    assert_eq!(rows(session.on_sync_event(SyncEvent::Refresh).await, true), initial);
+    let mut local = Session::local(engine.clone(), Arc::new(LaneHub::new()), "local-error");
+    let mut local_initial = BTreeMap::new();
+    for id in ["a", "b"] {
+        local_initial.extend(rows(local.handle(ClientMessage::Subscribe {
+            id: id.into(), protein: query(),
+        }).await, true));
+    }
+    store::sqlx::query("ALTER TABLE record RENAME TO unavailable_record")
+        .execute(&engine.store.pool).await.unwrap();
+    for _ in 0..2 {
+        let expired = session.on_sync_event(SyncEvent::Refresh).await;
+        assert!(matches!(expired.as_slice(), [ServerMessage::Error { code: Some(code), .. }] if code == "session_expired"));
+        let errors = local.on_sync_event(SyncEvent::Refresh).await;
+        assert_eq!(errors.len(), 2, "{errors:?}");
+        assert!(errors.iter().all(|message| matches!(message, ServerMessage::Error { .. })), "{errors:?}");
+    }
+    store::sqlx::query("ALTER TABLE unavailable_record RENAME TO record")
+        .execute(&engine.store.pool).await.unwrap();
+    assert_eq!(rows(session.on_sync_event(SyncEvent::Refresh).await, true), initial);
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    assert_eq!(rows(local.on_sync_event(SyncEvent::Refresh).await, true), local_initial);
+    assert!(local.on_sync_event(SyncEvent::Refresh).await.is_empty());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn refresh_and_fact_batches_preserve_aliases_query_shapes_history_and_freshness() {
     let _measurement = MEASUREMENT.lock().await;
     observe();
@@ -169,10 +277,7 @@ async fn refresh_and_fact_batches_preserve_aliases_query_shapes_history_and_fres
         .await;
     QUERIES.store(0, Ordering::Relaxed);
     REUSES.store(0, Ordering::Relaxed);
-    assert_eq!(
-        rows(session.on_sync_event(SyncEvent::Refresh).await, true),
-        original
-    );
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
     assert_eq!(QUERIES.load(Ordering::Relaxed), 8);
     assert_eq!(REUSES.load(Ordering::Relaxed), 7);
     let history = engine.sync_overview(None).await.unwrap().history;
@@ -209,10 +314,12 @@ async fn refresh_and_fact_batches_preserve_aliases_query_shapes_history_and_fres
                 .await,
             false
         ),
-        changed
+        changed.iter().filter(|(id, value)| original[*id] != **value)
+            .map(|(id, value)| (id.clone(), value.clone())).collect()
     );
-    assert_eq!(QUERIES.load(Ordering::Relaxed), 8);
-    assert_eq!(REUSES.load(Ordering::Relaxed), 7);
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    assert_eq!(QUERIES.load(Ordering::Relaxed), 16);
+    assert_eq!(REUSES.load(Ordering::Relaxed), 14);
     session
         .handle(ClientMessage::Unsubscribe {
             id: "alias-7".into(),
@@ -228,9 +335,10 @@ async fn refresh_and_fact_batches_preserve_aliases_query_shapes_history_and_fres
         .await;
     subscriptions.insert("alias-0".into(), replacement);
     assert_eq!(
-        rows(session.on_sync_event(SyncEvent::Refresh).await, true),
+        rows(session.refresh().await, true),
         expected(&engine, &subscriptions).await
     );
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
     engine.store.pool.close().await;
     QUERIES.store(0, Ordering::Relaxed);
     REUSES.store(0, Ordering::Relaxed);
@@ -301,11 +409,12 @@ async fn shared_results_remain_inside_the_session_and_current_visibility() {
     }
     for (session, count) in [(&mut local, 2), (&mut remote, 1)] {
         QUERIES.store(0, Ordering::Relaxed);
-        let actual = rows(session.on_sync_event(SyncEvent::Refresh).await, true);
+        let actual = rows(session.refresh().await, true);
         assert_eq!(actual.len(), 2);
         assert_eq!(actual["a"].len(), count);
         assert_eq!(actual["a"], actual["b"]);
         assert_eq!(QUERIES.load(Ordering::Relaxed), 1);
+        assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
     }
     engine
         .access_scope(true, async {
@@ -320,7 +429,10 @@ async fn shared_results_remain_inside_the_session_and_current_visibility() {
     let actual = rows(remote.on_sync_event(SyncEvent::Refresh).await, true);
     assert!(actual.values().all(Vec::is_empty));
     assert_eq!(actual.len(), 2);
-    let actual = rows(local.on_sync_event(SyncEvent::Refresh).await, true);
+    assert!(remote.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    assert!(local.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    let actual = rows(local.refresh().await, true);
+    assert_eq!(actual.len(), 2);
     assert!(actual.values().all(|rows| rows.len() == 2));
 }
 
@@ -362,7 +474,8 @@ async fn refreshing_ephemeral_aliases_keeps_the_next_tick_quiet_and_replacement_
             protein: query(),
         })
         .await;
-    let refreshed = rows(session.on_sync_event(SyncEvent::Refresh).await, true);
+    assert!(session.on_sync_event(SyncEvent::Refresh).await.is_empty());
+    let refreshed = rows(session.refresh().await, true);
     assert_eq!(refreshed["a"].len(), 1);
     assert!(refreshed["b"].is_empty());
     assert!(session.on_sync_event(SyncEvent::Ephemeral).await.is_empty());
@@ -430,17 +543,17 @@ async fn measure_subscription_refreshes() {
         READ_HELD_US.store(0, Ordering::Relaxed);
         let before = resources();
         let mut milliseconds = Vec::new();
+        let mut delivered = 0;
         for _ in 0..12 {
             let start = std::time::Instant::now();
             let messages = session.on_sync_event(SyncEvent::Refresh).await;
             milliseconds.push(start.elapsed().as_secs_f64() * 1000.0);
             let result = rows(messages, true);
-            assert_eq!(result.len(), aliases);
-            for i in 0..aliases {
-                assert_eq!(
-                    result[&i.to_string()].len(),
-                    if distinct { 300 - i } else { 300 }
-                );
+            delivered += result.len();
+            for (id, rows) in result {
+                let index = id.parse::<usize>().unwrap();
+                assert!(index < aliases);
+                assert_eq!(rows.len(), if distinct { 300 - index } else { 300 });
             }
         }
         let after = resources();
@@ -449,7 +562,8 @@ async fn measure_subscription_refreshes() {
             json!({
                 "benchmark": "subscription-refresh", "optimized": !cfg!(debug_assertions),
                 "aliases": aliases, "distinct": distinct, "records": 300, "body_bytes": 4096,
-                "samples_ms": milliseconds, "queries": QUERIES.load(Ordering::Relaxed),
+                "samples_ms": milliseconds, "delivered_updates": delivered,
+                "queries": QUERIES.load(Ordering::Relaxed),
                 "reuses": REUSES.load(Ordering::Relaxed),
                 "read_held_us": READ_HELD_US.load(Ordering::Relaxed),
                 "cpu_ticks": after.0 - before.0, "rchar": after.1 - before.1,

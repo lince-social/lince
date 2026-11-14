@@ -1736,6 +1736,10 @@ async fn local_record_text_refreshes_only_dependent_queries() {
         matches!(initial.as_slice(), [ServerMessage::Snapshot { rows, .. }] if rows.len() == 1)
     );
     for revoked in [false, true] {
+        let before: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_activity")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
         if revoked {
             store::auth::revoke(&engine.store.pool, role, permission)
                 .await
@@ -1751,9 +1755,18 @@ async fn local_record_text_refreshes_only_dependent_queries() {
             .unwrap();
         let fact = facts.recv().await.unwrap();
         let messages = delegated.on_fact(&fact).await;
-        assert!(
-            matches!(messages.as_slice(), [ServerMessage::Update { rows, .. }] if rows.len() == usize::from(!revoked))
-        );
+        if revoked {
+            assert!(
+                matches!(messages.as_slice(), [ServerMessage::Update { rows, .. }] if rows.is_empty())
+            );
+        } else {
+            assert!(messages.is_empty());
+        }
+        let after: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_activity")
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+        assert_eq!(after - before, 1);
     }
 }
 

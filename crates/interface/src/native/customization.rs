@@ -1110,8 +1110,8 @@ pub(crate) mod tests {
                 )
             );
             assert_eq!(
-                app.world().get::<BackgroundColor>(sand).unwrap().0,
-                Token::SandBackground.default_value(scheme).color()
+                app.world().get::<BackgroundColor>(sand).unwrap().0.to_linear(),
+                Token::SandBackground.default_value(scheme).color().to_linear()
             );
             let node = app.world().get::<Node>(sample).unwrap();
             assert_eq!(
@@ -1268,8 +1268,8 @@ pub(crate) mod tests {
         app.update();
         app.update();
         assert_eq!(
-            app.world().get::<BackgroundColor>(sand).unwrap().0,
-            Color::srgb_u8(18, 52, 86)
+            app.world().get::<BackgroundColor>(sand).unwrap().0.to_linear(),
+            Color::srgb_u8(18, 52, 86).to_linear()
         );
         app.world_mut()
             .get_mut::<EditableText>(field)
@@ -1292,8 +1292,8 @@ pub(crate) mod tests {
         CustomizationAction::Scheme(ColorScheme::Light).apply(app.world_mut(), root);
         app.update();
         assert_eq!(
-            app.world().get::<BackgroundColor>(sand).unwrap().0,
-            Color::srgb_u8(18, 52, 86)
+            app.world().get::<BackgroundColor>(sand).unwrap().0.to_linear(),
+            Color::srgb_u8(18, 52, 86).to_linear()
         );
         CustomizationAction::Scope(Scope::Sand(sand)).apply(app.world_mut(), root);
         edit(
@@ -1324,10 +1324,11 @@ pub(crate) mod tests {
         CustomizationAction::ClearOverrides.apply(app.world_mut(), root);
         app.update();
         assert_eq!(
-            app.world().get::<BackgroundColor>(sand).unwrap().0,
+            app.world().get::<BackgroundColor>(sand).unwrap().0.to_linear(),
             Token::SandBackground
                 .default_value(ColorScheme::Light)
                 .color()
+                .to_linear()
         );
         EditAction::Customization.apply(app.world_mut(), root);
         app.update();

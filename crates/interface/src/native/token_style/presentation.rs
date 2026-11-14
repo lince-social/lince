@@ -136,9 +136,13 @@ pub(super) fn apply(
             let background = if clock {
                 Color::NONE
             } else {
-                tokens.resolve(entity, Token::SandBackground).0.color()
+                tokens
+                    .resolve(entity, Token::SandBackground)
+                    .0
+                    .linear_color()
             };
-            let border = BorderColor::all(tokens.resolve(entity, Token::SandBorder).0.color());
+            let border =
+                BorderColor::all(tokens.resolve(entity, Token::SandBorder).0.linear_color());
             if let Some(color) = style.background_color.as_mut() {
                 color.set_if_neq(BackgroundColor(background));
             }
@@ -181,7 +185,7 @@ pub(super) fn apply(
                     background_token(&tokens, entity, style.item, binding.0),
                 )
                 .0
-                .color();
+                .linear_color();
             if let Some(color) = style.background_color.as_mut() {
                 color.set_if_neq(BackgroundColor(value));
             }
@@ -190,7 +194,7 @@ pub(super) fn apply(
             let value = tokens
                 .resolve(entity, text_token(&tokens, entity, binding.0))
                 .0
-                .color();
+                .linear_color();
             if let Some(color) = style.text_color.as_mut() {
                 color.set_if_neq(TextColor(value));
             }
@@ -204,7 +208,7 @@ pub(super) fn apply(
             .border
             .filter(|_| !style.icon || tokens.has_use(entity, "border"))
         {
-            let value = BorderColor::all(tokens.resolve(entity, binding.0).0.color());
+            let value = BorderColor::all(tokens.resolve(entity, binding.0).0.linear_color());
             if let Some(color) = style.border_color.as_mut() {
                 color.set_if_neq(value);
             } else if style.item && tokens.kind(entity).is_some() {
@@ -214,7 +218,7 @@ pub(super) fn apply(
         if let Some(binding) = style.outline
             && let Some(outline) = style.outline_color.as_mut()
         {
-            let value = tokens.resolve(entity, binding.0).0.color();
+            let value = tokens.resolve(entity, binding.0).0.linear_color();
             if outline.color != value {
                 outline.color = value;
             }
@@ -222,7 +226,7 @@ pub(super) fn apply(
         if let Some(binding) = style.cursor
             && let Some(cursor) = style.cursor_color.as_mut()
         {
-            let value = tokens.resolve(entity, binding.0).0.color();
+            let value = tokens.resolve(entity, binding.0).0.linear_color();
             if cursor.color != value {
                 cursor.color = value;
             }

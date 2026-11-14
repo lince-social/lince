@@ -317,6 +317,10 @@ pub(crate) mod tests {
         (app, root)
     }
 
+    fn assert_color(actual: Color, expected: Color) {
+        assert_eq!(actual.to_linear(), expected.to_linear());
+    }
+
     #[cfg_attr(test, test)]
     fn renders_global_type_and_individual_styles_and_preserves_later_resizing() {
         let (mut app, root) = fixture();
@@ -352,17 +356,17 @@ pub(crate) mod tests {
             app.world().get::<Node>(a).unwrap().border_radius,
             BorderRadius::all(px(12))
         );
-        assert_eq!(
+        assert_color(
             app.world().get::<BackgroundColor>(a).unwrap().0,
-            Color::srgb_u8(10, 20, 30)
+            Color::srgb_u8(10, 20, 30),
         );
-        assert_eq!(
+        assert_color(
             app.world().get::<BackgroundColor>(preview).unwrap().0,
-            Color::srgb_u8(10, 20, 30)
+            Color::srgb_u8(10, 20, 30),
         );
-        assert_eq!(
+        assert_color(
             app.world().get::<Outline>(a).unwrap().color,
-            Color::srgb_u8(30, 20, 10)
+            Color::srgb_u8(30, 20, 10),
         );
         app.world_mut().get_mut::<CanvasItem>(a).unwrap().size.x = 500.0;
         app.update();
@@ -374,15 +378,15 @@ pub(crate) mod tests {
         app.update();
         assert_eq!(app.world().get::<CanvasItem>(a).unwrap().size.x, 500.0);
         assert_eq!(app.world().get::<CanvasItem>(b).unwrap().size.x, 600.0);
-        assert_eq!(
+        assert_color(
             app.world().get::<BackgroundColor>(a).unwrap().0,
-            Color::srgb_u8(10, 20, 30)
+            Color::srgb_u8(10, 20, 30),
         );
-        assert_eq!(
+        assert_color(
             app.world().get::<BackgroundColor>(b).unwrap().0,
             Token::SandBackground
                 .default_value(ColorScheme::Light)
-                .color()
+                .color(),
         );
         let mut values = overrides(app.world(), a);
         values.0.remove(&Token::Width);
@@ -414,9 +418,9 @@ pub(crate) mod tests {
         values.set(Token::SandInk, parent_color);
         set_overrides(app.world_mut(), sand, values);
         app.update();
-        assert_eq!(
+        assert_color(
             app.world().get::<TextColor>(text).unwrap().0,
-            parent_color.color()
+            parent_color.color(),
         );
         assert_eq!(resolve(app.world(), text, Token::SandInk).1, "Parent Sand");
         let mut values = TokenOverrides::default();
@@ -424,9 +428,9 @@ pub(crate) mod tests {
         set_overrides(app.world_mut(), text, values);
         app.world_mut().resource_mut::<ThemeSettings>().scheme = ColorScheme::Light;
         app.update();
-        assert_eq!(
+        assert_color(
             app.world().get::<TextColor>(text).unwrap().0,
-            own_color.color()
+            own_color.color(),
         );
     }
 
@@ -484,8 +488,11 @@ pub(crate) mod tests {
             app.world_mut().resource_mut::<ThemeSettings>().scheme = scheme;
             app.update();
             let color = app.world().get::<ImageNode>(glyph).unwrap().color;
-            assert_eq!(color, Token::Ink.default_value(scheme).color());
-            assert_ne!(color, Token::Surface.default_value(scheme).color());
+            assert_color(color, Token::Ink.default_value(scheme).color());
+            assert_ne!(
+                color.to_linear(),
+                Token::Surface.default_value(scheme).color().to_linear()
+            );
         }
     }
 
@@ -513,16 +520,16 @@ pub(crate) mod tests {
             PostUpdate,
             (move |world: &mut World| {
                 let expected = world.resource::<Observed>().1;
-                assert_eq!(world.get::<BorderColor>(sand).unwrap().top, expected);
-                assert_eq!(world.get::<Outline>(sand).unwrap().color, expected);
-                assert_eq!(
+                assert_color(world.get::<BorderColor>(sand).unwrap().top, expected);
+                assert_color(world.get::<Outline>(sand).unwrap().color, expected);
+                assert_color(
                     world
                         .get::<crate::native::icons::IconStyle>(icon)
                         .unwrap()
                         .color,
-                    expected
+                    expected,
                 );
-                assert_eq!(world.get::<ImageNode>(glyph).unwrap().color, expected);
+                assert_color(world.get::<ImageNode>(glyph).unwrap().color, expected);
                 world.resource_mut::<Observed>().0 += 1;
             })
             .after(ApplyTokenStyles),
@@ -541,11 +548,84 @@ pub(crate) mod tests {
         assert_eq!(app.world().resource::<Observed>().0, 3);
     }
 
+    #[cfg_attr(test, test)]
+    fn linear_paint_preserves_authored_colors_and_stable_component_ticks() {
+        use bevy::color::ColorToPacked;
+        use bevy::text::TextCursorStyle;
+
+        let (mut app, root) = fixture();
+        let entity = app
+            .world_mut()
+            .spawn((
+                background(Token::Accent),
+                text(Token::Accent),
+                border(Token::Accent),
+                OutlineToken(Token::Accent),
+                Outline::default(),
+                CursorToken(Token::Accent),
+                TextCursorStyle::default(),
+                ImageNode::default(),
+                ChildOf(root),
+            ))
+            .id();
+        for channel in 0..=u8::MAX {
+            let rgba = [channel, 255 - channel, channel.wrapping_mul(73), channel];
+            let authored = TokenValue::Color(rgba);
+            app.world_mut()
+                .resource_mut::<ThemeSettings>()
+                .global
+                .set(Token::Accent, authored);
+            app.update();
+            assert_eq!(
+                app.world()
+                    .resource::<ThemeSettings>()
+                    .global
+                    .0
+                    .get(&Token::Accent),
+                Some(&authored)
+            );
+            let world = app.world();
+            let border = world.get::<BorderColor>(entity).unwrap();
+            for actual in [
+                world.get::<BackgroundColor>(entity).unwrap().0,
+                world.get::<TextColor>(entity).unwrap().0,
+                border.left,
+                border.top,
+                border.right,
+                border.bottom,
+                world.get::<Outline>(entity).unwrap().color,
+                world.get::<TextCursorStyle>(entity).unwrap().color,
+                world.get::<ImageNode>(entity).unwrap().color,
+            ] {
+                assert!(matches!(actual, Color::LinearRgba(_)));
+                assert_color(actual, Color::srgba_u8(rgba[0], rgba[1], rgba[2], rgba[3]));
+                assert_eq!(actual.to_srgba().to_u8_array(), rgba);
+            }
+        }
+        let ticks = |world: &World| {
+            let item = world.entity(entity);
+            [
+                item.get_ref::<BackgroundColor>().unwrap().last_changed(),
+                item.get_ref::<TextColor>().unwrap().last_changed(),
+                item.get_ref::<BorderColor>().unwrap().last_changed(),
+                item.get_ref::<Outline>().unwrap().last_changed(),
+                item.get_ref::<TextCursorStyle>().unwrap().last_changed(),
+                item.get_ref::<ImageNode>().unwrap().last_changed(),
+            ]
+        };
+        let before = ticks(app.world());
+        for _ in 0..3 {
+            app.update();
+            assert_eq!(ticks(app.world()), before);
+        }
+    }
+
     crate::native::laboratory_cases! {
         image_glyphs_follow_ink_when_switching_themes,
         renders_global_type_and_individual_styles_and_preserves_later_resizing,
         nested_text_inherits_its_parent_and_can_override_it,
         styling_stays_unchanged_while_idle_and_keeps_explicit_icon_colors,
         styling_publishes_complete_theme_colors_before_same_tick_consumers,
+        linear_paint_preserves_authored_colors_and_stable_component_ticks,
     }
 }

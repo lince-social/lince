@@ -1509,12 +1509,17 @@ pub(crate) mod tests {
     use bevy::text::EditableText;
 
     pub(super) fn fixture(path: Option<PathBuf>) -> (App, Entity) {
+        fixture_with(path, |_| {})
+    }
+
+    fn fixture_with(path: Option<PathBuf>, configure: impl FnOnce(&mut App)) -> (App, Entity) {
         let mut app = App::new();
         crate::native::laboratory::isolate(app.world_mut());
         app.init_resource::<Assets<Font>>()
             .init_resource::<Typography>()
             .init_resource::<InputFocus>()
             .add_plugins(WorkspacePlugin);
+        configure(&mut app);
         if let Some(path) = path {
             app.insert_resource(WorkspaceFile::new(path));
         }
@@ -2698,8 +2703,9 @@ pub(crate) mod tests {
         };
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("interface.json");
-        let (mut app, root) = fixture(Some(path.clone()));
-        app.add_plugins(TokenStylePlugin);
+        let (mut app, root) = fixture_with(Some(path.clone()), |app| {
+            app.add_plugins(TokenStylePlugin);
+        });
         let sand = crate::native::sand_store::spawn_sand(
             app.world_mut(),
             root,
@@ -2739,8 +2745,9 @@ pub(crate) mod tests {
         app.update();
         flush(&mut app);
         drop(app);
-        let (mut app, _) = fixture(Some(path));
-        app.add_plugins(TokenStylePlugin);
+        let (mut app, _) = fixture_with(Some(path), |app| {
+            app.add_plugins(TokenStylePlugin);
+        });
         app.update();
         assert_eq!(
             app.world().resource::<ThemeSettings>().scheme,
@@ -2770,8 +2777,8 @@ pub(crate) mod tests {
         );
         let text = stored.content.unwrap();
         assert_eq!(
-            app.world().get::<TextColor>(text).unwrap().0,
-            Color::srgb_u8(1, 2, 3)
+            app.world().get::<TextColor>(text).unwrap().0.to_linear(),
+            Color::srgb_u8(1, 2, 3).to_linear()
         );
         app.world_mut()
             .resource_mut::<ThemeSettings>()

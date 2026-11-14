@@ -60,6 +60,11 @@ impl TokenValue {
         }
     }
 
+    #[cfg(feature = "ui")]
+    pub fn linear_color(self) -> Color {
+        self.color().to_linear().into()
+    }
+
     pub fn number(self) -> f32 {
         match self {
             Self::Number(value) => value,

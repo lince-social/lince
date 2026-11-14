@@ -68,6 +68,17 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     let mut styles = Vec::new();
     crate::native::token_style::resolver::tests::laboratory_cases(&mut styles);
     cases.extend(styles);
+    let mut paint = Vec::new();
+    crate::native::token_style::tests::laboratory_cases(&mut paint);
+    cases.push(
+        paint
+            .into_iter()
+            .find(|case| {
+                case.name
+                    .ends_with("::linear_paint_preserves_authored_colors_and_stable_component_ticks")
+            })
+            .expect("Missing native paint color regression"),
+    );
     crate::native::token_metrics::tests::laboratory_cases(&mut cases);
     crate::native::sand::tests::laboratory_cases(&mut cases);
     crate::native::topology::surface_render::tests::laboratory_cases(&mut cases);
@@ -468,7 +479,9 @@ fn glyphs(world: &World, parent: Entity, expected: &str) -> bool {
                     !color.0.is_fully_transparent()
                         && world
                             .get::<BackgroundColor>(parent)
-                            .is_none_or(|background| background.0 != color.0)
+                            .is_none_or(|background| {
+                                background.0.to_linear() != color.0.to_linear()
+                            })
                 })
         })
     })

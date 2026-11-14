@@ -13,21 +13,21 @@ pub struct OutlineToken(pub Token);
 pub struct CursorToken(pub Token);
 pub fn background(token: Token) -> impl Bundle {
     (
-        BackgroundColor(token.default_value(Default::default()).color()),
+        BackgroundColor(token.default_value(Default::default()).linear_color()),
         BackgroundToken(token),
     )
 }
 
 pub fn text(token: Token) -> impl Bundle {
     (
-        TextColor(token.default_value(Default::default()).color()),
+        TextColor(token.default_value(Default::default()).linear_color()),
         TextToken(token),
     )
 }
 
 pub fn border(token: Token) -> impl Bundle {
     (
-        BorderColor::all(token.default_value(Default::default()).color()),
+        BorderColor::all(token.default_value(Default::default()).linear_color()),
         BorderToken(token),
     )
 }

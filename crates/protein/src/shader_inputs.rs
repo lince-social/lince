@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
 use store::{Store, records::RecordRow};
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Request {
     pub record: String,

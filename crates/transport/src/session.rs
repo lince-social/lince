@@ -655,6 +655,7 @@ impl Session {
         &self,
         id: &str,
         protein: &Protein,
+        reused: Option<&[serde_json::Value]>,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
         use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
         self.engine
@@ -666,7 +667,14 @@ impl Session {
                     direction: Direction::Outgoing,
                     update: Update::Full,
                 },
-                self.execute(protein),
+                async {
+                    if let Some(rows) = reused {
+                        engine::performance::add("cell-query-batch-reuses", 1);
+                        Ok(rows.to_vec())
+                    } else {
+                        self.execute(protein).await
+                    }
+                },
                 |rows| {
                     let mut summary = Summary::new(Outcome::Refreshed, rows.len());
                     summary.subjects = rows
@@ -680,13 +688,70 @@ impl Session {
             .await
     }
 
+    async fn update_subscriptions(&self, fact: Option<&Fact>) -> Vec<ServerMessage> {
+        let _batch = engine::performance::Span::new("cell-query-batch-await");
+        let subscriptions: Vec<_> = self
+            .subscriptions
+            .iter()
+            .filter(|(_, query)| {
+                fact.is_none_or(|fact| protein::affects(query, fact, self.subject.as_deref()))
+            })
+            .collect();
+        let mut out = Vec::with_capacity(subscriptions.len());
+        for (index, (id, query)) in subscriptions.iter().enumerate() {
+            let reused = subscriptions[..index].iter().zip(&out).find_map(
+                |((_, previous), message)| match message {
+                    ServerMessage::Update { rows, .. } if previous == query => {
+                        Some(rows.as_slice())
+                    }
+                    _ => None,
+                },
+            );
+            out.push(match self.execute_sync(id, query, reused).await {
+                Ok(rows) => ServerMessage::Update {
+                    id: (*id).clone(),
+                    rows,
+                },
+                Err(error) => ServerMessage::Error {
+                    id: (*id).clone(),
+                    message: error.to_string(),
+                    code: protein::error_code(&error),
+                },
+            });
+        }
+        out
+    }
+
     async fn execute(
         &self,
         protein: &Protein,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
         let _query = engine::performance::Span::new("cell-query-execute-await");
+        let _source = engine::performance::Span::new(match protein.source {
+            protein::Source::Record => "cell-query-record-await",
+            protein::Source::Promise => "cell-query-promise-await",
+            protein::Source::Decision => "cell-query-decision-await",
+            protein::Source::Fact => "cell-query-fact-await",
+            protein::Source::Concept => "cell-query-concept-await",
+            protein::Source::Lingua => "cell-query-lingua-await",
+            protein::Source::Assertion => "cell-query-assertion-await",
+            protein::Source::Transfer => "cell-query-transfer-await",
+            protein::Source::TransferSettlementPreview => "cell-query-transfer-settlement-preview-await",
+            protein::Source::TransferBulkCompletionPreview => "cell-query-transfer-bulk-completion-preview-await",
+            protein::Source::Auth => "cell-query-auth-await",
+            protein::Source::Karma => "cell-query-karma-await",
+            protein::Source::KarmaRule => "cell-query-karma-rule-await",
+            protein::Source::Timeline => "cell-query-timeline-await",
+            protein::Source::Calendar => "cell-query-calendar-await",
+            protein::Source::Schedule => "cell-query-schedule-await",
+            protein::Source::Entry => "cell-query-entry-await",
+            protein::Source::Frequency => "cell-query-frequency-await",
+            protein::Source::Recurrence => "cell-query-recurrence-await",
+            protein::Source::Nearby => "cell-query-nearby-await",
+        });
         engine::performance::add("cell-queries", 1);
         if matches!(protein.source, protein::Source::Calendar | protein::Source::Schedule) {
+            let _projection = engine::performance::Span::new("cell-query-projection-request-await");
             let context = protein::calendar::context(protein, self.subject.as_deref())?;
             self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
         }
@@ -736,7 +801,7 @@ impl Session {
         {
             return vec![session_denied("subscription limit")];
         }
-        match self.execute_sync(&id, &protein).await {
+        match self.execute_sync(&id, &protein, None).await {
             Ok(rows) => {
                 if protein::is_ephemeral(&protein) {
                     self.last_ephemeral.insert(id.clone(), rows.clone());
@@ -773,8 +838,15 @@ impl Session {
         for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
             out.extend(self.subscribe_workspace(id, workspace, client).await);
         }
-        for (id, protein) in self.subscriptions.clone() {
-            out.extend(self.subscribe(id, protein).await);
+        for message in self.update_subscriptions(None).await {
+            if let ServerMessage::Update { id, rows } = message {
+                if self.subscriptions.get(&id).is_some_and(protein::is_ephemeral) {
+                    self.last_ephemeral.insert(id.clone(), rows.clone());
+                }
+                out.push(ServerMessage::Snapshot { id, rows });
+            } else {
+                out.push(message);
+            }
         }
         let _collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
         for record_uid in self.collab_records.clone() {
@@ -1052,22 +1124,7 @@ impl Session {
             }
         }
         drop(collaboration);
-        for (id, protein) in &self.subscriptions {
-            if !protein::affects(protein, fact, self.subject.as_deref()) {
-                continue;
-            }
-            match self.execute_sync(id, protein).await {
-                Ok(rows) => out.push(ServerMessage::Update {
-                    id: id.clone(),
-                    rows,
-                }),
-                Err(e) => out.push(ServerMessage::Error {
-                    id: id.clone(),
-                    message: e.to_string(),
-                    code: protein::error_code(&e),
-                }),
-            }
-        }
+        out.extend(self.update_subscriptions(Some(fact)).await);
         out
     }
 

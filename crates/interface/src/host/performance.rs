@@ -150,6 +150,32 @@ stages! {
     RecordObserve => "record-observe-state-await",
     RecordReact => "record-reactions-await",
     CellQuery => "cell-query-execute-await",
+    CellQueryBatch => "cell-query-batch-await",
+    CellQueryRecord => "cell-query-record-await",
+    CellQueryPromise => "cell-query-promise-await",
+    CellQueryDecision => "cell-query-decision-await",
+    CellQueryFact => "cell-query-fact-await",
+    CellQueryConcept => "cell-query-concept-await",
+    CellQueryLingua => "cell-query-lingua-await",
+    CellQueryAssertion => "cell-query-assertion-await",
+    CellQueryTransfer => "cell-query-transfer-await",
+    CellQueryTransferSettlementPreview => "cell-query-transfer-settlement-preview-await",
+    CellQueryTransferBulkCompletionPreview => "cell-query-transfer-bulk-completion-preview-await",
+    CellQueryAuth => "cell-query-auth-await",
+    CellQueryKarma => "cell-query-karma-await",
+    CellQueryKarmaRule => "cell-query-karma-rule-await",
+    CellQueryTimeline => "cell-query-timeline-await",
+    CellQueryCalendar => "cell-query-calendar-await",
+    CellQuerySchedule => "cell-query-schedule-await",
+    CellQueryEntry => "cell-query-entry-await",
+    CellQueryFrequency => "cell-query-frequency-await",
+    CellQueryRecurrence => "cell-query-recurrence-await",
+    CellQueryNearby => "cell-query-nearby-await",
+    CellQueryProjectionRequest => "cell-query-projection-request-await",
+    ProteinRecordSelection => "protein-record-selection-await",
+    ProteinRecordMaterialization => "protein-record-materialization-await",
+    ProteinLinkGraphLoad => "protein-link-graph-load-await",
+    ProteinLinkProjection => "protein-link-projection",
     CellRefresh => "cell-refresh-await",
     CellSubjectValidation => "cell-subject-validation-await",
     CellRefreshCollaboration => "cell-refresh-collaboration-await",
@@ -297,6 +323,9 @@ counts! {
     RecordCanonicalDeltaBytes => "record-canonical-delta-bytes",
     CellQueries => "cell-queries",
     CellQueryRows => "cell-query-rows",
+    CellQueryBatchReuses => "cell-query-batch-reuses",
+    ProteinLinkGraphLoads => "protein-link-graph-loads",
+    ProteinLinkEdgesVisited => "protein-link-edges-visited",
     RecordReadBodyBytes => "record-read-body-bytes",
     RecordBindingViews => "record-binding-views-compared",
     RecordBindingViewChanged => "record-binding-views-changed",
@@ -1120,6 +1149,11 @@ pub mod checks {
         ));
         monitor.backend(engine::performance::Reading::Count("cell-query-rows", 8));
         monitor.backend(engine::performance::Reading::Elapsed(
+            "cell-query-batch-await",
+            Duration::from_micros(30),
+        ));
+        monitor.backend(engine::performance::Reading::Count("cell-query-batch-reuses", 7));
+        monitor.backend(engine::performance::Reading::Elapsed(
             "private Record contents",
             Duration::from_secs(1),
         ));
@@ -1128,12 +1162,16 @@ pub mod checks {
             99,
         ));
         let report = monitor.snapshot();
-        assert_eq!(report.stages.len(), 1);
+        assert_eq!(report.stages.len(), 2);
         assert_eq!(report.stages[0].stage, "record-guard-base-validation");
         assert_eq!(report.stages[0].total_us, 25);
-        assert_eq!(report.counters.len(), 1);
+        assert_eq!(report.stages[1].stage, "cell-query-batch-await");
+        assert_eq!(report.stages[1].total_us, 30);
+        assert_eq!(report.counters.len(), 2);
         assert_eq!(report.counters[0].counter, "cell-query-rows");
         assert_eq!(report.counters[0].count, 8);
+        assert_eq!(report.counters[1].counter, "cell-query-batch-reuses");
+        assert_eq!(report.counters[1].count, 7);
         assert!(
             !serde_json::to_string(&report)
                 .unwrap()

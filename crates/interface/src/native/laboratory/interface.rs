@@ -108,6 +108,8 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
 
 #[cfg_attr(test, test)]
 fn performance_traces_preserve_concurrent_samples_and_report_overflow() {
+    #[cfg(feature = "native-presentation")]
+    crate::host::performance::checks::backend_phases_share_the_monitor_and_only_allow_declared_numeric_readings();
     crate::host::performance::checks::concurrent_trace_producers_preserve_every_sample_until_capacity();
     crate::host::performance::checks::input_traces_are_bounded_nonblocking_and_report_loss_without_payloads();
     crate::host::performance::checks::system_samples_survive_concurrent_snapshots_and_shard_reuse();

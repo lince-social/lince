@@ -9,6 +9,7 @@ mod karma_transfers;
 mod meanings;
 pub mod read_rules;
 pub mod record_query;
+mod record_links;
 pub mod role_authority;
 pub mod schedule;
 pub mod shader_inputs;
@@ -43,7 +44,7 @@ pub fn error_code(error: &ProteinError) -> Option<String> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Protein {
     pub source: Source,
@@ -65,7 +66,7 @@ mod conjunction;
 pub mod record_schema;
 pub mod relation_context;
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Aggregate {
     pub op: AggregateOp,
@@ -125,7 +126,7 @@ fn part_of_kind() -> String {
     "feature:containment".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
     ProjectionWindow(nucleus::projection::Window),
@@ -228,7 +229,7 @@ pub enum DateComparison {
     Exists,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Include {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -257,19 +258,19 @@ pub struct Include {
     pub reference_reads: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExtensionInclude {
     pub namespace: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectionInclude {
     pub at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FactsInclude {
     #[serde(default = "default_fact_limit")]
@@ -280,14 +281,14 @@ fn default_fact_limit() -> i64 {
     10
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PromisesInclude {
     #[serde(default)]
     pub state: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LinksInclude {
     #[serde(default)]
@@ -312,7 +313,7 @@ impl Default for LinkDirection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ThreadsInclude {
     #[serde(default = "default_messages_limit")]
@@ -344,7 +345,7 @@ fn default_messages_limit() -> usize {
     50
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Order {
     Asc(String),
@@ -352,7 +353,7 @@ pub enum Order {
     Link(LinkOrder),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LinkOrder {
     pub kind: String,
@@ -1677,6 +1678,7 @@ async fn execute_records(
     visible: Option<&HashSet<String>>,
     subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
+    let selection = nucleus::performance::Span::new("protein-record-selection-await");
     let rows = select_records_for::<Option<String>>(
         store,
         protein,
@@ -1685,11 +1687,23 @@ async fn execute_records(
         record_schema::requires_body(protein),
     )
     .await?;
+    drop(selection);
+    let _materialization = nucleus::performance::Span::new("protein-record-materialization-await");
 
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
     }
 
+    let links = if let Some(settings) = &protein.include.links
+        && !rows.is_empty()
+    {
+        Some((
+            settings,
+            record_links::Graph::load(store, settings, subject).await?,
+        ))
+    } else {
+        None
+    };
     let mut out = Vec::with_capacity(rows.len());
     let wants = |key| record_schema::requests(protein, key);
     let concept_names = if wants("concept_name")
@@ -1811,6 +1825,9 @@ async fn execute_records(
                     .and_then(Value::as_str)
             );
         }
+        if let Some((settings, graph)) = &links {
+            row["links"] = Value::Array(graph.for_record(&r.uid, settings, &concept_names));
+        }
         attach_includes(
             store,
             &mut row,
@@ -1819,8 +1836,6 @@ async fn execute_records(
             r.unit_uid.as_deref(),
             &protein.include,
             &protected_transfers,
-            &concept_names,
-            subject,
         )
         .await?;
         if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
@@ -2131,8 +2146,6 @@ async fn attach_includes(
     record_unit_uid: Option<&str>,
     include: &Include,
     protected_transfers: &HashSet<String>,
-    concept_names: &HashMap<String, String>,
-    subject: Option<&str>,
 ) -> Result<(), ProteinError> {
     if include.availability {
         let availability =
@@ -2179,10 +2192,6 @@ async fn attach_includes(
                 })
                 .collect(),
         );
-    }
-    if let Some(links) = &include.links {
-        row["links"] =
-            Value::Array(links_for_record(store, record_uid, links, concept_names, subject).await?);
     }
     if let Some(threads) = &include.threads {
         row["threads"] = json!(threads_for_record(store, record_uid, threads).await?);
@@ -2318,99 +2327,6 @@ fn resolve_at(value: &str) -> Option<String> {
     chrono::DateTime::parse_from_rfc3339(value)
         .ok()
         .map(|_| value.to_string())
-}
-
-async fn resolve_link_kind_uids(
-    store: &Store,
-    links: &LinksInclude,
-    subject: Option<&str>,
-) -> Result<Vec<String>, ProteinError> {
-    let mut requested = Vec::new();
-    for kind in &links.kinds {
-        let kind = kind.trim();
-        if !kind.is_empty() && !requested.iter().any(|existing| existing == kind) {
-            requested.push(kind.to_string());
-        }
-    }
-    let mut out = Vec::new();
-    for kind in requested {
-        for uid in store::vocabulary::meaning_family(&store.pool, &kind, subject).await? {
-            if !out.iter().any(|existing| existing == &uid) {
-                out.push(uid);
-            }
-        }
-    }
-    Ok(out)
-}
-
-async fn links_for_record(
-    store: &Store,
-    record_uid: &str,
-    links: &LinksInclude,
-    concept_names: &HashMap<String, String>,
-    subject: Option<&str>,
-) -> Result<Vec<Value>, ProteinError> {
-    let wants_all = links.kinds.iter().any(|kind| kind.trim() == "*");
-    let rows = if wants_all {
-        store::assertions::all_binary(&store.pool).await?
-    } else {
-        let kind_uids = resolve_link_kind_uids(store, links, subject).await?;
-        if kind_uids.is_empty() {
-            return Ok(vec![]);
-        }
-        store::assertions::binary_of_predicates(&store.pool, &kind_uids).await?
-    };
-
-    let max_hops = links.depth.max(1);
-    let mut frontier: HashSet<String> = HashSet::from([record_uid.to_string()]);
-    let mut visited: HashSet<String> = frontier.clone();
-    let mut seen_links: HashSet<String> = HashSet::new();
-    let mut out = Vec::new();
-    for hop in 1..=max_hops {
-        let mut next: HashSet<String> = HashSet::new();
-        for link in &rows {
-            let outgoing = frontier.contains(&link.subject_uid);
-            let incoming = frontier.contains(&link.object_uid);
-            if !outgoing && !incoming {
-                continue;
-            }
-            if matches!(links.direction, LinkDirection::Out) && !outgoing {
-                continue;
-            }
-            if matches!(links.direction, LinkDirection::In) && !incoming {
-                continue;
-            }
-            let other = if outgoing {
-                link.object_uid.clone()
-            } else {
-                link.subject_uid.clone()
-            };
-            if !visited.contains(&other) {
-                next.insert(other.clone());
-            }
-            if !seen_links.insert(link.uid.clone()) {
-                continue;
-            }
-            out.push(json!({
-                "uid": link.uid,
-                "from": link.subject_uid,
-                "to": link.object_uid,
-                "kind_uid": link.predicate_uid,
-                "kind": concept_names.get(&link.predicate_uid).unwrap_or(&link.predicate),
-                "direction": if outgoing { "out" } else { "in" },
-                "other": other,
-                "hop": hop,
-                "quantity": link.quantity.map(|value| value.to_f64()),
-                "created_at": link.created_at,
-            }));
-        }
-        if next.is_empty() {
-            break;
-        }
-        visited.extend(next.iter().cloned());
-        frontier = next;
-    }
-    Ok(out)
 }
 
 async fn threads_for_record(

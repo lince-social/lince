@@ -376,15 +376,15 @@ impl CanvasWorker {
     }
 
     pub fn pointer(&self, position: [f32; 2]) -> std::io::Result<u64> {
-        self.publish_pointer(position, None)
+        self.publish_pointer(position, None, true)
     }
 
     #[cfg(feature = "nested")]
-    pub(crate) fn pointer_with_epoch(&self, position: [f32; 2], epoch: u64) -> std::io::Result<u64> {
-        self.publish_pointer(position, Some(epoch))
+    pub(crate) fn pointer_with_epoch(&self, position: [f32; 2], epoch: u64, wake: bool) -> std::io::Result<u64> {
+        self.publish_pointer(position, Some(epoch), wake)
     }
 
-    fn publish_pointer(&self, position: [f32; 2], epoch: Option<u64>) -> std::io::Result<u64> {
+    fn publish_pointer(&self, position: [f32; 2], epoch: Option<u64>, wake: bool) -> std::io::Result<u64> {
         if position.iter().any(|value| !value.is_finite()) {
             return Err(std::io::Error::other("invalid Park pointer position"));
         }
@@ -395,10 +395,10 @@ impl CanvasWorker {
             })
             .map_err(|_| std::io::Error::other("Park pointer serials exhausted"))?;
         self.pointer
-            .publish((serial, position, epoch.unwrap_or(serial), latency::Stamp::current()))
+            .publish((serial, position, epoch.unwrap_or(serial), wake.then(latency::Stamp::current).flatten()))
             .map_err(|_| std::io::Error::other("the Park pointer receiver is unavailable"))?;
         lince_interface::host::performance::count(lince_interface::host::performance::Count::PointerPublished);
-        self.wake();
+        if wake { self.wake(); }
         Ok(serial)
     }
     pub fn request(&self) -> Option<HostRequest> {
@@ -579,7 +579,9 @@ fn run(
             windows = scene.windows;
         }
         let mut input = false;
-        let pointer = if button_pending { None } else { motion.take() };
+        if !button_pending && queued_event.is_none() { queued_event = events.pop_timed(); }
+        let events_ready = queued_event.is_some();
+        let pointer = if button_pending || !(native_changed || update || events_ready) { None } else { motion.take() };
         let pointer_applied = pointer.is_some() && active.input_activity.active();
         if let Some((serial, point, epoch, stamp)) = pointer && active.input_activity.active() {
             lince_interface::native::layout::desktop::focus::pointer_epoch(canvas.world_mut(), epoch);
@@ -588,7 +590,7 @@ fn run(
             input = true;
         }
         let mut pointer_stamp = None;
-        while !button_pending {
+        while !button_pending && events_ready {
             let Some((serial, event, stamp)) = queued_event.take().or_else(|| events.pop_timed()) else {
                 break;
             };

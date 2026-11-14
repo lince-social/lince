@@ -38,6 +38,7 @@ mod compact;
 mod scratch;
 mod ordinary;
 mod pacing;
+mod motion;
 mod providers;
 #[cfg(feature = "session")]
 mod power;

@@ -6,6 +6,13 @@ use std::collections::{HashMap, HashSet};
 
 const MAX_TARGETS: usize = 16_384;
 
+pub(crate) fn observes_motion(
+    cursors: Query<(), With<bevy::ui::RelativeCursorPosition>>,
+    bindings: Query<&native::topology::terrain::Bound>,
+) -> bool {
+    !cursors.is_empty() || bindings.iter().any(|binding| binding.0.anchor == nucleus::terrain::Anchor::Cursor)
+}
+
 #[derive(Clone, Debug, PartialEq)]
 enum Projection {
     Final(RasterMapping),

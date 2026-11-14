@@ -133,6 +133,7 @@ pub struct InputSnapshot {
     pub workspaces: crate::server::WorkspaceSnapshot,
     pub editor: Option<crate::native_input::Editor>,
     pub(crate) native_pointer: crate::native_input::pointer::Snapshot,
+    pub(crate) pointer_motion: bool,
     pub drop_target: Option<crate::native_input::transfer::Target>,
     pub controls: Vec<lince_interface::host::Rectangle>,
     pub focus_blocks: Vec<lince_interface::host::Rectangle>,
@@ -1579,6 +1580,7 @@ impl Presentation {
                 crate::native_input::capture(world, geometry)
             },
             native_pointer,
+            pointer_motion: world.run_system_cached(crate::native_input::pointer::observes_motion).expect("Native pointer demand queries are valid"),
             controls: nodes
                 .iter()
                 .filter_map(|(rectangle, _, _, _)| *rectangle)

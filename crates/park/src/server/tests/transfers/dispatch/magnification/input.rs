@@ -76,9 +76,10 @@ fn actual_client_constraints_relative_motion_and_virtual_host_warp_use_the_prese
         let root = world.query_filtered::<Entity, With<native::workspace::Workspaces>>().single(world).unwrap();
         let workspace = world.get::<native::workspace::Workspaces>(root).unwrap().active;
         native::workspace_config::set_physics(world, root, workspace, false);
+        let center = world.get::<native::canvas::CanvasView>(root).unwrap().center;
         let windows = world.query::<(Entity, &native::layout::desktop::ApplicationWindow)>().iter(world).map(|(entity, window)| (entity, window.surface)).collect::<Vec<_>>();
         for (entity, surface) in windows {
-            world.get_mut::<native::canvas::CanvasItem>(entity).unwrap().position = bevy::math::DVec2::new(if surface == first_id { -180.0 } else { 180.0 }, 0.0);
+            world.get_mut::<native::canvas::CanvasItem>(entity).unwrap().position = center + bevy::math::DVec2::new(if surface == first_id { -180.0 } else { 180.0 }, 0.0);
         }
     });
     let mut buffers = vec![first_buffer, second_buffer];

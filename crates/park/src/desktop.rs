@@ -81,7 +81,7 @@ pub(crate) struct Desktop {
     pub(crate) clips: Vec<(OutputId, Rectangle)>,
     pub(crate) pointer: [f64; 2],
     display_pointer: Option<[f64; 2]>,
-    pub(crate) pointer_sent: Option<[f64; 2]>,
+    pub(crate) pointer_sent: Option<([f64; 2], bool)>,
     pub(crate) pointer_stamp: u64,
     pub(crate) pointer_epoch: u64,
     pub(crate) pointer_target: Option<(WlSurface, [f64; 2])>,

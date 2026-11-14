@@ -18,6 +18,11 @@ pub(super) fn open(fixture: &mut Fixture) {
     fixture.desktop.key(125, false, 2).unwrap();
     fixture.inspect(|_| ());
     activate(fixture, "Park");
+    activate(fixture, "Configure Park in Customization");
+    let section = magnification::focus(fixture, "Focus and application opening");
+    if fixture.inspect(move |canvas| canvas.world_mut().get::<bevy::a11y::AccessibilityNode>(section).unwrap().is_expanded()) != Some(true) {
+        tap(fixture, 28);
+    }
     activate(fixture, "Edit focus settings");
 }
 

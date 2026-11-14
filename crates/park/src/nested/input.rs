@@ -437,23 +437,29 @@ impl Desktop {
             self.focus()?;
             return self.server.lock_motion(self.pointer, time);
         }
+        let target = if self.server.dragging() {
+            self.target()
+        } else {
+            self.grabbed.clone().unwrap_or_else(|| self.target())
+        };
+        let native_motion = matches!(target, Target::Native) || self.manipulation.owns() || self.server.dragging()
+            || self.current.as_ref().is_none_or(|current| current.frame.input.pointer_motion
+                || current.frame.input.modal || current.frame.input.keyboard_modal || current.frame.input.keyboard_capture
+                || current.frame.input.overview)
+            || self.magnification.snapshot.heads.iter().any(|head| head.requested > 1.0 || head.effective.is_some_and(|factor| factor > 1.0));
         let native_position = self.native_position();
-        if self.pointer_sent != Some(native_position) {
+        if self.pointer_sent != Some((native_position, native_motion)) {
+            let wake = native_motion || self.pointer_sent.is_none_or(|(_, native)| native);
             self.pointer_stamp = self
                 .worker
-                .pointer_with_epoch(native_position.map(|value| value as f32), self.pointer_epoch)?;
-            self.pointer_sent = Some(native_position);
+                .pointer_with_epoch(native_position.map(|value| value as f32), self.pointer_epoch, wake)?;
+            self.pointer_sent = Some((native_position, native_motion));
         }
         if self.manipulation.owns() {
             self.pointer_target = None;
             self.server.suspend_native_drop();
             return self.server.pointer_motion(None, time);
         }
-        let target = if self.server.dragging() {
-            self.target()
-        } else {
-            self.grabbed.clone().unwrap_or_else(|| self.target())
-        };
         let position = self.target_position(target, self.pointer);
         let position = position.filter(|(surface, _)| surface.is_alive());
         if self.pointer_target != position {

@@ -51,6 +51,8 @@ impl Driver {
     pub(super) fn new(device: wgpu::Device) -> Result<Self> {
         let (sender, receiver) = sync_channel::<Job>(32);
         let worker = std::thread::Builder::new().name("park-gpu-completion".into()).spawn(move || {
+            #[cfg(feature = "native-presentation")]
+            let _observations = crate::presentation::observe_systems();
             let mut jobs: Vec<Job> = Vec::new();
             let mut disconnected = false;
             let mut failure: Option<String> = None;
@@ -79,9 +81,14 @@ impl Driver {
                 }
                 jobs.retain(|job| {
                     let result = if let Some(error) = &failure { Some(Err(error.clone())) } else {
-                        match device.poll(wgpu::PollType::Wait {
-                            submission_index: Some(job.submission.clone()), timeout: Some(Duration::ZERO),
-                        }) {
+                        let polled = {
+                            #[cfg(feature = "native-presentation")]
+                            let _observation = crate::presentation::observe_work("lince_park::graphics::completion::poll");
+                            device.poll(wgpu::PollType::Wait {
+                                submission_index: Some(job.submission.clone()), timeout: Some(Duration::ZERO),
+                            })
+                        };
+                        match polled {
                             Ok(_) => Some(Ok(())),
                             Err(wgpu::PollError::Timeout) if job.started.elapsed() < Duration::from_secs(5) => None,
                             Err(error) => Some(Err(error.to_string())),

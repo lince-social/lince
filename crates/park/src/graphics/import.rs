@@ -399,7 +399,11 @@ impl GpuContext {
     ) -> Result<completion::Completion> {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        let submission = self.queue.submit(commands);
+        let submission = {
+            #[cfg(feature = "native-presentation")]
+            let _observation = crate::presentation::observe_work("lince_park::graphics::queue_submit");
+            self.queue.submit(commands)
+        };
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-submit", started);
         #[cfg(all(test, feature = "native-presentation"))]
@@ -412,6 +416,8 @@ impl GpuContext {
         &self,
         sources: &[wgpu::Texture],
     ) -> Result<Vec<ExportedImage>> {
+        #[cfg(feature = "native-presentation")]
+        let _observation = crate::presentation::observe_work("lince_park::graphics::export_render_targets");
         if sources.is_empty() {
             return Ok(Vec::new());
         }

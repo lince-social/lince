@@ -122,9 +122,11 @@ fn measurement_coverage(reports: &[Value]) -> Value {
                 report["phase"] == *phase
                     && report["systems"].as_array().is_some_and(|systems| {
                         systems.iter().any(|system| {
-                            system["exclusive_owner_cpu"]["count"]
-                                .as_u64()
-                                .is_some_and(|count| count > 0)
+                            system["system"].as_str().is_some_and(|name| {
+                                name.starts_with("bevy_") || name.starts_with("lince_interface::")
+                            }) && system["exclusive_owner_cpu"]["count"]
+                                    .as_u64()
+                                    .is_some_and(|count| count > 0)
                         })
                     })
             })
@@ -143,6 +145,25 @@ fn measurement_coverage(reports: &[Value]) -> Value {
                 stages.iter().any(|reading| {
                     reading["stage"] == *stage
                         && reading["count"].as_u64().is_some_and(|count| count > 0)
+                })
+            })
+        })
+    })
+    .collect();
+    let missing_export_owners: Vec<_> = [
+        "lince_park::graphics::export_render_targets",
+        "lince_park::graphics::queue_submit",
+        "lince_park::graphics::completion::poll",
+    ]
+    .into_iter()
+    .filter(|name| {
+        !reports.iter().any(|report| {
+            report["systems"].as_array().is_some_and(|systems| {
+                systems.iter().any(|system| {
+                    system["system"] == *name
+                        && system["exclusive_owner_cpu"]["count"]
+                            .as_u64()
+                            .is_some_and(|count| count > 0)
                 })
             })
         })
@@ -180,9 +201,10 @@ fn measurement_coverage(reports: &[Value]) -> Value {
         && missing_phases.is_empty()
         && missing_bodies.is_empty()
         && missing_stages.is_empty()
+        && missing_export_owners.is_empty()
         && hardware_gpu
         && loss.values().all(|value| value == 0);
-    json!({"passed":passed,"reports":reports.len(),"final_report":final_report,"missing_phases":missing_phases,"missing_system_bodies":missing_bodies,"missing_stages":missing_stages,"hardware_gpu_execution":hardware_gpu,"loss":loss})
+    json!({"passed":passed,"reports":reports.len(),"final_report":final_report,"missing_phases":missing_phases,"missing_system_bodies":missing_bodies,"missing_stages":missing_stages,"missing_export_owners":missing_export_owners,"hardware_gpu_execution":hardware_gpu,"loss":loss})
 }
 
 fn measurements() -> io::Result<Value> {
@@ -869,13 +891,33 @@ mod tests {
     fn incomplete_or_lost_measurements_cannot_pass() {
         assert_eq!(measurement_coverage(&[])["passed"], false);
         let mut reports: Vec<_> = ["warmup", "open-reveal", "typing", "scroll", "active", "pan", "quiet"].into_iter().map(|phase| json!({
-            "phase":phase, "systems":[{"exclusive_owner_cpu":{"count":1}}],
+            "phase":phase, "systems":(["lince_interface::native::body", "lince_park::graphics::export_render_targets", "lince_park::graphics::queue_submit", "lince_park::graphics::completion::poll"].into_iter().map(|name| json!({"system":name,"exclusive_owner_cpu":{"count":1}})).collect::<Vec<_>>()),
             "stages":(["native-main", "native-phase-post-update-owner-cpu", "gpu-submission-to-completion", "cell-query-execute-await"].into_iter().map(|stage| json!({"stage":stage,"count":1})).collect::<Vec<_>>()),
             "render_diagnostics":[{"path":"render/ui/elapsed_gpu","count":1}],
             "dropped_reports":0,"dropped_system_samples":0,"dropped_span_trace":0,"dropped_input_trace":0,
             "final_report":phase == "quiet"
         })).collect();
         assert_eq!(measurement_coverage(&reports)["passed"], true);
+        let mut exports_only = reports.clone();
+        for report in &mut exports_only {
+            report["systems"].as_array_mut().unwrap().retain(|system| system["system"] != "lince_interface::native::body");
+        }
+        let coverage = measurement_coverage(&exports_only);
+        assert_eq!(coverage["passed"], false);
+        assert_eq!(coverage["missing_system_bodies"], json!(["open-reveal", "typing", "scroll", "active", "pan"]));
+        for missing in [
+            "lince_park::graphics::export_render_targets",
+            "lince_park::graphics::queue_submit",
+            "lince_park::graphics::completion::poll",
+        ] {
+            let mut incomplete = reports.clone();
+            for report in &mut incomplete {
+                report["systems"].as_array_mut().unwrap().retain(|system| system["system"] != missing);
+            }
+            let coverage = measurement_coverage(&incomplete);
+            assert_eq!(coverage["passed"], false);
+            assert_eq!(coverage["missing_export_owners"], json!([missing]));
+        }
         for name in [
             "dropped_reports",
             "dropped_system_samples",

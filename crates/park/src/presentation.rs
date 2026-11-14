@@ -46,6 +46,11 @@ mod system_metrics;
 pub(crate) fn observe_systems() -> Option<bevy::log::tracing::subscriber::DefaultGuard> {
     lince_interface::host::performance::enabled().then(system_metrics::enter)
 }
+
+pub(crate) fn observe_work(name: &'static str) -> Option<bevy::log::tracing::span::EnteredSpan> {
+    lince_interface::host::performance::enabled()
+        .then(|| bevy::log::tracing::info_span!("system", name = name).entered())
+}
 pub(crate) use pixels::Sync as PixelSync;
 #[cfg(test)]
 mod color_tests;

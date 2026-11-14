@@ -3,8 +3,70 @@ use bevy::{a11y::AccessibilityNode, asset::AssetId, ecs::change_detection::Detec
 use bevy::{camera::{ImageRenderTarget, NormalizedRenderTarget}, picking::pointer::Location};
 use lince_interface::host::{GeometrySnapshot, ItemGeometry, ItemId, OutputId, Rectangle, raster::RasterMapping};
 use std::collections::{HashMap, HashSet};
+use std::time::{Duration, Instant};
+use lince_interface::host::performance::{self, Count, Stage};
 
 const MAX_TARGETS: usize = 16_384;
+
+#[derive(Clone, Copy)]
+enum Part { Filtering, Projection, Ownership, Lineage, Result }
+
+#[derive(Default)]
+struct Timings {
+    active: bool,
+    elapsed: [Duration; 5],
+    counts: [u64; 5],
+}
+
+impl Timings {
+    fn begin(&mut self) -> Timing<'_> {
+        let started = self.active.then(Instant::now);
+        if self.active { self.counts[Part::Filtering as usize] += 1; }
+        Timing { totals: self, part: Part::Filtering, started }
+    }
+}
+
+impl Drop for Timings {
+    fn drop(&mut self) {
+        if !self.active { return; }
+        for (index, (stage, count)) in [
+            (Stage::NativePointerFiltering, Count::NativePointerCandidates),
+            (Stage::NativePointerProjection, Count::NativePointerProjections),
+            (Stage::NativePointerOwnership, Count::NativePointerOwners),
+            (Stage::NativePointerLineage, Count::NativePointerLineages),
+            (Stage::NativePointerResult, Count::NativePointerTargets),
+        ].into_iter().enumerate() {
+            performance::record(stage, self.elapsed[index]);
+            performance::add(count, self.counts[index]);
+        }
+    }
+}
+
+struct Timing<'a> {
+    totals: &'a mut Timings,
+    part: Part,
+    started: Option<Instant>,
+}
+
+impl Timing<'_> {
+    fn next(&mut self, part: Part) {
+        if let Some(started) = self.started {
+            let now = Instant::now();
+            self.totals.elapsed[self.part as usize] += now - started;
+            self.totals.counts[part as usize] += 1;
+            self.started = Some(now);
+        }
+        self.part = part;
+    }
+}
+
+impl Drop for Timing<'_> {
+    fn drop(&mut self) {
+        if let Some(started) = self.started {
+            self.totals.elapsed[self.part as usize] += started.elapsed();
+        }
+    }
+}
 
 pub(crate) fn observes_motion(
     cursors: Query<(), With<bevy::ui::RelativeCursorPosition>>,
@@ -169,6 +231,11 @@ impl Snapshot {
 }
 
 fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity) -> Option<Geometry> {
+    measured_candidate(world, view, geometry, entity, &mut Timings::default())
+}
+
+fn measured_candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, timings: &mut Timings) -> Option<Geometry> {
+    let mut timing = timings.begin();
     let node = *world.get::<ComputedNode>(entity)?;
     if node.size().min_element() <= 0.0 || world.get::<InheritedVisibility>(entity).is_none_or(|visible| !visible.get())
         || world.get::<Pickable>(entity).is_some_and(|pickable| !pickable.should_block_lower && !pickable.is_hoverable)
@@ -179,6 +246,7 @@ fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, en
     let active = world.get::<Camera>(camera)?.is_active;
     let bevy::camera::RenderTarget::Image(target) = world.get::<bevy::camera::RenderTarget>(camera)? else { return None; };
     let image = target.handle.id();
+    timing.next(Part::Projection);
     let projection = if image == view.image {
         if !active { return None; }
         Projection::Final(view.raster)
@@ -193,8 +261,10 @@ fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, en
         let item = geometry?.items.iter().find(|item| item.id == ItemId::Native(id) && item.output == view.output)?.clone();
         Projection::Sand { owner, pixels: surface.pixels, item }
     };
+    timing.next(Part::Ownership);
     let owner = native::accessibility::owner_context(world, entity, false);
     if owner.as_ref().is_some_and(|owner| owner.output().is_some_and(|output| output != view.output)) { return None; }
+    timing.next(Part::Lineage);
     let mut lineage = Vec::new();
     let mut actions = Vec::new();
     let mut eligible = view.root.is_none() || owner.as_ref().is_some_and(|owner| Some(owner.root) == view.root);
@@ -218,6 +288,7 @@ fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, en
     if let Projection::Sand { owner, .. } = &projection {
         eligible &= lineage.contains(owner) && world.get::<ChildOf>(*owner).map(ChildOf::parent) == view.root;
     }
+    timing.next(Part::Result);
     Some(Geometry { entity, output: view.output, bounds: view.viewport.as_ref().map(|viewport| viewport.bounds), image, lineage, actions, owner, eligible,
         blocks: world.get::<Pickable>(entity).is_none_or(|pickable| pickable.should_block_lower),
         modal: native::shortcuts::keyboard_owner(world), node, transform: *world.get::<UiGlobalTransform>(entity)?,
@@ -225,6 +296,8 @@ fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, en
 }
 
 pub(crate) fn capture(world: &World, views: &[View], geometry: Option<&GeometrySnapshot>) -> Snapshot {
+    let _cpu = crate::presentation::observe_work("lince_park::native_input::pointer::capture");
+    let mut timings = Timings { active: performance::enabled(), ..default() };
     let Some(stack) = world.get_resource::<bevy::ui::UiStack>() else { return Snapshot::default(); };
     let mut snapshot = Snapshot::default();
     for view in views {
@@ -235,7 +308,7 @@ pub(crate) fn capture(world: &World, views: &[View], geometry: Option<&GeometryS
             snapshot.backgrounds.push(Background { root, output: view.output, image: view.image, bounds: viewport.bounds, owner });
         }
         for entity in stack.uinodes.iter().rev() {
-            let Some(target) = candidate(world, view, geometry, *entity) else { continue; };
+            let Some(target) = measured_candidate(world, view, geometry, *entity, &mut timings) else { continue; };
             if snapshot.targets.len() == MAX_TARGETS { snapshot.overflowed = true; return snapshot; }
             snapshot.targets.push(target);
         }

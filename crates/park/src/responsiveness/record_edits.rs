@@ -31,7 +31,7 @@ pub fn run() -> io::Result<()> {
     let arguments: Vec<_> = std::env::args().skip(2).collect();
     let [surface, cadence, scene] = arguments.as_slice() else {
         return Err(error(
-            "Use --record-edits fiote|kanban paced|burst quiet|mixed",
+            "Use --record-edits fiote|kanban paced|burst quiet|mixed|settled",
         ));
     };
     let surface = match surface.as_str() {
@@ -46,7 +46,7 @@ pub fn run() -> io::Result<()> {
     };
     let mixed = match scene.as_str() {
         "quiet" => false,
-        "mixed" => true,
+        "mixed" | "settled" => true,
         _ => return Err(error("Unknown Record edit scene")),
     };
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -59,7 +59,7 @@ pub fn run() -> io::Result<()> {
     if native["passed"] != true {
         return Err(error("Required native interface checks failed"));
     }
-    let result = measure(&runtime, surface, interval, mixed);
+    let result = measure(&runtime, surface, interval, mixed, scene == "settled");
     let drained = performance::finish(Duration::from_secs(3));
     println!(
         "{}",
@@ -102,11 +102,22 @@ fn observe(canvas: &mut Presentation, editor: Entity) -> io::Result<EditObservat
     Ok(observation)
 }
 
+fn motion(canvas: &mut Presentation) -> (usize, bool) {
+    let world = canvas.world_mut();
+    let awake = native::topology::physics::awake(world);
+    let bodies = world
+        .query::<&native::topology::physics::Body>()
+        .iter(world)
+        .count();
+    (bodies, awake)
+}
+
 fn measure(
     runtime: &tokio::runtime::Runtime,
     surface: Surface,
     interval: Duration,
     mixed: bool,
+    settle: bool,
 ) -> io::Result<Value> {
     performance::set_phase(Phase::Warmup);
     let directory = tempfile::tempdir()?;
@@ -283,6 +294,26 @@ fn measure(
     for _ in 0..8 {
         completed(&mut canvas)?;
     }
+    let settling = Instant::now();
+    let mut settling_frames = 0;
+    let mut quiet_frames = 0;
+    while settle && quiet_frames < 3 {
+        completed(&mut canvas)?;
+        settling_frames += 1;
+        let (bodies, awake) = motion(&mut canvas);
+        quiet_frames = if awake { 0 } else { quiet_frames + 1 };
+        println!(
+            "{}",
+            json!({"record_edit_settling_frame":settling_frames,
+            "bodies":bodies,"awake":awake,"elapsed_ms":settling.elapsed().as_secs_f64()*1000.0})
+        );
+        if settling.elapsed() >= Duration::from_secs(60) {
+            return Err(error(
+                "The populated scene did not settle within 60 seconds",
+            ));
+        }
+    }
+    let settling_ms = settling.elapsed().as_secs_f64() * 1000.0;
     let point = input_point(&mut canvas, editor)?;
     canvas.focus(true).map_err(error)?;
     canvas.pointer(point).map_err(error)?;
@@ -329,6 +360,7 @@ fn measure(
     let mut expected = original.to_owned();
     let mut receipts: Vec<Receipt> = Vec::new();
     let mut frames = 0;
+    let mut awake_frames = 0;
     let mut maximum_pending = 0;
     let mut warned = false;
     let mut dirty_since = None;
@@ -384,6 +416,8 @@ fn measure(
             )));
         }
         let observation = observe(&mut canvas, editor)?;
+        let (bodies, awake) = motion(&mut canvas);
+        awake_frames += usize::from(awake);
         for receipt in &mut receipts[before..] {
             receipt.echo = now;
         }
@@ -423,7 +457,8 @@ fn measure(
             "{}",
             json!({"record_edit_frame":frames,"inputs":receipts.len(),"elapsed_ms":now.as_secs_f64()*1000.0,
             "pending":observation.pending.len(),"revision":observation.revision,"durable_revision":observation.durable_revision,
-            "unsaved":observation.unsaved,"warning":observation.warning})
+            "unsaved":observation.unsaved,"warning":observation.warning,
+            "bodies":bodies,"physics_awake":awake})
         );
         if receipts.len() == edits.len()
             && !observation.unsaved
@@ -504,6 +539,7 @@ fn measure(
     Ok(
         json!({"surface":if surface==Surface::Fiote {"fiote"} else {"kanban"},"mixed":mixed,
         "interval_ms":interval.as_secs_f64()*1000.0,"logical_inputs":receipts.len(),"frames":frames,
+        "settling_frames":settling_frames,"settling_ms":settling_ms,"awake_frames":awake_frames,
         "scheduled_delivery":summary(&delivery),"scheduled_visible_response":summary(&echo),
         "scheduled_durable_recovery":durable_summary,"scheduled_canonical_acknowledgement":acknowledged_summary,
         "maximum_pending_requests":maximum_pending,"warning_observed":warned,

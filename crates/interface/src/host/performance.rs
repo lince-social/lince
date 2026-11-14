@@ -224,6 +224,11 @@ stages! {
     FrameInput => "frame-input",
     NativeInputProjection => "native-input-projection",
     NativePointerCapture => "native-pointer-capture",
+    NativePointerFiltering => "native-pointer-filtering",
+    NativePointerProjection => "native-pointer-projection",
+    NativePointerOwnership => "native-pointer-ownership",
+    NativePointerLineage => "native-pointer-lineage",
+    NativePointerResult => "native-pointer-result",
     NativeInputControls => "native-input-controls",
     NativeInputEditor => "native-input-editor",
     NativeInputCatalog => "native-input-catalog",
@@ -300,6 +305,11 @@ counts! {
     NativeUiRoots => "native-ui-roots-computed",
     NativeUiGeometryNodes => "native-ui-geometry-nodes-visited",
     NativeInputApplied => "native-input-applied",
+    NativePointerCandidates => "native-pointer-candidates",
+    NativePointerProjections => "native-pointer-projections",
+    NativePointerOwners => "native-pointer-owner-reads",
+    NativePointerLineages => "native-pointer-lineages",
+    NativePointerTargets => "native-pointer-targets-built",
     NativeInputRetired => "native-input-retired",
     NativeInputBatches => "native-input-frame-batches",
     NativeInputPresented => "native-input-batches-presented-per-output",
@@ -750,11 +760,7 @@ impl Monitor {
     }
 
     fn record_system(&self, name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
-        if name.len() > 512
-            || !(name.starts_with("bevy_")
-                || name.starts_with("lince_interface::")
-                || name.starts_with("lince_park::"))
-        {
+        if !accepts_system_name(name) {
             self.dropped_system_samples.fetch_add(1, Ordering::Relaxed);
             return;
         }
@@ -1120,6 +1126,14 @@ pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str
     } else {
         count(Count::TimingCapacity);
     }
+}
+
+pub fn accepts_system_name(name: &str) -> bool {
+    name.len() <= 512
+        && (name.starts_with("bevy_")
+            || name.starts_with("avian3d::")
+            || name.starts_with("lince_interface::")
+            || name.starts_with("lince_park::"))
 }
 
 pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {

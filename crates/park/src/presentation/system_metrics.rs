@@ -67,10 +67,7 @@ impl<S: Subscriber + for<'lookup> LookupSpan<'lookup>> tracing_subscriber::Layer
         if commands {
             name.0.push_str("::apply_deferred");
         }
-        if (name.0.starts_with("bevy_")
-            || name.0.starts_with("lince_interface::")
-            || name.0.starts_with("lince_park::"))
-            && name.0.len() <= 512
+        if performance::accepts_system_name(&name.0)
             && let Some(span) = context.span(id)
         {
             span.extensions_mut().insert(Body(name.0.into()));
@@ -178,11 +175,21 @@ mod tests {
         let _observer = enter();
         let parent = tracing::info_span!("system", name = "lince_interface::native::parent");
         let child = tracing::info_span!("system", name = "bevy_ui::layout::child");
+        let physics = tracing::info_span!("system", name = "avian3d::dynamics::solver::child");
         for _ in 0..2 {
             let _parent = parent.enter();
             {
                 let _child = child.enter();
                 ENTERED.with(|stack| assert_eq!(stack.borrow().len(), 2));
+            }
+            ENTERED.with(|stack| assert_eq!(stack.borrow().len(), 1));
+            {
+                let _physics = physics.enter();
+                ENTERED.with(|stack| {
+                    let stack = stack.borrow();
+                    assert_eq!(stack.len(), 2);
+                    assert!(stack.last().unwrap().name.starts_with("avian3d::"));
+                });
             }
             ENTERED.with(|stack| assert_eq!(stack.borrow().len(), 1));
         }

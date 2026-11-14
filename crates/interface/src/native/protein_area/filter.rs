@@ -135,7 +135,7 @@ pub(super) fn publish(world: &mut World) {
         .map(|(e, s)| (e, s.0, s.1))
         .collect();
     for (entity, owner, changes) in subscriptions {
-        let Some(config) = configuration(world, entity) else {
+        let Some(config) = configuration_ref(world, entity) else {
             continue;
         };
         let Some(state) = world.resource::<Runtime>().areas.get(&entity) else {
@@ -156,7 +156,7 @@ pub(super) fn publish(world: &mut World) {
             continue;
         }
         let matches = Matches {
-            source: config.source,
+            source: config.source.clone(),
             current,
             uids: state
                 .data

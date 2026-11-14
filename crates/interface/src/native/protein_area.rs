@@ -831,7 +831,7 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
                 state.thread_requests = state.thread_requests.saturating_sub(1);
                 state.thread_error = None;
             }
-            if state.ready && state.data == *rows {
+            if state.ready && state.revision != 0 && state.data == *rows {
                 state.status = "Live".into();
                 drop(runtime);
                 mirror_editor(world, owner);
@@ -1047,8 +1047,9 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             .resource::<Runtime>()
             .areas
             .get(&owner)
-            .and_then(|state| state.applied.clone());
-        if previous.as_ref() != Some(&config) {
+            .and_then(|state| state.applied.as_ref());
+        if previous != Some(&config) {
+            let previous = previous.cloned();
             let query_same = previous.as_ref().is_some_and(|old| {
                 old.enabled == config.enabled
                     && old.source == config.source
@@ -1494,15 +1495,19 @@ fn mirror_editor(world: &mut World, owner: Entity) {
 }
 
 pub(crate) fn configuration(world: &World, entity: Entity) -> Option<Config> {
+    configuration_ref(world, entity).cloned()
+}
+
+fn configuration_ref(world: &World, entity: Entity) -> Option<&Config> {
     if let Some(filter) = world.get::<filter::Subscription>(entity) {
         let area = world.get::<InfluenceArea>(filter.0)?;
         if filter.1 {
-            area.change_filter.clone()
+            area.change_filter.as_ref()
         } else {
-            area.filter.clone()
+            area.filter.as_ref()
         }
     } else {
-        world.get::<InfluenceArea>(entity)?.protein.clone()
+        world.get::<InfluenceArea>(entity)?.protein.as_ref()
     }
 }
 

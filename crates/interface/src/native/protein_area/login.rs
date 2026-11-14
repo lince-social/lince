@@ -283,7 +283,7 @@ pub(super) fn sync(world: &mut World) {
         .map(|(entity, form)| (entity, form.area, form.organ.clone(), form.canvas))
         .collect();
     for (entity, area, organ, canvas) in existing {
-        let config = configuration(world, area);
+        let config = configuration_ref(world, area);
         if config.as_ref().is_none_or(|config| {
             config.source != Source::Organ(organ) || (canvas && !config.enabled)
         }) {
@@ -299,14 +299,14 @@ pub(super) fn sync(world: &mut World) {
         .copied()
         .filter(|owner| world.get::<InfluenceArea>(*owner).is_some())
         .filter_map(|owner| {
-            let config = configuration(world, owner)?;
+            let config = configuration_ref(world, owner)?;
             if !config.enabled {
                 return None;
             }
-            let Source::Organ(organ) = config.source else {
+            let Source::Organ(organ) = &config.source else {
                 return None;
             };
-            Some((owner, organ))
+            Some((owner, organ.clone()))
         })
         .collect();
     let present: std::collections::HashSet<_> = world

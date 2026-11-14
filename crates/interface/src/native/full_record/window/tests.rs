@@ -2,6 +2,83 @@ use super::*;
 use bevy::{ecs::system::RunSystemOnce, input_focus::InputFocus, text::EditableText};
 
 #[test]
+fn restoration_preserves_live_metadata_until_its_identity_changes() {
+    let mut world = World::new();
+    let owner = world.spawn_empty().id();
+    let uid = nucleus::new_uid("r");
+    let mut config = config(&uid, Source::Local);
+    config.window_record = Some(WindowRecord {
+        placement: [1; 16],
+        uid,
+        title: "Saved title".into(),
+        app_id: "example.client".into(),
+        creating: false,
+    });
+    restore(&mut world, owner, &config);
+    let mut metadata = config.window_record.as_ref().unwrap().metadata();
+    assert_eq!(world.get::<Metadata>(owner), Some(&metadata));
+    metadata.title = "Live title".into();
+    metadata.live = true;
+    metadata.state = "floating".into();
+    world.entity_mut(owner).insert(metadata.clone());
+    let changed = world
+        .entity(owner)
+        .get_ref::<Metadata>()
+        .unwrap()
+        .last_changed();
+    world.increment_change_tick();
+    restore(&mut world, owner, &config);
+    assert_eq!(world.get::<Metadata>(owner), Some(&metadata));
+    assert_eq!(
+        world
+            .entity(owner)
+            .get_ref::<Metadata>()
+            .unwrap()
+            .last_changed(),
+        changed
+    );
+    config.window_record.as_mut().unwrap().placement = [2; 16];
+    restore(&mut world, owner, &config);
+    assert_eq!(
+        world.get::<Metadata>(owner),
+        Some(&config.window_record.as_ref().unwrap().metadata())
+    );
+}
+
+#[test]
+fn invalid_window_queries_cannot_insert_or_replace_metadata() {
+    let mut world = World::new();
+    let uid = nucleus::new_uid("r");
+    let mut config = config(&uid, Source::Local);
+    config.window_record = Some(WindowRecord {
+        placement: [1; 16],
+        uid,
+        title: "Saved title".into(),
+        app_id: "example.client".into(),
+        creating: false,
+    });
+    let empty = world.spawn_empty().id();
+    let mut metadata = config.window_record.as_ref().unwrap().metadata();
+    metadata.placement = [3; 16];
+    metadata.live = true;
+    let live = world.spawn(metadata.clone()).id();
+    for mutation in 0..4 {
+        let mut invalid = config.clone();
+        match mutation {
+            0 => invalid.source = Source::Organ("remote".into()),
+            1 => invalid.draft.query["limit"] = json!(2),
+            2 => invalid.window_record.as_mut().unwrap().uid = nucleus::new_uid("r"),
+            _ => invalid.window_record.as_mut().unwrap().placement = [0; 16],
+        }
+        for owner in [empty, live] {
+            restore(&mut world, owner, &invalid);
+        }
+        assert!(world.get::<Metadata>(empty).is_none());
+        assert_eq!(world.get::<Metadata>(live), Some(&metadata));
+    }
+}
+
+#[test]
 fn metadata_updates_and_closure_preserve_the_actual_record_editor_draft_and_binding() {
     let (mut app, _, owner) = crate::native::protein_area::tests::fixture();
     let uid = nucleus::new_uid("r");

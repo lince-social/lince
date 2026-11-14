@@ -354,6 +354,29 @@ async fn granted_organ_unlocks_without_a_password_and_reconnect_preserves_the_qu
         app.world().get::<Node>(entity).unwrap().display,
         Display::None
     );
+    let revision = app.world().resource::<Runtime>().areas[&owner].revision;
+    assert_ne!(revision, 0);
+    for message in [
+        ServerMessage::Snapshot {
+            id: "remote-query".into(),
+            rows: Vec::new(),
+        },
+        ServerMessage::Update {
+            id: "remote-query".into(),
+            rows: Vec::new(),
+        },
+    ] {
+        receive(app.world_mut(), owner, message);
+        app.update();
+        assert_eq!(
+            app.world().resource::<Runtime>().areas[&owner].revision,
+            revision
+        );
+        assert_eq!(
+            app.world().get::<Node>(entity).unwrap().display,
+            Display::None
+        );
+    }
     let config = app
         .world()
         .get::<InfluenceArea>(owner)

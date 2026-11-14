@@ -111,16 +111,13 @@ impl Creation {
 }
 
 pub(crate) fn restore(world: &mut World, owner: Entity, config: &Config) {
-    let Some(window) = config
-        .window_record
-        .as_ref()
-        .filter(|window| window.valid(config))
-    else {
+    let Some(window) = config.window_record.as_ref() else {
         return;
     };
     if world
         .get::<Metadata>(owner)
         .is_none_or(|metadata| metadata.uid != window.uid || metadata.placement != window.placement)
+        && window.valid(config)
     {
         world.entity_mut(owner).insert(window.metadata());
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {

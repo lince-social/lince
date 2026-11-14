@@ -1,7 +1,9 @@
 use lince_interface::records::KANBAN_COLUMNS as COLUMNS;
+mod checks;
 mod persistence;
 #[cfg(test)]
 mod tests;
+pub(crate) use checks::laboratory_cases;
 
 use crate::native::{
     actions::{Action, ActionButton},
@@ -444,7 +446,8 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         |world, root| {
             let owner = spawn(world, root, 1, DVec2::ZERO).unwrap();
             let board = world.get::<Kanban>(owner).unwrap().clone();
-            maintain(world, owner, &board);
+            let mut labels = world.query_filtered();
+            maintain(world, owner, &board, &mut labels);
             crate::native::sand_store::preview::compose(world, root)
         },
     );
@@ -491,6 +494,11 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
 
 #[derive(Component)]
 struct ColumnTitle;
+
+type ColumnLabels = QueryState<
+    (Entity, &'static ChildOf, Has<Status>),
+    Or<(With<Status>, With<ColumnTitle>)>,
+>;
 
 #[derive(Clone)]
 enum Command {
@@ -711,6 +719,7 @@ fn update(
     parts: &mut QueryState<(Entity, &'static Part)>,
     boards: &mut QueryState<(Entity, &'static Kanban)>,
     released_cards: &mut QueryState<Entity, (With<RecordCard>, With<HeldMembership>, Without<Card>)>,
+    labels: &mut ColumnLabels,
 ) {
     if !crate::native::laboratory::normal(world) {
         return;
@@ -767,7 +776,7 @@ fn update(
         {
             Command::Initialize.apply(world, owner);
         }
-        maintain(world, owner, &board);
+        maintain(world, owner, &board, labels);
     }
     let released: Vec<_> = released_cards
         .iter(world)
@@ -782,7 +791,7 @@ fn update(
     }
 }
 
-fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
+fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut ColumnLabels) {
     let Some(source) = area(world, owner, &board.source) else {
         world.get_mut::<View>(owner).unwrap().status = "Task source Area removed".into();
         return;
@@ -861,19 +870,17 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             area.name,
             area.changes.enter.quantity.as_deref().unwrap_or("—")
         );
-        let labels: Vec<_> = world
-            .query::<(Entity, &ChildOf, Has<Status>, Has<ColumnTitle>)>()
+        let column_labels: Vec<_> = labels
             .iter(world)
-            .filter(|(_, parent, status, title)| {
-                (*status || *title)
-                    && (parent.parent() == part
-                        || world
-                            .get::<ChildOf>(parent.parent())
-                            .is_some_and(|p| p.parent() == part))
+            .filter(|(_, parent, _)| {
+                parent.parent() == part
+                    || world
+                        .get::<ChildOf>(parent.parent())
+                        .is_some_and(|p| p.parent() == part)
             })
-            .map(|(e, _, status, _)| (e, status))
+            .map(|(e, _, status)| (e, status))
             .collect();
-        for (label, status) in labels {
+        for (label, status) in column_labels {
             set_label(
                 world,
                 label,

@@ -1,6 +1,7 @@
 pub fn catalogue() -> Vec<super::Case> {
     let mut cases = Vec::new();
     super::interface::laboratory_cases(&mut cases);
+    crate::native::accessibility::laboratory_cases(&mut cases);
     super::showoff::screenshot::laboratory_cases(&mut cases);
     #[cfg(feature = "test-driver")]
     super::driver::laboratory_cases(&mut cases);
@@ -18,6 +19,8 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::native::area::tests::laboratory_cases(&mut cases);
     crate::native::area_effects::tests::laboratory_cases(&mut cases);
     crate::native::influence_report::tests::laboratory_cases(&mut cases);
+    crate::native::topology::influence::tests::laboratory_cases(&mut cases);
+    crate::native::topology::area_summary::hover_checks::laboratory_cases(&mut cases);
     crate::native::external_drop::tests::laboratory_cases(&mut cases);
     crate::native::area_effects::ui::laboratory_cases(&mut cases);
     crate::native::area_drawing::tests::laboratory_cases(&mut cases);
@@ -36,6 +39,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::native::canvas_selection::tests::laboratory_cases(&mut cases);
     crate::native::castle::tests::laboratory_cases(&mut cases);
     crate::native::calendar::tests::laboratory_cases(&mut cases);
+    crate::native::kanban::laboratory_cases(&mut cases);
     crate::native::map_castle::laboratory_cases(&mut cases);
     crate::visibility::laboratory_cases(&mut cases);
     crate::native::schedule_editor::tests::laboratory_cases(&mut cases);

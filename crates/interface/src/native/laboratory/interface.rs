@@ -73,6 +73,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::topology::surface_render::tests::laboratory_cases(&mut cases);
     crate::native::information::sync::tests::laboratory_cases(&mut cases);
     crate::native::retained::tests::laboratory_cases(&mut cases);
+    crate::native::kanban::laboratory_cases(&mut cases);
     crate::native::area_effects::tests::laboratory_cases(&mut cases);
     crate::native::influence_report::tests::laboratory_cases(&mut cases);
     crate::native::topology::influence::tests::laboratory_cases(&mut cases);
@@ -287,6 +288,7 @@ fn fast_interface_rules() {
         "::presented_castles_keep_their_surface_while_replacement_content_settles",
         "::two_outputs_resolve_one_canonical_root_without_reparenting_items",
         "::mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window",
+        "::column_labels_follow_late_creation_reparenting_and_removed_roles",
     ] {
         assert!(results.iter().any(|result| result.name.ends_with(name)));
     }

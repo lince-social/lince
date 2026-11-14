@@ -1,30 +1,7 @@
 use super::*;
+use super::checks::fixture;
 
 mod room_mount;
-
-fn fixture() -> (App, Entity, Entity) {
-    let mut app = App::new();
-    crate::native::laboratory::isolate(app.world_mut());
-    app.add_plugins(MinimalPlugins)
-        .init_resource::<Assets<Font>>()
-        .init_resource::<crate::native::theme::Typography>()
-        .init_resource::<bevy::input_focus::InputFocus>()
-        .add_plugins((
-            crate::native::protein_area::ProteinAreaPlugin,
-            crate::native::area_mutation::AreaMutationPlugin,
-            crate::native::layout::LayoutPlugin,
-            KanbanPlugin,
-        ));
-    let root = app
-        .world_mut()
-        .spawn((
-            crate::native::container::BoxRoot,
-            crate::native::workspace::Workspaces::default(),
-        ))
-        .id();
-    let board = spawn(app.world_mut(), root, 1, DVec2::ZERO).unwrap();
-    (app, root, board)
-}
 
 async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     let result = tokio::time::timeout(std::time::Duration::from_secs(15), async {
@@ -498,7 +475,8 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
             .get_mut::<InfluenceArea>(source)
             .unwrap()
             .immunity = crate::native::area_effects::Immunity::None;
-        maintain(app.world_mut(), owner, &board);
+        let mut labels = app.world_mut().query_filtered();
+        maintain(app.world_mut(), owner, &board, &mut labels);
         crate::native::area_effects::update(app.world_mut());
         assert!(
             app.world()

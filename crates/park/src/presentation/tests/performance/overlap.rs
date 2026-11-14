@@ -1,5 +1,6 @@
 use super::*;
 
+mod consumer;
 mod offered;
 use bevy::{
     app::SubApp,
@@ -100,20 +101,46 @@ struct Publisher {
 
 impl Publisher {
     fn new(origin: Instant) -> Self {
+        Self::start(origin, None)
+    }
+
+    fn consuming(origin: Instant, warm: Frame, item: ItemId, original: bevy::math::DVec2) -> Self {
+        Self::start(origin, Some((warm, item, original)))
+    }
+
+    fn start(origin: Instant, consume: Option<(Frame, ItemId, bevy::math::DVec2)>) -> Self {
         let (sender, incoming) = sync_channel::<Publication>(1);
+        let (ready, initialized) = sync_channel(1);
         let worker = std::thread::Builder::new()
             .name("park-publication-probe".into())
             .spawn(move || {
+                let mut consumer = consume
+                    .map(|(warm, item, original)| consumer::Consumer::new(&warm, item, original));
+                ready.send(()).unwrap();
                 let mut received = Vec::new();
                 while let Ok((frame, mut sample)) = incoming.recv() {
                     sample["published_ms"] =
                         serde_json::json!(origin.elapsed().as_secs_f64() * 1000.0);
                     assert!(frame.ready().unwrap());
+                    if let Some(consumer) = consumer.as_mut() {
+                        sample["gles"] = consumer.consume(&frame, origin);
+                    }
                     received.push((frame, sample));
+                }
+                if let Some(consumer) = consumer.as_mut() {
+                    let (frame, sample) = received.last_mut().unwrap();
+                    sample["consumer_finished_ms"] =
+                        serde_json::json!(origin.elapsed().as_secs_f64() * 1000.0);
+                    sample["consumer_finished_cpu_ns"] =
+                        serde_json::json!(consumer::process_cpu_ns());
+                    sample["gles_pixels"] = consumer.check(frame, sample);
                 }
                 received
             })
             .unwrap();
+        initialized
+            .recv_timeout(Duration::from_secs(30))
+            .expect("Publication consumer did not initialize");
         Self {
             sender: Some(sender),
             worker: Some(worker),
@@ -454,100 +481,117 @@ fn check_pixels(
     mode: &str,
     secondary_reference: &mut Option<u64>,
 ) -> Vec<serde_json::Value> {
-    let mut pixels = Vec::new();
-    for (frame, sample) in frames.iter().zip(samples) {
-        let number = sample["epoch"].as_u64().unwrap() as usize;
-        assert_eq!(
-            frame.input.editor.as_ref().unwrap().surrounding,
-            "a".repeat(number + 1)
-        );
-        let geometry = frame.geometry.as_ref().unwrap();
-        let mapping = geometry
-            .items
+    frames
+        .iter()
+        .zip(samples)
+        .map(|(frame, sample)| {
+            let primary = probe_pixels(output_buffer(frame, OutputId(1))).unwrap();
+            let secondary = probe_pixels(output_buffer(frame, OutputId(2))).unwrap();
+            check_frame_pixels(
+                frame,
+                sample,
+                item,
+                original,
+                movement,
+                mode,
+                secondary_reference,
+                [&primary, &secondary],
+            )
+        })
+        .collect()
+}
+
+fn output_buffer(frame: &Frame, id: OutputId) -> &smithay::backend::allocator::dmabuf::Dmabuf {
+    if frame.output == Some(id) {
+        frame.dmabuf().unwrap()
+    } else {
+        frame
+            .outputs
             .iter()
-            .find(|entry| entry.id == item && entry.output == OutputId(1))
+            .find(|output| output.id == id)
             .unwrap()
-            .mapping;
-        let point = mapping
-            .canvas_point([
-                mapping.surface.origin()[0] + mapping.surface.size()[0] * 20.0 / 68.0,
-                mapping.surface.origin()[1] + mapping.surface.size()[1] * 12.0 / 80.0,
-            ])
-            .unwrap();
-        let expected_point = [
-            640.0 / 2.0 + original.x - 68.0 / 2.0 + 20.0 + (number + 1) as f64 * movement,
-            480.0 / 2.0 + original.y - 80.0 / 2.0 + 12.0,
-        ];
-        assert!(
-            point
-                .iter()
-                .zip(expected_point)
-                .all(|(actual, expected)| (actual - expected).abs() < 0.01),
-            "{mode} epoch {number}: geometry {point:?}, expected {expected_point:?}"
-        );
-        let image = if frame.output == Some(OutputId(1)) {
-            frame.dmabuf().unwrap()
-        } else {
-            frame
-                .outputs
-                .iter()
-                .find(|output| output.id == OutputId(1))
-                .unwrap()
-                .dmabuf()
-        };
-        let bytes = probe_pixels(image).unwrap();
-        let offset = (point[1].round() as usize * 640 + point[0].round() as usize) * 4;
-        let actual = &bytes[offset..offset + 3];
-        let expected = palette(number + 1);
-        assert!(
-            actual
-                .iter()
-                .zip(expected)
-                .all(|(actual, expected)| actual.abs_diff(expected) < 30),
-            "{mode} epoch {number} at {point:?}: {actual:?}, expected {expected:?}"
-        );
-        let secondary = if frame.output == Some(OutputId(2)) {
-            frame.dmabuf().unwrap()
-        } else {
-            frame
-                .outputs
-                .iter()
-                .find(|output| output.id == OutputId(2))
-                .unwrap()
-                .dmabuf()
-        };
-        let secondary = probe_pixels(secondary).unwrap();
-        let green = secondary
-            .chunks_exact(4)
-            .filter(|pixel| pixel[0] < 30 && pixel[1] > 230 && pixel[2] < 30)
-            .count();
-        let glyphs = (0..8)
-            .flat_map(|index| {
-                (200..280).flat_map(move |y| {
-                    ((34 + index * 72)..(102 + index * 72)).map(move |x| (y * 640 + x) * 4)
-                })
-            })
-            .filter(|offset| {
-                secondary[*offset..*offset + 3]
-                    .iter()
-                    .all(|channel| *channel < 180)
-            })
-            .count();
-        assert!(
-            green > 20000 && glyphs > 200,
-            "{mode} epoch {number}: secondary green {green}, glyphs {glyphs}"
-        );
-        let mut hash = std::collections::hash_map::DefaultHasher::new();
-        std::hash::Hash::hash(&secondary, &mut hash);
-        let hash = std::hash::Hasher::finish(&hash);
-        assert_eq!(
-            *secondary_reference.get_or_insert(hash),
-            hash,
-            "The quiet output changed: {mode}, epoch {number}"
-        );
-        pixels.push(serde_json::json!({"epoch":number,"point":point,"rgb":actual,"geometry_revision":geometry.revision,"secondary_hash":hash,"secondary_green":green,"secondary_glyphs":glyphs}));
+            .dmabuf()
     }
-    pixels
+}
+
+fn check_frame_pixels(
+    frame: &Frame,
+    sample: &serde_json::Value,
+    item: ItemId,
+    original: bevy::math::DVec2,
+    movement: f64,
+    mode: &str,
+    secondary_reference: &mut Option<u64>,
+    [bytes, secondary]: [&[u8]; 2],
+) -> serde_json::Value {
+    let number = sample["epoch"].as_u64().unwrap() as usize;
+    assert_eq!(
+        frame.input.editor.as_ref().unwrap().surrounding,
+        "a".repeat(number + 1)
+    );
+    let geometry = frame.geometry.as_ref().unwrap();
+    let mapping = geometry
+        .items
+        .iter()
+        .find(|entry| entry.id == item && entry.output == OutputId(1))
+        .unwrap()
+        .mapping;
+    let point = mapping
+        .canvas_point([
+            mapping.surface.origin()[0] + mapping.surface.size()[0] * 20.0 / 68.0,
+            mapping.surface.origin()[1] + mapping.surface.size()[1] * 12.0 / 80.0,
+        ])
+        .unwrap();
+    let expected_point = [
+        640.0 / 2.0 + original.x - 68.0 / 2.0 + 20.0 + (number + 1) as f64 * movement,
+        480.0 / 2.0 + original.y - 80.0 / 2.0 + 12.0,
+    ];
+    assert!(
+        point
+            .iter()
+            .zip(expected_point)
+            .all(|(actual, expected)| (actual - expected).abs() < 0.01),
+        "{mode} epoch {number}: geometry {point:?}, expected {expected_point:?}"
+    );
+    let offset = (point[1].round() as usize * 640 + point[0].round() as usize) * 4;
+    let actual = &bytes[offset..offset + 3];
+    let expected = palette(number + 1);
+    assert!(
+        actual
+            .iter()
+            .zip(expected)
+            .all(|(actual, expected)| actual.abs_diff(expected) < 30),
+        "{mode} epoch {number} at {point:?}: {actual:?}, expected {expected:?}"
+    );
+    let green = secondary
+        .chunks_exact(4)
+        .filter(|pixel| pixel[0] < 30 && pixel[1] > 230 && pixel[2] < 30)
+        .count();
+    let glyphs = (0..8)
+        .flat_map(|index| {
+            (200..280).flat_map(move |y| {
+                ((34 + index * 72)..(102 + index * 72)).map(move |x| (y * 640 + x) * 4)
+            })
+        })
+        .filter(|offset| {
+            secondary[*offset..*offset + 3]
+                .iter()
+                .all(|channel| *channel < 180)
+        })
+        .count();
+    assert!(
+        green > 20000 && glyphs > 200,
+        "{mode} epoch {number}: secondary green {green}, glyphs {glyphs}"
+    );
+    let mut hash = std::collections::hash_map::DefaultHasher::new();
+    std::hash::Hash::hash(&secondary, &mut hash);
+    let hash = std::hash::Hasher::finish(&hash);
+    assert_eq!(
+        *secondary_reference.get_or_insert(hash),
+        hash,
+        "The quiet output changed: {mode}, epoch {number}"
+    );
+    serde_json::json!({"epoch":number,"point":point,"rgb":actual,"geometry_revision":geometry.revision,"secondary_hash":hash,"secondary_green":green,"secondary_glyphs":glyphs})
 }
 
 #[test]

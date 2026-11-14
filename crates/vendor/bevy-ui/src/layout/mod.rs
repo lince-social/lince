@@ -15,12 +15,13 @@ use bevy_ecs::{
     hierarchy::{ChildOf, Children},
     lifecycle::RemovedComponents,
     query::{Added, Allow, Changed, Or},
-    system::{Local, ParamSet, Query, ResMut},
+    system::{Local, ParamSet, Query, Res, ResMut},
     world::Ref,
 };
 
 use bevy_math::{Affine2, Vec2};
 use bevy_sprite::BorderRect;
+use std::time::Instant;
 use thiserror::Error;
 use ui_surface::UiSurface;
 
@@ -29,6 +30,8 @@ use bevy_text::ComputedTextBlock;
 use bevy_text::FontCx;
 
 mod convert;
+mod diagnostics;
+pub use diagnostics::{UiLayoutDiagnostics, UiLayoutReading};
 pub mod debug;
 #[cfg(test)]
 mod incremental_tests;
@@ -81,6 +84,7 @@ pub enum LayoutError {
 /// Updates the UI's layout tree, computes the new layout geometry and then updates the sizes and transforms of all the UI nodes.
 pub fn ui_layout_system(
     mut ui_surface: ResMut<UiSurface>,
+    diagnostics: Option<Res<UiLayoutDiagnostics>>,
     ui_root_node_query: UiRootNodes,
     ui_children: UiChildren,
     mut node_query: Query<(
@@ -143,6 +147,8 @@ pub fn ui_layout_system(
         Local<EntityHashSet>,
     ),
 ) {
+    let started = diagnostics.as_ref().map(|_| Instant::now());
+    let mut reading = UiLayoutReading::default();
     let (changes, hierarchy_changes, disabled, mut removed, mut dirty, mut hierarchy) = updates;
     dirty.clear();
     hierarchy.clear();
@@ -158,26 +164,48 @@ pub fn ui_layout_system(
     dirty.extend(removed.2.read());
     dirty.extend(removed.3.read());
     dirty.extend(removed.4.read());
+    reading.geometry_inputs = dirty.len() as u64;
 
     // Sync Node and ContentSize to Taffy for all nodes
     node_query
         .iter_mut()
         .for_each(|(entity, node, mut content_size, computed_target)| {
+            if diagnostics.is_some() {
+                reading.nodes += 1;
+                reading.styles += u64::from(node.is_changed());
+                reading.measures += u64::from(content_size.is_changed());
+                reading.targets += u64::from(computed_target.is_changed());
+            }
             if reset
                 || computed_target.is_changed()
                 || node.is_changed()
                 || content_size.is_changed()
             {
-                dirty.insert(entity);
                 let layout_context = LayoutContext::new(
                     computed_target.scale_factor,
                     computed_target.physical_size.as_vec2(),
                 );
-                if content_size.is_changed() && content_size.measure.is_none() {
-                    ui_surface.try_remove_node_context(entity);
+                if diagnostics.is_some() && content_size.is_changed() {
+                    match content_size.measure.as_ref() {
+                        None => reading.empty_measures += 1,
+                        Some(crate::NodeMeasure::Image(_)) => reading.image_measures += 1,
+                        Some(crate::NodeMeasure::Fixed(_)) => reading.fixed_measures += 1,
+                        Some(crate::NodeMeasure::TextInput(_)) => reading.text_input_measures += 1,
+                        Some(crate::NodeMeasure::Text(_)) => reading.text_measures += 1,
+                        Some(crate::NodeMeasure::Custom(_)) => reading.custom_measures += 1,
+                    }
                 }
+                let removed = content_size.is_changed()
+                    && content_size.measure.is_none()
+                    && ui_surface.try_remove_node_context(entity);
                 let measure = content_size.bypass_change_detection().measure.take();
-                ui_surface.upsert_node(&layout_context, entity, &node, measure);
+                let changed = ui_surface.upsert_node(&layout_context, entity, &node, measure);
+                if reset || node.is_changed() || computed_target.is_changed() || changed || removed
+                {
+                    dirty.insert(entity);
+                } else if diagnostics.is_some() {
+                    reading.measure_noops += 1;
+                }
             }
             if reset {
                 hierarchy.insert(entity);
@@ -234,6 +262,9 @@ pub fn ui_layout_system(
         dirty.insert(entity);
     }
     for &entity in hierarchy.iter() {
+        if diagnostics.is_some() {
+            reading.hierarchy += 1;
+        }
         dirty.insert(entity);
         if node_query.contains(entity) && ui_surface.entity_to_taffy.contains_key(&entity) {
             ui_surface.update_children(entity, ui_children.iter_ui_children(entity));
@@ -249,6 +280,9 @@ pub fn ui_layout_system(
     for &entity in dirty.iter() {
         ui_children.affected_roots(entity, &mut hierarchy);
     }
+    if let Some(started) = started {
+        reading.synchronization = started.elapsed();
+    }
 
     let mut node_update_query = geometry.p0();
     for ui_root_entity in ui_root_node_query.iter() {
@@ -261,6 +295,7 @@ pub fn ui_layout_system(
             continue;
         }
         let (_, _, _, computed_target) = node_query.get(ui_root_entity).unwrap();
+        let started = diagnostics.as_ref().map(|_| Instant::now());
 
         ui_surface.compute_layout(
             ui_root_entity,
@@ -268,7 +303,12 @@ pub fn ui_layout_system(
             &mut buffer_query,
             &mut font_system,
         );
+        if let Some(started) = started {
+            reading.computation += started.elapsed();
+            reading.roots += 1;
+        }
 
+        let started = diagnostics.as_ref().map(|_| Instant::now());
         update_uinode_geometry_recursive(
             ui_root_entity,
             &mut ui_surface,
@@ -280,7 +320,14 @@ pub fn ui_layout_system(
             computed_target.scale_factor.recip(),
             Vec2::ZERO,
             Vec2::ZERO,
+            diagnostics.as_ref().map(|_| &mut reading.geometry_nodes),
         );
+        if let Some(started) = started {
+            reading.geometry += started.elapsed();
+        }
+    }
+    if let Some(diagnostics) = diagnostics {
+        (diagnostics.0)(reading);
     }
 
     // Returns the combined bounding box of the node and any of its overflowing children.
@@ -304,7 +351,11 @@ pub fn ui_layout_system(
         inverse_target_scale_factor: f32,
         parent_size: Vec2,
         parent_scroll_position: Vec2,
+        mut visits: Option<&mut u64>,
     ) {
+        if let Some(visits) = visits.as_deref_mut() {
+            *visits += 1;
+        }
         #[cfg(test)]
         {
             ui_surface.geometry_visits += 1;
@@ -453,6 +504,7 @@ pub fn ui_layout_system(
                     inverse_target_scale_factor,
                     layout_size,
                     physical_scroll_position,
+                    visits.as_deref_mut(),
                 );
             }
         }

@@ -115,21 +115,39 @@ impl UiSurface {
         entity: Entity,
         node: &Node,
         mut new_node_context: Option<NodeMeasure>,
-    ) {
+    ) -> bool {
         let taffy = &mut self.taffy;
 
         match self.entity_to_taffy.entry(entity) {
             Entry::Occupied(entry) => {
                 let taffy_node = *entry.get();
-                if new_node_context.is_some() {
+                let unchanged = match (
+                    taffy.get_node_context(taffy_node.id),
+                    new_node_context.as_ref(),
+                ) {
+                    (Some(NodeMeasure::Fixed(old)), Some(NodeMeasure::Fixed(new))) => {
+                        old.size == new.size
+                    }
+                    (Some(NodeMeasure::Image(old)), Some(NodeMeasure::Image(new))) => {
+                        old.size == new.size && old.visual_box == new.visual_box
+                    }
+                    (Some(NodeMeasure::TextInput(old)), Some(NodeMeasure::TextInput(new))) => old == new,
+                    _ => false,
+                };
+                let mut changed = false;
+                if new_node_context.is_some() && !unchanged {
                     taffy
                         .set_node_context(taffy_node.id, new_node_context)
                         .unwrap();
+                    changed = true;
                 }
 
-                taffy
-                    .set_style(taffy_node.id, convert::from_node(node, layout_context))
-                    .unwrap();
+                let style = convert::from_node(node, layout_context);
+                if taffy.style(taffy_node.id).unwrap() != &style {
+                    taffy.set_style(taffy_node.id, style).unwrap();
+                    changed = true;
+                }
+                changed
             }
             Entry::Vacant(entry) => {
                 let taffy_node = if let Some(measure) = new_node_context.take() {
@@ -138,6 +156,7 @@ impl UiSurface {
                     taffy.new_leaf(convert::from_node(node, layout_context))
                 };
                 entry.insert(taffy_node.unwrap().into());
+                true
             }
         }
     }
@@ -178,10 +197,14 @@ impl UiSurface {
     }
 
     /// Removes the measure from the entity's taffy node if it exists. Does nothing otherwise.
-    pub fn try_remove_node_context(&mut self, entity: Entity) {
-        if let Some(taffy_node) = self.entity_to_taffy.get(&entity) {
+    pub fn try_remove_node_context(&mut self, entity: Entity) -> bool {
+        if let Some(taffy_node) = self.entity_to_taffy.get(&entity)
+            && self.taffy.get_node_context(taffy_node.id).is_some()
+        {
             self.taffy.set_node_context(taffy_node.id, None).unwrap();
+            return true;
         }
+        false
     }
 
     /// Gets or inserts an implicit taffy viewport node corresponding to the given UI root entity

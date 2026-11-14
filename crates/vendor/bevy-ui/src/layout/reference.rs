@@ -43,7 +43,20 @@ pub(super) fn ui_layout_system(
                     ui_surface.try_remove_node_context(entity);
                 }
                 let measure = content_size.bypass_change_detection().measure.take();
-                ui_surface.upsert_node(&layout_context, entity, &node, measure);
+                if let Some(taffy_node) = ui_surface.entity_to_taffy.get(&entity).copied() {
+                    if measure.is_some() {
+                        ui_surface
+                            .taffy
+                            .set_node_context(taffy_node.id, measure)
+                            .unwrap();
+                    }
+                    ui_surface
+                        .taffy
+                        .set_style(taffy_node.id, convert::from_node(&node, &layout_context))
+                        .unwrap();
+                } else {
+                    ui_surface.upsert_node(&layout_context, entity, &node, measure);
+                }
             }
         });
 

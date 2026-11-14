@@ -40,6 +40,7 @@ pub(super) fn install(app: &mut App) -> Result<(), &'static str> {
     observed.add_systems(run);
     schedules.insert(observed);
     drop(schedules);
+    app.insert_resource(bevy::ui::UiLayoutDiagnostics(ui_layout_work));
     app.add_systems(
         PostUpdate,
         text_work
@@ -48,6 +49,32 @@ pub(super) fn install(app: &mut App) -> Result<(), &'static str> {
             .before(bevy::ui::widget::measure_text_system),
     );
     Ok(())
+}
+
+fn ui_layout_work(reading: bevy::ui::UiLayoutReading) {
+    use performance::Count;
+    performance::record(Stage::NativeUiSynchronization, reading.synchronization);
+    performance::record(Stage::NativeUiComputation, reading.computation);
+    performance::record(Stage::NativeUiGeometry, reading.geometry);
+    for (count, value) in [
+        (Count::NativeUiNodes, reading.nodes),
+        (Count::NativeUiStyles, reading.styles),
+        (Count::NativeUiMeasures, reading.measures),
+        (Count::NativeUiEmptyMeasures, reading.empty_measures),
+        (Count::NativeUiImageMeasures, reading.image_measures),
+        (Count::NativeUiFixedMeasures, reading.fixed_measures),
+        (Count::NativeUiTextInputMeasures, reading.text_input_measures),
+        (Count::NativeUiTextMeasures, reading.text_measures),
+        (Count::NativeUiCustomMeasures, reading.custom_measures),
+        (Count::NativeUiMeasureNoops, reading.measure_noops),
+        (Count::NativeUiTargets, reading.targets),
+        (Count::NativeUiHierarchy, reading.hierarchy),
+        (Count::NativeUiGeometryInputs, reading.geometry_inputs),
+        (Count::NativeUiRoots, reading.roots),
+        (Count::NativeUiGeometryNodes, reading.geometry_nodes),
+    ] {
+        performance::add(count, value);
+    }
 }
 
 fn text_work(

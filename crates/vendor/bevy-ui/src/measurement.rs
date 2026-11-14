@@ -7,7 +7,7 @@ pub use taffy::style::AvailableSpace;
 use taffy::MaybeMath;
 use taffy::MaybeResolve;
 
-use crate::widget::ImageMeasure;
+use crate::widget::{ImageMeasure, TextInputMeasure};
 
 use crate::widget::TextMeasure;
 
@@ -107,6 +107,7 @@ pub enum NodeMeasure {
     Fixed(FixedMeasure),
     Text(TextMeasure),
     Image(ImageMeasure),
+    TextInput(TextInputMeasure),
     Custom(Box<dyn Measure>),
 }
 
@@ -116,6 +117,7 @@ impl Measure for NodeMeasure {
             NodeMeasure::Fixed(fixed) => fixed.measure(measure_args),
             NodeMeasure::Text(text) => text.measure(measure_args),
             NodeMeasure::Image(image) => image.measure(measure_args),
+            NodeMeasure::TextInput(input) => input.measure(measure_args),
             NodeMeasure::Custom(custom) => custom.measure(measure_args),
         }
     }

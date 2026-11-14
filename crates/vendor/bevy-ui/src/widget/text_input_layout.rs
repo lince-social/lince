@@ -33,9 +33,10 @@ use taffy::MaybeMath;
 #[reflect(Component, Default, Clone)]
 pub struct TextScroll(pub Vec2);
 
-struct TextInputMeasure {
-    width: Option<f32>,
-    height: Option<f32>,
+#[derive(Clone, Copy, PartialEq)]
+pub struct TextInputMeasure {
+    pub(crate) width: Option<f32>,
+    pub(crate) height: Option<f32>,
 }
 
 impl crate::Measure for TextInputMeasure {
@@ -148,10 +149,10 @@ pub fn update_editable_text_content_size(
         });
 
         if width.is_some() || height.is_some() {
-            content_size.set(NodeMeasure::Custom(Box::new(TextInputMeasure {
+            content_size.set(NodeMeasure::TextInput(TextInputMeasure {
                 width,
                 height,
-            })));
+            }));
         } else {
             content_size.clear();
         }

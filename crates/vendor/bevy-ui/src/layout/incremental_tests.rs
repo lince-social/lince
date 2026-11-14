@@ -214,6 +214,244 @@ fn unchanged_trees_do_no_geometry_work_and_one_changed_tree_does_not_walk_its_ne
 }
 
 #[test]
+fn geometry_changes_match_full_traversal_inside_nested_branches() {
+    let mut candidate = scene(false, 1, 8);
+    let mut reference = scene(true, 1, 8);
+    let mut nested = Vec::new();
+    for scene in [&mut candidate, &mut reference] {
+        let mut children = Vec::new();
+        for &branch in &scene.leaves {
+            for _ in 0..32 {
+                children.push(
+                    scene
+                        .app
+                        .world_mut()
+                        .spawn((
+                            Node {
+                                width: Val::Px(13.25),
+                                height: Val::Px(12.75),
+                                flex_shrink: 0.0,
+                                ..Default::default()
+                            },
+                            target(),
+                            ChildOf(branch),
+                        ))
+                        .id(),
+                );
+            }
+        }
+        nested.push(children);
+    }
+    equivalent(&mut candidate, &mut reference, 0);
+    for step in 0..9 {
+        for (scene, children) in [&mut candidate, &mut reference].into_iter().zip(&nested) {
+            let world = scene.app.world_mut();
+            let branch = scene.leaves[2];
+            let leaf = children[65];
+            match step {
+                0 => {
+                    world.entity_mut(leaf).insert(Outline {
+                        width: Val::Px(3.5),
+                        ..Default::default()
+                    });
+                }
+                1 => {
+                    world
+                        .entity_mut(branch)
+                        .insert(UiTransform::from_translation(crate::Val2::px(2.25, -3.5)));
+                }
+                2 => {
+                    world.entity_mut(branch).insert(LayoutConfig {
+                        use_rounding: false,
+                    });
+                }
+                3 => {
+                    world.entity_mut(branch).remove::<LayoutConfig>();
+                }
+                4 => {
+                    world.get_mut::<ComputedNode>(leaf).unwrap().size = Vec2::splat(800.0);
+                }
+                5 => {
+                    world.entity_mut(leaf).insert(UiGlobalTransform::from(
+                        Affine2::from_translation(Vec2::splat(900.0)),
+                    ));
+                }
+                6 => {
+                    world
+                        .entity_mut(scene.roots[0])
+                        .insert(ScrollPosition(Vec2::new(0.0, 31.5)));
+                }
+                7 => {
+                    world.get_mut::<Node>(leaf).unwrap().height = Val::Px(27.25);
+                }
+                8 => {
+                    world.entity_mut(leaf).insert(ChildOf(scene.leaves[3]));
+                }
+                _ => unreachable!(),
+            }
+        }
+        equivalent(&mut candidate, &mut reference, step + 1);
+        let surface = candidate.app.world().resource::<UiSurface>();
+        let stable = surface.geometry_visits;
+        equivalent(&mut candidate, &mut reference, step + 1);
+        assert_eq!(
+            candidate
+                .app
+                .world()
+                .resource::<UiSurface>()
+                .geometry_visits,
+            stable
+        );
+    }
+}
+
+#[test]
+fn layout_diagnostics_count_work_without_changing_geometry() {
+    static READINGS: std::sync::Mutex<Vec<UiLayoutReading>> = std::sync::Mutex::new(Vec::new());
+    let mut candidate = scene(false, 2, 3);
+    let mut reference = scene(true, 2, 3);
+    candidate
+        .app
+        .insert_resource(UiLayoutDiagnostics(|reading| {
+            READINGS.lock().unwrap().push(reading);
+        }));
+    equivalent(&mut candidate, &mut reference, 0);
+    equivalent(&mut candidate, &mut reference, 1);
+    for scene in [&mut candidate, &mut reference] {
+        scene
+            .app
+            .world_mut()
+            .get_mut::<Node>(scene.leaves[1])
+            .unwrap()
+            .height = Val::Px(51.0);
+    }
+    equivalent(&mut candidate, &mut reference, 2);
+    let readings = READINGS.lock().unwrap();
+    assert_eq!(readings.len(), 3);
+    assert_eq!(readings[0].nodes, 8);
+    assert_eq!(readings[0].styles, 8);
+    assert_eq!(readings[0].targets, 8);
+    assert_eq!(readings[0].roots, 2);
+    assert_eq!(readings[0].geometry_nodes, 8);
+    assert_eq!(readings[1].nodes, 8);
+    assert_eq!(readings[1].styles, 0);
+    assert_eq!(readings[1].roots, 0);
+    assert_eq!(readings[1].geometry_nodes, 0);
+    assert_eq!(readings[1].computation, std::time::Duration::ZERO);
+    assert_eq!(readings[1].geometry, std::time::Duration::ZERO);
+    assert_eq!(readings[2].styles, 1);
+    assert_eq!(readings[2].roots, 1);
+    assert_eq!(readings[2].geometry_nodes, 4);
+}
+
+#[test]
+fn equal_intrinsic_measurements_do_no_layout_work_and_real_changes_match_full_traversal() {
+    let mut candidate = scene(false, 1, 1);
+    let mut reference = scene(true, 1, 1);
+    for scene in [&mut candidate, &mut reference] {
+        let mut node = scene
+            .app
+            .world_mut()
+            .get_mut::<Node>(scene.leaves[0])
+            .unwrap();
+        node.height = Val::Auto;
+        node.align_self = crate::AlignSelf::Start;
+    }
+    equivalent(&mut candidate, &mut reference, 0);
+    for step in 0..21 {
+        let visits = candidate
+            .app
+            .world()
+            .resource::<UiSurface>()
+            .geometry_visits;
+        for scene in [&mut candidate, &mut reference] {
+            let leaf = scene.leaves[0];
+            let world = scene.app.world_mut();
+            let fixed = |size| crate::NodeMeasure::Fixed(crate::FixedMeasure { size });
+            let image = |size, visual_box| {
+                crate::NodeMeasure::Image(crate::widget::ImageMeasure { size, visual_box })
+            };
+            match step {
+                0 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(fixed(Vec2::new(80.0, 22.0))),
+                1 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(fixed(Vec2::new(90.0, 25.0))),
+                2 | 3 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(image(Vec2::new(80.0, 22.0), crate::VisualBox::ContentBox)),
+                4 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(image(Vec2::new(80.0, 22.0), crate::VisualBox::PaddingBox)),
+                5 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(image(Vec2::new(95.0, 34.0), crate::VisualBox::PaddingBox)),
+                6 | 7 | 14 | 15 => world.get_mut::<ContentSize>(leaf).unwrap().clear(),
+                8 => world
+                    .get_mut::<ContentSize>(leaf)
+                    .unwrap()
+                    .set(fixed(Vec2::new(80.0, 22.0))),
+                9 | 10 => {
+                    world
+                        .get_mut::<ContentSize>(leaf)
+                        .unwrap()
+                        .set(crate::NodeMeasure::Custom(Box::new(crate::FixedMeasure {
+                            size: Vec2::new(83.0, 27.0),
+                        })))
+                }
+                11 => world.get_mut::<Node>(leaf).unwrap().margin = UiRect::all(Val::Px(2.5)),
+                12 => {
+                    for mut target in world
+                        .query::<&mut ComputedUiRenderTargetInfo>()
+                        .iter_mut(world)
+                    {
+                        target.scale_factor = 1.5;
+                    }
+                }
+                13 => {
+                    world.get_mut::<Node>(leaf).unwrap().border_radius =
+                        crate::BorderRadius::all(Val::Px(3.0))
+                }
+                16..=20 => {
+                    world
+                        .get_mut::<ContentSize>(leaf)
+                        .unwrap()
+                        .set(crate::NodeMeasure::TextInput(
+                            crate::widget::TextInputMeasure {
+                                width: (step >= 18).then_some(80.0),
+                                height: Some(if step == 20 { 24.0 } else { 12.0 }),
+                            },
+                        ))
+                }
+                _ => unreachable!(),
+            }
+        }
+        equivalent(&mut candidate, &mut reference, step + 1);
+        assert_eq!(
+            candidate
+                .app
+                .world()
+                .resource::<UiSurface>()
+                .geometry_visits
+                - visits,
+            if matches!(step, 0 | 3 | 7 | 15 | 17 | 19) {
+                0
+            } else {
+                2
+            },
+            "Unexpected work for intrinsic measurement change {step}"
+        );
+        equivalent(&mut candidate, &mut reference, step + 1);
+    }
+}
+
+#[test]
 fn incremental_geometry_matches_the_original_across_layout_and_hierarchy_transitions() {
     let mut candidate = scene(false, 4, 12);
     let mut reference = scene(true, 4, 12);
@@ -449,7 +687,7 @@ fn ghost_branch_insertion_removal_and_reparenting_match_the_original() {
         ghosts.push((ghost, nested));
     }
     equivalent(&mut candidate, &mut reference, 0);
-    for step in 0..11 {
+    for step in 0..15 {
         for (scene, (ghost, nested)) in [&mut candidate, &mut reference].into_iter().zip(&ghosts) {
             let world = scene.app.world_mut();
             match step {
@@ -495,6 +733,23 @@ fn ghost_branch_insertion_removal_and_reparenting_match_the_original() {
                 }
                 10 => {
                     world.entity_mut(*ghost).remove::<Node>();
+                }
+                11 => {
+                    world
+                        .entity_mut(scene.leaves[0])
+                        .insert(UiTransform::from_translation(crate::Val2::px(3.25, -5.75)));
+                }
+                12 => {
+                    world.entity_mut(scene.leaves[1]).insert(LayoutConfig {
+                        use_rounding: false,
+                    });
+                }
+                13 => {
+                    world.entity_mut(scene.leaves[1]).remove::<LayoutConfig>();
+                }
+                14 => {
+                    world.get_mut::<ComputedNode>(scene.leaves[0]).unwrap().size =
+                        Vec2::splat(712.0);
                 }
                 _ => unreachable!(),
             }

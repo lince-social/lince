@@ -197,6 +197,38 @@ pub(crate) async fn attach<Body>(
     {
         return Ok(HashMap::new());
     }
+    let mut log_ids = HashMap::<String, Vec<String>>::new();
+    if wants("work_logs") {
+        let owners: Vec<_> = records
+            .iter()
+            .filter(|record| {
+                work.get(&record.uid)
+                    .and_then(|metadata| metadata.get("logs"))
+                    .and_then(Value::as_array)
+                    .is_some_and(|logs| !logs.is_empty())
+            })
+            .map(|record| record.uid.as_str())
+            .collect();
+        for owners in owners.chunks(512) {
+            let _ids = nucleus::performance::Span::new("protein-work-log-ids-await");
+            let mut query = store::sqlx::QueryBuilder::new(
+                "SELECT record_uid, property FROM record_property WHERE record_uid IN (",
+            );
+            let mut arguments = query.separated(",");
+            for uid in owners {
+                arguments.push_bind(*uid);
+            }
+            arguments.push_unseparated(")");
+            query.push(" AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY record_uid, json_extract(value, '$.start'), property");
+            for (uid, property) in query
+                .build_query_as::<(String, String)>()
+                .fetch_all(&store.pool)
+                .await?
+            {
+                log_ids.entry(uid).or_default().push(property);
+            }
+        }
+    }
     let mut out = HashMap::new();
     for record in records {
         let mut value = json!({});
@@ -213,15 +245,12 @@ pub(crate) async fn attach<Body>(
             .map(Vec::as_slice)
             .unwrap_or_default();
         if wants("work_logs") {
-            let _ids = nucleus::performance::Span::new("protein-work-log-ids-await");
-            let entries: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY json_extract(value, '$.start'), property")
-                .bind(&record.uid).fetch_all(&store.pool).await?;
+            let mut entries = log_ids.remove(&record.uid).unwrap_or_default().into_iter();
             let mut identified = logs.to_vec();
             for (index, log) in identified.iter_mut().enumerate() {
-                log["id"] = json!(
+                log["id"] = Value::String(
                     entries
-                        .get(index)
-                        .map(|entry| entry.0.clone())
+                        .next()
                         .unwrap_or_else(|| format!("work.log:seed-{index}"))
                 );
             }

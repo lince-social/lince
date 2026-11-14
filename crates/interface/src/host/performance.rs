@@ -571,7 +571,7 @@ pub struct RenderDiagnostic {
     pub identity: &'static str,
 }
 
-const SPAN_TRACE_LIMIT: usize = 2048;
+const SPAN_TRACE_LIMIT: usize = 16_384;
 const SYSTEM_LIMIT: usize = 2048;
 const SYSTEM_SHARDS: usize = 16;
 

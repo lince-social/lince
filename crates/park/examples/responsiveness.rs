@@ -67,6 +67,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map_err(|_| "Projection reveal probe panicked")?
             .map_err(Into::into);
     }
+    if std::env::args().nth(1).as_deref() == Some("--record-edits") {
+        return std::thread::Builder::new()
+            .name("park-record-edits".into())
+            .stack_size(32 * 1024 * 1024)
+            .spawn(lince_park::responsiveness::record_edits)?
+            .join()
+            .map_err(|_| "Record edit probe panicked")?
+            .map_err(Into::into);
+    }
     let directory = PathBuf::from(
         std::env::args_os()
             .nth(1)

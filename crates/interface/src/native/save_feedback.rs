@@ -42,6 +42,16 @@ impl SaveFeedback {
     }
 }
 
+#[cfg(feature = "behavior-checks")]
+pub(crate) fn warning(world: &World, entity: Entity) -> bool {
+    world.get::<SaveFeedback>(entity).is_some_and(|feedback| {
+        !feedback.failed
+            && feedback
+                .since
+                .is_some_and(|since| since.elapsed() >= SAVE_WARNING_AFTER)
+    })
+}
+
 pub(crate) fn set_failed(world: &mut World, entity: Entity, failed: bool) {
     let mut descendants = vec![entity];
     while let Some(entity) = descendants.pop() {

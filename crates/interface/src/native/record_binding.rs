@@ -1059,6 +1059,47 @@ impl TextBinding {
     }
 }
 
+#[cfg(feature = "behavior-checks")]
+#[derive(Debug)]
+pub struct EditObservation {
+    pub revision: u64,
+    pub durable_revision: u64,
+    pub pending: Vec<String>,
+    pub saving: bool,
+    pub writable: bool,
+    pub applied: bool,
+    pub unsaved: bool,
+    pub warning: bool,
+    pub failed: bool,
+}
+
+#[cfg(feature = "behavior-checks")]
+pub fn observe_edit(world: &World, entity: Entity) -> Option<EditObservation> {
+    let binding = world.get::<TextBinding>(entity)?;
+    let text = world.get::<EditableText>(entity)?;
+    let document = world
+        .get_resource::<Bindings>()?
+        .documents
+        .get(&key(&binding.record))?;
+    let value = text.value().to_string();
+    Some(EditObservation {
+        revision: document.revision,
+        durable_revision: document.saved,
+        pending: document
+            .pending
+            .iter()
+            .map(|request| request.id.clone())
+            .collect(),
+        saving: document.saving,
+        writable: document.joined && document.writable.contains(&binding.property),
+        applied: binding.observed == value
+            && document.doc.get_text(binding.property.as_str()).to_string() == value,
+        unsaved: binding.unsaved(&value),
+        warning: crate::native::save_feedback::warning(world, entity),
+        failed: document.failed,
+    })
+}
+
 #[derive(Component)]
 pub(crate) struct BindingStatus;
 
@@ -1356,7 +1397,11 @@ pub fn attach(
     ));
 }
 
-pub fn receive(world: &mut World, source: Source, message: impl std::borrow::Borrow<ServerMessage>) {
+pub fn receive(
+    world: &mut World,
+    source: Source,
+    message: impl std::borrow::Borrow<ServerMessage>,
+) {
     let message = message.borrow();
     let Some(mut bindings) = world.get_resource_mut::<Bindings>() else {
         return;

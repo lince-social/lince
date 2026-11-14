@@ -20,6 +20,8 @@ use std::{
 
 mod projection;
 pub use projection::run as projection_reveal;
+mod record_edits;
+pub use record_edits::run as record_edits;
 
 fn error(value: impl std::fmt::Display) -> io::Error {
     io::Error::other(value.to_string())
@@ -128,8 +130,8 @@ fn measurement_coverage(reports: &[Value]) -> Value {
                             system["system"].as_str().is_some_and(|name| {
                                 name.starts_with("bevy_") || name.starts_with("lince_interface::")
                             }) && system["exclusive_owner_cpu"]["count"]
-                                    .as_u64()
-                                    .is_some_and(|count| count > 0)
+                                .as_u64()
+                                .is_some_and(|count| count > 0)
                         })
                     })
             })
@@ -907,11 +909,17 @@ mod tests {
         assert_eq!(measurement_coverage(&reports)["passed"], true);
         let mut exports_only = reports.clone();
         for report in &mut exports_only {
-            report["systems"].as_array_mut().unwrap().retain(|system| system["system"] != "lince_interface::native::body");
+            report["systems"]
+                .as_array_mut()
+                .unwrap()
+                .retain(|system| system["system"] != "lince_interface::native::body");
         }
         let coverage = measurement_coverage(&exports_only);
         assert_eq!(coverage["passed"], false);
-        assert_eq!(coverage["missing_system_bodies"], json!(["open-reveal", "typing", "scroll", "active", "pan"]));
+        assert_eq!(
+            coverage["missing_system_bodies"],
+            json!(["open-reveal", "typing", "scroll", "active", "pan"])
+        );
         for missing in [
             "lince_park::graphics::export_render_targets",
             "lince_park::graphics::queue_submit",
@@ -919,7 +927,10 @@ mod tests {
         ] {
             let mut incomplete = reports.clone();
             for report in &mut incomplete {
-                report["systems"].as_array_mut().unwrap().retain(|system| system["system"] != missing);
+                report["systems"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|system| system["system"] != missing);
             }
             let coverage = measurement_coverage(&incomplete);
             assert_eq!(coverage["passed"], false);

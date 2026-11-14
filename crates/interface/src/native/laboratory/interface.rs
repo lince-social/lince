@@ -124,6 +124,105 @@ fn retained_exclusive_queries_follow_new_archetypes_and_membership_changes() {
     crate::native::kanban::query_checks::retained_queries_follow_late_boards_parts_and_released_cards();
 }
 
+#[cfg_attr(test, test)]
+fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live() {
+    use bevy::{
+        input_focus::{FocusCause, InputFocus},
+        text::{EditableText, EditableTextGeneration, FontSize, PreeditCursor, TextEdit, TextLayoutInfo},
+        ui::{ContentSize, widget::TextScroll},
+    };
+    let (mut app, root) = fixture(UVec2::new(800, 600), 1.0);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_millis(10),
+    ));
+    let font = app.world().resource::<crate::native::theme::Typography>().text(18.0);
+    let editors = (0..8).map(|index| {
+        let mut text = EditableText::new("Idle editor");
+        text.visible_lines = Some(1.0);
+        app.world_mut().spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                width: px(260),
+                height: px(80),
+                top: px(index as f32 * 60.0),
+                ..default()
+            },
+            text,
+            font.clone(),
+            TextLayoutInfo::default(),
+            TextScroll::default(),
+            ChildOf(root),
+        )).id()
+    }).collect::<Vec<_>>();
+    for _ in 0..6 { app.update(); }
+    let ticks = |world: &World, entity: Entity| {
+        let entity = world.entity(entity);
+        [
+            entity.get_ref::<EditableText>().unwrap().last_changed().get(),
+            entity.get_ref::<EditableTextGeneration>().unwrap().last_changed().get(),
+            entity.get_ref::<ContentSize>().unwrap().last_changed().get(),
+            entity.get_ref::<TextLayoutInfo>().unwrap().last_changed().get(),
+        ]
+    };
+    let previous = editors.iter().map(|entity| ticks(app.world(), *entity)).collect::<Vec<_>>();
+    for _ in 0..12 { app.update(); }
+    for (entity, expected) in editors.iter().zip(&previous) {
+        assert_eq!(ticks(app.world(), *entity), *expected, "Untouched editor was marked changed");
+        assert!(!app.world().get::<TextLayoutInfo>(*entity).unwrap().glyphs.is_empty());
+    }
+    let field = editors[0];
+    app.world_mut().get_mut::<EditableText>(field).unwrap().queue_edit(TextEdit::SelectAll);
+    app.update();
+    assert!(!app.world().get::<TextLayoutInfo>(field).unwrap().selection_rects.is_empty());
+    let text = "héllo world with several words";
+    app.world_mut().get_mut::<EditableText>(field).unwrap().queue_edit(TextEdit::Insert(text.into()));
+    app.update();
+    assert_eq!(app.world().get::<EditableText>(field).unwrap().value(), text);
+    assert!(app.world().get::<TextLayoutInfo>(field).unwrap().selection_rects.is_empty());
+    let wide = app.world().get::<TextLayoutInfo>(field).unwrap().size;
+    app.world_mut().get_mut::<Node>(field).unwrap().width = px(80);
+    app.update();
+    assert!(app.world().get::<TextLayoutInfo>(field).unwrap().size.y > wide.y);
+    let before_font = app.world().get::<TextLayoutInfo>(field).unwrap().size;
+    app.world_mut().get_mut::<TextFont>(field).unwrap().font_size = FontSize::Px(28.0);
+    app.update();
+    assert!(app.world().get::<TextLayoutInfo>(field).unwrap().size.y > before_font.y);
+    let mut input = app.world_mut().get_mut::<EditableText>(field).unwrap();
+    input.queue_edit(TextEdit::SelectAll);
+    input.queue_edit(TextEdit::Insert("base".into()));
+    input.queue_edit(TextEdit::ImeSetCompose {
+        value: "é".into(),
+        cursor: Some(PreeditCursor { anchor: 2, focus: 2 }),
+    });
+    app.update();
+    assert_eq!(app.world().get::<EditableText>(field).unwrap().value(), "base");
+    assert!(app.world().get::<EditableText>(field).unwrap().is_composing());
+    assert!(!app.world().get::<TextLayoutInfo>(field).unwrap().preedit_underline_rects.is_empty());
+    app.world_mut().get_mut::<EditableText>(field).unwrap().queue_edit(TextEdit::ImeCommit { value: "é".into() });
+    app.update();
+    assert_eq!(app.world().get::<EditableText>(field).unwrap().value(), "baseé");
+    assert!(!app.world().get::<EditableText>(field).unwrap().is_composing());
+    assert!(app.world().get::<TextLayoutInfo>(field).unwrap().preedit_underline_rects.is_empty());
+    app.world_mut().get_mut::<EditableText>(field).unwrap().cursor_blink_period = std::time::Duration::from_millis(80);
+    app.world_mut().resource_mut::<InputFocus>().set(field, FocusCause::Navigated);
+    for _ in 0..3 { app.update(); }
+    let retained = ticks(app.world(), field);
+    let mut cursor_states = [false; 2];
+    for _ in 0..16 {
+        app.update();
+        let cursor = app.world().get::<TextLayoutInfo>(field).unwrap().cursor.unwrap();
+        cursor_states[usize::from(cursor.0)] = true;
+        assert_eq!(&ticks(app.world(), field)[..3], &retained[..3]);
+    }
+    assert_eq!(cursor_states, [true, true]);
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    app.update();
+    assert!(!app.world().get::<TextLayoutInfo>(field).unwrap().cursor.unwrap().0);
+    for (entity, expected) in editors.iter().zip(&previous).skip(1) {
+        assert_eq!(ticks(app.world(), *entity), *expected, "Another editor's update invalidated this field");
+    }
+}
+
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
     let (sender, incoming) = std::sync::mpsc::sync_channel(1);
     let wake = crate::native::wake::WakeSignal::new(move || {
@@ -786,5 +885,6 @@ crate::native::laboratory_cases! {
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,
     performance_traces_preserve_concurrent_samples_and_report_overflow,
     retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
+    untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live,
     retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

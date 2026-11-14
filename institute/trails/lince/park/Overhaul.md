@@ -615,11 +615,53 @@ All **76 mandatory native cases**, the GPU rendering/output/capture/reconnect/ex
 
 Source and executable identities, the two traced recordings, four capture-off recordings, comparisons, negative baseline regressions and final validation receipts are saved privately in `round-schema-20261114/`. All sixteen archived Record bodies remain exact. No local optimized build, installation, personal-service activation, session restart or reboot was performed. This batch ends with a source push; it does not watch Actions or claim optimized physical acceptance.
 
+### Idle editable text — follow-up to `02c72cc9`
+
+The next source audit follows the remaining change propagation in the native frame. The earlier 64-editor hardware fixture observed 1,536 changes each to `EditableText`, `ContentSize` and `TextLayoutInfo` during 24 untouched updates. The current Bevy UI producer constructs a mutable editor driver every frame, even when the editor's own retained layout is valid, and unconditionally assigns the same cursor geometry. Those writes mark the components changed and cause later size, scrolling, binding and readiness consumers to revisit unchanged fields. The direct editable-layout system is only 0.665 ms per update in the latest debug capture; the experiment must measure its downstream work rather than claim that this one owner explains all lag.
+
+The retained change consults the existing editor layout-validity API before refreshing, reads valid layouts immutably, and assigns cursor geometry only when its value changes. It adds no second layout cache, change detector or execution mode. Actual width/style/text changes still use the existing layout and generation path. A new mandatory native case exercises idle change ticks, selection, Unicode insertion, width/font reflow, IME preedit/commit, cursor blinking, focus loss and isolation between editors. The hardware idle/pixel regression now rejects false idle invalidations. All three component-change counts are **zero across 64 editors and 24 untouched updates**, while the exact rendered reference and subsequent editing transitions still pass. The older 1,536-count recording establishes the false invalidation, not a matched hardware timing comparison.
+
+The saved-workspace comparison uses the unchanged `02c72cc9` executable and the final candidate, the same debug profile/features and graphics environment, fresh verified fixture copies and no concurrent compiler or other test. Both traced runs contain 243 native updates, 71 warmed soak actions, 38 contiguous reports, a final drain and zero lost reports, systems, spans or inputs.
+
+| Traced saved-workspace observation | Previous behavior | Final candidate |
+| --- | ---: | ---: |
+| Editable-input measure updates | 27,696 | 839 |
+| All changed measure inputs | 31,840 | 4,984 |
+| Equivalent-measure no-ops | 27,581 | 724 |
+| UI roots computed | 3,650 | 3,650 |
+| UI geometry nodes visited | 243,846 | 243,846 |
+| UI layout: mean exclusive CPU/update | 8.917 ms | 8.514 ms |
+| Castle layout bookkeeping: mean exclusive CPU/update | 0.683 ms | 0.410 ms |
+| Editable layout producer: mean exclusive CPU/update | 0.660 ms | 0.678 ms |
+| Native update: mean wall time | 147.606 ms | 146.969 ms |
+| Whole process CPU | 56.483 s | 56.213 s |
+
+Editable measure updates fall **97.0%** and layout bookkeeping does less work, but real root computation and geometry visitation counts do not change. The editable-layout producer itself is slightly slower. The roughly 0.4% native-update reduction is small, not evidence of a desktop latency fix. Exclusive CPU observations and nested wall spans use different clocks and must not be added together.
+
+With tracing disabled, the run order is control A, candidate A, candidate B, control B. Every run completes twelve initial Edit actions and 78 warmed actions during a thirty-second soak, with a 250 ms pause after each completed soak action.
+
+| Capture-off observation | Control A | Candidate A | Control B | Candidate B |
+| --- | ---: | ---: | ---: | ---: |
+| Startup | 3,783.952 ms | 3,614.895 ms | 3,699.144 ms | 3,703.244 ms |
+| First twelve actions: median | 140.691 ms | 138.751 ms | 141.780 ms | 124.175 ms |
+| First twelve actions: worst | 1,822.310 ms | 1,798.001 ms | 1,859.101 ms | 1,830.171 ms |
+| Soak median | 135.441 ms | 137.489 ms | 134.378 ms | 134.574 ms |
+| Soak p95 | 220.629 ms | 154.999 ms | 159.710 ms | 204.317 ms |
+| Soak worst | 250.020 ms | 230.731 ms | 233.923 ms | 252.941 ms |
+| Whole process CPU | 49.212 s | 49.242 s | 49.336 s | 48.334 s |
+| Whole run wall time | 40.104 s | 39.811 s | 39.808 s | 39.815 s |
+
+There is **no consistent end-to-end latency gain**. Whole CPU is essentially unchanged in pair A (+0.06%) and 2.03% lower in pair B. Warmed medians are 1.51% and 0.15% worse; p95 improves 29.75% in A but worsens 27.93% in B. Retain the simpler, accurate change handling and the eliminated invalidations, not a claim that this resolves the main slowdown. The evidence argues against another round of speculative editor caching: larger frame and first-use costs remain the priority.
+
+All **77 mandatory native cases**, **71 Bevy UI unit cases with ghost nodes**, both exact hardware regressions for idle editors and real keyboard typing, the GPU rendering/output/capture/reconnect/export probe and the full application check with `instinct,park` pass. The typing regression verifies rendered glyphs, local autosave and a fresh reopen. Protein Add filter remains first; readable selectable Protein choices and usable Edit-panel geometry remain covered. The first build rejected the new unregistered native case under denied warnings; registering it in the mandatory suite corrected that failure before all final checks and measurements. No additional hard rule specific to editor scheduling was found in the declared Records. Backend and unrelated feature suites were not rerun for this change.
+
+Source/executable identities, all six recordings, comparisons and validation receipts are saved privately in `round-editor-20261114/`. The sixteen archived Record bodies remain exact. This is private unoptimized evidence; optimized physical latency and daily-use acceptance remain open. No local optimized build, installation, personal-service activation, session restart or reboot was performed. This batch ends with a source push without watching Actions.
+
 ### Remaining acceptance obligations
 
 This report replaces the old execution queues, not their unproved guarantees. The archive remains exact historical evidence. These are unresolved obligations within this same report, not a new round of unrelated feature work:
 
-- Continue from the remaining native frame cost, not another equal-measure cache. UI layout is still 9.239 ms in the latest debug replay, while extraction, scene readiness/fingerprinting and input-geometry preparation remain substantial. Attribute unchanged scene/view preparation and repeated style writes, distinguish real dependencies from changed ticks, and retain work only with current pixels, capture privacy and hit mapping proved. The geometry-only branch experiment has been tested and removed; do not repeat it, the blanket layout gate or the ready-root cache unchanged. Shared Area preparation, hidden Sync-history rebuilding and equivalent editable-input layout invalidation are addressed at their measured boundaries. Upstream editable components still change every update. Parallel scheduling should follow work elimination and preserve frame/resource ownership.
+- Continue from the remaining native frame cost, not another equal-measure or editor cache. UI layout is still 8.514 ms of exclusive CPU and the native update averages 146.969 ms wall time in the latest debug replay. Layout solve and geometry-visit counts are unchanged; extraction, scene readiness/fingerprinting and input-geometry preparation remain substantial. Attribute unchanged scene/view preparation and repeated style writes, distinguish real dependencies from changed ticks, and retain work only with current pixels, capture privacy and hit mapping proved. The geometry-only branch experiment has been tested and removed; do not repeat it, the blanket layout gate or the ready-root cache unchanged. Shared Area preparation, hidden Sync-history rebuilding, equivalent editable-input measurement and false idle-editor invalidation are addressed at their measured boundaries. Parallel scheduling should follow work elimination and preserve frame/resource ownership.
 - The optimized Park visit exposes persistent live canvas and SQLite work even in the requested quiet interval. Repeated graph reads and per-Record thread-selection reads have been removed in the faithful isolated saved-state reproduction; identical queries share work within an event. Status reads no longer invalidate subscriptions or request exclusive access: the recurring five-second refresh loop is removed in the private replay. Its one remaining early refresh still holds read access for about 0.6 seconds. Attribute that refresh's trigger, the necessary query work and read-scope lifetime before adding more caches or parallelism; preserve authorization and durable acknowledgements. Validate these reductions on an optimized artifact and instrumented daily session before claiming that live quiet-state churn is solved. Do not restart the owner's session unexpectedly.
 - Cold text/pipeline preparation still stalls. Implement asynchronous preparation only together with readiness, completion-driven wakeup, shader-failure handling and a policy-valid prior-frame fallback. The optimized release evidence does not justify disabling readiness or pretending submission-to-completion is GPU execution time.
 - Building a newly visible large Protein area is still synchronous, and previously built hidden row trees remain allocated. Visible paging/virtualization and bounded construction are not claimed complete.

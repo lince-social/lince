@@ -300,21 +300,21 @@ pub fn update_editable_text_layout(
                 .set_width(Some(computed_node.content_box().width()));
         }
 
-        let mut driver = editable_text
-            .editor
-            .driver(font_cx.as_mut(), layout_cx.as_mut());
+        if editable_text.editor.try_layout().is_none() {
+            editable_text
+                .editor
+                .refresh_layout(font_cx.as_mut(), layout_cx.as_mut());
+        }
 
-        driver.refresh_layout();
+        let compose_range = editable_text.editor.raw_compose().clone();
 
-        let compose_range = driver.editor.raw_compose().clone();
-
-        let layout_changed = driver.editor.generation() != **generation;
+        let layout_changed = editable_text.editor.generation() != **generation;
         if layout_changed {
-            **generation = driver.editor.generation();
+            **generation = editable_text.editor.generation();
         }
 
         if layout_changed || hinting.is_changed() {
-            let layout = driver.layout();
+            let layout = editable_text.editor.try_layout().unwrap();
 
             info.scale_factor = layout.scale();
             info.size = (layout.full_width(), layout.height()).into();
@@ -448,7 +448,7 @@ pub fn update_editable_text_layout(
                 }
             }
 
-            info.selection_rects = driver
+            info.selection_rects = editable_text
                 .editor
                 .selection_geometry()
                 .iter()
@@ -465,26 +465,29 @@ pub fn update_editable_text_layout(
             }
         }
 
-        if let Some(input_focus) = input_focus.as_ref()
+        let cursor = if let Some(input_focus) = input_focus.as_ref()
             && Some(entity) == input_focus.get()
         {
             if input_focus.is_changed() || layout_changed || *cursor_timer >= cursor_blink_period {
                 *cursor_timer = Duration::ZERO;
             }
 
-            info.cursor = driver
+            editable_text
                 .editor
                 .cursor_geometry(
                     cursor_width * text_font.font_size.eval(target.logical_size(), rem_size.0),
                 )
                 .map(bounding_box_to_rect)
-                .map(|rect| (*cursor_timer < cursor_blink_period / 2, rect));
+                .map(|rect| (*cursor_timer < cursor_blink_period / 2, rect))
         } else {
-            info.cursor = driver
+            editable_text
                 .editor
                 .cursor_geometry(0.)
                 .map(bounding_box_to_rect)
-                .map(|rect| (false, rect));
+                .map(|rect| (false, rect))
+        };
+        if info.cursor != cursor {
+            info.cursor = cursor;
         }
     }
 }

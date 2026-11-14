@@ -151,6 +151,7 @@ fn idle_editors_record_measurement_and_exact_pixels() {
         .unwrap();
     }
     eprintln!("idle-editors: {report}");
+    assert_eq!(updates, [0; 3], "Untouched editors invalidated retained UI state");
     transitions(&mut canvas, &reference);
     canvas.finish().unwrap();
 }

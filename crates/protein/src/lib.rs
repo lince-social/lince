@@ -1726,6 +1726,7 @@ async fn execute_records(
         || protein.include.links.is_some()
         || protein.include.relation_context.is_some()
     {
+        let _names = nucleus::performance::Span::new("protein-record-names-await");
         store::vocabulary::display_names(&store.pool, subject).await?
     } else {
         HashMap::new()
@@ -1741,6 +1742,7 @@ async fn execute_records(
     .iter()
     .any(|key| wants(key))
     {
+        let _work = nucleus::performance::Span::new("protein-record-work-await");
         let selected: Vec<_> = rows.iter().map(|record| record.uid.clone()).collect();
         store::records::extensions_for_records(&store.pool, "work", &selected).await?
     } else {
@@ -2165,6 +2167,7 @@ async fn attach_includes(
     include: &Include,
     protected_transfers: &HashSet<String>,
 ) -> Result<(), ProteinError> {
+    let _includes = nucleus::performance::Span::new("protein-record-includes-await");
     if include.availability {
         let availability =
             derive_record_availability(store, record_uid, quantity, record_unit_uid).await?;

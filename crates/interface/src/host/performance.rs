@@ -162,6 +162,7 @@ stages! {
     RecordReact => "record-reactions-await",
     CellQuery => "cell-query-execute-await",
     CellQueryBatch => "cell-query-batch-await",
+    ActionInspection => "action-inspection-await",
     CellQueryRecord => "cell-query-record-await",
     CellQueryPromise => "cell-query-promise-await",
     CellQueryDecision => "cell-query-decision-await",
@@ -185,6 +186,11 @@ stages! {
     CellQueryProjectionRequest => "cell-query-projection-request-await",
     ProteinRecordSelection => "protein-record-selection-await",
     ProteinRecordMaterialization => "protein-record-materialization-await",
+    ProteinRecordSchema => "protein-record-schema-await",
+    ProteinRecordNames => "protein-record-names-await",
+    ProteinRecordWork => "protein-record-work-await",
+    ProteinRecordIncludes => "protein-record-includes-await",
+    ProteinWorkLogIds => "protein-work-log-ids-await",
     ProteinLinkGraphLoad => "protein-link-graph-load-await",
     ProteinLinkProjection => "protein-link-projection",
     ProteinThreadSelection => "protein-thread-selection-await",
@@ -277,6 +283,7 @@ macro_rules! counts {
 }
 
 counts! {
+    ActionQueryInvalidations => "action-query-invalidations",
     NativeUiNodes => "native-ui-nodes-scanned",
     NativeUiStyles => "native-ui-styles-changed",
     NativeUiMeasures => "native-ui-measures-changed",

@@ -197,17 +197,19 @@ impl Session {
         }
         let engine = self.engine.clone();
         let login = self.login.clone();
-        let write = matches!(
-            msg,
-            ClientMessage::Act { .. }
-                | ClientMessage::SignedAct { .. }
+        let write = match &msg {
+            ClientMessage::Act { action, .. } => !action.is_read_only(),
+            _ => matches!(
+                &msg,
+                ClientMessage::SignedAct { .. }
                 | ClientMessage::DescriptionAsset { request: nucleus::description_asset::Request::Put { .. }, .. }
                 | ClientMessage::CollabUpdate { .. }
                 | ClientMessage::SessionAuthenticate { .. }
                 | ClientMessage::Fiote { .. }
                 | ClientMessage::FioteTerminal { .. }
                 | ClientMessage::Speech { .. }
-        );
+            ),
+        };
         let work = self.handle_inner(msg);
         let operation = async { Ok(work.await) };
         let result = if let Some(login) = login {

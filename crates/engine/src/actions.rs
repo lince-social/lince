@@ -1419,6 +1419,23 @@ pub enum Action {
     },
 }
 
+impl Action {
+    pub fn is_read_only(&self) -> bool {
+        matches!(
+            self,
+            Self::RosterStatus
+                | Self::MailboxSavedStatus
+                | Self::MailboxOutbound
+                | Self::FileSyncStatus { .. }
+                | Self::InspectCanvases
+                | Self::InspectFioteActivations { .. }
+                | Self::InspectKarmaRuleHistory { .. }
+                | Self::InspectKarmaCommands
+                | Self::InspectRecordAuthority { .. }
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferSatiation {
@@ -2099,8 +2116,11 @@ impl Engine {
                     ..Default::default()
                 });
             }
+            let read_only = action.is_read_only();
+            let _inspection = read_only
+                .then(|| crate::performance::Span::new("action-inspection-await"));
             self.access_scope(
-                true,
+                !read_only,
                 Box::pin(self.act_authorized(action, actor, now, verified_authorship)),
             )
             .await
@@ -2136,7 +2156,7 @@ impl Engine {
                 | Action::DesignateKarmaExecutor { .. }
                 | Action::ImportKarmaHabit { .. }
         );
-        let preview = matches!(
+        let reading = action.is_read_only() || matches!(
             &action,
             Action::PreviewInstinct
                 | Action::PendingOffers
@@ -2193,7 +2213,8 @@ impl Engine {
         if changes_rules {
             self.notify_karma_deadline_change();
         }
-        if outcome.facts.is_empty() && !preview {
+        if outcome.facts.is_empty() && !reading {
+            crate::performance::add("action-query-invalidations", 1);
             self.query_changed
                 .send_modify(|revision| *revision = revision.wrapping_add(1));
         }

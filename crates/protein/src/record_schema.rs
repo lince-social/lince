@@ -182,6 +182,7 @@ pub(crate) async fn attach<Body>(
     work: &HashMap<String, Value>,
     concept_names: &HashMap<String, String>,
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
+    let _schema = nucleus::performance::Span::new("protein-record-schema-await");
     let wants = |key| requests(query, key);
     if ![
         "estimate_min",
@@ -212,6 +213,7 @@ pub(crate) async fn attach<Body>(
             .map(Vec::as_slice)
             .unwrap_or_default();
         if wants("work_logs") {
+            let _ids = nucleus::performance::Span::new("protein-work-log-ids-await");
             let entries: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY json_extract(value, '$.start'), property")
                 .bind(&record.uid).fetch_all(&store.pool).await?;
             let mut identified = logs.to_vec();

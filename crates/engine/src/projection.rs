@@ -34,6 +34,26 @@ struct Queue {
     pending: Option<(Request, crate::karma_runtime::KarmaDeadlineDirectorConfig)>,
 }
 
+fn finish_request(
+    queue: &Mutex<Queue>,
+    superseded: bool,
+    changed: &tokio::sync::watch::Sender<u64>,
+) -> Option<(Request, crate::karma_runtime::KarmaDeadlineDirectorConfig)> {
+    let next = {
+        let mut queue = queue.lock().expect("projection queue");
+        let next = queue.pending.take();
+        queue.active = next.as_ref().map(|(request, _)| request.clone());
+        next
+    };
+    if superseded && next.is_some() {
+        crate::performance::add("schedule-projection-notifications-coalesced", 1);
+    } else {
+        crate::performance::add("schedule-projection-notifications", 1);
+        changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+    }
+    next
+}
+
 #[derive(Default)]
 pub struct Metrics {
     pub snapshots: AtomicU64,
@@ -183,6 +203,7 @@ impl Engine {
                         &metrics,
                     )
                     .await;
+                    let mut superseded = false;
                     match computed {
                         Ok(calculated) => {
                             if calculated.source_revision == request.revision {
@@ -202,13 +223,19 @@ impl Engine {
                                         crate::performance::add("schedule-projection-publications", 1);
                                         arm_expiry(&expiry, calculated.expires_ms, changed.clone())
                                     }
-                                    Ok(false) => { crate::performance::add("schedule-projection-superseded", 1); }
+                                    Ok(false) => {
+                                        crate::performance::add("schedule-projection-superseded", 1);
+                                        crate::performance::add("schedule-projection-publication-superseded", 1);
+                                        superseded = true;
+                                    }
                                     Err(error) => {
                                         tracing::warn!(%error, "projection publication failed")
                                     }
                                 }
                             } else {
                                 crate::performance::add("schedule-projection-superseded", 1);
+                                crate::performance::add("schedule-projection-snapshot-superseded", 1);
+                                superseded = true;
                             }
                         }
                         Err(error) => {
@@ -226,14 +253,7 @@ impl Engine {
                             arm_expiry(&expiry, base + 60_000, changed.clone());
                         }
                     }
-                    crate::performance::add("schedule-projection-notifications", 1);
-                    changed.send_modify(|revision| *revision = revision.wrapping_add(1));
-                    let next = {
-                        let mut queue = queue.lock().expect("projection queue");
-                        let next = queue.pending.take();
-                        queue.active = next.as_ref().map(|(request, _)| request.clone());
-                        next
-                    };
+                    let next = finish_request(&queue, superseded, &changed);
                     match next {
                         Some((next, next_config)) => {
                             request = next;
@@ -260,6 +280,7 @@ fn covers(existing: &Request, requested: &Request) -> bool {
         && existing.context.window.from_ms <= requested.context.window.from_ms
         && existing.context.window.until_ms >= requested.context.window.until_ms
 }
+
 
 fn extend_window(window: &mut nucleus::projection::Window, from_ms: i64, until_ms: i64) {
     window.until_ms = window.until_ms.max(until_ms);
@@ -521,6 +542,131 @@ fn retain_payload_budget<T: serde::Serialize>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn changing_sources_eventually_publish_a_current_reusable_forecast() {
+        tokio::time::timeout(std::time::Duration::from_secs(30), async {
+            let engine = Engine::open_memory().await.unwrap();
+            let now = nucleus::execution::now().timestamp_millis();
+            let context = Context {
+                actor: None,
+                window: nucleus::projection::Window {
+                    from_ms: now,
+                    until_ms: now + 86_400_000,
+                    timezone: "UTC".into(),
+                },
+            };
+            let mut changes = engine.watch_query_changes();
+            for _ in 0..3 {
+                store::sqlx::query("UPDATE projection_source SET revision = revision + 1 WHERE id = 1")
+                    .execute(&engine.store.pool).await.unwrap();
+                engine.request_projection(context.clone()).await.unwrap();
+            }
+            loop {
+                changes.changed().await.unwrap();
+                if store::projection::read(
+                    &engine.store,
+                    &context,
+                    nucleus::execution::now().timestamp_millis(),
+                )
+                .await
+                .unwrap()
+                .is_some()
+                {
+                    break;
+                }
+                engine.request_projection(context.clone()).await.unwrap();
+            }
+            let snapshots = engine.projection.metrics.snapshots.load(Ordering::Relaxed);
+            let hits = engine.projection.metrics.hits.load(Ordering::Relaxed);
+            assert!(snapshots > 0);
+            engine.request_projection(context).await.unwrap();
+            assert_eq!(engine.projection.metrics.snapshots.load(Ordering::Relaxed), snapshots);
+            assert_eq!(engine.projection.metrics.hits.load(Ordering::Relaxed), hits + 1);
+            engine.store.pool.close().await;
+        })
+        .await
+        .expect("The final forecast must become current without polling or another source edit");
+    }
+
+    fn request(revision: i64) -> Request {
+        Request {
+            revision,
+            context: Context {
+                actor: None,
+                window: nucleus::projection::Window {
+                    from_ms: 1_800_000_000_000,
+                    until_ms: 1_800_086_400_000,
+                    timezone: "UTC".into(),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn superseded_replacements_progress_without_refreshing_unchanged_results() {
+        let queue = Mutex::new(Queue {
+            active: Some(request(1)),
+            pending: None,
+        });
+        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        for revision in 2..=4 {
+            let mut next = request(revision);
+            next.context.window.until_ms += revision * 60_000;
+            next.context.window.timezone = "America/Sao_Paulo".into();
+            let config = crate::karma_runtime::KarmaDeadlineDirectorConfig::for_host(
+                format!("forecast-{revision}"),
+            )
+            .unwrap();
+            let identity = config.projection_identity().unwrap();
+            queue.lock().unwrap().pending = Some((next.clone(), config));
+            let (running, config) = finish_request(&queue, true, &changed).unwrap();
+            assert!(running == next);
+            assert_eq!(config.projection_identity().unwrap(), identity);
+            assert!(queue.lock().unwrap().active.as_ref() == Some(&next));
+            assert!(queue.lock().unwrap().pending.is_none());
+            assert!(!subscriber.has_changed().unwrap());
+        }
+        assert!(finish_request(&queue, false, &changed).is_none());
+        assert!(queue.lock().unwrap().active.is_none());
+        assert!(subscriber.has_changed().unwrap());
+        assert_eq!(*subscriber.borrow_and_update(), 1);
+    }
+
+    #[test]
+    fn last_superseded_request_wakes_subscribers_for_a_fresh_retry() {
+        let queue = Mutex::new(Queue {
+            active: Some(request(1)),
+            pending: None,
+        });
+        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        assert!(finish_request(&queue, true, &changed).is_none());
+        assert!(queue.lock().unwrap().active.is_none());
+        assert!(subscriber.has_changed().unwrap());
+        assert_eq!(*subscriber.borrow_and_update(), 1);
+        queue.lock().unwrap().active = Some(request(2));
+        assert!(finish_request(&queue, false, &changed).is_none());
+        assert!(subscriber.has_changed().unwrap());
+        assert_eq!(*subscriber.borrow_and_update(), 2);
+    }
+
+    #[test]
+    fn non_superseded_results_notify_while_replacement_work_remains() {
+        let config = crate::karma_runtime::KarmaDeadlineDirectorConfig::for_host("next".into())
+            .unwrap();
+        let queue = Mutex::new(Queue {
+            active: Some(request(1)),
+            pending: Some((request(2), config)),
+        });
+        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        assert!(finish_request(&queue, false, &changed).is_some());
+        assert!(queue.lock().unwrap().active.as_ref() == Some(&request(2)));
+        assert!(subscriber.has_changed().unwrap());
+        assert_eq!(*subscriber.borrow_and_update(), 1);
+        assert!(finish_request(&queue, false, &changed).is_none());
+        assert!(subscriber.has_changed().unwrap());
+        assert_eq!(*subscriber.borrow_and_update(), 2);
+    }
 
     #[test]
     fn projection_budget_counts_json_escaping_and_preserves_entries_that_fit() {

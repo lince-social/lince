@@ -115,6 +115,11 @@ fn performance_traces_preserve_concurrent_samples_and_report_overflow() {
     crate::host::performance::checks::system_samples_survive_concurrent_snapshots_and_shard_reuse();
 }
 
+#[cfg_attr(test, test)]
+fn retained_exclusive_queries_follow_new_archetypes_and_membership_changes() {
+    crate::native::kanban::query_checks::retained_queries_follow_late_boards_parts_and_released_cards();
+}
+
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
     let (sender, incoming) = std::sync::mpsc::sync_channel(1);
     let wake = crate::native::wake::WakeSignal::new(move || {
@@ -776,5 +781,6 @@ crate::native::laboratory_cases! {
     edit_panel_usable_bounds,
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,
     performance_traces_preserve_concurrent_samples_and_report_overflow,
+    retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
     retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

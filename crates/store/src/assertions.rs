@@ -1265,6 +1265,44 @@ pub async fn subjects_pointing_to(
     .collect()
 }
 
+pub async fn subjects_pointing_to_many(
+    pool: &SqlitePool,
+    predicate_uid: &str,
+    object_uids: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<crate::records::RecordRow>>, StoreError> {
+    let mut subjects = std::collections::HashMap::<String, Vec<_>>::new();
+    if object_uids.is_empty() {
+        return Ok(subjects);
+    }
+    let _selection = nucleus::performance::Span::new("record-related-subjects-await");
+    nucleus::performance::add("record-related-subject-batches", 1);
+    let ids = serde_json::to_string(object_uids)
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT DISTINCT a.target_uid AS parent_uid, r.*,
+                (SELECT predicate_uid FROM record_assertion identity
+                  WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
+                    AND identity.retracted_at IS NULL) AS identity_predicate_uid
+           FROM record_assertion_link a JOIN record r ON r.uid = a.subject_uid
+          WHERE (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
+            AND a.target_uid IN (SELECT value FROM json_each(?))
+            AND a.retracted_at IS NULL AND r.deleted_at IS NULL
+          ORDER BY a.created_at, a.uid",
+    )
+    .bind(predicate_uid)
+    .bind(predicate_uid.strip_prefix("feature:"))
+    .bind(ids)
+    .fetch_all(pool)
+    .await?;
+    for row in rows {
+        subjects
+            .entry(row.get("parent_uid"))
+            .or_default()
+            .push(map_record(row)?);
+    }
+    Ok(subjects)
+}
+
 pub async fn recent_messages(
     pool: &SqlitePool,
     predicate_uid: &str,

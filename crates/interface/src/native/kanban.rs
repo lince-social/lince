@@ -706,7 +706,12 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     }
 }
 
-fn update(world: &mut World) {
+fn update(
+    world: &mut World,
+    parts: &mut QueryState<(Entity, &'static Part)>,
+    boards: &mut QueryState<(Entity, &'static Kanban)>,
+    released_cards: &mut QueryState<Entity, (With<RecordCard>, With<HeldMembership>, Without<Card>)>,
+) {
     if !crate::native::laboratory::normal(world) {
         return;
     }
@@ -741,8 +746,7 @@ fn update(world: &mut World) {
             break;
         }
     }
-    let stale: Vec<_> = world
-        .query::<(Entity, &Part)>()
+    let stale: Vec<_> = parts
         .iter(world)
         .filter(|(_, part)| world.get::<Kanban>(part.owner).is_none())
         .map(|(e, _)| e)
@@ -750,8 +754,7 @@ fn update(world: &mut World) {
     for entity in stale {
         world.despawn(entity);
     }
-    let owners: Vec<_> = world
-        .query::<(Entity, &Kanban)>()
+    let owners: Vec<_> = boards
         .iter(world)
         .map(|(e, k)| (e, k.clone()))
         .collect();
@@ -766,8 +769,7 @@ fn update(world: &mut World) {
         }
         maintain(world, owner, &board);
     }
-    let released: Vec<_> = world
-        .query_filtered::<Entity, (With<RecordCard>, With<HeldMembership>, Without<Card>)>()
+    let released: Vec<_> = released_cards
         .iter(world)
         .filter(|entity| {
             world
@@ -1215,4 +1217,55 @@ fn refresh_attachment(world: &mut World, entity: Entity, anchor: Entity) {
             rotation: (inverse * rotation).to_array(),
         },
     ));
+}
+
+pub(crate) mod query_checks {
+    use super::*;
+
+    #[cfg_attr(test, test)]
+    pub(crate) fn retained_queries_follow_late_boards_parts_and_released_cards() {
+        let mut world = World::new();
+        world.init_resource::<Requests>();
+        world.run_system_cached(update).unwrap();
+        let owner = world
+            .spawn((
+                Kanban {
+                    source: "missing".into(),
+                    columns: Vec::new(),
+                },
+                View {
+                    initialized: true,
+                    ..default()
+                },
+            ))
+            .id();
+        let part = world.spawn(Part { owner, column: 0 }).id();
+        let card = world.spawn((RecordCard, HeldMembership(DVec3::ZERO))).id();
+        let unrelated = world.spawn(HeldMembership(DVec3::ZERO)).id();
+        world.run_system_cached(update).unwrap();
+        assert_eq!(
+            world.get::<View>(owner).unwrap().status,
+            "Task source Area removed"
+        );
+        assert!(world.get_entity(part).is_ok());
+        assert!(world.get::<HeldMembership>(card).is_none());
+        assert!(world.get::<HeldMembership>(unrelated).is_some());
+        world.get_mut::<View>(owner).unwrap().status.clear();
+        world
+            .entity_mut(owner)
+            .insert(bevy::ecs::entity_disabling::Disabled);
+        world.run_system_cached(update).unwrap();
+        assert!(world.get::<View>(owner).unwrap().status.is_empty());
+        world
+            .entity_mut(owner)
+            .remove::<bevy::ecs::entity_disabling::Disabled>();
+        world.run_system_cached(update).unwrap();
+        assert_eq!(
+            world.get::<View>(owner).unwrap().status,
+            "Task source Area removed"
+        );
+        world.entity_mut(owner).remove::<Kanban>();
+        world.run_system_cached(update).unwrap();
+        assert!(world.get_entity(part).is_err());
+    }
 }

@@ -1,3 +1,4 @@
+pub(crate) mod checks;
 mod editor;
 pub(crate) mod policy;
 mod publishing;
@@ -1954,7 +1955,12 @@ fn history(world: &mut World, owner: Entity, data: &Value) {
 
 fn protect_passwords(views: Query<&WorkspaceSync>, mut fields: Query<&mut EditableText>) {
     for view in &views {
-        if let Ok(mut field) = fields.get_mut(view.password) {
+        if let Ok(mut field) = fields.get_mut(view.password)
+            && field
+                .pending_edits
+                .iter()
+                .any(|edit| matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut))
+        {
             field.pending_edits.retain(|edit| {
                 !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
             });
@@ -2020,11 +2026,15 @@ fn maintain(world: &mut World) {
         let mask = view.password_mask;
         let count = world
             .get::<EditableText>(password)
-            .map_or(0, |text| text.value().chars().count());
-        if let Some(mut text) = world.get_mut::<Text>(mask) {
-            text.0 = "•".repeat(count.min(32));
-        }
-        if let Some(mut field) = world.get_mut::<EditableText>(password) {
+            .map_or(0, |text| text.value().chars().take(32).count());
+        let mask_text = "••••••••••••••••••••••••••••••••";
+        panel::status(world, mask, &mask_text[..count * '•'.len_utf8()]);
+        if let Some(mut field) = world.get_mut::<EditableText>(password)
+            && field
+                .pending_edits
+                .iter()
+                .any(|edit| matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut))
+        {
             field.pending_edits.retain(|edit| {
                 !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
             });

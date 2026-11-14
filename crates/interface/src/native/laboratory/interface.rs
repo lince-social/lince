@@ -126,6 +126,12 @@ fn retained_exclusive_queries_follow_new_archetypes_and_membership_changes() {
 }
 
 #[cfg_attr(test, test)]
+fn workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits() {
+    let (mut app, root) = fixture(UVec2::new(1000, 1000), 1.0);
+    crate::native::workspace_sync::checks::password_retention(&mut app, root);
+}
+
+#[cfg_attr(test, test)]
 fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live() {
     use bevy::{
         input_focus::{FocusCause, InputFocus},
@@ -886,6 +892,7 @@ crate::native::laboratory_cases! {
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,
     performance_traces_preserve_concurrent_samples_and_report_overflow,
     retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
+    workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits,
     untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live,
     retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

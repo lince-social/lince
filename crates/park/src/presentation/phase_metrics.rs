@@ -122,34 +122,67 @@ fn text_work(
         counts[0] += 1;
         counts[1] += bytes as u64;
         counts[2] += u64::from(size.is_added());
+        use lince_interface::native::sand_store::SandKind;
+        let owner = std::iter::successors(Some(entity), |entity| {
+            parents.get(*entity).ok().map(ChildOf::parent)
+        })
+        .take(64)
+        .find_map(|entity| owners.get(entity).ok().map(|owner| owner.kind));
+        let (new, candidate) = match owner {
+            Some(SandKind::Square) => (
+                Count::TextMeasureNewSquare,
+                Count::TextMeasureCandidateSquare,
+            ),
+            Some(SandKind::Text) => (Count::TextMeasureNewPlain, Count::TextMeasureCandidatePlain),
+            Some(SandKind::EditableText) => (
+                Count::TextMeasureNewEditable,
+                Count::TextMeasureCandidateEditable,
+            ),
+            Some(SandKind::Operation) => (
+                Count::TextMeasureNewOperation,
+                Count::TextMeasureCandidateOperation,
+            ),
+            Some(SandKind::Overview) => (
+                Count::TextMeasureNewOverview,
+                Count::TextMeasureCandidateOverview,
+            ),
+            Some(SandKind::WorkTimer) => {
+                (Count::TextMeasureNewTimer, Count::TextMeasureCandidateTimer)
+            }
+            Some(SandKind::AccessControl) => (
+                Count::TextMeasureNewAccess,
+                Count::TextMeasureCandidateAccess,
+            ),
+            Some(SandKind::Visibility) => (
+                Count::TextMeasureNewVisibility,
+                Count::TextMeasureCandidateVisibility,
+            ),
+            Some(SandKind::Trust) => (Count::TextMeasureNewTrust, Count::TextMeasureCandidateTrust),
+            Some(SandKind::HandCamera) => (
+                Count::TextMeasureNewCamera,
+                Count::TextMeasureCandidateCamera,
+            ),
+            Some(SandKind::Video) => (Count::TextMeasureNewVideo, Count::TextMeasureCandidateVideo),
+            Some(SandKind::Sync) => (Count::TextMeasureNewSync, Count::TextMeasureCandidateSync),
+            Some(SandKind::Terminal) => (
+                Count::TextMeasureNewTerminal,
+                Count::TextMeasureCandidateTerminal,
+            ),
+            Some(SandKind::Configuration) => (
+                Count::TextMeasureNewConfiguration,
+                Count::TextMeasureCandidateConfiguration,
+            ),
+            Some(SandKind::Organ) => (Count::TextMeasureNewOrgan, Count::TextMeasureCandidateOrgan),
+            Some(SandKind::Todo) => (Count::TextMeasureNewTodo, Count::TextMeasureCandidateTodo),
+            Some(SandKind::Ontology) => (
+                Count::TextMeasureNewOntology,
+                Count::TextMeasureCandidateOntology,
+            ),
+            _ => (Count::TextMeasureNewOther, Count::TextMeasureCandidateOther),
+        };
+        sources[candidate as usize] += 1;
         if size.is_added() {
-            use lince_interface::native::sand_store::SandKind;
-            let owner = std::iter::successors(Some(entity), |entity| {
-                parents.get(*entity).ok().map(ChildOf::parent)
-            })
-            .take(64)
-            .find_map(|entity| owners.get(entity).ok().map(|owner| owner.kind));
-            let source = match owner {
-                Some(SandKind::Square) => Count::TextMeasureNewSquare,
-                Some(SandKind::Text) => Count::TextMeasureNewPlain,
-                Some(SandKind::EditableText) => Count::TextMeasureNewEditable,
-                Some(SandKind::Operation) => Count::TextMeasureNewOperation,
-                Some(SandKind::Overview) => Count::TextMeasureNewOverview,
-                Some(SandKind::WorkTimer) => Count::TextMeasureNewTimer,
-                Some(SandKind::AccessControl) => Count::TextMeasureNewAccess,
-                Some(SandKind::Visibility) => Count::TextMeasureNewVisibility,
-                Some(SandKind::Trust) => Count::TextMeasureNewTrust,
-                Some(SandKind::HandCamera) => Count::TextMeasureNewCamera,
-                Some(SandKind::Video) => Count::TextMeasureNewVideo,
-                Some(SandKind::Sync) => Count::TextMeasureNewSync,
-                Some(SandKind::Terminal) => Count::TextMeasureNewTerminal,
-                Some(SandKind::Configuration) => Count::TextMeasureNewConfiguration,
-                Some(SandKind::Organ) => Count::TextMeasureNewOrgan,
-                Some(SandKind::Todo) => Count::TextMeasureNewTodo,
-                Some(SandKind::Ontology) => Count::TextMeasureNewOntology,
-                _ => Count::TextMeasureNewOther,
-            };
-            sources[source as usize] += 1;
+            sources[new as usize] += 1;
         }
         counts[3] += u64::from(text.is_changed());
         counts[4] += u64::from(style);

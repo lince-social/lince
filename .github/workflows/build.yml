@@ -181,6 +181,28 @@ jobs:
           fi
         shell: bash
 
+      - name: Build Park measurement probe
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+          RUST_MIN_STACK: "33554432"
+        shell: bash
+        run: |
+          cargo build --locked --release --package lince --features instinct,park --example park-responsiveness --target "$BUILD_TARGET" --timings
+          measurement_dir=target/park-measurement
+          mkdir -p "$measurement_dir" park-measurement-artifacts
+          install -m 755 "target/$BUILD_TARGET/release/examples/park-responsiveness" "$measurement_dir/park-responsiveness"
+          "$measurement_dir/park-responsiveness" --build-info > "$measurement_dir/probe-build-info.json"
+          jq -e --arg revision "$LINCE_REVISION" --slurpfile application target/release-build-info.json '
+            .probe == "park-responsiveness-v1" and .package == "lince" and
+            .revision == $revision and .revision == $application[0].revision and
+            .version == $application[0].version and .optimized == true and
+            .architecture == "x86_64" and .os == "linux"
+          ' "$measurement_dir/probe-build-info.json" > /dev/null
+          cp target/release-build-info.json "$measurement_dir/application-build-info.json"
+          (cd "$measurement_dir" && sha256sum park-responsiveness probe-build-info.json application-build-info.json > SHA256SUMS)
+          tar -I 'gzip -1' -cf "park-measurement-artifacts/park-responsiveness-$BUILD_TARGET.tar.gz" -C "$measurement_dir" park-responsiveness probe-build-info.json application-build-info.json SHA256SUMS
+          (cd park-measurement-artifacts && sha256sum "park-responsiveness-$BUILD_TARGET.tar.gz" > "park-responsiveness-$BUILD_TARGET.tar.gz.sha256")
+
       - name: Save compiled inputs
         if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
         continue-on-error: true
@@ -199,6 +221,15 @@ jobs:
         with:
           name: lince-binary-artifacts-${{ env.BUILD_TARGET }}
           path: binary-artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Upload Park measurement probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: park-measurement-artifacts-${{ env.BUILD_TARGET }}
+          path: park-measurement-artifacts/*
           if-no-files-found: error
           retention-days: 7
           compression-level: 0

@@ -26,6 +26,21 @@ fn wait(worker: &CanvasWorker, serial: u64, deadline: Instant) -> Result<Complet
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().nth(1).as_deref() == Some("--build-info") {
+        println!(
+            "{}",
+            serde_json::json!({
+                "probe": "park-responsiveness-v1",
+                "package": env!("CARGO_PKG_NAME"),
+                "version": env!("CARGO_PKG_VERSION"),
+                "revision": option_env!("LINCE_REVISION").unwrap_or("unknown"),
+                "optimized": !cfg!(debug_assertions),
+                "architecture": std::env::consts::ARCH,
+                "os": std::env::consts::OS,
+            })
+        );
+        return Ok(());
+    }
     if std::env::args().nth(1).as_deref() == Some("--suite") {
         return std::thread::Builder::new()
             .name("park-suite".into())

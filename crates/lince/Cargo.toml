@@ -9,6 +9,11 @@ homepage.workspace = true
 readme = "README.md"
 keywords = ["registry", "automation", "self-hosted"]
 
+[[example]]
+name = "park-responsiveness"
+path = "../park/examples/responsiveness.rs"
+required-features = ["park"]
+
 [features]
 default = ["ui"]
 stuff = ["lince-sandbox?/stuff"]

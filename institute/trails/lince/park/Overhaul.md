@@ -657,11 +657,57 @@ All **77 mandatory native cases**, **71 Bevy UI unit cases with ghost nodes**, b
 
 Source/executable identities, all six recordings, comparisons and validation receipts are saved privately in `round-editor-20261114/`. The sixteen archived Record bodies remain exact. This is private unoptimized evidence; optimized physical latency and daily-use acceptance remain open. No local optimized build, installation, personal-service activation, session restart or reboot was performed. This batch ends with a source push without watching Actions.
 
+### Area hover invalidation — follow-up to `bc1edfe6`
+
+The next audit follows recurring native layout work. A temporary source-location diagnostic, built with Bevy's `track_location` feature, attributes 9,560 Node writes to Area behavior hover handling. During its 212 warm updates, that producer writes forty unchanged delete-button layouts per update: 8,480 writes, **76.8% of the diagnostic's warm style writes**. It also reinserts unchanged row clickability. These writes occur even without a hovered row. The saved fixture's retained Areas therefore keep dirtying their UI roots during unrelated interaction. The diagnostic prints only source locations/counts, uses the private copied workspace and was removed before ordinary-build performance comparisons. Its timings are not a control/candidate comparison.
+
+The retained change updates visibility and clickability only when their existing values differ. It adds no stored hover cache or alternate execution path. The new mandatory native regression checks unchanged ticks with hover absent/present, both pointer routes, nested button hits, edit-mode transitions and recreation of a removed preview. Its first fixture incorrectly assumed that the preview resource already existed before the first hover; that assumption was corrected. The corrected case fails on the old implementation because a stable hover advances both component timestamps, then passes with the fix. All other 77 mandatory native cases pass in both runs.
+
+Both ordinary debug executables use the same features, graphics environment and verified private database/snapshot, with no concurrent compiler or test. The traced control processes 243 updates and 71 soak actions; the candidate processes 246 updates and 72 soak actions. Both recordings have 38 contiguous reports, a final drain and zero lost reports, systems, spans or inputs.
+
+| Traced saved-workspace observation | Previous behavior | Final candidate |
+| --- | ---: | ---: |
+| Changed Node styles, total | 14,259 | 4,627 |
+| UI roots computed, total | 3,650 | 1,958 |
+| UI geometry nodes visited, total | 243,803 | 217,640 |
+| UI roots computed per update | 15.021 | 7.959 |
+| UI layout: mean exclusive CPU/update | 8.497 ms | 8.019 ms |
+| Clipping: mean exclusive CPU/update | 1.654 ms | 1.356 ms |
+| Token style application: mean exclusive CPU/update | 2.024 ms | 1.849 ms |
+| Token metric application: mean exclusive CPU/update | 1.332 ms | 1.208 ms |
+| Castle readiness: mean exclusive CPU/update | 6.082 ms | 6.062 ms |
+| Native update: mean wall time | 146.963 ms | 145.381 ms |
+
+After accounting for the update count, there are **68% fewer style notifications and 47.0% fewer root computations**. Layout CPU falls 5.6%, but the layout-computation span itself is essentially unchanged (3.528 → 3.511 ms/update); much of the eliminated work belongs to smaller roots. Readiness still traverses the relevant trees, and the whole update improves only about 1.1%. These observations do not establish a shipping latency gain. CPU and nested wall intervals must not be added as independent savings.
+
+The capture-off order is control A, candidate A, candidate B, control B. Every run receives twelve initial Edit actions followed by a thirty-second soak with 250 ms pauses after completed actions.
+
+| Capture-off observation | Control A | Candidate A | Control B | Candidate B |
+| --- | ---: | ---: | ---: | ---: |
+| Startup | 3,894.801 ms | 3,654.199 ms | 3,634.382 ms | 3,625.152 ms |
+| First twelve actions: median | 137.585 ms | 136.455 ms | 140.448 ms | 136.443 ms |
+| First twelve actions: worst | 1,737.124 ms | 1,806.476 ms | 1,826.900 ms | 1,754.112 ms |
+| Soak action count | 78 | 78 | 79 | 78 |
+| Soak median | 138.032 ms | 138.684 ms | 136.975 ms | 136.481 ms |
+| Soak mean | 136.356 ms | 137.073 ms | 135.460 ms | 136.396 ms |
+| Soak p95 | 219.252 ms | 216.593 ms | 222.970 ms | 215.268 ms |
+| Soak worst | 244.601 ms | 258.875 ms | 229.561 ms | 228.424 ms |
+| Whole process CPU | 49.025 s | 49.010 s | 49.750 s | 48.929 s |
+| Whole run wall time | 40.361 s | 39.859 s | 40.158 s | 39.759 s |
+
+Warm p95 improves **1.2% and 3.5%**, but medians are effectively unchanged (+0.47% and −0.36%), and mean response is slightly worse in both pairs. Whole CPU is unchanged in A (−0.03%) and 1.65% lower in B, where the candidate completes one fewer action. The worst warm response is 5.84% worse in A and 0.50% better in B. Retain the simple elimination of false writes and its measured reduction in layout work; do not describe the result as a meaningful overall responsiveness fix. These results lower the priority of further unmeasured setter sweeps and reinforce the need to attribute the larger complete-frame costs and input waiting.
+
+All **78 mandatory native cases**, the GPU rendering/output/capture/reconnect/export probe and the full application check with `instinct,park` pass on the final source. Protein Add filter still runs first; readable selectable choices and usable Edit-panel geometry remain covered. No additional hard requirement specific to hover invalidation was found in the declared Records. The source-location probe and `track_location` build feature are absent from the delivered implementation. Existing shader, input, readiness, permission and durable-edit behavior was not replaced by this change; focused verification does not re-certify every archived hardware workflow.
+
+Source identities, the negative regression, the diagnostic recording, six matched ordinary-build recordings and final receipts are private in `round-node-writes-20261114/`. All sixteen archived Record bodies remain exact. No optimized local build, binary installation, session restart or personal-service activation was performed. The batch ends with a source push without watching Actions. Optimized physical and daily-use acceptance remain open.
+
+The cold-path source audit also confirms that Bevy's upscaling preparation explicitly blocks for its first pipeline, separately from Park's synchronous compilation setting. A flag change alone would leave that wait. Asynchronous compilation remains a separate obligation requiring completed-frame publication, wakeup and shader-error handling together.
+
 ### Remaining acceptance obligations
 
 This report replaces the old execution queues, not their unproved guarantees. The archive remains exact historical evidence. These are unresolved obligations within this same report, not a new round of unrelated feature work:
 
-- Continue from the remaining native frame cost, not another equal-measure or editor cache. UI layout is still 8.514 ms of exclusive CPU and the native update averages 146.969 ms wall time in the latest debug replay. Layout solve and geometry-visit counts are unchanged; extraction, scene readiness/fingerprinting and input-geometry preparation remain substantial. Attribute unchanged scene/view preparation and repeated style writes, distinguish real dependencies from changed ticks, and retain work only with current pixels, capture privacy and hit mapping proved. The geometry-only branch experiment has been tested and removed; do not repeat it, the blanket layout gate or the ready-root cache unchanged. Shared Area preparation, hidden Sync-history rebuilding, equivalent editable-input measurement and false idle-editor invalidation are addressed at their measured boundaries. Parallel scheduling should follow work elimination and preserve frame/resource ownership.
+- Continue from the remaining complete-frame cost and input waiting. UI layout still consumes 8.019 ms of exclusive CPU, Castle readiness 6.062 ms, and the native update averages 145.381 ms wall time in the latest debug replay. Removing most false style writes substantially reduces root counts but barely changes overall response; further unmeasured setter sweeps are lower priority. Attribute whole-scene preparation/extraction, rendering and handoff on the representative optimized workload, including waits and serial dependencies; retain work only with current pixels, capture privacy and hit mapping proved. The geometry-only branch experiment has been tested and removed; do not repeat it, the blanket layout gate or the ready-root cache unchanged. Shared Area preparation, hidden Sync-history rebuilding, equivalent editable-input measurement, false idle-editor invalidation and unconditional Area hover writes are addressed at their measured boundaries. Parallel scheduling should follow work elimination and preserve frame/resource ownership.
 - The optimized Park visit exposes persistent live canvas and SQLite work even in the requested quiet interval. Repeated graph reads and per-Record thread-selection reads have been removed in the faithful isolated saved-state reproduction; identical queries share work within an event. Status reads no longer invalidate subscriptions or request exclusive access: the recurring five-second refresh loop is removed in the private replay. Its one remaining early refresh still holds read access for about 0.6 seconds. Attribute that refresh's trigger, the necessary query work and read-scope lifetime before adding more caches or parallelism; preserve authorization and durable acknowledgements. Validate these reductions on an optimized artifact and instrumented daily session before claiming that live quiet-state churn is solved. Do not restart the owner's session unexpectedly.
 - Cold text/pipeline preparation still stalls. Implement asynchronous preparation only together with readiness, completion-driven wakeup, shader-failure handling and a policy-valid prior-frame fallback. The optimized release evidence does not justify disabling readiness or pretending submission-to-completion is GPU execution time.
 - Building a newly visible large Protein area is still synchronous, and previously built hidden row trees remain allocated. Visible paging/virtualization and bounded construction are not claimed complete.

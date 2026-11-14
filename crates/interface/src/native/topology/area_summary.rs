@@ -2,6 +2,8 @@ use crate::native::area::{AreaShape, Direction, InfluenceArea};
 use bevy::{math::DVec2, prelude::*};
 use serde_json::Value;
 
+pub(crate) mod hover_checks;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Behavior {
     Hole,
@@ -614,17 +616,23 @@ pub(super) fn hover(world: &mut World) {
         .map(|(entity, row)| (entity, row.button, editing(world, row.area)))
         .collect();
     for (entity, button, editing) in rows {
-        world.entity_mut(entity).insert(if editing {
+        let pickable = if editing {
             Pickable::default()
         } else {
             Pickable::IGNORE
-        });
+        };
+        if world.get::<Pickable>(entity) != Some(&pickable) {
+            world.entity_mut(entity).insert(pickable);
+        }
         if let Some(mut node) = world.get_mut::<Node>(button) {
-            node.display = if Some(entity) == hovered {
+            let display = if Some(entity) == hovered {
                 Display::Flex
             } else {
                 Display::None
             };
+            if node.display != display {
+                node.display = display;
+            }
         }
     }
     let previous = world

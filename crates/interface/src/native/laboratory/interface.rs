@@ -75,6 +75,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     crate::native::area_effects::tests::laboratory_cases(&mut cases);
     crate::native::influence_report::tests::laboratory_cases(&mut cases);
     crate::native::topology::influence::tests::laboratory_cases(&mut cases);
+    crate::native::topology::area_summary::hover_checks::laboratory_cases(&mut cases);
     crate::native::output_views::tests::laboratory_cases(&mut cases);
     let mut inspection = Vec::new();
     crate::native::inspection::tests::laboratory_cases(&mut inspection);

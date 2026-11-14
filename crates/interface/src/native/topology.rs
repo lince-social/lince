@@ -6,7 +6,7 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 
 mod area_reach;
-mod area_summary;
+pub(crate) mod area_summary;
 pub(crate) use area_summary::{SummaryAtBottom, SummaryInEditMode};
 pub mod appearance;
 pub(crate) mod compositor;

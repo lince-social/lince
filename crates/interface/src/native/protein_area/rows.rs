@@ -678,14 +678,16 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         return;
     };
     super::availability::synchronize(world, owner, &state);
-    if !state.dirty {
+    if !state.dirty && !state.deferred_rows {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
     }
     let parent = world.get::<ChildOf>(owner).map(ChildOf::parent);
     let workspace = world.get::<WorkspaceMember>(owner).map_or(1, |member| member.0);
     if state.ready && parent.is_some_and(|root| !crate::native::output_views::presents(world, root, workspace)) {
-        if let Some(config) = &state.applied {
+        if state.dirty && !state.row_entities.is_empty()
+            && let Some(config) = &state.applied
+        {
             let current: std::collections::HashSet<_> = state.data.iter()
                 .filter_map(|row| row["uid"].as_str()).collect();
             state.row_entities.retain(|uid, entity| {
@@ -701,6 +703,8 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                 }
             });
         }
+        state.dirty = false;
+        state.deferred_rows = true;
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
     }
@@ -847,6 +851,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         }
     }
     state.dirty = false;
+    state.deferred_rows = false;
     state.template_dirty = false;
     super::availability::synchronize(world, owner, &state);
     crate::native::relation_castle::reconcile(

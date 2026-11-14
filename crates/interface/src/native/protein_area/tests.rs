@@ -1375,11 +1375,12 @@ fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
     rows::reconcile(world, owner);
     assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
     let bounds = Rectangle::new([0.0; 2], [800.0,600.0]).unwrap();
-    world.insert_resource(OutputViews::new(vec![OutputViewport {
+    let outputs = OutputViews::new(vec![OutputViewport {
         id: OutputId(1), workspace: 2, bounds, usable: Some(bounds), physical_size: [800,600],
         raster: crate::host::raster::RasterMapping { origin: [0.0;2], scale: [1.0;2] },
         rotation: Default::default(),
-    }], OutputId(1)).unwrap());
+    }], OutputId(1)).unwrap();
+    world.insert_resource(outputs.clone());
     rows::reconcile(world, owner);
     let row = world.resource::<Runtime>().areas[&owner].row_entities["record-1"];
     assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Latest");
@@ -1388,20 +1389,40 @@ fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
     assert!(!world.resource::<Runtime>().areas[&owner].dirty);
     assert_eq!(world.resource::<Runtime>().areas[&owner].revision, revision);
     world.remove_resource::<OutputViews>();
+    for head in ["Hidden first", "Hidden latest"] {
+        receive(world, owner, snapshot(head));
+        for _ in 0..3 {
+            rows::reconcile(world, owner);
+            assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Latest");
+        }
+    }
+    world.insert_resource(outputs);
+    rows::reconcile(world, owner);
+    assert_eq!(world.resource::<Runtime>().areas[&owner].row_entities["record-1"], row);
+    assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Hidden latest");
+    world.remove_resource::<OutputViews>();
     receive(world, owner, ServerMessage::Update { id: "demand".into(), rows: vec![] });
     rows::reconcile(world, owner);
     assert!(world.get_entity(row).is_err());
     assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    receive(world, owner, snapshot("Through portal"));
+    rows::reconcile(world, owner);
+    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
     world.entity_mut(root).insert(crate::native::topology::holes::Layers(vec![crate::native::topology::holes::Layer {
         workspace: 2, depth: 1, openings: vec![], cuts: vec![],
     }]));
-    receive(world, owner, snapshot("Through portal"));
     rows::reconcile(world, owner);
     assert_eq!(world.resource::<Runtime>().areas[&owner].row_entities.len(), 1);
+    let row = world.resource::<Runtime>().areas[&owner].row_entities["record-1"];
+    assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Through portal");
     world.entity_mut(root).remove::<crate::native::topology::holes::Layers>();
+    receive(world, owner, snapshot("Hidden before revocation"));
+    rows::reconcile(world, owner);
+    assert!(world.get_entity(row).is_ok());
     receive(world, owner, ServerMessage::Error { id: "connection".into(), message: "Revoked".into(), code: None });
     rows::reconcile(world, owner);
     assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    assert!(world.get_entity(row).is_err());
 }
 
 crate::native::laboratory_cases! {

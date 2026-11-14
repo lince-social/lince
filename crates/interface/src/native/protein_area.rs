@@ -263,6 +263,7 @@ struct State {
     groups: HashMap<(bool, String), Entity>,
     page: usize,
     dirty: bool,
+    deferred_rows: bool,
     template_dirty: bool,
     navigation: Option<Entity>,
     actions: HashMap<String, Entity>,

@@ -286,7 +286,7 @@ fn scene(
     name: &str,
     hidden: bool,
     mixed: bool,
-    reveal: Option<usize>,
+    reveal: Option<projection::Fixture>,
 ) -> io::Result<Value> {
     performance::set_phase(Phase::Warmup);
     let directory = tempfile::tempdir()?;
@@ -303,9 +303,8 @@ fn scene(
         eprintln!("Preparing 300 synthetic Records");
         runtime
             .block_on(async {
-                let body =
-                    "**Private fixture**: rich text, Unicode café 日本語, and local data.\n\n"
-                        .repeat(100);
+                let contents = reveal.map(|fixture| fixture.contents).unwrap_or_default();
+                let body = contents.body(0);
                 let first = store::records::create(
                     &engine.store.pool,
                     store::records::NewRecord {
@@ -327,7 +326,7 @@ fn scene(
                             slug: None,
                             kind: nucleus::RecordKind::Plain,
                             head: &format!("Synthetic row {index}"),
-                            body: &body,
+                            body: &contents.body(index),
                             quantity: store::exact::zero(),
                         },
                         &organ,
@@ -399,7 +398,7 @@ fn scene(
     if hidden {
         for index in 0..if reveal.is_some() { 1 } else { 8 } {
             let mut config = native::protein_area::Config::records();
-            config.draft.query["limit"] = json!(reveal.unwrap_or(300));
+            config.draft.query["limit"] = json!(reveal.map_or(300, |fixture| fixture.rows));
             let area = native::area::InfluenceArea {
                 name: format!("Synthetic inactive area {index}"),
                 protein: Some(config),
@@ -486,8 +485,9 @@ fn scene(
     }
     let ready_deadline = Instant::now() + Duration::from_secs(30);
     while !inactive.iter().all(|owner| {
-        native::protein_area::projection_stats(canvas.world_mut(), *owner)
-            .is_some_and(|stats| stats.ready && stats.records >= reveal.unwrap_or(300))
+        native::protein_area::projection_stats(canvas.world_mut(), *owner).is_some_and(|stats| {
+            stats.ready && stats.records >= reveal.map_or(300, |fixture| fixture.rows)
+        })
     }) {
         if Instant::now() >= ready_deadline {
             return Err(error(
@@ -506,8 +506,8 @@ fn scene(
         ));
     }
     let cold_ms = cold.elapsed().as_secs_f64() * 1000.0;
-    if let Some(count) = reveal {
-        return projection::measure(&mut canvas, root, inactive[0], count, cold_ms);
+    if let Some(fixture) = reveal {
+        return projection::measure(&mut canvas, root, inactive[0], fixture, cold_ms);
     }
     performance::set_phase(Phase::OpenReveal);
     let mut samples = Vec::with_capacity(120);

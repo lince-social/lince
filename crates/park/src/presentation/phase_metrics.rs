@@ -41,6 +41,7 @@ pub(super) fn install(app: &mut App) -> Result<(), &'static str> {
     schedules.insert(observed);
     drop(schedules);
     app.insert_resource(bevy::ui::UiLayoutDiagnostics(ui_layout_work));
+    app.insert_resource(bevy::ui::widget::UiTextMeasureDiagnostics(static_text_work));
     app.add_systems(
         PostUpdate,
         text_work
@@ -77,6 +78,40 @@ fn ui_layout_work(reading: bevy::ui::UiLayoutReading) {
         (Count::NativeUiGeometryNodes, reading.geometry_nodes),
     ] {
         performance::add(count, value);
+    }
+}
+
+fn static_text_work(reading: bevy::ui::widget::UiTextMeasureReading) {
+    use bevy::ui::widget::UiTextMeasureReading;
+    use performance::Count;
+    let UiTextMeasureReading::Measured {
+        elapsed,
+        bytes,
+        spans,
+        no_wrap,
+        succeeded,
+    } = reading
+    else {
+        performance::count(Count::StaticTextHidden);
+        return;
+    };
+    let stage = match bytes {
+        0 => Stage::NativeStaticTextEmpty,
+        1..=64 => Stage::NativeStaticTextShort,
+        65..=512 => Stage::NativeStaticTextMedium,
+        _ => Stage::NativeStaticTextLong,
+    };
+    performance::record(stage, elapsed);
+    if no_wrap {
+        performance::record(Stage::NativeStaticTextNoWrap, elapsed);
+    }
+    if spans > 1 {
+        performance::record(Stage::NativeStaticTextMultiSpan, elapsed);
+    }
+    performance::add(Count::StaticTextBytes, bytes);
+    performance::add(Count::StaticTextSpans, spans);
+    if !succeeded {
+        performance::count(Count::StaticTextFailed);
     }
 }
 

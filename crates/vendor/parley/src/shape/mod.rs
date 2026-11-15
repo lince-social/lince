@@ -17,7 +17,7 @@ use crate::convert::script_to_harfrust;
 use crate::inline_box::InlineBox;
 use crate::lru_cache::LruCache;
 use crate::util::nearly_eq;
-use crate::{FontData, convert};
+use crate::{convert, FontData};
 use fontique::Language;
 use icu_properties::props::Script;
 
@@ -29,6 +29,7 @@ pub(crate) struct ShapeContext {
     shape_data_cache: LruCache<cache::ShapeDataKey, harfrust::ShaperData>,
     shape_instance_cache: LruCache<cache::ShapeInstanceId, harfrust::ShaperInstance>,
     shape_plan_cache: LruCache<cache::ShapePlanId, harfrust::ShapePlan>,
+    shape_result_cache: LruCache<cache::ShapeResultId, cache::ShapedGlyphs>,
     unicode_buffer: Option<harfrust::UnicodeBuffer>,
     features: Vec<harfrust::Feature>,
     char_cluster: CharCluster,
@@ -41,6 +42,7 @@ impl Default for ShapeContext {
             shape_data_cache: LruCache::new(MAX_ENTRIES),
             shape_instance_cache: LruCache::new(MAX_ENTRIES),
             shape_plan_cache: LruCache::new(MAX_ENTRIES),
+            shape_result_cache: LruCache::new(MAX_ENTRIES),
             unicode_buffer: Some(harfrust::UnicodeBuffer::new()),
             features: Vec::new(),
             char_cluster: CharCluster::default(),
@@ -398,8 +400,8 @@ fn shape_item<'a, B: Brush>(
             .instance(Some(instance))
             .point_size(Some(item.size))
             .build();
-        let shaper_plan = scx.shape_plan_cache.entry(
-            cache::ShapePlanKey::new(
+        let result_key = cache::ShapeResultKey {
+            plan: cache::ShapePlanKey::new(
                 font.font.blob.id(),
                 font.font.index,
                 &font.font.synthesis,
@@ -409,7 +411,15 @@ fn shape_item<'a, B: Brush>(
                 &scx.features,
                 rcx.variations(item.variations),
             ),
-            || {
+            size: item.size,
+            text: segment_text,
+        };
+        let cacheable = result_key.cacheable();
+        let cached = cacheable
+            .then(|| scx.shape_result_cache.get(&result_key))
+            .flatten();
+        let glyph_buffer = if cached.is_none() {
+            let shaper_plan = scx.shape_plan_cache.entry(result_key.plan.clone(), || {
                 harfrust::ShapePlan::new(
                     &harf_shaper,
                     direction,
@@ -417,35 +427,42 @@ fn shape_item<'a, B: Brush>(
                     language.as_ref(),
                     &scx.features,
                 )
-            },
-        );
+            });
 
-        // Prepare harfrust buffer
-        let mut buffer = mem::take(&mut scx.unicode_buffer).unwrap();
-        buffer.clear();
+            // Prepare harfrust buffer
+            let mut buffer = mem::take(&mut scx.unicode_buffer).unwrap();
+            buffer.clear();
 
-        // Use the entire segment text including newlines
-        buffer.reserve(segment_text.len());
-        for (i, ch) in segment_text.chars().enumerate() {
-            // Ensure that each cluster's index matches the index into `infos`. This is required
-            // for efficient cluster lookup within `data.rs`.
-            //
-            // In other words, instead of using `buffer.push_str`, which iterates `segment_text`
-            // with `char_indices`, push each char individually via `.chars` with a cluster index
-            // that matches its `infos` counterpart. This allows us to lookup `infos` via cluster
-            // index in `data.rs`.
-            buffer.add(ch, i as u32);
-        }
+            // Use the entire segment text including newlines
+            buffer.reserve(segment_text.len());
+            for (i, ch) in segment_text.chars().enumerate() {
+                // Ensure that each cluster's index matches the index into `infos`. This is required
+                // for efficient cluster lookup within `data.rs`.
+                //
+                // In other words, instead of using `buffer.push_str`, which iterates `segment_text`
+                // with `char_indices`, push each char individually via `.chars` with a cluster index
+                // that matches its `infos` counterpart. This allows us to lookup `infos` via cluster
+                // index in `data.rs`.
+                buffer.add(ch, i as u32);
+            }
 
-        buffer.set_direction(direction);
+            buffer.set_direction(direction);
 
-        buffer.set_script(hb_script);
+            buffer.set_script(hb_script);
 
-        if let Some(lang) = language {
-            buffer.set_language(lang);
-        }
+            if let Some(lang) = language {
+                buffer.set_language(lang);
+            }
 
-        let glyph_buffer = harf_shaper.shape_with_plan(shaper_plan, buffer, &scx.features);
+            Some(harf_shaper.shape_with_plan(shaper_plan, buffer, &scx.features))
+        } else {
+            None
+        };
+        let (glyph_infos, glyph_positions) = match (cached, &glyph_buffer) {
+            (Some(cached), _) => (&*cached.infos, &*cached.positions),
+            (_, Some(buffer)) => (buffer.glyph_infos(), buffer.glyph_positions()),
+            _ => unreachable!(),
+        };
 
         // Extract relevant CharInfo slice for this segment
         let char_start = char_range.start + item_text[..segment_start_offset].chars().count();
@@ -460,7 +477,8 @@ fn shape_item<'a, B: Brush>(
             item.size,
             font.attrs,
             font.font.synthesis,
-            &glyph_buffer,
+            glyph_infos,
+            glyph_positions,
             item.level,
             item.style_index,
             item.word_spacing,
@@ -472,7 +490,18 @@ fn shape_item<'a, B: Brush>(
         );
 
         // Replace buffer to reuse allocation in next iteration.
-        scx.unicode_buffer = Some(glyph_buffer.clear());
+        if let Some(buffer) = glyph_buffer {
+            // A pathological font can expand a short string into many glyphs.
+            // Keep the cache bounded by output size as well as input size.
+            if cacheable && buffer.len() <= 2048 {
+                scx.shape_result_cache
+                    .entry(result_key, || cache::ShapedGlyphs {
+                        infos: buffer.glyph_infos().into(),
+                        positions: buffer.glyph_positions().into(),
+                    });
+            }
+            scx.unicode_buffer = Some(buffer.clear());
+        }
     }
 }
 

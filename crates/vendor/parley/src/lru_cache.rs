@@ -29,6 +29,17 @@ impl<ID, T> LruCache<ID, T> {
         }
     }
 
+    /// Looks up an existing entry without allocating a value on a miss.
+    pub(crate) fn get<K: Equivalent<ID>>(&mut self, id: &K) -> Option<&T> {
+        let entry = self
+            .entries
+            .iter_mut()
+            .find(|entry| id.equivalent(&entry.id))?;
+        self.epoch += 1;
+        entry.epoch = self.epoch;
+        Some(&entry.data)
+    }
+
     /// Returns a reference to the entry with the given ID. If the entry is not
     /// found, it is created and returned using `make_data`.
     ///

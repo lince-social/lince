@@ -1,5 +1,74 @@
 use super::*;
 
+#[derive(Clone, Copy)]
+pub(super) struct Fixture {
+    pub rows: usize,
+    pub contents: Contents,
+}
+
+#[derive(Clone, Copy, Default)]
+pub(super) enum Contents {
+    #[default]
+    Repeated,
+    Distinct,
+}
+
+impl Contents {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Repeated => "repeated-paragraphs",
+            Self::Distinct => "distinct-paragraphs",
+        }
+    }
+
+    pub(super) fn body(self, row: usize) -> String {
+        const PARAGRAPH: &str =
+            "**Private fixture**: rich text, Unicode café 日本語, and local data.\n\n";
+        match self {
+            Self::Repeated => PARAGRAPH.repeat(100),
+            Self::Distinct => (0..100)
+                .map(|paragraph| {
+                    PARAGRAPH
+                        .replace(
+                            "Private fixture",
+                            &format!("Record {row:03} {paragraph:03}!"),
+                        )
+                        .replace(
+                            "local data.",
+                            &format!("data {:05}.", row * 100 + paragraph),
+                        )
+                })
+                .collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Contents;
+    use std::collections::HashSet;
+
+    #[test]
+    fn distinct_fixture_keeps_paragraph_load_without_duplicate_paragraphs() {
+        let repeated = Contents::Repeated.body(0);
+        let mut paragraphs = HashSet::new();
+        for row in 0..300 {
+            let distinct = Contents::Distinct.body(row);
+            assert_eq!(distinct.len(), repeated.len());
+            assert_eq!(distinct.chars().count(), repeated.chars().count());
+            assert_eq!(distinct.matches("**").count(), 200);
+            assert_eq!(distinct.matches("café 日本語").count(), 100);
+            let body: Vec<_> = distinct.split_terminator("\n\n").collect();
+            assert_eq!(body.len(), 100);
+            for paragraph in body {
+                assert!(paragraphs.insert(paragraph.to_owned()));
+            }
+        }
+        assert_eq!(paragraphs.len(), 30_000);
+        assert_eq!(Contents::Repeated.body(299), repeated);
+    }
+}
+
 pub fn run() -> io::Result<()> {
     if !performance::enabled() || std::env::var_os("LINCE_PERFORMANCE_LOG").is_none() {
         return Err(error(
@@ -18,9 +87,23 @@ pub fn run() -> io::Result<()> {
     }
     let mut results = Vec::new();
     let measured = (|| -> io::Result<()> {
-        for count in [1, 20, 200] {
-            eprintln!("Starting populated projection reveal: {count} rows");
-            let result = scene(&runtime, "projection-reveal", true, false, Some(count))?;
+        let fixtures = [1, 20, 200]
+            .map(|rows| Fixture {
+                rows,
+                contents: Contents::Repeated,
+            })
+            .into_iter()
+            .chain([Fixture {
+                rows: 200,
+                contents: Contents::Distinct,
+            }]);
+        for fixture in fixtures {
+            eprintln!(
+                "Starting populated projection reveal: {} rows, {}",
+                fixture.rows,
+                fixture.contents.name()
+            );
+            let result = scene(&runtime, "projection-reveal", true, false, Some(fixture))?;
             println!("{result}");
             results.push(result);
         }
@@ -33,7 +116,7 @@ pub fn run() -> io::Result<()> {
     println!(
         "{}",
         json!({
-            "suite":"park-projection-reveal-v1",
+            "suite":"park-projection-reveal-v2",
             "scope":"diagnostic; native input to completed GPU frame, not physical scanout",
             "optimized":!cfg!(debug_assertions),
             "revision":option_env!("LINCE_REVISION").unwrap_or("unknown"),
@@ -61,9 +144,10 @@ pub(super) fn measure(
     canvas: &mut Presentation,
     root: Entity,
     owner: Entity,
-    count: usize,
+    fixture: Fixture,
     cold_ms: f64,
 ) -> io::Result<Value> {
+    let count = fixture.rows;
     let item = native::sand_store::spawn_sand(
         canvas.world_mut(),
         root,
@@ -196,6 +280,7 @@ pub(super) fn measure(
     Ok(json!({
         "case":"populated-projection-reveal",
         "rows":count,
+        "contents":fixture.contents.name(),
         "completed":after_complete == 12,
         "cold_setup_ms":cold_ms,
         "all_rows_materialized_ms":complete_ms,

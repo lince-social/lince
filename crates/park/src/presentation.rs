@@ -751,7 +751,7 @@ impl Presentation {
         self.app.world_mut()
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "server-tests"))]
     pub(crate) fn world(&self) -> &World { self.app.world() }
 
     pub(crate) fn prepare_linear_output(&mut self, requested: bool) -> Result<(), ProbeFailure> {

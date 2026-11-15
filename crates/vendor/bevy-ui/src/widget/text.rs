@@ -12,6 +12,7 @@ use bevy_ecs::{
     hierarchy::ChildOf,
     query::With,
     reflect::ReflectComponent,
+    resource::Resource,
     system::{Query, Res, ResMut},
     world::Ref,
 };
@@ -26,6 +27,20 @@ use bevy_text::{
 };
 use taffy::{style::AvailableSpace, MaybeMath, ResolveOrZero};
 use tracing::error;
+
+#[derive(Resource)]
+pub struct UiTextMeasureDiagnostics(pub fn(UiTextMeasureReading));
+
+pub enum UiTextMeasureReading {
+    Hidden,
+    Measured {
+        elapsed: std::time::Duration,
+        bytes: u64,
+        spans: u64,
+        no_wrap: bool,
+        succeeded: bool,
+    },
+}
 
 pub(super) fn has_display_box(
     mut entity: Entity,
@@ -279,6 +294,7 @@ impl Measure for TextMeasure {
 ///   color changes. This can be expensive, particularly for large blocks of text, and the [`bypass_change_detection`](bevy_ecs::change_detection::DetectChangesMut::bypass_change_detection)
 ///   method should be called when only changing the `Text`'s colors.
 pub fn measure_text_system(
+    diagnostics: Option<Res<UiTextMeasureDiagnostics>>,
     fonts: Res<Assets<Font>>,
     mut text_query: Query<
         (
@@ -324,16 +340,27 @@ pub fn measure_text_system(
         }
 
         if !has_display_box(entity, &nodes) {
+            if let Some(diagnostics) = &diagnostics {
+                (diagnostics.0)(UiTextMeasureReading::Hidden);
+            }
             if !text_flags.needs_measure_fn {
                 text_flags.needs_measure_fn = true;
             }
             continue;
         }
 
-        match text_pipeline.create_text_measure(
+        let started = diagnostics.as_ref().map(|_| std::time::Instant::now());
+        let mut bytes = 0;
+        let mut spans = 0;
+        let measured = text_pipeline.create_text_measure(
             entity,
             fonts.as_ref(),
-            text_reader.iter(entity),
+            text_reader.iter(entity).inspect(|section| {
+                if started.is_some() {
+                    bytes += section.2.len() as u64;
+                    spans += 1;
+                }
+            }),
             computed_target.scale_factor,
             &block,
             computed.as_mut(),
@@ -341,7 +368,17 @@ pub fn measure_text_system(
             &mut layout_cx,
             computed_target.logical_size(),
             rem_size.0,
-        ) {
+        );
+        if let Some(started) = started {
+            (diagnostics.as_ref().unwrap().0)(UiTextMeasureReading::Measured {
+                elapsed: started.elapsed(),
+                bytes,
+                spans,
+                no_wrap: block.linebreak == LineBreak::NoWrap,
+                succeeded: measured.is_ok(),
+            });
+        }
+        match measured {
             Ok(measure) => {
                 if block.linebreak == LineBreak::NoWrap {
                     content_size.set(NodeMeasure::Fixed(FixedMeasure { size: measure.max }));

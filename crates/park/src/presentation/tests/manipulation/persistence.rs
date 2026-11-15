@@ -167,7 +167,7 @@ fn uids(rows: &[serde_json::Value]) -> std::collections::BTreeSet<String> {
 fn stop(
     runtime: &tokio::runtime::Runtime,
     canvas: &mut Presentation,
-) -> tokio::sync::mpsc::Sender<cell::ClientMessage> {
+) -> native::cell_bridge::Sender {
     let mut bridge = canvas
         .world_mut()
         .non_send_mut::<native::cell_bridge::CellBridge>();

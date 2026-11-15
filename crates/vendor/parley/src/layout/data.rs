@@ -384,7 +384,8 @@ impl<B: Brush> LayoutData<B> {
         font_size: f32,
         font_attrs: fontique::Attributes,
         synthesis: fontique::Synthesis,
-        glyph_buffer: &harfrust::GlyphBuffer,
+        glyph_infos: &[harfrust::GlyphInfo],
+        glyph_positions: &[harfrust::GlyphPosition],
         bidi_level: u8,
         style_index: u16,
         word_spacing: f32,
@@ -476,11 +477,9 @@ impl<B: Brush> LayoutData<B> {
         // `HarfRust` returns glyphs in visual order, so we need to process them as such while
         // maintaining logical ordering of clusters.
 
-        let glyph_infos = glyph_buffer.glyph_infos();
         if glyph_infos.is_empty() {
             return;
         }
-        let glyph_positions = glyph_buffer.glyph_positions();
         let scale_factor = font_size / units_per_em;
         let cluster_range_start = self.clusters.len();
         let is_rtl = bidi_level & 1 == 1;

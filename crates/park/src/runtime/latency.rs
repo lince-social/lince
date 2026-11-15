@@ -50,11 +50,6 @@ impl Stamp {
         CURRENT.with(Cell::get).or_else(Self::fresh)
     }
 
-    #[cfg(all(test, feature = "nested"))]
-    pub(crate) fn origin(self) -> u64 {
-        self.id
-    }
-
     pub(crate) fn record(self, stage: Stage) {
         performance::record(stage, self.instant.elapsed());
     }

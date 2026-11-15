@@ -15995,6 +15995,7 @@ version = "0.8.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "libsqlite3-sys",
  "nucleus",
  "sensei",
  "serde",

@@ -136,7 +136,7 @@ rust-sitter-tool = "0.4.5"
 hkdf = "0.13.0"
 getrandom = "0.4.3"
 x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
-sqlx = { version = "0.8.6" }
+sqlx = { version = "=0.8.6" }
 tokio = { version = "1.53.1", features = ["io-util", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
 tokio-util = "0.7.19"
 toml = "1.1.6"

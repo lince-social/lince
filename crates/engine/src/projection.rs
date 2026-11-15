@@ -369,8 +369,10 @@ pub async fn calculate(
     let snapshot = crate::performance::Span::new("schedule-projection-snapshot-await");
     source.snapshot_into(&path).await?;
     drop(snapshot);
+    let open = crate::performance::Span::new("schedule-projection-open-snapshot-await");
     let private =
         store::Store::open_existing_durable(&format!("sqlite://{}", path.display())).await?;
+    drop(open);
     result.source_revision = store::projection::revision(&private.pool).await?;
     let key = context
         .key(execution_identity())
@@ -384,6 +386,7 @@ pub async fn calculate(
     let execution =
         Execution::new(seed, base_ms).map_err(|error| EngineError::Consequence(error.into()))?;
     let outcome = execution.scope(async {
+        let setup = crate::performance::Span::new("schedule-projection-runtime-setup-await");
         let engine = Engine::new(private.clone()).await?;
         let cell = store::cells::local(&private.pool).await?.ok_or_else(|| EngineError::Consequence("projection has no Cell".into()))?;
         let organ = store::organs::local(&private.pool).await?.ok_or_else(|| EngineError::Consequence("projection has no Organ".into()))?;
@@ -392,6 +395,8 @@ pub async fn calculate(
         engine.set_signer(signer).await?;
         let config = match config { Some(config) => config, None => crate::karma_runtime::KarmaDeadlineDirectorConfig::for_host(format!("{}:projection", cell.uid))? };
         engine.install_karma_runtime_config(config)?;
+        drop(setup);
+        let preparation = crate::performance::Span::new("schedule-projection-prepare-await");
         let mut position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM fact").fetch_one(&private.pool).await?;
         let application_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_rule_application").fetch_one(&private.pool).await?;
         let mut schedule_position = application_position;
@@ -411,10 +416,12 @@ pub async fn calculate(
             };
             active.insert(record.uid, span);
         }
+        drop(preparation);
         if active.len() > MAX_SPANS { result.incomplete = Some(Incomplete::Budget {}); return Ok(()); }
         let mut now = base_ms;
         let mut complete = false;
         for _ in 0..MAX_STEPS {
+            let _step = crate::performance::Span::new("schedule-projection-simulation-step-await");
             execution.set_time(now).map_err(|error| EngineError::Consequence(error.into()))?;
             if !engine.karma_device_execution().await?.executing { result.incomplete = Some(Incomplete::UnavailableRuntime {}); break; }
             metrics.steps.fetch_add(1, Ordering::Relaxed);
@@ -491,7 +498,9 @@ pub async fn calculate(
         result.schedule.dedup_by(|a, b| a.id == b.id);
         Ok::<_, EngineError>(())
     }).await;
+    let close = crate::performance::Span::new("schedule-projection-close-snapshot-await");
     private.pool.close().await;
+    drop(close);
     outcome?;
     result
         .spans

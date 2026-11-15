@@ -1,9 +1,9 @@
+mod backup;
 mod cache;
 mod hashing;
 
 pub use cache::StateHasher;
 
-use std::io::Write;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -36,35 +36,7 @@ pub struct Table {
 
 impl Store {
     pub async fn snapshot_into(&self, path: &Path) -> Result<(), StoreError> {
-        if path.exists() {
-            return Err(StoreError::Protocol(
-                "snapshot destination already exists".into(),
-            ));
-        }
-        let path = path
-            .to_str()
-            .ok_or_else(|| StoreError::Protocol("snapshot path is not UTF-8".into()))?;
-        let mut connection = self.pool.acquire().await?;
-        let filename: String =
-            sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name = 'main'")
-                .fetch_one(&mut *connection)
-                .await?;
-        if filename.is_empty() {
-            let bytes = connection.serialize(None).await?;
-            let mut file = std::fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(path)
-                .map_err(StoreError::Io)?;
-            file.write_all(&bytes).map_err(StoreError::Io)?;
-            file.sync_all().map_err(StoreError::Io)?;
-            return Ok(());
-        }
-        sqlx::query("VACUUM main INTO ?")
-            .bind(path)
-            .execute(&mut *connection)
-            .await?;
-        Ok(())
+        backup::snapshot(&self.pool, path).await
     }
 
     pub async fn logical_snapshot(&self) -> Result<Vec<Table>, StoreError> {

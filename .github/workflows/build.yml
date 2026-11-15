@@ -136,7 +136,7 @@ jobs:
     if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
     name: Linux release
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 240
     env:
       BUILD_TARGET: x86_64-unknown-linux-gnu
       CARGO_PROFILE_RELEASE_LTO: thin
@@ -182,6 +182,7 @@ jobs:
         shell: bash
 
       - name: Build Park measurement probe
+        timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
           RUST_MIN_STACK: "33554432"

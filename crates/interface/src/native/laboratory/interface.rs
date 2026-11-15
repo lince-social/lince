@@ -278,6 +278,68 @@ fn hidden_text_defers_visual_work_and_reveals_current_edits_and_styles() {
 }
 
 #[cfg_attr(test, test)]
+fn logical_end_cursor_preserves_text_and_selection_without_eager_shaping() {
+    use bevy::text::{FontCx, LayoutCx, TextBrush};
+
+    fn check(
+        editor: &mut parley::PlainEditor<TextBrush>,
+        fonts: &mut parley::FontContext,
+        layouts: &mut parley::LayoutContext<TextBrush>,
+    ) {
+        let dirty = editor.try_layout().is_none();
+        let mut reference = editor.clone();
+        reference.refresh_layout(fonts, layouts);
+        let expected = reference.raw_selection().move_lines(
+            reference.try_layout().unwrap(),
+            isize::MAX,
+            false,
+        );
+        let text = editor.raw_text().to_string();
+        let compose = editor.raw_compose().clone();
+        editor.driver(fonts, layouts).move_to_text_end();
+        assert_eq!(editor.try_layout().is_none(), dirty, "Cursor movement shaped the buffer");
+        assert_eq!(editor.raw_selection().focus(), expected.focus());
+        assert_eq!(editor.raw_selection().anchor(), expected.anchor());
+        assert_eq!(editor.raw_text(), text);
+        assert_eq!(editor.raw_compose(), &compose);
+        editor.refresh_layout(fonts, layouts);
+        assert_eq!(editor.raw_selection().focus(), expected.focus());
+        assert_eq!(editor.raw_selection().anchor(), expected.anchor());
+        let actual = editor.try_layout().unwrap();
+        let reference = reference.try_layout().unwrap();
+        assert_eq!(actual.width(), reference.width());
+        assert_eq!(actual.height(), reference.height());
+        assert_eq!(actual.len(), reference.len());
+        assert_eq!(editor.raw_selection().focus().geometry(actual, 1.0),
+            expected.focus().geometry(reference, 1.0));
+    }
+
+    let (mut app, _) = fixture(UVec2::new(800, 600), 1.0);
+    app.world_mut().resource_scope(|world, mut fonts: Mut<FontCx>| {
+        let mut layouts = world.resource_mut::<LayoutCx>();
+        let long = "Unicode café 日本語 and another wrapped line.\n".repeat(100);
+        for text in ["", "Plain title", "e\u{301}", "👩‍👩‍👧‍👦", "العربية", "abc אבג",
+            "first\nsecond", "trailing\n", "trailing\r\n", "trailing\u{2028}",
+            "trailing\u{2029}", long.as_str()]
+        {
+            let mut editor = parley::PlainEditor::<TextBrush>::new(18.0);
+            editor.set_text(text);
+            editor.set_width(Some(180.0));
+            check(&mut editor, &mut fonts.context, &mut layouts.0);
+            check(&mut editor, &mut fonts.context, &mut layouts.0);
+            editor.driver(&mut fonts.context, &mut layouts.0).insert_or_replace_selection("é");
+            assert_eq!(editor.raw_text(), format!("{text}é"));
+            editor.set_text("Short replacement");
+            check(&mut editor, &mut fonts.context, &mut layouts.0);
+            editor.driver(&mut fonts.context, &mut layouts.0).set_compose("東京", Some((6, 6)));
+            editor.set_width(Some(80.0));
+            check(&mut editor, &mut fonts.context, &mut layouts.0);
+            assert!(editor.is_composing());
+        }
+    });
+}
+
+#[cfg_attr(test, test)]
 fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live() {
     use bevy::{
         input_focus::{FocusCause, InputFocus},
@@ -324,6 +386,21 @@ fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain
         assert!(!app.world().get::<TextLayoutInfo>(*entity).unwrap().glyphs.is_empty());
     }
     let field = editors[0];
+    let generation = app.world().get::<EditableText>(field).unwrap().editor().generation();
+    let layout = app.world().get::<TextLayoutInfo>(field).unwrap().clone();
+    app.world_mut().get_mut::<Node>(field).unwrap().height = px(100);
+    app.update();
+    assert_eq!(app.world().get::<ComputedNode>(field).unwrap().size().y, 100.0);
+    assert!(app.world().get::<EditableText>(field).unwrap().editor().generation() == generation,
+        "Height-only geometry change reshaped the editor");
+    let retained = app.world().get::<TextLayoutInfo>(field).unwrap();
+    assert_eq!(retained.size, layout.size);
+    assert_eq!(retained.glyphs.len(), layout.glyphs.len());
+    for (actual, expected) in retained.glyphs.iter().zip(&layout.glyphs) {
+        assert_eq!(actual.position, expected.position);
+        assert_eq!(actual.atlas_info.texture, expected.atlas_info.texture);
+        assert_eq!(actual.atlas_info.rect, expected.atlas_info.rect);
+    }
     app.world_mut().get_mut::<EditableText>(field).unwrap().queue_edit(TextEdit::SelectAll);
     app.update();
     assert!(!app.world().get::<TextLayoutInfo>(field).unwrap().selection_rects.is_empty());
@@ -1045,6 +1122,7 @@ crate::native::laboratory_cases! {
     retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
     workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits,
     hidden_text_defers_visual_work_and_reveals_current_edits_and_styles,
+    logical_end_cursor_preserves_text_and_selection_without_eager_shaping,
     untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live,
     retained_layout_keeps_scroll_reparenting_clips_and_input_order_current,
 }

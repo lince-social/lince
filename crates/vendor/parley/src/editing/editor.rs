@@ -476,12 +476,13 @@ where
 
     /// Move the cursor to the end of the buffer.
     pub fn move_to_text_end(&mut self) {
-        self.refresh_layout();
-        self.editor.set_selection(self.editor.selection.move_lines(
-            &self.editor.layout,
-            isize::MAX,
-            false,
-        ));
+        self.editor.set_selection(
+            Cursor {
+                index: self.editor.buffer.len(),
+                affinity: Affinity::Upstream,
+            }
+            .into(),
+        );
     }
 
     /// Move the cursor to just before the next hard line break (such as `\n`).
@@ -980,8 +981,10 @@ where
 
     /// Set the width of the layout.
     pub fn set_width(&mut self, width: Option<f32>) {
-        self.width = width;
-        self.layout_dirty = true;
+        if self.width != width {
+            self.width = width;
+            self.layout_dirty = true;
+        }
     }
 
     /// Set the alignment of the layout.

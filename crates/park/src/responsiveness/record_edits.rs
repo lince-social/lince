@@ -378,6 +378,7 @@ fn measure(
     let projection_before = projection_counts();
     let cpu_before = cpu_ms();
     let started = Instant::now();
+    let origin_us = performance::timestamp(started);
     loop {
         let before = receipts.len();
         while receipts.len() < edits.len() && edits[receipts.len()].at <= started.elapsed() {
@@ -560,6 +561,16 @@ fn measure(
         "settling_frames":settling_frames,"settling_ms":settling_ms,"awake_frames":awake_frames,
         "scheduled_delivery":summary(&delivery),"scheduled_visible_response":summary(&echo),
         "scheduled_durable_recovery":durable_summary,"scheduled_canonical_acknowledgement":acknowledged_summary,
+        "edit_origin_us":origin_us,
+        "edit_receipts":receipts.iter().map(|receipt| json!({
+            "operation":receipt.request.as_deref().and_then(|id| nucleus::performance::Operation::new(id).id()),
+            "revision":receipt.revision,
+            "scheduled_us":receipt.scheduled.as_micros(),
+            "delivered_us":receipt.delivered.as_micros(),
+            "echo_us":receipt.echo.as_micros(),
+            "durable_observed_us":receipt.durable.map(|at| at.as_micros()),
+            "ack_observed_us":receipt.acknowledged.map(|at| at.as_micros()),
+        })).collect::<Vec<_>>(),
         "maximum_pending_requests":maximum_pending,"warning_observed":warned,
         "longest_unsaved_ms":longest_dirty.as_secs_f64()*1000.0,"reopened_exactly":true,
         "input_order_and_focus":true,"component_owner":owner.to_string(),"passed":passed}),

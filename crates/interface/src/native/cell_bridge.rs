@@ -198,6 +198,12 @@ fn connect_session(
             let messages = tokio::select! {
                 request = requests.recv() => {
                     let Some(request) = request else { break };
+                    let edit = match &request {
+                        ClientMessage::Act { action: engine::actions::Action::ChangeRecord { request }, .. } =>
+                            nucleus::performance::Operation::new(&request.id),
+                        _ => Default::default(),
+                    };
+                    edit.mark("record-edit-service-started");
                     if let ClientMessage::Act { id, action: engine::actions::Action::PreviewKarmaProposal { .. } } = &request {
                         if preview_tasks.len() >= 4 {
                             if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Four previews are already running; wait for a result".into(), code: Some("preview_busy".into()) }]).await { break; }
@@ -304,6 +310,7 @@ fn connect_session(
                     let started = matches!(&request, ClientMessage::Act { action: engine::actions::Action::ChangeRecord { .. }, .. })
                         .then(crate::host::performance::start).flatten();
                     let messages = session.handle(request).await;
+                    edit.mark("record-edit-service-finished");
                     crate::host::performance::record_since(crate::host::performance::Stage::RecordChangeService, started);
                     messages
                 }
@@ -353,9 +360,15 @@ async fn deliver(
     messages: Vec<ServerMessage>,
 ) -> bool {
     for message in messages {
+        let operation = match &message {
+            ServerMessage::ActionOk { id, .. } => nucleus::performance::Operation::new(id),
+            _ => Default::default(),
+        };
+        operation.mark("action-response-queued");
         if out.send(message).await.is_err() {
             return false;
         }
+        operation.mark("action-response-sent");
         wake.ring_reason(crate::host::performance::Count::CellMessageWake);
     }
     true

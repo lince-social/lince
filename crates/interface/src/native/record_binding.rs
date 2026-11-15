@@ -1233,6 +1233,8 @@ impl Document {
                 record_uid: uid.into(),
                 mutation: engine::record_change::Mutation::Text { update_base64 },
             }));
+        nucleus::performance::Operation::new(&self.pending.back().unwrap().id)
+            .mark("record-edit-queued");
         self.revision += 1;
         self.status = "Saving locally…".into();
         Ok(())
@@ -1459,6 +1461,9 @@ pub fn receive(
             _ => false,
         };
         if applies {
+            if let ServerMessage::ActionOk { id, .. } = message {
+                nucleus::performance::Operation::new(id).mark("record-edit-ack-routed");
+            }
             document.incoming.push_back(message.clone());
         }
     }
@@ -1600,6 +1605,7 @@ pub(crate) fn submit(
         return Err("Wait for pending edits to sync".into());
     }
     document.sender = channel;
+    nucleus::performance::Operation::new(&request.id).mark("record-edit-queued");
     document.pending.push_back(Arc::new(request));
     document.revision += 1;
     document.status = "Saving locally…".into();
@@ -1810,6 +1816,16 @@ fn update(world: &mut World) {
                     document.saving = false;
                     match result {
                         Ok(metadata) => {
+                            if performance::enabled() {
+                                for id in &metadata.pending {
+                                    if document.journal.metadata.as_ref()
+                                        .is_none_or(|previous| !previous.pending.contains(id))
+                                    {
+                                        nucleus::performance::Operation::new(id)
+                                            .mark("record-edit-draft-observed");
+                                    }
+                                }
+                            }
                             document.journal.accept(metadata, cursor);
                             document.saved = revision;
                         }
@@ -1948,6 +1964,8 @@ fn update(world: &mut World) {
                             .front()
                             .is_some_and(|request| request.id == id)
                         {
+                            nucleus::performance::Operation::new(&id)
+                                .mark("record-edit-ack-observed");
                             document.pending.pop_front();
                             document.inflight = None;
                             document.revision += 1;
@@ -2003,6 +2021,18 @@ fn update(world: &mut World) {
             drop(timing);
             match draft {
                 Ok((draft, cursor)) => {
+                    let operations = if performance::enabled() {
+                        draft.pending.iter()
+                            .filter(|request| draft.expected.as_ref()
+                                .is_none_or(|previous| !previous.pending.contains(&request.id)))
+                            .map(|request| nucleus::performance::Operation::new(&request.id))
+                            .collect::<Vec<_>>()
+                    } else {
+                        Vec::new()
+                    };
+                    for operation in &operations {
+                        operation.mark("record-edit-draft-queued");
+                    }
                     let clearing = document.pending.is_empty();
                     document.saving = true;
                     let sender = bindings.sender.clone();
@@ -2014,6 +2044,9 @@ fn update(world: &mut World) {
                     let wake = wake.clone();
                     let queued = performance::start();
                     tokio::spawn(async move {
+                        for operation in &operations {
+                            operation.mark("record-edit-draft-started");
+                        }
                         performance::record_since(Stage::RecordDraftQueueWait, queued);
                         let timing = performance::Span::new(Stage::RecordDraftWrite);
                         if clearing {
@@ -2025,6 +2058,11 @@ fn update(world: &mut World) {
                             .save_record_edit_draft(&storage, &key.1, draft)
                             .await
                             .map_err(|error| error.to_string());
+                        if result.is_ok() {
+                            for operation in &operations {
+                                operation.mark("record-edit-draft-durable");
+                            }
+                        }
                         drop(timing);
                         let _ = sender
                             .send(StorageEvent::Saved(key, instance, revision, cursor, result));
@@ -2053,6 +2091,8 @@ fn update(world: &mut World) {
                     .as_ref()
                     .is_some_and(|metadata| metadata.pending.contains(&request.id))
                     && document.sender.as_ref().is_some_and(|sender| {
+                        nucleus::performance::Operation::new(&request.id)
+                            .mark("record-edit-dispatched");
                         sender
                             .try_send(ClientMessage::Act {
                                 id: request.id.clone(),

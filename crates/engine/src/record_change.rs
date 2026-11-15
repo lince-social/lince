@@ -511,6 +511,7 @@ impl Engine {
         actor: Option<&str>,
         location_revision: Option<i64>,
     ) -> Result<ActionOutcome, EngineError> {
+        crate::performance::Operation::new(&request.id).mark("record-edit-access-granted");
         if !nucleus::valid_uid(&request.id, "op") || !nucleus::valid_uid(&request.record_uid, "r") {
             return Err(invalid(
                 "A property change needs durable Record and change identities",

@@ -423,6 +423,9 @@ impl crate::Engine {
         receipt: Option<(&str, &str)>,
     ) -> Result<Option<nucleus::Fact>, EngineError> {
         let _persistence = crate::performance::Span::new("record-canonical-persist-await");
+        let operation = receipt
+            .map(|(id, _)| crate::performance::Operation::new(id))
+            .unwrap_or_default();
         if prepared.is_duplicate() && incoming.is_none() && receipt.is_none() {
             return Ok(None);
         }
@@ -502,7 +505,9 @@ impl crate::Engine {
         let now = nucleus::execution::now();
         let beginning = crate::performance::Span::new("record-canonical-begin-await");
         crate::performance::add("record-canonical-begins", 1);
+        operation.mark("record-edit-transaction-queued");
         let mut tx = store::write_tx(&self.store.pool).await?;
+        operation.mark("record-edit-transaction-granted");
         drop(beginning);
         let body = crate::performance::Span::new("record-canonical-transaction-body-await");
         let checkpoint = self
@@ -595,7 +600,9 @@ impl crate::Engine {
         }
         drop(body);
         let committing = crate::performance::Span::new("record-canonical-commit-await");
+        operation.mark("record-edit-commit-started");
         tx.commit().await?;
+        operation.mark("record-edit-committed");
         drop(committing);
         crate::performance::add("record-canonical-commits", 1);
         self.cache_doc(uid, Arc::new(prepared.into_accepted_after_commit()));

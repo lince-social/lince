@@ -124,6 +124,23 @@ stages! {
     NativeRecordProjection => "native-record-projection",
     NativeRecordPresentation => "native-record-presentation",
     RecordBindingUpdate => "record-binding-update",
+    RecordEditQueued => "record-edit-queued",
+    RecordEditDraftQueued => "record-edit-draft-queued",
+    RecordEditDraftStarted => "record-edit-draft-started",
+    RecordEditDraftDurable => "record-edit-draft-durable",
+    RecordEditDraftObserved => "record-edit-draft-observed",
+    RecordEditDispatched => "record-edit-dispatched",
+    RecordEditServiceStarted => "record-edit-service-started",
+    RecordEditAccessGranted => "record-edit-access-granted",
+    RecordEditTransactionQueued => "record-edit-transaction-queued",
+    RecordEditTransactionGranted => "record-edit-transaction-granted",
+    RecordEditCommitStarted => "record-edit-commit-started",
+    RecordEditCommitted => "record-edit-committed",
+    RecordEditServiceFinished => "record-edit-service-finished",
+    ActionResponseQueued => "action-response-queued",
+    ActionResponseSent => "action-response-sent",
+    RecordEditAckRouted => "record-edit-ack-routed",
+    RecordEditAckObserved => "record-edit-ack-observed",
     EditProbeSetText => "edit-probe-set-text",
     EditProbeMirror => "edit-probe-mirror-observed-await",
     EditProbeDurable => "edit-probe-durable-recovery-observed-await",
@@ -628,6 +645,8 @@ pub struct SpanReading {
     pub ended_us: u64,
     pub start_thread: u64,
     pub end_thread: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -701,7 +720,25 @@ impl Monitor {
                     self.counters[counter as usize].fetch_add(count, Ordering::Relaxed);
                 }
             }
+            engine::performance::Reading::Mark(label, operation) => {
+                if let Some(stage) = Stage::from_label(label) {
+                    let now = self.timestamp(Instant::now());
+                    let thread = thread_id();
+                    self.trace_span(SpanReading {
+                        stage: stage.label(),
+                        started_us: now,
+                        ended_us: now,
+                        start_thread: thread,
+                        end_thread: thread,
+                        operation: Some(operation),
+                    });
+                }
+            }
         }
+    }
+
+    fn timestamp(&self, at: Instant) -> u64 {
+        at.saturating_duration_since(self.started).as_micros().min(u128::from(u64::MAX)) as u64
     }
 
     fn new(sender: Option<SyncSender<Report>>) -> Self {
@@ -1043,6 +1080,10 @@ pub fn start() -> Option<Instant> {
     monitor().map(|_| Instant::now())
 }
 
+pub fn timestamp(at: Instant) -> Option<u64> {
+    monitor().map(|monitor| monitor.timestamp(at))
+}
+
 pub fn record(stage: Stage, duration: Duration) {
     if let Some(monitor) = monitor() {
         monitor.record(stage, duration);
@@ -1242,6 +1283,7 @@ impl Drop for Span {
                     .min(u128::from(u64::MAX)) as u64,
                 start_thread: self.thread,
                 end_thread: thread_id(),
+                operation: None,
             };
             monitor.trace_span(reading);
         }
@@ -1277,7 +1319,15 @@ pub mod checks {
             "private Record contents",
             99,
         ));
+        monitor.backend(engine::performance::Reading::Mark("record-edit-queued", 7));
+        monitor.backend(engine::performance::Reading::Mark("record-edit-dispatched", 7));
+        monitor.backend(engine::performance::Reading::Mark("private Record contents", 99));
         let report = monitor.snapshot();
+        assert_eq!(report.spans.len(), 2);
+        assert_eq!(report.spans[0].stage, "record-edit-queued");
+        assert_eq!(report.spans[1].stage, "record-edit-dispatched");
+        assert!(report.spans[0].started_us <= report.spans[1].started_us);
+        assert!(report.spans.iter().all(|span| span.operation == Some(7) && span.started_us == span.ended_us));
         assert_eq!(report.stages.len(), 2);
         assert_eq!(report.stages[0].stage, "record-guard-base-validation");
         assert_eq!(report.stages[0].total_us, 25);
@@ -1367,6 +1417,7 @@ pub mod checks {
                             ended_us: serial + 1,
                             start_thread: worker,
                             end_thread: worker,
+                            operation: Some(serial),
                         });
                     }
                 })
@@ -1378,6 +1429,7 @@ pub mod checks {
         let report = monitor.snapshot();
         assert_eq!(report.dropped_input_trace, 0);
         assert_eq!(report.dropped_span_trace, 0);
+        assert!(report.spans.iter().all(|span| span.operation == Some(span.started_us)));
         let mut inputs = report
             .input_trace
             .iter()
@@ -1399,6 +1451,7 @@ pub mod checks {
                 ended_us: serial as u64 + 1,
                 start_thread: 1,
                 end_thread: 1,
+                operation: Some(serial as u64),
             });
         }
         let report = monitor.snapshot();

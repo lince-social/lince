@@ -14,7 +14,7 @@ pub(super) struct Transcript {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
+struct Subscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
 
 pub(super) fn populate(world: &mut World, owner: Entity, binding: &RecordBinding, data: &Value) {
     let Some(thread) = data["tool_call"]["thread"].as_str() else {

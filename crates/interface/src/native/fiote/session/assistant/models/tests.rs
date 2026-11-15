@@ -91,13 +91,13 @@ fn intercept(
     app: &mut App,
 ) -> (
     tokio::sync::mpsc::Receiver<cell::ClientMessage>,
-    tokio::sync::mpsc::Sender<cell::ClientMessage>,
+    crate::native::cell_bridge::Sender,
 ) {
     let (sender, receiver) = tokio::sync::mpsc::channel(1);
     let mut bridge = app
         .world_mut()
         .non_send_mut::<crate::native::cell_bridge::CellBridge>();
-    let original = std::mem::replace(&mut bridge.outgoing, sender.clone());
+    let original = std::mem::replace(&mut bridge.outgoing, sender.clone().into());
     bridge.speech_cancellation = crate::native::cell_bridge::SpeechCancellation::new(sender);
     (receiver, original)
 }

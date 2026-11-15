@@ -10,7 +10,7 @@ mod transclusion;
 pub(crate) fn source_sender(
     world: &World,
     source: &Source,
-) -> Option<tokio::sync::mpsc::Sender<cell::ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     live::sender(world, source)
 }
 

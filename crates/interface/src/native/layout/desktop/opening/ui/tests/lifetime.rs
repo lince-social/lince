@@ -16,7 +16,7 @@ impl Transport {
         if blocked {
             for index in 0..64 { sender.try_send(ClientMessage::Unsubscribe { id: format!("startup-occupied-{index}") }).unwrap(); }
         }
-        app.add_systems(PostStartup, move |mut bridge: NonSendMut<crate::native::cell_bridge::CellBridge>| { bridge.outgoing = sender.clone(); });
+        app.add_systems(PostStartup, move |mut bridge: NonSendMut<crate::native::cell_bridge::CellBridge>| { bridge.outgoing = sender.clone().into(); });
         app.update();
         Self { requests, session: runtime.local_session(), creates: 0, extensions: 0 }
     }
@@ -239,7 +239,7 @@ async fn a_real_late_save_cannot_link_rules_or_steal_focus_after_editor_view_cel
             }
             4 => {
                 let (sender, receiver) = tokio::sync::mpsc::channel(64);
-                app.world_mut().get_non_send_mut::<crate::native::cell_bridge::CellBridge>().unwrap().outgoing = sender;
+                app.world_mut().get_non_send_mut::<crate::native::cell_bridge::CellBridge>().unwrap().outgoing = sender.into();
                 replacement_channel = Some(receiver);
                 app.update();
             }

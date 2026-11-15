@@ -1,5 +1,5 @@
 use super::*;
-use tokio::sync::mpsc::Sender;
+use crate::native::cell_bridge::Sender;
 
 pub(super) fn owns(state: &State) -> bool {
     state.remote.is_none()
@@ -45,7 +45,7 @@ pub(super) fn synchronize(world: &mut World) {
     }
 }
 
-fn observe(world: &mut World, sender: Sender<ClientMessage>) {
+fn observe(world: &mut World, sender: Sender) {
     let previous = world
         .resource_mut::<Runtime>()
         .local_sender
@@ -257,7 +257,7 @@ mod tests {
     fn new_local_channel_replays_only_fresh_subscriptions_and_rejects_stale_snapshots() {
         let (mut world, owner, editor, uid) = fixture();
         let (first, _first_receiver) = tokio::sync::mpsc::channel(1);
-        observe(&mut world, first);
+        observe(&mut world, first.into());
         let state = world
             .resource_mut::<Runtime>()
             .into_inner()
@@ -271,7 +271,7 @@ mod tests {
             },
         });
         let (second, _second_receiver) = tokio::sync::mpsc::channel(1);
-        observe(&mut world, second.clone());
+        observe(&mut world, second.clone().into());
         let state = &world.resource::<Runtime>().areas[&owner];
         assert!(!state.ready);
         assert!(sendable(state));
@@ -281,7 +281,7 @@ mod tests {
         };
         let fresh = id.clone();
         assert_ne!(fresh, "original-subscription");
-        observe(&mut world, second);
+        observe(&mut world, second.into());
         assert_eq!(world.resource::<Runtime>().areas[&owner].pending.len(), 1);
         receive(
             &mut world,

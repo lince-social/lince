@@ -435,7 +435,7 @@ async fn status_polling_accepts_one_utterance_and_ignores_the_stale_inspection_r
     let (outgoing, mut requests) = tokio::sync::mpsc::channel(8);
     app.world_mut()
         .non_send_mut::<crate::native::cell_bridge::CellBridge>()
-        .outgoing = outgoing;
+        .outgoing = outgoing.into();
     let (capture, events, _) = fake_capture();
     let session = app.world().get::<Listening>(owner).unwrap().owner.clone();
     {
@@ -524,7 +524,7 @@ async fn speaking_pauses_and_resumes_the_bound_conversation_and_end_can_be_cance
     let (sender, mut requests) = tokio::sync::mpsc::channel(8);
     app.world_mut()
         .non_send_mut::<crate::native::cell_bridge::CellBridge>()
-        .outgoing = sender.clone();
+        .outgoing = sender.clone().into();
     let conversation = Conversation {
         target: nucleus::new_uid("r"),
         thread: nucleus::new_uid("r"),

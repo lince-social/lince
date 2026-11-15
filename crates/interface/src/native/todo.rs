@@ -51,7 +51,7 @@ enum Mutation {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
+struct Subscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
 
 pub struct TodoPlugin;
 impl Plugin for TodoPlugin {

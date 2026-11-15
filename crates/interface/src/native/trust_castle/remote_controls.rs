@@ -64,7 +64,7 @@ struct Ticket {
     person: String,
     job: String,
     generation: u64,
-    sender: tokio::sync::mpsc::Sender<cell::ClientMessage>,
+    sender: crate::native::cell_bridge::Sender,
 }
 #[derive(Resource, Default)]
 pub(super) struct Tracked(BTreeMap<Entity, Ticket>);
@@ -200,7 +200,7 @@ fn track(world: &mut World, owner: Entity) {
 pub(super) fn track_with_sender(
     world: &mut World,
     owner: Entity,
-    sender: tokio::sync::mpsc::Sender<cell::ClientMessage>,
+    sender: crate::native::cell_bridge::Sender,
 ) {
     let Some(view) = world.get::<View>(owner) else {
         return;

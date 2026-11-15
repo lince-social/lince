@@ -223,7 +223,7 @@ async fn automatic_world() -> (World, tokio::sync::mpsc::Receiver<ClientMessage>
     let mut bridge =
         crate::native::cell_bridge::connect(cell, crate::native::wake::WakeSignal::new(|| {}));
     let (outgoing, requests) = tokio::sync::mpsc::channel(8);
-    bridge.outgoing = outgoing;
+    bridge.outgoing = outgoing.into();
     let mut world = world();
     world.insert_non_send(bridge);
     world.spawn((

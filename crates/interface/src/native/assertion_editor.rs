@@ -53,8 +53,8 @@ struct Chip {
 
 #[derive(Resource, Default)]
 struct Subscriptions(
-    HashMap<Entity, (String, tokio::sync::mpsc::Sender<ClientMessage>)>,
-    VecDeque<(tokio::sync::mpsc::Sender<ClientMessage>, ClientMessage)>,
+    HashMap<Entity, (String, crate::native::cell_bridge::Sender)>,
+    VecDeque<(crate::native::cell_bridge::Sender, ClientMessage)>,
 );
 
 pub(crate) struct AssertionEditorPlugin;

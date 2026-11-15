@@ -136,7 +136,7 @@ async fn quiet_command_views_sleep_and_resume_for_real_output_and_completion() {
             .get_non_send_mut::<crate::native::cell_bridge::CellBridge>()
             .unwrap()
             .outgoing,
-        outgoing,
+        outgoing.into(),
     );
     let proxy = tokio::spawn(async move {
         while let Some(request) = requests.recv().await {
@@ -403,7 +403,7 @@ async fn quiet_command_views_sleep_and_resume_for_real_output_and_completion() {
             .get_non_send_mut::<crate::native::cell_bridge::CellBridge>()
             .unwrap()
             .outgoing,
-        closed,
+        closed.into(),
     );
     runtime
         .commands
@@ -448,7 +448,7 @@ async fn quiet_command_views_sleep_and_resume_for_real_output_and_completion() {
     app.world_mut()
         .get_non_send_mut::<crate::native::cell_bridge::CellBridge>()
         .unwrap()
-        .outgoing = live;
+        .outgoing = live.into();
     driver.pending.store(true, Ordering::Release);
     driver
         .pump(&mut app, Duration::from_secs(3), |_| {
@@ -537,7 +537,7 @@ async fn quiet_command_views_sleep_and_resume_for_real_output_and_completion() {
             .get_non_send_mut::<crate::native::cell_bridge::CellBridge>()
             .unwrap()
             .outgoing,
-        closed,
+        closed.into(),
     );
     playback(&mut app, terminal, "Next output");
     driver
@@ -555,7 +555,7 @@ async fn quiet_command_views_sleep_and_resume_for_real_output_and_completion() {
     app.world_mut()
         .get_non_send_mut::<crate::native::cell_bridge::CellBridge>()
         .unwrap()
-        .outgoing = live;
+        .outgoing = live.into();
     driver.pending.store(true, Ordering::Release);
     driver
         .pump(&mut app, Duration::from_secs(5), |world| {

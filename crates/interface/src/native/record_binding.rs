@@ -256,6 +256,154 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn durable_local_edit_reaches_canonical_storage_without_another_interface_update() {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        pump(&mut world, |world| {
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| {
+                    document.pending.is_empty()
+                        && !document.saving
+                        && document.saved == document.revision
+                })
+        })
+        .await;
+        let expected = "Immediate local edit 👩‍💻";
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text(expected);
+        update(&mut world);
+        assert_eq!(world.get::<EditableText>(second).unwrap().value(), expected);
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while engine.doc_text(&uid).await.unwrap().1 != expected {
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .expect(
+            "A durable local edit waited for another interface update before canonical storage",
+        );
+        assert_eq!(
+            store::records::get(&engine.store.pool, &uid)
+                .await
+                .unwrap()
+                .unwrap()
+                .body,
+            expected,
+        );
+        assert!(
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| { !document.pending.is_empty() })
+        );
+        pump(&mut world, |world| {
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| {
+                    document.pending.is_empty()
+                        && !document.saving
+                        && document.saved == document.revision
+                })
+        })
+        .await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, expected);
+    }
+
+    #[tokio::test]
+    async fn disconnect_during_recovery_keeps_the_draft_for_the_next_connection() {
+        recovery_after_disconnect(false).await;
+    }
+
+    #[tokio::test]
+    async fn closing_all_views_during_disconnect_keeps_the_draft_for_the_next_connection() {
+        recovery_after_disconnect(true).await;
+    }
+
+    async fn recovery_after_disconnect(close_views: bool) {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        pump(&mut world, |world| {
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| {
+                    document.pending.is_empty()
+                        && !document.saving
+                        && document.saved == document.revision
+                })
+        })
+        .await;
+        let expected = "Kept across disconnection é新";
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text(expected);
+        update(&mut world);
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        let request = world.resource::<Bindings>().documents[&key].pending[0]
+            .id
+            .clone();
+        drop(
+            world
+                .remove_non_send::<crate::native::cell_bridge::CellBridge>()
+                .unwrap(),
+        );
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                let loaded = engine
+                    .load_record_edit_draft(&storage_source(&key, None), &uid)
+                    .await
+                    .unwrap();
+                if loaded
+                    .recovered
+                    .is_some_and(|draft| draft.pending.iter().any(|edit| edit.id == request))
+                {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .expect("Disconnect cancelled the independent recovery write");
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 עולם");
+        if close_views {
+            assert!(world.despawn(first));
+            assert!(world.despawn(second));
+        }
+        let runtime = world.resource::<crate::native::app::CellHandle>().0.clone();
+        world.insert_non_send(crate::native::cell_bridge::connect(
+            runtime,
+            crate::native::wake::WakeSignal::new(|| {}),
+        ));
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.pending.is_empty() && !document.saving && document.saved == document.revision
+        })
+        .await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, expected);
+        assert_eq!(
+            store::sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid=?",
+            )
+            .bind(request)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap(),
+            1,
+        );
+    }
+
+    #[tokio::test]
     async fn drawing_insertion_keeps_local_drafts_and_stores_only_a_reference_in_the_description() {
         let (mut world, engine, uid, first, second) = fixture().await;
         assert!(can_edit(&world, first));
@@ -344,8 +492,10 @@ mod tests {
             .values()
             .next()
             .unwrap();
-        assert!(document.inflight.is_none());
         assert_eq!(document.pending.len(), 1);
+        assert!(document.journal.metadata.as_ref().is_none_or(|metadata| {
+            !metadata.pending.contains(&document.pending[0].id)
+        }));
         for entity in [first, second] {
             assert!(
                 world
@@ -734,7 +884,7 @@ mod tests {
             .documents
             .get_mut(&key)
             .unwrap()
-            .sender = Some(sender);
+            .sender = Some(sender.into());
         world
             .get_mut::<EditableText>(first)
             .unwrap()
@@ -1169,7 +1319,7 @@ struct Document {
     undo: UndoManager,
     source: Source,
     principal: Option<String>,
-    sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
+    sender: Option<crate::native::cell_bridge::Sender>,
     pending: VecDeque<Arc<engine::record_change::Request>>,
     journal: journal::Journal,
     inflight: Option<(String, Instant)>,
@@ -1220,6 +1370,15 @@ impl Document {
             presence_value: None,
             touched: Instant::now(),
         }
+    }
+
+    fn dispatchable(&self, needs_text: bool) -> bool {
+        (self.joined || !needs_text)
+            && !self.failed
+            && self
+                .inflight
+                .as_ref()
+                .is_none_or(|(_, at)| at.elapsed().as_secs() >= 5)
     }
 
     fn queue(&mut self, uid: &str, before: &VersionVector) -> Result<(), String> {
@@ -1791,6 +1950,7 @@ fn update(world: &mut World) {
             document.sender = crate::native::protein_area::editor_sender(world, &binding.record);
             document.joined = false;
             document.joining = None;
+            document.inflight = None;
         }
     }
     while let Ok(event) = bindings.incoming.try_recv() {
@@ -1868,6 +2028,7 @@ fn update(world: &mut World) {
             );
             document.joined = false;
             document.joining = None;
+            document.inflight = None;
         }
         let members: Vec<_> = views
             .iter()
@@ -2033,6 +2194,34 @@ fn update(world: &mut World) {
                     for operation in &operations {
                         operation.mark("record-edit-draft-queued");
                     }
+                    let durable = if document.dispatchable(needs_text)
+                        && let Some(request) = document.pending.front()
+                        && document
+                            .journal
+                            .metadata
+                            .as_ref()
+                            .is_none_or(|metadata| !metadata.pending.contains(&request.id))
+                        && draft.pending.iter().any(|pending| pending.id == request.id)
+                        && let Some(outgoing) = &document.sender
+                    {
+                        let (durable, ready) = tokio::sync::oneshot::channel();
+                        if outgoing.try_send_after(
+                            ClientMessage::Act {
+                                id: request.id.clone(),
+                                action: engine::actions::Action::ChangeRecord {
+                                    request: request.as_ref().clone(),
+                                },
+                            },
+                            ready,
+                        ) {
+                            document.inflight = Some((request.id.clone(), Instant::now()));
+                            Some(durable)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
                     let clearing = document.pending.is_empty();
                     document.saving = true;
                     let sender = bindings.sender.clone();
@@ -2064,8 +2253,12 @@ fn update(world: &mut World) {
                             }
                         }
                         drop(timing);
+                        let succeeded = result.is_ok();
                         let _ = sender
                             .send(StorageEvent::Saved(key, instance, revision, cursor, result));
+                        if let Some(durable) = durable {
+                            let _ = durable.send(succeeded);
+                        }
                         if let Some(wake) = wake {
                             wake.ring();
                         }
@@ -2077,13 +2270,7 @@ fn update(world: &mut World) {
                 }
             }
         }
-        if (document.joined || !needs_text)
-            && !document.failed
-            && document
-                .inflight
-                .as_ref()
-                .is_none_or(|(_, at)| at.elapsed().as_secs() >= 5)
-        {
+        if document.dispatchable(needs_text) {
             if let Some(request) = document.pending.front() {
                 if document
                     .journal
@@ -2091,8 +2278,6 @@ fn update(world: &mut World) {
                     .as_ref()
                     .is_some_and(|metadata| metadata.pending.contains(&request.id))
                     && document.sender.as_ref().is_some_and(|sender| {
-                        nucleus::performance::Operation::new(&request.id)
-                            .mark("record-edit-dispatched");
                         sender
                             .try_send(ClientMessage::Act {
                                 id: request.id.clone(),

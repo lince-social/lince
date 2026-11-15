@@ -6,7 +6,7 @@ struct Feed {
     entity: Entity,
     reference: String,
     source: Source,
-    sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
+    sender: Option<crate::native::cell_bridge::Sender>,
 }
 
 #[derive(Resource, Default)]
@@ -33,7 +33,7 @@ pub(super) fn watch(world: &mut World, entity: Entity, reference: &str, source: 
 pub(super) fn sender(
     world: &World,
     source: &Source,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(
         world,
         &crate::native::protein_area::RecordBinding {

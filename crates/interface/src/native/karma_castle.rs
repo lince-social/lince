@@ -107,7 +107,7 @@ struct View {
 
 #[derive(Resource, Default)]
 struct Requests {
-    senders: HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+    senders: HashMap<String, crate::native::cell_bridge::Sender>,
     executions: HashMap<String, Entity>,
     subscriptions: HashMap<String, (Entity, usize)>,
     readings: HashMap<String, Entity>,

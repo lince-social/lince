@@ -298,7 +298,7 @@ fn request(
 fn sender(
     world: &World,
     controller: &Controller,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     match &controller.binding.source {
         crate::native::protein_area::Source::Local => {
             crate::native::protein_area::editor_sender(world, &controller.binding)
@@ -306,7 +306,7 @@ fn sender(
         crate::native::protein_area::Source::Organ(_) => controller
             .remote
             .as_ref()
-            .map(|remote| remote.outgoing.clone()),
+            .map(|remote| remote.outgoing.clone().into()),
     }
 }
 

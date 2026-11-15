@@ -92,7 +92,7 @@ struct Feed {
     id: String,
     sent: bool,
     window: nucleus::projection::Window,
-    sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
+    sender: Option<crate::native::cell_bridge::Sender>,
 }
 
 #[derive(Resource, Default)]
@@ -714,7 +714,7 @@ mod tests {
         assert_eq!(world.get::<View>(owner).unwrap().revision, revision + 1);
     }
 
-    fn feed(sender: tokio::sync::mpsc::Sender<ClientMessage>) -> Feed {
+    fn feed(sender: impl Into<crate::native::cell_bridge::Sender>) -> Feed {
         let window = Settings::default()
             .window(chrono::Utc::now().timestamp_millis())
             .unwrap();
@@ -726,7 +726,7 @@ mod tests {
             id: "closed-clock".into(),
             sent: true,
             window,
-            sender: Some(sender),
+            sender: Some(sender.into()),
         }
     }
 

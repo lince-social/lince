@@ -44,7 +44,7 @@ struct Pending {
 #[derive(Resource, Default)]
 struct Requests(
     HashMap<String, Entity>,
-    HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+    HashMap<String, crate::native::cell_bridge::Sender>,
 );
 
 pub struct FrequencyCastlePlugin;

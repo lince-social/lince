@@ -236,7 +236,7 @@ async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() 
         .outgoing
         .clone();
     let mut reserved = Vec::new();
-    while let Ok(permit) = sender.clone().try_reserve_owned() {
+    while let Ok(permit) = sender.try_reserve_many(1) {
         reserved.push(permit);
     }
     for (sand, _) in &records {

@@ -187,7 +187,7 @@ impl Plugin for ExtensionPlugin {
     }
 }
 
-fn sender(world: &World, source: &Source) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+fn sender(world: &World, source: &Source) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(
         world,
         &RecordBinding {

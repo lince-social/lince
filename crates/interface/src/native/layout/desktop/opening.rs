@@ -102,7 +102,7 @@ struct Feed {
 
 struct Retirement {
     id: String,
-    sender: tokio::sync::mpsc::Sender<cell::ClientMessage>,
+    sender: crate::native::cell_bridge::Sender,
 }
 
 impl Feed {
@@ -127,7 +127,7 @@ struct Catalog {
     rules: Feed,
     windows: Feed,
     window_refs: BTreeSet<String>,
-    sender: Option<tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+    sender: Option<crate::native::cell_bridge::Sender>,
     cursor: MessageCursor<CellMessage>,
     pending: HashMap<String, Pending>,
     clock: Option<(Instant, tokio::task::JoinHandle<()>)>,

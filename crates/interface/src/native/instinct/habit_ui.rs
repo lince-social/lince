@@ -70,7 +70,7 @@ struct Field {
 #[derive(Resource, Default)]
 pub(super) struct Subscriptions(
     HashMap<String, Entity>,
-    HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+    HashMap<String, crate::native::cell_bridge::Sender>,
 );
 
 #[derive(Clone, Copy)]

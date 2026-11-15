@@ -19,7 +19,7 @@ struct Attachment {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
+struct Subscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
 
 enum Preview {
     Image(u32, u32, Vec<u8>),

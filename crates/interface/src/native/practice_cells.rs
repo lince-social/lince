@@ -58,7 +58,7 @@ pub(crate) struct PracticeSource(pub String);
 pub(crate) fn sender(
     world: &World,
     owner: Entity,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     if crate::native::laboratory::blocked(world, owner) {
         return None;
     }

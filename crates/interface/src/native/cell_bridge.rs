@@ -11,6 +11,9 @@ use tokio::{
     task::JoinHandle,
 };
 
+mod requests;
+pub use requests::Sender;
+
 mod recovery;
 mod speech_scope;
 mod command_changes;
@@ -51,7 +54,7 @@ pub fn records_subscription() -> ClientMessage {
 }
 
 pub struct CellBridge {
-    pub outgoing: mpsc::Sender<ClientMessage>,
+    pub outgoing: Sender,
     pub incoming: mpsc::Receiver<ServerMessage>,
     pub(crate) speech_cancellation: SpeechCancellation,
     task: JoinHandle<()>,
@@ -62,7 +65,7 @@ pub struct CellBridge {
 
 #[derive(Clone)]
 pub(crate) struct SpeechCancellation {
-    sender: mpsc::Sender<ClientMessage>,
+    sender: Sender,
     runtime: tokio::runtime::Handle,
 }
 
@@ -81,9 +84,9 @@ impl SpeechCancellation {
         self.sender.is_closed()
     }
 
-    pub(crate) fn new(sender: mpsc::Sender<ClientMessage>) -> Self {
+    pub(crate) fn new(sender: impl Into<Sender>) -> Self {
         Self {
-            sender,
+            sender: sender.into(),
             runtime: tokio::runtime::Handle::current(),
         }
     }
@@ -150,21 +153,18 @@ fn connect_session(
     mut session: cell::Session,
 ) -> CellBridge {
     simulation::karma_preview::install(&runtime.engine).expect("Karma preview service");
-    let (outgoing, mut requests) = mpsc::channel::<ClientMessage>(64);
+    let (outgoing, mut requests, queued_requests) = requests::channel(64);
     let speech_cancellation = SpeechCancellation::new(outgoing.clone());
     let (responses, incoming) = mpsc::channel(64);
     let mut components = runtime.engine.subscribe_components();
     let queue_connection = session.connection_id().to_owned();
-    let queued_requests = outgoing.downgrade();
     let queued_responses = responses.downgrade();
     let sync_queue = runtime
         .engine
         .sync_service
         .observe_queue(move || nucleus::sync::Queue {
             instance: nucleus::sync::Instance::interface(&queue_connection, "channel"),
-            incoming: queued_requests.upgrade().map_or(0, |sender| {
-                (sender.max_capacity() - sender.capacity()) as u64
-            }),
+            incoming: queued_requests(),
             outgoing: queued_responses.upgrade().map_or(0, |sender| {
                 (sender.max_capacity() - sender.capacity()) as u64
             }),

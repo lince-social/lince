@@ -1122,7 +1122,7 @@ fn remote_view_edits_and_closing_discard_jobs_through_the_original_connection() 
             .iter(app.world())
             .any(|text| text.0.contains("private evidence"))
     );
-    remote_controls::track_with_sender(app.world_mut(), owner, sender.clone());
+    remote_controls::track_with_sender(app.world_mut(), owner, sender.clone().into());
     app.world_mut().get_mut::<View>(owner).unwrap().generation += 1;
     remote_controls::maintain(app.world_mut());
     let cell::ClientMessage::Act {
@@ -1159,7 +1159,7 @@ fn remote_view_edits_and_closing_discard_jobs_through_the_original_connection() 
     );
     let second = nucleus::new_uid("ask");
     app.world_mut().get_mut::<View>(owner).unwrap().remote.job = Some(second.clone());
-    remote_controls::track_with_sender(app.world_mut(), owner, sender);
+    remote_controls::track_with_sender(app.world_mut(), owner, sender.into());
     app.world_mut().despawn(owner);
     remote_controls::maintain(app.world_mut());
     let cell::ClientMessage::Act {
@@ -1532,7 +1532,7 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
         view.remote.job = Some(job.clone());
         view.remote.verified = json!({"kind":"remote_verified","claim_checks":[{"review_required":true,"document":document}]});
     }
-    remote_controls::track_with_sender(app.world_mut(), owner, sender);
+    remote_controls::track_with_sender(app.world_mut(), owner, sender.into());
     Command::Remote(remote_controls::UiCommand::ReviewClaim(0)).apply(app.world_mut(), owner);
     remote_controls::maintain(app.world_mut());
     let cell::ClientMessage::Act {

@@ -3,6 +3,7 @@ use super::*;
 #[test]
 fn full_queue_preserves_one_loading_deadline_and_no_unbounded_pending_work() {
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
+    let sender = crate::native::cell_bridge::Sender::from(sender);
     sender.try_send(ClientMessage::Unsubscribe { id: "occupied".into() }).unwrap();
     let mut feed = Feed::new(RULE_NAMESPACE);
     let ids = BTreeSet::from([nucleus::new_uid("r")]);
@@ -21,7 +22,9 @@ fn full_queue_preserves_one_loading_deadline_and_no_unbounded_pending_work() {
 #[test]
 fn retirement_keeps_the_original_connection_and_blocks_new_subscriptions_until_sent() {
     let (old, mut old_requests) = tokio::sync::mpsc::channel(1);
+    let old = crate::native::cell_bridge::Sender::from(old);
     let (new, mut new_requests) = tokio::sync::mpsc::channel(1);
+    let new = crate::native::cell_bridge::Sender::from(new);
     old.try_send(ClientMessage::Unsubscribe { id: "occupied".into() }).unwrap();
     let mut feed = Feed::new(RULE_NAMESPACE);
     feed.id = Some("original-subscription".into());

@@ -276,7 +276,7 @@ struct Runtime {
     areas: HashMap<Entity, State>,
     sessions: HashMap<String, sessions::Session>,
     outgoing: VecDeque<ClientMessage>,
-    local_sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
+    local_sender: Option<crate::native::cell_bridge::Sender>,
 }
 
 #[derive(Component)]
@@ -670,7 +670,7 @@ fn retry_wake(world: &World) {
 pub(crate) fn auxiliary_sender(
     world: &World,
     source: &Source,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     if let Source::Organ(source) = source
         && crate::native::laboratory::reserved_source(source)
     {
@@ -1361,7 +1361,7 @@ fn execute_action(
 pub(crate) fn editor_sender(
     world: &World,
     binding: &RecordBinding,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     if binding.area != Entity::PLACEHOLDER
         && crate::native::laboratory::blocked(world, binding.area)
     {

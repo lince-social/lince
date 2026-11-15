@@ -12,7 +12,7 @@ pub(super) struct Feed {
     pub revision: u64,
     pub status: String,
     ready: bool,
-    outgoing: tokio::sync::mpsc::Sender<ClientMessage>,
+    outgoing: crate::native::cell_bridge::Sender,
 }
 
 impl Drop for Feed {

@@ -33,7 +33,7 @@ pub struct OrganCastle {
 #[derive(Resource, Default)]
 struct Requests {
     subscriptions: HashSet<String>,
-    senders: HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+    senders: HashMap<String, crate::native::cell_bridge::Sender>,
     actions: HashMap<String, (Entity, std::time::Instant)>,
 }
 

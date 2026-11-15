@@ -37,7 +37,7 @@ struct Draft {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashMap<String, (Entity, tokio::sync::mpsc::Sender<ClientMessage>)>);
+struct Subscriptions(HashMap<String, (Entity, crate::native::cell_bridge::Sender)>);
 
 #[derive(Component)]
 struct InlineLink {

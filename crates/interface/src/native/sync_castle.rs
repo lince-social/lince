@@ -39,7 +39,7 @@ struct SyncCastle {
 #[derive(Resource, Default)]
 struct Requests {
     subscriptions: HashSet<String>,
-    senders: std::collections::HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>,
+    senders: std::collections::HashMap<String, crate::native::cell_bridge::Sender>,
     next: u64,
 }
 

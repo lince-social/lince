@@ -19,7 +19,7 @@ struct ScopedCatalog(Catalog);
 
 #[derive(Resource, Default)]
 struct ScopedSubscriptions(
-    std::collections::HashMap<Entity, (String, tokio::sync::mpsc::Sender<ClientMessage>)>,
+    std::collections::HashMap<Entity, (String, crate::native::cell_bridge::Sender)>,
 );
 
 fn catalog(world: &World, owner: Entity) -> &Catalog {

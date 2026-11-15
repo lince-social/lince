@@ -54,7 +54,7 @@ async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_dis
     };
     let mut bridge = connect(runtime.clone(), crate::native::wake::WakeSignal::new(|| {}));
     let (personal, mut personal_requests) = mpsc::channel(1);
-    bridge.outgoing = personal;
+    bridge.outgoing = personal.into();
     let mut world = World::new();
     world.insert_non_send(bridge);
     world.init_resource::<Runtime>();

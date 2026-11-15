@@ -71,11 +71,11 @@ pub(super) fn attach(world: &mut World, organ: &str, state: &mut State) {
 pub(super) fn sender(
     world: &World,
     organ: &str,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     let session = world.get_resource::<Runtime>()?.sessions.get(organ)?;
     (session.phase == Phase::Ready).then_some(())?;
     let remote = session.remote.as_ref()?;
-    (!remote.outgoing.is_closed()).then(|| remote.outgoing.clone())
+    (!remote.outgoing.is_closed()).then(|| remote.outgoing.clone().into())
 }
 
 pub(super) fn unsubscribe(world: &mut World, organ: &str, id: String) {

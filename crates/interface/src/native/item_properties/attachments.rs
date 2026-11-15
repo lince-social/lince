@@ -17,7 +17,7 @@ impl Attachment {
 struct Stream {
     id: String,
     uid: String,
-    sender: tokio::sync::mpsc::Sender<cell::ClientMessage>,
+    sender: crate::native::cell_bridge::Sender,
     baseline: Option<crate::native::area::RecordProperties>,
     message: String,
 }

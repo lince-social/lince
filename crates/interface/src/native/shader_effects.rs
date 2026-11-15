@@ -617,7 +617,7 @@ fn feed_key(binding: &RecordBinding) -> String {
 fn sender(
     world: &World,
     binding: &RecordBinding,
-) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(world, binding)
 }
 

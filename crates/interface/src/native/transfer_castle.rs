@@ -116,7 +116,7 @@ struct Pending {
 #[derive(Resource, Default)]
 struct Requests(
     HashMap<String, (Entity, String)>,
-    HashMap<String, tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+    HashMap<String, crate::native::cell_bridge::Sender>,
 );
 
 pub struct TransferCastlePlugin;

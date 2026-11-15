@@ -26,7 +26,7 @@ fn live_catalogue_updates_preserve_chips_and_only_change_resolved_names() {
     app.world_mut()
         .resource_mut::<Subscriptions>()
         .0
-        .insert(parent, ("catalogue".into(), sender));
+        .insert(parent, ("catalogue".into(), sender.into()));
     let chip = app.world().get::<Field>(parent).unwrap().chips[0];
     let text = app.world().get::<Chip>(chip).unwrap().text;
     let children = app.world().get::<Children>(chip).unwrap().to_vec();

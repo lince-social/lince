@@ -47,7 +47,7 @@ struct ScopedCatalog {
 }
 
 #[derive(Resource, Default)]
-struct ScopedSubscriptions(HashMap<String, tokio::sync::mpsc::Sender<ClientMessage>>);
+struct ScopedSubscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
 
 fn catalog(world: &World, owner: Entity) -> Option<&Catalog> {
     if world

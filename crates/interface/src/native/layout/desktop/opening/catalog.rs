@@ -2,7 +2,7 @@ use super::*;
 use bevy::ecs::message::Messages;
 use cell::{ClientMessage, ServerMessage};
 
-fn sender(world: &World) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+fn sender(world: &World) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(world, &RecordBinding { area: Entity::PLACEHOLDER, uid: String::new(), source: Source::Local })
 }
 
@@ -42,7 +42,7 @@ fn read_entry(namespace: &str, row: Value) -> Option<(String, Entry)> {
     Some((uid, Entry { title, exists: true, value: raw, payload }))
 }
 
-fn retire(feed: &mut Feed, sender: Option<&tokio::sync::mpsc::Sender<ClientMessage>>) {
+fn retire(feed: &mut Feed, sender: Option<&crate::native::cell_bridge::Sender>) {
     if let Some(id) = feed.id.take() && let Some(sender) = sender {
         if matches!(sender.try_send(ClientMessage::Unsubscribe { id: id.clone() }), Err(tokio::sync::mpsc::error::TrySendError::Full(_))) {
             feed.retiring = Some(Retirement { id, sender: sender.clone() });
@@ -55,7 +55,7 @@ fn retire(feed: &mut Feed, sender: Option<&tokio::sync::mpsc::Sender<ClientMessa
     feed.blocked = false;
 }
 
-fn subscribe(feed: &mut Feed, selected: BTreeSet<String>, sender: Option<&tokio::sync::mpsc::Sender<ClientMessage>>) {
+fn subscribe(feed: &mut Feed, selected: BTreeSet<String>, sender: Option<&crate::native::cell_bridge::Sender>) {
     let now = Instant::now();
     if feed.selected != selected {
         let retained = std::mem::take(&mut feed.entries);

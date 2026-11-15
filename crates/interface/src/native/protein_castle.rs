@@ -130,8 +130,8 @@ enum RequestKind {
 struct Requests {
     next: u64,
     owners: HashMap<String, (Entity, RequestKind)>,
-    outgoing: VecDeque<(tokio::sync::mpsc::Sender<ClientMessage>, ClientMessage)>,
-    senders: HashMap<Entity, tokio::sync::mpsc::Sender<ClientMessage>>,
+    outgoing: VecDeque<(crate::native::cell_bridge::Sender, ClientMessage)>,
+    senders: HashMap<Entity, crate::native::cell_bridge::Sender>,
 }
 
 pub struct ProteinCastlePlugin;
@@ -283,7 +283,7 @@ fn request(
     id
 }
 
-fn query_sender(world: &World, owner: Entity) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+fn query_sender(world: &World, owner: Entity) -> Option<crate::native::cell_bridge::Sender> {
     match crate::native::time_castle::source::editor_source(world, owner)
         .or_else(|| crate::native::protein_area::query_editor_source(world, owner))
     {

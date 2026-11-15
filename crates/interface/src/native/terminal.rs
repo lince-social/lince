@@ -88,7 +88,7 @@ pub struct TerminalSand {
 struct Screen(Entity);
 
 #[derive(Resource, Default)]
-struct Sessions(HashMap<Entity, (String, tokio::sync::mpsc::Sender<ClientMessage>)>);
+struct Sessions(HashMap<Entity, (String, crate::native::cell_bridge::Sender)>);
 
 pub struct TerminalPlugin;
 impl Plugin for TerminalPlugin {

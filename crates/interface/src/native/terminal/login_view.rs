@@ -9,7 +9,7 @@ pub(super) struct LoginView {
     offset: u64,
     pending: Option<String>,
     next: Instant,
-    sender: tokio::sync::mpsc::Sender<ClientMessage>,
+    sender: crate::native::cell_bridge::Sender,
 }
 
 impl Drop for LoginView {

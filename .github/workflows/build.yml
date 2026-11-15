@@ -134,7 +134,13 @@ jobs:
           retention-days: 7
   binary:
     if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
-    name: Linux release
+    # Optimize elapsed time with two runners. For a compute-minute budget,
+    # prefer one shared Cargo build; see .github/README.md before changing this.
+    name: Linux release (${{ matrix.artifact }})
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: [application, park-probe]
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
@@ -165,10 +171,12 @@ jobs:
       - uses: ./.github/actions/rust-artifacts
         id: cache
         with:
-          scope: linux-release
+          scope: ${{ matrix.artifact == 'application' && 'linux-release' || 'linux-park-measurement' }}
           target: ${{ env.BUILD_TARGET }}
+          fallback-scope: ${{ matrix.artifact == 'park-probe' && 'linux-release' || '' }}
 
       - name: Build native Lince
+        if: matrix.artifact == 'application'
         timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
@@ -182,6 +190,7 @@ jobs:
         shell: bash
 
       - name: Build Park measurement probe
+        if: matrix.artifact == 'park-probe'
         timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
@@ -190,19 +199,11 @@ jobs:
         run: |
           cargo build --locked --release --package lince --features instinct,park --example park-responsiveness --target "$BUILD_TARGET" --timings
           measurement_dir=target/park-measurement
-          mkdir -p "$measurement_dir" park-measurement-artifacts
+          mkdir -p "$measurement_dir" park-measurement-build
           install -m 755 "target/$BUILD_TARGET/release/examples/park-responsiveness" "$measurement_dir/park-responsiveness"
           "$measurement_dir/park-responsiveness" --build-info > "$measurement_dir/probe-build-info.json"
-          jq -e --arg revision "$LINCE_REVISION" --slurpfile application target/release-build-info.json '
-            .probe == "park-responsiveness-v1" and .package == "lince" and
-            .revision == $revision and .revision == $application[0].revision and
-            .version == $application[0].version and .optimized == true and
-            .architecture == "x86_64" and .os == "linux"
-          ' "$measurement_dir/probe-build-info.json" > /dev/null
-          cp target/release-build-info.json "$measurement_dir/application-build-info.json"
-          (cd "$measurement_dir" && sha256sum park-responsiveness probe-build-info.json application-build-info.json > SHA256SUMS)
-          tar -I 'gzip -1' -cf "park-measurement-artifacts/park-responsiveness-$BUILD_TARGET.tar.gz" -C "$measurement_dir" park-responsiveness probe-build-info.json application-build-info.json SHA256SUMS
-          (cd park-measurement-artifacts && sha256sum "park-responsiveness-$BUILD_TARGET.tar.gz" > "park-responsiveness-$BUILD_TARGET.tar.gz.sha256")
+          tar -I 'gzip -1' -cf park-measurement-build/probe.tar.gz -C "$measurement_dir" park-responsiveness probe-build-info.json
+          (cd park-measurement-build && sha256sum probe.tar.gz > probe.tar.gz.sha256)
 
       - name: Save compiled inputs
         if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
@@ -213,11 +214,13 @@ jobs:
           key: ${{ job.status == 'failure' && format('{0}-partial-{1}-{2}', steps.cache.outputs.key, github.run_id, github.run_attempt) || steps.cache.outputs.key }}
 
       - name: Package Linux binary
+        if: matrix.artifact == 'application'
         run: |
           mkdir -p binary-artifacts
           bash institute/packaging/linux/package.sh "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
 
       - name: Upload binaries
+        if: matrix.artifact == 'application'
         uses: actions/upload-artifact@v4
         with:
           name: lince-binary-artifacts-${{ env.BUILD_TARGET }}
@@ -226,6 +229,67 @@ jobs:
           retention-days: 7
           compression-level: 0
 
+      - name: Upload application build identity
+        if: matrix.artifact == 'application'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-build-info-${{ env.BUILD_TARGET }}
+          path: target/release-build-info.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload compiled Park probe for packaging
+        if: matrix.artifact == 'park-probe'
+        uses: actions/upload-artifact@v4
+        with:
+          name: park-measurement-build-${{ env.BUILD_TARGET }}
+          path: park-measurement-build/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+      - name: Upload build timings
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-timings-linux-${{ env.BUILD_TARGET }}-${{ matrix.artifact }}
+          path: |
+            target/cargo-timings/*.html
+            target/${{ env.BUILD_TARGET }}/cargo-timings/*.html
+          if-no-files-found: ignore
+          retention-days: 7
+
+  park-measurement:
+    needs: binary
+    name: Verify and package Park measurement probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      BUILD_TARGET: x86_64-unknown-linux-gnu
+      LINCE_REVISION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download application build identity
+        uses: actions/download-artifact@v4
+        with:
+          name: lince-build-info-${{ env.BUILD_TARGET }}
+          path: target/application-identity
+      - name: Download compiled Park probe
+        uses: actions/download-artifact@v4
+        with:
+          name: park-measurement-build-${{ env.BUILD_TARGET }}
+          path: target/park-probe-build
+      - name: Verify and package matching artifacts
+        shell: bash
+        run: |
+          (cd target/park-probe-build && sha256sum --check probe.tar.gz.sha256)
+          mkdir -p target/park-measurement
+          tar -xzf target/park-probe-build/probe.tar.gz -C target/park-measurement
+          bash institute/packaging/linux/package-park-probe.sh \
+            target/park-measurement/park-responsiveness \
+            target/park-measurement/probe-build-info.json \
+            target/application-identity/release-build-info.json \
+            "park-measurement-artifacts/park-responsiveness-$BUILD_TARGET.tar.gz"
       - name: Upload Park measurement probe
         uses: actions/upload-artifact@v4
         with:
@@ -234,17 +298,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
-
-      - name: Upload build timings
-        if: always() && !cancelled()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-timings-linux-${{ env.BUILD_TARGET }}
-          path: |
-            target/cargo-timings/*.html
-            target/${{ env.BUILD_TARGET }}/cargo-timings/*.html
-          if-no-files-found: ignore
-          retention-days: 7
 
   tooling:
     if: github.event_name != 'schedule' && github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
@@ -263,6 +316,10 @@ jobs:
         run: |
           python3 -B -m unittest discover -s institute/scripts -p 'test_ci_cache_identity.py'
           python3 -B -m unittest discover -s institute/scripts -p 'test_ci_source_cache.py'
+      - name: Verify release artifact identities
+        run: |
+          bash institute/packaging/linux/test-build-info.sh
+          bash institute/packaging/linux/test-package-park-probe.sh
       - name: Verify automatic Rust updates
         run: python3 -B -m unittest discover -s institute/scripts -p 'test_ci_update_rust.py'
       - name: Verify target-cache cleanup
@@ -272,7 +329,7 @@ jobs:
 
   publish-rolling:
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, tooling]
+    needs: [binary, park-measurement, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -358,7 +415,7 @@ jobs:
 
   publish-main:
     if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, tooling]
+    needs: [binary, park-measurement, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -419,7 +476,7 @@ jobs:
 
   publish-tag:
     if: ${{ startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
-    needs: [binary, tooling]
+    needs: [binary, park-measurement, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: write

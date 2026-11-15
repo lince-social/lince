@@ -7,6 +7,9 @@ inputs:
   target:
     description: Rust target triple
     default: x86_64-unknown-linux-gnu
+  fallback-scope:
+    description: Optional compatible cache scope to seed a new build cache
+    default: ''
 outputs:
   key:
     description: Cache key to save after compilation
@@ -27,12 +30,22 @@ runs:
         CACHE_SCOPE: ${{ inputs.scope }}
         CACHE_TARGET: ${{ inputs.target }}
       run: python3 -B institute/scripts/ci-cache-identity.py >> "$GITHUB_OUTPUT"
+    - name: Identify compatible fallback compiler inputs
+      id: fallback
+      if: inputs.fallback-scope != ''
+      shell: bash
+      env:
+        CACHE_SCOPE: ${{ inputs.fallback-scope }}
+        CACHE_TARGET: ${{ inputs.target }}
+      run: python3 -B institute/scripts/ci-cache-identity.py >> "$GITHUB_OUTPUT"
     - uses: actions/cache/restore@v4
       id: restore
       with:
         path: ${{ steps.identity.outputs.paths }}
         key: ${{ steps.identity.outputs.key }}
-        restore-keys: ${{ steps.identity.outputs.restore-keys }}
+        restore-keys: |
+          ${{ steps.identity.outputs.restore-keys }}
+          ${{ steps.fallback.outputs.restore-keys }}
     - name: Restore timestamps only for unchanged sources
       shell: bash
       run: python3 -B institute/scripts/ci-source-cache.py

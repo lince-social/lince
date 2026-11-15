@@ -1427,6 +1427,7 @@ fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
 
 crate::native::laboratory_cases! {
     inactive_rows_defer_materialization_but_follow_visibility_and_revocation,
+    field_settings_retain_unchanged_wrapping_and_apply_real_changes,
     async local_record_text_refreshes_only_dependent_queries,
     async record_projection_preserves_requested_fields_and_exact_values,
     record_source_stays_stable_while_paused_and_typing_resumes_at_selection,
@@ -1444,6 +1445,81 @@ crate::native::laboratory_cases! {
     templates_validate_and_request_only_bound_properties_even_before_rows_exist,
     async area_reads_real_records_preserves_entities_edits_and_deletes_through_actions,
     remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded,
+}
+
+#[cfg_attr(test, test)]
+fn field_settings_retain_unchanged_wrapping_and_apply_real_changes() {
+    use crate::native::sand_settings::{Value as Setting, set};
+    use bevy::text::LineBreak;
+
+    let (mut app, _, owner) = fixture();
+    let config = Config::records();
+    app.world_mut().get_mut::<InfluenceArea>(owner).unwrap().protein = Some(config.clone());
+    app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
+        applied: Some(config),
+        data: vec![json!({
+            "uid": "wrapping-record", "head": "Short title", "body": "**Rich** café 日本語\n\nAnother paragraph",
+            "slug": "wrapping", "quantity": "0",
+        })],
+        ready: true,
+        dirty: true,
+        ..default()
+    });
+    rows::reconcile(app.world_mut(), owner);
+    presentation::update(app.world_mut());
+    let row = app.world().resource::<Runtime>().areas[&owner].row_entities["wrapping-record"];
+    let mut pending = vec![row];
+    let mut field = None;
+    while let Some(entity) = pending.pop() {
+        if app.world().get::<rows::PropertyContainer>(entity).is_some_and(|field| field.0 == "body") {
+            field = Some(entity);
+            break;
+        }
+        if let Some(children) = app.world().get::<Children>(entity) {
+            pending.extend(children.iter());
+        }
+    }
+    let field = field.expect("Body field missing");
+    let mut pending = vec![field];
+    let mut blocks = Vec::new();
+    while let Some(entity) = pending.pop() {
+        if let Some(layout) = app.world().get::<TextLayout>(entity) {
+            blocks.push((entity, layout.linebreak));
+        }
+        if let Some(children) = app.world().get::<Children>(entity) {
+            pending.extend(children.iter());
+        }
+    }
+    assert!(blocks.len() >= 3, "Expected editor and rich-text paragraphs");
+    let ticks = |world: &World| blocks.iter().map(|(entity, _)| {
+        world.entity(*entity).get_ref::<TextLayout>().unwrap().last_changed()
+    }).collect::<Vec<_>>();
+    let original = ticks(app.world());
+    app.world_mut().increment_change_tick();
+    assert!(set(app.world_mut(), field, "width", Some(Setting::Number(360.0))));
+    app.world_mut().flush();
+    assert_eq!(app.world().get::<Node>(field).unwrap().width, px(360));
+    assert_eq!(ticks(app.world()), original, "Changing field width invalidated unchanged text wrapping");
+
+    app.world_mut().increment_change_tick();
+    assert!(set(app.world_mut(), field, "wrap", Some(Setting::Toggle(false))));
+    app.world_mut().flush();
+    for (entity, _) in &blocks {
+        assert_eq!(app.world().get::<TextLayout>(*entity).unwrap().linebreak, LineBreak::NoWrap);
+    }
+    let unwrapped = ticks(app.world());
+    app.world_mut().increment_change_tick();
+    assert!(set(app.world_mut(), field, "height", Some(Setting::Number(120.0))));
+    app.world_mut().flush();
+    assert_eq!(app.world().get::<Node>(field).unwrap().height, px(120));
+    assert_eq!(ticks(app.world()), unwrapped, "Changing field height invalidated unchanged text wrapping");
+
+    app.world_mut().increment_change_tick();
+    assert!(set(app.world_mut(), field, "wrap", None));
+    app.world_mut().flush();
+    for (entity, expected) in blocks {
+        assert_eq!(app.world().get::<TextLayout>(entity).unwrap().linebreak, expected);
+    }
 }
 
 #[cfg_attr(test, tokio::test)]

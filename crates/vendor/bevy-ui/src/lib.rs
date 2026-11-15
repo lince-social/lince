@@ -235,6 +235,10 @@ impl Plugin for UiPlugin {
 }
 
 fn build_text_interop(app: &mut App) {
+    app.configure_sets(
+        PostUpdate,
+        UiSystems::Prepare.before(detect_text_needs_rerender),
+    );
     app.add_systems(
         PostUpdate,
         (

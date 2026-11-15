@@ -39,6 +39,7 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     for name in [
         "::local_record_text_refreshes_only_dependent_queries",
         "::record_projection_preserves_requested_fields_and_exact_values",
+        "::field_settings_retain_unchanged_wrapping_and_apply_real_changes",
         "::inactive_rows_defer_materialization_but_follow_visibility_and_revocation",
         "::remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded",
         "::independent_sorting_uses_live_protein_order_without_spawning_and_clears_on_stop",
@@ -142,6 +143,62 @@ fn retained_exclusive_queries_follow_new_archetypes_and_membership_changes() {
 fn workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits() {
     let (mut app, root) = fixture(UVec2::new(1000, 1000), 1.0);
     crate::native::workspace_sync::checks::password_retention(&mut app, root);
+}
+
+#[cfg_attr(test, test)]
+fn inherited_font_changes_prepare_current_glyphs_once_in_the_same_update() {
+    use bevy::text::{FontSize, TextLayoutInfo};
+    use crate::native::tokens::{Token, TokenOverrides, TokenValue};
+
+    let (mut app, root) = fixture(UVec2::new(800, 600), 1.0);
+    let parent = app.world_mut().spawn((
+        Node { width: px(500), height: px(150), ..default() }, ChildOf(root),
+    )).id();
+    let font = app.world().resource::<crate::native::theme::Typography>().text(20.0);
+    let entities = [parent, root].map(|parent| {
+        app.world_mut().spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                width: px(400),
+                height: px(120),
+                ..default()
+            },
+            Text::new("Current café 日本語 text"),
+            font.clone(),
+            ChildOf(parent),
+        )).id()
+    });
+    settle(&mut app);
+
+    for size in [40.0, 10.0, 20.0] {
+        let mut overrides = TokenOverrides::default();
+        overrides.set(Token::FontSize, TokenValue::Number(16.0 * size / 20.0));
+        app.world_mut().entity_mut(parent).insert(overrides);
+        app.world_mut().get_mut::<TextFont>(entities[1]).unwrap().font_size = FontSize::Px(size);
+        app.update();
+        let actual = app.world().get::<TextLayoutInfo>(entities[0]).unwrap();
+        let expected = app.world().get::<TextLayoutInfo>(entities[1]).unwrap();
+        assert_eq!(app.world().get::<TextFont>(entities[0]).unwrap().font_size, FontSize::Px(size));
+        assert_eq!(actual.size, expected.size, "Inherited font was not measured in the same update");
+        assert_eq!(actual.scale_factor, expected.scale_factor);
+        assert!(!actual.glyphs.is_empty());
+        assert_eq!(actual.glyphs.len(), expected.glyphs.len());
+        for (actual, expected) in actual.glyphs.iter().zip(&expected.glyphs) {
+            assert_eq!(actual.position, expected.position);
+            assert_eq!(actual.section_index, expected.section_index);
+            assert_eq!(actual.line_index, expected.line_index);
+            assert_eq!(actual.atlas_info.texture, expected.atlas_info.texture);
+            assert_eq!(actual.atlas_info.rect, expected.atlas_info.rect);
+            assert_eq!(actual.atlas_info.offset, expected.atlas_info.offset);
+        }
+        let measured = entities.map(|entity| app.world().entity(entity)
+            .get_ref::<bevy::ui::ContentSize>().unwrap().last_changed());
+        app.update();
+        for (entity, measured) in entities.into_iter().zip(measured) {
+            assert_eq!(app.world().entity(entity).get_ref::<bevy::ui::ContentSize>()
+                .unwrap().last_changed(), measured, "Unchanged text was measured again");
+        }
+    }
 }
 
 #[cfg_attr(test, test)]
@@ -1121,6 +1178,7 @@ crate::native::laboratory_cases! {
     performance_traces_preserve_concurrent_samples_and_report_overflow,
     retained_exclusive_queries_follow_new_archetypes_and_membership_changes,
     workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits,
+    inherited_font_changes_prepare_current_glyphs_once_in_the_same_update,
     hidden_text_defers_visual_work_and_reveals_current_edits_and_styles,
     logical_end_cursor_preserves_text_and_selection_without_eager_shaping,
     untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live,

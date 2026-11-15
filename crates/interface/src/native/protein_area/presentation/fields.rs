@@ -245,11 +245,14 @@ fn apply_field(world: &mut World, entity: Entity) {
     }
     for (entity, original) in field.wrapping {
         if let Some(mut wrapping) = world.get_mut::<TextLayout>(entity) {
-            wrapping.linebreak = match values.0.get("wrap") {
+            let linebreak = match values.0.get("wrap") {
                 Some(Setting::Toggle(false)) => bevy::text::LineBreak::NoWrap,
                 Some(Setting::Toggle(true)) => bevy::text::LineBreak::WordBoundary,
                 _ => original.linebreak,
             };
+            if wrapping.linebreak != linebreak {
+                wrapping.linebreak = linebreak;
+            }
         }
     }
     for (entity, original) in field.editors {

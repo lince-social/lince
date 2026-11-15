@@ -106,7 +106,11 @@ pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
         metrics.set_if_neq(next);
     };
     if pending.len() >= 1024 {
-        icons.par_iter_many_unique_mut(&pending).for_each(apply);
+        icons.par_iter_mut().for_each(|icon| {
+            if pending.contains(&icon.entity) {
+                apply(icon);
+            }
+        });
     } else {
         for entity in pending {
             if let Ok(icon) = icons.get_mut(entity) {
@@ -272,7 +276,11 @@ pub(crate) fn layout(
         metrics.set_if_neq(next);
     };
     if work >= 1024 {
-        nodes.par_iter_many_unique_mut(&pending).for_each(apply);
+        nodes.par_iter_mut().for_each(|node| {
+            if pending.contains(&node.entity) {
+                apply(node);
+            }
+        });
     } else {
         for entity in pending {
             if let Ok(node) = nodes.get_mut(entity) {
@@ -285,6 +293,78 @@ pub(crate) fn layout(
 pub(crate) mod tests {
     use super::*;
     use crate::native::tokens::{ThemeSettings, TokenValue};
+
+    #[cfg_attr(test, test)]
+    fn bulk_metrics_apply_changed_subtrees_once_and_leave_unrelated_nodes_clean() {
+        use crate::native::icons::IconStyle;
+
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+        install(&mut app);
+        let world = app.world_mut();
+        world.init_resource::<ThemeSettings>();
+        let changed = world.spawn_empty().id();
+        let unrelated = world.spawn_empty().id();
+        let entities: Vec<_> = (0..2400)
+            .map(|index| {
+                let affected = index % 2 == 0;
+                let entity = world
+                    .spawn((
+                        Node {
+                            column_gap: px(4),
+                            padding: UiRect::all(px(6)),
+                            ..default()
+                        },
+                        TextFont {
+                            font_size: FontSize::Px(20.0),
+                            ..default()
+                        },
+                        WidthToken(Token::Spacing, false),
+                        RadiusToken(Token::Padding),
+                        IconStyle::default(),
+                        ChildOf(if affected { changed } else { unrelated }),
+                    ))
+                    .id();
+                (entity, affected)
+            })
+            .collect();
+        world.run_system_cached(layout).unwrap();
+        world.run_system_cached(icons).unwrap();
+        world.clear_trackers();
+        let mut overrides = crate::native::tokens::TokenOverrides::default();
+        for token in [Token::Spacing, Token::Padding, Token::FontSize, Token::IconSize, Token::IconPadding] {
+            overrides.set(token, TokenValue::Number(token.default_value(Default::default()).number() * 2.0));
+        }
+        world.entity_mut(changed).insert(overrides);
+        world.run_system_cached(layout).unwrap();
+        world.run_system_cached(icons).unwrap();
+        for (entity, affected) in &entities {
+            let factor = if *affected { 2.0 } else { 1.0 };
+            let node = world.entity(*entity).get_ref::<Node>().unwrap();
+            assert_eq!(node.column_gap, px(4.0 * factor));
+            assert_eq!(node.padding, UiRect::all(px(6.0 * factor)));
+            assert_eq!(node.width, px(8.0 * factor));
+            assert_eq!(node.border_radius, BorderRadius::all(px(8.0 * factor)));
+            assert_eq!(node.is_changed(), *affected);
+            let font = world.entity(*entity).get_ref::<TextFont>().unwrap();
+            assert_eq!(font.font_size, FontSize::Px(20.0 * factor));
+            assert_eq!(font.is_changed(), *affected);
+            let icon = world.entity(*entity).get_ref::<IconStyle>().unwrap();
+            assert_eq!(icon.size, IconStyle::default().size * factor);
+            assert_eq!(icon.padding, IconStyle::default().padding * factor);
+            assert_eq!(icon.is_changed(), *affected);
+        }
+        world.clear_trackers();
+        world.run_system_cached(layout).unwrap();
+        world.run_system_cached(icons).unwrap();
+        for (entity, _) in entities {
+            assert!(!world.entity(entity).get_ref::<Node>().unwrap().is_changed());
+            assert!(!world.entity(entity).get_ref::<TextFont>().unwrap().is_changed());
+            assert!(!world.entity(entity).get_ref::<Metrics>().unwrap().is_changed());
+            assert!(!world.entity(entity).get_ref::<IconStyle>().unwrap().is_changed());
+            assert!(!world.entity(entity).get_ref::<IconMetrics>().unwrap().is_changed());
+        }
+    }
 
     #[cfg_attr(test, test)]
     fn initially_empty_metrics_follow_late_fields_bindings_and_reparenting() {
@@ -640,6 +720,7 @@ pub(crate) mod tests {
     }
 
     crate::native::laboratory_cases! {
+        bulk_metrics_apply_changed_subtrees_once_and_leave_unrelated_nodes_clean,
         initially_empty_metrics_follow_late_fields_bindings_and_reparenting,
         zero_theme_ratios_keep_authored_bases_and_zero_bound_controls_still_update,
         spacing_padding_and_type_scale_without_compounding_or_losing_authored_changes,

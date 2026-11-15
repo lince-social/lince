@@ -819,8 +819,7 @@ impl Engine {
         for fact in facts {
             self.publish_committed_fact(fact);
         }
-        self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.notify_query_changed();
         Ok(
             json!({"created":created,"binding":prepared.bound_state.then_some(&prepared.binding),"root":selected_record(source).and_then(|record| prepared.records.get(&record.uid)),"preview":preview}),
         )

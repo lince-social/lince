@@ -140,6 +140,18 @@ use tokio::sync::{Mutex, broadcast, watch};
 
 pub use error::EngineError;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct QueryChanges {
+    pub general: u64,
+    pub projection: u64,
+}
+
+impl QueryChanges {
+    pub fn revision(&self) -> u64 {
+        self.general.wrapping_add(self.projection)
+    }
+}
+
 pub struct Engine {
     pub(crate) meal_runtime: optimization::Runtime,
     pub(crate) knowledge: knowledge::Runtime,
@@ -168,7 +180,7 @@ pub struct Engine {
     component_presentations: broadcast::Sender<nucleus::component::Presentation>,
     canvas: canvas::Broker,
     fiote_availability: std::sync::RwLock<std::collections::HashMap<String, bool>>,
-    query_changed: watch::Sender<u64>,
+    query_changed: watch::Sender<QueryChanges>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
     pub(crate) social_network: std::sync::Mutex<Option<std::sync::Weak<dyn social::Network>>>,
     pub(crate) location: location::Runtime,
@@ -238,7 +250,7 @@ impl Engine {
         }
         let (bus, _) = broadcast::channel(1024);
         let (component_presentations, _) = broadcast::channel(64);
-        let (query_changed, _) = watch::channel(0);
+        let (query_changed, _) = watch::channel(QueryChanges::default());
         let (karma_deadline_changed, _) = watch::channel(0);
         let (notifications_changed, _) = watch::channel(0);
         let (config_changed, _) = watch::channel(0);
@@ -324,13 +336,13 @@ impl Engine {
         self.bus.subscribe()
     }
 
-    pub fn watch_query_changes(&self) -> watch::Receiver<u64> {
+    pub fn watch_query_changes(&self) -> watch::Receiver<QueryChanges> {
         self.query_changed.subscribe()
     }
 
     pub fn notify_query_changed(&self) {
         self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+            .send_modify(|revision| revision.general = revision.general.wrapping_add(1));
     }
 
     pub fn watch_notifications(&self) -> watch::Receiver<u64> {

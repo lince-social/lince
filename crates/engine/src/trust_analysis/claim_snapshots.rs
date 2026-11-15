@@ -124,7 +124,7 @@ impl Engine {
             if !current
                 || authority != IdentityAuthenticity::Accepted
                 || document.statement.expires_at <= finished_at.timestamp()
-                || *self.watch_query_changes().borrow() != evaluated.revision
+                || self.watch_query_changes().borrow().revision() != evaluated.revision
             {
                 return Err(claim_invalid(
                     "The claim, evidence or current authority changed while checking; refresh",

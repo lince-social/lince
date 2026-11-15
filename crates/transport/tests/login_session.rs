@@ -102,6 +102,9 @@ async fn revocation_stops_queries_collaboration_and_actions_but_keeps_local_owne
         matches!(&denied[0], ServerMessage::Error { code: Some(code), .. } if code == "forbidden")
     );
     login.revoke();
+    let denied = session.on_sync_event(transport::SyncEvent::Projection).await;
+    assert!(matches!(denied.as_slice(), [ServerMessage::Error { code: Some(code), .. }]
+        if code == "session_expired"));
     for message in [
         query(),
         ClientMessage::CollabJoin {

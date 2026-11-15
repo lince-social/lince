@@ -178,8 +178,7 @@ impl Engine {
                     Err(error) => tracing::warn!(effect = effect.uid, %error, "Could not attach the effect result to its Record"),
                 }
             }
-            self.query_changed
-                .send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.notify_query_changed();
             out.push(EffectOutcome {
                 uid: effect.uid,
                 kind: effect.kind,

@@ -695,8 +695,7 @@ impl Engine {
         )
         .await?;
         transaction.commit().await?;
-        self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.notify_query_changed();
         Ok(())
     }
 }

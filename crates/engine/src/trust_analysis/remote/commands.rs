@@ -59,7 +59,7 @@ impl Engine {
                 profiles,
                 reviewed_at: nucleus::execution::now().timestamp(),
             };
-            if *self.watch_query_changes().borrow() != evaluated.revision {
+            if self.watch_query_changes().borrow().revision() != evaluated.revision {
                 return Err(invalid(
                     "Local evidence changed during review; refresh the local snapshot",
                 ));

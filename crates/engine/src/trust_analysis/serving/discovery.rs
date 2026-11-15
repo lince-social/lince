@@ -32,7 +32,7 @@ impl Engine {
             .map_err(|_| invalid("Evidence serving is at its concurrent work limit"))?;
         self.serving_work_budget(&peer.organ).await?;
         let authority = self.serving_peer_authority(&peer.organ, source).await?;
-        let epoch = *self.watch_query_changes().borrow();
+        let epoch = self.watch_query_changes().borrow().revision();
         let question = request.question.hash().map_err(invalid)?;
         let principal = serde_json::to_string(&(
             source,
@@ -153,7 +153,7 @@ impl Engine {
         self.social_ask_peer_on(&mut tx, source, &peer.organ, false)
             .await?;
         self.custody_peer_unchanged_on(&mut tx,source,&peer.organ,&authority).await?;
-        if *self.watch_query_changes().borrow()!=epoch {return Err(invalid("Evidence discovery permissions changed during collection"));}
+        if self.watch_query_changes().borrow().revision()!=epoch {return Err(invalid("Evidence discovery permissions changed during collection"));}
         let mut headers = Vec::new();
         for (saved, snapshot) in accepted {
             self.validate_served_evidence_on(&mut tx, &saved, &snapshot, &reader)

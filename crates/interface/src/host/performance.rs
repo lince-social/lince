@@ -417,6 +417,7 @@ counts! {
     CellQueries => "cell-queries",
     CellRefreshFacts => "cell-refresh-fact-events",
     CellRefreshGlobal => "cell-refresh-global-events",
+    CellRefreshProjection => "cell-refresh-projection-events",
     CellRefreshEphemeral => "cell-refresh-ephemeral-events",
     CellRefreshPresence => "cell-refresh-presence-events",
     ScheduleProjectionSnapshots => "schedule-projection-snapshots",

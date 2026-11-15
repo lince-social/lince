@@ -5,24 +5,39 @@ use tokio::sync::{broadcast, watch};
 pub enum SyncEvent {
     Fact(Fact),
     Refresh,
+    Projection,
     Ephemeral,
     Presence,
 }
 
 pub struct SyncEvents {
     facts: broadcast::Receiver<Fact>,
-    queries: watch::Receiver<u64>,
+    queries: watch::Receiver<engine::QueryChanges>,
+    observed_queries: Option<engine::QueryChanges>,
     ephemeral: tokio::time::Interval,
     presence: Option<watch::Receiver<u64>>,
 }
 
 impl SyncEvents {
     pub fn new(engine: &Engine) -> Self {
+        Self::from_receivers(engine.subscribe(), engine.watch_query_changes())
+    }
+
+    fn from_receivers(
+        facts: broadcast::Receiver<Fact>,
+        queries: watch::Receiver<engine::QueryChanges>,
+    ) -> Self {
         let mut ephemeral = tokio::time::interval(std::time::Duration::from_secs(3));
         ephemeral.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let current = *queries.borrow();
+        let observed_queries = match queries.has_changed() {
+            Ok(false) => Some(current),
+            _ => None,
+        };
         Self {
-            facts: engine.subscribe(),
-            queries: engine.watch_query_changes(),
+            facts,
+            queries,
+            observed_queries,
             ephemeral,
             presence: None,
         }
@@ -44,8 +59,68 @@ impl SyncEvents {
                 }
                 Err(broadcast::error::RecvError::Closed) => None,
             },
-            changed = self.queries.changed() => changed.ok().map(|()| SyncEvent::Refresh),
+            changed = self.queries.changed() => changed.ok().map(|()| {
+                let current = *self.queries.borrow_and_update();
+                let event = if self.observed_queries.is_none_or(|previous| current.general != previous.general) {
+                    SyncEvent::Refresh
+                } else {
+                    SyncEvent::Projection
+                };
+                self.observed_queries = Some(current);
+                event
+            }),
             _ = self.ephemeral.tick(), if ephemeral => Some(SyncEvent::Ephemeral),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn coalesced_general_changes_cannot_be_hidden_by_forecast_notifications() {
+        let (_facts, facts) = broadcast::channel(1);
+        let (changed, queries) = watch::channel(engine::QueryChanges::default());
+        let mut events = SyncEvents::from_receivers(facts, queries);
+        for general_first in [true, false] {
+            if general_first {
+                changed.send_modify(|state| state.general += 1);
+            }
+            for _ in 0..128 {
+                changed.send_modify(|state| state.projection += 1);
+            }
+            if !general_first {
+                changed.send_modify(|state| state.general += 1);
+            }
+            assert!(matches!(events.next(false).await, Some(SyncEvent::Refresh)));
+            assert!(!events.queries.has_changed().unwrap());
+            changed.send_modify(|state| state.projection += 1);
+            assert!(matches!(
+                events.next(false).await,
+                Some(SyncEvent::Projection)
+            ));
+            assert!(!events.queries.has_changed().unwrap());
+            changed.send_modify(|state| state.general += 1);
+            assert!(matches!(events.next(false).await, Some(SyncEvent::Refresh)));
+        }
+    }
+
+    #[tokio::test]
+    async fn a_change_arriving_before_watcher_initialization_is_not_consumed_or_narrowed() {
+        let (_facts, facts) = broadcast::channel(1);
+        let (changed, queries) = watch::channel(engine::QueryChanges::default());
+        changed.send_modify(|state| state.general += 1);
+        let mut events = SyncEvents::from_receivers(facts, queries);
+        let event = tokio::time::timeout(std::time::Duration::from_secs(1), events.next(false))
+            .await
+            .unwrap();
+        assert!(matches!(event, Some(SyncEvent::Refresh)));
+        changed.send_modify(|state| state.projection += 1);
+        assert!(matches!(
+            events.next(false).await,
+            Some(SyncEvent::Projection)
+        ));
+        assert_eq!(events.queries.borrow().revision(), 2);
     }
 }

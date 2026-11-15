@@ -141,7 +141,7 @@ impl Engine {
             || control.revision != state.revision
             || control.mode != state.mode
             || !store::claim_recipes::current_on(&mut tx, &current).await?
-            || *self.watch_query_changes().borrow() != evaluated.revision
+            || self.watch_query_changes().borrow().revision() != evaluated.revision
             || expires <= current_now.timestamp()
             || evaluated
                 .publication_expires_at

@@ -398,7 +398,7 @@ impl Engine {
                             )
                             .await?
                         || checked.document.statement.expires_at <= finished_at.timestamp()
-                        || *self.watch_query_changes().borrow() != evaluated.revision
+                        || self.watch_query_changes().borrow().revision() != evaluated.revision
                         || !store::profile_claims::current_on(
                             &mut tx,
                             person,

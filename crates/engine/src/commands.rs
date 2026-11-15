@@ -261,8 +261,7 @@ impl Engine {
             .execute(&self.store.pool)
             .await?;
         self.notify_karma_deadline_change();
-        self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.notify_query_changed();
         Ok(uid)
     }
 
@@ -731,8 +730,7 @@ impl Engine {
             } else {
                 tx.commit().await?;
             }
-            self.query_changed
-                .send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.notify_query_changed();
             Ok((error.is_none(), error.unwrap_or(response.stdout)))
         })
     }

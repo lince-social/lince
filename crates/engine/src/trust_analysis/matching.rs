@@ -16,7 +16,7 @@ impl Engine {
         self.require_permission(actor, "transfer:read").await?;
         self.refuse_unreadable(Some(person), &[request.need.need.clone()])
             .await?;
-        let revision = *self.watch_query_changes().borrow();
+        let revision = self.watch_query_changes().borrow().revision();
         let mut tx = self.store.pool.begin().await?;
         let need = store::transfer_evidence::freeze_need_on(&mut tx, person, &request.need).await?;
         drop(tx);
@@ -206,7 +206,7 @@ impl Engine {
                 break;
             }
         }
-        if *self.watch_query_changes().borrow() != revision {
+        if self.watch_query_changes().borrow().revision() != revision {
             return Err(invalid(
                 "Offers or trust evidence changed during matching; search again",
             ));

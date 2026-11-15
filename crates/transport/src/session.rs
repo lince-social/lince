@@ -15,6 +15,13 @@ struct Subscription {
     rows: Option<Arc<Vec<serde_json::Value>>>,
 }
 
+#[derive(Clone, Copy)]
+enum SubscriptionChange<'a> {
+    All,
+    Fact(&'a Fact),
+    Projection,
+}
+
 pub struct Session {
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
@@ -661,12 +668,14 @@ impl Session {
         engine::performance::add(match &event {
             crate::SyncEvent::Fact(_) => "cell-refresh-fact-events",
             crate::SyncEvent::Refresh => "cell-refresh-global-events",
+            crate::SyncEvent::Projection => "cell-refresh-projection-events",
             crate::SyncEvent::Ephemeral => "cell-refresh-ephemeral-events",
             crate::SyncEvent::Presence => "cell-refresh-presence-events",
         }, 1);
         match event {
             crate::SyncEvent::Fact(fact) => self.on_fact(&fact).await,
-            crate::SyncEvent::Refresh => self.refresh_inner(false).await,
+            crate::SyncEvent::Refresh => self.refresh_inner(SubscriptionChange::All, false).await,
+            crate::SyncEvent::Projection => self.refresh_inner(SubscriptionChange::Projection, false).await,
             crate::SyncEvent::Ephemeral => self.tick_ephemeral().await,
             crate::SyncEvent::Presence => self.tick_cursors().await,
         }
@@ -711,17 +720,17 @@ impl Session {
 
     async fn update_subscriptions(
         &mut self,
-        fact: Option<&Fact>,
+        change: SubscriptionChange<'_>,
         full_snapshot: bool,
     ) -> Vec<ServerMessage> {
         let _batch = engine::performance::Span::new("cell-query-batch-await");
         let subscriptions: Vec<_> = self
             .subscriptions
             .iter()
-            .filter(|(_, subscription)| {
-                fact.is_none_or(|fact| {
-                    protein::affects(&subscription.query, fact, self.subject.as_deref())
-                })
+            .filter(|(_, subscription)| match change {
+                SubscriptionChange::All => true,
+                SubscriptionChange::Fact(fact) => protein::affects(&subscription.query, fact, self.subject.as_deref()),
+                SubscriptionChange::Projection => protein::depends_on_forecast(&subscription.query),
             })
             .map(|(id, subscription)| (id.clone(), subscription.query.clone()))
             .collect();
@@ -803,7 +812,7 @@ impl Session {
             protein::Source::Nearby => "cell-query-nearby-await",
         });
         engine::performance::add("cell-queries", 1);
-        if matches!(protein.source, protein::Source::Calendar | protein::Source::Schedule) {
+        if protein::depends_on_forecast(protein) {
             let _projection = engine::performance::Span::new("cell-query-projection-request-await");
             let context = protein::calendar::context(protein, self.subject.as_deref())?;
             self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
@@ -895,10 +904,10 @@ impl Session {
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
-        self.refresh_inner(true).await
+        self.refresh_inner(SubscriptionChange::All, true).await
     }
 
-    async fn refresh_inner(&mut self, full_snapshot: bool) -> Vec<ServerMessage> {
+    async fn refresh_inner(&mut self, change: SubscriptionChange<'_>, full_snapshot: bool) -> Vec<ServerMessage> {
         let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
             self.clear_subscription_rows();
@@ -907,15 +916,20 @@ impl Session {
             return vec![session_expired()];
         }
         let mut out = Vec::new();
-        for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
-            out.extend(self.subscribe_workspace(id, workspace, client).await);
+        if matches!(change, SubscriptionChange::All) {
+            for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
+                out.extend(self.subscribe_workspace(id, workspace, client).await);
+            }
         }
-        for message in self.update_subscriptions(None, full_snapshot).await {
+        for message in self.update_subscriptions(change, full_snapshot).await {
             if let ServerMessage::Update { id, rows } = message {
                 out.push(ServerMessage::Snapshot { id, rows });
             } else {
                 out.push(message);
             }
+        }
+        if matches!(change, SubscriptionChange::Projection) {
+            return out;
         }
         let _collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
         for record_uid in self.collab_records.clone() {
@@ -1203,7 +1217,7 @@ impl Session {
             }
         }
         drop(collaboration);
-        out.extend(self.update_subscriptions(Some(fact), false).await);
+        out.extend(self.update_subscriptions(SubscriptionChange::Fact(fact), false).await);
         out
     }
 

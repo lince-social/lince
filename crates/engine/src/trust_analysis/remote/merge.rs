@@ -102,7 +102,7 @@ impl Engine {
         actor: Option<&str>,
     ) -> Result<ActionOutcome, EngineError> {
         let now = nucleus::execution::now();
-        let epoch = *self.watch_query_changes().borrow();
+        let epoch = self.watch_query_changes().borrow().revision();
         let (found, partial) = {
             let mut jobs = self.trust_remote.jobs.lock().await;
             let job = jobs
@@ -420,7 +420,7 @@ impl Engine {
             originals.items.iter().map(|input| input.artifact.as_ref()),
         )
         .await?;
-        if before != after || *self.watch_query_changes().borrow() != epoch {
+        if before != after || self.watch_query_changes().borrow().revision() != epoch {
             return Err(invalid(
                 "Evidence, identity or permissions changed while merging; verify again",
             ));

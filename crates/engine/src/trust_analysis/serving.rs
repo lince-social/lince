@@ -489,7 +489,7 @@ impl Engine {
             }
             drop(tx);
             let changed = self.watch_query_changes();
-            let epoch = *changed.borrow();
+            let epoch = changed.borrow().revision();
             let snapshot = self
                 .serving_snapshot(person, &review.request, actor, now)
                 .await?;
@@ -539,7 +539,7 @@ impl Engine {
                 || review.source_revision != snapshot.revision
                 || current_revision != snapshot.revision
                 || review.previous != head(&mut tx, person, &review.request.source).await?
-                || *changed.borrow() != epoch
+                || changed.borrow().revision() != epoch
                 || authority_stamp(&mut tx, &review.artifact).await? != snapshot.authority
             {
                 return Err(invalid(
@@ -697,7 +697,7 @@ impl Engine {
         self.serving_work_budget(&peer.organ).await?;
         let reader_authority = self.serving_peer_authority(&peer.organ, source).await?;
         let changed = self.watch_query_changes();
-        let epoch = *changed.borrow();
+        let epoch = changed.borrow().revision();
         let candidates:Vec<String>=store::sqlx::query_scalar("SELECT a.record_uid FROM record_evidence_serving a JOIN record r ON r.uid=a.record_uid WHERE (a.artifact_hash=? OR json_extract(a.review_json,'$.request.scope')='recipe') AND a.expires_at>? AND r.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM record_evidence_serving n WHERE n.owner_person_uid=a.owner_person_uid AND n.source_record_uid=a.source_record_uid AND n.source_kind=a.source_kind AND n.sequence>a.sequence) ORDER BY a.sequence DESC LIMIT ?").bind(hash.as_str()).bind(now).bind(model::MAX_PERMISSIONS as i64).fetch_all(&self.store.pool).await?;
         for record in candidates {
             let mut tx = self.store.pool.begin().await?;
@@ -937,7 +937,7 @@ impl Engine {
         .await?;
         if !final_state.current
             || !final_state.active
-            || *self.watch_query_changes().borrow() != reader.epoch
+            || self.watch_query_changes().borrow().revision() != reader.epoch
             || saved.review.expires_at <= nucleus::execution::now().timestamp()
             || snapshot.artifact.expires_at().map_err(invalid)?
                 <= nucleus::execution::now().timestamp()

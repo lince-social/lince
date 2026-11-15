@@ -179,8 +179,7 @@ impl Engine {
             if store::karma_schedules::refresh(&self.store.pool, nucleus::execution::now()).await? {
                 self.notify_karma_deadline_change();
             }
-            self.query_changed
-                .send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.notify_query_changed();
             Ok(())
         })
         .await

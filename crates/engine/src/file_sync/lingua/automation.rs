@@ -572,8 +572,7 @@ impl Engine {
                 .await?;
             }
             self.notify_karma_deadline_change();
-            self.query_changed
-                .send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.notify_query_changed();
             let current = store::recurrence::get(&self.store.pool, &rule.uid)
                 .await?
                 .ok_or_else(|| invalid("Rule missing"))?;

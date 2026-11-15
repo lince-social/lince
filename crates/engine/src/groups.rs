@@ -287,8 +287,7 @@ impl Engine {
             &serde_json::to_value(signed).map_err(|error| refused(error.to_string()))?,
         )
         .await?;
-        self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.notify_query_changed();
         Ok(())
     }
 

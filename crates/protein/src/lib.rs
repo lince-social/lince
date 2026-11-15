@@ -999,6 +999,10 @@ pub fn is_ephemeral(protein: &Protein) -> bool {
     matches!(protein.source, Source::Nearby)
 }
 
+pub fn depends_on_forecast(protein: &Protein) -> bool {
+    matches!(protein.source, Source::Calendar | Source::Schedule)
+}
+
 async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
     if protein.aggregate.is_some() {
         return Err(karma_query_error(

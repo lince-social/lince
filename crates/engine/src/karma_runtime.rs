@@ -415,8 +415,7 @@ impl Engine {
             .await?;
         }
         let facts = self.process_rule_occurrences(now).await?;
-        self.query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        self.notify_query_changed();
         let pending = self.has_rule_occurrences().await?
             || store::karma::runs::has_pending_occurrences(&self.store.pool).await?
             || store::karma::expansions::has_pending_schedule_occurrences(&self.store.pool).await?;
@@ -654,9 +653,7 @@ async fn run_deadline_director(
         directory.pending_program_processing =
             store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
         engine.process_rule_occurrences(observed_at).await?;
-        engine
-            .query_changed
-            .send_modify(|revision| *revision = revision.wrapping_add(1));
+        engine.notify_query_changed();
         directory.pending_rule_processing = engine.has_rule_occurrences().await?;
         if reload {
             directory = rebuild_directory(&engine, &config).await?;
@@ -865,9 +862,7 @@ async fn rebuild_directory(
     .await?;
     let lease_recovery_at =
         store::karma::schedules::next_active_schedule_lease_expiry(&engine.store.pool).await?;
-    engine
-        .query_changed
-        .send_modify(|revision| *revision = revision.wrapping_add(1));
+    engine.notify_query_changed();
     Ok(DeadlineDirectory {
         index,
         calendar_provider_by_activation,

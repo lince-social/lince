@@ -2215,8 +2215,7 @@ impl Engine {
         }
         if outcome.facts.is_empty() && !reading {
             crate::performance::add("action-query-invalidations", 1);
-            self.query_changed
-                .send_modify(|revision| *revision = revision.wrapping_add(1));
+            self.notify_query_changed();
         }
         if refresh_work {
             if let Err(error) = self.refresh_projection().await {

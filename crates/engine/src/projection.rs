@@ -37,7 +37,7 @@ struct Queue {
 fn finish_request(
     queue: &Mutex<Queue>,
     superseded: bool,
-    changed: &tokio::sync::watch::Sender<u64>,
+    changed: &tokio::sync::watch::Sender<crate::QueryChanges>,
 ) -> Option<(Request, crate::karma_runtime::KarmaDeadlineDirectorConfig)> {
     let next = {
         let mut queue = queue.lock().expect("projection queue");
@@ -49,7 +49,7 @@ fn finish_request(
         crate::performance::add("schedule-projection-notifications-coalesced", 1);
     } else {
         crate::performance::add("schedule-projection-notifications", 1);
-        changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        changed.send_modify(|revision| revision.projection = revision.projection.wrapping_add(1));
     }
     next
 }
@@ -301,7 +301,7 @@ pub struct Calculated {
 fn arm_expiry(
     expiry: &Arc<Mutex<Option<(i64, tokio::task::JoinHandle<()>)>>>,
     deadline: i64,
-    changed: tokio::sync::watch::Sender<u64>,
+    changed: tokio::sync::watch::Sender<crate::QueryChanges>,
 ) {
     let mut expiry = expiry.lock().expect("projection expiry");
     if expiry
@@ -325,7 +325,7 @@ fn arm_expiry(
             .await;
         }
         crate::performance::add("schedule-projection-notifications", 1);
-        changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+        changed.send_modify(|revision| revision.projection = revision.projection.wrapping_add(1));
     });
     *expiry = Some((deadline, task));
 }
@@ -618,7 +618,7 @@ mod tests {
             active: Some(request(1)),
             pending: None,
         });
-        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        let (changed, mut subscriber) = tokio::sync::watch::channel(crate::QueryChanges::default());
         for revision in 2..=4 {
             let mut next = request(revision);
             next.context.window.until_ms += revision * 60_000;
@@ -639,7 +639,7 @@ mod tests {
         assert!(finish_request(&queue, false, &changed).is_none());
         assert!(queue.lock().unwrap().active.is_none());
         assert!(subscriber.has_changed().unwrap());
-        assert_eq!(*subscriber.borrow_and_update(), 1);
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 1 });
     }
 
     #[test]
@@ -648,15 +648,15 @@ mod tests {
             active: Some(request(1)),
             pending: None,
         });
-        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        let (changed, mut subscriber) = tokio::sync::watch::channel(crate::QueryChanges::default());
         assert!(finish_request(&queue, true, &changed).is_none());
         assert!(queue.lock().unwrap().active.is_none());
         assert!(subscriber.has_changed().unwrap());
-        assert_eq!(*subscriber.borrow_and_update(), 1);
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 1 });
         queue.lock().unwrap().active = Some(request(2));
         assert!(finish_request(&queue, false, &changed).is_none());
         assert!(subscriber.has_changed().unwrap());
-        assert_eq!(*subscriber.borrow_and_update(), 2);
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 2 });
     }
 
     #[test]
@@ -667,14 +667,26 @@ mod tests {
             active: Some(request(1)),
             pending: Some((request(2), config)),
         });
-        let (changed, mut subscriber) = tokio::sync::watch::channel(0);
+        let (changed, mut subscriber) = tokio::sync::watch::channel(crate::QueryChanges::default());
         assert!(finish_request(&queue, false, &changed).is_some());
         assert!(queue.lock().unwrap().active.as_ref() == Some(&request(2)));
         assert!(subscriber.has_changed().unwrap());
-        assert_eq!(*subscriber.borrow_and_update(), 1);
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 1 });
         assert!(finish_request(&queue, false, &changed).is_none());
         assert!(subscriber.has_changed().unwrap());
-        assert_eq!(*subscriber.borrow_and_update(), 2);
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 2 });
+    }
+
+    #[tokio::test]
+    async fn forecast_expiry_notifies_the_same_scoped_subscribers() {
+        let expiry = Arc::new(Mutex::new(None));
+        let (changed, mut subscriber) = tokio::sync::watch::channel(crate::QueryChanges::default());
+        arm_expiry(&expiry, nucleus::execution::now().timestamp_millis() - 1, changed);
+        tokio::time::timeout(std::time::Duration::from_secs(1), subscriber.changed())
+            .await.unwrap().unwrap();
+        assert_eq!(*subscriber.borrow_and_update(), crate::QueryChanges { general: 0, projection: 1 });
+        let task = expiry.lock().unwrap().take().unwrap().1;
+        task.await.unwrap();
     }
 
     #[test]

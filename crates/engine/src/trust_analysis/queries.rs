@@ -36,7 +36,7 @@ impl Engine {
     ) -> Result<QueryEvaluation, EngineError> {
         query.validate().map_err(invalid)?;
         let changed = self.watch_query_changes();
-        let revision = *changed.borrow();
+        let revision = changed.borrow().revision();
         let known_filter = [&query.issuers, &query.counterparties]
             .into_iter()
             .any(|filter| {
@@ -141,7 +141,7 @@ impl Engine {
         .map_err(invalid)?;
         analysis.partial |=
             evidence.partial || contacts.as_ref().is_some_and(|contacts| contacts.partial);
-        if *changed.borrow() != revision {
+        if changed.borrow().revision() != revision {
             return Err(invalid(
                 "Evidence or permissions changed during analysis; refresh the local view",
             ));

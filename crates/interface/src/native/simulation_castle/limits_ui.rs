@@ -33,9 +33,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             world.entity_mut(child).despawn();
         }
     }
-    let Ok(scenario) = serde_json::from_str::<simulation::scenario::Scenario>(
-        &world.get::<SimulationCastle>(owner).unwrap().scenario,
-    ) else {
+    let Ok(scenario) = world
+        .get::<SimulationCastle>(owner)
+        .unwrap()
+        .scenario
+        .parsed()
+    else {
         return;
     };
     let line = super::row(world, panel);
@@ -100,8 +103,11 @@ fn apply(world: &mut World, owner: Entity) -> simulation::Result<()> {
         .filter(|(input, _)| input.owner == owner)
         .map(|(input, text)| (input.wall_time, text.value().to_string()))
         .collect();
-    let mut scenario: simulation::scenario::Scenario =
-        serde_json::from_str(&world.get::<SimulationCastle>(owner).unwrap().scenario)?;
+    let mut scenario = world
+        .get::<SimulationCastle>(owner)
+        .unwrap()
+        .scenario
+        .draft()?;
     for (wall_time, value) in values {
         if wall_time {
             scenario.limits.wall_time_ms = if value.trim().is_empty() {
@@ -120,7 +126,11 @@ fn apply(world: &mut World, owner: Entity) -> simulation::Result<()> {
         .unwrap()
         .editor
         .set_text(&source);
-    world.get_mut::<SimulationCastle>(owner).unwrap().scenario = source;
+    world
+        .get_mut::<SimulationCastle>(owner)
+        .unwrap()
+        .scenario
+        .set(source);
     world.get_mut::<Text>(status).unwrap().0 = "Limits saved in this setup".into();
     Ok(())
 }

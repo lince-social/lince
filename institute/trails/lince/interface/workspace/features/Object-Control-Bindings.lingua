@@ -1,0 +1,33 @@
+Custom object controls and possession actions (@ws-object-controls: 0, is #chapter, #part-of @workspace-development, #requires @ws-behavior-authoring, #requires @ws-possession) { r_6J4TE0XVYJ8PXAG5EJ1811177W
+Status: Pending. Owner refinement, 2026-11-15: the actions authored for an object can be used through normal controls, connections and possession.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Behavior authoring](Behavior-Authoring.lingua) and [Possession](Possession.lingua). Deliver configurable mappings from native input and supported in-scene controls to the same named actions/continuous intents already used by inspector buttons and functional connections. Exact CAD and new physical/character adapters are not prerequisites.
+
+## Ownership and ordered work
+
+Own input/action adapters and their native configuration. Reuse focus, key binding, selection, delegation and fenced possession/activity ownership; no separate controller engine or grant path. Shared input/camera/service edits require one owner in the current checkout.
+
+### Task CTL.T01
+
+- [ ] Bind discrete press/release/cancel and bounded continuous values to exposed actions, with typed arguments, axes/units, supported target/frame, dead zone/range where relevant and the captured profile/source revision. Validate trigger-versus-value semantics and incompatible action changes. Provide keyboard-accessible inspector controls and optional in-scene button/handle controls over the same action path; visual appearance cannot invent an action implementation.
+
+### Task CTL.T02
+
+- [ ] Use the lamp and hatch to invoke the same public action from an inspector, a sensor connection, an authorized Agent operation and a possessed object's configured control. Preserve identical action semantics, parameters, observed outputs and provenance of the input source. Possession supplies intent to the current state owner; it does not compete with the actuator/solver for pose or silently change fidelity. Supported physical/character actions remain separate provider adapters.
+
+### Task CTL.T03
+
+- [ ] Extend Place/Play behavior without merging their lifecycles: placement remains an accepted-edit preview; configured device actions execute in the admitted trial or explicitly supported live activity. Stop held inputs and obsolete sessions on release, focus loss, target switch, revoke, disconnect, deletion or incompatible recipe revision. Keep pose adopts only the supported placement result; it does not adopt past device events or commands. Mounted application typing retains its existing focus isolation.
+
+### Task CTL.T04
+
+- [ ] Prove OA.W05 with remapping, differently shaped instances, source revisions, stale/repeated inputs, competing control, cancellation and save/reopen without held-input replay. Keep source/other occurrences isolated and record action-to-observed-output latency, queue bounds and release. Reuse the actual native controls and reduced-motion/editor layout requirements; do not require scripts or a humanoid rig.
+
+## Completion
+
+Read OA.R05–OA.R07/OA.R10–OA.R12 and the existing exploration/possession contract. Publish supported action maps, native evidence and authority/state handoff limits. Consumer: [Object authoring acceptance](../contracts/Object-authoring-contracts.lingua). Current outcome: unbuilt and unverified.
+} r_6J4TE0XVYJ8PXAG5EJ1811177W

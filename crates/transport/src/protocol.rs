@@ -2,6 +2,7 @@ use engine::actions::Action;
 use protein::Protein;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::sync::Arc;
 
 pub use engine::presence::Cursor as CollabCursor;
 
@@ -172,11 +173,11 @@ pub enum ServerMessage {
     },
     Snapshot {
         id: String,
-        rows: Vec<Value>,
+        rows: Arc<Vec<Value>>,
     },
     Update {
         id: String,
-        rows: Vec<Value>,
+        rows: Arc<Vec<Value>>,
     },
     ActionOk {
         id: String,

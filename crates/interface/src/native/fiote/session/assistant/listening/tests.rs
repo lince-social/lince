@@ -204,8 +204,9 @@ async fn admitted_voice_recovery_preserves_edits_attachments_and_does_not_send_o
         app.world()
             .get::<crate::native::message_content::Draft>(owner)
             .unwrap()
-            .parts,
-        vec![part]
+            .parts
+            .as_slice(),
+        &[part]
     );
     publish(&mut app, owner, status);
     click(app.world_mut(), "Recover unsent voice request");

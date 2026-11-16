@@ -55,20 +55,29 @@ pub(super) async fn play(
         .iter()
         .rposition(|(at, _)| *at <= start)
         .unwrap_or(0);
-    for (index, (at, image)) in take.frames.iter().enumerate().skip(first) {
-        if *at > start {
-            tokio::time::sleep_until(clock + Duration::from_millis(*at - start)).await;
+    let total = take.frames.len();
+    for (index, (at, image)) in take.frames.into_iter().enumerate().skip(first) {
+        if at > start {
+            tokio::time::sleep_until(clock + Duration::from_millis(at - start)).await;
         }
+        let _prepare = crate::host::performance::Span::new(
+            crate::host::performance::Stage::NativeGifFramePrepare,
+        );
+        let pixels = crate::native::media_sand::Pixels {
+            width: image.width(),
+            height: image.height(),
+            rgba: image.into_raw(),
+        };
+        crate::host::performance::add(
+            crate::host::performance::Count::GifFrameBytesMoved,
+            pixels.rgba.len() as u64,
+        );
         publish(
             output,
             Frame {
-                pixels: Some(crate::native::media_sand::Pixels {
-                    width: image.width(),
-                    height: image.height(),
-                    rgba: image.as_raw().clone(),
-                }),
-                status: format!("Video · frame {} / {}", index + 1, take.frames.len()),
-                position_ms: Some(*at),
+                pixels: Some(pixels),
+                status: format!("Video · frame {} / {total}", index + 1),
+                position_ms: Some(at),
                 skipped: 0,
             },
             wake,

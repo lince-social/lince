@@ -40,7 +40,7 @@ impl FieldKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Preset {
     pub predicate: String,
@@ -93,6 +93,14 @@ fn id(value: &str) -> bool {
 
 impl Schema {
     pub fn validate(&self) -> Result<(), String> {
+        self.validate_with(|_, _| {})
+    }
+
+    fn validate_with<'a>(
+        &'a self,
+        mut field_validated: impl FnMut(&'a Field, BTreeSet<&'a str>),
+    ) -> Result<(), String> {
+        let _validation = crate::performance::Span::new("extension-schema-validation");
         if !name(&self.name) || self.fields.is_empty() || self.fields.len() > 64 {
             return Err("Give the schema a name and 1–64 fields".into());
         }
@@ -110,7 +118,7 @@ impl Schema {
             for choice in &field.choices {
                 if !id(&choice.id)
                     || !name(&choice.name)
-                    || !choices.insert(&choice.id)
+                    || !choices.insert(choice.id.as_str())
                     || choice.assertions.len() > 16
                 {
                     return Err(
@@ -134,30 +142,49 @@ impl Schema {
                     }
                 }
             }
+            field_validated(field, choices);
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES {
             return Err("The schema is too large".into());
         }
         Ok(())
     }
 
     pub fn update_from(&self, before: &Self) -> Result<(), String> {
-        self.validate()?;
+        self.validated()?.update_from(before)
+    }
+
+    /// Validation owns the choice-identity pass. Retain its borrowed indexes
+    /// only when a caller also needs to check a schema transition.
+    pub fn validated(&self) -> Result<ValidatedSchema<'_>, String> {
+        let mut fields = BTreeMap::new();
+        self.validate_with(|field, choices| {
+            fields.insert(field.id.as_str(), (field, choices));
+        })?;
+        crate::performance::add("extension-schema-indexes-prepared", 1);
+        Ok(ValidatedSchema { fields })
+    }
+}
+
+/// Constructed only through Schema::validated. The borrow prevents changes to
+/// the schema while its validation and identity indexes are being reused.
+pub struct ValidatedSchema<'a> {
+    fields: BTreeMap<&'a str, (&'a Field, BTreeSet<&'a str>)>,
+}
+
+impl ValidatedSchema<'_> {
+    pub fn update_from(&self, before: &Schema) -> Result<(), String> {
+        let _preservation = crate::performance::Span::new("extension-schema-preservation");
         for old in &before.fields {
-            let field = self
+            let (field, choices) = self
                 .fields
-                .iter()
-                .find(|field| field.id == old.id)
+                .get(old.id.as_str())
                 .ok_or("Archive existing fields instead of deleting their IDs")?;
             if field.kind != old.kind
                 || old
                     .choices
                     .iter()
-                    .any(|old| !field.choices.iter().any(|choice| choice.id == old.id))
+                    .any(|old| !choices.contains(old.id.as_str()))
             {
                 return Err(
                     "Keep existing field types and choice IDs; archive choices to retire them"
@@ -170,6 +197,7 @@ impl Schema {
 }
 
 impl Field {
+    /// Validate selection shape and return unique IDs in lexical order.
     pub fn selection<'a>(&self, value: &'a Value) -> Result<Vec<&'a str>, String> {
         if value.is_null() {
             return Ok(Vec::new());
@@ -193,6 +221,33 @@ impl Field {
         }
     }
 
+    /// Resolve in selection order, retaining missing entries for the caller's
+    /// error/preview policy. One selection needs no index; multiple selections
+    /// share an index instead of repeatedly searching all choices.
+    pub fn selected_choices<'schema, 'value>(
+        &'schema self,
+        value: &'value Value,
+    ) -> Result<SelectedChoices<'schema, 'value>, String> {
+        let selected = self.selection(value)?;
+        let by_id = if selected.len() > 1 {
+            let mut by_id = BTreeMap::new();
+            for choice in &self.choices {
+                // Match the first occurrence even in an unvalidated schema.
+                by_id.entry(choice.id.as_str()).or_insert(choice);
+            }
+            crate::performance::add("extension-choice-indexes-prepared", 1);
+            crate::performance::add("extension-choices-indexed", self.choices.len() as u64);
+            Some(by_id)
+        } else {
+            None
+        };
+        Ok(SelectedChoices {
+            field: self,
+            selected: selected.into_iter(),
+            by_id,
+        })
+    }
+
     pub fn validate_value(&self, value: &Value, before: &Value) -> Result<(), String> {
         if self.archived && value != before && !value.is_null() {
             return Err("This field is archived; its existing value is kept".into());
@@ -214,13 +269,9 @@ impl Field {
             FieldKind::Boolean if value.is_boolean() => Ok(()),
             FieldKind::Select | FieldKind::MultiSelect => {
                 let old = self.selection(before)?;
-                for id in self.selection(value)? {
-                    let choice = self
-                        .choices
-                        .iter()
-                        .find(|choice| choice.id == id)
-                        .ok_or("Unknown choice; reload the schema")?;
-                    if choice.archived && !old.contains(&id) {
+                for choice in self.selected_choices(value)? {
+                    let choice = choice.ok_or("Unknown choice; reload the schema")?;
+                    if choice.archived && old.binary_search(&choice.id.as_str()).is_err() {
                         return Err("This choice is archived".into());
                     }
                 }
@@ -232,6 +283,28 @@ impl Field {
                 self.kind.name().to_lowercase()
             )),
         }
+    }
+}
+
+/// Borrows only the current schema/value snapshot; no retained lookup can
+/// outlive a schema edit or change how a missing selection is handled.
+pub struct SelectedChoices<'schema, 'value> {
+    field: &'schema Field,
+    selected: std::vec::IntoIter<&'value str>,
+    by_id: Option<BTreeMap<&'schema str, &'schema Choice>>,
+}
+
+impl<'schema> Iterator for SelectedChoices<'schema, '_> {
+    type Item = Option<&'schema Choice>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.selected.next().map(|id| {
+            if let Some(by_id) = &self.by_id {
+                by_id.get(id).copied()
+            } else {
+                self.field.choices.iter().find(|choice| choice.id == id)
+            }
+        })
     }
 }
 

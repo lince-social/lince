@@ -234,7 +234,7 @@ impl Engine {
                 "Use a budget up to 30000 ms and slices of 1–200 ms",
             ));
         }
-        if serde_json::to_vec(&run)?.len() > 950_000 {
+        if nucleus::json::encoded_len(&run)? > 950_000 {
             return Err(invalid(
                 "The frozen run exceeds its storage limit; select fewer inputs",
             ));
@@ -276,16 +276,20 @@ impl Engine {
         now: DateTime<Utc>,
         cancel: bool,
     ) -> Result<ActionOutcome, EngineError> {
+        let _poll = nucleus::performance::Span::new("optimization-poll-await");
         self.require_permission(actor, "record:update").await?;
         let (uid, mut run) = self.load_optimization_run(token, actor).await?;
-        let before = serde_json::to_value(&run)?;
+        // Polls only change status/message. Keep the authored run intact until
+        // a transition needs its before/after values for the guarded write.
+        let mut state = run.state.clone();
+        let mut message = run.message.clone();
         let mut outcome = ActionOutcome::default();
         let job = {
             let mut jobs = self.meal_runtime.jobs.lock().map_err(invalid)?;
             if cancel {
                 if let Some(job) = jobs.get(&uid) {
                     job.cancelled.store(true, Ordering::Relaxed);
-                    run.state = "cancelling".into();
+                    state = "cancelling".into();
                 }
             }
             if jobs.get(&uid).is_some_and(|j| j.work.is_finished()) {
@@ -297,7 +301,7 @@ impl Engine {
         if let Some(job) = job {
             match job.work.await.map_err(invalid)? {
                 Ok(result) => {
-                    run.state = result.get("solution").unwrap_or(&result)["status"]
+                    state = result.get("solution").unwrap_or(&result)["status"]
                         .as_str()
                         .unwrap_or("failed")
                         .into();
@@ -307,11 +311,11 @@ impl Engine {
                     );
                 }
                 Err(error) => {
-                    run.state = "failed".into();
-                    run.message = Some(error);
+                    state = "failed".into();
+                    message = Some(error);
                 }
             }
-        } else if ["running", "cancelling"].contains(&run.state.as_str())
+        } else if ["running", "cancelling"].contains(&state.as_str())
             && !self
                 .meal_runtime
                 .jobs
@@ -319,20 +323,23 @@ impl Engine {
                 .map_err(invalid)?
                 .contains_key(&uid)
         {
-            run.state = "interrupted".into();
-            run.message = Some("Runtime restarted; start another bounded run".into());
+            state = "interrupted".into();
+            message = Some("Runtime restarted; start another bounded run".into());
         }
-        if serde_json::to_value(&run)? != before {
+        if state != run.state || message != run.message {
+            let (before, after) = {
+                let _prepare =
+                    nucleus::performance::Span::new("optimization-run-transition-preparation");
+                let before = serde_json::to_value(&run)?;
+                run.state = state;
+                run.message = message;
+                let after = serde_json::to_value(&run)?;
+                nucleus::performance::add("optimization-run-transitions-prepared", 1);
+                (before, after)
+            };
             outcome.facts.extend(
-                self.managed_write(
-                    &uid,
-                    RUN,
-                    &serde_json::to_value(&run)?,
-                    Some(&before),
-                    actor,
-                    now,
-                )
-                .await?,
+                self.managed_write(&uid, RUN, &after, Some(&before), actor, now)
+                    .await?,
             );
         }
         let result = self.read_optimization_result(&uid).await?;

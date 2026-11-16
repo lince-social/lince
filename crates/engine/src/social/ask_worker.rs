@@ -106,7 +106,7 @@ impl Engine {
         let budgets = super::ask::split(
             request,
             own.documents.len(),
-            serde_json::to_vec(&own.documents)?.len(),
+            nucleus::json::encoded_len(&own.documents)?,
             peers.len(),
         );
         if budgets.is_empty() {
@@ -132,7 +132,7 @@ impl Engine {
                 if let Some((source, original)) = incoming && !self.social_ask_peer_on(&mut tx, source, original, false).await?.forward { return Err(invalid("Onward query consent changed")); }
                 self.social_ask_peer_on(&mut tx,endpoint,organ,true).await?;
                 if now >= child.deadline { return Err(invalid("This contact question has expired")); }
-                store::social::spend_on(&mut tx, endpoint, "out", serde_json::to_vec(&message)?.len(), settings.outgoing_bytes_per_minute, now).await?;
+                store::social::spend_on(&mut tx, endpoint, "out", nucleus::json::encoded_len(&message)?, settings.outgoing_bytes_per_minute, now).await?;
                 tx.commit().await?;
                 let timeout = if request.depth == contract::MAX_DEPTH {8} else {4};
                 let until = std::time::Duration::from_secs((child.deadline-now).clamp(1, timeout) as u64);
@@ -146,7 +146,7 @@ impl Engine {
                         }
                     }
                 };
-                let size = serde_json::to_vec(&response)?.len();
+                let size = nucleus::json::encoded_len(&response)?;
                 if size > MAX_FRAME_BYTES-1024 || response["service"].as_str() != Some(endpoint) { return Err(invalid("Invalid pinned contact answer")); }
                 store::social::spend(&self.store.pool,endpoint,"in",size,settings.incoming_bytes_per_minute,nucleus::execution::now().timestamp()).await?;
                 let answer: Reply = serde_json::from_value(response["reply"].clone())?;
@@ -351,8 +351,8 @@ impl Engine {
         let Some(row) = row else {
             return Ok(0);
         };
-        let request: Request = serde_json::from_str(&row.get::<String, _>("request"))?;
-        let peers: Vec<(String, String)> = serde_json::from_str(&row.get::<String, _>("peers"))?;
+        let request: Request = serde_json::from_str(row.get::<&str, _>("request"))?;
+        let peers: Vec<(String, String)> = serde_json::from_str(row.get::<&str, _>("peers"))?;
         super::ask::validate_request(&request, now)?;
         let mut reply = self.social_ask_local(&request).await?;
         let outcome = self
@@ -478,9 +478,9 @@ impl Engine {
         let mut queries = Vec::new();
         let mut results = Vec::new();
         for row in store::sqlx::query("SELECT id,request,peers,deadline,state,error,results FROM social_ask_query WHERE (? IS NULL OR actor=?) ORDER BY deadline DESC,id DESC LIMIT 20").bind(actor).bind(actor).fetch_all(&self.store.pool).await? {
-            let request: Request = serde_json::from_str(&row.get::<String,_>("request"))?;
-            let peers: Vec<(String,String)> = serde_json::from_str(&row.get::<String,_>("peers"))?;
-            let answers: Vec<Value> = serde_json::from_str(&row.get::<String,_>("results"))?;
+            let request: Request = serde_json::from_str(row.get::<&str,_>("request"))?;
+            let peers: Vec<(String,String)> = serde_json::from_str(row.get::<&str,_>("peers"))?;
+            let answers: Vec<Value> = serde_json::from_str(row.get::<&str,_>("results"))?;
             if queries.is_empty() {
                 let mut tx=self.social_write_tx().await?;
                 for answer in &answers {

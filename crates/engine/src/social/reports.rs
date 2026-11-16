@@ -11,7 +11,7 @@ fn validate(report: &Report, now: i64) -> Result<String, EngineError> {
         || report.expires_at <= now
         || report.expires_at != report.created_at.saturating_add(REPORT_LIFETIME)
         || report.explanation.len() > 8 * 1024
-        || serde_json::to_vec(report)?.len() > MAX_REPORT_BYTES
+        || nucleus::json::encoded_len(report)? > MAX_REPORT_BYTES
     {
         return Err(invalid("Invalid or expired bounded public report"));
     }
@@ -148,7 +148,7 @@ impl Engine {
         tx.commit().await?;
         let mut reports = Vec::new();
         for row in rows {
-            let report: Report = serde_json::from_str(&row.get::<String, _>("body"))?;
+            let report: Report = serde_json::from_str(row.get::<&str, _>("body"))?;
             reports.push(json!({"id":row.get::<String,_>("id"),"post":report.document.id,"title":report.document.title,"service":row.get::<String,_>("service"),"state":row.get::<String,_>("state"),"expires_at":row.get::<i64,_>("expires_at"),"error":row.get::<Option<String>,_>("error")}));
         }
         Ok(
@@ -298,7 +298,7 @@ impl Engine {
             let id: String = row.get("id");
             let actor: String = row.get("actor");
             let attempt: i64 = row.get("attempts");
-            let report: Report = serde_json::from_str(&row.get::<String, _>("body"))?;
+            let report: Report = serde_json::from_str(row.get::<&str, _>("body"))?;
             let result=async {
                 self.require_permission((!actor.is_empty()).then_some(actor.as_str()),"organ:update").await?;
                 self.social_require_local_write().await?;
@@ -306,10 +306,10 @@ impl Engine {
                 let still_pending:bool=store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM social_report_work WHERE id=? AND state='pending')").bind(&id).fetch_one(&self.store.pool).await?;
                 if !still_pending {return Ok(None);}
                 let settings=self.social_settings().await?;
-                store::social::spend(&self.store.pool,&report.service,"out",serde_json::to_vec(&report)?.len()+128,settings.outgoing_bytes_per_minute,now).await?;
+                store::social::spend(&self.store.pool,&report.service,"out",nucleus::json::encoded_len(&report)?+128,settings.outgoing_bytes_per_minute,now).await?;
                 let response=tokio::time::timeout(std::time::Duration::from_secs(5),network.request(&report.service,PublicRequest::SubmitReport {document:Box::new(report.clone())})).await
                     .map_err(|_|invalid("The selected report operator did not respond"))??;
-                if serde_json::to_vec(&response)?.len()>1024 || response["report"]!=id || response["hash"]!=row.get::<String,_>("hash") || !response["accepted"].is_boolean() {return Err(invalid("Invalid report intake receipt"));}
+                if nucleus::json::encoded_len(&response)?>1024 || response["report"]!=id || response["hash"]!=row.get::<String,_>("hash") || !response["accepted"].is_boolean() {return Err(invalid("Invalid report intake receipt"));}
                 Ok(Some(response))
             }.await;
             match result {

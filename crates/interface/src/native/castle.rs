@@ -42,6 +42,9 @@ struct Presented;
 #[derive(Resource, Default)]
 struct Layouts(HashMap<Entity, [u32; 5]>);
 
+#[derive(Resource, Default)]
+struct GlyphImages(HashMap<Entity, Vec<AssetId<Image>>>);
+
 #[derive(QueryData)]
 struct LayoutData {
     node: Ref<'static, Node>,
@@ -74,7 +77,7 @@ struct ReadinessData {
     failure: Option<&'static crate::native::laboratory::StartupFailure>,
     block: Option<&'static ComputedTextBlock>,
     text_node: Has<Text>,
-    text: Option<&'static TextLayoutInfo>,
+    text: Has<TextLayoutInfo>,
     image: Option<&'static ImageNode>,
     surface: Option<&'static crate::native::topology::presentation::Surface>,
 }
@@ -570,15 +573,48 @@ fn prepared_images(
     prepared: Res<PreparedImages>,
     wake: Option<Res<WakeSignal>>,
 ) {
-    let next: HashSet<_> = images.iter().map(|(id, _)| id).collect();
+    let current = prepared.0.read().unwrap_or_else(|error| error.into_inner());
+    let mut count = 0;
+    let mut unchanged = true;
+    for (id, _) in images.iter() {
+        count += 1;
+        unchanged &= current.contains(&id);
+    }
+    if unchanged && count == current.len() {
+        return;
+    }
+    drop(current);
     let mut current = prepared
         .0
         .write()
         .unwrap_or_else(|error| error.into_inner());
-    if *current != next {
-        *current = next;
-        if let Some(wake) = wake {
-            wake.ring();
+    current.clear();
+    current.extend(images.iter().map(|(id, _)| id));
+    if let Some(wake) = wake {
+        wake.ring();
+    }
+}
+
+fn remember_glyph_images(
+    changed: Query<(Entity, &TextLayoutInfo), (Changed<TextLayoutInfo>, Allow<Disabled>)>,
+    mut removed: RemovedComponents<TextLayoutInfo>,
+    mut images: ResMut<GlyphImages>,
+) {
+    for entity in removed.read() {
+        images.0.remove(&entity);
+    }
+    for (entity, layout) in &changed {
+        let textures = images.0.entry(entity).or_default();
+        textures.clear();
+        let mut previous = None;
+        for glyph in &layout.glyphs {
+            let texture = glyph.atlas_info.texture;
+            if previous != Some(texture) {
+                previous = Some(texture);
+                if !textures.contains(&texture) {
+                    textures.push(texture);
+                }
+            }
         }
     }
 }
@@ -649,6 +685,10 @@ fn remember_layout(
 }
 
 fn present(world: &mut World) {
+    world.init_resource::<GlyphImages>();
+    world
+        .run_system_cached(remember_glyph_images)
+        .expect("retain Castle text atlas dependencies");
     world.init_resource::<ReadinessQueries>();
     world.resource_scope(|world, mut queries: Mut<ReadinessQueries>| {
         present_with(world, &mut queries);
@@ -750,16 +790,15 @@ fn present_with(world: &mut World, queries: &mut ReadinessQueries) {
                         );
                     }
                 }
-                if let Some(text) = node.text {
-                    let mut previous = None;
-                    let prepared = text.glyphs.iter().all(|glyph| {
-                        let texture = glyph.atlas_info.texture;
-                        if previous == Some(texture) {
-                            return true;
-                        }
-                        previous = Some(texture);
-                        images.contains(&texture)
-                    });
+                if node.text {
+                    let prepared =
+                        world
+                            .resource::<GlyphImages>()
+                            .0
+                            .get(&entity)
+                            .is_some_and(|textures| {
+                                textures.iter().all(|texture| images.contains(texture))
+                            });
                     ready &= prepared;
                     if !prepared {
                         issue(

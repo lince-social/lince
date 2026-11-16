@@ -94,7 +94,9 @@ pub fn choices(field: &Value) -> Vec<(String, String)> {
 }
 
 pub fn validate_schema(schema: &Value) -> Result<(), String> {
-    if schema.to_string().len() > 65_536 || schema["type"] != "object" {
+    if crate::json::encoded_len(schema).map_err(|error| error.to_string())? > 65_536
+        || schema["type"] != "object"
+    {
         return Err("Use a flat question form smaller than 64 KiB.".into());
     }
     let fields = schema["properties"]

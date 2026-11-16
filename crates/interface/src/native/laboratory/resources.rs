@@ -277,7 +277,7 @@ pub fn capture(world: &mut World) -> ResourceSnapshot {
                 pending.extend(children.iter());
             }
             if let Some(text) = world.get::<EditableText>(entity) {
-                row.text_bytes += text.value().to_string().len();
+                row.text_bytes += text.value().into_iter().map(str::len).sum::<usize>();
             } else if let Some(text) = world.get::<Text>(entity) {
                 row.text_bytes += text.0.len();
             } else if let Some(text) = world.get::<TextSpan>(entity) {

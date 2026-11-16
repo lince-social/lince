@@ -20,11 +20,11 @@ pub(crate) fn retry(world: &mut World, record: &RecordBinding) {
     document.joined = false;
     document.joining = None;
     document.recovery_join = Some(format!("binding-rejoin-{}", nucleus::new_uid("op")));
-    document.inflight = None;
+    document.reset_dispatch();
     document.writable.clear();
     document.incoming.clear();
     document.cursors.clear();
-    document.presence_value = None;
+    document.presence = None;
     document.status = "Reconnecting Record… Your draft is kept.".into();
 }
 
@@ -56,7 +56,7 @@ mod tests {
         document.failed = true;
         document.joined = true;
         document.writable = vec!["body".into()];
-        document.inflight = Some((document.pending.front().unwrap().id.clone(), Instant::now()));
+        document.inflight = 1;
         let requests = document
             .pending
             .iter()
@@ -83,7 +83,7 @@ mod tests {
         assert!(!document.joined);
         assert!(document.joining.is_none());
         assert!(document.recovery_join.is_some());
-        assert!(document.inflight.is_none());
+        assert_eq!(document.inflight, 0);
         assert!(document.writable.is_empty());
         assert_eq!(
             document.doc.get_text("body").to_string(),

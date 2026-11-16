@@ -621,9 +621,14 @@ pub fn base(component: &Component) -> &Component {
 }
 
 pub fn edits(component: &Component) -> Edits {
+    edits_ref(component).cloned().unwrap_or_default()
+}
+
+/// Read an authored definition without copying its parts, defaults and actions.
+pub fn edits_ref(component: &Component) -> Option<&Edits> {
     match component {
-        Component::Authored { edits, .. } => edits.clone(),
-        _ => Edits::default(),
+        Component::Authored { edits, .. } => Some(edits),
+        _ => None,
     }
 }
 
@@ -631,11 +636,15 @@ pub fn rebind(
     component: &Component,
     records: &BTreeMap<String, String>,
 ) -> Result<Component, String> {
-    if records
-        .keys()
-        .any(|record| !component.records().contains(&record.as_str()))
-    {
-        return Err("Rebinding keys must be declared Record bindings in this item.".into());
+    if !records.is_empty() {
+        let mut declared = component.records();
+        declared.sort_unstable();
+        if records
+            .keys()
+            .any(|record| declared.binary_search(&record.as_str()).is_err())
+        {
+            return Err("Rebinding keys must be declared Record bindings in this item.".into());
+        }
     }
     fn replace(
         component: &mut Component,
@@ -689,7 +698,6 @@ pub fn rebind(
 }
 
 pub fn hash(value: &impl Serialize) -> Result<String, String> {
-    use sha2::{Digest, Sha256};
     fn canonical(value: serde_json::Value) -> serde_json::Value {
         match value {
             serde_json::Value::Object(values) => {
@@ -706,10 +714,9 @@ pub fn hash(value: &impl Serialize) -> Result<String, String> {
         }
     }
     let value = canonical(serde_json::to_value(value).map_err(|error| error.to_string())?);
-    Ok(
-        Sha256::digest(serde_json::to_vec(&value).map_err(|error| error.to_string())?)
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect(),
-    )
+    Ok(crate::json::sha256(&value)
+        .map_err(|error| error.to_string())?
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
 }

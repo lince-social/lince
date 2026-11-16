@@ -70,16 +70,20 @@ pub(super) fn hover_actions(world: &mut World) {
             && world
                 .get::<View>(owner)
                 .is_some_and(|view| view.pending.is_none());
-        world.entity_mut(entity).insert(if visible {
+        let visibility = if visible {
             Visibility::Inherited
         } else {
             Visibility::Hidden
-        });
-        if visible {
+        };
+        if world.get::<Visibility>(entity) != Some(&visibility) {
+            world.entity_mut(entity).insert(visibility);
+        }
+        let disabled = world.get::<bevy::ui::InteractionDisabled>(entity).is_some();
+        if visible && disabled {
             world
                 .entity_mut(entity)
                 .remove::<bevy::ui::InteractionDisabled>();
-        } else {
+        } else if !visible && !disabled {
             world
                 .entity_mut(entity)
                 .insert(bevy::ui::InteractionDisabled);
@@ -102,30 +106,37 @@ fn reset_columns(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn fit_columns(world: &mut World) {
+    let _fit = nucleus::performance::Span::new("karma-column-fitting");
     let mut widths = HashMap::<Entity, [f32; 6]>::new();
     let rows: Vec<_> = world
         .query::<(Entity, &TableRow, &Children)>()
         .iter(world)
-        .map(|(entity, row, children)| (entity, row.0, children.to_vec()))
-        .collect();
-    for (_, owner, children) in &rows {
-        let columns = widths
-            .entry(*owner)
-            .or_insert([29.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
-        for (index, child) in children.iter().take(6).enumerate().skip(1) {
-            if let Some(node) = world.get::<ComputedNode>(*child) {
-                columns[index] = columns[index].max(node.size().x * node.inverse_scale_factor());
+        .map(|(entity, row, children)| {
+            let columns = widths
+                .entry(row.0)
+                .or_insert([29.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+            for (index, child) in children.iter().take(6).enumerate().skip(1) {
+                if let Some(node) = world.get::<ComputedNode>(*child) {
+                    columns[index] =
+                        columns[index].max(node.size().x * node.inverse_scale_factor());
+                }
             }
-        }
-    }
-    for (entity, owner, _) in rows {
+            (entity, row.0)
+        })
+        .collect();
+    for (entity, owner) in rows {
         if let Some(widths) = widths.get(&owner)
             && widths.iter().all(|width| *width > 0.0)
         {
-            let tracks: Vec<_> = widths.iter().map(|width| GridTrack::px(*width)).collect();
-            let mut node = world.get_mut::<Node>(entity).unwrap();
-            if node.grid_template_columns != tracks {
-                node.grid_template_columns = tracks;
+            let tracks: [RepeatedGridTrack; 6] = widths.map(GridTrack::px);
+            if world
+                .get::<Node>(entity)
+                .unwrap()
+                .grid_template_columns
+                .as_slice()
+                != tracks.as_slice()
+            {
+                world.get_mut::<Node>(entity).unwrap().grid_template_columns = tracks.to_vec();
             }
         }
     }
@@ -228,36 +239,41 @@ impl Action for Command {
                 }
             }
             Self::SelectAll => {
-                let rules = visible_rules(world, owner);
+                let ids: Vec<_> = visible_rules(world, owner)
+                    .into_iter()
+                    .map(|rule| rule.uid.clone())
+                    .collect();
                 let mut view = world.get_mut::<View>(owner).unwrap();
-                let all = rules.iter().all(|rule| view.selected.contains(&rule.uid));
-                for rule in rules {
+                let all = ids.iter().all(|uid| view.selected.contains(uid));
+                for uid in ids {
                     if all {
-                        view.selected.remove(&rule.uid);
+                        view.selected.remove(&uid);
                     } else {
-                        view.selected.insert(rule.uid);
+                        view.selected.insert(uid);
                     }
                 }
             }
             Self::DeleteSelected => {
-                let rules = visible_rules(world, owner);
+                let selected = &world.get::<View>(owner).unwrap().selected;
+                let deleting = visible_rules(world, owner)
+                    .into_iter()
+                    .filter(|rule| selected.contains(&rule.uid))
+                    .map(|rule| rule.uid.clone())
+                    .collect();
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.pausing.clear();
-                view.deleting = rules
-                    .into_iter()
-                    .filter(|rule| view.selected.contains(&rule.uid))
-                    .map(|rule| rule.uid)
-                    .collect();
+                view.deleting = deleting;
             }
             Self::PauseSelected => {
-                let rules = visible_rules(world, owner);
+                let selected = &world.get::<View>(owner).unwrap().selected;
+                let pausing = visible_rules(world, owner)
+                    .into_iter()
+                    .filter(|rule| selected.contains(&rule.uid) && rule.state != "paused")
+                    .map(|rule| (rule.uid.clone(), rule.revision, true))
+                    .collect();
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.deleting.clear();
-                view.pausing = rules
-                    .into_iter()
-                    .filter(|rule| view.selected.contains(&rule.uid) && rule.state != "paused")
-                    .map(|rule| (rule.uid, rule.revision, true))
-                    .collect();
+                view.pausing = pausing;
             }
             Self::RequestPause(uid, revision, paused) => {
                 let mut view = world.get_mut::<View>(owner).unwrap();
@@ -832,7 +848,7 @@ pub(super) fn render_tools(world: &mut World, owner: Entity) {
     }
 }
 
-fn visible_rules(world: &World, owner: Entity) -> Vec<Rule> {
+fn visible_rules(world: &World, owner: Entity) -> Vec<&Rule> {
     let query = world
         .get::<KarmaCastle>(owner)
         .unwrap()
@@ -845,15 +861,15 @@ fn visible_rules(world: &World, owner: Entity) -> Vec<Rule> {
         .rules
         .iter()
         .filter(|rule| {
-            format!("{} {}", rule.name, rule.slug)
-                .to_lowercase()
-                .contains(&query)
+            query.is_empty()
+                || format!("{} {}", rule.name, rule.slug)
+                    .to_lowercase()
+                    .contains(&query)
                 || rule
                     .fields
                     .iter()
                     .any(|field| field.source.to_lowercase().contains(&query))
         })
-        .cloned()
         .collect()
 }
 
@@ -863,12 +879,16 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
     let castle = world.get::<KarmaCastle>(owner).unwrap();
     let creating = castle.draft.is_some();
     let editing = !castle.edits.is_empty();
-    let selected = visible_rules(world, owner)
-        .iter()
-        .any(|rule| view.selected.contains(&rule.uid));
-    let can_pause = visible_rules(world, owner)
-        .iter()
-        .any(|rule| view.selected.contains(&rule.uid) && rule.state != "paused");
+    let (selected, can_pause) = visible_rules(world, owner).into_iter().fold(
+        (false, false),
+        |(selected, can_pause), rule| {
+            let included = view.selected.contains(&rule.uid);
+            (
+                selected || included,
+                can_pause || included && rule.state != "paused",
+            )
+        },
+    );
     clear(world, controls);
     if selected && !creating && !editing {
         for (command, label) in [
@@ -910,22 +930,19 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
+    let _prepare = nucleus::performance::Span::new("karma-list-preparation");
     reset_columns(world, owner);
-    let known: HashSet<_> = world
-        .get::<View>(owner)
-        .unwrap()
-        .rules
-        .iter()
-        .map(|rule| rule.uid.clone())
-        .collect();
-    world
-        .get_mut::<View>(owner)
-        .unwrap()
-        .selected
-        .retain(|uid| known.contains(uid));
+    {
+        let mut view = world.get_mut::<View>(owner).unwrap();
+        let View {
+            rules, selected, ..
+        } = &mut *view;
+        let known: HashSet<_> = rules.iter().map(|rule| rule.uid.as_str()).collect();
+        selected.retain(|uid| known.contains(uid.as_str()));
+    }
     let view = world.get::<View>(owner).unwrap();
     let (list, busy, editing) = (view.list, view.pending.is_some(), view.editing.clone());
-    let rules = visible_rules(world, owner);
+    let rules: Vec<_> = visible_rules(world, owner).into_iter().cloned().collect();
     let castle = world.get::<KarmaCastle>(owner).unwrap();
     let edits = castle.edits.clone();
     let creating = castle.draft.is_some();
@@ -1261,30 +1278,49 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
 }
 
 pub(super) fn capture(world: &mut World, owner: Entity) {
-    let values: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
+    let _capture = nucleus::performance::Span::new("karma-field-capture");
+    let inputs: Vec<_> = world
+        .query::<(Entity, &Input, &EditableText)>()
         .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.row, input.index, text.value().to_string()))
+        .filter(|(_, input, _)| input.owner == owner)
+        .map(|(entity, input, _)| (entity, input.row, input.index))
         .collect();
-    let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
-    for (row, index, text) in values {
+    for (entity, row, index) in inputs {
+        let castle = world.get::<KarmaCastle>(owner).unwrap();
+        let Some(current) = draft(castle, row) else {
+            continue;
+        };
+        let text = world.get::<EditableText>(entity).unwrap().value();
+        if text == field_value(current, index) {
+            continue;
+        }
+        let text = text.to_string();
+        let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
         if let Some(draft) = draft_mut(&mut castle, row) {
-            set_value(draft, index, text);
+            set_value(draft, index, &text);
         }
     }
 }
 
-fn set_value(draft: &mut Draft, index: usize, text: String) {
+fn field_value(draft: &Draft, index: usize) -> &str {
     match index {
-        3 => draft.name = text,
-        4 => draft.slug = text,
+        3 => &draft.name,
+        4 => &draft.slug,
+        _ => &draft.fields[index].text,
+    }
+}
+
+fn set_value(draft: &mut Draft, index: usize, text: &str) {
+    if field_value(draft, index) == text {
+        return;
+    }
+    match index {
+        3 => text.clone_into(&mut draft.name),
+        4 => text.clone_into(&mut draft.slug),
         _ => {
             let field = &mut draft.fields[index];
-            if field.text != text {
-                field.linked = None;
-                field.text = text;
-            }
+            field.linked = None;
+            text.clone_into(&mut field.text);
         }
     }
 }
@@ -1340,12 +1376,14 @@ pub(super) fn inputs(world: &mut World) {
         let dismissed = input.dismissed;
         input.options.clear();
         input.selected = 0;
-        input.observed = text.clone();
+        if input.observed != text {
+            input.observed.clone_from(&text);
+        }
         input.dirty = false;
         input.focused = focused;
         input.selection = selection.clone();
         if let Some(draft) = draft_mut(&mut world.get_mut::<KarmaCastle>(owner).unwrap(), row) {
-            set_value(draft, index, text.clone());
+            set_value(draft, index, &text);
         }
         clear(world, suggestions);
         world.get_mut::<Node>(suggestions).unwrap().display = Display::None;

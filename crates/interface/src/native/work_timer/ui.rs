@@ -93,34 +93,43 @@ fn entry(world: &mut World, list: Entity, owner: Entity, value: Option<&Entry>) 
 }
 
 pub(super) fn reconcile(world: &mut World, owner: Entity) {
+    let _reconcile = nucleus::performance::Span::new("work-timer-form-reconciliation");
     let timer = world.get::<WorkTimer>(owner).unwrap();
     let Some(list) = timer.list else { return };
     let logs = timer.logs.clone();
     let enabled = timer.query.is_empty() || timer.binding.is_some();
-    world.get_mut::<Node>(list).unwrap().display = if enabled {
+    let display = if enabled {
         Display::Flex
     } else {
         Display::None
     };
+    if world.get::<Node>(list).unwrap().display != display {
+        world.get_mut::<Node>(list).unwrap().display = display;
+    }
     let forms: Vec<_> = world
         .query::<(Entity, &Form)>()
         .iter(world)
         .filter(|(_, form)| form.owner == owner)
         .map(|(entity, form)| (entity, form.id.clone()))
         .collect();
-    let mut ordered = Vec::new();
-    let mut logs = logs;
-    logs.sort_by_key(|entry| (entry.end.is_some(), std::cmp::Reverse(entry.start_time())));
-    for log in &logs {
-        let row = forms
-            .iter()
-            .find(|(_, id)| id.as_ref() == Some(&log.id))
-            .map(|(entity, _)| *entity)
+    let mut by_id = std::collections::HashMap::new();
+    for (entity, id) in &forms {
+        if let Some(id) = id {
+            by_id.entry(id.as_str()).or_insert(*entity);
+        }
+    }
+    let mut ordered = Vec::with_capacity(logs.entries().len() + 1);
+    for log in logs.ordered() {
+        let row = by_id
+            .get(log.id.as_str())
+            .copied()
             .unwrap_or_else(|| entry(world, list, owner, Some(log)));
         let form = world.get::<Form>(row).unwrap();
-        let values = values(world, form);
-        let observed = [log.start.clone(), log.end.clone().unwrap_or_default()];
-        if values == form.initial && form.initial != observed {
+        let end = log.end.as_deref().unwrap_or_default();
+        if (form.initial[0] != log.start || form.initial[1] != end)
+            && values_match(world, form, &form.initial)
+        {
+            let observed = [log.start.clone(), end.to_owned()];
             let (start, end) = (form.start, form.end);
             for (field, value) in [start, end].into_iter().zip(&observed) {
                 world
@@ -135,10 +144,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         ordered.push(row);
     }
     for (row, id) in &forms {
-        if id
-            .as_ref()
-            .is_some_and(|id| !logs.iter().any(|log| &log.id == id))
-        {
+        if id.as_ref().is_some_and(|id| !logs.contains(id)) {
             world.despawn(*row);
         }
     }
@@ -173,6 +179,13 @@ fn values(world: &World, form: &Form) -> [String; 2] {
     })
 }
 
+fn values_match(world: &World, form: &Form, expected: &[String; 2]) -> bool {
+    [form.start, form.end]
+        .into_iter()
+        .zip(expected)
+        .all(|(entity, value)| world.get::<EditableText>(entity).unwrap().value() == value.as_str())
+}
+
 pub(super) fn reset(world: &mut World, owner: Entity) {
     let forms: Vec<_> = world
         .query::<(Entity, &Form)>()
@@ -194,7 +207,7 @@ pub(super) fn finished(world: &mut World, form: Entity, submitted: [String; 2], 
     }
     if value.id.is_some() {
         world.get_mut::<Form>(form).unwrap().initial = submitted;
-    } else if values(world, value) == submitted {
+    } else if values_match(world, value, &submitted) {
         let fields = [value.start, value.end];
         for field in fields {
             world
@@ -243,14 +256,19 @@ pub(super) fn edits(world: &mut World, mut previous: Local<Option<Entity>>) {
             }
             let focused = focus.is_some_and(|focus| fields.contains(&focus));
             let blurred = previous.is_some_and(|focus| fields.contains(&focus)) && !focused;
-            let values = values(world, form);
-            (values != form.initial
-                && form.attempted.as_ref() != Some(&values)
-                && (form.id.is_some() || blurred || focused && enter)
-                && world
+            if !(form.id.is_some() || blurred || focused && enter)
+                || !world
                     .get::<WorkTimer>(form.owner)
-                    .is_some_and(|timer| timer.pending.is_none()))
-            .then_some((entity, form.owner, form.id.clone(), values))
+                    .is_some_and(|timer| timer.pending.is_none())
+                || values_match(world, form, &form.initial)
+                || form
+                    .attempted
+                    .as_ref()
+                    .is_some_and(|values| values_match(world, form, values))
+            {
+                return None;
+            }
+            Some((entity, form.owner, form.id.clone(), values(world, form)))
         })
         .collect();
     *previous = focus;
@@ -269,28 +287,15 @@ pub(super) fn edits(world: &mut World, mut previous: Local<Option<Entity>>) {
 }
 
 pub(super) fn tick(world: &mut World, now: chrono::DateTime<chrono::Utc>) {
+    let _tick = nucleus::performance::Span::new("work-timer-row-presentation");
     let rows: Vec<_> = world
         .query::<&Form>()
         .iter(world)
         .filter_map(|form| {
             let id = form.id.as_ref()?;
-            let entry = world
-                .get::<WorkTimer>(form.owner)?
-                .logs
-                .iter()
-                .find(|entry| &entry.id == id)?;
-            Some((
-                form.duration,
-                format!(
-                    "{}{}",
-                    if entry.end.is_none() {
-                        "Current · "
-                    } else {
-                        ""
-                    },
-                    formatted(entry.seconds(now))
-                ),
-            ))
+            let caption = world.get::<WorkTimer>(form.owner)?.logs.caption(id, now)?;
+            (world.get::<Text>(form.duration)?.0 != caption.as_ref())
+                .then(|| (form.duration, caption.into_owned()))
         })
         .collect();
     for (entity, value) in rows {

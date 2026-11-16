@@ -31,13 +31,13 @@ pub fn read_decimal(
     row: &sqlx::sqlite::SqliteRow,
     prefix: &str,
 ) -> Result<DecimalValue, StoreError> {
-    let mantissa: String = row
+    let mantissa: &str = row
         .try_get(format!("{prefix}_mantissa").as_str())
         .map_err(StoreError::from)?;
     let scale: i64 = row
         .try_get(format!("{prefix}_scale").as_str())
         .map_err(StoreError::from)?;
-    parse_decimal(&mantissa, scale)
+    parse_decimal(mantissa, scale)
 }
 
 pub fn parse_decimal(mantissa: &str, scale: i64) -> Result<DecimalValue, StoreError> {

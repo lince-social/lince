@@ -421,7 +421,7 @@ impl Engine {
                     );
                 }
                 let data = json!({"trust":result});
-                if serde_json::to_vec(&data)?.len() > nucleus::trust_analysis::MAX_BYTES {
+                if nucleus::json::encoded_len(&data)? > nucleus::trust_analysis::MAX_BYTES {
                     return Err(claim_invalid(
                         "The claim-check result exceeded its byte budget",
                     ));

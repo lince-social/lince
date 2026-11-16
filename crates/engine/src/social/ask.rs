@@ -29,7 +29,7 @@ pub(super) fn validate_reply(
 ) -> Result<(), EngineError> {
     if reply.id != request.id
         || reply.documents.len() > usize::from(request.results)
-        || serde_json::to_vec(&reply.documents)?.len() > request.bytes as usize
+        || nucleus::json::encoded_len(&reply.documents)? > request.bytes as usize
     {
         return Err(invalid("Contact answers exceed the assigned result budget"));
     }
@@ -50,7 +50,7 @@ pub(super) fn validate_reply(
 pub(super) fn clip(reply: &mut Reply, request: &Request) -> Result<(), EngineError> {
     let original = reply.documents.len();
     reply.documents.truncate(usize::from(request.results));
-    while serde_json::to_vec(&reply.documents)?.len() > request.bytes as usize {
+    while nucleus::json::encoded_len(&reply.documents)? > request.bytes as usize {
         if reply.documents.pop().is_none() {
             break;
         }

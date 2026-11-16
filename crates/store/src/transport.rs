@@ -180,7 +180,7 @@ async fn capacities_on(
             continue;
         }
         let item: TransferItem =
-            serde_json::from_str(&row.get::<String, _>("item_json")).map_err(invalid)?;
+            serde_json::from_str(row.get::<&str, _>("item_json")).map_err(invalid)?;
         let exchange = item
             .exchange
             .as_ref()

@@ -112,7 +112,7 @@ pub(super) fn prepare(
     }
     scenario.checks.clear();
     Ok(SimulationCastle {
-        scenario: serde_json::to_string_pretty(&scenario)?,
+        scenario: serde_json::to_string_pretty(&scenario)?.into(),
         current_database: true,
         selected_cell: "current".into(),
         through: chrono::DateTime::from_timestamp_millis(scenario.end_ms)
@@ -385,7 +385,7 @@ fn prepare_balance(balance: &Value, now: i64) -> simulation::Result<SimulationCa
     scenario.checks.clear();
     let first = forms.remove(0);
     Ok(SimulationCastle {
-        scenario: serde_json::to_string_pretty(&scenario)?,
+        scenario: serde_json::to_string_pretty(&scenario)?.into(),
         current_database: true,
         selected_cell: "current".into(),
         through: chrono::DateTime::from_timestamp_millis(scenario.end_ms)

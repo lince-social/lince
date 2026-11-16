@@ -514,6 +514,32 @@ pub async fn doc_tail(
     .collect())
 }
 
+/// Decide checkpoint admission without counting an arbitrarily long CRDT tail.
+/// Read the checkpoint and tail together on the writer's current transaction so
+/// an operation just appended by the caller participates in the same decision.
+pub async fn compaction_due_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record_uid: &str,
+    min_ops: i64,
+) -> Result<bool, StoreError> {
+    if min_ops <= 0 {
+        return Ok(true);
+    }
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1 FROM sync_op
+            WHERE tbl = 'record' AND kind = 'crdt' AND uid = ?
+              AND seq > COALESCE((SELECT through_seq FROM record_doc WHERE record_uid = ?), 0)
+            LIMIT 1 OFFSET ?
+        )",
+    )
+    .bind(record_uid)
+    .bind(record_uid)
+    .bind(min_ops - 1)
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
 pub async fn crdt_ops_since(
     pool: &SqlitePool,
     record_uid: &str,

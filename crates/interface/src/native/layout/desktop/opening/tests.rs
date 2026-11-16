@@ -158,14 +158,34 @@ fn initial_preferences_are_not_reapplied_by_title_focus_or_rule_changes() {
     let decision = capture(&world, &json!({"app_id":"org.example.Editor"}), None);
     world.entity_mut(application).insert((decision, ApplicationOpeningPending));
     crate::native::layout::engine::resolve(&mut world);
-    world.resource_mut::<Catalog>().rules.entries.insert(uid, entry(Payload::Rule(rule([2, 3]))));
+    world
+        .resource_mut::<Catalog>()
+        .rules
+        .entries
+        .insert(uid, entry(Payload::Rule(rule([2, 3]))));
     world.resource_mut::<Catalog>().advance();
     for index in 0..100 {
-        world.entity_mut(application).insert(crate::native::area::RecordProperties(json!({"head":format!("Document {index}"),"app_id":"org.example.Editor"})));
-        focus_item(&mut world, if index % 2 == 0 { application } else { native });
+        world
+            .entity_mut(application)
+            .insert(crate::native::area::RecordProperties(
+                json!({"head":format!("Document {index}"),"app_id":"org.example.Editor"}).into(),
+            ));
+        focus_item(
+            &mut world,
+            if index % 2 == 0 { application } else { native },
+        );
         crate::native::layout::engine::resolve(&mut world);
-        assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.item_width(id), Some(Width::Fraction(1, 3)));
-        assert!(world.get::<ApplicationOpeningPending>(application).is_none());
+        assert_eq!(
+            world.get::<Workspaces>(root).unwrap().entries[0]
+                .desktop
+                .item_width(id),
+            Some(Width::Fraction(1, 3))
+        );
+        assert!(
+            world
+                .get::<ApplicationOpeningPending>(application)
+                .is_none()
+        );
     }
     let decision = capture(&world, &json!({"app_id":"org.example.Editor"}), None);
     prepare_reapply(&mut world, root, 1, id, 1, &decision).unwrap().commit(&mut world).unwrap();

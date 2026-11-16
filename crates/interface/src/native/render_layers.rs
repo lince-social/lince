@@ -25,6 +25,7 @@ pub(crate) const FIOTE: Slots = Slots::new(48, 16);
 pub(crate) const SHADERS: Slots = Slots::new(64, 64);
 pub(crate) const OVERVIEW: Slots = Slots::new(128, 8);
 pub(crate) const MODELS: Slots = Slots::new(136, 16);
+pub(crate) const KAMALIE: Slots = Slots::new(152, 64);
 
 #[cfg(test)]
 mod tests {

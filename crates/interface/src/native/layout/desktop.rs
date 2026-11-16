@@ -14,6 +14,8 @@ use bevy::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 mod commands;
+mod publication;
+use publication::ResolvedItem;
 pub(crate) mod compact;
 pub(crate) mod scratch;
 pub mod control;
@@ -165,6 +167,12 @@ struct Runtime {
 
 #[derive(Resource)]
 struct ResolveQueries {
+    stamp: InfluenceStamp,
+    views: Vec<(Entity, u64, Rectangle, Rectangle, OutputId)>,
+    row_buffer: Vec<(Entity, CanvasItem, Option<SurfaceId>)>,
+    entity_buffer: Vec<Entity>,
+    outputs: Vec<OutputViewport>,
+    geometries: Vec<ResolvedItem>,
     roots: QueryState<(Entity, &'static Workspaces)>,
     managed: QueryState<(Entity, &'static ChildOf, &'static Managed)>,
     suppressed: QueryState<(Entity, &'static ChildOf), With<Suppressed>>,
@@ -189,6 +197,12 @@ struct ResolveQueries {
 impl FromWorld for ResolveQueries {
     fn from_world(world: &mut World) -> Self {
         Self {
+            stamp: InfluenceStamp::default(),
+            views: Vec::new(),
+            row_buffer: Vec::new(),
+            entity_buffer: Vec::new(),
+            outputs: Vec::new(),
+            geometries: Vec::new(),
             roots: QueryState::new(world),
             managed: QueryState::new(world),
             suppressed: QueryState::new(world),
@@ -199,7 +213,7 @@ impl FromWorld for ResolveQueries {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Default, PartialEq)]
 struct InfluenceStamp {
     sources: Vec<(Entity, [u32; 4])>,
     constraints: Vec<(Entity, u32)>,
@@ -208,66 +222,69 @@ struct InfluenceStamp {
     settings: u32,
 }
 
-fn influence_stamp(
+fn influence_stamp<'a>(
     world: &World,
-    queries: &mut ResolveQueries,
+    queries: &'a mut ResolveQueries,
     root: Entity,
     workspace: u64,
     bounds: Rectangle,
     entities: &BTreeMap<PlacementId, Entity>,
-) -> InfluenceStamp {
-    let mut sources: Vec<_> = queries.influences
-        .iter(world)
-        .filter(|(_, parent, member, area, filter, record, binding)| {
-            parent.parent() == root
-                && member.0 == workspace
-                && (area.is_some() || filter.is_some() || record.is_some() || binding.is_some())
-        })
-        .map(|(entity, _, _, area, filter, record, binding)| {
-            (
-                entity,
-                [
-                    area.map_or(0, |value| value.last_changed().get()),
-                    filter.map_or(0, |value| value.last_changed().get()),
-                    record.map_or(0, |value| value.last_changed().get()),
-                    binding.map_or(0, |value| value.last_changed().get()),
-                ],
-            )
-        })
-        .collect();
-    sources.sort_by_key(|(entity, _)| *entity);
-    InfluenceStamp {
-        sources,
-        constraints: entities
-            .values()
-            .map(|entity| {
-                (
-                    *entity,
-                    world
-                        .get_entity(*entity)
-                        .ok()
-                        .and_then(|entity| {
-                            entity
-                                .get_ref::<LayoutBox>()
-                                .map(|layout| layout.last_changed().get())
-                        })
-                        .unwrap_or(0),
-                )
+) -> &'a InfluenceStamp {
+    let _stamp = engine::performance::Span::new("desktop-influence-stamp");
+    let stamp = &mut queries.stamp;
+    stamp.sources.clear();
+    stamp.sources.extend(
+        queries
+            .influences
+            .iter_many(world, direct_children(world, root))
+            .filter(|(_, parent, member, area, filter, record, binding)| {
+                parent.parent() == root
+                    && member.0 == workspace
+                    && (area.is_some() || filter.is_some() || record.is_some() || binding.is_some())
             })
-            .collect(),
-        items: entities.keys().copied().collect(),
-        bounds: [
-            bounds.origin()[0],
-            bounds.origin()[1],
-            bounds.size()[0],
-            bounds.size()[1],
-        ],
-        settings: world.get_entity(root).ok().map_or(0, |entity| {
-            entity
-                .get_ref::<crate::native::workspace_config::WorkspaceSettings>()
-                .map_or(0, |settings| settings.last_changed().get())
-        }),
-    }
+            .map(|(entity, _, _, area, filter, record, binding)| {
+                (
+                    entity,
+                    [
+                        area.map_or(0, |value| value.last_changed().get()),
+                        filter.map_or(0, |value| value.last_changed().get()),
+                        record.map_or(0, |value| value.last_changed().get()),
+                        binding.map_or(0, |value| value.last_changed().get()),
+                    ],
+                )
+            }),
+    );
+    stamp.sources.sort_unstable_by_key(|(entity, _)| *entity);
+    stamp.constraints.clear();
+    stamp.constraints.extend(entities.values().map(|entity| {
+        (
+            *entity,
+            world
+                .get_entity(*entity)
+                .ok()
+                .and_then(|entity| {
+                    entity
+                        .get_ref::<LayoutBox>()
+                        .map(|layout| layout.last_changed().get())
+                })
+                .unwrap_or(0),
+        )
+    }));
+    stamp.items.clear();
+    stamp.items.extend(entities.keys().copied());
+    stamp.bounds = [
+        bounds.origin()[0],
+        bounds.origin()[1],
+        bounds.size()[0],
+        bounds.size()[1],
+    ];
+    stamp.settings = world.get_entity(root).ok().map_or(0, |entity| {
+        entity
+            .get_ref::<crate::native::workspace_config::WorkspaceSettings>()
+            .map_or(0, |settings| settings.last_changed().get())
+    });
+    engine::performance::add("desktop-influence-stamps-prepared", 1);
+    stamp
 }
 
 pub fn tiled(world: &World, entity: Entity) -> bool {
@@ -381,6 +398,17 @@ pub(crate) fn root(world: &World, mut entity: Entity) -> Option<Entity> {
     None
 }
 
+/// ChildOf/Children is Bevy's maintained relationship index. Resolve each phase
+/// against the current root instead of scanning unrelated workspace entities.
+fn direct_children(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
+    let children = world.get::<Children>(root);
+    engine::performance::add(
+        "desktop-root-children-sourced",
+        children.map_or(0, |children| children.len()) as u64,
+    );
+    children.into_iter().flat_map(|children| children.iter())
+}
+
 fn candidate(world: &World, entity: Entity) -> bool {
     !crate::native::inspection::excluded(world, entity)
         && (world.get::<ApplicationWindow>(entity).is_none()
@@ -412,6 +440,7 @@ fn candidate(world: &World, entity: Entity) -> bool {
 }
 
 pub(crate) fn resolve(world: &mut World) {
+    let _resolve = engine::performance::Span::new("desktop-layout-resolve");
     world.init_resource::<ResolveQueries>();
     world.resource_scope(|world, mut queries: Mut<ResolveQueries>| {
         resolve_queried(world, &mut queries);
@@ -423,53 +452,41 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
     world.init_resource::<Runtime>();
     world.init_resource::<PublishedGeometry>();
     let layout_settings = preferences::synchronize(world);
-    let roots: Vec<_> = queries.roots
-        .iter(world)
-        .flat_map(|(root, spaces)| {
-            if let Some(views) = world
-                .get_resource::<crate::native::output_views::OutputViews>()
-                .filter(|views| views.applies_to(root))
-            {
-                return views
-                    .outputs
+    queries.views.clear();
+    for (root, spaces) in queries.roots.iter(world) {
+        if let Some(views) = world
+            .get_resource::<crate::native::output_views::OutputViews>()
+            .filter(|views| views.applies_to(root))
+        {
+            for output in &views.outputs {
+                if spaces
+                    .entries
                     .iter()
-                    .filter_map(|output| {
-                        spaces
-                            .entries
-                            .iter()
-                            .any(|space| space.id == output.workspace)
-                            .then_some(())?;
-                        Some((
-                            root,
-                            output.workspace,
-                            output.bounds,
-                            output.usable?,
-                            output.id,
-                        ))
-                    })
-                    .collect::<Vec<_>>();
+                    .any(|space| space.id == output.workspace)
+                    && let Some(usable) = output.usable
+                {
+                    queries
+                        .views
+                        .push((root, output.workspace, output.bounds, usable, output.id));
+                }
             }
-            viewport(world, root)
-                .zip(usable(world, root))
-                .map(|(bounds, usable)| {
-                    (
-                        root,
-                        spaces.active,
-                        bounds,
-                        usable,
-                        world
-                            .get::<Output>(root)
-                            .map_or(OutputId(root.to_bits()), |output| output.0),
-                    )
-                })
-                .into_iter()
-                .collect()
-        })
-        .collect();
-    let mut outputs = Vec::new();
-    let mut geometries = Vec::new();
+        } else if let Some((bounds, usable)) = viewport(world, root).zip(usable(world, root)) {
+            queries.views.push((
+                root,
+                spaces.active,
+                bounds,
+                usable,
+                world
+                    .get::<Output>(root)
+                    .map_or(OutputId(root.to_bits()), |output| output.0),
+            ));
+        }
+    }
+    queries.outputs.clear();
+    queries.geometries.clear();
     let mut focused = None;
-    for (root, active, bounds, usable, output) in roots {
+    for view_index in 0..queries.views.len() {
+        let (root, active, bounds, usable, output) = queries.views[view_index];
         let focused_view = world.get::<Workspaces>(root).unwrap().active == active;
         let restoring_free = world
             .resource_mut::<Runtime>()
@@ -497,20 +514,28 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 .find(|workspace| workspace.id == active)
                 .is_none_or(|workspace| workspace.desktop.items().is_empty())
         {
-            let managed: Vec<_> = queries.managed
-                .iter(world)
-                .filter(|(_, parent, _)| parent.parent() == root)
-                .map(|(entity, _, _)| entity)
-                .collect();
-            for entity in managed {
+            queries.entity_buffer.clear();
+            queries.entity_buffer.extend(
+                queries
+                    .managed
+                    .iter_many(world, direct_children(world, root))
+                    .filter(|(_, parent, _)| parent.parent() == root)
+                    .map(|(entity, _, _)| entity),
+            );
+            for index in 0..queries.entity_buffer.len() {
+                let entity = queries.entity_buffer[index];
                 world.entity_mut(entity).remove::<Managed>();
             }
-            let hidden: Vec<_> = queries.suppressed
-                .iter(world)
-                .filter(|(_, parent)| parent.parent() == root)
-                .map(|(entity, _)| entity)
-                .collect();
-            for entity in hidden {
+            queries.entity_buffer.clear();
+            queries.entity_buffer.extend(
+                queries
+                    .suppressed
+                    .iter_many(world, direct_children(world, root))
+                    .filter(|(_, parent)| parent.parent() == root)
+                    .map(|(entity, _)| entity),
+            );
+            for index in 0..queries.entity_buffer.len() {
+                let entity = queries.entity_buffer[index];
                 world.entity_mut(entity).remove::<Suppressed>();
             }
             world
@@ -530,29 +555,46 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
             };
             std::mem::take(&mut workspace.desktop)
         };
-        let mut rows: Vec<_> = queries.items
-            .iter(world)
-            .filter(|(entity, _, parent, member)| {
-                parent.parent() == root && member.0 == active && candidate(world, *entity)
-            })
-            .map(|(entity, item, _, _)| (entity, *item))
-            .collect();
-        rows.sort_by(|(a, first), (b, second)| {
-            let first_window = world.get::<ApplicationWindow>(*a).map(|window| window.surface);
-            let second_window = world.get::<ApplicationWindow>(*b).map(|window| window.surface);
-            first.position.x.total_cmp(&second.position.x)
-                .then_with(|| first.position.y.total_cmp(&second.position.y))
-                .then_with(|| first_window.is_some().cmp(&second_window.is_some()))
-                .then_with(|| first_window.cmp(&second_window))
-                .then_with(|| a.index_u32().cmp(&b.index_u32()))
-        });
+        queries.row_buffer.clear();
+        queries.row_buffer.extend(
+            queries
+                .items
+                .iter_many(world, direct_children(world, root))
+                .filter(|(entity, _, parent, member)| {
+                    parent.parent() == root && member.0 == active && candidate(world, *entity)
+                })
+                .map(|(entity, item, _, _)| {
+                    (
+                        entity,
+                        *item,
+                        world
+                            .get::<ApplicationWindow>(entity)
+                            .map(|window| window.surface),
+                    )
+                }),
+        );
+        // Entity indices are unique within the live query, so this is a total
+        // ordering. Cache application identity before sorting, not per compare.
+        queries.row_buffer.sort_unstable_by(
+            |(a, first, first_window), (b, second, second_window)| {
+                first
+                    .position
+                    .x
+                    .total_cmp(&second.position.x)
+                    .then_with(|| first.position.y.total_cmp(&second.position.y))
+                    .then_with(|| first_window.is_some().cmp(&second_window.is_some()))
+                    .then_with(|| first_window.cmp(second_window))
+                    .then_with(|| a.index_u32().cmp(&b.index_u32()))
+            },
+        );
         let mut entities = BTreeMap::new();
         let mut inserted = false;
-        let previous = world.resource_mut::<Runtime>().seen.remove(&(root, active));
+        let mut previous = world.resource_mut::<Runtime>().seen.remove(&(root, active));
         if previous.is_none() {
-            let live: BTreeSet<_> = rows
+            let live: BTreeSet<_> = queries
+                .row_buffer
                 .iter()
-                .filter_map(|(entity, _)| world.get::<LayoutBox>(*entity))
+                .filter_map(|(entity, _, _)| world.get::<LayoutBox>(*entity))
                 .map(|layout| PlacementId(layout.id))
                 .collect();
             let stale: Vec<_> = model
@@ -565,7 +607,8 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 model.remove(id);
             }
         }
-        for (entity, item) in rows {
+        for row_index in 0..queries.row_buffer.len() {
+            let (entity, item, _) = queries.row_buffer[row_index];
             if world.get::<LayoutBox>(entity).is_none() {
                 let mut layout = LayoutBox::new(item.size);
                 if crate::native::protein_area::uses_content_height(world, entity) {
@@ -578,19 +621,27 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
             if entities.insert(id, entity).is_some() {
                 continue;
             }
-            let mut floating = model
+            let previous_item = model
                 .items()
                 .iter()
-                .any(|item| item.id == id && item.floating);
+                .find(|item| item.id == id)
+                .map(|item| (item.floating, item.free));
+            let mut floating = previous_item.is_some_and(|(floating, _)| floating);
+            let mut current = previous_item.map(|(_, geometry)| geometry);
             if !floating
                 && world.get::<TransientParent>(entity).is_some()
-                && model.items().iter().any(|item| item.id == id)
+                && current.is_some()
                 && let Some(rectangle) = Rectangle::new(
                     (item.position - item.size.as_dvec2() * 0.5).to_array(),
                     item.size.as_dvec2().to_array(),
                 )
             {
                 floating = model.toggle_floating(id, rectangle).is_ok();
+                current = model
+                    .items()
+                    .iter()
+                    .find(|item| item.id == id)
+                    .map(|item| item.free);
             }
             let origin = item.position
                 - item.size.as_dvec2() * 0.5
@@ -608,12 +659,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 origin: (item.position - item.size.as_dvec2() * 0.5).to_array(),
                 size: item.size.as_dvec2().to_array(),
             };
-            if let Some(current) = model
-                .items()
-                .iter()
-                .find(|item| item.id == id)
-                .map(|item| item.free)
-            {
+            if let Some(current) = current {
                 world
                     .entity_mut(entity)
                     .remove::<ApplicationOpeningPending>();
@@ -707,59 +753,62 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 );
             }
         }
-        if let Some(previous) = previous {
-            for id in previous.difference(&entities.keys().copied().collect()) {
-                model.remove(*id);
-            }
+        if let Some(previous) = &mut previous {
+            previous.retain(|id| {
+                if entities.contains_key(id) {
+                    true
+                } else {
+                    model.remove(*id);
+                    false
+                }
+            });
         }
-        let stamp = influence_stamp(world, queries, root, active, usable, &entities);
-        if mode != WorkspaceLayout::Free
-            && world.resource::<Runtime>().influences.get(&(root, active)) != Some(&stamp)
-        {
+        let influences_changed = mode != WorkspaceLayout::Free && {
+            let stamp = influence_stamp(world, queries, root, active, usable, &entities);
+            world.resource::<Runtime>().influences.get(&(root, active)) != Some(stamp)
+        };
+        if influences_changed {
             if let Ok(solution) = model.solve(usable, bounds) {
                 for item in &solution.items {
                     if let Some(entity) = entities.get(&item.id)
                         && let Some(mut canvas) = world.get_mut::<CanvasItem>(*entity)
                     {
-                        canvas.position =
-                            bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
-                                item.rectangle.origin()[axis]
-                                    + solution.scroll[axis]
-                                    + item.rectangle.size()[axis] * 0.5
-                            }));
-                        canvas.size =
-                            bevy::math::DVec2::from_array(item.rectangle.size()).as_vec2();
+                        let position = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
+                            item.rectangle.origin()[axis]
+                                + solution.scroll[axis]
+                                + item.rectangle.size()[axis] * 0.5
+                        }));
+                        let size = bevy::math::DVec2::from_array(item.rectangle.size()).as_vec2();
+                        if canvas.position != position || canvas.size != size {
+                            canvas.position = position;
+                            canvas.size = size;
+                        }
                     }
                 }
             }
             crate::native::area_effects::refresh(world);
-            let inputs: Vec<_> = entities
-                .iter()
-                .map(|(id, entity)| {
-                    let item = world.get::<CanvasItem>(*entity).unwrap();
-                    let input = world
-                        .resource::<crate::native::area_effects::Influences>()
-                        .layout_input(
-                            *entity,
-                            root,
-                            active,
-                            item.position,
-                            world.get::<crate::native::area::RecordProperties>(*entity),
-                            world.get::<crate::native::protein_area::RecordBinding>(*entity),
-                        );
-                    (*id, input)
-                })
-                .collect();
-            for (id, input) in inputs {
-                let _ = model.influence(id, input);
+            for (id, entity) in &entities {
+                let item = world.get::<CanvasItem>(*entity).unwrap();
+                let input = world
+                    .resource::<crate::native::area_effects::Influences>()
+                    .layout_input(
+                        *entity,
+                        root,
+                        active,
+                        item.position,
+                        world.get::<crate::native::area::RecordProperties>(*entity),
+                        world.get::<crate::native::protein_area::RecordBinding>(*entity),
+                    );
+                let _ = model.influence(*id, input);
             }
             if let Some(id) = model.focused().filter(|_| model.fullscreen().is_none()) {
                 let _ = model.focus(id, usable);
             }
-            world
+            let previous = world
                 .resource_mut::<Runtime>()
                 .influences
-                .insert((root, active), stamp);
+                .insert((root, active), std::mem::take(&mut queries.stamp));
+            queries.stamp = previous.unwrap_or_default();
         }
         tiling::resolve_focus(world, root, active, &mut model, &entities, usable);
         match model.solve(usable, bounds) {
@@ -778,21 +827,33 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                     solution.focused = model.focused();
                 }
                 let fullscreen = model.fullscreen().and_then(|id| entities.get(&id).copied());
-                let members: Vec<_> = queries.members
-                    .iter(world)
-                    .filter(|(entity, parent, member)| {
-                        parent.parent() == root
-                            && member.0 == active
-                            && world.get::<CanvasItem>(*entity).is_some()
-                    })
-                    .map(|(entity, _, _)| entity)
-                    .collect();
-                for entity in members {
-                    let compact = world.get::<LayoutBox>(entity).and_then(|layout| model.compact_viewport(PlacementId(layout.id), usable, &solution))
+                queries.entity_buffer.clear();
+                queries.entity_buffer.extend(
+                    queries
+                        .members
+                        .iter_many(world, direct_children(world, root))
+                        .filter(|(entity, parent, member)| {
+                            parent.parent() == root
+                                && member.0 == active
+                                && world.get::<CanvasItem>(*entity).is_some()
+                        })
+                        .map(|(entity, _, _)| entity),
+                );
+                for index in 0..queries.entity_buffer.len() {
+                    let entity = queries.entity_buffer[index];
+                    let compact = world
+                        .get::<LayoutBox>(entity)
+                        .and_then(|layout| {
+                            model.compact_viewport(PlacementId(layout.id), usable, &solution)
+                        })
                         .map(|size| CompactViewport(bevy::math::DVec2::from_array(size).as_vec2()));
                     if let Some(compact) = compact {
-                        if world.get::<CompactViewport>(entity) != Some(&compact) { world.entity_mut(entity).insert(compact); }
-                    } else if world.get::<CompactViewport>(entity).is_some() { world.entity_mut(entity).remove::<CompactViewport>(); }
+                        if world.get::<CompactViewport>(entity) != Some(&compact) {
+                            world.entity_mut(entity).insert(compact);
+                        }
+                    } else if world.get::<CompactViewport>(entity).is_some() {
+                        world.entity_mut(entity).remove::<CompactViewport>();
+                    }
                     if transients::minimized(world, entity, &model)
                         || fullscreen.is_some_and(|focused| {
                             focused != entity && !transients::descendant(world, entity, focused)
@@ -851,7 +912,9 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                     canvas.center = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
                         bounds.size()[axis] * 0.5 + solution.scroll[axis]
                     }));
-                    if entered_normalized { canvas.zoom = 1.0; }
+                    if entered_normalized {
+                        canvas.zoom = 1.0;
+                    }
                     world
                         .resource_mut::<Runtime>()
                         .views
@@ -878,7 +941,8 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                         space.zoom = canvas.zoom;
                     }
                 }
-                outputs.push(OutputViewport { rotation: Default::default(),
+                queries.outputs.push(OutputViewport {
+                    rotation: Default::default(),
                     id: output,
                     bounds,
                     usable: Some(usable),
@@ -981,7 +1045,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                         ) else {
                             continue;
                         };
-                        geometries.push(ItemGeometry {
+                        queries.geometries.push(ResolvedItem {
                             id,
                             output,
                             mapping: ContentMapping {
@@ -990,7 +1054,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                                 surface,
                             },
                             floating: managed.floating,
-                            clip: compact_polygon(world, entity, canvas),
+                            clip: compact_corners(world, entity, canvas),
                         });
                         if focused_view && solution.focused == Some(item.id) {
                             focused = Some(id);
@@ -1004,10 +1068,14 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 "The workspace layout is invalid.",
             ),
         }
+        let mut seen = previous.unwrap_or_default();
+        for id in entities.keys() {
+            seen.insert(*id);
+        }
         world
             .resource_mut::<Runtime>()
             .seen
-            .insert((root, active), entities.keys().copied().collect());
+            .insert((root, active), seen);
         let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
         if let Some(workspace) = spaces
             .entries
@@ -1017,106 +1085,20 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
             workspace.desktop = model;
         }
     }
-    let previous = &world.resource::<PublishedGeometry>().0;
-    let unchanged = previous.as_ref().is_some_and(|previous| {
-        previous.outputs == outputs && previous.items == geometries && previous.focused == focused
-    });
-    if !unchanged {
-        let revision = previous
-            .as_ref()
-            .map_or(1, |previous| previous.revision.saturating_add(1));
-        world.resource_mut::<PublishedGeometry>().0 = Some(GeometrySnapshot {
-            revision,
-            outputs,
-            items: geometries,
-            focused,
-        });
-    }
+    publication::publish_resolved(world, &mut queries.outputs, &queries.geometries, focused);
 }
 
 pub(super) fn publish(world: &mut World) {
-    let Some(mut snapshot) = world
-        .get_resource::<PublishedGeometry>()
-        .and_then(|geometry| geometry.0.clone())
-    else {
-        return;
-    };
-    let entities: BTreeMap<_, _> = world
-        .query::<(
-            Entity,
-            &Managed,
-            &ChildOf,
-            &WorkspaceMember,
-            Option<&ApplicationWindow>,
-        )>()
-        .iter(world)
-        .map(|(entity, managed, parent, member, application)| {
-            (
-                application.map_or(ItemId::Native(managed.id.0), |application| {
-                    ItemId::Application(application.surface)
-                }),
-                (entity, parent.parent(), member.0),
-            )
-        })
-        .collect();
-    for geometry in &mut snapshot.items {
-        let Some((entity, root, workspace)) = entities.get(&geometry.id).copied() else {
-            continue;
-        };
-        let Some(output) = snapshot
-            .outputs
-            .iter()
-            .find(|output| output.id == geometry.output && output.workspace == workspace)
-        else {
-            continue;
-        };
-        let Some(item) = crate::native::canvas::presented(world, entity) else {
-            continue;
-        };
-        let view = crate::native::output_views::canvas(world, root, workspace);
-        let (offset, _) = super::viewport::clip(world, entity);
-        let scale = if world
-            .get::<Managed>(entity)
-            .is_some_and(|managed| managed.floating)
-        {
-            f64::from(
-                world
-                    .get::<crate::native::area_effects::AreaScale>(entity)
-                    .map_or(1.0, |scale| scale.0),
-            )
-        } else {
-            1.0
-        };
-        let size = item.size.as_dvec2() * scale;
-        if let Some(rectangle) = Rectangle::new(
-            ((item.position - offset.as_dvec2() - view.center - size * 0.5) * view.zoom
-                + bevy::math::DVec2::from_array(output.bounds.size()) * 0.5)
-                .to_array(),
-            (size * view.zoom).to_array(),
-        ) {
-            geometry.mapping.canvas = rectangle;
-            if world.get::<CompactViewport>(entity).is_some() || world.get::<CompactViewportPreview>(entity).is_some() { geometry.clip = compact_polygon(world, entity, rectangle); }
-        }
-        if matches!(geometry.id, ItemId::Native(_))
-            && let Some(surface) = Rectangle::new([0.0; 2], item.size.as_dvec2().to_array())
-        {
-            geometry.mapping.surface = surface;
-        }
-    }
-    let previous = world.resource::<PublishedGeometry>().0.as_ref().unwrap();
-    if previous.items != snapshot.items {
-        snapshot.revision = previous.revision.saturating_add(1);
-        world.resource_mut::<PublishedGeometry>().0 = Some(snapshot);
-    }
+    publication::publish(world);
 }
 
-fn compact_polygon(world: &World, entity: Entity, canvas: Rectangle) -> Option<Vec<Vec<[f64; 2]>>> {
+fn compact_corners(world: &World, entity: Entity, canvas: Rectangle) -> Option<[[f64; 2]; 4]> {
     let viewport = compact_extent(world, entity)?;
     let item = crate::native::canvas::presented(world, entity)?;
     let extent = viewport.min(item.size) / item.size;
     let origin = canvas.origin();
     let size = std::array::from_fn::<_, 2, _>(|axis| canvas.size()[axis] * f64::from(extent[axis]));
-    Some(vec![vec![origin, [origin[0] + size[0], origin[1]], [origin[0] + size[0], origin[1] + size[1]], [origin[0], origin[1] + size[1]]]])
+    Some([origin, [origin[0] + size[0], origin[1]], [origin[0] + size[0], origin[1] + size[1]], [origin[0], origin[1] + size[1]]])
 }
 
 impl crate::native::actions::Action for DesktopAction {
@@ -1425,7 +1407,7 @@ pub(crate) mod tests {
         world
             .entity_mut(first)
             .insert(crate::native::area::RecordProperties(
-                serde_json::json!({"head": "Updated window Record"}),
+                serde_json::json!({"head": "Updated window Record"}).into(),
             ));
         resolve(&mut world);
         assert_eq!(

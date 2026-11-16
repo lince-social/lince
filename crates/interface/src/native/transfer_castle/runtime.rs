@@ -208,21 +208,27 @@ pub(super) fn receive(
                 ui::capture(world, owner);
                 match kind.as_str() {
                     "transfers" => {
-                        let context = rows
-                            .iter()
-                            .find(|row| row["kind"] == "transfer_context")
-                            .cloned();
-                        let fresh: Vec<_> = rows
-                            .into_iter()
-                            .filter(|row| row["kind"] != "transfer_context").cloned()
-                            .collect();
-                        let view = world.get::<View>(owner).unwrap();
-                        if view.ready
-                            && view.rows == fresh
-                            && context.as_ref() == Some(&view.context)
-                        {
-                            continue;
-                        }
+                        let (context, fresh) = {
+                            let _preparation =
+                                nucleus::performance::Span::new("transfer-snapshot-preparation");
+                            let context = rows.iter().find(|row| row["kind"] == "transfer_context");
+                            let fresh = rows.iter().filter(|row| row["kind"] != "transfer_context");
+                            let view = world.get::<View>(owner).unwrap();
+                            if view.ready
+                                && view.rows.iter().eq(fresh.clone())
+                                && context == Some(&view.context)
+                            {
+                                nucleus::performance::add("transfer-snapshot-duplicates", 1);
+                                continue;
+                            }
+                            let context = context.cloned();
+                            let fresh: Vec<_> = fresh.cloned().collect();
+                            nucleus::performance::add(
+                                "transfer-snapshot-rows-prepared",
+                                fresh.len() as u64,
+                            );
+                            (context, fresh)
+                        };
                         let mut view = world.get_mut::<View>(owner).unwrap();
                         view.ready = context.is_some();
                         let viewer_changed = context.as_ref().map(|context| &context["viewer"])

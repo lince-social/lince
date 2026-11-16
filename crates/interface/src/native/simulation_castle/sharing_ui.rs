@@ -1,6 +1,6 @@
 use super::*;
 use nucleus::simulation::sharing::{Assumption, Kind, SelectedResult, Shared};
-use simulation::scenario::{Event, Scenario};
+use simulation::scenario::Event;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -43,17 +43,21 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     let model = world.get::<SimulationCastle>(owner).unwrap().clone();
     let view = world.get::<View>(owner).unwrap();
     let parent = view.sharing;
-    let saved = view.bundle.is_some();
-    let scenario = view
-        .bundle
+    let bundle = view.bundle.clone();
+    let saved = bundle.is_some();
+    let live = if saved {
+        None
+    } else {
+        model.scenario.parsed().ok()
+    };
+    let scenario = bundle
         .as_ref()
-        .map(|bundle| bundle.scenario.clone())
-        .or_else(|| serde_json::from_str::<Scenario>(&model.scenario).ok());
-    let coverage = view
-        .bundle
+        .map(|bundle| &bundle.scenario)
+        .or(live.as_deref());
+    let coverage = bundle
         .as_ref()
-        .map(|bundle| bundle.result.coverage.clone())
-        .unwrap_or_default();
+        .map(|bundle| bundle.result.coverage.as_slice())
+        .unwrap_or(&[]);
     world.entity_mut(parent).despawn_children();
     crate::native::edit_mode::label(
         world,
@@ -145,11 +149,17 @@ pub(super) fn apply(command: &Command, world: &mut World, owner: Entity) -> simu
         }
         Command::Preview => {
             let view = world.get::<View>(owner).unwrap();
+            let live = if view.bundle.is_none() {
+                Some(model.scenario.parsed()?)
+            } else {
+                None
+            };
             let scenario = view
                 .bundle
                 .as_ref()
-                .map(|bundle| bundle.scenario.clone())
-                .map_or_else(|| serde_json::from_str::<Scenario>(&model.scenario), Ok)?;
+                .map(|bundle| &bundle.scenario)
+                .or(live.as_deref())
+                .unwrap();
             let mut assumptions = Vec::new();
             let mut binding = None;
             for index in &model.sharing.assumptions {

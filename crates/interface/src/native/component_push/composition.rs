@@ -28,7 +28,7 @@ pub(crate) fn bind_events(
         .map(|binding| {
             Ok((
                 binding.event.clone(),
-                serde_json::from_value::<engine::actions::Action>(binding.action.clone())
+                engine::actions::Action::deserialize(&binding.action)
                     .map_err(|error| error.to_string())?,
             ))
         })
@@ -233,7 +233,7 @@ fn populate_validated(
                     })
                 {
                     for (id, value) in &part.settings {
-                        let value = serde_json::from_value(value.clone())
+                        let value = serde::Deserialize::deserialize(value)
                             .map_err(|error| error.to_string())?;
                         crate::native::sand_settings::set(world, text, id, Some(value));
                     }

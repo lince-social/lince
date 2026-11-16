@@ -4,7 +4,7 @@ use bevy::{
     text::{FontCx, LayoutCx},
 };
 use cell::{ClientMessage, ServerMessage};
-use std::ops::Range;
+use std::{ops::Range, sync::Arc};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Mention {
@@ -19,12 +19,46 @@ struct Candidate {
     head: String,
 }
 
+struct PreparedCandidate {
+    row: Candidate,
+    slug: String,
+    head: String,
+    uid: String,
+}
+
+impl PreparedCandidate {
+    fn new(row: Candidate) -> Self {
+        Self {
+            slug: row.slug.to_lowercase(),
+            head: row.head.to_lowercase(),
+            uid: row.uid.to_lowercase(),
+            row,
+        }
+    }
+}
+
+struct Rendered {
+    options: Arc<[Candidate]>,
+    selected: usize,
+    error: Option<String>,
+    loaded: bool,
+}
+
+impl Rendered {
+    fn matches(&self, draft: &Draft) -> bool {
+        self.selected == draft.selected
+            && self.error == draft.error
+            && self.loaded == draft.loaded
+            && (Arc::ptr_eq(&self.options, &draft.options) || self.options == draft.options)
+    }
+}
+
 #[derive(Component, Default)]
 struct Draft {
     text: String,
     links: Vec<Mention>,
-    rows: Vec<Candidate>,
-    options: Vec<Candidate>,
+    rows: Vec<PreparedCandidate>,
+    options: Arc<[Candidate]>,
     filter: Option<String>,
     query: Option<Range<usize>>,
     dismissed: Option<(String, usize)>,
@@ -33,7 +67,7 @@ struct Draft {
     subscription: Option<String>,
     error: Option<String>,
     loaded: bool,
-    rendered: String,
+    rendered: Option<Rendered>,
 }
 
 #[derive(Resource, Default)]
@@ -129,28 +163,29 @@ fn query(text: &str, caret: usize) -> Option<Range<usize>> {
     (code == 0).then_some(start..caret)
 }
 
-fn candidates(rows: &[Candidate], query: &str) -> Vec<Candidate> {
+fn candidates(rows: &[PreparedCandidate], query: &str) -> Arc<[Candidate]> {
+    let _preparation = nucleus::performance::Span::new("mention-candidate-selection");
     let query = query.to_lowercase();
     let mut result: Vec<_> = rows
         .iter()
         .filter(|row| {
-            row.slug.to_lowercase().contains(&query)
-                || row.head.to_lowercase().contains(&query)
-                || row.uid.to_lowercase().contains(&query)
+            row.slug.contains(&query) || row.head.contains(&query) || row.uid.contains(&query)
         })
-        .cloned()
         .collect();
-    result.sort_by_key(|row| {
-        let slug = row.slug.to_lowercase();
-        (
-            slug != query,
-            !slug.starts_with(&query),
-            row.head.to_lowercase(),
-            row.uid.clone(),
-        )
+    result.sort_by(|left, right| {
+        let rank = |row: &PreparedCandidate| (row.slug != query, !row.slug.starts_with(&query));
+        rank(left)
+            .cmp(&rank(right))
+            .then_with(|| left.head.cmp(&right.head))
+            .then_with(|| left.row.uid.cmp(&right.row.uid))
     });
     result.truncate(12);
+    nucleus::performance::add("mention-candidates-materialized", result.len() as u64);
     result
+        .into_iter()
+        .map(|prepared| prepared.row.clone())
+        .collect::<Vec<_>>()
+        .into()
 }
 
 pub(super) fn body(world: &mut World, input: Entity, text: &str) -> String {
@@ -199,11 +234,11 @@ pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
         draft.rows = rows
             .iter()
             .filter_map(|row| {
-                Some(Candidate {
+                Some(PreparedCandidate::new(Candidate {
                     uid: row["uid"].as_str()?.into(),
                     slug: row["slug"].as_str().unwrap_or("").into(),
                     head: row["head"].as_str().unwrap_or("").into(),
-                })
+                }))
             })
             .collect();
     }
@@ -211,6 +246,7 @@ pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
 }
 
 pub(super) fn sync(world: &mut World) {
+    let _sync = nucleus::performance::Span::new("mention-input-preparation");
     let focused = world
         .get_resource::<InputFocus>()
         .and_then(|focus| focus.get());
@@ -218,24 +254,19 @@ pub(super) fn sync(world: &mut World) {
         .query::<(Entity, &ThreadForm)>()
         .iter(world)
         .filter(|(_, form)| form.thread.is_some())
-        .map(|(form, state)| {
-            (
-                form,
-                state.input,
-                state.binding.clone(),
-                state.pending.is_some(),
-            )
-        })
+        .map(|(form, state)| (form, state.input, state.pending.is_some()))
         .collect();
-    for (form, input, binding, pending) in forms {
+    for (form, input, pending) in forms {
         let Some(mut draft) = world.entity_mut(input).take::<Draft>() else {
             continue;
         };
         let editor = world.get::<EditableText>(input).unwrap();
-        let text = editor.value().to_string();
         let caret = editor.editor.raw_selection().focus().index();
         let composing = editor.is_composing();
-        reconcile(&mut draft, &text);
+        let value = editor.value();
+        if value != draft.text.as_str() {
+            reconcile(&mut draft, &value.to_cow());
+        }
         let mut focus = focused;
         let mut picker_focused = false;
         while let Some(entity) = focus {
@@ -248,9 +279,12 @@ pub(super) fn sync(world: &mut World) {
         let active = if (focused == Some(input) || picker_focused)
             && !pending
             && !composing
-            && draft.dismissed.as_ref() != Some(&(text.clone(), caret))
+            && !draft
+                .dismissed
+                .as_ref()
+                .is_some_and(|(text, index)| text == &draft.text && *index == caret)
         {
-            query(&text, caret).filter(|range| {
+            query(&draft.text, caret).filter(|range| {
                 !draft
                     .links
                     .iter()
@@ -265,7 +299,9 @@ pub(super) fn sync(world: &mut World) {
         draft.query = active;
         if let Some(range) = &draft.query {
             if draft.subscription.is_none() {
-                if let Some(sender) = crate::native::protein_area::editor_sender(world, &binding) {
+                if let Some(sender) = world.get::<ThreadForm>(form).and_then(|form| {
+                    crate::native::protein_area::editor_sender(world, &form.binding)
+                }) {
                     let id = nucleus::new_uid("mention");
                     let protein = serde_json::from_value(serde_json::json!({
                         "source":"record", "fields":["uid","head","slug"], "limit":null
@@ -293,7 +329,7 @@ pub(super) fn sync(world: &mut World) {
                     draft.error = Some("Record search is disconnected.".into());
                 }
             }
-            let filter = &text[range.start + 1..range.end];
+            let filter = &draft.text[range.start + 1..range.end];
             if draft.filter.as_deref() != Some(filter) {
                 draft.options = candidates(&draft.rows, filter);
                 draft.filter = Some(filter.into());
@@ -301,42 +337,54 @@ pub(super) fn sync(world: &mut World) {
             draft.selected = draft.selected.min(draft.options.len().saturating_sub(1));
             render(world, form, input, &mut draft);
         } else {
-            draft.options.clear();
+            if !draft.options.is_empty() {
+                draft.options = Arc::default();
+            }
             draft.filter = None;
             draft.subscription = None;
             draft.rows.clear();
-            draft.rendered.clear();
+            draft.rendered = None;
             if let Some(popup) = draft.popup.take() {
                 world.despawn(popup);
             }
         }
         world.entity_mut(input).insert(draft);
     }
-    let active: HashSet<_> = world
-        .query::<&Draft>()
-        .iter(world)
-        .filter_map(|draft| draft.subscription.clone())
-        .collect();
-    if let Some(mut subscriptions) = world.get_resource_mut::<Subscriptions>() {
-        subscriptions.0.retain(|id, (_, sender)| {
-            active.contains(id)
-                || (sender
-                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                    .is_err()
-                    && !sender.is_closed())
+    if world
+        .get_resource::<Subscriptions>()
+        .is_some_and(|subscriptions| !subscriptions.0.is_empty())
+    {
+        world.resource_scope(|world, mut subscriptions: Mut<Subscriptions>| {
+            let mut drafts = world.query::<&Draft>();
+            let active: HashSet<_> = drafts
+                .iter(world)
+                .filter_map(|draft| draft.subscription.as_deref())
+                .collect();
+            subscriptions.0.retain(|id, (_, sender)| {
+                active.contains(id.as_str())
+                    || (sender
+                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                        .is_err()
+                        && !sender.is_closed())
+            });
         });
     }
 }
 
 fn render(world: &mut World, form: Entity, input: Entity, draft: &mut Draft) {
-    let signature = format!(
-        "{:?}:{}:{:?}:{}",
-        draft.options, draft.selected, draft.error, draft.loaded
-    );
-    if draft.rendered == signature {
+    if draft
+        .rendered
+        .as_ref()
+        .is_some_and(|rendered| rendered.matches(draft))
+    {
         return;
     }
-    draft.rendered = signature;
+    draft.rendered = Some(Rendered {
+        options: Arc::clone(&draft.options),
+        selected: draft.selected,
+        error: draft.error.clone(),
+        loaded: draft.loaded,
+    });
     let popup = *draft.popup.get_or_insert_with(|| {
         world
             .spawn((
@@ -484,7 +532,7 @@ impl Action for Choose {
             }
             draft.query = None;
             draft.dismissed = Some((value, end + 1));
-            draft.options.clear();
+            draft.options = Arc::default();
             if let Some(popup) = draft.popup.take() {
                 world.despawn(popup);
             }
@@ -565,6 +613,7 @@ pub(super) fn keys(world: &mut World) -> bool {
 }
 
 pub(super) fn paint(world: &mut World) {
+    let _paint = nucleus::performance::Span::new("mention-link-presentation");
     let selected: Vec<_> = world
         .query_filtered::<(Entity, &ChildOf, &ComputedNode), With<SelectedOption>>()
         .iter(world)
@@ -623,13 +672,23 @@ pub(super) fn paint(world: &mut World) {
         .query::<(Entity, &Draft)>()
         .iter(world)
         .filter(|(_, draft)| !draft.links.is_empty())
-        .map(|(input, draft)| (input, draft.links.clone()))
+        .map(|(input, _)| input)
         .collect();
-    for (input, links) in inputs {
+    for input in inputs {
         let Some(text) = world.get::<EditableText>(input) else {
             continue;
         };
-        let mut editor = text.editor.clone();
+        let draft = world.get::<Draft>(input).unwrap();
+        let mut boxes = Vec::new();
+        let ready = draft.links.iter().all(|link| {
+            text.editor
+                .try_range_geometry_with(link.range.clone(), |rect, line| {
+                    boxes.push((link.clone(), rect, line));
+                })
+        });
+        // Normal post-layout painting only reads the editor. Keep the existing
+        // isolated preparation for a dirty layout or an invalidated link range.
+        let fallback = (!ready).then(|| (text.editor.clone(), draft.links.clone()));
         let computed = world
             .get::<ComputedNode>(input)
             .copied()
@@ -637,19 +696,22 @@ pub(super) fn paint(world: &mut World) {
         let scroll = world
             .get::<bevy::ui::widget::TextScroll>(input)
             .map_or(Vec2::ZERO, |scroll| scroll.0);
-        let mut fonts = world.remove_resource::<FontCx>().unwrap();
-        let mut layout = world.remove_resource::<LayoutCx>().unwrap();
-        let mut boxes = Vec::new();
-        for link in links {
-            editor
-                .driver(&mut fonts.context, &mut layout.0)
-                .select_byte_range(link.range.start, link.range.end);
-            for (rect, line) in editor.selection_geometry() {
-                boxes.push((link.clone(), rect, line));
+        if let Some((mut editor, links)) = fallback {
+            nucleus::performance::add("mention-editor-clone-fallbacks", 1);
+            boxes.clear();
+            let mut fonts = world.remove_resource::<FontCx>().unwrap();
+            let mut layout = world.remove_resource::<LayoutCx>().unwrap();
+            for link in links {
+                editor
+                    .driver(&mut fonts.context, &mut layout.0)
+                    .select_byte_range(link.range.start, link.range.end);
+                editor.selection_geometry_with(|rect, line| {
+                    boxes.push((link.clone(), rect, line));
+                });
             }
+            world.insert_resource(fonts);
+            world.insert_resource(layout);
         }
-        world.insert_resource(fonts);
-        world.insert_resource(layout);
         for (link, rect, line) in boxes {
             let min = (Vec2::new(rect.x0 as f32, rect.y0 as f32) - scroll).max(Vec2::ZERO);
             let max = (Vec2::new(rect.x1 as f32, rect.y1 as f32) - scroll)
@@ -682,11 +744,7 @@ pub(super) fn paint(world: &mut World) {
                 let mut accessibility = accesskit::Node::new(accesskit::Role::Link);
                 accessibility.set_label(format!(
                     "Open {}",
-                    &world
-                        .get::<EditableText>(input)
-                        .unwrap()
-                        .value()
-                        .to_string()[link.range.clone()]
+                    &world.get::<EditableText>(input).unwrap().value().to_cow()[link.range.clone()]
                 ));
                 world
                     .spawn((
@@ -880,7 +938,8 @@ mod tests {
                 uid: "r_person".into(),
                 slug: String::new(),
                 head: "Jane [work]".into(),
-            }],
+            }]
+            .into(),
             ..default()
         });
         Choose {

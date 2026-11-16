@@ -76,7 +76,7 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
                 position: DVec2::new(100.0, 0.0),
                 size: Vec2::splat(20.0),
             },
-            RecordProperties(serde_json::json!({"uid": uid, "quantity":0})),
+            RecordProperties(serde_json::json!({"uid": uid, "quantity":0}).into()),
             ChildOf(root),
             WorkspaceMember(1),
         ))
@@ -221,7 +221,7 @@ async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() 
                     position: DVec2::new(100.0, 0.0),
                     size: Vec2::splat(20.0),
                 },
-                RecordProperties(serde_json::json!({"uid":uid,"quantity":0})),
+                RecordProperties(serde_json::json!({"uid":uid,"quantity":0}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))
@@ -419,7 +419,7 @@ async fn entry_and_exit_change_real_records_and_property_changes_do_not_fake_an_
     move_to(&mut app, sand, 0.0);
     pump(&mut app).await;
     assert_eq!(quantity(&engine, &uid).await, "-3");
-    app.world_mut().get_mut::<RecordProperties>(sand).unwrap().0["quantity"] =
+    std::sync::Arc::make_mut(&mut app.world_mut().get_mut::<RecordProperties>(sand).unwrap().0)["quantity"] =
         serde_json::json!(-3);
     pump(&mut app).await;
     assert_eq!(quantity(&engine, &uid).await, "-3");
@@ -438,7 +438,7 @@ async fn copies_count_together_and_exit_waits_until_the_last_copy_leaves() {
                 position: DVec2::new(100.0, 0.0),
                 size: Vec2::splat(20.0),
             },
-            RecordProperties(serde_json::json!({"uid":uid,"quantity":0})),
+            RecordProperties(serde_json::json!({"uid":uid,"quantity":0}).into()),
             ChildOf(root),
             WorkspaceMember(1),
         ))

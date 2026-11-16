@@ -167,9 +167,7 @@ impl Policy {
         {
             return Err("Exclusions deny access; choose an area size on an inclusion");
         }
-        if serde_json::to_vec(self)
-            .map_err(|_| "Cannot encode visibility rules")?
-            .len()
+        if crate::json::encoded_len(self).map_err(|_| "Cannot encode visibility rules")?
             > MAX_POLICY_BYTES
         {
             return Err(

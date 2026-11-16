@@ -2,7 +2,9 @@ use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use engine::blob_sync::{Target, Transfer};
 use lince_interface::blob_sync::{size, state};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
+
+mod presentation;
 
 const CREDITS: &[crate::native::credits::Attribution] = &[
     crate::native::credits::Attribution {
@@ -36,18 +38,52 @@ struct View {
     transfers: Entity,
     paths: Vec<PathBuf>,
     target: Option<String>,
-    snapshot: Option<Snapshot>,
+    snapshot: Option<Arc<Snapshot>>,
+    shown: Option<Arc<Snapshot>>,
+    rows: presentation::Rows,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 struct Snapshot {
     targets: Vec<Target>,
-    transfers: Vec<Transfer>,
+    transfers: Vec<Arc<Transfer>>,
+}
+
+impl Snapshot {
+    fn from_rows(targets: Vec<Target>, transfers: Vec<Transfer>, previous: Option<&Self>) -> Self {
+        let _timing = crate::host::performance::Span::new(
+            crate::host::performance::Stage::NativeBlobSnapshotPreparation,
+        );
+        let previous: HashMap<_, _> = previous
+            .into_iter()
+            .flat_map(|snapshot| &snapshot.transfers)
+            .map(|transfer| (transfer.id.as_str(), transfer))
+            .collect();
+        let mut reused = 0;
+        let transfers = transfers
+            .into_iter()
+            .map(|transfer| {
+                if let Some(previous) = previous.get(transfer.id.as_str())
+                    && previous.as_ref() == &transfer
+                {
+                    reused += 1;
+                    Arc::clone(previous)
+                } else {
+                    Arc::new(transfer)
+                }
+            })
+            .collect();
+        crate::host::performance::add(
+            crate::host::performance::Count::BlobTransferModelsReused,
+            reused,
+        );
+        Self { targets, transfers }
+    }
 }
 
 #[derive(Component)]
 struct Watch {
-    receiver: tokio::sync::watch::Receiver<Option<Result<Snapshot, String>>>,
+    receiver: tokio::sync::watch::Receiver<Option<Result<Arc<Snapshot>, String>>>,
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -66,33 +102,6 @@ struct Job(
 impl Drop for Job {
     fn drop(&mut self) {
         self.1.abort();
-    }
-}
-
-#[derive(Component)]
-struct TransferRow(Transfer);
-
-#[derive(Component)]
-struct FileList(Vec<nucleus::blob_sync::Entry>, bool);
-
-#[derive(Clone)]
-struct ToggleFiles;
-
-impl Action for ToggleFiles {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        let Some(mut list) = world.get_mut::<FileList>(owner) else {
-            return;
-        };
-        list.1 = !list.1;
-        let entries = if list.1 { list.0.clone() } else { Vec::new() };
-        panel::clear(world, owner);
-        for entry in entries {
-            label(
-                world,
-                owner,
-                &format!("{} · {}", entry.path, size(entry.size)),
-            );
-        }
     }
 }
 
@@ -145,6 +154,8 @@ pub(super) fn populate(world: &mut World, parent: Entity) {
         paths: Vec::new(),
         target: None,
         snapshot: None,
+        shown: None,
+        rows: Default::default(),
     });
 }
 
@@ -405,18 +416,28 @@ pub(super) fn update(world: &mut World) {
                 None
             }
         });
-        if let Some(update) = update {
-            let view = world.get::<View>(owner).unwrap();
-            match update {
-                Ok(snapshot) if view.snapshot.as_ref() != Some(&snapshot) => {
-                    render(world, owner, snapshot)
-                }
-                Err(error) => {
-                    let status = view.status;
-                    panel::status(world, status, error);
-                }
-                _ => {}
+        let snapshot = match update {
+            Some(Ok(snapshot)) => Some(snapshot),
+            Some(Err(error)) => {
+                let status = world.get::<View>(owner).unwrap().status;
+                panel::status(world, status, error);
+                None
             }
+            None => None,
+        }
+        .or_else(|| {
+            let view = world.get::<View>(owner).unwrap();
+            view.snapshot
+                .as_ref()
+                .filter(|snapshot| {
+                    view.shown
+                        .as_ref()
+                        .is_none_or(|shown| !Arc::ptr_eq(shown, snapshot))
+                })
+                .cloned()
+        });
+        if let Some(snapshot) = snapshot {
+            render(world, owner, snapshot);
         }
         let result = world
             .get_mut::<Job>(owner)
@@ -490,7 +511,15 @@ fn start_watch(world: &mut World, owner: Entity) {
                     .blob_transfers()
                     .await
                     .map_err(|error| error.to_string())?;
-                Ok(Snapshot { targets, transfers })
+                let previous = sender.borrow();
+                let previous = previous
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.as_ref().ok());
+                Ok(Arc::new(Snapshot::from_rows(
+                    targets,
+                    transfers,
+                    previous.map(Arc::as_ref),
+                )))
             }
             .await;
             if !super::snapshots::publish(&sender, result, wake.as_ref()) {
@@ -501,182 +530,38 @@ fn start_watch(world: &mut World, owner: Entity) {
     world.entity_mut(owner).insert(Watch { receiver, task });
 }
 
-fn render(world: &mut World, owner: Entity, snapshot: Snapshot) {
+fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Snapshot>>) {
+    let snapshot = snapshot.into();
     let view = world.get::<View>(owner).unwrap();
-    let (targets, transfers, status) = (view.targets, view.transfers, view.status);
     let first = view.snapshot.is_none();
+    let status = view.status;
+    let shown = view
+        .shown
+        .as_ref()
+        .is_some_and(|shown| Arc::ptr_eq(shown, &snapshot));
     if view
         .snapshot
         .as_ref()
-        .is_none_or(|old| old.targets != snapshot.targets)
+        .is_none_or(|current| !Arc::ptr_eq(current, &snapshot))
     {
-        panel::clear(world, targets);
-        if snapshot.targets.is_empty() {
-            label(
-                world,
-                targets,
-                "No recipients. Add a contact or enable LAN discovery in Organ settings.",
-            );
-        }
-        for target in &snapshot.targets {
-            let caption = format!(
-                "{} · {} · {}",
-                target.label,
-                if target.nearby { "Nearby" } else { "Contact" },
-                target.node_id.chars().take(8).collect::<String>()
-            );
-            panel::button(
-                world,
-                targets,
-                owner,
-                &caption,
-                Command::Select(target.node_id.clone(), target.label.clone()),
-            );
-        }
-    }
-    let children = world
-        .get::<Children>(transfers)
-        .map(|children| children.iter().collect::<Vec<_>>())
-        .unwrap_or_default();
-    for child in children {
-        if world.get::<TransferRow>(child).is_none_or(|row| {
-            !snapshot
-                .transfers
-                .iter()
-                .any(|transfer| transfer.id == row.0.id)
-        }) {
-            world.despawn(child);
-        }
-    }
-    if snapshot.transfers.is_empty() {
-        label(world, transfers, "No copies sent or received yet.");
-    }
-    for transfer in &snapshot.transfers {
-        let existing = world
-            .get::<Children>(transfers)
-            .into_iter()
-            .flatten()
-            .find_map(|child| {
-                world
-                    .get::<TransferRow>(*child)
-                    .filter(|row| row.0.id == transfer.id)
-                    .map(|row| (*child, row.0 == *transfer))
-            });
-        if existing.is_some_and(|(_, unchanged)| unchanged) {
-            continue;
-        }
-        let row = if let Some((row, _)) = existing {
-            panel::clear(world, row);
-            row
-        } else {
-            panel::column(world, transfers)
-        };
-        world.entity_mut(row).insert(TransferRow(transfer.clone()));
-        let incoming = transfer.direction == "incoming";
-        label(
-            world,
-            row,
-            &format!(
-                "{} {} · {} · {}",
-                if incoming { "From" } else { "To" },
-                transfer.label,
-                size(transfer.manifest.bytes()),
-                state(&transfer.state, incoming)
-            ),
-        );
-        label(
-            world,
-            row,
-            &format!("Peer {}", transfer.peer.chars().take(8).collect::<String>()),
-        );
-        for entry in transfer.manifest.entries.iter().take(12) {
-            label(
-                world,
-                row,
-                &format!(
-                    "{}{}",
-                    entry.path,
-                    if entry.hash.is_none() { "/" } else { "" }
-                ),
-            );
-        }
-        if transfer.manifest.entries.len() > 12 {
-            let details = panel::column(world, row);
-            world.entity_mut(details).insert(FileList(
-                transfer.manifest.entries.iter().skip(12).cloned().collect(),
-                false,
-            ));
-            panel::button(
-                world,
-                row,
-                details,
-                &format!(
-                    "Show / hide {} more entries",
-                    transfer.manifest.entries.len() - 12
-                ),
-                ToggleFiles,
-            );
-        }
-        if transfer.state == "accepted" {
-            label(
-                world,
-                row,
-                &format!(
-                    "{} / {}",
-                    size(transfer.progress),
-                    size(transfer.manifest.bytes())
-                ),
-            );
-        }
-        if let Some(destination) = &transfer.destination {
-            label(world, row, destination);
-        }
-        if !transfer.error.is_empty() {
-            label(
-                world,
-                row,
-                &format!("{} · Lince will retry automatically.", transfer.error),
-            );
-        }
-        let controls = panel::row(world, row);
-        if incoming && transfer.state == "accepted" && !transfer.error.is_empty() {
-            panel::button(
-                world,
-                controls,
-                owner,
-                "Change save folder…",
-                Command::Accept(transfer.id.clone()),
-            );
-        }
-        if incoming && transfer.state == "offered" {
-            panel::button(
-                world,
-                controls,
-                owner,
-                "Accept and save…",
-                Command::Accept(transfer.id.clone()),
-            );
-            panel::button(
-                world,
-                controls,
-                owner,
-                "Decline",
-                Command::Stop(transfer.id.clone()),
-            );
-        } else if matches!(transfer.state.as_str(), "offered" | "accepted") {
-            panel::button(
-                world,
-                controls,
-                owner,
-                "Cancel copy",
-                Command::Stop(transfer.id.clone()),
-            );
-        }
+        world.get_mut::<View>(owner).unwrap().snapshot = Some(snapshot.clone());
     }
     if first {
         panel::status(world, status, "Ready");
     }
-    world.get_mut::<View>(owner).unwrap().snapshot = Some(snapshot);
+    // Snapshot consumers (including practice steps) stay current independently
+    // of presentation. Retain the old UI until it has real output demand.
+    if shown || !crate::native::output_views::presents_entity(world, owner) {
+        return;
+    }
+    let (previous, mut rows) = {
+        let mut view = world.get_mut::<View>(owner).unwrap();
+        (view.shown.take(), std::mem::take(&mut view.rows))
+    };
+    presentation::render(world, owner, previous.as_deref(), &snapshot, &mut rows);
+    let mut view = world.get_mut::<View>(owner).unwrap();
+    view.rows = rows;
+    view.shown = Some(snapshot);
 }
 
 #[cfg(test)]
@@ -722,7 +607,7 @@ mod tests {
             owner,
             Snapshot {
                 targets: Vec::new(),
-                transfers: vec![incoming.clone(), outgoing.clone()],
+                transfers: vec![Arc::new(incoming.clone()), Arc::new(outgoing.clone())],
             },
         );
         let accept = world
@@ -743,7 +628,7 @@ mod tests {
             owner,
             Snapshot {
                 targets: Vec::new(),
-                transfers: vec![incoming, outgoing],
+                transfers: vec![Arc::new(incoming), Arc::new(outgoing)],
             },
         );
         assert_eq!(world.get::<Text>(accept).unwrap().0, "Accept and save…");

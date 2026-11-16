@@ -1,0 +1,9 @@
+{
+  "base_url": "http://127.0.0.1:8080",
+  "instance_id": "my-nomad",
+  "kiwix_url": "http://127.0.0.1:8090",
+  "include_maps": true,
+  "include_documents": false,
+  "include_wikipedia": true,
+  "batch_size": 50
+}

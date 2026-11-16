@@ -98,6 +98,10 @@ impl Default for Config {
 }
 
 impl Config {
+    pub(crate) fn same_query_inputs(&self, other: &Self) -> bool {
+        self == other && self.draft.same_preparation_inputs(&other.draft)
+    }
+
     pub(crate) fn creating(&self) -> bool {
         self.window_record
             .as_ref()
@@ -121,8 +125,8 @@ impl Config {
         Self {
             record_cards: true,
             show_labels: true,
-            bindings: protein::record_schema::fields()
-                .into_iter()
+            bindings: protein::record_schema::FIELDS
+                .iter()
                 .filter(|field| field.editable)
                 .map(|field| Binding {
                     editable: true,

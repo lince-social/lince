@@ -69,7 +69,7 @@ fn entries(map: &Value) -> Result<Vec<Subscription>, EngineError> {
 fn within_limits(map: &Value, filters: &[Subscription]) -> Result<bool, EngineError> {
     Ok(filters.len() <= MAX_FILTERS
         && filters.iter().filter(|filter| filter.enabled).count() <= MAX_ACTIVE
-        && serde_json::to_vec(map)?.len() <= 64 * 1024)
+        && nucleus::json::encoded_len(map)? <= 64 * 1024)
 }
 
 fn quiet(filter: &Subscription, now: i64) -> bool {
@@ -126,18 +126,18 @@ impl Engine {
         validate_filter(&filter)?;
         let mut tx = self.social_write_tx().await?;
         let (organ, mut map, previous) = self.social_subscription_config_on(&mut tx).await?;
-        let previous_bytes = serde_json::to_vec(&map)?.len();
+        let previous_bytes = nucleus::json::encoded_len(&map)?;
         map[key(&filter.id)] = serde_json::to_value(&filter)?;
         let updated = entries(&map)?;
         if !within_limits(&map, &updated)? {
             let smaller = updated.len() <= previous.len()
                 && updated.iter().filter(|entry| entry.enabled).count()
                     <= previous.iter().filter(|entry| entry.enabled).count()
-                && serde_json::to_vec(&map)?.len() <= previous_bytes
+                && nucleus::json::encoded_len(&map)? <= previous_bytes
                 && (updated.len() < previous.len()
                     || updated.iter().filter(|entry| entry.enabled).count()
                         < previous.iter().filter(|entry| entry.enabled).count()
-                    || serde_json::to_vec(&map)?.len() < previous_bytes);
+                    || nucleus::json::encoded_len(&map)? < previous_bytes);
             if !smaller {
                 return Err(invalid(
                     "Resolve saved searches within sixteen filters, eight active filters and 64 KiB before adding more work",

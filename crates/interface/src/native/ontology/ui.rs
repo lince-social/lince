@@ -1,3 +1,4 @@
+use super::catalog::title;
 use super::*;
 use crate::i18n::Token as Tr;
 use crate::native::edit_mode::label;
@@ -78,9 +79,9 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
         package: Entity::PLACEHOLDER,
         context: Entity::PLACEHOLDER,
         feature: "assignment".into(),
-        knowledge_sources: vec![],
+        knowledge_sources: Default::default(),
         knowledge_selected: vec!["test".into()],
-        knowledge_results: vec![],
+        knowledge_results: Default::default(),
         knowledge_job: None,
         knowledge_poll: std::time::Instant::now(),
         knowledge_page: 0,
@@ -91,7 +92,7 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
         knowledge_preview: None,
         knowledge_review: None,
         knowledge_fields: vec![],
-        knowledge_cached: vec![],
+        knowledge_cached: Default::default(),
         knowledge_cache_bytes: 0,
         knowledge_file: None,
         output: None,
@@ -500,24 +501,11 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
     }
 }
 
-fn title(row: &Value) -> String {
-    row["name"]
-        .as_str()
-        .or_else(|| row["head"].as_str().filter(|value| !value.is_empty()))
-        .or_else(|| row["slug"].as_str())
-        .or_else(|| row["uid"].as_str())
-        .unwrap_or("Unnamed")
-        .into()
+fn reference<'a>(rows: &'a Catalog, uid: &'a str) -> &'a str {
+    rows.find(uid).map(title).unwrap_or(uid)
 }
 
-fn reference(rows: &[Value], uid: &str) -> String {
-    rows.iter()
-        .find(|row| row["uid"] == uid)
-        .map(title)
-        .unwrap_or_else(|| uid.into())
-}
-
-fn references(row: &Value, key: &str, rows: &[Value]) -> String {
+fn references(row: &Value, key: &str, rows: &Catalog) -> String {
     row[key]
         .as_array()
         .map(|values| {
@@ -532,6 +520,8 @@ fn references(row: &Value, key: &str, rows: &[Value]) -> String {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("ontology-presentation");
+    nucleus::performance::add("ontology-views-rendered", 1);
     let view = world.get::<OntologySand>(owner).unwrap();
     let holders = view.choosers.clone();
     for (holder, slot) in holders {
@@ -541,35 +531,54 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             1 | 2 => 1,
             _ => 2,
         };
-        let mut options: Vec<(String, String)> = if slot == 5 {
-            ["private", "shared", "public"]
+        let catalog = view.rows[source].clone();
+        let visibility = [
+            ("private", "private"),
+            ("public", "public"),
+            ("shared", "shared"),
+        ];
+        let no_object = (slot == 4).then_some(("", "No object — tag"));
+        let selected = if slot == 5 {
+            visibility
                 .iter()
-                .map(|value| (value.to_string(), value.to_string()))
+                .find(|(uid, _)| *uid == view.choices[slot])
+                .map(|(_, name)| *name)
+        } else if slot == 4 && view.choices[slot].is_empty() {
+            Some("No object — tag")
+        } else {
+            catalog.choice_title(&view.choices[slot], slot == 6)
+        }
+        .unwrap_or("Choose…");
+        let total = if slot == 5 {
+            visibility.len()
+        } else {
+            catalog.choices(slot == 6).len() + usize::from(no_object.is_some())
+        };
+        let page = view.choice_pages[slot].min(total.saturating_sub(1) / PAGE);
+        let choices = if slot == 5 {
+            visibility
+                .into_iter()
+                .map(|(uid, caption)| {
+                    (
+                        caption.into(),
+                        crate::native::actions![Command::Choose(slot, uid.into())],
+                    )
+                })
                 .collect()
         } else {
-            view.rows[source]
-                .iter()
-                .filter(|row| slot != 6 || row["kind"] == "organ")
-                .filter_map(|row| row["uid"].as_str().map(|uid| (uid.into(), title(row))))
+            no_object
+                .into_iter()
+                .chain(catalog.choices(slot == 6))
+                .skip(page * PAGE)
+                .take(PAGE)
+                .map(|(uid, caption)| {
+                    (
+                        caption.into(),
+                        crate::native::actions![Command::Choose(slot, uid.into())],
+                    )
+                })
                 .collect()
         };
-        options.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        if slot == 4 {
-            options.insert(0, (String::new(), "No object — tag".into()));
-        }
-        let selected = options
-            .iter()
-            .find(|(uid, _)| uid == &view.choices[slot])
-            .map(|(_, name)| name.clone())
-            .unwrap_or_else(|| "Choose…".into());
-        let total = options.len();
-        let page = view.choice_pages[slot].min(total.saturating_sub(1) / PAGE);
-        let choices = options
-            .into_iter()
-            .skip(page * PAGE)
-            .take(PAGE)
-            .map(|(uid, caption)| (caption, crate::native::actions![Command::Choose(slot, uid)]))
-            .collect();
         world.get_mut::<OntologySand>(owner).unwrap().choice_pages[slot] = page;
         panel::clear(world, holder);
         let group = crate::native::dropdown::spawn(
@@ -629,10 +638,6 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     } else {
         tab
     };
-    let mut rows = view.rows[source].clone();
-    rows.sort_by_key(title);
-    let total = rows.len();
-    let page = view.page.min(total.saturating_sub(1) / PAGE);
     let catalogs = view.rows.clone();
     panel::clear(world, list);
     if tab == 5 {
@@ -640,10 +645,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         let sources = view.knowledge_sources.clone();
         let selected = view.knowledge_selected.clone();
         let results = view.knowledge_results.clone();
-        let output = view.output.clone().unwrap_or_default();
+        let output = view.output.clone();
+        let output = output.as_deref().unwrap_or(&Value::Null);
         let page = view.knowledge_page;
-        let item = view.knowledge_item.clone().unwrap_or_default();
-        let claim = view.knowledge_claim.clone();
+        let item = view.knowledge_item.clone();
+        let item = item.as_deref().unwrap_or(&Value::Null);
+        let claim = view.knowledge_claim;
         let availability = view.knowledge_availability.clone();
         let preview = view.knowledge_preview.clone();
         let review = view.knowledge_review.clone();
@@ -653,7 +660,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         let query = panel::value(world, view.name)
             .unwrap_or_default()
             .to_lowercase();
-        let local = view.rows[2]
+        let local = catalogs[2]
             .iter()
             .filter(|record| {
                 record["head"]
@@ -661,7 +668,6 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                     .is_some_and(|title| title.to_lowercase().contains(&query))
             })
             .take(PAGE)
-            .cloned()
             .collect::<Vec<_>>();
         label(world, list, "Local Records", 14.0);
         for record in local {
@@ -755,7 +761,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 );
             }
         }
-        for source in sources {
+        for source in sources.iter() {
             if let Some(id) = source["id"].as_str() {
                 panel::button(
                     world,
@@ -788,7 +794,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 }
             }
         }
-        for result in results {
+        for result in results.iter() {
             label(
                 world,
                 list,
@@ -977,7 +983,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 12.0,
             );
             let statement = claim
-                .as_ref()
+                .and_then(|index| item["claims"].get(index))
                 .map(|claim| serde_json::to_string_pretty(claim).unwrap_or_default());
             let content = statement
                 .as_deref()
@@ -1083,13 +1089,8 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         return;
     }
     if tab == 4 {
-        let history = world
-            .get::<OntologySand>(owner)
-            .unwrap()
-            .output
-            .clone()
-            .unwrap_or_default();
-        let history = &history["history"];
+        let history = world.get::<OntologySand>(owner).unwrap().output.clone();
+        let history = &history.as_deref().unwrap_or(&Value::Null)["history"];
         if let Some(versions) = history["versions"].as_array() {
             label(
                 world,
@@ -1167,12 +1168,8 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         return;
     }
     if tab == 0 {
-        let output = world
-            .get::<OntologySand>(owner)
-            .unwrap()
-            .output
-            .clone()
-            .unwrap_or_default();
+        let output = world.get::<OntologySand>(owner).unwrap().output.clone();
+        let output = output.as_deref().unwrap_or(&Value::Null);
         let package = &output["publication"];
         if let Some(entries) = output["translations_preview"]["entries"].as_array() {
             label(
@@ -1293,22 +1290,14 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     if tab == 3 {
         let view = world.get::<OntologySand>(owner).unwrap();
         let feature = view.feature.clone();
-        let meaning = view
-            .output
-            .as_ref()
-            .and_then(|output| output.get("meaning"))
-            .cloned();
-        let preview = view
-            .output
-            .as_ref()
-            .and_then(|output| output.get("feature_preview"))
-            .cloned();
+        let output = view.output.clone();
+        let meaning = output.as_deref().and_then(|output| output.get("meaning"));
+        let preview = output
+            .as_deref()
+            .and_then(|output| output.get("feature_preview"));
         let preferred = view.preferred;
         let personal = view.personal;
-        let selected = view.rows[1]
-            .iter()
-            .find(|row| row["uid"] == view.choices[1])
-            .cloned();
+        let selected = catalogs[1].find(&view.choices[1]);
         label(
             world,
             list,
@@ -1569,13 +1558,20 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         world.get_mut::<OntologySand>(owner).unwrap().dirty = false;
         return;
     }
+    let rows = catalogs[source].ordered();
+    let total = rows.len();
+    let page = world
+        .get::<OntologySand>(owner)
+        .unwrap()
+        .page
+        .min(total.saturating_sub(1) / PAGE);
     label(
         world,
         list,
         &format!("{} entries · page {}", total, page + 1),
         12.0,
     );
-    for row in rows.into_iter().skip(page * PAGE).take(PAGE) {
+    for row in rows.skip(page * PAGE).take(PAGE) {
         let Some(uid) = row["uid"].as_str() else {
             continue;
         };

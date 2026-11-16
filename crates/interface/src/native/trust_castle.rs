@@ -11,7 +11,11 @@ use nucleus::trust_analysis::{
     paths,
 };
 use serde_json::{Value, json};
-use std::collections::BTreeSet;
+use std::{
+    borrow::Cow,
+    collections::{BTreeSet, HashMap},
+    sync::Arc,
+};
 
 mod analysis;
 mod claims;
@@ -21,8 +25,10 @@ mod recipe_controls;
 mod remote_controls;
 mod root_controls;
 mod serving_controls;
+mod snapshot;
 pub(crate) mod tests;
 mod ui;
+use snapshot::{JsonPart, Snapshot, decode};
 use ui::render;
 
 pub struct TrustCastlePlugin;
@@ -70,7 +76,7 @@ enum RuleScope {
 #[derive(Component)]
 struct View {
     root: Entity,
-    context: Value,
+    context: Snapshot,
     person: String,
     contact: String,
     contact_organ: bool,
@@ -88,8 +94,8 @@ struct View {
     unilateral: bool,
     excluded: String,
     rules: Vec<Rule>,
-    result: Value,
-    review: Option<(ContactReview, nucleus::karma::CanonicalHash)>,
+    result: Snapshot,
+    review: Option<(Arc<ContactReview>, nucleus::karma::CanonicalHash)>,
     pending: Option<(String, u64)>,
     generation: u64,
     bootstrap: bool,
@@ -120,7 +126,7 @@ fn clear_scope(view: &mut View) {
     view.excluded.clear();
     view.rules.clear();
     view.review = None;
-    view.result = Value::Null;
+    view.result = Snapshot::default();
     view.pending = None;
     view.as_organ = false;
     view.issuer_organ = false;
@@ -135,7 +141,7 @@ fn clear_scope(view: &mut View) {
     view.generation = view.generation.wrapping_add(1);
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Key {
     Custody(custody_controls::Field),
     Serving(serving_controls::Field),
@@ -194,7 +200,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     crate::native::scroll_sand::attach(world, body);
     world.entity_mut(body).insert(View {
         root,
-        context: Value::Null,
+        context: Snapshot::default(),
         person: String::new(),
         contact: String::new(),
         contact_organ: false,
@@ -212,7 +218,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         unilateral: false,
         excluded: String::new(),
         rules: Vec::new(),
-        result: Value::Null,
+        result: Snapshot::default(),
         review: None,
         pending: None,
         generation: 0,
@@ -660,7 +666,7 @@ impl Action for Command {
                     expected_profile_revision: preview["profile_revision"]
                         .as_i64()
                         .ok_or("Missing profile revision")?,
-                    expected_review: serde_json::from_value(preview["review_hash"].clone())
+                    expected_review: decode(&preview["review_hash"])
                         .map_err(|error| error.to_string())?,
                 })
             })();
@@ -700,7 +706,7 @@ impl Action for Command {
                 .ok_or("Preview the exact disclosure first".into())
                 .map(|(review, expected_review)| {
                     Some(Backend::PublishContact {
-                        review,
+                        review: review.as_ref().clone(),
                         expected_review,
                     })
                 }),
@@ -779,17 +785,17 @@ impl Action for Command {
             view.claims.review = None;
             view.recipes.review = None;
             view.generation = view.generation.wrapping_add(1);
-            view.result = Value::Null;
+            view.result = Snapshot::default();
             view.analysis.page = 0;
         }
         match self {
             Self::QueryToggle(toggle) => {
                 analysis::toggle(&mut view.analysis, *toggle);
-                view.result = Value::Null;
+                view.result = Snapshot::default();
             }
             Self::QueryMeasurement(measurement) => {
                 view.analysis.measurements = measurement.iter().cloned().collect();
-                view.result = Value::Null;
+                view.result = Snapshot::default();
             }
             Self::QueryPage(page) => {
                 view.analysis.page = *page;
@@ -804,7 +810,7 @@ impl Action for Command {
                     view.analysis.organ = false;
                 }
                 view.pending = None;
-                view.result = Value::Null;
+                view.result = Snapshot::default();
                 view.import.clear();
                 view.readers.clear();
                 if view.anchor.is_empty() {
@@ -823,7 +829,7 @@ impl Action for Command {
                 "withdrawn" => view.withdrawn = !view.withdrawn,
                 "as_organ" => {
                     view.as_organ = !view.as_organ;
-                    view.result = Value::Null;
+                    view.result = Snapshot::default();
                     view.pending = None;
                 }
                 "anchor" => view.anchor_organ = !view.anchor_organ,
@@ -831,9 +837,8 @@ impl Action for Command {
                 _ => {}
             },
             Self::Revise(document, withdrawn) => {
-                if let Ok(document) = serde_json::from_value::<
-                    nucleus::trust_analysis::contacts::Document,
-                >(document.clone())
+                if let Ok(document) =
+                    decode::<nucleus::trust_analysis::contacts::Document>(document)
                 {
                     view.contact = document.statement.contact.uid().into();
                     view.contact_organ = matches!(document.statement.contact, Identity::Organ(_));
@@ -899,16 +904,61 @@ impl Action for Command {
 }
 
 fn capture(world: &mut World) {
+    let _capture = nucleus::performance::Span::new("trust-input-capture");
     let changes = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .filter(|(input, text)| input.observed != text.value().to_string())
+        .filter(|(input, text)| text.value() != input.observed.as_str())
         .map(|(input, text)| (input.owner, input.key, text.value().to_string()))
         .collect::<Vec<_>>();
+    nucleus::performance::add("trust-field-values-prepared", changes.len() as u64);
+    let mut observers = (changes.len() > 1).then(|| {
+        changes
+            .iter()
+            .map(|(owner, key, _)| ((*owner, *key), Vec::new()))
+            .collect::<HashMap<(Entity, Key), Vec<Entity>>>()
+    });
+    let mut observers_current = false;
     for (owner, key, value) in changes {
-        let Some(mut view) = world.get_mut::<View>(owner) else {
+        if world.get::<View>(owner).is_none() {
             continue;
+        }
+        let single;
+        let fields: &[Entity] = if let Some(observers) = &mut observers {
+            if !observers_current {
+                nucleus::performance::add("trust-input-indexes-prepared", 1);
+                for fields in observers.values_mut() {
+                    fields.clear();
+                }
+                for (entity, input) in world.query::<(Entity, &Input)>().iter(world) {
+                    if let Some(fields) = observers.get_mut(&(input.owner, input.key)) {
+                        fields.push(entity);
+                    }
+                }
+                observers_current = true;
+            }
+            observers
+                .get(&(owner, key))
+                .map(Vec::as_slice)
+                .unwrap_or_default()
+        } else {
+            // Ordinary single-field typing needs no grouping table.
+            single = world
+                .query::<(Entity, &Input)>()
+                .iter(world)
+                .filter(|(_, input)| input.owner == owner && input.key == key)
+                .map(|(entity, _)| entity)
+                .collect::<Vec<_>>();
+            &single
         };
+        for field in fields {
+            if let Some(mut input) = world.get_mut::<Input>(*field)
+                && input.observed != value
+            {
+                input.observed.clone_from(&value);
+            }
+        }
+        let mut view = world.get_mut::<View>(owner).unwrap();
         view.review = None;
         view.remote.review = None;
         view.claims.review = None;
@@ -916,66 +966,66 @@ fn capture(world: &mut World) {
         view.generation = view.generation.wrapping_add(1);
         match key {
             Key::Custody(field) => {
-                custody_controls::capture(&mut view.custody, field, value.clone());
-                view.result = Value::Null;
+                custody_controls::capture(&mut view.custody, field, value);
+                view.result = Snapshot::default();
             }
             Key::Serving(field) => {
-                serving_controls::capture(&mut view.serving, field, value.clone());
-                view.result = Value::Null;
+                serving_controls::capture(&mut view.serving, field, value);
+                view.result = Snapshot::default();
             }
             Key::OrganRoot(field) => {
-                root_controls::capture(&mut view.roots, field, value.clone());
-                view.result = Value::Null;
+                root_controls::capture(&mut view.roots, field, value);
+                view.result = Snapshot::default();
             }
             Key::Recipe(field) => {
-                recipe_controls::capture(&mut view.recipes, field, value.clone());
-                view.result = Value::Null;
+                recipe_controls::capture(&mut view.recipes, field, value);
+                view.result = Snapshot::default();
             }
             Key::Claim(field) => {
-                claims::capture(&mut view.claims, field, value.clone());
-                view.result = Value::Null;
+                claims::capture(&mut view.claims, field, value);
+                view.result = Snapshot::default();
             }
             Key::Query(field) => {
-                analysis::capture(&mut view.analysis, field, value.clone());
-                view.result = Value::Null;
+                analysis::capture(&mut view.analysis, field, value);
+                view.result = Snapshot::default();
             }
             Key::Person => {
                 clear_scope(&mut view);
-                view.person = value.clone();
+                view.person = value;
                 view.pending = None;
-                view.result = Value::Null;
+                view.result = Snapshot::default();
                 view.import.clear();
                 view.contact.clear();
                 view.anchor.clear();
                 view.readers.clear();
                 view.rules.clear();
             }
-            Key::Contact => view.contact = value.clone(),
-            Key::Readers => view.readers = value.clone(),
-            Key::Term => view.term = value.clone(),
-            Key::Revision => view.revision = value.clone(),
-            Key::Import => view.import = value.clone(),
-            Key::Anchor => view.anchor = value.clone(),
-            Key::Depth => view.depth = value.clone(),
-            Key::Excluded => view.excluded = value.clone(),
+            Key::Contact => view.contact = value,
+            Key::Readers => view.readers = value,
+            Key::Term => view.term = value,
+            Key::Revision => view.revision = value,
+            Key::Import => view.import = value,
+            Key::Anchor => view.anchor = value,
+            Key::Depth => view.depth = value,
+            Key::Excluded => view.excluded = value,
             Key::RuleIds(index) => {
                 if let Some(rule) = view.rules.get_mut(index) {
-                    rule.identities = value.clone();
+                    rule.identities = value;
                 }
             }
             Key::RuleLower(index) => {
                 if let Some(rule) = view.rules.get_mut(index) {
-                    rule.lower = value.clone();
+                    rule.lower = value;
                 }
             }
             Key::RuleUpper(index) => {
                 if let Some(rule) = view.rules.get_mut(index) {
-                    rule.upper = value.clone();
+                    rule.upper = value;
                 }
             }
         }
         if key == Key::Import && view.result["kind"] == "identity" {
-            view.result = Value::Null;
+            view.result = Snapshot::default();
         }
         if matches!(
             key,
@@ -986,20 +1036,14 @@ fn capture(world: &mut World) {
                 | Key::RuleLower(_)
                 | Key::RuleUpper(_)
         ) {
-            view.result = Value::Null;
+            view.result = Snapshot::default();
         }
         drop(view);
-        let fields = world
-            .query::<(Entity, &Input)>()
-            .iter(world)
-            .filter(|(_, input)| input.owner == owner && input.key == key)
-            .map(|(entity, _)| entity)
-            .collect::<Vec<_>>();
-        for field in fields {
-            world.get_mut::<Input>(field).unwrap().observed = value.clone();
-        }
         if key == Key::Person {
             render(world, owner);
+            // Rebuilt controls have new entities; later captured fields keep their
+            // original order and must update the replacement controls.
+            observers_current = false;
         }
     }
 }
@@ -1027,27 +1071,48 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .map(|messages| cursor.read(messages).cloned().collect::<Vec<_>>())
         .unwrap_or_default();
     for message in messages {
+        let message = message.0.as_ref();
+        let reset = matches!(
+            message,
+            cell::ServerMessage::SessionAuthenticated { .. }
+                | cell::ServerMessage::LiveHello {
+                    login_required: true
+                }
+        ) || matches!(message, cell::ServerMessage::Error { id, .. } if id == "connection");
+        if !reset
+            && !matches!(
+                message,
+                cell::ServerMessage::ActionOk { .. } | cell::ServerMessage::Error { .. }
+            )
+        {
+            continue;
+        }
         let owners = world
-            .query_filtered::<Entity, With<View>>()
+            .query::<(Entity, &View)>()
             .iter(world)
+            .filter(|(_, view)| {
+                reset
+                    || match message {
+                        cell::ServerMessage::ActionOk { id, .. }
+                        | cell::ServerMessage::Error { id, .. } => view
+                            .pending
+                            .as_ref()
+                            .is_some_and(|(pending, _)| pending == id),
+                        _ => false,
+                    }
+            })
+            .map(|(owner, _)| owner)
             .collect::<Vec<_>>();
         for owner in owners {
-            let reset = matches!(
-                message.0.as_ref(),
-                cell::ServerMessage::SessionAuthenticated { .. }
-                    | cell::ServerMessage::LiveHello {
-                        login_required: true
-                    }
-            ) || matches!(message.0.as_ref(),cell::ServerMessage::Error {id,..} if id=="connection");
             if reset {
                 let root = world.get::<View>(owner).unwrap().root;
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 clear_scope(&mut view);
-                view.person = match message.0.as_ref() {
+                view.person = match message {
                     cell::ServerMessage::SessionAuthenticated { person, .. } => person.clone(),
                     _ => String::new(),
                 };
-                view.context = Value::Null;
+                view.context = Snapshot::default();
                 view.contact.clear();
                 view.anchor.clear();
                 view.readers.clear();
@@ -1060,7 +1125,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 view.withdrawn = false;
                 view.revision = "0".into();
                 view.review = None;
-                view.result = Value::Null;
+                view.result = Snapshot::default();
                 view.pending = None;
                 view.bootstrap = false;
                 view.root = root;
@@ -1069,37 +1134,38 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 render(world, owner);
                 continue;
             }
-            let pending = world.get::<View>(owner).unwrap().pending.clone();
-            let Some((pending, generation)) = pending else {
-                continue;
-            };
-            if generation != world.get::<View>(owner).unwrap().generation {
-                if matches!(message.0.as_ref(),cell::ServerMessage::ActionOk {id,..}|cell::ServerMessage::Error {id,..} if *id==pending)
-                {
-                    let mut view = world.get_mut::<View>(owner).unwrap();
-                    view.pending = None;
-                    view.notice =
-                        "Draft changed. Refresh retained disclosures to see completed requests."
-                            .into();
-                    drop(view);
-                    render(world, owner);
-                }
+            let _reply = nucleus::performance::Span::new("trust-reply-application");
+            nucleus::performance::add("trust-replies-matched", 1);
+            let view = world.get::<View>(owner).unwrap();
+            if view
+                .pending
+                .as_ref()
+                .is_none_or(|(_, generation)| *generation != view.generation)
+            {
+                let mut view = world.get_mut::<View>(owner).unwrap();
+                view.pending = None;
+                view.notice =
+                    "Draft changed. Refresh retained disclosures to see completed requests.".into();
+                drop(view);
+                render(world, owner);
                 continue;
             }
-            match message.0.as_ref() {
-                cell::ServerMessage::ActionOk { id, data, .. } if *id == pending => {
+            match message {
+                cell::ServerMessage::ActionOk { data, .. } => {
                     let result = data
                         .as_ref()
                         .map(|data| {
                             if data["identity"].is_object() {
-                                json!({"kind":"identity","value":data["identity"]})
+                                Cow::Owned(json!({"kind":"identity","value":data["identity"]}))
                             } else if data["measurement"].is_object() {
-                                json!({"kind":"measurement","measurement":data["measurement"]})
+                                Cow::Owned(
+                                    json!({"kind":"measurement","measurement":data["measurement"]}),
+                                )
                             } else {
-                                data["trust"].clone()
+                                Cow::Borrowed(&data["trust"])
                             }
                         })
-                        .unwrap_or(Value::Null);
+                        .unwrap_or(Cow::Borrowed(&Value::Null));
                     let context_result = result["kind"] == "contact_context";
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     view.pending = None;
@@ -1120,35 +1186,38 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                                 view.anchor_organ = false;
                             }
                         }
-                        view.context = result;
+                        view.context = result.into();
                     } else if result["kind"] == "contact_review" {
                         view.claims.review = None;
                         view.recipes.review = None;
-                        view.review = serde_json::from_value(result["review"].clone())
+                        view.review = decode(&result["review"])
                             .ok()
-                            .zip(serde_json::from_value(result["hash"].clone()).ok());
+                            .map(Arc::new)
+                            .zip(decode(&result["hash"]).ok());
                         view.notice =
                             "Review these exact fields, audience and expiry before signing.".into();
                     } else if result["kind"] == "recipe_review" {
                         view.review = None;
                         view.claims.review = None;
                         view.recipes.review = None;
-                        view.recipes.review = serde_json::from_value(result["review"].clone())
+                        view.recipes.review = decode(&result["review"])
                             .ok()
-                            .zip(serde_json::from_value(result["hash"].clone()).ok());
+                            .map(Arc::new)
+                            .zip(decode(&result["hash"]).ok());
                         view.notice = "Review the exact output scope, signing Cell, audience and expiry before enabling automatic publication.".into();
                     } else if result["kind"] == "claim_review" {
                         view.recipes.review = None;
                         view.review = None;
-                        view.claims.review = serde_json::from_value(result["review"].clone())
+                        view.claims.review = decode(&result["review"])
                             .ok()
-                            .zip(serde_json::from_value(result["hash"].clone()).ok());
+                            .map(Arc::new)
+                            .zip(decode(&result["hash"]).ok());
                         view.notice="Review the exact issuer, subject, amount, basis, audience and term before signing this claim.".into();
                     } else {
+                        let result = Snapshot::from(result);
                         custody_controls::receive(&mut view, &result);
                         if result["kind"] == "measurement"
-                            && let Ok(measurement) =
-                                serde_json::from_value(result["measurement"].clone())
+                            && let Ok(measurement) = decode(&result["measurement"])
                         {
                             view.analysis.measurements = vec![measurement];
                             view.analysis.page = 0;
@@ -1157,7 +1226,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             if let Some(name) = result["name"].as_str() {
                                 view.analysis.name = name.into();
                             }
-                            if let Ok(query) = serde_json::from_value(result["query"].clone()) {
+                            if let Ok(query) = decode(&result["query"]) {
                                 analysis::load(&mut view, query);
                             }
                         }
@@ -1187,13 +1256,13 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         Command::Analyze.apply(world, owner);
                     }
                 }
-                cell::ServerMessage::Error { id, message, .. } if *id == pending => {
+                cell::ServerMessage::Error { message, .. } => {
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     if view.remote.pending {
                         view.remote = remote_controls::Draft::default();
                     }
                     view.pending = None;
-                    view.result = Value::Null;
+                    view.result = Snapshot::default();
                     view.review = None;
                     view.claims.review = None;
                     view.recipes.review = None;

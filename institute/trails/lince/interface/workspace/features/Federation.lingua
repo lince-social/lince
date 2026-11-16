@@ -1,4 +1,4 @@
-Independent infrastructure and composed workflows (@ws-federation: 0, is #chapter, #part-of @workspace-development, #requires @ws-civic, #requires @ws-linked-work, #requires @ws-hosted-world, #requires @ws-agent-authoring, #requires @ws-functional) { r_2RXCCJTTJYK6KNT9C2S6GYCCYC
+Independent infrastructure and composed workflows (@ws-federation: 0, is #chapter, #part-of @workspace-development, #requires @ws-civic, #requires @ws-linked-work, #requires @ws-hosted-world, #requires @ws-agent-authoring, #requires @ws-functional, #requires @ws-camera-feeds, #requires @ws-vision-tasks) { r_2RXCCJTTJYK6KNT9C2S6GYCCYC
 Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
 
 [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
@@ -6,6 +6,8 @@ Status: Pending. Dependency readiness is not implementation authorization or evi
 ## Start gate
 
 Required completed exports: [Civic and civil operational workflows](Civic.lingua); [Model-derived work and reconciliation](Linked-Work.lingua); [Hosted world and offline publication joins](Hosted-World.lingua); [Agent authoring and native continuation](Agent-Authoring.lingua); [Functional devices and model policy](Functional.lingua)
+
+Additional required completed exports: [Camera feeds](Camera-Feeds.lingua) and [Vision tasks](Vision-Tasks.lingua). Consume their real source descriptors, actual media lifecycle, typed observations and source-age/access semantics for F10; this join does not build a second media/vision service. Observed-model authoring is a separate downstream proof joined at core acceptance.
 
 Dependency reason: This is an explicit cross-Organ composition join; meaningful source/login/operation/scene integration needs the implemented contributing branches.
 
@@ -28,6 +30,8 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 ### Task 14.T01
 
 - [ ] **14.T01.** Assemble independently governed site/city layers, core F1–F10 operations, observations, queries and existing scoped behaviors into one useful infrastructure workspace. Inspect retained/imported specialist evidence only where available, with its source/revision/status and without starting new science. Verify partial coverage, source ages, denied fields, disconnected work and independent authorities. Exercise H1–H10 core hosting with independent Protein access and separately budgeted existing activities from more than one Organ; no workspace lends private authority or becomes a distributed transaction coordinator. Deferred scientific profiles later regress this same composition.
+
+- [ ] In 14.T01/14.T03, compose the verified camera/feed and event-watch subset with independently permitted site/Organ views. Prove metadata-only versus pixel access, source/task ages, revoke/disconnect and shared demand without borrowing source credentials. Use CV.W01/CV.W02/CV.W04 handoffs; full one-shot/periodic model authoring remains owned by Observed models and core 15.T10.
 
 ### Task 14.T02
 

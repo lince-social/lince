@@ -21,6 +21,9 @@ pub(super) fn build_views(
     identities: &mut BTreeMap<Entity, NodeId>,
     text_identities: &mut BTreeMap<(NodeId, usize), NodeId>,
 ) -> (TreeUpdate, BTreeMap<NodeId, Target>, BTreeMap<NodeId, Span>) {
+    let _measurement = lince_interface::host::performance::Span::new(
+        lince_interface::host::performance::Stage::NativeAccessibleTreeBuild,
+    );
     let mut window = Node::new(Role::Window);
     window.set_label("Lince Park");
     let mut update = TreeUpdate { nodes: Vec::new(), tree: Some(Tree::new(ROOT)), tree_id: TreeId::ROOT, focus: ROOT };

@@ -2,7 +2,7 @@ use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) fn decode(value: &Value) -> Option<Extension> {
-    serde_json::from_value::<Extension>(value.clone())
+    Extension::deserialize(value)
         .ok()
         .filter(Extension::bounded)
 }
@@ -474,7 +474,7 @@ pub(super) fn reference_status(world: &World, surface: &Surface) -> String {
         .get_resource::<Feeds>()
         .and_then(|feeds| feeds.0.get(&feed_key(&binding)))
         .and_then(|feed| feed.row.as_ref())
-        .and_then(|row| serde_json::from_value::<Extension>(row["shader_effect"].clone()).ok());
+        .and_then(|row| row.extension.as_ref());
     if extension
         .as_ref()
         .and_then(|extension| extension.selected(surface.effect_id.as_deref()))

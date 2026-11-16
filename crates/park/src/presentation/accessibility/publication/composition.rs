@@ -2,6 +2,9 @@ use super::*;
 use accesskit::{Node, Role, Tree};
 
 pub(super) fn merge(exports: &BTreeMap<OutputId, Arc<Publication>>) -> (TreeUpdate, BTreeMap<NodeId, Target>, BTreeMap<NodeId, Span>) {
+    let _measurement = lince_interface::host::performance::Span::new(
+        lince_interface::host::performance::Stage::NativeAccessibleComposition,
+    );
     let mut owners = BTreeMap::<NodeId, (u64, OutputId)>::new();
     for (output, publication) in exports {
         for id in publication.targets.iter().filter(|(_, target)| target.output == *output).map(|(id, _)| id)

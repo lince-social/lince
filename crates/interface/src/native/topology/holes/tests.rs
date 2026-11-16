@@ -382,7 +382,7 @@ fn off_hole_sands_keep_their_workspace_forces_while_visible_through_a_hole() {
     let lower = sand(&mut world, root, 1, DVec2::new(200.0, 0.0), 20.0);
     world
         .entity_mut(lower)
-        .insert(RecordProperties(serde_json::json!({"kind":"plain"})));
+        .insert(RecordProperties(serde_json::json!({"kind":"plain"}).into()));
     crate::native::area_effects::update(&mut world);
     assert!(
         world

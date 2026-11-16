@@ -26,7 +26,7 @@ fn payload(draft: &PendingProfile) -> Value {
 }
 
 fn checked_draft(key: &str, state: &Value) -> Result<PendingProfile, EngineError> {
-    if serde_json::to_vec(state)?.len() > store::records::MAX_EXTENSION_BYTES {
+    if nucleus::json::encoded_len(state)? > store::records::MAX_EXTENSION_BYTES {
         return Err(invalid(
             "Resolve the oversized retained profile draft state",
         ));
@@ -217,7 +217,7 @@ impl Engine {
             }
         }
         state[&key] = json!(draft);
-        if serde_json::to_vec(&state)?.len() > store::records::MAX_EXTENSION_BYTES {
+        if nucleus::json::encoded_len(&state)? > store::records::MAX_EXTENSION_BYTES {
             return Err(invalid(
                 "Resolve saved profile branches before adding more drafts",
             ));

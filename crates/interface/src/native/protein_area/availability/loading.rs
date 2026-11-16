@@ -94,7 +94,10 @@ fn initial_loading_has_no_authoritative_data_and_populates_the_same_card() {
             .get::<crate::native::area::RecordProperties>(row)
             .is_none()
     );
-    assert_eq!(app.world().get::<rows::Row>(row).unwrap().data, Value::Null);
+    assert_eq!(
+        app.world().get::<rows::Row>(row).unwrap().data.as_ref(),
+        &Value::Null
+    );
     assert_eq!(
         crate::native::canvas_host::authoring::owner(app.world(), row),
         owner
@@ -123,7 +126,7 @@ fn initial_loading_has_no_authoritative_data_and_populates_the_same_card() {
         owner,
         ServerMessage::Snapshot {
             id: subscription,
-            rows: vec![data(&uid)],
+            rows: vec![data(&uid)].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -239,7 +242,7 @@ fn an_initial_permission_failure_retries_the_captured_uid_without_creating_edito
         owner,
         ServerMessage::Snapshot {
             id: subscription,
-            rows: vec![data(&uid)],
+            rows: vec![data(&uid)].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -254,7 +257,7 @@ fn an_initial_permission_failure_retries_the_captured_uid_without_creating_edito
         owner,
         ServerMessage::Snapshot {
             id: fresh,
-            rows: vec![data(&uid)],
+            rows: vec![data(&uid)].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -284,7 +287,7 @@ fn field_presentations_leave_status_and_application_metadata_outside_editable_da
         owner,
         ServerMessage::Snapshot {
             id: subscription.clone(),
-            rows: vec![data(&uid)],
+            rows: vec![data(&uid)].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -323,7 +326,7 @@ fn field_presentations_leave_status_and_application_metadata_outside_editable_da
         owner,
         ServerMessage::Update {
             id: subscription,
-            rows: vec![],
+            rows: vec![].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);

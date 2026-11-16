@@ -108,13 +108,13 @@ async fn one_login_unlocks_current_and_later_areas_and_replies_stay_scoped() {
     responses
         .try_send(ServerMessage::Snapshot {
             id: subscription(&app, first),
-            rows: vec![json!({"uid":"first", "head":"First"})],
+            rows: vec![json!({"uid":"first", "head":"First"})].into(),
         })
         .unwrap();
     responses
         .try_send(ServerMessage::Snapshot {
             id: subscription(&app, second),
-            rows: vec![json!({"uid":"second", "head":"Second"})],
+            rows: vec![json!({"uid":"second", "head":"Second"})].into(),
         })
         .unwrap();
     app.update();
@@ -156,7 +156,7 @@ async fn one_login_unlocks_current_and_later_areas_and_replies_stay_scoped() {
     responses
         .try_send(ServerMessage::Snapshot {
             id: previous,
-            rows: vec![json!({"uid":"stale"})],
+            rows: vec![json!({"uid":"stale"})].into(),
         })
         .unwrap();
     app.update();
@@ -259,7 +259,7 @@ async fn disconnect_locks_every_area_clears_data_and_never_replays_mutations_on_
         responses
             .try_send(ServerMessage::Snapshot {
                 id: subscription(&app, owner),
-                rows: vec![json!({"uid":format!("row-{owner}"), "head":"Record"})],
+                rows: vec![json!({"uid":format!("row-{owner}"), "head":"Record"})].into(),
             })
             .unwrap();
     }

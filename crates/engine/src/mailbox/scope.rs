@@ -43,7 +43,7 @@ impl Scope {
                     || uid.len() > 256
                     || field.len() > 1024
             })
-            || serde_json::to_vec(self)?.len() > 262144
+            || nucleus::json::encoded_len(self)? > 262144
         {
             return Err(invalid());
         }

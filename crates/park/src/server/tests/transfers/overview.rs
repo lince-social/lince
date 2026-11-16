@@ -130,7 +130,7 @@ fn assert_rendered_text(
 pub(super) fn current(canvas: &mut Presentation, harness: &mut Harness) -> Frame {
     canvas.sync_windows(&harness.server.windows()).unwrap();
     let frame = settle(canvas);
-    for request in &frame.windows {
+    for request in frame.windows.iter() {
         let visible = frame.geometry.as_ref().is_some_and(|geometry| {
             geometry
                 .items

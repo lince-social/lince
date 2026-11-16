@@ -137,12 +137,7 @@ impl Action for Command {
 }
 
 fn find(world: &World, owner: Entity, uid: &str) -> Option<Frequency> {
-    world
-        .get::<View>(owner)?
-        .rows
-        .iter()
-        .find(|row| row.uid == uid)
-        .cloned()
+    world.get::<View>(owner)?.rows.by_uid(uid).cloned()
 }
 
 pub(super) fn row(world: &mut World, parent: Entity) -> Entity {
@@ -375,6 +370,7 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
+    let _prepare = nucleus::performance::Span::new("frequency-list-preparation");
     let view = world.get::<View>(owner).unwrap();
     let (list, deleting, page) = (view.list, view.deleting.clone(), view.page);
     let query = world
@@ -387,13 +383,20 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
         .rows
         .iter()
         .filter(|row| {
-            format!("{} {} {}", row.slug, row.definition.purpose, row.status)
-                .to_lowercase()
-                .contains(&query)
+            query.is_empty()
+                || format!("{} {} {}", row.slug, row.definition.purpose, row.status)
+                    .to_lowercase()
+                    .contains(&query)
         })
+        .collect();
+    let count = rows.len();
+    let page = page.min(count.saturating_sub(1) / PAGE_SIZE);
+    let rows: Vec<_> = rows
+        .into_iter()
+        .skip(page * PAGE_SIZE)
+        .take(PAGE_SIZE)
         .cloned()
         .collect();
-    let page = page.min(rows.len().saturating_sub(1) / PAGE_SIZE);
     world.get_mut::<View>(owner).unwrap().page = page;
     clear(world, list);
     if rows.is_empty() {
@@ -405,7 +408,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
         );
     }
     let now = chrono::Utc::now().timestamp_millis();
-    for frequency in rows.iter().skip(page * PAGE_SIZE).take(PAGE_SIZE) {
+    for frequency in &rows {
         let block = stack(world, list);
         let heading = row(world, block);
         world.get_mut::<Node>(heading).unwrap().flex_wrap = FlexWrap::NoWrap;
@@ -501,7 +504,7 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
             );
         }
     }
-    if rows.len() > PAGE_SIZE {
+    if count > PAGE_SIZE {
         let pages = row(world, list);
         if page > 0 {
             button(world, pages, owner, "Previous", Command::Page(page - 1));
@@ -509,32 +512,54 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
         crate::native::edit_mode::label(
             world,
             pages,
-            &format!("Page {} / {}", page + 1, rows.len().div_ceil(PAGE_SIZE)),
+            &format!("Page {} / {}", page + 1, count.div_ceil(PAGE_SIZE)),
             13.0,
         );
-        if (page + 1) * PAGE_SIZE < rows.len() {
+        if (page + 1) * PAGE_SIZE < count {
             button(world, pages, owner, "Next", Command::Page(page + 1));
         }
     }
 }
 
-pub(super) fn capture(world: &mut World, owner: Entity) {
+pub(super) fn capture(world: &mut World, owner: Entity) -> bool {
+    let _capture = nucleus::performance::Span::new("frequency-field-capture");
     let inputs: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
+        .query::<(Entity, &Input, &EditableText)>()
         .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
+        .filter(|(_, input, _)| input.owner == owner)
+        .map(|(entity, input, _)| (entity, input.index))
         .collect();
-    let Some(mut castle) = world.get_mut::<FrequencyCastle>(owner) else {
-        return;
-    };
-    for (index, value) in inputs {
+    let mut previous_search = None;
+    for (entity, index) in inputs {
+        let Some(castle) = world.get::<FrequencyCastle>(owner) else {
+            return false;
+        };
+        let expected = if index == 4 {
+            Some(castle.search.as_str())
+        } else {
+            castle
+                .draft
+                .as_ref()
+                .map(|draft| draft.fields[index].as_str())
+        };
+        let Some(expected) = expected else { continue };
+        let text = world.get::<EditableText>(entity).unwrap().value();
+        if text == expected {
+            continue;
+        }
+        let value = text.to_string();
+        let mut castle = world.get_mut::<FrequencyCastle>(owner).unwrap();
         if index == 4 {
-            castle.search = value;
+            // Retain the original value only on an actual change. Applying in
+            // query order also preserves the last input if a field is repeated.
+            let previous = std::mem::replace(&mut castle.search, value);
+            previous_search.get_or_insert(previous);
         } else if let Some(draft) = &mut castle.draft {
             draft.fields[index] = value;
         }
     }
+    previous_search
+        .is_some_and(|previous| world.get::<FrequencyCastle>(owner).unwrap().search != previous)
 }
 
 pub(super) fn inputs(world: &mut World) {
@@ -543,9 +568,7 @@ pub(super) fn inputs(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        let previous = world.get::<FrequencyCastle>(owner).unwrap().search.clone();
-        capture(world, owner);
-        if previous != world.get::<FrequencyCastle>(owner).unwrap().search {
+        if capture(world, owner) {
             world.get_mut::<View>(owner).unwrap().page = 0;
             render_list(world, owner);
         }
@@ -598,6 +621,7 @@ pub(super) fn refresh_next_date(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {
+    let _presentation = nucleus::performance::Span::new("frequency-countdown-presentation");
     let now = chrono::Utc::now().timestamp_millis();
     let updates: Vec<_> = world
         .query::<(Entity, &Countdown)>()
@@ -617,8 +641,7 @@ pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Insta
             let frequency = world
                 .get::<View>(countdown.owner)?
                 .rows
-                .iter()
-                .find(|row| row.uid == countdown.uid)?;
+                .by_uid(&countdown.uid)?;
             Some((
                 entity,
                 format!(

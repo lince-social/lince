@@ -12,6 +12,7 @@ fn follows_native_state(state: &nucleus::component::ComponentState) -> bool {
 }
 
 pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
+    let _timing = nucleus::performance::Span::new("native-canvas-content-preparation");
     if let Some(Content(ContentKind::Authored { base, edits })) = world.get::<Content>(entity) {
         return ContentKind::Authored {
             base: base.clone(),
@@ -65,41 +66,40 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
                 return component;
             }
         }
+        let texts = crate::native::sand_text::snapshot(world, entity);
         let mut settings = BTreeMap::from([(
             "texts".into(),
-            serde_json::json!(
-                serde_json::to_string(&crate::native::sand_text::snapshot(world, entity)).unwrap()
-            ),
+            serde_json::Value::String(serde_json::to_string(&texts).unwrap()),
         )]);
-        settings.insert(
-            "appearance".into(),
-            serde_json::json!(
-                serde_json::to_string(&crate::native::token_style::overrides(world, entity))
-                    .unwrap()
-            ),
-        );
+        let appearance = crate::native::token_style::overrides_ref(world, entity)
+            .map_or_else(
+                || serde_json::to_string(&crate::native::tokens::TokenOverrides::default()),
+                serde_json::to_string,
+            )
+            .unwrap();
+        settings.insert("appearance".into(), serde_json::Value::String(appearance));
         if let Some(timer) = world.get::<crate::native::work_timer::LocalTimer>(entity) {
             settings.insert(
                 "timer".into(),
-                serde_json::json!(serde_json::to_string(timer).unwrap()),
+                serde_json::Value::String(serde_json::to_string(timer).unwrap()),
             );
         }
         if let Some(clock) = world.get::<crate::native::time_castle::TimeSettings>(entity) {
             settings.insert(
                 "time_castle".into(),
-                serde_json::json!(serde_json::to_string(&clock.0).unwrap()),
+                serde_json::Value::String(serde_json::to_string(&clock.0).unwrap()),
             );
         }
         if let Some(todo) = crate::native::todo::snapshot(world, entity) {
             settings.insert(
                 "todo".into(),
-                serde_json::json!(serde_json::to_string(&todo).unwrap()),
+                serde_json::Value::String(serde_json::to_string(&todo).unwrap()),
             );
         }
         if let Some(video) = world.get::<crate::native::video_castle::Settings>(entity) {
             settings.insert(
                 "video".into(),
-                serde_json::json!(serde_json::to_string(video).unwrap()),
+                serde_json::Value::String(serde_json::to_string(video).unwrap()),
             );
         }
         if let Some(selection) = sand
@@ -108,14 +108,14 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         {
             settings.insert(
                 "visibility".into(),
-                serde_json::json!(serde_json::to_string(&selection).unwrap()),
+                serde_json::Value::String(serde_json::to_string(&selection).unwrap()),
             );
         }
         if matches!(
             sand.kind,
             SandKind::Text | SandKind::EditableText | SandKind::Square
         ) {
-            if let Some(text) = crate::native::sand_text::snapshot(world, entity).first() {
+            if let Some(text) = texts.first() {
                 for (id, value) in &text.area.settings.0 {
                     if sand.kind != SandKind::Square {
                         settings.insert(id.clone(), serde_json::to_value(value).unwrap());
@@ -124,12 +124,12 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
             }
             settings.insert(
                 "text".into(),
-                serde_json::json!(
-                    crate::native::sand_text::snapshot(world, entity)
+                serde_json::Value::String(
+                    texts
                         .iter()
                         .map(|text| text.text.as_str())
                         .collect::<Vec<_>>()
-                        .join("\n")
+                        .join("\n"),
                 ),
             );
         }
@@ -152,7 +152,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
             settings: BTreeMap::from([
                 ("name".into(), serde_json::json!(castle.draft.name)),
                 ("slug".into(), serde_json::json!(castle.draft.slug)),
-                ("query".into(), serde_json::json!(query)),
+                ("query".into(), serde_json::Value::String(query)),
             ]),
             bindings: record_references(&castle.draft.query),
         };
@@ -162,7 +162,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
             kind: "instinct".into(),
             settings: BTreeMap::from([(
                 "page".into(),
-                serde_json::json!(instinct.page.clone().unwrap_or_default()),
+                serde_json::Value::String(instinct.page.clone().unwrap_or_default()),
             )]),
             bindings: Vec::new(),
         };
@@ -260,10 +260,10 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
 }
 
 pub(super) fn record_references(value: &serde_json::Value) -> Vec<String> {
-    fn visit(value: &serde_json::Value, found: &mut std::collections::BTreeSet<String>) {
+    fn visit<'a>(value: &'a serde_json::Value, found: &mut std::collections::BTreeSet<&'a str>) {
         match value {
             serde_json::Value::String(value) if nucleus::valid_uid(value, "r") => {
-                found.insert(value.clone());
+                found.insert(value.as_str());
             }
             serde_json::Value::Array(values) => {
                 for value in values {
@@ -280,12 +280,14 @@ pub(super) fn record_references(value: &serde_json::Value) -> Vec<String> {
     }
     let mut found = std::collections::BTreeSet::new();
     visit(value, &mut found);
-    found.into_iter().collect()
+    found.into_iter().map(str::to_owned).collect()
 }
 
 pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String> {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
     crate::host::performance::count(crate::host::performance::Count::NativeCanvasSnapshots);
+    let spaces = world.get::<Workspaces>(root);
     let entities: Vec<_> = world
         .get::<Children>(root)
         .map(|children| {
@@ -296,7 +298,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                         && !crate::native::laboratory::temporary_owner(world, *entity)
                         && super::authoring::owner(world, *entity) == *entity
                         && world.get::<WorkspaceMember>(*entity).is_none_or(|member| {
-                            world.get::<Workspaces>(root).is_some_and(|spaces| {
+                            spaces.is_some_and(|spaces| {
                                 spaces.entries.iter().any(|space| space.id == member.0)
                             })
                         })
@@ -322,10 +324,12 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
     let spaces = world
         .get::<Workspaces>(root)
         .ok_or("Canvas has no workspaces.")?;
-    let selected = world
+    let selected: std::collections::HashSet<_> = world
         .get::<crate::native::canvas_selection::SandSelection>(root)
-        .map(|selection| selection.0.as_slice())
-        .unwrap_or_default();
+        .into_iter()
+        .flat_map(|selection| &selection.0)
+        .map(|entity| super::authoring::owner(world, *entity))
+        .collect();
     let camera = world.get::<CanvasView>(root).copied().unwrap_or_default();
     let scope = crate::native::laboratory::scope(world).filter(|(owner, _, _, _)| *owner == root);
     let workspaces = spaces
@@ -369,7 +373,6 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
         .into_iter()
         .map(|entity| {
             let item = world.get::<CanvasItem>(entity).unwrap();
-            let placement = crate::native::sand_placement::Placement::capture(world, entity);
             api::Placement {
                 id: world.get::<Identity>(entity).unwrap().0.clone(),
                 workspace: world
@@ -380,40 +383,11 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                     position: item.position.to_array(),
                     size: item.size.as_dvec2().to_array(),
                 },
-                selected: selected
-                    .iter()
-                    .any(|selected| super::authoring::owner(world, *selected) == entity),
-                group: placement
-                    .group
+                selected: selected.contains(&entity),
+                group: world
+                    .get::<crate::native::canvas_selection::SandGroup>(entity)
                     .map(|group| group.0.iter().map(|byte| format!("{byte:02x}")).collect()),
-                metadata: api::Metadata {
-                    room: placement.room.map(|value| value.0),
-                    room_member: placement.room_member.map(|value| value.0),
-                    material: placement.material.map(|value| value.0),
-                    light: placement.light.map(|value| value.0),
-                    binding: placement.binding,
-                    follow_slope: placement.follow_slope,
-                    order: placement.order,
-                    pinned: placement.pinned.map(|pin| api::Pinned {
-                        anchor: pin.anchor,
-                        scale: pin.scale,
-                    }),
-                    event_boundary: placement.events.0,
-                    spatial: api::Spatial {
-                        elevation: placement.spatial.elevation,
-                        rotation: placement.spatial.rotation,
-                        depth: placement.spatial.depth,
-                        world_pinned: placement.spatial.world_pinned,
-                    },
-                    attachment: placement.attachment.map(|pose| api::Pose {
-                        position: pose.position,
-                        rotation: pose.rotation,
-                    }),
-                    group_pose: placement.group_pose.map(|pose| api::Pose {
-                        position: pose.position,
-                        rotation: pose.rotation,
-                    }),
-                },
+                metadata: super::metadata::capture(world, entity),
             }
         })
         .collect();

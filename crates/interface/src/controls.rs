@@ -11,6 +11,18 @@ pub mod editing;
 
 pub const BUTTON_BORDER_WIDTH: f32 = 1.0;
 
+/// Keep password presentation unchanged without allocating or marking Text changed.
+/// Callers retain control of their existing visible character limit.
+pub fn password_mask(mut text: Mut<'_, Text>, count: usize) {
+    if text.0.chars().eq(std::iter::repeat_n('•', count)) {
+        return;
+    }
+    let value = &mut text.0;
+    value.clear();
+    value.extend(std::iter::repeat_n('•', count));
+    nucleus::performance::add("password-mask-text-updates", 1);
+}
+
 #[derive(Component)]
 pub struct Editor {
     pub title: String,

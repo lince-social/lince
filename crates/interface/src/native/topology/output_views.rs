@@ -145,44 +145,53 @@ pub fn geometry(
 ) -> Vec<crate::host::ItemGeometry> {
     use crate::host::{ContentMapping, ItemGeometry, ItemId, Rectangle};
     let canvas = crate::native::output_views::canvas(world, root, output.workspace);
-    let members: Vec<_> = world
-        .query::<(
-            Entity,
-            &CanvasItem,
-            &ChildOf,
-            &WorkspaceMember,
-            &crate::native::layout::LayoutBox,
-            &Surface,
-        )>()
-        .iter(world)
-        .filter(|(entity, _, parent, member, _, surface)| {
-            parent.parent() == root
-                && surface.visible
-                && super::presentation::displayed(world, *entity)
-                && holes::live_in(world, root, output.workspace, member.0)
-        })
-        .map(|(entity, item, _, member, layout, _)| {
-            (
-                entity,
-                world
-                    .get::<crate::native::canvas::ItemPreview>(entity)
-                    .map_or(*item, |preview| preview.0),
-                member.0,
-                layout.id,
-            )
-        })
-        .collect();
+    let mut members = world.query::<(
+        Entity,
+        &CanvasItem,
+        &ChildOf,
+        &WorkspaceMember,
+        &crate::native::layout::LayoutBox,
+        &Surface,
+    )>();
+    let Some(children) = world.get::<Children>(root) else {
+        return Vec::new();
+    };
+    let layers = holes::layers_for(world, root, output.workspace);
+    let focused = world
+        .get_resource::<OutputViews>()
+        .is_none_or(|views| views.focused == output.id);
+    let spatial = focused && super::view::spatial(world, root);
+    let extent = bevy::math::DVec2::from_array(output.bounds.size());
+    let origin = bevy::math::DVec2::from_array(output.bounds.origin());
+    let viewport = [
+        origin,
+        origin + bevy::math::DVec2::new(extent.x, 0.0),
+        origin + extent,
+        origin + bevy::math::DVec2::new(0.0, extent.y),
+    ];
+    let screen =
+        |point: bevy::math::DVec2| (point - canvas.center) * canvas.zoom + extent * 0.5 + origin;
     let mut result = Vec::new();
-    for (entity, item, workspace, id) in members {
+    for (entity, item, parent, member, layout, surface) in members.iter_many(world, children.iter())
+    {
+        if parent.parent() != root
+            || !surface.visible
+            || !super::presentation::displayed(world, entity)
+            || member.0 != output.workspace
+                && !layers
+                    .is_some_and(|layers| layers.0.iter().any(|layer| layer.workspace == member.0))
+        {
+            continue;
+        }
+        let item = world
+            .get::<crate::native::canvas::ItemPreview>(entity)
+            .map_or(*item, |preview| preview.0);
+        let workspace = member.0;
+        let id = layout.id;
         let scale = world
             .get::<crate::native::area_effects::AreaScale>(entity)
             .map_or(1.0, |scale| f64::from(scale.0));
         let size = item.size.as_dvec2() * scale;
-        let screen = |point: bevy::math::DVec2| {
-            (point - canvas.center) * canvas.zoom
-                + bevy::math::DVec2::from_array(output.bounds.size()) * 0.5
-                + bevy::math::DVec2::from_array(output.bounds.origin())
-        };
         let Some(mut rectangle) = Rectangle::new(
             screen(item.position - size * 0.5).to_array(),
             (size * canvas.zoom).to_array(),
@@ -205,16 +214,8 @@ pub fn geometry(
         let Some(surface) = surface else {
             continue;
         };
-        let spatial = super::view::spatial(world, root)
-            && world
-                .get_resource::<OutputViews>()
-                .is_none_or(|views| views.focused == output.id);
-        let projected = spatial
-            || world
-                .get_resource::<OutputViews>()
-                .is_none_or(|views| views.focused == output.id)
-                && crate::native::canvas::presented_spatial(world, entity).rotation()
-                    != bevy::math::DQuat::IDENTITY;
+        let placement = crate::native::canvas::presented_spatial(world, entity);
+        let projected = spatial || focused && placement.rotation() != bevy::math::DQuat::IDENTITY;
         let corners = if projected {
             let Some(mut corners) = super::presentation::projected_corners(world, entity) else {
                 continue;
@@ -274,14 +275,6 @@ pub fn geometry(
                 Some(screen(point))
             }
         };
-        let extent = bevy::math::DVec2::from_array(output.bounds.size());
-        let origin = bevy::math::DVec2::from_array(output.bounds.origin());
-        let viewport = [
-            origin,
-            origin + bevy::math::DVec2::new(extent.x, 0.0),
-            origin + extent,
-            origin + bevy::math::DVec2::new(0.0, extent.y),
-        ];
         let clip: Vec<_> = polygons
             .into_iter()
             .map(|polygon| {
@@ -304,12 +297,12 @@ pub fn geometry(
         if clip.is_empty() {
             continue;
         }
-        let depth = holes::layers_for(world, root, output.workspace)
+        let depth = layers
             .and_then(|layers| layers.0.iter().find(|layer| layer.workspace == workspace))
             .map_or(0, |layer| layer.depth);
         result.push((
             depth,
-            crate::native::canvas::presented_spatial(world, entity).elevation,
+            placement.elevation,
             super::stacking::key(world, entity),
             ItemGeometry {
                 id,

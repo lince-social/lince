@@ -418,7 +418,7 @@ pub(super) fn inputs(world: &mut World) {
         .filter(|(_, input, text)| {
             !text.is_composing()
                 && !crate::native::record_view::pending_text(text)
-                && input.previous != text.value().to_string()
+                && text.value() != input.previous.as_str()
         })
         .map(|(entity, input, text)| {
             (
@@ -486,7 +486,7 @@ fn changed(world: &mut World, owner: Entity) {
         .get::<ProteinCastle>(owner)
         .unwrap()
         .draft
-        .compile()
+        .compile_shared()
         .err();
     status(
         world,
@@ -506,6 +506,7 @@ fn clear(world: &mut World, parent: Entity) {
 }
 
 pub(super) fn editor(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("protein-editor-presentation");
     let Some(view) = world.get::<View>(owner) else {
         return;
     };
@@ -1144,23 +1145,19 @@ fn scalar(value: &Value) -> String {
 }
 
 pub(super) fn output(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("protein-result-presentation");
     let view = world.get::<View>(owner).unwrap();
     let parent = view.output;
     let status = view.status.clone();
     let results = world.get::<ProteinResults>(owner).unwrap();
     let count = results.rows.len();
     let page = view.page.min(count.saturating_sub(1) / 20);
-    let rows = results
-        .rows
-        .iter()
-        .skip(page * 20)
-        .take(20)
-        .cloned()
-        .collect::<Vec<_>>();
+    let rows = results.rows.clone();
     let columns = results.columns.clone();
     clear(world, parent);
     let status_entity = label(world, parent, &status, 14.0);
     world.entity_mut(status_entity).insert(Tooltip(status));
+    world.get_mut::<View>(owner).unwrap().status_label = Some(status_entity);
     let line = row(world, parent);
     label(world, line, &format!("{count} rows"), 18.0);
     crate::native::sand_panel::button(
@@ -1199,7 +1196,7 @@ pub(super) fn output(world: &mut World, owner: Entity) {
         &format!("Page {} / {}", page + 1, count.div_ceil(20).max(1)),
         14.0,
     );
-    for (index, value) in rows.iter().enumerate() {
+    for (index, value) in rows.iter().skip(page * 20).take(20).enumerate() {
         let group = column(world, parent);
         label(world, group, &format!("{}", page * 20 + index + 1), 16.0);
         for key in columns.iter().take(64) {

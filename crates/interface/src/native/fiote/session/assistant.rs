@@ -3,6 +3,7 @@ use crate::native::sand_panel as ui;
 use cell::fiote_assistant::{Directory, EntryReceipt, EntryRequest};
 use serde::{Deserialize, Serialize};
 use std::{
+    io::{BufWriter, Write},
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -216,7 +217,11 @@ fn preserve(world: &mut World, owner: Entity, saved: Saved) -> Result<(), String
         std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         let mut file =
             tempfile::NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
-        serde_json::to_writer(file.as_file_mut(), &saved).map_err(|error| error.to_string())?;
+        {
+            let mut buffered = BufWriter::new(file.as_file_mut());
+            serde_json::to_writer(&mut buffered, &saved).map_err(|error| error.to_string())?;
+            buffered.flush().map_err(|error| error.to_string())?;
+        }
         file.as_file()
             .sync_all()
             .map_err(|error| error.to_string())?;
@@ -344,10 +349,8 @@ impl Command {
                 if text.trim().is_empty() && content.is_empty() {
                     return Err("Write or attach an assistant request.".into());
                 }
-                let fingerprint = nucleus::message::digest(
-                    &serde_json::to_vec(&(&target, &text, &content))
-                        .map_err(|error| error.to_string())?,
-                );
+                let fingerprint = nucleus::json::sha256_hex(&(&target, &text, &content))
+                    .map_err(|error| error.to_string())?;
                 let previous = entry
                     .saved
                     .as_ref()
@@ -536,20 +539,16 @@ pub(super) fn update(
                         let accepted = receipt.message.is_some();
                         let submitted = entry.saved.as_ref().map(|saved| saved.fingerprint.clone());
                         if accepted {
-                            let current = world.get::<Entry>(owner).unwrap();
-                            let text = world
-                                .get::<EditableText>(input)
-                                .unwrap()
-                                .value()
-                                .to_string();
-                            let content = world
-                                .get::<crate::native::message_content::Draft>(owner)
-                                .map(|draft| draft.parts.clone())
-                                .unwrap_or_default();
-                            let fingerprint =
-                                serde_json::to_vec(&(&current.target, &text, &content))
-                                    .map(|bytes| nucleus::message::digest(&bytes))
-                                    .ok();
+                            let fingerprint = {
+                                let current = world.get::<Entry>(owner).unwrap();
+                                let text =
+                                    world.get::<EditableText>(input).unwrap().value().to_cow();
+                                let content = world
+                                    .get::<crate::native::message_content::Draft>(owner)
+                                    .map(|draft| draft.parts.as_slice())
+                                    .unwrap_or_default();
+                                nucleus::json::sha256_hex(&(&current.target, &text, content)).ok()
+                            };
                             if fingerprint == submitted {
                                 world
                                     .get_mut::<EditableText>(input)

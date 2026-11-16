@@ -911,7 +911,7 @@ fn protein(world: &mut World, root: Entity) -> Result<Entity, String> {
             ..default()
         };
         config.draft.query["where"] = serde_json::json!([{"any":ids.iter().take(if learning_protein { 1 } else { 2 }).map(|uid| serde_json::json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
-        config.draft.compile()?;
+        config.draft.compile_shared()?;
         world.get_mut::<InfluenceArea>(entity).unwrap().protein = Some(config);
     }
     Ok(entity)
@@ -2091,7 +2091,7 @@ pub(super) fn update(
                         let sample = find(world, root, Role::Square).unwrap();
                         world
                             .entity_mut(sample)
-                            .insert(RecordProperties(properties));
+                            .insert(RecordProperties(properties.into()));
                         let entity = area(world, root, Role::Area).unwrap();
                         world.get_mut::<InfluenceArea>(entity).unwrap().rules =
                             vec![crate::native::area::PropertyRule {

@@ -2,6 +2,7 @@ use crate::component::ComponentState;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::ControlFlow;
 
 pub const MAX_BYTES: usize = 256 * 1024;
 pub const MAX_PLACEMENTS: usize = 256;
@@ -286,26 +287,44 @@ impl Component {
     }
 
     pub fn records(&self) -> Vec<&str> {
+        let mut records = Vec::new();
+        let _: ControlFlow<()> = self.visit_records(&mut |record| {
+            records.push(record);
+            ControlFlow::Continue(())
+        });
+        records
+    }
+
+    /// Visits declared references in presentation order, including duplicates.
+    /// The visitor can stop without allocating a complete reference list.
+    pub fn visit_records<'a, B>(
+        &'a self,
+        visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
         match self {
-            Self::Authored { base, edits } => base
-                .records()
-                .into_iter()
-                .chain(
-                    edits
-                        .added
-                        .values()
-                        .filter_map(|part| part.component.as_ref())
-                        .flat_map(Self::records),
-                )
-                .collect(),
-            Self::Builtin { state } => state.records(),
-            Self::Native { bindings, .. } => bindings.iter().map(String::as_str).collect(),
-            Self::Composition { composition } => composition
-                .parts
-                .iter()
-                .flat_map(|part| part.component.records())
-                .collect(),
+            Self::Authored { base, edits } => {
+                base.visit_records(visit)?;
+                for component in edits
+                    .added
+                    .values()
+                    .filter_map(|part| part.component.as_ref())
+                {
+                    component.visit_records(visit)?;
+                }
+            }
+            Self::Builtin { state } => state.visit_records(visit)?,
+            Self::Native { bindings, .. } => {
+                for record in bindings {
+                    visit(record)?;
+                }
+            }
+            Self::Composition { composition } => {
+                for part in &composition.parts {
+                    part.component.visit_records(visit)?;
+                }
+            }
         }
+        ControlFlow::Continue(())
     }
 
     pub fn origin(&self) -> Option<&crate::component::composition::Origin> {
@@ -601,7 +620,7 @@ impl Snapshot {
             }
             checked.extend(path);
         }
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > bytes {
+        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > bytes {
             return Err("Canvas snapshot exceeds its byte limit.".into());
         }
         Ok(())
@@ -942,7 +961,7 @@ pub fn validate_registry(components: &[Descriptor]) -> Result<(), String> {
 }
 
 pub fn bounded(value: &(impl Serialize + ?Sized)) -> Result<(), String> {
-    if serde_json::to_vec(value).map_err(|e| e.to_string())?.len() > MAX_BYTES {
+    if crate::json::encoded_len(value).map_err(|e| e.to_string())? > MAX_BYTES {
         Err("Canvas data exceeds 256 KiB.".into())
     } else {
         Ok(())

@@ -53,9 +53,8 @@ pub async fn export_translations_on(
     let mut size = 0;
     for concept in concepts {
         let dictionary = super::dictionary_on(connection, &concept).await?;
-        size += serde_json::to_vec(&dictionary)
-            .map_err(|error| invalid(&error.to_string()))?
-            .len();
+        size +=
+            nucleus::json::encoded_len(&dictionary).map_err(|error| invalid(&error.to_string()))?;
         if size > 4 * 1024 * 1024 {
             return Err(invalid("A translation package can contain at most 4 MiB"));
         }

@@ -1,10 +1,12 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
 const TTL: Duration = Duration::from_secs(20);
+const RECORD_LIMIT: usize = 64;
+const CURSOR_LIMIT: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cursor {
@@ -51,6 +53,90 @@ struct State {
     viewers: HashMap<String, BTreeSet<String>>,
 }
 
+struct Selected<'a> {
+    record: &'a str,
+    origin: &'a str,
+    cursor: &'a Cursor,
+    age_ms: u64,
+}
+
+impl Selected<'_> {
+    fn entry(self) -> Entry {
+        Entry {
+            record: self.record.into(),
+            origin: self.origin.into(),
+            cursor: self.cursor.clone(),
+            age_ms: self.age_ms,
+        }
+    }
+
+    fn cursor(self) -> Cursor {
+        let mut cursor = self.cursor.clone();
+        if !self.origin.is_empty() {
+            cursor.session = format!("{}/{}", self.origin, cursor.session);
+            cursor.organ = Some(self.origin.into());
+        }
+        cursor
+    }
+}
+
+impl State {
+    // Filter and deduplicate borrowed entries before copying their text. Callers
+    // share this ordering and expiry policy for both wire and local delivery.
+    fn select<'a>(
+        &'a mut self,
+        local: &'a str,
+        includes: impl Fn(&str) -> bool,
+    ) -> Vec<Selected<'a>> {
+        let _selection = crate::performance::Span::new("presence-selection");
+        self.local.retain(|_, (at, _)| at.elapsed() < TTL);
+        self.remote.retain(|_, (at, _)| at.elapsed() < TTL);
+        let mut visited = self.local.len();
+        let mut entries = Vec::new();
+        for ((record, _), (at, cursor)) in &self.local {
+            if includes(record) {
+                entries.push(Selected {
+                    record,
+                    origin: local,
+                    cursor,
+                    age_ms: at.elapsed().as_millis() as u64,
+                });
+            }
+        }
+        for (at, remote) in self.remote.values() {
+            visited += remote.len();
+            for entry in remote {
+                if !includes(&entry.record) {
+                    continue;
+                }
+                let age_ms = entry.age_ms.saturating_add(at.elapsed().as_millis() as u64);
+                if age_ms < TTL.as_millis() as u64 {
+                    entries.push(Selected {
+                        record: &entry.record,
+                        origin: &entry.origin,
+                        cursor: &entry.cursor,
+                        age_ms,
+                    });
+                }
+            }
+        }
+        entries.sort_by(|a, b| {
+            (a.record, a.origin, &a.cursor.session, a.age_ms).cmp(&(
+                b.record,
+                b.origin,
+                &b.cursor.session,
+                b.age_ms,
+            ))
+        });
+        entries.dedup_by(|a, b| {
+            a.record == b.record && a.origin == b.origin && a.cursor.session == b.cursor.session
+        });
+        crate::performance::add("presence-entries-visited", visited as u64);
+        crate::performance::add("presence-entries-selected", entries.len() as u64);
+        entries
+    }
+}
+
 #[derive(Default)]
 pub struct Presence {
     state: Mutex<State>,
@@ -63,33 +149,48 @@ impl Presence {
     }
 
     fn notify(&self) {
+        crate::performance::add("presence-wakeups", 1);
         self.changed
             .send_modify(|version| *version = version.wrapping_add(1));
     }
 
     pub fn join(&self, record: &str, session: &str) {
-        self.state
+        let changed = self
+            .state
             .lock()
             .expect("presence")
             .viewers
             .entry(session.into())
             .or_default()
             .insert(record.into());
-        self.notify();
+        if changed {
+            self.notify();
+        }
     }
 
-    pub fn records(&self) -> Vec<String> {
+    pub fn has_viewers(&self) -> bool {
         self.state
             .lock()
             .expect("presence")
             .viewers
             .values()
-            .flatten()
-            .cloned()
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .take(64)
-            .collect()
+            .any(|records| !records.is_empty())
+    }
+
+    pub fn records(&self) -> Vec<String> {
+        let state = self.state.lock().expect("presence");
+        let mut records = BTreeSet::new();
+        for record in state.viewers.values().flatten() {
+            // Only the first sorted IDs can be requested on the wire. Keep
+            // that bounded prefix instead of sorting all viewer memberships.
+            if records.len() < RECORD_LIMIT || records.last().is_some_and(|last| record < *last) {
+                records.insert(record);
+                if records.len() > RECORD_LIMIT {
+                    let _ = records.pop_last();
+                }
+            }
+        }
+        records.into_iter().cloned().collect()
     }
 
     pub fn cursor(&self, record: &str, cursor: Cursor) {
@@ -111,89 +212,119 @@ impl Presence {
 
     pub fn leave_cursor(&self, record: Option<&str>, session: &str) {
         let mut state = self.state.lock().expect("presence");
+        let previous = state.local.len();
         state.local.retain(|(uid, editor), _| {
             editor != session || record.is_some_and(|record| record != uid)
         });
-        if let Some(record) = record {
+        let membership_changed = if let Some(record) = record {
             if let Some(records) = state.viewers.get_mut(session) {
-                records.remove(record);
-            }
-        } else {
-            state.viewers.remove(session);
-        }
-        drop(state);
-        self.notify();
-    }
-
-    pub fn snapshot(&self, local: &str) -> Vec<Entry> {
-        let mut state = self.state.lock().expect("presence");
-        state.local.retain(|_, (at, _)| at.elapsed() < TTL);
-        state.remote.retain(|_, (at, _)| at.elapsed() < TTL);
-        let mut entries: Vec<_> = state
-            .local
-            .iter()
-            .map(|((record, _), (at, cursor))| Entry {
-                record: record.clone(),
-                origin: local.into(),
-                cursor: cursor.clone(),
-                age_ms: at.elapsed().as_millis() as u64,
-            })
-            .collect();
-        for (at, remote) in state.remote.values() {
-            for entry in remote {
-                let mut entry = entry.clone();
-                entry.age_ms = entry.age_ms.saturating_add(at.elapsed().as_millis() as u64);
-                if entry.age_ms < TTL.as_millis() as u64 {
-                    entries.push(entry);
+                let removed = records.remove(record);
+                if records.is_empty() {
+                    state.viewers.remove(session);
                 }
+                removed
+            } else {
+                false
             }
-        }
-        entries.sort_by(|a, b| {
-            (&a.record, &a.origin, &a.cursor.session, a.age_ms).cmp(&(
-                &b.record,
-                &b.origin,
-                &b.cursor.session,
-                b.age_ms,
-            ))
-        });
-        entries.dedup_by(|a, b| {
-            a.record == b.record && a.origin == b.origin && a.cursor.session == b.cursor.session
-        });
-        entries
-    }
-
-    pub fn replace(&self, peer: &str, entries: Vec<Entry>) {
-        let mut state = self.state.lock().expect("presence");
-        state.remote.retain(|_, (at, _)| at.elapsed() < TTL);
-        if state.remote.len() >= 128 && !state.remote.contains_key(peer) {
-            return;
-        }
-        let changed = state.remote.get(peer).map(|(_, previous)| previous) != Some(&entries);
-        if entries.is_empty() {
-            state.remote.remove(peer);
         } else {
-            state.remote.insert(peer.into(), (Instant::now(), entries));
-        }
+            state
+                .viewers
+                .remove(session)
+                .is_some_and(|records| !records.is_empty())
+        };
+        let changed = membership_changed || previous != state.local.len();
         drop(state);
         if changed {
             self.notify();
         }
     }
 
-    pub fn cursors(&self, record: &str) -> Vec<Cursor> {
-        self.snapshot("")
+    pub fn snapshot(&self, local: &str) -> Vec<Entry> {
+        self.snapshot_matching(local, |_| true)
+    }
+
+    fn snapshot_for(&self, local: &str, records: &[String]) -> Vec<Entry> {
+        if records.is_empty() {
+            return Vec::new();
+        }
+        let records: HashSet<_> = records.iter().map(String::as_str).collect();
+        self.snapshot_matching(local, |record| records.contains(record))
+    }
+
+    fn snapshot_matching(&self, local: &str, includes: impl Fn(&str) -> bool) -> Vec<Entry> {
+        let _preparation = crate::performance::Span::new("presence-preparation");
+        let mut state = self.state.lock().expect("presence");
+        let entries: Vec<_> = state
+            .select(local, includes)
             .into_iter()
-            .filter(|entry| entry.record == record)
-            .take(256)
-            .map(|entry| {
-                let mut cursor = entry.cursor;
-                if !entry.origin.is_empty() {
-                    cursor.session = format!("{}/{}", entry.origin, cursor.session);
-                    cursor.organ = Some(entry.origin);
-                }
-                cursor
-            })
-            .collect()
+            .map(Selected::entry)
+            .collect();
+        drop(state);
+        crate::performance::add("presence-entries-materialized", entries.len() as u64);
+        entries
+    }
+
+    pub fn replace(&self, peer: &str, entries: Vec<Entry>) {
+        let mut state = self.state.lock().expect("presence");
+        let previous = state.remote.len();
+        state.remote.retain(|_, (at, _)| at.elapsed() < TTL);
+        let expired = previous != state.remote.len();
+        if state.remote.len() >= 128 && !state.remote.contains_key(peer) {
+            return;
+        }
+        let changed = if entries.is_empty() {
+            state.remote.remove(peer).is_some()
+        } else {
+            let changed = state.remote.get(peer).map(|(_, previous)| previous) != Some(&entries);
+            state.remote.insert(peer.into(), (Instant::now(), entries));
+            changed
+        };
+        drop(state);
+        if changed || expired {
+            self.notify();
+        }
+    }
+
+    pub fn cursors(&self, record: &str) -> Vec<Cursor> {
+        let _preparation = crate::performance::Span::new("presence-preparation");
+        let cursors: Vec<_> = self
+            .state
+            .lock()
+            .expect("presence")
+            .select("", |uid| uid == record)
+            .into_iter()
+            .take(CURSOR_LIMIT)
+            .map(Selected::cursor)
+            .collect();
+        crate::performance::add("presence-entries-materialized", cursors.len() as u64);
+        cursors
+    }
+
+    /// One short-lived snapshot for a refresh's subscribed Records. Delivery
+    /// still requires the caller's fresh Record and cursor-owner access checks.
+    pub fn cursors_for<'a>(
+        &self,
+        records: impl IntoIterator<Item = &'a str>,
+    ) -> HashMap<&'a str, Vec<Cursor>> {
+        let mut cursors: HashMap<_, Vec<_>> =
+            records.into_iter().map(|uid| (uid, Vec::new())).collect();
+        if cursors.is_empty() {
+            return cursors;
+        }
+        let _preparation = crate::performance::Span::new("presence-preparation");
+        let mut state = self.state.lock().expect("presence");
+        let selected = state.select("", |uid| cursors.contains_key(uid));
+        let mut materialized = 0;
+        for entry in selected {
+            let record_cursors = cursors.get_mut(entry.record).expect("selected Record");
+            if record_cursors.len() < CURSOR_LIMIT {
+                record_cursors.push(entry.cursor());
+                materialized += 1;
+            }
+        }
+        drop(state);
+        crate::performance::add("presence-entries-materialized", materialized);
+        cursors
     }
 }
 
@@ -214,7 +345,7 @@ impl crate::Engine {
         if contact.scope_unreadable.is_some() || contact.accept_unreadable.is_some() {
             return Ok(false);
         }
-        let Some(record) = store::records::get(pool, uid).await? else {
+        let Some(record) = store::records::routing(pool, uid).await? else {
             return Ok(false);
         };
         if record.kind == "message_draft" {
@@ -267,7 +398,7 @@ impl crate::Engine {
         route: &str,
         entries: Vec<Entry>,
     ) -> Result<(), crate::EngineError> {
-        if entries.len() > 256 || entries.iter().any(|entry| !entry.valid()) {
+        if entries.len() > CURSOR_LIMIT || entries.iter().any(|entry| !entry.valid()) {
             return Err(crate::EngineError::Consequence(
                 "Invalid cursor presence".into(),
             ));
@@ -285,9 +416,7 @@ impl crate::Engine {
             {
                 continue;
             }
-            let owner = store::records::get(&self.store.pool, &entry.record)
-                .await?
-                .and_then(|record| record.organ_uid);
+            let owner = store::records::organ_uid(&self.store.pool, &entry.record).await?;
             if entry.origin == peer || owner.as_deref() == Some(peer) {
                 accepted.push(entry);
             }
@@ -301,7 +430,8 @@ impl crate::Engine {
         peer: &str,
         records: &[String],
     ) -> Result<Vec<Entry>, crate::EngineError> {
-        if records.len() > 64 || records.iter().any(|uid| !nucleus::valid_uid(uid, "r")) {
+        let _preparation = crate::performance::Span::new("presence-wire-preparation-await");
+        if records.len() > RECORD_LIMIT || records.iter().any(|uid| !nucleus::valid_uid(uid, "r")) {
             return Err(crate::EngineError::Consequence(
                 "Invalid cursor subscriptions".into(),
             ));
@@ -311,7 +441,7 @@ impl crate::Engine {
             .map(|organ| organ.uid)
             .unwrap_or_default();
         let mut entries = Vec::new();
-        for entry in self.presence.snapshot(&local) {
+        for entry in self.presence.snapshot_for(&local, records) {
             if entry.origin == local
                 && !self
                     .may_read_record(entry.cursor.person.as_deref(), &entry.record)
@@ -319,20 +449,17 @@ impl crate::Engine {
             {
                 continue;
             }
-            if !records.contains(&entry.record)
-                || entry.origin == peer
+            if entry.origin == peer
                 || !self
                     .presence_shared(peer, &entry.record, &entry.cursor.property)
                     .await?
             {
                 continue;
             }
-            let owner = store::records::get(&self.store.pool, &entry.record)
-                .await?
-                .and_then(|record| record.organ_uid);
+            let owner = store::records::organ_uid(&self.store.pool, &entry.record).await?;
             if entry.origin == local || owner.as_deref() == Some(&local) {
                 entries.push(entry);
-                if entries.len() == 256 {
+                if entries.len() == CURSOR_LIMIT {
                     break;
                 }
             }
@@ -346,7 +473,7 @@ impl crate::Engine {
         records: &[String],
         entries: Vec<Entry>,
     ) -> Result<Vec<Entry>, crate::EngineError> {
-        if records.len() > 64 || records.iter().any(|uid| !nucleus::valid_uid(uid, "r")) {
+        if records.len() > RECORD_LIMIT || records.iter().any(|uid| !nucleus::valid_uid(uid, "r")) {
             return Err(crate::EngineError::Consequence(
                 "Invalid cursor subscriptions".into(),
             ));

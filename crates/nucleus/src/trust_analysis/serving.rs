@@ -148,9 +148,7 @@ impl Scope {
 impl Request {
     pub fn validate(&self) -> Result<(), String> {
         self.audience.validate()?;
-        if serde_json::to_vec(&self.audience)
-            .map_err(|e| e.to_string())?
-            .len()
+        if crate::json::encoded_len(&self.audience).map_err(|e| e.to_string())?
             > crate::visibility::MAX_POLICY_BYTES
         {
             return Err("Serving audience exceeds its 12 KiB policy limit".into());

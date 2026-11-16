@@ -128,7 +128,7 @@ impl Draft {
                 "Check the Record fields and use at most 40 assertions",
             ));
         }
-        crate::private_work::WorkMetadata::parse(&self.work)
+        crate::private_work::WorkMetadata::validate(&self.work)
             .map_err(|error| invalid(error.to_string()))?;
         DecimalValue::parse_inferred(&self.quantity)
             .map_err(|_| invalid("Enter an exact decimal quantity"))

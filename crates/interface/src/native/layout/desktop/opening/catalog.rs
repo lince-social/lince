@@ -1,6 +1,7 @@
 use super::*;
 use bevy::ecs::message::Messages;
 use cell::{ClientMessage, ServerMessage};
+use serde::Deserialize;
 
 fn sender(world: &World) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(world, &RecordBinding { area: Entity::PLACEHOLDER, uid: String::new(), source: Source::Local })
@@ -18,28 +19,44 @@ fn query(ids: &BTreeSet<String>, namespace: &str) -> protein::Protein {
     }
 }
 
-fn read_entry(namespace: &str, row: Value) -> Option<(String, Entry)> {
+fn read_entry(namespace: &str, row: &Value) -> Option<(String, Entry)> {
     let uid = row["uid"].as_str()?.to_owned();
-    if !nucleus::valid_uid(&uid, "r") { return None; }
-    let title = row["head"].as_str().unwrap_or("Opening preferences").chars().take(160).collect();
-    let value = row.get("extension").cloned().unwrap_or(Value::Null);
-    let raw = value.clone();
+    if !nucleus::valid_uid(&uid, "r") {
+        return None;
+    }
+    let title = row["head"]
+        .as_str()
+        .unwrap_or("Opening preferences")
+        .chars()
+        .take(160)
+        .collect();
+    let value = &row["extension"];
     let payload = (|| {
         if value.is_null() && namespace == WINDOW_NAMESPACE {
             return Ok(Payload::Window(Window { revision: 0, properties: Properties::default() }));
         }
-        if serde_json::to_vec(&value).map_err(|error| error.to_string())?.len() > nucleus::window_opening::MAX_BYTES {
+        if nucleus::json::encoded_len(&value).map_err(|error| error.to_string())?
+            > nucleus::window_opening::MAX_BYTES
+        {
             return Err("Opening preferences exceed 64 KiB.".into());
         }
         let payload = if namespace == RULE_NAMESPACE {
-            Payload::Rule(serde_json::from_value(value).map_err(|error| error.to_string())?)
+            Payload::Rule(Rule::deserialize(value).map_err(|error| error.to_string())?)
         } else {
-            Payload::Window(serde_json::from_value(value).map_err(|error| error.to_string())?)
+            Payload::Window(Window::deserialize(value).map_err(|error| error.to_string())?)
         };
         payload.validate()?;
         Ok(payload)
     })();
-    Some((uid, Entry { title, exists: true, value: raw, payload }))
+    Some((
+        uid,
+        Entry {
+            title,
+            exists: true,
+            value: value.clone(),
+            payload,
+        },
+    ))
 }
 
 fn retire(feed: &mut Feed, sender: Option<&crate::native::cell_bridge::Sender>) {
@@ -55,13 +72,17 @@ fn retire(feed: &mut Feed, sender: Option<&crate::native::cell_bridge::Sender>) 
     feed.blocked = false;
 }
 
-fn subscribe(feed: &mut Feed, selected: BTreeSet<String>, sender: Option<&crate::native::cell_bridge::Sender>) {
+fn subscribe(feed: &mut Feed, selected: &BTreeSet<String>, sender: Option<&crate::native::cell_bridge::Sender>) {
     let now = Instant::now();
-    if feed.selected != selected {
-        let retained = std::mem::take(&mut feed.entries);
+    if &feed.selected != selected {
+        let mut retained = std::mem::take(&mut feed.entries);
         retire(feed, sender);
-        feed.selected = selected;
-        feed.entries = retained.into_iter().filter(|(uid, _)| feed.selected.contains(uid)).collect();
+        feed.selected.retain(|uid| selected.contains(uid));
+        for uid in selected {
+            if !feed.selected.contains(uid) { feed.selected.insert(uid.clone()); }
+        }
+        retained.retain(|uid, _| feed.selected.contains(uid));
+        feed.entries = retained;
         feed.error = None;
     }
     if feed.selected.len() > 512 {
@@ -97,17 +118,26 @@ fn subscribe(feed: &mut Feed, selected: BTreeSet<String>, sender: Option<&crate:
     }
 }
 
-fn accept(feed: &mut Feed, rows: Vec<Value>) -> bool {
-    let previous = feed.entries.clone();
+fn accept(feed: &mut Feed, rows: &[Value]) -> bool {
+    let previous = std::mem::take(&mut feed.entries);
     feed.deadline = None;
-    if rows.len() > 512 || serde_json::to_vec(&rows).map_or(true, |bytes| bytes.len() > 4 * 1024 * 1024) {
+    if rows.len() > 512
+        || nucleus::json::encoded_len(&rows).map_or(true, |bytes| bytes > 4 * 1024 * 1024)
+    {
         feed.ready = false;
         feed.error = Some("Opening-preference snapshot exceeds its limit.".into());
         feed.entries.clear();
         return previous != feed.entries;
     }
-    feed.entries = rows.into_iter().filter_map(|row| read_entry(feed.namespace, row))
-        .filter(|(uid, _)| feed.selected.contains(uid)).collect();
+    feed.entries = rows
+        .iter()
+        .filter(|row| {
+            row["uid"]
+                .as_str()
+                .is_some_and(|uid| feed.selected.contains(uid))
+        })
+        .filter_map(|row| read_entry(feed.namespace, row))
+        .collect();
     for uid in &feed.selected {
         feed.entries.entry(uid.clone()).or_insert_with(|| Entry { title: uid.clone(), exists: false, value: Value::Null, payload: Err("The Record is missing or is not readable.".into()) });
     }
@@ -202,13 +232,21 @@ pub(super) fn update(world: &mut World) {
     for message in messages.iter().map(|message| message.as_ref()) {
         match message {
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let changed = if catalog.rules.id.as_ref() == Some(&id) { accept(&mut catalog.rules, rows.clone()) }
-                    else if catalog.windows.id.as_ref() == Some(&id) { accept(&mut catalog.windows, rows.clone()) } else { false };
-                if changed { catalog.advance(); }
+                let changed = if catalog.rules.id.as_ref() == Some(&id) {
+                    accept(&mut catalog.rules, rows)
+                } else if catalog.windows.id.as_ref() == Some(&id) {
+                    accept(&mut catalog.windows, rows)
+                } else {
+                    false
+                };
+                if changed {
+                    catalog.advance();
+                }
             }
             ServerMessage::Error { id, message, .. } => {
-                if let Some(pending) = catalog.pending.remove(id) { finish(world, &mut catalog, pending, Err(message.clone())); }
-                else {
+                if let Some(pending) = catalog.pending.remove(id) {
+                    finish(world, &mut catalog, pending, Err(message.clone()));
+                } else {
                     for feed in [&mut catalog.rules, &mut catalog.windows] {
                         if feed.id.as_ref() == Some(&id) {
                             retire(feed, catalog.sender.as_ref());
@@ -253,13 +291,13 @@ pub(super) fn update(world: &mut World) {
         }
     }
     if timed_out { catalog.advance(); }
-    let (extra_rules, extra_windows) = ui::references(world);
-    let mut rules: BTreeSet<_> = world.get_resource::<LayoutSettings>().map(|settings| settings.opening_rules.iter().cloned().collect()).unwrap_or_default();
-    rules.extend(extra_rules);
-    let mut windows = catalog.window_refs.clone();
-    windows.extend(extra_windows);
-    subscribe(&mut catalog.rules, rules, catalog.sender.as_ref());
-    subscribe(&mut catalog.windows, windows, catalog.sender.as_ref());
+    let mut references = catalog.references.take().unwrap_or_else(|| ui::References::from_world(world));
+    references.refresh(world, &catalog.window_refs);
+    // Selection preparation is retained, but subscription service still runs:
+    // retries, retirement and loading deadlines are independent of membership.
+    subscribe(&mut catalog.rules, references.rules(), catalog.sender.as_ref());
+    subscribe(&mut catalog.windows, references.windows(), catalog.sender.as_ref());
+    catalog.references = Some(references);
     clock(world, &mut catalog);
     world.insert_resource(catalog);
 }

@@ -1,4 +1,4 @@
-Complete core workspace acceptance (@ws-core-acceptance: 0, is #chapter, #part-of @workspace-development, #requires @ws-contract-01, #requires @ws-contract-02, #requires @ws-contract-03, #requires @ws-contract-04, #requires @ws-contract-05, #requires @ws-contract-06, #requires @ws-contract-07, #requires @ws-contract-08, #requires @ws-contract-09, #requires @ws-contract-10, #requires @ws-contract-11, #requires @ws-contract-11a, #requires @ws-contract-12, #requires @ws-contract-13, #requires @ws-contract-14) { r_3JHQAAN5FYFWYRNVA36409ZFP3
+Complete core workspace acceptance (@ws-core-acceptance: 0, is #chapter, #part-of @workspace-development, #requires @ws-contract-01, #requires @ws-contract-02, #requires @ws-contract-03, #requires @ws-contract-04, #requires @ws-contract-05, #requires @ws-contract-06, #requires @ws-contract-07, #requires @ws-contract-08, #requires @ws-contract-09, #requires @ws-contract-10, #requires @ws-contract-11, #requires @ws-contract-11a, #requires @ws-contract-12, #requires @ws-contract-13, #requires @ws-contract-14, #requires @ws-contract-exploration, #requires @ws-contract-object-authoring, #requires @ws-contract-camera-vision) { r_3JHQAAN5FYFWYRNVA36409ZFP3
 Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
 
 [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
@@ -8,6 +8,12 @@ Status: Pending. Dependency readiness is not implementation authorization or evi
 Required completed exports: [Contract 01 acceptance](../contracts/Baseline-evidence.lingua); [Contract 02 acceptance](../contracts/Durable-model-contracts.lingua); [Contract 03 acceptance](../contracts/Frames-and-views-contracts.lingua); [Contract 04 acceptance](../contracts/Selection-and-interface-contracts.lingua); [Contract 05 acceptance](../contracts/Scale-navigation-and-hosting-contracts.lingua); [Contract 06 acceptance](../contracts/Offline-coverage-contracts.lingua); [Contract 07 acceptance](../contracts/Native-authoring-and-behavior-contracts.lingua); [Contract 08 acceptance](../contracts/Cave-and-simplification-contracts.lingua); [Contract 09 acceptance](../contracts/Imported-base-contracts.lingua); [Contract 10 acceptance](../contracts/Exact-CAD-contracts.lingua); [Contract 11 acceptance](../contracts/Assembly-and-character-contracts.lingua); [Contract 11a acceptance](../contracts/Electronic-design-contracts.lingua); [Contract 12 acceptance](../contracts/Molecular-structure-contracts.lingua); [Contract 13 acceptance](../contracts/Operational-workflow-contracts.lingua); [Contract 14 acceptance](../contracts/Infrastructure-composition-contracts.lingua)
 
 Dependency reason: A full product claim waits for every core contract and composed workflow, although independent branch implementation does not.
+
+Additional required completed export: [Exploration and possession acceptance](../contracts/Exploration-contracts.lingua). Its authored placement/play subset is core; optional automatic exploration and later domain-specific possession adapters are not prerequisites for this gate.
+
+Additional required completed export: [Reusable object authoring acceptance](../contracts/Object-authoring-contracts.lingua). It joins native recipes, behavior/appearance, CAD/control bindings and bounded trials; later numerical implementations remain independent extensions.
+
+Additional required completed export: [Camera feeds and Fiote vision acceptance](../contracts/Camera-vision-contracts.lingua). Its source/plugin schema, real vision/event workflow and bounded one-shot/periodic observed model updates are core; no raw-video recorder, global camera catalog or research reconstruction system is required.
 
 This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
 
@@ -53,11 +59,23 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 
 - [ ] **15.T07.** Replay 07.W05/07.W06 and 11a.W01–11a.W03 beside the earlier core workflows. Verify independent appearance/structure/behavior settings, schematic/PCB/3D mapping, design-check/export limits, continued offscreen activity and source invalidation. Include supplied versus abstract-first device construction, power-aware functional rules versus unconditional light, stateful functional transition, weak visitor and interrupted offline restore. Record exact unresolved physical capabilities; no numerical circuit, thermal or microscopic execution is needed to pass this core gate.
 
+### Task 15.T08
+
+- [ ] **15.T08.** Replay EXP.W01–EXP.W05 as 15.W07 beside the existing scale, shared-view, editing and functional-device workflows. Observe/follow/enter/return through a noncharacter object and linked specimen, possess one occurrence to place/commit/undo/reopen, play/discard and explicitly Keep pose, then interrupt or revoke control. Preserve identity, physical dimensions, selected behavior fidelity, one output writer, source/definition isolation and no trial-to-live event leakage. Include offline/missing detail, stale source and bounded history/demand release under the existing mixed-workload limits. Record optional automatic exploration and unsupported numerical/rig control adapters separately; they do not delay this core proof.
+
+### Task 15.T09
+
+- [ ] **15.T09.** Replay OA.W01–OA.W06 as 15.W08 on the reusable lamp, hatch and visual pulse beside ordinary editing, functional behavior, possession and restricted shared observation. Edit exposed controls and recipe internals, reuse/fork a fragment, bind a CAD dimension to operating limits, invoke the same action through native/connection/possessed controls and compare isolated variants with causal explanation. Preserve accepted source/undo/offline closure, independent fidelity and editor disclosure, valid state transitions, one writer and no trial-to-live effect leakage. Measure aggregate response, computation, traces/products and release against provider limits. Reuse verified exports; no universal interpreter or new physics/scientific Laboratory is required.
+
+### Task 15.T10
+
+- [ ] **15.T10.** Replay CV.W01–CV.W05 on CV.F01 in the mixed native/Fiote workspace. Connect and spatially inspect two providers, deliver actual frames plus metadata to a supported vision model, watch a defined event and generate/update a selected observed model once and periodically. Preserve source/target identity, authored geometry, per-source time/calibration/coverage, access, bounded workers and explicit stale state. Exercise two-source misalignment, source movement, conflicting edits, model failure, stop/revoke and clean media release. Verify that saved metadata/results and task history contain no raw-video archive. Record actual error, event coverage, output age and aggregate resource limits; full-city/high-detail reconstruction remains separate.
+
 ## Required contracts and proof
 
 [Core-acceptance-contracts](../contracts/Core-acceptance-contracts.lingua)
 
-15.W01–15.W06/B25/B38/B41/B42/B43, all core limits, failure/recovery and source/privacy checks.
+15.W01–15.W09/B25/B38/B41/B42/B43/EXP.F01/OA.F01/CV.F01, EXP.W01–EXP.W05, OA.W01–OA.W06 and CV.W01–CV.W05, all core limits, failure/recovery and source/privacy checks.
 
 Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
 

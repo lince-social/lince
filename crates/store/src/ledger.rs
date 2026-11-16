@@ -95,6 +95,28 @@ pub async fn records_with_concept(
         .collect())
 }
 
+/// Concept memberships of one live Record, including inherited memberships.
+/// This is the inverse of `records_with_concept`: predicate ancestry is walked
+/// inside one read instead of materializing every subject of each ancestor.
+pub async fn record_concept_ancestors(
+    pool: &SqlitePool,
+    record_uid: &str,
+) -> Result<Vec<String>, StoreError> {
+    Ok(sqlx::query_scalar(
+        "WITH RECURSIVE memberships(concept_uid) AS (
+            SELECT a.predicate_uid FROM record_assertion a
+            JOIN record r ON r.uid = a.subject_uid
+            WHERE a.subject_uid = ? AND r.deleted_at IS NULL AND a.retracted_at IS NULL
+            UNION
+            SELECT p.parent_uid FROM concept_parent p
+            JOIN memberships m ON m.concept_uid = p.concept_uid
+        ) SELECT concept_uid FROM memberships",
+    )
+    .bind(record_uid)
+    .fetch_all(pool)
+    .await?)
+}
+
 pub async fn classify_fact(
     pool: &SqlitePool,
     fact_uid: &str,

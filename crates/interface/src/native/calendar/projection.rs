@@ -4,11 +4,28 @@ use cell::{ClientMessage, ServerMessage};
 #[derive(Component)]
 pub(super) struct TimezoneInput(pub Entity);
 
+struct Preparation {
+    config: crate::native::protein_area::Config,
+    year: i32,
+    month: u32,
+    timezone: String,
+}
+
+impl Preparation {
+    fn matches(&self, config: &crate::native::protein_area::Config, calendar: &Calendar) -> bool {
+        self.config.same_query_inputs(config)
+            && self.year == calendar.year
+            && self.month == calendar.month
+            && self.timezone == calendar.timezone
+    }
+}
+
 #[derive(Component)]
 pub(super) struct Feed {
     id: String,
     query: String,
-    pub rows: Vec<serde_json::Value>,
+    preparation: Preparation,
+    pub rows: Arc<Vec<serde_json::Value>>,
     pub revision: u64,
     pub status: String,
     ready: bool,
@@ -56,7 +73,7 @@ pub(super) fn receive(
                 }
                 ServerMessage::Error { id, message, .. } if id == &feed.id => {
                     feed.status = message.clone();
-                    feed.rows.clear();
+                    feed.rows = Arc::default();
                     feed.ready = false;
                     feed.revision += 1;
                 }
@@ -67,6 +84,7 @@ pub(super) fn receive(
 }
 
 pub(super) fn maintain(world: &mut World, owner: Entity) {
+    let _maintain = nucleus::performance::Span::new("calendar-projection-update");
     let Some(source) = area(world, owner) else {
         world.entity_mut(owner).remove::<Feed>();
         return;
@@ -82,11 +100,20 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
         world.entity_mut(owner).remove::<Feed>();
         return;
     }
+    let calendar = &world.get::<CalendarSand>(owner).unwrap().0;
+    if world
+        .get::<Feed>(owner)
+        .is_some_and(|feed| feed.preparation.matches(config, calendar))
+    {
+        return;
+    }
+    // Only an already successful Record query is reused. Invalid sources keep
+    // the original live validation/removal path, including time-based errors.
+    let _prepare = nucleus::performance::Span::new("calendar-projection-preparation");
     let Ok(mut query) = config.query() else {
         world.entity_mut(owner).remove::<Feed>();
         return;
     };
-    let calendar = &world.get::<CalendarSand>(owner).unwrap().0;
     let Ok(window) = nucleus::projection::Window::month(
         calendar.year,
         calendar.month,
@@ -107,10 +134,19 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
     let Ok(key) = serde_json::to_string(&query) else {
         return;
     };
+    nucleus::performance::add("calendar-projection-queries-prepared", 1);
+    let preparation = Preparation {
+        config: config.clone(),
+        year: calendar.year,
+        month: calendar.month,
+        timezone: calendar.timezone.clone(),
+    };
     if world
         .get::<Feed>(owner)
         .is_some_and(|feed| feed.query == key)
     {
+        // Presentation-only source changes can compile to the same wire query.
+        world.get_mut::<Feed>(owner).unwrap().preparation = preparation;
         return;
     }
     let Some(bridge) = world.get_non_send::<crate::native::cell_bridge::CellBridge>() else {
@@ -132,7 +168,8 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
     world.entity_mut(owner).insert(Feed {
         id,
         query: key,
-        rows: Vec::new(),
+        preparation,
+        rows: Arc::default(),
         revision,
         status: "Projection updating".into(),
         ready: false,

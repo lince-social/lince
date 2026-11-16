@@ -24,7 +24,7 @@ pub(super) async fn inactive_on(
         .unwrap_or_default();
     for row in maps {
         let namespace: String = row.get("namespace");
-        let mut map: Value = serde_json::from_str(&row.get::<String, _>("fds"))?;
+        let mut map: Value = serde_json::from_str(row.get::<&str, _>("fds"))?;
         let object = map
             .as_object_mut()
             .ok_or_else(|| invalid("Review malformed inactive admission metadata"))?;

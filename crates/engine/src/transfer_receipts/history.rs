@@ -75,7 +75,7 @@ impl Engine {
                 let resolution = &resolutions[&scope_id];
                 let (projected, pending) = super::collection::project_history(saved, resolution)?;
                 partial |= !pending.is_empty();
-                let size = serde_json::to_vec(&(&projected, &pending))?.len();
+                let size = nucleus::json::encoded_len(&(&projected, &pending))?;
                 if projected_bytes.saturating_add(size) > 4 * 1024 * 1024 {
                     partial = true;
                     more = true;

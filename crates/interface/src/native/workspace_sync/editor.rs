@@ -1,5 +1,6 @@
 use super::*;
 use engine::workspace_sync::RecordEdit;
+use std::{borrow::Cow, collections::BTreeMap, ops::ControlFlow};
 
 #[derive(Component)]
 struct Fields {
@@ -44,13 +45,8 @@ impl Action for Edit {
             (!value.trim().is_empty()).then(|| value.trim().to_owned())
         };
         let record = selected_element(world, owner)
-            .and_then(|element| {
-                element
-                    .component
-                    .records()
-                    .first()
-                    .map(|record| (*record).to_owned())
-            })
+            .and_then(|element| first_record(&element.component))
+            .map(str::to_owned)
             .unwrap_or_else(|| read(fields.record).trim().to_owned());
         let edit = match self {
             Self::Head => RecordEdit::Text {
@@ -341,47 +337,77 @@ pub(super) fn presentation(
         );
         return;
     }
-    for (path, event, action) in engine::workspace_sync::adapters::controls(&element.component) {
-        let caption = event.clone().unwrap_or_else(|| {
-            if let LayoutComponent::Builtin {
-                state: ComponentState::Button { label, .. },
-            } = &element.component
-            {
-                label.clone()
-            } else {
-                format!("Use {}", path.join(" / "))
-            }
-        });
-        panel::button(
-            world,
-            parent,
-            owner,
-            &caption,
-            Invoke(Change::Invoke {
-                element: element.id.clone(),
-                path,
-                event,
-                action,
-            }),
-        );
-    }
+    let _: ControlFlow<()> = engine::workspace_sync::adapters::visit_controls(
+        &element.component,
+        |path, event, action| {
+            let caption = event.map(Cow::Borrowed).unwrap_or_else(|| {
+                if let LayoutComponent::Builtin {
+                    state: ComponentState::Button { label, .. },
+                } = &element.component
+                {
+                    Cow::Borrowed(label.as_str())
+                } else {
+                    Cow::Owned(format!("Use {}", path.join(" / ")))
+                }
+            });
+            panel::button(
+                world,
+                parent,
+                owner,
+                &caption,
+                Invoke(Change::Invoke {
+                    element: element.id.clone(),
+                    path: path.iter().map(|part| (*part).to_owned()).collect(),
+                    event: event.map(str::to_owned),
+                    action: action.clone(),
+                }),
+            );
+            ControlFlow::Continue(())
+        },
+    );
 }
 
 pub(super) fn records(world: &mut World, owner: Entity, rows: &[Value]) {
-    let labels = world
-        .query::<(Entity, &RecordLabel)>()
-        .iter(world)
-        .filter(|(_, label)| label.owner == owner)
-        .map(|(entity, label)| (entity, label.record.clone()))
-        .collect::<Vec<_>>();
-    for (entity, record) in labels {
-        if let Some(row) = rows.iter().find(|row| row["uid"] == record) {
-            world.get_mut::<Text>(entity).unwrap().0 = format!(
+    let _presentation = engine::performance::Span::new("native-workspace-record-presentation");
+    if rows.is_empty() {
+        return;
+    }
+    let mut prepared = None;
+    let mut updated = 0;
+    for (label, text) in world
+        .query::<(&RecordLabel, Option<&mut Text>)>()
+        .iter_mut(world)
+    {
+        if label.owner != owner {
+            continue;
+        }
+        let rows_by_uid = prepared.get_or_insert_with(|| {
+            let mut by_uid = BTreeMap::new();
+            for row in rows {
+                if let Some(uid) = row["uid"].as_str() {
+                    // Match the former first-row lookup if the result repeats
+                    // an identity. Format only rows with a presented label.
+                    by_uid.entry(uid).or_insert((row, None::<String>));
+                }
+            }
+            by_uid
+        });
+        let Some((row, formatted)) = rows_by_uid.get_mut(label.record.as_str()) else {
+            continue;
+        };
+        let mut text = text.expect("Workspace Record label has no Text");
+        let value = formatted.get_or_insert_with(|| {
+            format!(
                 "{}\n{}\nQuantity: {}",
                 row["head"].as_str().unwrap_or_default(),
                 row["body"].as_str().unwrap_or_default(),
                 row["quantity"]
-            );
+            )
+        });
+        if text.0 != *value {
+            text.0.clone_from(value);
+            updated += 1;
         }
     }
+    engine::performance::add("native-workspace-record-labels-updated", updated);
 }

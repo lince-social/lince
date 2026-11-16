@@ -15,6 +15,10 @@ This is a core work package. Start only after the named providers publish verifi
 
 Functional sensors/lamps/cameras/actuators, model policy inspector, bounded timers/events, stateful functional transitions and causal demand.
 
+The real kinematic-actuator proof must publish supported control intents, per-activity state isolation, captured source/session generation, one-writer authority and stop/release semantics for [Possession](Possession.lingua). Reuse this same boundary for temporary trials and later live adapters; possession's native placement/play workflow remains a downstream package and cannot create a second runtime.
+
+Publish the actual bounded actions, state/timer operators and interruption/trace contracts for [Behavior authoring](Behavior-Authoring.lingua). Its editor and recipes are downstream consumers of this runtime, not another runtime or a prerequisite for the supplied B42 devices.
+
 ## Ownership and possible overlap
 
 Shared functional activity/model-policy services and native inspector; one owner before numerical runtime consumes them.
@@ -47,7 +51,9 @@ Publish the actual API/source owners, supported schemas/units, captured revision
 
 Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
 
-Consumers: [Reusable electronic device integration](Electronic-Devices.lingua); [Independent infrastructure and composed workflows](Federation.lingua); [First bounded numerical jobs and circuit references](Numerical-Runtime.lingua); [Material properties and offline evidence](Materials.lingua)
+Consumers: [Reusable electronic device integration](Electronic-Devices.lingua); [Independent infrastructure and composed workflows](Federation.lingua); [First bounded numerical jobs and circuit references](Numerical-Runtime.lingua); [Material properties and offline evidence](Materials.lingua); [Possession for placement and play](Possession.lingua)
+
+Additional consumer: [Native behavior composition](Behavior-Authoring.lingua).
 
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
 } r_6C7DG822FAKS8CZYCTVPF33TBS

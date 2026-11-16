@@ -7,12 +7,15 @@ use crate::native::{
 };
 use bevy::{
     a11y::AccessibilityNode,
+    ecs::query::QueryState,
     input_focus::{FocusCause, FocusGained, FocusLost, InputFocus, InputFocusVisible},
     math::DVec2,
     prelude::*,
 };
 
 pub(crate) mod corner;
+mod ordering;
+use ordering::order_controls;
 
 #[derive(Resource, Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
 pub(crate) struct ControlsSettings {
@@ -180,92 +183,16 @@ impl Plugin for CanvasControlsPlugin {
     }
 }
 
-fn order_controls(world: &mut World) {
-    let bars: Vec<_> = world
-        .query_filtered::<Entity, With<CanvasToolbar>>()
-        .iter(world)
-        .collect();
-    for bar in bars {
-        let children = world
-            .get::<Children>(bar)
-            .map(|children| children.iter().collect::<Vec<_>>())
-            .unwrap_or_default();
-        let scroll = children
-            .iter()
-            .copied()
-            .find(|child| world.get::<ToolbarScroll>(*child).is_some())
-            .unwrap_or_else(|| {
-                world
-                    .spawn((
-                        ToolbarScroll,
-                        Node {
-                            min_width: px(0),
-                            flex_shrink: 1.0,
-                            align_items: AlignItems::Center,
-                            column_gap: px(6),
-                            overflow: Overflow::scroll_x(),
-                            ..default()
-                        },
-                        ScrollPosition::default(),
-                        ChildOf(bar),
-                    ))
-                    .id()
-            });
-        let mut ordered = world
-            .get::<Children>(scroll)
-            .map(|children| children.iter().collect::<Vec<_>>())
-            .unwrap_or_default();
-        let mut pinned = Vec::new();
-        for child in children.iter().copied().filter(|child| *child != scroll) {
-            if world
-                .get::<ToolbarOrder>(child)
-                .is_some_and(|order| order.0 == 0)
-            {
-                pinned.push(child);
-            } else {
-                ordered.push(child);
-            }
-        }
-        for control in pinned.iter().chain(&ordered).copied() {
-            world.entity_mut(control).insert((
-                crate::native::icons::InlineTooltip,
-                crate::native::icons::AnchoredTooltip,
-                crate::native::icons::TooltipIcon { source: control },
-            ));
-        }
-        ordered.sort_by_key(|entity| {
-            world
-                .get::<ToolbarOrder>(*entity)
-                .map_or(u8::MAX, |order| order.0)
-        });
-        for child in &ordered {
-            if world
-                .get::<ChildOf>(*child)
-                .is_none_or(|parent| parent.parent() != scroll)
-            {
-                world.entity_mut(*child).insert(ChildOf(scroll));
-            }
-        }
-        let existing = world
-            .get::<Children>(scroll)
-            .map(|children| children.iter().collect::<Vec<_>>())
-            .unwrap_or_default();
-        if ordered != existing {
-            world.entity_mut(scroll).replace_children(&ordered);
-        }
-        pinned.push(scroll);
-        if pinned != children {
-            world.entity_mut(bar).replace_children(&pinned);
-        }
-    }
-}
 
-pub(crate) fn create_controls(world: &mut World) {
-    let views: Vec<_> = world
-        .query_filtered::<Entity, Added<CanvasView>>()
-        .iter(world)
-        .collect();
-    for view in views {
+pub(crate) fn create_controls(
+    world: &mut World,
+    mut views: Local<Option<QueryState<Entity, Added<CanvasView>>>>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    let views = views.get_or_insert_with(|| world.query_filtered());
+    pending.clear();
+    pending.extend(views.iter(world));
+    for view in pending.drain(..) {
         let toolbar = toolbar(world, view);
         for action in [
             CanvasAction::Recenter,
@@ -523,6 +450,7 @@ fn circular_positions(items: &[(Entity, Vec2)]) -> Vec<DVec2> {
 
 pub(crate) mod tests {
     use super::*;
+    use bevy::ecs::system::RunSystemOnce;
     use bevy::ui_widgets::Activate;
     use bevy::{input_focus::FocusCause, text::EditableText};
 
@@ -606,7 +534,7 @@ pub(crate) mod tests {
         world
             .resource_mut::<InputFocus>()
             .set(view_toggle, FocusCause::Navigated);
-        order_controls(world);
+        world.run_system_once(order_controls).unwrap();
         let ordered: Vec<_> = world.get::<Children>(bar).unwrap().iter().collect();
         assert_eq!(ordered[0], edit);
         let scroll = ordered[1];
@@ -619,13 +547,13 @@ pub(crate) mod tests {
         let late = world
             .spawn((ToolbarOrder(1), Node::default(), ChildOf(bar)))
             .id();
-        order_controls(world);
+        world.run_system_once(order_controls).unwrap();
         assert_eq!(world.get::<ChildOf>(late).unwrap().parent(), scroll);
         assert_eq!(world.get::<ChildOf>(view_toggle).unwrap().parent(), scroll);
         assert_eq!(world.get::<Children>(scroll).unwrap()[0], late);
         assert_eq!(world.resource::<InputFocus>().get(), Some(view_toggle));
         assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0.x, 200.0);
-        order_controls(world);
+        world.run_system_once(order_controls).unwrap();
         assert_eq!(
             world
                 .get::<Children>(bar)

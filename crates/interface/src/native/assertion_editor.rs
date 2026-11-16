@@ -33,8 +33,8 @@ pub(crate) struct Field {
     queue: VecDeque<Assertion>,
     pending: bool,
     removing: Option<String>,
-    records: Vec<Value>,
-    concepts: Vec<Value>,
+    records: Arc<Vec<Value>>,
+    concepts: Arc<Vec<Value>>,
     signature: String,
     options: Vec<completion::Option>,
     selected: usize,
@@ -166,8 +166,8 @@ pub(crate) fn spawn(
         queue: VecDeque::new(),
         pending: false,
         removing: None,
-        records: Vec::new(),
-        concepts: Vec::new(),
+        records: Arc::default(),
+        concepts: Arc::default(),
         signature: String::new(),
         options: Vec::new(),
         selected: 0,
@@ -336,9 +336,12 @@ pub(crate) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
     let Some(field) = world.get::<Field>(entity) else {
         return false;
     };
-    let values = data["assertions"].as_array().cloned().unwrap_or_default();
-    if field.values != values {
-        world.get_mut::<Field>(entity).unwrap().values = values;
+    let values = data["assertions"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default();
+    if field.values.as_slice() != values {
+        world.get_mut::<Field>(entity).unwrap().values = values.to_vec();
         draw(world, entity);
     }
     true

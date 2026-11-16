@@ -83,7 +83,7 @@ impl CustomCastle {
             return self.parts.is_empty()
                 && self.composition.is_none()
                 && component
-                    .validate(&crate::native::canvas_host::registry(), false)
+                    .validate(&crate::native::canvas_host::shared_registry(), false)
                     .is_ok();
         }
         if let Some(composition) = &self.composition {

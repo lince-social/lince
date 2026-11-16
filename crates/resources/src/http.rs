@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fs,
-    io::{Read, Write},
+    io::{BufWriter, Read, Write},
     path::PathBuf,
     sync::{Arc, Mutex, OnceLock, Weak},
     time::{SystemTime, UNIX_EPOCH},
@@ -311,7 +311,11 @@ impl Library {
         };
         let mut temporary =
             tempfile::NamedTempFile::new_in(&directory).map_err(|error| error.to_string())?;
-        serde_json::to_writer(&mut temporary, &stored).map_err(|error| error.to_string())?;
+        {
+            let mut buffered = BufWriter::new(&mut temporary);
+            serde_json::to_writer(&mut buffered, &stored).map_err(|error| error.to_string())?;
+            buffered.flush().map_err(|error| error.to_string())?;
+        }
         temporary
             .persist(metadata)
             .map_err(|error| error.to_string())?;

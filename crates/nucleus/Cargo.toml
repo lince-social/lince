@@ -15,7 +15,7 @@ base64 = { workspace = true }
 regex = { workspace = true }
 url = "2.5.8"
 schemars = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
 glam = "=0.32.1"
 chrono = { workspace = true, features = ["serde"] }

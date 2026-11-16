@@ -1,5 +1,5 @@
 use super::*;
-use sha2::{Digest, Sha256};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -7,21 +7,45 @@ struct SavedReceipt {
     id: String,
     hash: [u8; 32],
     receipt: Receipt,
-    before: Snapshot,
-    after: Snapshot,
+    before: Arc<Snapshot>,
+    after: Arc<Snapshot>,
+    #[serde(skip)]
+    encoded_bytes: Option<usize>,
+}
+
+impl SavedReceipt {
+    fn encoded_bytes(&mut self) -> Result<usize, String> {
+        if let Some(bytes) = self.encoded_bytes {
+            crate::performance::add("canvas-history-size-reuses", 1);
+            return Ok(bytes);
+        }
+        let bytes = crate::json::encoded_len(&(&self.before, &self.after))
+            .map_err(|error| error.to_string())?;
+        self.encoded_bytes = Some(bytes);
+        Ok(bytes)
+    }
+
+    fn replace_after(&mut self, snapshot: Arc<Snapshot>) {
+        self.after = snapshot;
+        self.encoded_bytes = None;
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct State {
-    pub snapshot: Snapshot,
+    pub snapshot: Arc<Snapshot>,
     next_workspace_id: u64,
-    registry: Vec<Descriptor>,
+    registry: Arc<Vec<Descriptor>>,
     receipts: Vec<SavedReceipt>,
 }
 
 impl State {
-    pub fn new(mut snapshot: Snapshot, registry: Vec<Descriptor>) -> Result<Self, String> {
+    pub fn new(
+        mut snapshot: Snapshot,
+        registry: impl Into<Arc<Vec<Descriptor>>>,
+    ) -> Result<Self, String> {
+        let registry = registry.into();
         if snapshot.next_offset.is_some() {
             return Err(
                 "Initialize canvas state from a complete snapshot, not an inspection page.".into(),
@@ -43,7 +67,7 @@ impl State {
             .ok_or("Workspace identity overflow.")?;
         Ok(Self {
             next_workspace_id,
-            snapshot,
+            snapshot: Arc::new(snapshot),
             registry,
             receipts: Vec::new(),
         })
@@ -57,16 +81,20 @@ impl State {
         for placement in &snapshot.placements {
             placement.component.validate_snapshot(&self.registry)?;
         }
-        self.snapshot = snapshot;
+        self.snapshot = Arc::new(snapshot);
         if let Some(receipt) = self.receipts.last_mut()
             && receipt.receipt.revision == self.snapshot.revision
         {
-            receipt.after = self.snapshot.clone();
+            receipt.replace_after(self.snapshot.clone());
         }
         Ok(())
     }
 
-    pub fn refresh_registry(&mut self, registry: Vec<Descriptor>) -> Result<(), String> {
+    pub fn refresh_registry(
+        &mut self,
+        registry: impl Into<Arc<Vec<Descriptor>>>,
+    ) -> Result<(), String> {
+        let registry = registry.into();
         validate_registry(&registry)?;
         for placement in &self.snapshot.placements {
             placement.component.validate_snapshot(&registry)?;
@@ -83,7 +111,7 @@ impl State {
         for placement in &snapshot.placements {
             placement.component.validate_snapshot(&self.registry)?;
         }
-        if snapshot != self.snapshot {
+        if snapshot != *self.snapshot {
             snapshot.revision = snapshot
                 .revision
                 .checked_add(1)
@@ -98,7 +126,7 @@ impl State {
                     .checked_add(1)
                     .ok_or("Workspace identity overflow.")?,
             );
-            self.snapshot = snapshot;
+            self.snapshot = Arc::new(snapshot);
         }
         Ok(())
     }
@@ -128,7 +156,7 @@ impl State {
         for placement in &self.snapshot.placements {
             placement.component.validate_snapshot(&self.registry)?;
         }
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 33 * 1024 * 1024 {
+        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > 33 * 1024 * 1024 {
             return Err("Canvas recovery exceeds 33 MiB.".into());
         }
         if self.receipts.len() > 16 {
@@ -166,19 +194,25 @@ impl State {
                 let hash = authoring::hash(&document)?;
                 Ok(Response::Export { document, hash, revision: self.snapshot.revision })
             }
-            Request::Registry => Ok(Response::Registry { components: self.registry.clone() }),
+            Request::Registry => Ok(Response::Registry { components: self.registry.as_ref().clone() }),
             Request::Inspect { workspace, selected_only, offset, limit } => {
                 if workspace.is_some_and(|id| !self.snapshot.workspaces.iter().any(|w| w.id == id)) { return Err("The workspace no longer exists.".into()); }
-                let placements: Vec<_> = self.snapshot.placements.iter().filter(|p| workspace.is_none_or(|id| p.workspace == id) && (!selected_only || p.selected)).collect();
-                let mut snapshot = self.snapshot.clone();
-                snapshot.placements = placements.iter().skip(*offset).take(*limit).map(|p| (*p).clone()).collect();
-                snapshot.next_offset = if offset.saturating_add(*limit) < placements.len() { Some(offset + limit) } else { None };
+                let mut placements = self.snapshot.placements.iter().filter(|p| workspace.is_none_or(|id| p.workspace == id) && (!selected_only || p.selected)).skip(*offset);
+                let page = placements.by_ref().take(*limit).cloned().collect();
+                let snapshot = Snapshot {
+                    revision: self.snapshot.revision,
+                    active_workspace: self.snapshot.active_workspace,
+                    workspaces: self.snapshot.workspaces.clone(),
+                    placements: page,
+                    next_offset: placements.next().map(|_| offset + limit),
+                };
                 snapshot.validate()?;
                 Ok(Response::Snapshot { snapshot })
             }
             Request::Receipt { request_id } => Ok(Response::Receipt { receipt: self.receipts.iter().find(|r| &r.id == request_id).ok_or("This request has no retained receipt. Inspect actual canvas state before retrying.")?.receipt.clone() }),
             Request::Mutate { request_id, expected_revision, mutation } => {
-                let hash: [u8; 32] = Sha256::digest(serde_json::to_vec(request).map_err(|e| e.to_string())?).into();
+                let _mutation = crate::performance::Span::new("canvas-mutation");
+                let hash = crate::json::sha256(request).map_err(|e| e.to_string())?;
                 if let Some(receipt) = self.receipts.iter().find(|r| &r.id == request_id) {
                     if receipt.hash != hash { return Err("This request ID already belongs to another canvas operation.".into()); }
                     return Ok(Response::Receipt { receipt: receipt.receipt.clone() });
@@ -189,19 +223,22 @@ impl State {
                 let (mut affected_placements, workspace) = self.apply(&mut next, mutation)?;
                 let affected_count = if let Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } = mutation { self.receipts.iter().find(|r| &r.id == receipt).ok_or("The undo receipt is no longer retained.")?.receipt.affected_count } else { affected_placements.len() };
                 affected_placements.truncate(MAX_PLACEMENTS);
-                next.revision = next.revision.checked_add(1).ok_or("Canvas revision overflow.")?;
-                next.validate_full()?;
-                room::project(&mut next.placements)?;
+                let snapshot = Arc::make_mut(&mut next);
+                snapshot.revision = snapshot.revision.checked_add(1).ok_or("Canvas revision overflow.")?;
+                snapshot.validate_full()?;
+                room::project(&mut snapshot.placements)?;
                 let receipt = Receipt { request_id: request_id.clone(), revision: next.revision, persistence: Persistence::Applied, affected_placements, affected_count, workspace };
                 if matches!(mutation, Mutation::CreateWorkspace { .. }) { self.next_workspace_id = self.next_workspace_id.checked_add(1).ok_or("Workspace identity overflow.")?; }
                 self.snapshot = next;
-                self.receipts.push(SavedReceipt { id: request_id.clone(), hash, receipt: receipt.clone(), before, after: self.snapshot.clone() });
-                let mut sizes = self.receipts.iter().map(|r| serde_json::to_vec(&(&r.before, &r.after)).map(|bytes| bytes.len())).collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
+                self.receipts.push(SavedReceipt { id: request_id.clone(), hash, receipt: receipt.clone(), before, after: self.snapshot.clone(), encoded_bytes: None });
+                let sizes = self.receipts.iter_mut().map(SavedReceipt::encoded_bytes).collect::<Result<Vec<_>, _>>()?;
                 let mut bytes = sizes.iter().sum::<usize>();
-                while self.receipts.len() > 1 && (self.receipts.len() > 16 || bytes > 16 * 1024 * 1024) {
-                    bytes -= sizes.remove(0);
-                    self.receipts.remove(0);
+                let mut remove = 0;
+                while self.receipts.len() - remove > 1 && (self.receipts.len() - remove > 16 || bytes > 16 * 1024 * 1024) {
+                    bytes -= sizes[remove];
+                    remove += 1;
                 }
+                if remove != 0 { drop(self.receipts.drain(..remove)); }
                 Ok(Response::Receipt { receipt })
             }
         }
@@ -227,9 +264,33 @@ impl State {
 
     fn apply(
         &self,
-        next: &mut Snapshot,
+        next: &mut Arc<Snapshot>,
         mutation: &Mutation,
     ) -> Result<(Vec<String>, Option<u64>), String> {
+        // A full undo replaces the candidate. Select its source before making
+        // a writable copy, rather than cloning the current canvas to discard it.
+        if let Mutation::Undo { receipt } = mutation {
+            let previous = self
+                .receipts
+                .iter()
+                .find(|r| &r.id == receipt)
+                .ok_or("The undo receipt is no longer retained.")?;
+            if previous.receipt.revision != next.revision {
+                return Err(
+                    "Undo would overwrite later changes; inspect the current canvas first.".into(),
+                );
+            }
+            let revision = next.revision;
+            *next = previous.before.clone();
+            Arc::make_mut(next).revision = revision;
+            crate::performance::add("canvas-mutation-snapshots-copied", 1);
+            return Ok((
+                previous.receipt.affected_placements.clone(),
+                Some(next.active_workspace),
+            ));
+        }
+        let next = Arc::make_mut(next);
+        crate::performance::add("canvas-mutation-snapshots-copied", 1);
         let require_workspace = |id| {
             if next.workspaces.iter().any(|w| w.id == id) {
                 Ok(())
@@ -525,25 +586,8 @@ impl State {
                 next.active_workspace = destination;
                 Ok((affected, Some(destination)))
             }
-            Mutation::Undo { receipt } => {
-                let previous = self
-                    .receipts
-                    .iter()
-                    .find(|r| &r.id == receipt)
-                    .ok_or("The undo receipt is no longer retained.")?;
-                if previous.receipt.revision != next.revision {
-                    return Err(
-                        "Undo would overwrite later changes; inspect the current canvas first."
-                            .into(),
-                    );
-                }
-                let revision = next.revision;
-                *next = previous.before.clone();
-                next.revision = revision;
-                Ok((
-                    previous.receipt.affected_placements.clone(),
-                    Some(next.active_workspace),
-                ))
+            Mutation::Undo { .. } => {
+                unreachable!("Full undo is handled before copying the canvas.")
             }
             Mutation::UndoChanges { receipt } => {
                 let previous = self
@@ -1037,7 +1081,8 @@ mod tests {
     fn inspection_pages_do_not_limit_the_whole_canvas_to_one_page() {
         let mut state = state();
         for _ in 0..300 {
-            state.snapshot.placements.push(Placement {
+            let snapshot = Arc::make_mut(&mut state.snapshot);
+            snapshot.placements.push(Placement {
                 id: crate::new_uid("placement"),
                 workspace: 1,
                 component: Component::Builtin {

@@ -123,7 +123,7 @@ pub(crate) fn password_retention(app: &mut App, root: Entity) {
         if protect {
             app.world_mut().run_system_once(protect_passwords).unwrap();
         } else {
-            maintain(app.world_mut());
+            app.world_mut().run_system_once(maintain).unwrap();
         }
         let field = app.world().get::<EditableText>(password).unwrap();
         assert!(

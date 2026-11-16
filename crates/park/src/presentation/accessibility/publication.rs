@@ -4,6 +4,44 @@ use std::collections::BTreeSet;
 
 mod composition;
 
+fn difference(previous: Option<&TreeUpdate>, current: &TreeUpdate) -> TreeUpdate {
+    use lince_interface::host::performance::{self, Count, Stage};
+    let _measurement = performance::Span::new(Stage::NativeAccessiblePublicationDiff);
+    performance::add(
+        Count::AccessiblePublicationCandidates,
+        current.nodes.len() as u64,
+    );
+    let Some(previous) = previous.filter(|previous| previous.tree_id == current.tree_id) else {
+        performance::add(
+            Count::AccessiblePublicationNodes,
+            current.nodes.len() as u64,
+        );
+        return current.clone();
+    };
+    let old: std::collections::HashMap<_, _> = previous
+        .nodes
+        .iter()
+        .map(|(id, node)| (*id, node))
+        .collect();
+    let nodes: Vec<_> = current
+        .nodes
+        .iter()
+        .filter(|(id, node)| old.get(id).is_none_or(|previous| *previous != node))
+        .cloned()
+        .collect();
+    performance::add(Count::AccessiblePublicationNodes, nodes.len() as u64);
+    // Parent child lists carry removals/reparenting. Removed nodes must not be
+    // emitted, and focus is required even when no node properties changed.
+    TreeUpdate {
+        nodes,
+        tree: (previous.tree != current.tree)
+            .then(|| current.tree.clone())
+            .flatten(),
+        tree_id: current.tree_id,
+        focus: current.focus,
+    }
+}
+
 pub(super) struct Publication {
     pub epoch: u64,
     pub serial: u64,
@@ -122,7 +160,8 @@ impl Bridge {
                 let screen = accesskit::Rect::new(0.0, 0.0, bounds.x1.max(0.0), bounds.y1.max(0.0));
                 self.adapter.set_root_window_bounds(screen, screen);
             }
-            self.adapter.update_if_active(|| update.clone());
+            let delta = difference(self.last.as_ref().filter(|_| !self.needs_tree), &update);
+            self.adapter.update_if_active(|| delta);
             self.last = Some(update);
             self.needs_tree = false;
         }

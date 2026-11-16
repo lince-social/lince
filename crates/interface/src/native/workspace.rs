@@ -265,7 +265,7 @@ impl Document {
             .retain(|saved| saved.frame.workspace != temporary);
         self.shaders.retain(|saved| saved.workspace() != temporary);
         if let Some(state) = &mut self.canvas_state {
-            let snapshot = &mut state.snapshot;
+            let snapshot = std::sync::Arc::make_mut(&mut state.snapshot);
             if snapshot.active_workspace == temporary {
                 snapshot.active_workspace = previous;
             }
@@ -817,6 +817,9 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Terminal {
                         content = Some(crate::native::terminal::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Kamalie {
+                        content = Some(crate::native::kamalie::populate(world, root, entity));
+                    }
                     if sand.kind == SandKind::Organ {
                         content = Some(crate::native::organ_castle::populate(world, root, entity));
                     }
@@ -847,7 +850,7 @@ fn initialize(world: &mut World) {
                     if let Some(properties) = sand.properties {
                         world
                             .entity_mut(entity)
-                            .insert(crate::native::area::RecordProperties(properties));
+                            .insert(crate::native::area::RecordProperties(properties.into()));
                     }
                     if let Some(timer) = sand.timer {
                         world.entity_mut(entity).insert(timer);
@@ -1180,6 +1183,8 @@ pub(crate) fn place_record(world: &mut World, root: Entity, card: Entity, uid: &
 }
 
 fn snapshot(world: &mut World, root: Entity) -> Document {
+    let _capture = nucleus::performance::Span::new("workspace-snapshot-preparation");
+    nucleus::performance::add("workspace-snapshots-prepared", 1);
     let workspace_focus = crate::native::layout::desktop::focus::snapshot(world, root);
     let spaces = world.get::<Workspaces>(root).unwrap();
     let active = spaces.active;
@@ -1205,7 +1210,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .get::<crate::native::topology::view::View>(root)
         .copied()
         .unwrap_or_default();
-    let mut records = spaces.saved_records.clone();
+    let mut records = HashMap::new();
     let mut sands = Vec::new();
     let mut items = world.query::<(
         Entity,
@@ -1243,7 +1248,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 tokens: crate::native::token_style::overrides(world, entity),
                 properties: world
                     .get::<crate::native::area::RecordProperties>(entity)
-                    .map(|properties| properties.0.clone()),
+                    .map(|properties| properties.0.as_ref().clone()),
                 kind: sand.kind,
                 texts: sand_text::snapshot(world, entity),
                 video: world
@@ -1263,6 +1268,13 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 position: item.position.to_array(),
                 size: item.size.to_array(),
             });
+        }
+    }
+    // A visible Record replaces its saved presentation. Do not clone that old
+    // tree merely to discard it; only retained, uncaptured Records need copies.
+    for (uid, saved) in &world.get::<Workspaces>(root).unwrap().saved_records {
+        if !records.contains_key(uid) {
+            records.insert(uid.clone(), saved.clone());
         }
     }
     let mut records: Vec<_> = records.into_values().collect();
@@ -1432,6 +1444,17 @@ pub(crate) fn persist(world: &mut World) {
     if !quitting && !writer.due() {
         return;
     }
+    let capture = match writer.prepare(quitting) {
+        Ok(Some(capture)) => capture,
+        Ok(None) => return,
+        Err(error) => {
+            report(world, root, Some(error));
+            if quitting {
+                world.resource_mut::<Messages<AppExit>>().clear();
+            }
+            return;
+        }
+    };
     if let Err(error) = crate::native::canvas_host::synchronize_saved_state(world, root) {
         report(
             world,
@@ -1444,12 +1467,7 @@ pub(crate) fn persist(world: &mut World) {
         return;
     }
     let document = snapshot(world, root);
-    let result = world
-        .resource::<WorkspaceFile>()
-        .writer
-        .as_ref()
-        .unwrap()
-        .save(document, quitting);
+    let result = capture.save(document);
     if let Err(error) = result {
         report(world, root, Some(error));
         if quitting {
@@ -2586,7 +2604,7 @@ pub(crate) mod tests {
         world
             .entity_mut(sand)
             .insert(crate::native::area::RecordProperties(
-                serde_json::json!({"kind": "physics-piece", "quantity": -3}),
+                serde_json::json!({"kind": "physics-piece", "quantity": -3}).into(),
             ));
         world
             .get_mut::<EditableText>(editor)
@@ -2668,8 +2686,8 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(item.position, DVec2::new(1e12 + 0.25, -1e12));
         assert_eq!(
-            properties.0,
-            serde_json::json!({"kind": "physics-piece", "quantity": -3}),
+            properties.0.as_ref(),
+            &serde_json::json!({"kind": "physics-piece", "quantity": -3}),
         );
         assert_eq!(
             world

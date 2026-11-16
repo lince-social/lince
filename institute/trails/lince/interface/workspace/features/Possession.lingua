@@ -1,0 +1,53 @@
+Possession for placement and play (@ws-possession: 0, is #chapter, #part-of @workspace-development, #requires @ws-exploration, #requires @ws-functional) { r_4K2PTTW665X5MXPYKEDEECEJ9E
+Status: Pending. Owner refinement, 2026-11-14: possess an object and move around as it, either to adjust its position or to play.
+
+[Development graph](../Workspace-Development.lingua) · [Exploration contracts](../contracts/Exploration-contracts.lingua)
+
+## Start gate
+
+Required completed exports: [Exploration](Exploration.lingua) and [functional behavior/model policy](Functional.lingua). Functional behavior already depends on geometry authoring, shared authority and typed operations; do not duplicate their preview/commit, state or control services.
+
+The first supported object is an ordinary unrigged occurrence with an explicit authored movement profile. This branch needs no globe, splats, rig editor or new physical solver. Generalized possession of a later articulated or physical model requires that model's actual controller/authority adapter and its own proof; an unsupported target remains observable and explains the missing control capability.
+
+## Delivered boundary
+
+From ordinary selection, choose Possess, use the supported movement and turning controls from an attached or following viewpoint, then release control. A visible Place/Play choice distinguishes authoring from temporary activity. No setup wizard or mandatory script is required to possess the supplied object or select a supported generic profile in the ordinary inspector.
+
+## Ownership and possible overlap
+
+Own possession intent routing, native actions and the two session lifecycles. The existing view service owns camera movement, accepted commands own authored placement, and the selected behavior activity owns runtime state. There is one writer per governed output. Coordinate shared API edits with their owners in the current checkout; independent exploration-tour work may overlap after the exploration handoff. Keep functional/numerical/character runtimes shared rather than making a possession-specific engine.
+
+## Ordered work
+
+### Task POS.T01
+
+- [ ] Define a bounded profile using existing behavior/operation descriptors: target occurrence and captured revision, movement/turn/action intents, local axes and units, speed/acceleration limits, viewpoint anchors, free or supported-surface motion, optional visual animation, state owner and stop/release behavior. Implement generic authored translation/rotation and a supported surface-following profile over navigation queries. A ball, box, lamp or vehicle-shaped mesh may use a chosen profile without becoming a humanoid or requiring a skeleton. A flying profile means authored flight unless an actual physical model supplies the forces. Reuse real supported character/device profiles when present; a name alone provides no abilities.
+
+### Task POS.T02
+
+- [ ] Deliver Place through the normal transform preview/cancel/commit path. Input moves/turns the selected occurrence while its viewpoint follows; numeric position, orientation and snapping remain available. Keep preview local except for explicitly permitted draft publication, show accepted versus proposed pose, and commit the validated final pose as one undoable edit. Apply or the ordinary ready editor-exit adoption commits; explicit Cancel restores the pre-preview accepted state. Stale, denied, invalid or unfinished output does not commit on exit and follows the existing visible recovery path. Preserve shared definitions, unselected copies, physical dimensions and source lineage. Existing constraints, attachments, mounts and electrical connections retain their real transform rules; an unsupported constrained move is unavailable rather than silently detached or overwritten. The authored placement path cannot take a pose from an active physical writer without its existing supported pause/edit transition.
+
+### Task POS.T03
+
+- [ ] Deliver Play as a bounded temporary trial using the existing activity/model state over captured source, with the trial scope visible. Source definitions and accepted placement remain unchanged while the selected occurrence moves in the trial presentation. Do not run both trial and source writers on one output. Reuse admitted source assets and allocate only the declared trial state/dependencies. Trial interactions and signals stay inside that scope; default play neither pushes live shared objects nor emits accepted operational, device or external-application commands. Stop discards trial state and returns to current accepted source. An explicit Keep pose validates only the selected resulting pose through the normal placement command and undo path; it does not adopt hidden history, other objects' state or past events. Reopening a document never automatically resumes possession or replays held input.
+
+### Task POS.T04
+
+- [ ] Scope observation, authored placement, temporary play and any supported live control through the existing grants and fenced activity authority. Possession changes who supplies supported control intents, not the selected physics model, solver accuracy or compute owner. Stop held input on focus loss, target switch, Escape/release, disconnect, stale generation, target deletion or revoke; return or pause the previous controller at its declared boundary. Never let a clip, keyboard controller and solver all write the root pose. A local view choice cannot seize another participant's object or source credentials. Keep repeat/late messages bounded and reject input for an obsolete possession session.
+
+### Task POS.T05
+
+- [ ] Expose supported actions and the effective profile, Place/Play state and exit control in the existing native selection/inspector flow. Keep object movement distinct from camera inspection and mounted Sand/application input. Provide keyboard-accessible equivalents and configurable controls using the existing input binding family; preserve readable labels, reduced motion and the edit-panel geometry rule. Show what will be saved before committing placement or Keep pose. Changing appearance/detail may release geometry while the same admitted control model continues; switching behavior models uses the existing validated transition policy.
+
+### Task POS.T06
+
+- [ ] Prove EXP.W03–EXP.W05 on EXP.F01: place/undo/reload one of two shared-definition objects, play/discard, play/Keep pose/undo, control a differently shaped object with the same profile, lose support, switch targets under held input and exercise competing control/revoke/stale source. Include a functional device near the trial and show no leaked trial events or unintended accepted changes. Confirm accurate local-unit movement across view scales and no per-frame model-provider call. Publish native/UI/backend/persistence evidence and measured input, preview, state/asset cost and release limits.
+
+The downstream [custom object controls](Object-Control-Bindings.lingua) package joins this verified intent/authority boundary with real user-authored actions. Publish profile action descriptors, captured revisions and release behavior from the ordinary object proof; custom action editing is not a reverse prerequisite for base possession.
+
+## Domain extensions and completion
+
+The core proof covers the declared authored profiles and existing navigation support. Character root motion, physical force/torque control, dynamic contacts and articulated motors retain their own model contracts. Their future possession integration must declare the supported intents, authority transfer and state continuity and replay EXP.W05 with that provider. It remains pending until both exports exist; it does not reopen a verified authored profile merely to add another supported model. Recursive world traversal and autonomous scene editing are outside this core scope.
+
+Consumers: [exploration acceptance](../contracts/Exploration-contracts.lingua) and full core acceptance. Retain profile/authority ownership, Place versus Play save/undo semantics, failure evidence and unsupported domain adapters in the handoff. Current outcome: unbuilt and unverified.
+} r_4K2PTTW665X5MXPYKEDEECEJ9E

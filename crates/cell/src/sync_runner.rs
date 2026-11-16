@@ -7,7 +7,7 @@ const REPUBLISH_INTERVAL: Duration = Duration::from_secs(3600);
 pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut bus = state.engine.subscribe();
-        let mut queries = state.engine.watch_query_changes();
+        let mut queries = state.engine.watch_general_query_changes();
         let mut next_republish = tokio::time::Instant::now() + REPUBLISH_INTERVAL;
         loop {
             let wire = state.wire.read().await.clone();
@@ -59,7 +59,7 @@ where
 
 pub fn spawn_social(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     supervised(state, engine::social::Worker::Publication, |state| async move {
-        let mut changes = state.engine.watch_query_changes();
+        let mut changes = state.engine.watch_general_query_changes();
         loop {
             let online = state.wire.read().await.is_some();
             let mut succeeded = true;
@@ -114,7 +114,7 @@ pub fn spawn_private_pickup(state: CellRuntime) -> tokio::task::JoinHandle<()> {
 
 pub fn spawn_gossip(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     supervised(state, engine::social::Worker::Gossip, |state| async move {
-        let mut changes = state.engine.watch_query_changes();
+        let mut changes = state.engine.watch_general_query_changes();
         loop {
             if state.wire.read().await.is_some() {
                 let succeeded = state.engine.social_gossip_once().await.is_ok();
@@ -133,7 +133,7 @@ pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     supervised(state, engine::social::Worker::Ask, |state| async move {
         let evidence_state=state.clone();
         let evidence=async move {
-            let mut changes=evidence_state.engine.watch_query_changes();
+            let mut changes=evidence_state.engine.watch_general_query_changes();
             loop {
                 if evidence_state.wire.read().await.is_some() && evidence_state.engine.refresh_trust_requests_once().await.is_err() {
                     tracing::debug!("Reviewed evidence query work remains bounded by its original deadline");
@@ -145,7 +145,7 @@ pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
             }
         };
         let announcements=async move {
-        let mut changes = state.engine.watch_query_changes();
+        let mut changes = state.engine.watch_general_query_changes();
         loop {
             if state.wire.read().await.is_some() {
                 let succeeded = state.engine.social_ask_once().await.is_ok();
@@ -164,7 +164,7 @@ pub fn spawn_ask(state: CellRuntime) -> tokio::task::JoinHandle<()> {
 
 pub fn spawn_subscriptions(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     supervised(state,engine::social::Worker::Subscriptions,|state| async move {
-        let mut changes=state.engine.watch_query_changes();
+        let mut changes=state.engine.watch_general_query_changes();
         loop {
             let online=state.wire.read().await.is_some();
             let result=state.engine.social_subscriptions_once(online).await;
@@ -184,7 +184,7 @@ pub fn spawn_subscriptions(state: CellRuntime) -> tokio::task::JoinHandle<()> {
 
 pub fn spawn_mail_delivery(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        let mut changes = state.engine.watch_query_changes();
+        let mut changes = state.engine.watch_general_query_changes();
         loop {
             let wire = state.wire.read().await.clone();
             if let Some(wire) = wire {
@@ -230,15 +230,13 @@ async fn republish(state: &CellRuntime, wire: Option<&engine::wire::Wire>) {
 }
 
 async fn shortest_interval(state: &CellRuntime) -> Result<u64, String> {
-    let contacts = store::organs::contacts(&state.store.pool)
+    let _read = engine::performance::Span::new("sync-catchup-interval-read-await");
+    let interval = store::organs::minimum_catchup_interval(&state.store.pool)
         .await
         .map_err(|error| error.to_string())?;
-    Ok(contacts
-        .iter()
-        .filter(|c| c.sync_in && c.catchup_interval_secs > 0 && c.trust != "blocked")
-        .map(|c| c.catchup_interval_secs.clamp(5, 300) as u64)
-        .min()
-        .unwrap_or(30))
+    // Clamping is monotone, so clamp(min(intervals)) preserves the former
+    // min(clamp(intervals)) result without loading any Contact payloads.
+    Ok(interval.map_or(30, |seconds| seconds.clamp(5, 300) as u64))
 }
 
 pub fn spawn_presence(state: CellRuntime) -> tokio::task::JoinHandle<()> {
@@ -252,7 +250,7 @@ pub fn spawn_presence(state: CellRuntime) -> tokio::task::JoinHandle<()> {
                 changed = changes.changed() => { if changed.is_err() { break } }
                 _ = interval.tick(), if active => {}
             }
-            let next = !state.engine.presence.records().is_empty();
+            let next = state.engine.presence.has_viewers();
             let wire = state.wire.read().await.clone();
             if (active || next)
                 && let Some(wire) = wire

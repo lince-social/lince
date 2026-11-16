@@ -1,9 +1,12 @@
+use std::sync::Arc;
+mod catalog;
 #[cfg(test)]
 mod tests;
 mod ui;
 
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
+use catalog::Catalog;
 use cell::{ClientMessage, ServerMessage};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -29,23 +32,23 @@ pub struct OntologySand {
     package: Entity,
     context: Entity,
     feature: String,
-    knowledge_sources: Vec<Value>,
+    knowledge_sources: Arc<Vec<Value>>,
     knowledge_selected: Vec<String>,
-    knowledge_results: Vec<Value>,
+    knowledge_results: Arc<Vec<Value>>,
     knowledge_job: Option<String>,
     knowledge_poll: std::time::Instant,
     knowledge_page: usize,
     knowledge_filter: String,
-    knowledge_item: Option<Value>,
-    knowledge_claim: Option<Value>,
+    knowledge_item: Option<Arc<Value>>,
+    knowledge_claim: Option<usize>,
     knowledge_availability: String,
-    knowledge_preview: Option<Value>,
-    knowledge_review: Option<Value>,
+    knowledge_preview: Option<Arc<Value>>,
+    knowledge_review: Option<Arc<Value>>,
     knowledge_fields: Vec<nucleus::knowledge::UpdateField>,
-    knowledge_cached: Vec<Value>,
+    knowledge_cached: Arc<Vec<Value>>,
     knowledge_cache_bytes: u64,
     knowledge_file: Option<(String, String)>,
-    output: Option<Value>,
+    output: Option<Arc<Value>>,
     package_page: usize,
     definition_page: usize,
     preferred: bool,
@@ -54,7 +57,7 @@ pub struct OntologySand {
     choices: [String; 7],
     choice_pages: [usize; 7],
     choosers: Vec<(Entity, usize)>,
-    rows: [Vec<Value>; 4],
+    rows: [Catalog; 4],
     ids: [String; 4],
     requested: [bool; 4],
     ready: [bool; 4],
@@ -169,14 +172,14 @@ impl Action for Command {
         }
         match self {
             Self::KnowledgeClaim(index) => {
-                let claim = index.and_then(|index| {
+                let claim = index.filter(|index| {
                     world
                         .get::<OntologySand>(owner)
                         .unwrap()
                         .knowledge_item
                         .as_ref()
-                        .and_then(|item| item["claims"].get(index))
-                        .cloned()
+                        .and_then(|item| item["claims"].get(*index))
+                        .is_some()
                 });
                 let mut view = world.get_mut::<OntologySand>(owner).unwrap();
                 view.knowledge_claim = claim;
@@ -277,11 +280,11 @@ impl Action for Command {
                 view.dirty = true;
             }
             Self::Term(uid) => {
-                let term = view.rows[1]
+                let catalog = view.rows[1].clone();
+                let term = catalog
                     .iter()
                     .flat_map(|row| row["terms"].as_array().into_iter().flatten())
-                    .find(|term| term["uid"] == *uid)
-                    .cloned();
+                    .find(|term| term["uid"] == *uid);
                 if let Some(term) = term {
                     let mut view = world.get_mut::<OntologySand>(owner).unwrap();
                     view.term = uid.clone();
@@ -335,8 +338,7 @@ impl Action for Command {
                 if *slot == view.tab && *slot < 2 {
                     let name = view.name;
                     let value = view.rows[*slot]
-                        .iter()
-                        .find(|row| row["uid"] == *uid)
+                        .find(uid)
                         .and_then(|row| row["name"].as_str())
                         .unwrap_or("")
                         .to_owned();
@@ -348,8 +350,7 @@ impl Action for Command {
                     let view = world.get::<OntologySand>(owner).unwrap();
                     let field = view.definition;
                     let definition = view.rows[1]
-                        .iter()
-                        .find(|row| row["uid"] == *uid)
+                        .find(uid)
                         .and_then(|row| row["definitions"].as_array())
                         .and_then(|versions| versions.last())
                         .and_then(|version| version["definition"].as_str())
@@ -408,8 +409,8 @@ fn selected(view: &OntologySand, slot: usize) -> Result<String, String> {
     };
     let uid = &view.choices[slot];
     view.rows[source]
-        .iter()
-        .any(|row| row["uid"].as_str() == Some(uid))
+        .find(uid)
+        .is_some()
         .then(|| uid.clone())
         .ok_or_else(|| "Choose an existing entry first".into())
 }
@@ -417,13 +418,25 @@ fn selected(view: &OntologySand, slot: usize) -> Result<String, String> {
 #[derive(Component)]
 struct KnowledgeFile(tokio::sync::oneshot::Receiver<Result<Option<(String, String)>, String>>);
 
+fn snapshot<T: Clone>(value: &T) -> Arc<T> {
+    let _preparation = nucleus::performance::Span::new("ontology-payload-preparation");
+    nucleus::performance::add("ontology-payload-snapshots-prepared", 1);
+    Arc::new(value.clone())
+}
+
 fn knowledge_package(world: &World, view: &OntologySand) -> Result<String, String> {
     let text = panel::value(world, view.package)?;
-    Ok(view
-        .knowledge_file
-        .as_ref()
-        .filter(|(label, _)| *label == text)
-        .map_or(text.clone(), |(_, raw)| raw.clone()))
+    Ok(
+        if let Some((_, raw)) = view
+            .knowledge_file
+            .as_ref()
+            .filter(|(label, _)| *label == text)
+        {
+            raw.clone()
+        } else {
+            text
+        },
+    )
 }
 
 fn mutation(
@@ -746,8 +759,7 @@ fn mutation(
         Command::ReviseDefinition => {
             let concept = selected(view, 1)?;
             let version = view.rows[1]
-                .iter()
-                .find(|row| row["uid"] == concept)
+                .find(&concept)
                 .and_then(|row| row["definitions"].as_array())
                 .and_then(|versions| versions.last())
                 .and_then(|version| version["revision"].as_i64())
@@ -763,8 +775,7 @@ fn mutation(
         Command::Publish => {
             let vocabulary = selected(view, 0)?;
             let expected_revision = view.rows[0]
-                .iter()
-                .find(|row| row["uid"] == vocabulary)
+                .find(&vocabulary)
                 .and_then(|row| row["revision"].as_i64())
                 .ok_or("Refresh the selected Vocabulary")?;
             Backend::Vocabulary {
@@ -777,8 +788,7 @@ fn mutation(
         Command::Withdraw | Command::InspectPublication | Command::Adopt => {
             let vocabulary = selected(view, 0)?;
             let publication = view.rows[0]
-                .iter()
-                .find(|row| row["uid"] == vocabulary)
+                .find(&vocabulary)
                 .and_then(|row| row["publications"].as_array())
                 .and_then(|publications| {
                     publications
@@ -839,8 +849,7 @@ fn mutation(
         },
         Command::EditTerm | Command::RetireTerm => {
             let term = view.rows[1]
-                .iter()
-                .find(|row| row["uid"] == selected(view, 1).unwrap_or_default())
+                .find(&selected(view, 1).unwrap_or_default())
                 .and_then(|row| row["terms"].as_array())
                 .and_then(|terms| terms.iter().find(|term| term["uid"] == view.term))
                 .ok_or("Choose a term of the selected Concept")?;
@@ -930,7 +939,7 @@ fn mutation(
             predicate: Some(selected(view, 1)?),
         },
         Command::Retract(uid) => {
-            if !view.rows[3].iter().any(|row| row["uid"] == *uid) {
+            if view.rows[3].find(uid).is_none() {
                 return Err("This assertion is no longer available".into());
             }
             Backend::RetractAssertion {
@@ -966,18 +975,22 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
                 .iter()
                 .position(|candidate| candidate == id)
                 .unwrap();
+            let _reply = nucleus::performance::Span::new("ontology-catalog-reply");
             let mut view = world.get_mut::<OntologySand>(owner).unwrap();
-            view.rows[index] = rows.clone();
+            let mut changed = view.rows[index].replace(rows) || !view.ready[index];
             if index == 2 && view.choices[6].is_empty() {
-                view.choices[6] = rows
+                let organ = rows
                     .iter()
                     .find(|row| row["slug"] == store::organs::LOCAL_ORGAN_SLUG)
                     .and_then(|row| row["uid"].as_str())
-                    .unwrap_or("")
-                    .to_owned();
+                    .unwrap_or("");
+                if !organ.is_empty() {
+                    view.choices[6] = organ.to_owned();
+                    changed = true;
+                }
             }
             view.ready[index] = true;
-            view.dirty = true;
+            view.dirty |= changed;
             if view.ready.iter().all(|ready| *ready) && view.pending.is_none() {
                 panel::status(world, status, "Live");
             }
@@ -988,14 +1001,15 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
             let mut refresh = true;
             let mut view = world.get_mut::<OntologySand>(owner).unwrap();
             if let Some(data) = data {
+                let output = snapshot(data);
                 if !data["preview_uid"].is_null() {
-                    view.knowledge_preview = Some(data.clone());
+                    view.knowledge_preview = Some(output.clone());
                 }
                 if !data["review_uid"].is_null() {
-                    view.knowledge_review = Some(data.clone());
+                    view.knowledge_review = Some(output.clone());
                 }
                 if let Some(item) = data.get("item").filter(|item| !item.is_null()) {
-                    view.knowledge_item = Some(item.clone());
+                    view.knowledge_item = Some(snapshot(item));
                     view.knowledge_claim = None;
                     view.knowledge_availability = if data["cached"] == true {
                         "temporary content available offline"
@@ -1014,18 +1028,20 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
                     view.knowledge_item = None;
                     view.knowledge_claim = None;
                     view.knowledge_job = None;
-                    view.knowledge_results.clear();
+                    view.knowledge_results = Default::default();
                     view.knowledge_preview = None;
                     view.knowledge_review = None;
-                    view.knowledge_cached.clear();
+                    view.knowledge_cached = Default::default();
                     view.knowledge_file = None;
                     view.knowledge_cache_bytes = 0;
                     refresh = false;
                 }
                 if let Some(sources) = data["sources"].as_array() {
-                    view.knowledge_sources = sources.clone();
-                    view.knowledge_cached =
-                        data["cached_items"].as_array().cloned().unwrap_or_default();
+                    view.knowledge_sources = snapshot(sources);
+                    view.knowledge_cached = data["cached_items"]
+                        .as_array()
+                        .map(snapshot)
+                        .unwrap_or_default();
                     view.knowledge_cache_bytes = data["cache_bytes"].as_u64().unwrap_or(0);
                     refresh = false;
                 }
@@ -1035,17 +1051,17 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
                     view.knowledge_poll =
                         std::time::Instant::now() + std::time::Duration::from_millis(300);
                     if let Some(sources) = data["result"]["sources"].as_array() {
-                        view.knowledge_results = sources.clone();
+                        view.knowledge_results = snapshot(sources);
                         view.page = 0;
                     }
                     if !data["result"]["item"].is_null() {
                         view.knowledge_page = 0;
-                        view.knowledge_item = Some(data["result"]["item"].clone());
+                        view.knowledge_item = Some(snapshot(&data["result"]["item"]));
                         view.knowledge_claim = None;
                         view.knowledge_availability = "cached for this Person".into();
                     }
                 }
-                view.output = Some(data.clone());
+                view.output = Some(output);
                 view.package_page = 0;
                 let package = view.package;
                 let context = view.context;
@@ -1149,17 +1165,27 @@ fn update(
         .query_filtered::<Entity, With<OntologySand>>()
         .iter(world)
         .collect();
-    let active: HashSet<_> = owners
-        .iter()
-        .flat_map(|owner| world.get::<OntologySand>(*owner).unwrap().ids.clone())
-        .collect();
-    let stale: Vec<_> = world
-        .resource::<Subscriptions>()
-        .0
-        .keys()
-        .filter(|id| !active.contains(*id))
-        .cloned()
-        .collect();
+    let stale: Vec<_> = {
+        let _identity = nucleus::performance::Span::new("ontology-subscription-identity");
+        let active: HashSet<_> = owners
+            .iter()
+            .flat_map(|owner| {
+                world
+                    .get::<OntologySand>(*owner)
+                    .unwrap()
+                    .ids
+                    .iter()
+                    .map(String::as_str)
+            })
+            .collect();
+        world
+            .resource::<Subscriptions>()
+            .0
+            .keys()
+            .filter(|id| !active.contains(id.as_str()))
+            .cloned()
+            .collect()
+    };
     for id in stale {
         let sender = world.resource::<Subscriptions>().0[&id].clone();
         if sender
@@ -1220,10 +1246,22 @@ fn update(
             && view.pending.is_none()
             && view.knowledge_poll <= std::time::Instant::now()
             && view.ready.iter().all(|ready| *ready);
-        let filter = (view.tab == 5).then(|| panel::value(world, view.name).unwrap_or_default());
-        if let Some(filter) = filter
-            && filter != view.knowledge_filter
-        {
+        let filter = if view.tab == 5 {
+            match world
+                .get::<bevy::text::EditableText>(view.name)
+                .filter(|field| !field.is_composing())
+            {
+                Some(field) => {
+                    let value = field.value();
+                    (value != view.knowledge_filter.as_str()).then(|| value.to_string())
+                }
+                None => (!view.knowledge_filter.is_empty()).then(String::new),
+            }
+        } else {
+            None
+        };
+        if let Some(filter) = filter {
+            nucleus::performance::add("ontology-filter-values-prepared", 1);
             let mut view = world.get_mut::<OntologySand>(owner).unwrap();
             view.knowledge_filter = filter;
             view.dirty = true;

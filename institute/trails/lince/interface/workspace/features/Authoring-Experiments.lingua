@@ -1,0 +1,33 @@
+Composed object trials and explanation (@ws-authoring-experiments: 0, is #chapter, #part-of @workspace-development, #requires @ws-behavior-authoring, #requires @ws-procedural-appearance) { r_14S8R6T8BT8W1TNNV0RSJS8C65
+Status: Pending. Owner refinement, 2026-11-15: understand and compare a reusable creation while editing its form, appearance and workings.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Behavior authoring](Behavior-Authoring.lingua) and [Procedural appearance](Procedural-Appearance.lingua), including their already working local previews, diagnostics and persistence. Deliver actual live output-to-appearance binding, comparison of variants and causal explanation across the composed object. Exact CAD, possession, scientific Laboratory and full calculated-state recording do not gate this bounded authoring trial.
+
+## Ownership and ordered work
+
+Own composed inspection and comparison, extending existing activity/trace/asset services. Runtime scheduling and renderer lifetimes retain their provider owners; serialize shared changes. This package joins real implementations rather than retroactively supplying omitted provider debugging or save behavior.
+
+### Task AEX.T01
+
+- [ ] Bind the lamp/hatch state and pulse envelope to appearance inputs using typed explicit mappings. Specify the source activity/clock, sampling/interpolation/hold policy, validity and update cadence. Read a consistent published state; never make a visual evaluator another state writer. Missing/stale values retain explicit status instead of silently claiming a current observation. Reduced rendering detail preserves the behavior and required outputs.
+
+### Task AEX.T02
+
+- [ ] Provide a bounded experiment over captured source revisions and input/time sequences: run/pause/step/reset supported activities, inspect values, state transitions, active regions and the source nodes responsible for an output. Compare two isolated variants under the same inputs/seeds where meaningful, and identify unsupported determinism or numerical tolerances. Reuse existing causal trace concepts with bounded adapters and selected summaries; no permanent per-frame operational fact log.
+
+### Task AEX.T03
+
+- [ ] Keep trial products and state isolated from authored source, shared live activities and external effects. Discard returns to accepted source; any supported adoption names the precise parameters/geometry being committed through existing validation/undo. Publish cost per activity/operator where measurable, aggregate estimates where not, plus queue/product/trace limits. Pause, frozen playback and cheaper evolving behavior remain distinct. Do not infer a cheap equivalent model from an arbitrary composed recipe.
+
+### Task AEX.T04
+
+- [ ] Prove OA.W06 on all three OA.F01 creations: edit internals, expose a simple interface, reuse a fragment, compare variants, explain a trigger and repair a bad link. Exercise source update while running, output budget exhaustion, lower visual detail, cancellation, offline reopen and restricted observation without private-source disclosure. Basic save/preview/causal diagnostics remain usable if this combined view is closed. Record accuracy of expected events, input/frame latency, compute/memory cost and last-demand release.
+
+## Completion
+
+Read OA.R04–OA.R08/OA.R10–OA.R12. Publish real composed proof and retained source/clock/trace provenance. Long-term scientific recording and domain-specific inverse/reduction methods remain separately pending. Consumer: [Object authoring acceptance](../contracts/Object-authoring-contracts.lingua). Current outcome: unbuilt and unverified.
+} r_14S8R6T8BT8W1TNNV0RSJS8C65

@@ -8,6 +8,7 @@ use crate::native::{
 };
 use bevy::{
     ecs::message::MessageCursor,
+    ecs::query::QueryState,
     picking::{
         hover::{HoverMap, generate_hovermap},
         pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
@@ -21,7 +22,7 @@ use std::collections::HashSet;
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SandGroup(pub [u8; 16]);
 
-#[derive(Component, Default)]
+#[derive(Component, Default, PartialEq)]
 pub struct SandSelection(pub Vec<Entity>);
 
 #[derive(Resource, Default)]
@@ -66,20 +67,24 @@ impl Plugin for CanvasSelectionPlugin {
 pub(crate) use crate::native::canvas_item::eligible;
 
 pub(crate) fn group_members(world: &World, root: Entity, entity: Entity) -> Vec<Entity> {
+    group_members_iter(world, root, entity).collect()
+}
+
+pub(crate) fn group_members_iter(
+    world: &World,
+    root: Entity,
+    entity: Entity,
+) -> impl Iterator<Item = Entity> + '_ {
     let group = world.get::<SandGroup>(entity);
+    let workspace = world.get::<WorkspaceMember>(entity);
     world
         .get::<Children>(root)
-        .map_or_else(Vec::new, |children| {
-            children
-                .iter()
-                .filter(|candidate| {
-                    eligible(world, root, *candidate)
-                        && world.get::<WorkspaceMember>(*candidate)
-                            == world.get::<WorkspaceMember>(entity)
-                        && (*candidate == entity
-                            || group.is_some() && world.get::<SandGroup>(*candidate) == group)
-                })
-                .collect()
+        .into_iter()
+        .flat_map(|children| children.iter())
+        .filter(move |candidate| {
+            (*candidate == entity || group.is_some() && world.get::<SandGroup>(*candidate) == group)
+                && world.get::<WorkspaceMember>(*candidate) == workspace
+                && eligible(world, root, *candidate)
         })
 }
 
@@ -88,6 +93,9 @@ fn expand_groups(world: &World, root: Entity, selection: Vec<Entity>) -> Vec<Ent
         .into_iter()
         .filter(|entity| eligible(world, root, *entity))
         .collect();
+    if selected.is_empty() {
+        return Vec::new();
+    }
     let groups: HashSet<_> = selected
         .iter()
         .filter_map(|entity| {
@@ -102,14 +110,13 @@ fn expand_groups(world: &World, root: Entity, selection: Vec<Entity>) -> Vec<Ent
     let mut result = Vec::new();
     if let Some(children) = world.get::<Children>(root) {
         for entity in children.iter() {
-            if eligible(world, root, entity)
-                && (selected.contains(&entity)
-                    || world.get::<SandGroup>(entity).is_some_and(|group| {
-                        groups.contains(&(
-                            world.get::<WorkspaceMember>(entity).map(|member| member.0),
-                            *group,
-                        ))
-                    }))
+            if selected.contains(&entity)
+                || (world.get::<SandGroup>(entity).is_some_and(|group| {
+                    groups.contains(&(
+                        world.get::<WorkspaceMember>(entity).map(|member| member.0),
+                        *group,
+                    ))
+                }) && eligible(world, root, entity))
             {
                 result.push(entity);
             }
@@ -120,16 +127,15 @@ fn expand_groups(world: &World, root: Entity, selection: Vec<Entity>) -> Vec<Ent
 }
 
 pub(crate) fn selected(world: &World, root: Entity) -> Vec<Entity> {
+    selected_iter(world, root).collect()
+}
+
+fn selected_iter(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
     world
         .get::<SandSelection>(root)
-        .map_or_else(Vec::new, |selection| {
-            selection
-                .0
-                .iter()
-                .copied()
-                .filter(|entity| eligible(world, root, *entity))
-                .collect()
-        })
+        .into_iter()
+        .flat_map(|selection| selection.0.iter().copied())
+        .filter(move |entity| eligible(world, root, *entity))
 }
 
 pub(crate) fn set_selection(world: &mut World, root: Entity, mut entities: Vec<Entity>) {
@@ -181,7 +187,9 @@ pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Opti
     let viewport = crate::native::inspection::bounds(world, root)?;
     let item = crate::native::canvas::presented(world, entity)?;
     let view = *world.get::<CanvasView>(root)?;
-    let pin = world.get::<crate::native::sand_placement::PinnedPreview>(entity).map(|preview| &preview.0)
+    let pin = world
+        .get::<crate::native::sand_placement::PinnedPreview>(entity)
+        .map(|preview| &preview.0)
         .or_else(|| world.get::<Pinned>(entity));
     let view = pin.map_or(view, |pin| pin.view(&item, viewport.size()));
     let scale = if pin.is_some() {
@@ -238,6 +246,7 @@ pub(crate) fn active_volume(
 }
 
 fn inside(world: &World, root: Entity, rect: Rect) -> Vec<Entity> {
+    let _marquee = engine::performance::Span::new("native-canvas-selection-marquee");
     if world
         .get::<crate::native::topology::presentation::SpatialRoot>(root)
         .is_some()
@@ -308,6 +317,8 @@ fn input(
     world: &mut World,
     mut cursor: Local<MessageCursor<PointerInput>>,
     mut windows: Local<MessageCursor<WindowEvent>>,
+    mut roots: Local<Option<QueryState<Entity, With<SandSelection>>>>,
+    mut cleanup: Local<Vec<Entity>>,
 ) {
     let escape = world
         .resource::<ButtonInput<KeyCode>>()
@@ -318,16 +329,28 @@ fn input(
             matches!(event, WindowEvent::WindowFocused(event) if !event.focused)
                 || matches!(event, WindowEvent::CursorLeft(_))
         });
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<SandSelection>>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        if escape {
-            clear(world, root);
-        } else {
-            let selection = selected(world, root);
-            set_selection(world, root, selection);
+    {
+        let _maintenance = engine::performance::Span::new("native-canvas-selection-maintenance");
+        let roots = roots.get_or_insert_with(|| world.query_filtered());
+        cleanup.clear();
+        cleanup.extend(roots.iter(world).filter(|root| {
+            let selection = &world.get::<SandSelection>(*root).unwrap().0;
+            // Recheck live eligibility, but only normalize/copy a selection that
+            // changed. Restored selections may arrive unordered or duplicated.
+            escape
+                || !selection.windows(2).all(|pair| pair[0] < pair[1])
+                || selection
+                    .iter()
+                    .any(|entity| !eligible(world, *root, *entity))
+        }));
+        for root in cleanup.drain(..) {
+            if escape {
+                clear(world, root);
+            } else {
+                let selection = selected(world, root);
+                set_selection(world, root, selection);
+                engine::performance::add("native-canvas-selections-normalized", 1);
+            }
         }
     }
     if world
@@ -473,27 +496,39 @@ pub enum GroupAction {
     Detach,
 }
 
-pub(crate) fn options(world: &World, root: Entity, target: Entity) -> (bool, bool) {
+#[derive(Default)]
+pub(crate) struct SelectionOptions {
+    pub grouping: (bool, bool),
+    pub pinned: bool,
+}
+
+pub(crate) fn options(world: &World, root: Entity, target: Entity) -> SelectionOptions {
     if !eligible(world, root, target) {
-        return (false, false);
+        return SelectionOptions::default();
     }
-    let selection = selected(world, root);
-    let selection = if selection.contains(&target) {
-        selection
-    } else {
-        group_members(world, root, target)
-    };
     let group = world.get::<SandGroup>(target);
-    (
-        selection.len() > 1
-            && (group.is_none()
-                || selection
-                    .iter()
-                    .any(|entity| world.get::<SandGroup>(*entity) != group)),
-        selection
-            .iter()
-            .any(|entity| world.get::<SandGroup>(*entity).is_some()),
-    )
+    let mut count = 0;
+    let mut different_group = false;
+    let mut grouped = false;
+    let mut pinnable = false;
+    let mut all_pinned = true;
+    for entity in companions_iter(world, root, target) {
+        count += 1;
+        let member_group = world.get::<SandGroup>(entity);
+        different_group |= member_group != group;
+        grouped |= member_group.is_some();
+        if world
+            .get::<crate::native::area::InfluenceArea>(entity)
+            .is_none()
+        {
+            pinnable = true;
+            all_pinned &= world.get::<Pinned>(entity).is_some();
+        }
+    }
+    SelectionOptions {
+        grouping: (count > 1 && (group.is_none() || different_group), grouped),
+        pinned: pinnable && all_pinned,
+    }
 }
 
 impl Action for GroupAction {
@@ -542,17 +577,15 @@ impl Action for GroupAction {
                 if expanded.len() < 2 {
                     return;
                 }
-                let parents: std::collections::HashSet<_> = expanded
-                    .iter()
-                    .map(|entity| {
-                        let frame = crate::native::topology::rooms::frame(world, *entity)
-                            .unwrap_or(*entity);
-                        world
-                            .get::<crate::native::topology::rooms::Member>(frame)
-                            .map(|member| (member.0.room.clone(), member.0.parent.clone()))
-                    })
-                    .collect();
-                if parents.len() > 1 {
+                let mut parents = expanded.iter().map(|entity| {
+                    let frame =
+                        crate::native::topology::rooms::frame(world, *entity).unwrap_or(*entity);
+                    world
+                        .get::<crate::native::topology::rooms::Member>(frame)
+                        .map(|member| (&member.0.room, &member.0.parent))
+                });
+                let first_parent = parents.next();
+                if parents.any(|parent| Some(parent) != first_parent) {
                     crate::native::notifications::report(
                         world,
                         "Rooms",
@@ -613,17 +646,28 @@ pub(crate) fn detach(world: &mut World, target: Entity) {
     )>();
 }
 
-fn draw(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<SandSelection>>()
-        .iter(world)
-        .collect();
-    let mut marks = Vec::new();
-    for root in roots {
+fn draw(
+    world: &mut World,
+    mut roots: Local<Option<QueryState<Entity, With<SandSelection>>>>,
+    mut marks: Local<Vec<(Entity, Rect)>>,
+) {
+    let _drawing = engine::performance::Span::new("native-canvas-selection-drawing");
+    let roots = roots.get_or_insert_with(|| world.query_filtered());
+    marks.clear();
+    for root in roots.iter(world) {
+        if world.get::<SandSelection>(root).unwrap().0.is_empty()
+            && !world
+                .resource::<SelectionGesture>()
+                .0
+                .as_ref()
+                .is_some_and(|gesture| gesture.root == root)
+        {
+            continue;
+        }
         let Some(viewport) = crate::native::inspection::bounds(world, root) else {
             continue;
         };
-        for entity in selected(world, root) {
+        for entity in selected_iter(world, root) {
             if let Some(rect) = screen_bounds(world, root, entity) {
                 marks.push((
                     root,
@@ -643,12 +687,16 @@ fn draw(world: &mut World) {
             ));
         }
     }
+    engine::performance::add("native-canvas-selection-marks", marks.len() as u64);
+    if marks.is_empty() && world.resource::<Drawing>().0.is_empty() {
+        return;
+    }
     let mut drawing = std::mem::take(&mut world.resource_mut::<Drawing>().0);
     drawing.retain(|entity| world.get_entity(*entity).is_ok());
     while drawing.len() > marks.len() {
         world.despawn(drawing.pop().unwrap());
     }
-    for (index, (root, rect)) in marks.into_iter().enumerate() {
+    for (index, (root, rect)) in marks.drain(..).enumerate() {
         let node = Node {
             position_type: PositionType::Absolute,
             left: px(rect.min.x),
@@ -684,12 +732,27 @@ fn draw(world: &mut World) {
 }
 
 pub(crate) fn companions(world: &World, root: Entity, entity: Entity) -> Vec<Entity> {
-    let selection = selected(world, root);
-    if selection.contains(&entity) {
-        selection
-    } else {
-        group_members(world, root, entity)
-    }
+    companions_iter(world, root, entity).collect()
+}
+
+pub(crate) fn companions_iter(
+    world: &World,
+    root: Entity,
+    entity: Entity,
+) -> impl Iterator<Item = Entity> + '_ {
+    let selection = world
+        .get::<SandSelection>(root)
+        .filter(|selection| selection.0.contains(&entity) && eligible(world, root, entity));
+    let group = selection.is_none().then_some(entity);
+    selection
+        .into_iter()
+        .flat_map(|selection| selection.0.iter().copied())
+        .filter(move |member| eligible(world, root, *member))
+        .chain(
+            group
+                .into_iter()
+                .flat_map(move |entity| group_members_iter(world, root, entity)),
+        )
 }
 
 pub(crate) fn transform_members(
@@ -1245,7 +1308,7 @@ pub(crate) mod tests {
         GroupAction::Group.apply(app.world_mut(), first);
         let group = *app.world().get::<SandGroup>(first).unwrap();
         assert_eq!(app.world().get::<SandGroup>(second), Some(&group));
-        assert_eq!(options(app.world(), root, first), (false, true));
+        assert_eq!(options(app.world(), root, first).grouping, (false, true));
         let saved = crate::native::sand_placement::Placement::capture(app.world(), first);
         let saved: crate::native::sand_placement::Placement =
             serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();

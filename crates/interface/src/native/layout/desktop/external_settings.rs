@@ -1,6 +1,6 @@
 use super::{
     HostRequests,
-    input_settings::{button, disable, feedback, field, next_request, text},
+    input_settings::{button, caption, disable, feedback, field, next_request, text},
 };
 use crate::{
     host::{
@@ -17,8 +17,13 @@ use bevy::{
     text::EditableText,
 };
 
+mod draft;
+mod presentation;
+
 #[derive(Component)]
-struct Page {
+struct Page(Option<PageState>);
+
+struct PageState {
     root: Entity,
     body: Entity,
     toggle: (Entity, Entity),
@@ -49,6 +54,20 @@ struct Page {
     expanded: bool,
     message: String,
     alert: bool,
+    preparation: draft::Draft,
+    presentation: presentation::View,
+}
+
+fn take(world: &mut World, entity: Entity) -> Option<PageState> {
+    world.get_mut::<Page>(entity)?.0.take()
+}
+
+fn restore(world: &mut World, entity: Entity, page: PageState) {
+    if let Some(mut slot) = world.get_mut::<Page>(entity) {
+        slot.0 = Some(page);
+    } else {
+        world.entity_mut(entity).insert(Page(Some(page)));
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -70,7 +89,7 @@ enum Change {
 pub(crate) fn install(app: &mut App) {
     app.add_systems(
         PostUpdate,
-        refresh
+        presentation::refresh
             .after(crate::native::actions::ApplyActions)
             .before(bevy::ui::UiSystems::Layout),
     );
@@ -243,7 +262,7 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
     let status = feedback(world, body);
     let save = button(world, body, page, "Save external commands", Change::Save).0;
     let cancel = button(world, body, page, "Cancel external changes", Change::Cancel).0;
-    world.entity_mut(page).insert(Page {
+    world.entity_mut(page).insert(Page(Some(PageState {
         root,
         body,
         toggle,
@@ -274,7 +293,9 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
         expanded: false,
         message: String::new(),
         alert: false,
-    });
+        preparation: Default::default(),
+        presentation: Default::default(),
+    })));
 }
 
 fn value(world: &World, entity: Entity) -> Result<String, String> {
@@ -287,53 +308,15 @@ fn value(world: &World, entity: Entity) -> Result<String, String> {
     Ok(field.value().to_string())
 }
 
-fn read(world: &World, page: &mut Page) -> Result<Settings, String> {
-    if let Some(mut options) = page.capture_options.clone() {
-        options.directory = value(world, page.capture_directory)?;
-        options.validate()?;
-        if options == Default::default() {
-            page.draft.0.remove(&page.selected);
-        } else {
-            page.draft.0.insert(
-                page.selected,
-                Command {
-                    command: options
-                        .command(page.selected)
-                        .ok_or("Choose a screenshot action")?,
-                    allow_when_locked: false,
-                },
-            );
-        }
-        page.capture_options = Some(options);
-        return Ok(configured(&page.draft));
-    }
-    let mut command = page
-        .draft
-        .0
-        .get(&page.selected)
-        .cloned()
-        .unwrap_or_else(|| empty(page.selected));
-    command.command.program = value(world, page.program)?;
-    let directory = value(world, page.directory)?;
-    command.command.directory = (!directory.is_empty()).then(|| directory.into());
-    command.command.arguments = page
-        .arguments
-        .iter()
-        .map(|entity| value(world, *entity))
-        .collect::<Result<_, _>>()?;
-    page.draft.0.insert(page.selected, command);
-    Ok(configured(&page.draft))
-}
-
-fn configured(draft: &Settings) -> Settings {
-    Settings(
-        draft
-            .0
-            .iter()
-            .filter(|(_, command)| !command.command.program.is_empty())
-            .map(|(action, command)| (*action, command.clone()))
-            .collect(),
-    )
+fn read(world: &World, page: &mut PageState) -> Result<Settings, String> {
+    let mut preparation = std::mem::take(&mut page.preparation);
+    let result = preparation
+        .prepare(world, page)
+        .as_ref()
+        .map(|capture| capture.settings.clone())
+        .map_err(Clone::clone);
+    page.preparation = preparation;
+    result
 }
 
 fn set_value(world: &mut World, entity: Entity, value: &str) {
@@ -347,7 +330,7 @@ fn set_value(world: &mut World, entity: Entity, value: &str) {
     }
 }
 
-fn arguments(world: &mut World, page_entity: Entity, page: &mut Page, values: &[String]) {
+fn arguments(world: &mut World, page_entity: Entity, page: &mut PageState, values: &[String]) {
     for row in page.argument_rows.drain(..) {
         world.despawn(row);
     }
@@ -380,7 +363,7 @@ fn arguments(world: &mut World, page_entity: Entity, page: &mut Page, values: &[
     }
 }
 
-fn selected(world: &mut World, entity: Entity, page: &mut Page) {
+fn selected(world: &mut World, entity: Entity, page: &mut PageState) {
     let command = page
         .draft
         .0
@@ -465,23 +448,15 @@ fn selected(world: &mut World, entity: Entity, page: &mut Page) {
     }
 }
 
-fn load(world: &mut World, entity: Entity, page: &mut Page, snapshot: &Snapshot) {
+fn load(world: &mut World, entity: Entity, page: &mut PageState, snapshot: &Snapshot) {
     page.draft = snapshot.settings.clone();
     page.origin = Some((snapshot.revision, snapshot.settings.clone()));
     selected(world, entity, page);
 }
 
-fn caption(world: &mut World, control: (Entity, Entity), value: impl Into<String>) {
-    let value = value.into();
-    text(world, control.1, &value);
-    if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(control.0) {
-        accessibility.set_label(value);
-    }
-}
-
 impl Action for Change {
     fn apply(&self, world: &mut World, entity: Entity) {
-        let Some(mut page) = world.entity_mut(entity).take::<Page>() else {
+        let Some(mut page) = take(world, entity) else {
             return;
         };
         let snapshot = world
@@ -696,177 +671,13 @@ impl Action for Change {
             page.message = error;
             page.alert = true;
         }
-        world.entity_mut(entity).insert(page);
+        restore(world, entity, page);
         if let Some((root, action)) = binding {
             crate::native::shortcuts::edit_binding(world, root, Shortcut::External(action));
         }
         if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
             wake.ring();
         }
-    }
-}
-
-fn refresh(world: &mut World) {
-    let snapshot = world
-        .get_resource::<Snapshot>()
-        .cloned()
-        .unwrap_or_default();
-    let pages: Vec<_> = world
-        .query_filtered::<Entity, With<Page>>()
-        .iter(world)
-        .collect();
-    for entity in pages {
-        let mut page = world.entity_mut(entity).take::<Page>().unwrap();
-        if page.origin.is_none() && snapshot.available {
-            load(world, entity, &mut page, &snapshot);
-        }
-        text(
-            world,
-            page.summary,
-            if snapshot.available {
-                format!(
-                    "{} custom commands. Screenshots use Grim + Slurp unless overridden. {} actions available.",
-                    snapshot.settings.0.len(),
-                    ExternalAction::ALL.len()
-                )
-            } else {
-                "External commands are configured by a Park session.".into()
-            },
-        );
-        if !page.expanded && page.pending.is_none() {
-            world.entity_mut(entity).insert(page);
-            continue;
-        }
-        let candidate = read(world, &mut page).and_then(|settings| {
-            settings.validate()?;
-            Ok(settings)
-        });
-        if let Some((id, saved)) = page.pending.clone() {
-            if let Some(response) = snapshot
-                .response
-                .as_ref()
-                .filter(|response| response.request == id)
-            {
-                page.pending = None;
-                match &response.outcome {
-                    InputOutcome::Saved { warning } => {
-                        page.alert = warning.is_some();
-                        page.origin = Some((snapshot.revision, snapshot.settings.clone()));
-                        page.message = warning.clone().unwrap_or_else(|| {
-                            if candidate.as_ref() == Ok(&saved) {
-                                "External commands saved.".into()
-                            } else {
-                                "Saved; newer edits remain unsaved.".into()
-                            }
-                        });
-                    }
-                    InputOutcome::Failed(error) => {
-                        page.message = error.clone();
-                        page.alert = true;
-                    }
-                    InputOutcome::Pending => page.pending = Some((id, saved)),
-                }
-            } else if snapshot.last_request > id {
-                page.pending = None;
-                page.message =
-                    "Another editor changed commands; your draft is preserved. Cancel to reload."
-                        .into();
-                page.alert = true;
-            }
-        } else if let Some((revision, origin)) = &page.origin
-            && *revision != snapshot.revision
-        {
-            if candidate.as_ref() == Ok(origin) {
-                load(world, entity, &mut page, &snapshot);
-            } else {
-                page.message =
-                    "Commands changed elsewhere; your draft is preserved. Cancel to reload.".into();
-                page.alert = true;
-            }
-        }
-        let allow_locked = page
-            .draft
-            .0
-            .get(&page.selected)
-            .is_some_and(|command| command.allow_when_locked);
-        caption(
-            world,
-            page.locked,
-            if !page.selected.lockable() {
-                "Unavailable while locked"
-            } else if allow_locked {
-                "Allow while locked: on"
-            } else {
-                "Allow while locked: off"
-            },
-        );
-        disable(
-            world,
-            page.locked.0,
-            !snapshot.available || !page.selected.lockable(),
-        );
-        let settings = world
-            .get_resource::<crate::native::shortcuts::Settings>()
-            .cloned()
-            .unwrap_or_default();
-        let binding = Shortcut::External(page.selected).caption(
-            &settings,
-            world.get_resource::<crate::host::input::KeyboardSnapshot>(),
-        );
-        caption(world, page.binding, format!("Edit binding · {binding}"));
-        let stale = page
-            .origin
-            .as_ref()
-            .is_none_or(|(revision, _)| *revision != snapshot.revision);
-        disable(
-            world,
-            page.save,
-            !snapshot.available || page.pending.is_some() || candidate.is_err() || stale,
-        );
-        disable(world, page.cancel, page.pending.is_some());
-        for input in [
-            page.program,
-            page.directory,
-            page.capture_directory,
-            page.capture_pointer.0,
-            page.capture_defaults,
-            page.capture_custom,
-        ]
-        .into_iter()
-        .chain(page.arguments.iter().copied())
-        {
-            disable(world, input, !snapshot.available);
-        }
-        let dirty = candidate.as_ref().is_ok_and(|candidate| {
-            page.origin
-                .as_ref()
-                .is_some_and(|(_, origin)| candidate != origin)
-        });
-        let message = snapshot
-            .message
-            .as_ref()
-            .or_else(|| candidate.as_ref().err())
-            .cloned()
-            .unwrap_or_else(|| {
-                if page.alert || page.pending.is_some() {
-                    page.message.clone()
-                } else if dirty {
-                    "Unsaved command changes. Save to apply; no program has been run.".into()
-                } else if page
-                    .draft
-                    .0
-                    .get(&page.selected)
-                    .is_none_or(|command| command.command.program.is_empty())
-                {
-                    format!("{} is not configured.", page.selected.label())
-                } else if page.message.is_empty() {
-                    "Saved locally. Editing never runs the command.".into()
-                } else {
-                    page.message.clone()
-                }
-            });
-        text(world, page.status, message);
-        world.entity_mut(entity).insert(page);
     }
 }
 

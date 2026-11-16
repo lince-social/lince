@@ -210,15 +210,16 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
 }
 
 pub(super) fn inputs(world: &mut World) {
+    let _capture = nucleus::performance::Span::new("sound-control-capture");
     let statuses: Vec<_> = world
-        .query::<(Entity, &StatusLabel)>()
+        .query::<(Entity, &StatusLabel, &Text)>()
         .iter(world)
-        .map(|(entity, label)| {
+        .filter_map(|(entity, label, text)| {
             let message = world
                 .get::<SoundStatus>(label.0)
-                .map(|status| status.0.clone())
+                .map(|status| status.0.as_str())
                 .unwrap_or_default();
-            (entity, message)
+            (text.0 != message).then(|| (entity, message.to_owned()))
         })
         .collect();
     for (entity, message) in statuses {
@@ -226,6 +227,7 @@ pub(super) fn inputs(world: &mut World) {
             && text.0 != message
         {
             text.0 = message;
+            nucleus::performance::add("sound-status-label-updates", 1);
         }
     }
     let fields: Vec<_> = world
@@ -234,7 +236,7 @@ pub(super) fn inputs(world: &mut World) {
         .filter(|(_, input, text)| {
             let revision = crate::native::sound::audio_for(world, input.owner)
                 .map_or(0, |audio| audio.revision);
-            input.last != text.value().to_string() || input.revision != revision
+            input.revision != revision || text.value() != input.last.as_str()
         })
         .map(|(e, input, text)| {
             (
@@ -253,6 +255,10 @@ pub(super) fn inputs(world: &mut World) {
             continue;
         }
         if (value.is_empty() || crate::native::sound::library::valid_path(&value))
+            && world
+                .get::<InfluenceArea>(owner)
+                .and_then(|area| area.sound.as_ref())
+                .is_some_and(|sound| (if enter { &sound.enter } else { &sound.leave }) != &value)
             && let Some(sound) = &mut world.get_mut::<InfluenceArea>(owner).unwrap().sound
         {
             if enter {
@@ -260,6 +266,7 @@ pub(super) fn inputs(world: &mut World) {
             } else {
                 sound.leave = value.clone();
             }
+            nucleus::performance::add("sound-input-path-writes", 1);
         }
         let mut input = world.get_mut::<Input>(entity).unwrap();
         input.last = value.clone();

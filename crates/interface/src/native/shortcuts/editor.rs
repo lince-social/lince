@@ -20,6 +20,8 @@ use bevy::{
 use std::collections::{BTreeSet, HashSet};
 
 mod pointer;
+mod presentation;
+use presentation::refresh;
 
 #[derive(Component)]
 pub struct KeyboardModalTrigger;
@@ -42,6 +44,7 @@ pub(crate) struct Editor {
     focus_lost: MessageCursor<KeyboardFocusLost>,
     pressed_trigger: Option<Entity>,
     buffered: Vec<crate::native::keyboard::PreparedKey>,
+    spare: Vec<crate::native::keyboard::PreparedKey>,
     pointer: pointer::CapturePointer,
 }
 
@@ -53,6 +56,8 @@ struct Modal {
     capture: Option<Capture>,
     filter: Entity,
     observed: String,
+    filter_source: Option<String>,
+    prepared: presentation::Prepared,
     observed_focus: Option<Entity>,
     conflicts_only: bool,
     review: BTreeSet<Shortcut>,
@@ -151,14 +156,13 @@ pub(super) fn quarantine(world: &mut World) {
         .get_resource::<crate::native::keyboard::Dispatch>()
         .map(|context| context.held.clone());
     if let Some(mut editor) = world.get_resource_mut::<Editor>() {
-        let held = current
-            .as_ref()
-            .map(|held| held.iter().copied().collect())
-            .unwrap_or_else(|| editor.held.clone());
         if let Some(current) = current {
-            editor.dispatch_quarantine.extend(current);
+            editor.dispatch_quarantine.extend(current.iter().copied());
+            editor.swallowed.extend(current.iter().copied());
+        } else {
+            let editor = &mut *editor;
+            editor.swallowed.extend(editor.held.iter().copied());
         }
-        editor.swallowed.extend(held);
     }
 }
 
@@ -223,6 +227,7 @@ fn capture_trigger(world: &mut World) -> Option<Entity> {
 }
 
 fn capture_input(world: &mut World) {
+    let _capture = engine::performance::Span::new("keyboard-capture");
     let mut editor = world.remove_resource::<Editor>().unwrap_or_default();
     editor.dispatch_quarantine.clear();
     if let Some(events) = world.get_resource::<Messages<KeyboardFocusLost>>()
@@ -247,7 +252,7 @@ fn capture_input(world: &mut World) {
     if capturing {
         editor.swallowed.extend(editor.held.iter().copied());
     }
-    let events = crate::native::keyboard::take(world);
+    let mut events = crate::native::keyboard::take(world);
     let (press, release) = world
         .get_resource::<ButtonInput<MouseButton>>()
         .map(|buttons| {
@@ -266,7 +271,8 @@ fn capture_input(world: &mut World) {
             .take()
             .is_some_and(|trigger| capture_trigger(world) == Some(trigger));
     if armed && !events.is_empty() {
-        editor.buffered.extend(events);
+        editor.buffered.append(&mut events);
+        crate::native::keyboard::recycle(world, events);
         if let Some(mut keys) = world.get_resource_mut::<ButtonInput<KeyCode>>() {
             keys.reset_all();
         }
@@ -276,12 +282,12 @@ fn capture_input(world: &mut World) {
         world.insert_resource(editor);
         return;
     }
-    let buffered = std::mem::take(&mut editor.buffered);
+    let mut buffered = std::mem::take(&mut editor.buffered);
     let buffered_count = buffered.len();
     let mut intercepted = false;
-    let mut retained = Vec::new();
-    let events = buffered.into_iter().chain(events);
-    for (index, prepared) in events.enumerate() {
+    let mut retained = std::mem::take(&mut editor.spare);
+    retained.clear();
+    for (index, prepared) in buffered.drain(..).chain(events.drain(..)).enumerate() {
         let event = &prepared.input;
         let quarantined = !editor.swallowed.is_empty();
         let mut transition = None;
@@ -377,6 +383,12 @@ fn capture_input(world: &mut World) {
     if intercepted && let Some(mut events) = world.get_resource_mut::<Messages<KeyboardInput>>() {
         events.clear();
     }
+    if editor.buffered.is_empty() && buffered.capacity() > editor.buffered.capacity() {
+        editor.buffered = buffered;
+    }
+    if editor.spare.is_empty() && events.capacity() > editor.spare.capacity() {
+        editor.spare = events;
+    }
     crate::native::keyboard::replace(world, retained);
     pointer::capture(world, &mut editor);
     world.insert_resource(editor);
@@ -388,12 +400,13 @@ fn captured(modal: &mut Modal, result: Result<String, String>) {
         let mut candidate = modal.draft.clone();
         candidate.stage(capture.shortcut, Some(&value))?;
         let sharing = candidate
-            .conflicts()
-            .into_iter()
+            .conflict_groups()
+            .iter()
             .find(|(_, commands)| commands.contains(&capture.shortcut))
             .map(|(_, commands)| {
                 commands
-                    .into_iter()
+                    .iter()
+                    .copied()
                     .filter(|command| *command != capture.shortcut)
                     .map(|command| command.label())
                     .collect::<Vec<_>>()
@@ -769,6 +782,8 @@ fn open(world: &mut World, target: Entity, shortcut: Option<Shortcut>) {
         capture,
         filter,
         observed: "\0".into(),
+        filter_source: None,
+        prepared: default(),
         observed_focus: None,
         conflicts_only: false,
         review: BTreeSet::new(),
@@ -817,7 +832,7 @@ impl Action for Change {
                     if let Some(value) = &capture.value {
                         match modal.draft.stage(capture.shortcut, Some(value)) {
                             Ok(()) => {
-                                modal.conflicts_only |= !modal.draft.conflicts().is_empty();
+                                modal.conflicts_only |= !modal.draft.conflict_groups().is_empty();
                                 modal.message = "Combination added to draft. Review all affected commands before Save.".into();
                                 restore_focus(world, Some(capture.return_to));
                             }
@@ -920,10 +935,10 @@ impl Action for Change {
     }
 }
 
-fn review_snapshot(world: &World, owner: Entity) -> Result<configuration::review::Snapshot, String> {
+fn review_snapshot(world: &World, owner: Entity, previous: Option<&configuration::review::Snapshot>) -> Result<configuration::review::Snapshot, String> {
     let modal = world.get_resource::<Editor>().and_then(|editor| editor.modal.as_ref()).filter(|modal| modal.overlay == owner).ok_or("The binding editor is unavailable.")?;
     if modal.capture.is_some() { return Err("Validate or cancel the captured combination before reviewing this draft.".into()); }
-    configuration::review::Snapshot::new(&modal.origin, &modal.draft, world.resource::<Settings>())
+    configuration::review::Snapshot::new(&modal.origin, &modal.draft, world.resource::<Settings>(), previous)
 }
 
 fn review_apply(world: &mut World, owner: Entity, active: serde_json::Value, draft: serde_json::Value) -> Result<(), String> {
@@ -938,264 +953,6 @@ fn review_apply(world: &mut World, owner: Entity, active: serde_json::Value, dra
     modal.dirty = true;
     modal.message = "Review applied to the draft. Resolve any conflicting combinations, then Save all changes.".into();
     Ok(())
-}
-
-fn set_text(world: &mut World, entity: Entity, value: String) {
-    if let Some(mut text) = world.get_mut::<Text>(entity)
-        && text.0 != value
-    {
-        text.0 = value.clone();
-    }
-    if let Some(parent) = world.get::<ChildOf>(entity).map(ChildOf::parent)
-        && world.get::<ActionButton>(parent).is_some()
-        && let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(parent)
-    {
-        node.set_label(value);
-    }
-}
-
-fn disabled(world: &mut World, entity: Entity, disabled: bool) {
-    if disabled {
-        world.entity_mut(entity).insert(InteractionDisabled);
-    } else {
-        world.entity_mut(entity).remove::<InteractionDisabled>();
-    }
-}
-
-fn refresh(world: &mut World) {
-    let settings_changed = world.is_resource_changed::<Settings>();
-    let keyboard_changed = world.is_resource_changed::<crate::host::input::KeyboardSnapshot>();
-    if settings_changed {
-        let modifier = world.resource::<Settings>().modifier();
-        let summaries: Vec<_> = world
-            .query_filtered::<Entity, With<ModifierSummary>>()
-            .iter(world)
-            .collect();
-        for summary in summaries {
-            set_text(
-                world,
-                summary,
-                format!(
-                    "Mod is {}. Bindings are shared across workspaces.",
-                    modifier.label()
-                ),
-            );
-        }
-    }
-    let summaries: Vec<_> = world
-        .query::<(Entity, &Summary)>()
-        .iter(world)
-        .map(|(entity, summary)| {
-            (
-                entity,
-                summary.shortcut,
-                summary.root,
-                summary.label,
-                summary.context,
-            )
-        })
-        .collect();
-    let mut contexts = std::collections::HashMap::new();
-    for (entity, shortcut, root, label, previous) in summaries {
-        let context = *contexts
-            .entry(root)
-            .or_insert_with(|| crate::native::layout::desktop::CommandContext::new(world, root));
-        if !settings_changed && !keyboard_changed && previous == Some(context) {
-            continue;
-        }
-        let settings = world.resource::<Settings>();
-        let keyboard = world.get_resource::<crate::host::input::KeyboardSnapshot>();
-        let value = shortcut.caption(settings, keyboard);
-        let help = shortcut.help(settings, context, keyboard);
-        set_text(world, label, value);
-        if world
-            .get::<crate::native::icons::Tooltip>(entity)
-            .is_none_or(|tooltip| tooltip.0 != help)
-        {
-            world
-                .entity_mut(entity)
-                .insert(crate::native::icons::Tooltip(help.clone()));
-        }
-        if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
-            node.set_label(help.as_str());
-        }
-        world.get_mut::<Summary>(entity).unwrap().context = Some(context);
-    }
-    let Some(mut modal) = world.resource_mut::<Editor>().modal.take() else {
-        return;
-    };
-    if world.get_entity(modal.overlay).is_err() {
-        super::release_keyboard(world, modal.overlay);
-        return;
-    }
-    let filter = world
-        .get::<EditableText>(modal.filter)
-        .map(|text| text.value().to_string())
-        .unwrap_or_default()
-        .to_lowercase();
-    let focus = world.resource::<InputFocus>().get();
-    if !modal.dirty
-        && !keyboard_changed
-        && !settings_changed
-        && filter == modal.observed
-        && focus == modal.observed_focus
-    {
-        world.resource_mut::<Editor>().modal = Some(modal);
-        return;
-    }
-    modal.observed = filter.clone();
-    modal.observed_focus = focus;
-    modal.dirty = false;
-    let conflicts = modal.draft.conflicts();
-    modal.review.extend(
-        conflicts
-            .iter()
-            .flat_map(|(_, commands)| commands.iter().copied()),
-    );
-    modal
-        .review
-        .extend(Shortcut::ALL.into_iter().filter(|shortcut| {
-            modal.draft.text(*shortcut) != modal.origin.text(*shortcut)
-                || modal.draft.chord(*shortcut) != modal.origin.chord(*shortcut)
-        }));
-    let changed = Shortcut::ALL
-        .into_iter()
-        .filter(|shortcut| {
-            modal.draft.text(*shortcut) != modal.origin.text(*shortcut)
-                || modal.draft.chord(*shortcut) != modal.origin.chord(*shortcut)
-        })
-        .count();
-    let count: usize = conflicts.iter().map(|(_, commands)| commands.len()).sum();
-    let stale = world.resource::<Settings>() != &modal.origin;
-    let validation = modal.draft.validate().err();
-    let warning = if stale { "Active bindings changed. Reload active bindings or Review the draft against the file.\n".to_owned() }
-        else { validation.as_ref().map(|error| format!("{error}\n")).unwrap_or_default() };
-    set_text(
-        world,
-        modal.status,
-        format!(
-            "{warning}{}\n{changed} changed commands · {count} commands with conflicting bindings{}",
-            modal.message,
-            if modal.conflicts_only {
-                " · showing affected commands"
-            } else {
-                ""
-            }
-        ),
-    );
-    set_text(
-        world,
-        modal.modifier_text,
-        format!("Mod: {}", modal.draft.modifier().label()),
-    );
-    world.get_mut::<Node>(modal.capture_panel).unwrap().display = if modal.capture.is_some() {
-        Display::Flex
-    } else {
-        Display::None
-    };
-    disabled(
-        world,
-        modal.validate,
-        modal
-            .capture
-            .as_ref()
-            .is_none_or(|capture| capture.value.is_none()),
-    );
-    disabled(
-        world,
-        modal.save,
-        stale || validation.is_some() || !conflicts.is_empty() || modal.capture.is_some(),
-    );
-    if let Some(capture) = &modal.capture {
-        set_text(
-            world,
-            modal.capture_text,
-            format!(
-                "{}: {}",
-                capture.shortcut.label(),
-                capture.value.as_deref().unwrap_or(
-                    if capture.shortcut.pointer_action().is_some() {
-                        "hold a modifier and press a mouse button…"
-                    } else {
-                        "press a key combination…"
-                    }
-                )
-            ),
-        );
-    }
-    let rows: Vec<_> = world
-        .query::<(Entity, &Row)>()
-        .iter(world)
-        .map(|(entity, row)| (entity, row.shortcut, row.binding, row.text, row.status))
-        .collect();
-    for (entity, shortcut, binding, text, status) in rows {
-        let chord = modal.draft.text(shortcut);
-        let display = modal.draft.display_text(
-            shortcut,
-            world.get_resource::<crate::host::input::KeyboardSnapshot>(),
-        );
-        let sharing = conflicts
-            .iter()
-            .find(|(_, commands)| commands.contains(&shortcut));
-        let mut focused_row = focus;
-        let mut keep_focus = false;
-        for _ in 0..crate::native::layout::MAX_DEPTH {
-            let Some(focused) = focused_row else {
-                break;
-            };
-            if focused == entity {
-                keep_focus = true;
-                break;
-            }
-            focused_row = world.get::<ChildOf>(focused).map(ChildOf::parent);
-        }
-        let visible = keep_focus
-            || (!modal.conflicts_only || sharing.is_some() || modal.review.contains(&shortcut))
-                && format!(
-                    "{} {} {} {}",
-                    shortcut.label(),
-                    shortcut.id(),
-                    shortcut.scope().label(),
-                    display
-                )
-                .to_lowercase()
-                .contains(&filter);
-        world.get_mut::<Node>(entity).unwrap().display = if visible {
-            Display::Flex
-        } else {
-            Display::None
-        };
-        set_text(world, text, display.clone());
-        world
-            .get_mut::<bevy::a11y::AccessibilityNode>(binding)
-            .unwrap()
-            .set_label(format!("Change {}: {display}", shortcut.label()));
-        let message = if let Some((_, commands)) = sharing {
-            format!(
-                "Conflicts with: {}",
-                commands
-                    .iter()
-                    .filter(|command| **command != shortcut)
-                    .map(|command| command.label())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        } else if modal.origin.text(shortcut) != chord
-            || modal.origin.trigger(shortcut) != modal.draft.trigger(shortcut)
-        {
-            format!(
-                "Was {} · changed in draft",
-                modal
-                    .origin
-                    .trigger(shortcut)
-                    .map_or_else(|| "Unbound".into(), Trigger::text)
-            )
-        } else {
-            String::new()
-        };
-        set_text(world, status, message);
-    }
-    world.resource_mut::<Editor>().modal = Some(modal);
 }
 
 #[cfg(test)]

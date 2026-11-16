@@ -42,9 +42,15 @@ struct State {
     now_ms: i64,
     trace: Trace,
     trace_bytes: u64,
-    schedules: Vec<crate::simulation::RecordedSchedule>,
+    schedules: Vec<RetainedSchedule>,
     schedule_bytes: u64,
     checks: Vec<ResolvedCheck>,
+}
+
+#[derive(Debug)]
+struct RetainedSchedule {
+    schedule: crate::simulation::RecordedSchedule,
+    encoded_bytes: u64,
 }
 
 impl Control {
@@ -417,30 +423,46 @@ impl Control {
         &self,
         schedule: crate::simulation::RecordedSchedule,
     ) -> Result<(), Limit> {
+        let _admission = crate::performance::Span::new("execution-schedule-admission");
         let mut state = self.0.lock().expect("execution control");
-        let bytes = serde_json::to_vec(&schedule).map_or(u64::MAX, |bytes| bytes.len() as u64);
+        let bytes = crate::json::encoded_len(&schedule).map_or(u64::MAX, |bytes| bytes as u64);
         let next = state.schedule_bytes.saturating_add(bytes);
         if next.saturating_add(state.trace.bytes()) > state.trace_bytes {
             state.stopped.get_or_insert(Limit::Evidence);
             return Err(Limit::Evidence);
         }
         state.schedule_bytes = next;
-        state.schedules.push(schedule);
+        state.schedules.push(RetainedSchedule {
+            schedule,
+            encoded_bytes: bytes,
+        });
         Ok(())
     }
 
     pub fn drain_schedules(&self, cell: &str) -> Vec<crate::simulation::RecordedSchedule> {
+        let _drain = crate::performance::Span::new("execution-schedule-drain");
         let mut state = self.0.lock().expect("execution control");
-        let (selected, retained): (Vec<_>, Vec<_>) = std::mem::take(&mut state.schedules)
-            .into_iter()
-            .partition(|schedule| schedule.cell == cell);
-        state.schedule_bytes = retained
-            .iter()
-            .map(|schedule| {
-                serde_json::to_vec(schedule).map_or(u64::MAX, |bytes| bytes.len() as u64)
-            })
-            .fold(0u64, u64::saturating_add);
-        state.schedules = retained;
+        let mut selected = Vec::new();
+        let mut retained_bytes = 0u64;
+        // Schedules are immutable after admission. Keep the exact byte charge
+        // with its value, rather than serializing every survivor on each drain.
+        let mut retained = std::mem::take(&mut state.schedules);
+        for entry in retained.extract_if(.., |entry| {
+            if entry.schedule.cell == cell {
+                true
+            } else {
+                retained_bytes = retained_bytes.saturating_add(entry.encoded_bytes);
+                false
+            }
+        }) {
+            selected.push(entry.schedule);
+        }
+        state.schedule_bytes = retained_bytes;
+        state.schedules = if retained.is_empty() {
+            Vec::new()
+        } else {
+            retained
+        };
         selected
     }
 

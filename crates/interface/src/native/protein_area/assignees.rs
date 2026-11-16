@@ -22,7 +22,7 @@ struct Picker {
     input: Entity,
     list: Entity,
     subscription: String,
-    rows: Vec<Value>,
+    rows: Arc<Vec<Value>>,
     drawn: String,
     message: String,
     predicate_ready: bool,
@@ -79,7 +79,11 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
         return false;
     };
     let label = field.label;
-    world.get_mut::<Text>(label).unwrap().0 = caption(data);
+    let caption = caption(data);
+    let mut text = world.get_mut::<Text>(label).unwrap();
+    if text.0 != caption {
+        text.0 = caption;
+    }
     true
 }
 
@@ -248,7 +252,7 @@ impl Action for Open {
             input,
             list,
             subscription: subscription.clone(),
-            rows: Vec::new(),
+            rows: Arc::default(),
             drawn: String::new(),
             message: "Loading people…".into(),
             predicate_ready: false,

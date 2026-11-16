@@ -54,7 +54,7 @@ pub(super) fn trim_publication_state(state: &mut Value) -> Result<(), EngineErro
             object.remove(&key);
         }
     }
-    if serde_json::to_vec(state)?.len() > 512 * 1024 {
+    if nucleus::json::encoded_len(state)? > 512 * 1024 {
         return Err(invalid(
             "The retained publication state is full. Resolve its concurrent branches or archive this ended post",
         ));

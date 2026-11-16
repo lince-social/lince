@@ -172,6 +172,30 @@ pub(super) fn capture(node: &Node) -> Style {
 }
 
 pub(super) fn apply(node: &mut Node, style: &Style) {
+    update(node, style, false);
+}
+
+pub(super) fn apply_live(mut node: Mut<'_, Node>, style: &Style, removed: bool) {
+    if update(node.bypass_change_detection(), style, removed) {
+        node.set_changed();
+        crate::host::performance::count(
+            crate::host::performance::Count::CanvasAuthoringStyleWrites,
+        );
+    }
+}
+
+fn replace<T: PartialEq>(current: &mut T, next: T) -> bool {
+    if *current == next {
+        return false;
+    }
+    *current = next;
+    true
+}
+
+// Touch only authored properties. An unchanged style does not require cloning
+// the Node's grid/track data or publishing an unrelated layout change.
+fn update(node: &mut Node, style: &Style, removed: bool) -> bool {
+    let mut changed = false;
     for (key, value) in &style.dimensions {
         let target = match key.as_str() {
             "width" => &mut node.width,
@@ -201,84 +225,105 @@ pub(super) fn apply(node: &mut Node, style: &Style) {
             "border-bottom" => &mut node.border.bottom,
             _ => continue,
         };
-        *target = val(value);
+        changed |= replace(target, val(value));
     }
     for (key, value) in &style.numbers {
-        match key.as_str() {
-            "flex-grow" => node.flex_grow = *value,
-            "flex-shrink" => node.flex_shrink = *value,
-            "aspect-ratio" => node.aspect_ratio = Some(*value),
-            _ => {}
-        }
+        changed |= match key.as_str() {
+            "flex-grow" => replace(&mut node.flex_grow, *value),
+            "flex-shrink" => replace(&mut node.flex_shrink, *value),
+            "aspect-ratio" => replace(&mut node.aspect_ratio, Some(*value)),
+            _ => false,
+        };
     }
     for (key, value) in &style.choices {
         let value = value.as_str();
         match key.as_str() {
-            "display" => {
-                node.display = match value {
-                    "none" => Display::None,
-                    "grid" => Display::Grid,
-                    _ => Display::Flex,
-                }
+            "display" if !removed => {
+                changed |= replace(
+                    &mut node.display,
+                    match value {
+                        "none" => Display::None,
+                        "grid" => Display::Grid,
+                        _ => Display::Flex,
+                    },
+                );
             }
             "direction" => {
-                node.flex_direction = match value {
-                    "column" => FlexDirection::Column,
-                    "row-reverse" => FlexDirection::RowReverse,
-                    "column-reverse" => FlexDirection::ColumnReverse,
-                    _ => FlexDirection::Row,
-                }
+                changed |= replace(
+                    &mut node.flex_direction,
+                    match value {
+                        "column" => FlexDirection::Column,
+                        "row-reverse" => FlexDirection::RowReverse,
+                        "column-reverse" => FlexDirection::ColumnReverse,
+                        _ => FlexDirection::Row,
+                    },
+                );
             }
             "wrap" => {
-                node.flex_wrap = match value {
-                    "wrap" => FlexWrap::Wrap,
-                    "wrap-reverse" => FlexWrap::WrapReverse,
-                    _ => FlexWrap::NoWrap,
-                }
+                changed |= replace(
+                    &mut node.flex_wrap,
+                    match value {
+                        "wrap" => FlexWrap::Wrap,
+                        "wrap-reverse" => FlexWrap::WrapReverse,
+                        _ => FlexWrap::NoWrap,
+                    },
+                );
             }
             "position" => {
-                node.position_type = if value == "absolute" {
-                    PositionType::Absolute
-                } else {
-                    PositionType::Relative
-                }
+                changed |= replace(
+                    &mut node.position_type,
+                    if value == "absolute" {
+                        PositionType::Absolute
+                    } else {
+                        PositionType::Relative
+                    },
+                );
             }
             "align-items" => {
-                node.align_items = match value {
-                    "start" => AlignItems::Start,
-                    "end" => AlignItems::End,
-                    "flex-start" => AlignItems::FlexStart,
-                    "flex-end" => AlignItems::FlexEnd,
-                    "center" => AlignItems::Center,
-                    "stretch" => AlignItems::Stretch,
-                    "baseline" => AlignItems::Baseline,
-                    _ => AlignItems::Default,
-                }
+                changed |= replace(
+                    &mut node.align_items,
+                    match value {
+                        "start" => AlignItems::Start,
+                        "end" => AlignItems::End,
+                        "flex-start" => AlignItems::FlexStart,
+                        "flex-end" => AlignItems::FlexEnd,
+                        "center" => AlignItems::Center,
+                        "stretch" => AlignItems::Stretch,
+                        "baseline" => AlignItems::Baseline,
+                        _ => AlignItems::Default,
+                    },
+                );
             }
             "align-self" => {
-                node.align_self = match value {
-                    "start" => AlignSelf::Start,
-                    "end" => AlignSelf::End,
-                    "flex-start" => AlignSelf::FlexStart,
-                    "flex-end" => AlignSelf::FlexEnd,
-                    "center" => AlignSelf::Center,
-                    "stretch" => AlignSelf::Stretch,
-                    "baseline" => AlignSelf::Baseline,
-                    _ => AlignSelf::Auto,
-                }
+                changed |= replace(
+                    &mut node.align_self,
+                    match value {
+                        "start" => AlignSelf::Start,
+                        "end" => AlignSelf::End,
+                        "flex-start" => AlignSelf::FlexStart,
+                        "flex-end" => AlignSelf::FlexEnd,
+                        "center" => AlignSelf::Center,
+                        "stretch" => AlignSelf::Stretch,
+                        "baseline" => AlignSelf::Baseline,
+                        _ => AlignSelf::Auto,
+                    },
+                );
             }
             "justify-content" => {
-                node.justify_content = match value {
-                    "start" => JustifyContent::Start,
-                    "end" => JustifyContent::End,
-                    "flex-start" => JustifyContent::FlexStart,
-                    "flex-end" => JustifyContent::FlexEnd,
-                    "center" => JustifyContent::Center,
-                    "space-between" => JustifyContent::SpaceBetween,
-                    "space-around" => JustifyContent::SpaceAround,
-                    "space-evenly" => JustifyContent::SpaceEvenly,
-                    _ => JustifyContent::Default,
-                }
+                changed |= replace(
+                    &mut node.justify_content,
+                    match value {
+                        "start" => JustifyContent::Start,
+                        "end" => JustifyContent::End,
+                        "flex-start" => JustifyContent::FlexStart,
+                        "flex-end" => JustifyContent::FlexEnd,
+                        "center" => JustifyContent::Center,
+                        "space-between" => JustifyContent::SpaceBetween,
+                        "space-around" => JustifyContent::SpaceAround,
+                        "space-evenly" => JustifyContent::SpaceEvenly,
+                        _ => JustifyContent::Default,
+                    },
+                );
             }
             "overflow-x" | "overflow-y" => {
                 let target = if key == "overflow-x" {
@@ -286,16 +331,23 @@ pub(super) fn apply(node: &mut Node, style: &Style) {
                 } else {
                     &mut node.overflow.y
                 };
-                *target = match value {
-                    "clip" => OverflowAxis::Clip,
-                    "hidden" => OverflowAxis::Hidden,
-                    "scroll" => OverflowAxis::Scroll,
-                    _ => OverflowAxis::Visible,
-                };
+                changed |= replace(
+                    target,
+                    match value {
+                        "clip" => OverflowAxis::Clip,
+                        "hidden" => OverflowAxis::Hidden,
+                        "scroll" => OverflowAxis::Scroll,
+                        _ => OverflowAxis::Visible,
+                    },
+                );
             }
             _ => {}
         }
     }
+    if removed {
+        changed |= replace(&mut node.display, Display::None);
+    }
+    changed
 }
 
 pub(super) fn reset(node: &mut Node, original: &Node, previous: &Style) {

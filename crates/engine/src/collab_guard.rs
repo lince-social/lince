@@ -84,8 +84,8 @@ pub struct AcceptedDoc {
     version: VersionVector,
     validated_limits: Limits,
     history_text_json_bytes: usize,
-    head: String,
-    body: String,
+    head: Arc<String>,
+    body: Arc<String>,
     snapshot: Vec<u8>,
 }
 
@@ -145,19 +145,44 @@ impl AcceptedDoc {
     }
 
     fn from_document(doc: LoroDoc, limits: &Limits) -> Result<Self, GuardError> {
-        Self::from_document_with_text_json_bytes(doc, limits, None)
+        Self::from_document_with_text_json_bytes(doc, limits, None, None)
     }
 
     fn from_document_with_text_json_bytes(
         doc: LoroDoc,
         limits: &Limits,
         history_text_json_bytes: Option<usize>,
+        previous: Option<(&Self, &BTreeSet<Property>)>,
     ) -> Result<Self, GuardError> {
         let _building = crate::performance::Span::new("record-guard-candidate-build");
         validate_limits(limits)?;
         let history_text_json_bytes = validate_document(&doc, limits, history_text_json_bytes)?;
-        let head = doc.get_text("head").to_string();
-        let body = doc.get_text("body").to_string();
+        // The normalized delta has already proved which roots can change. Keep
+        // the other root's immutable text instead of materializing a potentially
+        // large description again for every title keystroke. This shares text
+        // only; candidate isolation and every document/history limit still apply.
+        let materialize = |property, field: &str| {
+            if let Some((previous, touched)) = previous
+                && !touched.contains(&property)
+            {
+                let text = match property {
+                    Property::Head => &previous.head,
+                    Property::Body => &previous.body,
+                    _ => unreachable!("only text roots are materialized"),
+                };
+                crate::performance::add("record-canonical-fields-reused", 1);
+                return Arc::clone(text);
+            }
+            let text = doc.get_text(field).to_string();
+            crate::performance::add(
+                "record-canonical-text-bytes-materialized",
+                text.len() as u64,
+            );
+            // Keep Loro's String allocation when publishing a changed root too.
+            Arc::new(text)
+        };
+        let head = materialize(Property::Head, "head");
+        let body = materialize(Property::Body, "body");
         let exporting = crate::performance::Span::new("record-canonical-snapshot-export");
         let snapshot = doc
             .export(ExportMode::Snapshot)
@@ -364,6 +389,7 @@ impl AcceptedDoc {
                 candidate,
                 limits,
                 Some(history_text_json_bytes),
+                Some((self, &normalized_inspection.touched)),
             )?,
             base_version,
             normalized_delta,

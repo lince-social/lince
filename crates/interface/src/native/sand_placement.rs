@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub(crate) mod scratch;
 
-#[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pinned {
     pub anchor: [f64; 2],
     pub scale: f64,
@@ -292,7 +292,7 @@ impl Placement {
                 .is_none_or(|id| nucleus::valid_uid(id, "placement"))
             && self.canvas_component.as_ref().is_none_or(|component| {
                 component
-                    .validate_snapshot(&crate::native::canvas_host::registry())
+                    .validate_snapshot(&crate::native::canvas_host::shared_registry())
                     .is_ok()
             })
             && self
@@ -424,8 +424,7 @@ impl Action for PlacementAction {
                 return;
             }
             let members: Vec<_> =
-                crate::native::canvas_selection::companions(world, parent, entity)
-                    .into_iter()
+                crate::native::canvas_selection::companions_iter(world, parent, entity)
                     .filter(|member| {
                         world
                             .get::<crate::native::area::InfluenceArea>(*member)

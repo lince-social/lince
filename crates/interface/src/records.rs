@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::{borrow::Cow, fmt::Write};
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Source {
     #[default]
     Local,
@@ -16,35 +17,49 @@ pub fn baseline(data: &Value, property: &str) -> Value {
     value
 }
 
+pub fn baseline_matches(saved: &Value, data: &Value, property: &str) -> bool {
+    saved[property] == data[property]
+        && (!matches!(property, "start_date" | "due_date" | "estimate_min")
+            || saved["extension"] == data["extension"])
+}
+
 pub fn display(value: &Value) -> String {
+    display_ref(value).into_owned()
+}
+
+pub fn display_ref(value: &Value) -> Cow<'_, str> {
     match value {
-        Value::Null => String::new(),
-        Value::String(value) => value.clone(),
-        Value::Array(values) => values
-            .iter()
-            .map(|value| {
-                if let Some(head) = value["head"].as_str() {
-                    head.into()
-                } else if let Some(predicate) = value["predicate"].as_str() {
-                    format!(
-                        "#{predicate}{}{}",
-                        value["quantity"]
-                            .as_str()
-                            .map(|q| format!(": {q}"))
-                            .unwrap_or_default(),
-                        value["object"]
-                            .as_str()
-                            .map(|uid| format!(" → {uid}"))
-                            .unwrap_or_default()
-                    )
-                } else {
-                    value.to_string()
-                }
-            })
-            .collect::<Vec<String>>()
-            .join("\n"),
-        value => value.to_string(),
+        Value::Null => Cow::Borrowed(""),
+        Value::String(value) => Cow::Borrowed(value),
+        Value::Array(values) => Cow::Owned(display_list(values)),
+        value => Cow::Owned(value.to_string()),
     }
+}
+
+pub fn display_list(values: &[Value]) -> String {
+    let mut text = String::new();
+    for (index, value) in values.iter().enumerate() {
+        if index != 0 {
+            text.push('\n');
+        }
+        if let Some(head) = value["head"].as_str() {
+            text.push_str(head);
+        } else if let Some(predicate) = value["predicate"].as_str() {
+            text.push('#');
+            text.push_str(predicate);
+            if let Some(quantity) = value["quantity"].as_str() {
+                text.push_str(": ");
+                text.push_str(quantity);
+            }
+            if let Some(object) = value["object"].as_str() {
+                text.push_str(" → ");
+                text.push_str(object);
+            }
+        } else {
+            write!(text, "{value}").expect("format Record field");
+        }
+    }
+    text
 }
 
 pub const KANBAN_COLUMNS: [(&str, &str, i32); 7] = [
@@ -108,7 +123,7 @@ impl Binding {
     }
     pub fn valid(&self) -> bool {
         (nucleus::record_extension::column_binding(&self.property).is_some()
-            || protein::record_schema::fields()
+            || protein::record_schema::FIELDS
                 .iter()
                 .any(|field| field.key == self.property && (!self.editable || field.editable)))
             && [self.width, self.height]

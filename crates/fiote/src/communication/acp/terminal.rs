@@ -53,10 +53,7 @@ impl LoginTerminal {
     pub fn start(config: &Config, method: &AuthMethodTerminal) -> Result<Arc<Self>, String> {
         if method.args.len() > 64
             || method.env.len() > 64
-            || serde_json::to_vec(method)
-                .map_err(|error| error.to_string())?
-                .len()
-                > 32_768
+            || nucleus::json::encoded_len(method).map_err(|error| error.to_string())? > 32_768
         {
             return Err("The agent's terminal login command is too large.".into());
         }

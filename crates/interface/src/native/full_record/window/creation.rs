@@ -33,7 +33,7 @@ impl WindowRecord {
                 _ => false,
             }
         }
-        config.draft.compile().is_ok_and(|query| {
+        config.draft.compile_shared().is_ok_and(|query| {
             query.source == protein::Source::Record
                 && query.aggregate.is_none()
                 && query.limit == Some(1)

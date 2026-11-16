@@ -18,7 +18,7 @@ Start with the largest traced cost. Direct scanout is conditional late work for 
 
 **Continue through these Records:**
 
-- [P53 — Pace one output from its presentation clock without a redraw loop.](record:r_3HT09KTMPBS113E9QXKT5ASZGQ)
+- [P53 — Verify implemented output demand and callback pacing.](record:r_3HT09KTMPBS113E9QXKT5ASZGQ)
 - [P55 — Remove one measured redundant render pass or copy.](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J)
 - [P68 — Compare processor placement for one evidenced misplaced stage.](record:r_7NEHBEAZ041VSG76B4TAWJ83PS)
 - [P52 — Retain damage independently for each output.](record:r_0R0MWH247WFE7SYBX74GP66PM8)
@@ -28,7 +28,7 @@ Start with the largest traced cost. Direct scanout is conditional late work for 
 - [P57 — Test direct scanout for one eligible fullscreen SDR client.](record:r_1W82JGD8E7MYX2XM60YYXGMM53)
 } r_333RCJBDSGX0Y0W630FWHJAJCB
 
-P53 — Pace one output from its presentation clock without a redraw loop. (
+P53 — Verify implemented output demand and callback pacing. (
     @park-p53: 0,
     is #task,
     #park-performance-task,
@@ -36,16 +36,12 @@ P53 — Pace one output from its presentation clock without a redraw loop. (
     #part-of @park-dev-06-gpu-and-outputs: 12,
     #park-workflow @park-development-cycle
 ) { r_3HT09KTMPBS113E9QXKT5ASZGQ
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, physical verification pending.** Successful-output callback ownership and the bounded per-output estimated-refresh/no-damage queue are already coded. They preserve replacement deadlines, pause/mode changes and stale-owner retirement. Do not build them again.
 
-**Context:** [Source chapter](record:r_333RCJBDSGX0Y0W630FWHJAJCB); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** independent output activity, quiet/off-screen clients, actual callback traffic, missed deadlines, failure/resume, multi-node GPU coherence and ready work while an earlier submission is stalled. Compare frame age and physical output intervals. Zero no-damage counter activity is not a speedup. Preserve input, semantic work and capture service independently of another output.
 
+**Why:** callback service must follow actual output demand without an immediate redraw loop or a global polling clock. The physical daily desktop remains unverified even where private compositor checks passed. Execution is deferred by the current source-only instruction; use Overhaul.md and the current checkpoint.
 
-**Why:** coupling outputs or answering undamaged clients too quickly can burn CPU and cause uneven delivery. **Scope:** distinct dirty, queued and waiting states in session/desktop, with callback throttling even when a redraw finds no damage. **Verify:** independent output activity, quiet/off-screen clients, missed deadlines, completion/failure and resume. Compare native frame age and output intervals. Follow Niri's estimated-vblank distinction; do not remove callback service or create a fixed global polling clock.
-
-**Remaining:** validate the implemented estimated-refresh/no-damage throttling on the optimized candidate, then reduce any measured remaining presentation preparation that exceeds actual output demand. Verify independent outputs, quiet/off-screen clients, missed deadlines, failure/resume, held multi-node GPU coherence and ready work while an earlier submission is deliberately stalled. Compare frame age and actual output intervals without delaying input, semantic work, capture or another ready output. A fixed global polling clock is not the intended mechanism.
-
-**Current delivery boundary:** the successful-output callback move and removal of native Started snapshots/channel/wakes are already included in measured 3fdc9356; 00 holds the prior red/green result. The next candidate implements a bounded, per-output estimated-refresh queue for the no-damage branch, anchored to actual presentation, with replacement, pause, mode-change and stale owner retirement. Pure clock checks and compilation precede delivery; Park must verify actual callback traffic, failure/resume and both outputs. The current output texture path may make most renders damaged: if the new no-damage counters stay zero, do not claim this branch improved performance. Measure remaining real output-demand/composition waste before expanding the mechanism. The original no-progress import and clock controls are complete.
 } r_3HT09KTMPBS113E9QXKT5ASZGQ
 
 Extension @park-p53 "lince.controls" {

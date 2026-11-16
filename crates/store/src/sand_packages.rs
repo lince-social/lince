@@ -25,7 +25,7 @@ pub async fn list(
         .await?
         .into_iter()
         .map(|row| {
-            let manifest: Manifest = serde_json::from_str(&row.get::<String, _>("manifest"))
+            let manifest: Manifest = serde_json::from_str(row.get::<&str, _>("manifest"))
                 .map_err(|error| StoreError::Decode(Box::new(error)))?;
             Ok(Entry {
                 identity: manifest.identity,
@@ -49,7 +49,7 @@ pub async fn get(
         .bind(&identity.origin).bind(&identity.id).bind(i64::from(identity.version)).bind(public_only)
         .fetch_optional(pool).await?
         .map(|row| {
-            Ok(Stored { package: serde_json::from_str(&row.get::<String, _>("document"))
+            Ok(Stored { package: serde_json::from_str(row.get::<&str, _>("document"))
                 .map_err(|error| StoreError::Decode(Box::new(error)))?, public: row.get("public"), origin_verified: row.get("origin_verified") })
         }).transpose()
 }

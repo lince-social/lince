@@ -462,10 +462,7 @@ async fn file_backed_local_edit_phase_probe() {
         .fetch_one(&engine.store.pool)
         .await
         .unwrap();
-    let storage = storage_source(
-        &(serde_json::to_string(&Source::Local).unwrap(), uid.clone()),
-        None,
-    );
+    let storage = storage_source(&(Source::Local, uid.clone()), None);
     assert!(
         engine
             .load_record_edit_draft(&storage, &uid)

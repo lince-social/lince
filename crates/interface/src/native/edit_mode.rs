@@ -1216,6 +1216,7 @@ pub(crate) fn control(
             SandKind::Trust => Icon::Person,
             SandKind::HandCamera => Icon::Person,
             SandKind::Video => Icon::Play,
+            SandKind::Kamalie => Icon::Play,
             SandKind::Sync => Icon::Reset,
             #[cfg(feature = "stuff")]
             SandKind::Freedoom => Icon::Play,

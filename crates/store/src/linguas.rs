@@ -169,28 +169,56 @@ pub async fn remove_concept(
 }
 
 pub async fn concept_uids(pool: &SqlitePool, lingua_uid: &str) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT concept_uid FROM lingua_concept WHERE lingua_uid = ? ORDER BY adopted_at, concept_uid",
-    )
-    .bind(lingua_uid)
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(|row| row.get("concept_uid"))
-    .collect())
+    Ok(concepts_for_linguas(pool, &[lingua_uid])
+        .await?
+        .remove(lingua_uid)
+        .unwrap_or_default())
+}
+
+pub async fn concepts_for_linguas(
+    pool: &SqlitePool,
+    linguas: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<String>>, StoreError> {
+    memberships(pool, linguas, "lingua_uid", "concept_uid").await
 }
 
 pub async fn lingua_uids_for_concept(
     pool: &SqlitePool,
     concept_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT lingua_uid FROM lingua_concept WHERE concept_uid = ? ORDER BY adopted_at, lingua_uid",
-    )
-    .bind(concept_uid)
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(|row| row.get("lingua_uid"))
-    .collect())
+    Ok(linguas_for_concepts(pool, &[concept_uid])
+        .await?
+        .remove(concept_uid)
+        .unwrap_or_default())
+}
+
+pub async fn linguas_for_concepts(
+    pool: &SqlitePool,
+    concepts: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<String>>, StoreError> {
+    memberships(pool, concepts, "concept_uid", "lingua_uid").await
+}
+
+async fn memberships(
+    pool: &SqlitePool,
+    selected: &[&str],
+    source: &'static str,
+    target: &'static str,
+) -> Result<std::collections::HashMap<String, Vec<String>>, StoreError> {
+    let mut memberships = std::collections::HashMap::<String, Vec<String>>::new();
+    if selected.is_empty() {
+        return Ok(memberships);
+    }
+    let ids =
+        serde_json::to_string(selected).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let sql = format!(
+        "SELECT {source}, {target} FROM lingua_concept WHERE {source} IN (SELECT value FROM json_each(?)) ORDER BY adopted_at, {target}"
+    );
+    for row in sqlx::query(&sql).bind(ids).fetch_all(pool).await? {
+        memberships
+            .entry(row.get(source))
+            .or_default()
+            .push(row.get(target));
+    }
+    Ok(memberships)
 }

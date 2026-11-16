@@ -14,8 +14,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     collections::HashMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
+
+mod text_protection;
+pub(crate) use text_protection::refresh as refresh_text_protection;
 
 mod catalog;
 #[cfg(test)]
@@ -355,7 +359,7 @@ fn draft_valid(effect: &Effect) -> bool {
 #[derive(Component, Clone)]
 struct RecordData {
     binding: RecordBinding,
-    extension: Option<Extension>,
+    extension: Option<Arc<Extension>>,
     quantity: Option<String>,
 }
 
@@ -447,17 +451,35 @@ struct MappingStatus(Entity);
 #[derive(Component)]
 struct EditorClose;
 
+#[derive(Clone)]
+struct EffectRecord {
+    extension: Option<Extension>,
+    quantity: Option<String>,
+}
+
+impl From<&Value> for EffectRecord {
+    fn from(row: &Value) -> Self {
+        Self {
+            extension: Extension::deserialize(&row["shader_effect"]).ok(),
+            quantity: model::quantity(&row["quantity"]),
+        }
+    }
+}
+
 struct Feed {
     binding: RecordBinding,
     id: String,
     sent: bool,
-    row: Option<Value>,
+    row: Option<Arc<EffectRecord>>,
     error: String,
     retry: Instant,
 }
 
 #[derive(Resource, Default)]
-struct Feeds(HashMap<String, Feed>, Vec<(RecordBinding, String)>);
+struct Feeds(
+    HashMap<(Source, String), Feed>,
+    Vec<(RecordBinding, String)>,
+);
 
 #[derive(Resource, Default, Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct ShaderSettings {
@@ -610,8 +632,8 @@ fn root(world: &World, mut entity: Entity) -> Option<Entity> {
     Some(entity)
 }
 
-fn feed_key(binding: &RecordBinding) -> String {
-    serde_json::to_string(&(&binding.source, &binding.uid)).unwrap()
+fn feed_key(binding: &RecordBinding) -> (Source, String) {
+    (binding.source.clone(), binding.uid.clone())
 }
 
 fn sender(
@@ -668,7 +690,7 @@ impl Action for OpenRecord {
             if let Some(id) = selected {
                 world.get_mut::<Editor>(editor).unwrap().catalog.choose(id);
             }
-            catalog::load(world, editor, extension, false);
+            catalog::load(world, editor, extension.as_ref().clone(), false);
             render_editor(world, editor);
         }
     }
@@ -1608,9 +1630,7 @@ impl Action for Command {
                         .0
                         .get(&feed_key(&binding))
                         .and_then(|feed| feed.row.as_ref())
-                        .and_then(|row| {
-                            serde_json::from_value::<Extension>(row["shader_effect"].clone()).ok()
-                        });
+                        .and_then(|row| row.extension.as_ref());
                     if let Some(extension) = extension {
                         let ids: Vec<_> = std::iter::once(None)
                             .chain(extension.effects.keys().cloned().map(Some))
@@ -1640,7 +1660,7 @@ impl Action for Command {
                         .0
                         .get(&feed_key(binding))
                         .and_then(|feed| feed.row.as_ref())
-                        .and_then(|row| model::quantity(&row["quantity"]));
+                        .and_then(|row| row.quantity.clone());
                     world.get_mut::<Editor>(owner).unwrap().custom_quantity = false;
                     set_record_quantity(world, owner, quantity);
                     let mut editor = world.get_mut::<Editor>(owner).unwrap();
@@ -1656,12 +1676,12 @@ impl Action for Command {
                         .get(&feed_key(binding))
                         .and_then(|feed| feed.row.clone());
                     if let Some(data) = data {
-                        let extension =
-                            serde_json::from_value::<Extension>(data["shader_effect"].clone()).ok();
                         catalog::load(
                             world,
                             owner,
-                            extension.unwrap_or_else(|| Extension::single(0, Effect::default())),
+                            data.extension
+                                .clone()
+                                .unwrap_or_else(|| Extension::single(0, Effect::default())),
                             true,
                         );
                         world.get_mut::<Editor>(owner).unwrap().loaded = true;
@@ -2011,7 +2031,7 @@ pub(crate) fn record(
         world.despawn(entity);
     }
     let Some(binding) = binding else { return };
-    let extension = catalog::decode(&data["shader_effect"]);
+    let extension = catalog::decode(&data["shader_effect"]).map(Arc::new);
     let effect_id = placement::effective(world, &binding, &config.shader_placement).effect_id;
     let quantity = model::quantity(&data["quantity"]);
     let numeric_context = numeric::Context {
@@ -2115,24 +2135,44 @@ pub(crate) fn refresh_record(world: &mut World, row: Entity, data: &Value) {
     else {
         return;
     };
-    let Some(config) = crate::native::protein_area::configuration(world, binding.area) else {
+    let Some(enabled) = crate::native::protein_area::configuration_ref(world, binding.area)
+        .map(|config| config.shader_effects)
+    else {
         return;
     };
-    let extension = serde_json::from_value::<Extension>(data["shader_effect"].clone()).ok();
+    let extension = Extension::deserialize(&data["shader_effect"]).ok();
     let floating = world
         .query::<&Floating>()
         .iter(world)
         .any(|floating| floating.record == row);
-    let enabled = config.shader_effects && extension.is_some();
+    let enabled = enabled && extension.is_some();
     if floating != enabled {
-        record(world, row, &config, data, Some(binding));
+        if let Some(config) = crate::native::protein_area::configuration(world, binding.area) {
+            record(world, row, &config, data, Some(binding));
+        }
         return;
     }
-    world.entity_mut(row).insert(RecordData {
-        binding,
-        extension,
-        quantity: model::quantity(&data["quantity"]),
-    });
+    let quantity = model::quantity(&data["quantity"]);
+    if let Some(mut current) = world.get_mut::<RecordData>(row) {
+        if current.binding.area != binding.area
+            || current.binding.uid != binding.uid
+            || current.binding.source != binding.source
+        {
+            current.binding = binding;
+        }
+        if current.extension.as_deref() != extension.as_ref() {
+            current.extension = extension.map(Arc::new);
+        }
+        if current.quantity != quantity {
+            current.quantity = quantity;
+        }
+    } else {
+        world.entity_mut(row).insert(RecordData {
+            binding,
+            extension: extension.map(Arc::new),
+            quantity,
+        });
+    }
 }
 
 pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessage) {
@@ -2177,7 +2217,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 feed.row = rows
                     .first()
                     .filter(|row| row["uid"].as_str() == Some(&feed.binding.uid))
-                    .cloned();
+                    .map(|row| Arc::new(EffectRecord::from(row)));
                 feed.error = if feed.row.is_none() {
                     "Record unavailable or not readable".into()
                 } else {
@@ -2233,7 +2273,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
 fn release_obsolete_feeds(
     world: &mut World,
     feeds: &mut Feeds,
-    bindings: &HashMap<String, RecordBinding>,
+    bindings: &HashMap<(Source, String), RecordBinding>,
 ) {
     let obsolete: Vec<_> = feeds
         .0
@@ -2269,7 +2309,7 @@ fn update(
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
 ) {
     let selections: Vec<_> = world
-        .query::<(&placement::EffectInput, &EditableText)>()
+        .query_filtered::<(&placement::EffectInput, &EditableText), Changed<EditableText>>()
         .iter(world)
         .map(|(input, text)| (input.0, text.value().to_string()))
         .collect();
@@ -2282,7 +2322,7 @@ fn update(
         }
     }
     let placements: Vec<_> = world
-        .query::<(&PlacementInput, &EditableText)>()
+        .query_filtered::<(&PlacementInput, &EditableText), Changed<EditableText>>()
         .iter(world)
         .map(|(input, text)| (input.area, input.key, text.value().to_string()))
         .collect();
@@ -2316,7 +2356,7 @@ fn update(
     for editor in &editors {
         capture(world, *editor);
     }
-    let mut bindings: HashMap<String, RecordBinding> = HashMap::new();
+    let mut bindings = HashMap::new();
     for (entity, editor) in world.query::<(Entity, &Editor)>().iter(world) {
         if crate::native::laboratory::blocked(world, entity) {
             continue;
@@ -2411,8 +2451,18 @@ fn update(
                 .get(&feed_key(&binding))
                 .map(|feed| (feed.row.clone(), feed.error.clone()));
             if let Some((Some(row), _)) = data {
-                let extension = catalog::decode(&row["shader_effect"])
-                    .unwrap_or_else(|| Extension::single(0, Effect::default()));
+                let fallback;
+                let extension = match row
+                    .extension
+                    .as_ref()
+                    .filter(|extension| extension.bounded())
+                {
+                    Some(extension) => extension,
+                    None => {
+                        fallback = Extension::single(0, Effect::default());
+                        &fallback
+                    }
+                };
                 let revision = extension.revision;
                 let previous_revision = world.get::<Editor>(owner).unwrap().revision;
                 if (!loaded || revision != previous_revision) && !dirty && !pending {
@@ -2420,17 +2470,17 @@ fn update(
                     let mut editor = world.get_mut::<Editor>(owner).unwrap();
                     editor.loaded = true;
                     if !editor.custom_quantity {
-                        editor.quantity = model::quantity(&row["quantity"]);
+                        editor.quantity.clone_from(&row.quantity);
                     }
                     editor.rebuild = true;
                 } else if !loaded
                     && revision == previous_revision
-                    && extension == world.get::<Editor>(owner).unwrap().catalog.base
+                    && extension == &world.get::<Editor>(owner).unwrap().catalog.base
                 {
                     let mut editor = world.get_mut::<Editor>(owner).unwrap();
                     editor.loaded = true;
                     if !editor.custom_quantity {
-                        editor.quantity = model::quantity(&row["quantity"]);
+                        editor.quantity.clone_from(&row.quantity);
                     }
                     editor.message = "Draft restored".into();
                     editor.rebuild = true;
@@ -2441,7 +2491,7 @@ fn update(
                         "Record effect changed elsewhere. Reload working before saving.".into();
                 }
                 let editor = world.get::<Editor>(owner).unwrap();
-                let quantity = model::quantity(&row["quantity"]);
+                let quantity = row.quantity.clone();
                 if editor.loaded && !editor.custom_quantity && editor.quantity != quantity {
                     set_record_quantity(world, owner, quantity);
                 }
@@ -2494,6 +2544,30 @@ fn update_presentations(world: &mut World) {
         .iter(world)
         .map(|(entity, floating)| (entity, floating.record, floating.preview))
         .collect();
+    let mut slots: HashMap<Entity, Vec<Entity>> = HashMap::new();
+    let mut labels: HashMap<Entity, Vec<(Entity, f32)>> = HashMap::new();
+    let camera_rotation = if floating.is_empty() {
+        None
+    } else {
+        for (entity, slot) in world.query::<(Entity, &EffectSlot)>().iter(world) {
+            slots.entry(slot.0).or_default().push(entity);
+        }
+        for (entity, label, node) in world
+            .query::<(Entity, &RecordStateLabel, Option<&ComputedNode>)>()
+            .iter(world)
+        {
+            let height = node.map_or(18.0, |node| {
+                node.size().y * node.inverse_scale_factor() + 4.0
+            });
+            labels.entry(label.0).or_default().push((entity, height));
+        }
+        world
+            .query_filtered::<&Transform, With<crate::native::topology::presentation::WorldCamera>>(
+            )
+            .iter(world)
+            .next()
+            .map(|transform| transform.rotation.as_dquat())
+    };
     for (entity, record, preview) in floating {
         let Some(item) = world
             .get::<crate::native::canvas::CanvasItem>(record)
@@ -2506,7 +2580,7 @@ fn update_presentations(world: &mut World) {
             world.despawn(entity);
             continue;
         };
-        let config = crate::native::protein_area::configuration(world, data.binding.area);
+        let config = crate::native::protein_area::configuration_ref(world, data.binding.area);
         if !config.as_ref().is_some_and(|config| config.shader_effects) {
             world.despawn(entity);
             continue;
@@ -2527,23 +2601,25 @@ fn update_presentations(world: &mut World) {
             && root(world, record)
                 .and_then(|root| world.get::<crate::native::topology::view::View>(root))
                 .is_some_and(|view| view.spatial)
-            && let Some(rotation) = world
-                .query_filtered::<&Transform, With<crate::native::topology::presentation::WorldCamera>>()
-                .iter(world)
-                .next()
-                .map(|transform| transform.rotation.as_dquat())
+            && let Some(rotation) = camera_rotation
         {
             placement.rotation = (rotation
                 * bevy::math::DQuat::from_rotation_x(std::f64::consts::FRAC_PI_2))
             .to_array();
         }
-        world.entity_mut(entity).insert((
-            crate::native::canvas::CanvasItem {
-                position: item.position + DVec2::new(offset.x, offset.z),
-                size: Vec2::splat(settings.size),
-            },
-            placement,
-        ));
+        let item = crate::native::canvas::CanvasItem {
+            position: item.position + DVec2::new(offset.x, offset.z),
+            size: Vec2::splat(settings.size),
+        };
+        if world
+            .get::<crate::native::canvas::CanvasItem>(entity)
+            .is_none_or(|current| current.position != item.position || current.size != item.size)
+        {
+            world.entity_mut(entity).insert(item);
+        }
+        if world.get::<crate::native::topology::Spatial>(entity) != Some(&placement) {
+            world.entity_mut(entity).insert(placement);
+        }
         if let Some(mut node) = world.get_mut::<Node>(entity) {
             let size = px(settings.size);
             if node.width != size {
@@ -2554,27 +2630,39 @@ fn update_presentations(world: &mut World) {
             }
         }
         let distant = placement::distant(world, entity, record, &settings);
-        world.get_mut::<Floating>(entity).unwrap().distant = distant;
+        if let Some(mut floating) = world.get_mut::<Floating>(entity)
+            && floating.distant != distant
+        {
+            floating.distant = distant;
+        }
         let frozen = settings.frozen || distant && settings.distance == DistancePolicy::Thumbnail;
         let selected = data
             .extension
             .as_ref()
-            .and_then(|extension| extension.selected(settings.effect_id.as_deref()))
-            .cloned();
+            .and_then(|extension| extension.selected(settings.effect_id.as_deref()));
         if let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview) {
-            shader.quantity = data.quantity;
-            if let Some(effect) = selected.clone() {
-                shader.effect = effect;
+            if shader.quantity != data.quantity {
+                shader.quantity = data.quantity.clone();
             }
-            shader.disabled =
+            if let Some(effect) = selected
+                && &shader.effect != effect
+            {
+                shader.effect.clone_from(effect);
+            }
+            let disabled =
                 off || selected.is_none() || distant && settings.distance == DistancePolicy::Hide;
-            shader.motion = settings.motion;
-            shader.frozen = frozen;
+            if shader.disabled != disabled {
+                shader.disabled = disabled;
+            }
+            if shader.motion != settings.motion {
+                shader.motion = settings.motion;
+            }
+            if shader.frozen != frozen {
+                shader.frozen = frozen;
+            }
         }
-        let data = world.get::<RecordData>(record).unwrap();
-        let effect = selected
-            .as_ref()
-            .and_then(|selected| shader::working(world, preview).or(Some(selected)));
+        let effect =
+            selected.and_then(|selected| shader::working(world, preview).or(Some(selected)));
         let mut label = effect
             .filter(|effect| effect.inputs.task.is_some() || effect.inputs.progress.is_some())
             .map(|effect| effect.inputs.resolve(data.quantity.as_deref()).label())
@@ -2599,23 +2687,17 @@ fn update_presentations(world: &mut World) {
             }
             label.push_str("Effect snapshot frozen");
         }
-        let slots: Vec<_> = world
-            .query::<(Entity, &EffectSlot)>()
-            .iter(world)
-            .filter(|(_, slot)| slot.0 == record)
-            .map(|(entity, _)| entity)
-            .collect();
         let label_height = if label.is_empty() {
             0.0
         } else {
-            world
-                .query::<(&RecordStateLabel, &ComputedNode)>()
-                .iter(world)
-                .filter(|(owner, _)| owner.0 == record)
-                .map(|(_, node)| node.size().y * node.inverse_scale_factor() + 4.0)
+            labels
+                .get(&record)
+                .into_iter()
+                .flatten()
+                .map(|(_, height)| *height)
                 .fold(18.0_f32, f32::max)
         };
-        for slot in slots {
+        for &slot in slots.get(&record).into_iter().flatten() {
             if let Some(mut node) = world.get_mut::<Node>(slot) {
                 let height = px(settings.size + settings.gap + label_height);
                 if node.height != height {
@@ -2623,22 +2705,21 @@ fn update_presentations(world: &mut World) {
                 }
             }
         }
-        for (owner, mut text, mut node) in world
-            .query::<(&RecordStateLabel, &mut Text, &mut Node)>()
-            .iter_mut(world)
-        {
-            if owner.0 == record {
-                if text.0 != label {
-                    text.0.clone_from(&label);
-                }
-                let display = if label.is_empty() {
-                    Display::None
-                } else {
-                    Display::Flex
-                };
-                if node.display != display {
-                    node.display = display;
-                }
+        for &(entity, _) in labels.get(&record).into_iter().flatten() {
+            if let Some(mut text) = world.get_mut::<Text>(entity)
+                && text.0 != label
+            {
+                text.0.clone_from(&label);
+            }
+            let display = if label.is_empty() {
+                Display::None
+            } else {
+                Display::Flex
+            };
+            if let Some(mut node) = world.get_mut::<Node>(entity)
+                && node.display != display
+            {
+                node.display = display;
             }
         }
     }
@@ -2647,18 +2728,23 @@ fn update_presentations(world: &mut World) {
         .iter(world)
         .map(|(entity, background)| (entity, background.preview))
         .collect();
+    let mut text_owners = Vec::new();
     for (entity, preview) in backgrounds {
-        if world.get::<Surface>(entity).is_none() && world.get_entity(preview).is_ok() {
-            world.despawn(preview);
+        if world.get::<Surface>(entity).is_none() {
+            if let Ok(preview) = world.get_entity_mut(preview) {
+                preview.despawn();
+            }
             world.entity_mut(entity).remove::<Background>();
+            text_owners.push(entity);
         }
     }
     let surfaces: Vec<_> = world
         .query::<(Entity, &Surface)>()
         .iter(world)
-        .map(|(entity, surface)| (entity, surface.clone()))
+        .map(|(entity, _)| entity)
         .collect();
-    for (entity, surface) in surfaces {
+    for entity in surfaces {
+        let surface = world.get::<Surface>(entity).unwrap();
         let bound = surface.record.as_ref().map(|uid| RecordBinding {
             area: Entity::PLACEHOLDER,
             uid: uid.clone(),
@@ -2670,7 +2756,8 @@ fn update_presentations(world: &mut World) {
             .and_then(|feed| feed.row.clone());
         let extension = data
             .as_ref()
-            .and_then(|row| catalog::decode(&row["shader_effect"]));
+            .and_then(|row| row.extension.as_ref())
+            .filter(|extension| extension.bounded());
         let selected = extension
             .as_ref()
             .and_then(|extension| extension.selected(surface.effect_id.as_deref()));
@@ -2681,155 +2768,132 @@ fn update_presentations(world: &mut World) {
                 selected.is_some()
             };
         let effect = if bound.is_some() && !surface.quantity_only {
-            selected.cloned().unwrap_or_else(|| preset(model::GRADIENT))
+            selected.map_or_else(
+                || std::borrow::Cow::Owned(preset(model::GRADIENT)),
+                std::borrow::Cow::Borrowed,
+            )
         } else {
-            surface.effect.clone()
+            std::borrow::Cow::Borrowed(&surface.effect)
         };
         let quantity = if bound.is_some() {
-            data.as_ref()
-                .and_then(|row| model::quantity(&row["quantity"]))
+            data.as_ref().and_then(|row| row.quantity.clone())
         } else {
             model::quantity(&Value::String(surface.quantity.clone()))
         };
         let preview = world
             .get::<Background>(entity)
             .map(|background| background.preview)
-            .filter(|preview| world.get_entity(*preview).is_ok())
-            .unwrap_or_else(|| {
-                let preview = shader::effect(world, entity, effect.clone(), quantity.clone());
-                let output = shader::background_output(world, preview);
-                world.entity_mut(preview).insert((
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: px(0),
-                        top: px(0),
-                        width: percent(100),
-                        height: percent(100),
-                        ..default()
-                    },
-                    ZIndex(-1),
-                    bevy::picking::Pickable::IGNORE,
-                ));
-                world.entity_mut(output).insert((
-                    Node {
-                        width: percent(100),
-                        height: percent(100),
-                        ..default()
-                    },
-                    bevy::picking::Pickable::IGNORE,
-                ));
-                world.entity_mut(entity).insert(Background { preview });
-                preview
+            .filter(|preview| world.get_entity(*preview).is_ok());
+        let mut effect = preview
+            .and_then(|preview| world.get::<shader::EffectPreview>(preview))
+            .is_none_or(|preview| &preview.effect != effect.as_ref())
+            .then(|| effect.into_owned());
+        let context = preview
+            .and_then(|preview| world.get::<numeric::Context>(preview))
+            .is_none_or(|context| {
+                context.record != surface.record || context.source != surface.source
+            })
+            .then(|| numeric::Context {
+                record: surface.record.clone(),
+                source: surface.source.clone(),
             });
         let enabled = !surface.disabled
             && !off
             && valid_reference
             && (!surface.room_ambient
                 || crate::native::topology::rooms::ambient_enabled(world, entity));
-        world.entity_mut(preview).insert(numeric::Context {
-            record: surface.record.clone(),
-            source: surface.source.clone(),
+        let (strength, glow, motion, frozen) = (
+            surface.strength,
+            surface.glow,
+            surface.motion,
+            surface.frozen,
+        );
+        let preview = preview.unwrap_or_else(|| {
+            let preview = shader::effect(
+                world,
+                entity,
+                effect.take().expect("new surface effect"),
+                quantity.clone(),
+            );
+            let output = shader::background_output(world, preview);
+            world.entity_mut(preview).insert((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: px(0),
+                    top: px(0),
+                    width: percent(100),
+                    height: percent(100),
+                    ..default()
+                },
+                ZIndex(-1),
+                bevy::picking::Pickable::IGNORE,
+            ));
+            world.entity_mut(output).insert((
+                Node {
+                    width: percent(100),
+                    height: percent(100),
+                    ..default()
+                },
+                bevy::picking::Pickable::IGNORE,
+            ));
+            world.entity_mut(entity).insert(Background { preview });
+            preview
         });
+        if let Some(context) = context {
+            world.entity_mut(preview).insert(context);
+        }
         let radius = world
             .get::<Node>(entity)
             .map(|node| node.border_radius)
             .unwrap_or_default();
-        world.get_mut::<Node>(preview).unwrap().border_radius = radius;
         world
-            .entity_mut(preview)
-            .insert(BoxShadow(if enabled && surface.glow > 0.0 {
-                vec![ShadowStyle {
-                    color: Color::srgba(0.2, 0.45, 1.0, surface.strength.min(0.35)),
-                    x_offset: px(0),
-                    y_offset: px(0),
-                    spread_radius: px(0),
-                    blur_radius: px(surface.glow / 3.0),
-                }]
-            } else {
-                vec![]
-            }));
+            .get_mut::<Node>(preview)
+            .unwrap()
+            .map_unchanged(|node| &mut node.border_radius)
+            .set_if_neq(radius);
+        let shadow = BoxShadow(if enabled && glow > 0.0 {
+            vec![ShadowStyle {
+                color: Color::srgba(0.2, 0.45, 1.0, strength.min(0.35)),
+                x_offset: px(0),
+                y_offset: px(0),
+                spread_radius: px(0),
+                blur_radius: px(glow / 3.0),
+            }]
+        } else {
+            vec![]
+        });
+        if world.get::<BoxShadow>(preview) != Some(&shadow) {
+            world.entity_mut(preview).insert(shadow);
+        }
         let output = shader::output(world, preview);
-        world.get_mut::<Node>(output).unwrap().border_radius = radius;
-        protect_text(world, entity, enabled);
+        world
+            .get_mut::<Node>(output)
+            .unwrap()
+            .map_unchanged(|node| &mut node.border_radius)
+            .set_if_neq(radius);
         if let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview) {
-            shader.effect = effect;
-            shader.quantity = quantity;
-            shader.strength = surface.strength.min(0.65);
-            shader.motion = surface.motion;
-            shader.frozen = surface.frozen;
-            shader.disabled = !enabled;
-        }
-    }
-}
-
-#[derive(Component)]
-struct ProtectedText;
-
-pub(crate) fn protect_text(world: &mut World, owner: Entity, enabled: bool) {
-    let enabled = enabled
-        || world
-            .get::<crate::native::topology::appearance::Material>(owner)
-            .is_some_and(|value| value.0.valid());
-    let mut descendants = Vec::new();
-    let mut pending = vec![owner];
-    while let Some(entity) = pending.pop() {
-        if let Some(children) = world.get::<Children>(entity) {
-            pending.extend(children.iter());
-        }
-        if world.get::<Text>(entity).is_some() || world.get::<EditableText>(entity).is_some() {
-            descendants.push(entity);
-        }
-    }
-    for entity in descendants {
-        if enabled
-            && world.get::<ProtectedText>(entity).is_none()
-            && world
-                .get::<bevy::text::TextBackgroundColor>(entity)
-                .is_none_or(|background| background.0 == Color::NONE)
-        {
-            let color = crate::native::token_style::resolve(
-                world,
-                entity,
-                crate::native::tokens::Token::Surface,
-            )
-            .0
-            .color()
-            .with_alpha(1.0);
-            world
-                .entity_mut(entity)
-                .insert((bevy::text::TextBackgroundColor(color), ProtectedText));
-        } else if enabled && world.get::<ProtectedText>(entity).is_some() {
-            let color = crate::native::token_style::resolve(
-                world,
-                entity,
-                crate::native::tokens::Token::Surface,
-            )
-            .0
-            .color()
-            .with_alpha(1.0);
-            if let Some(mut background) = world.get_mut::<bevy::text::TextBackgroundColor>(entity)
-                && background.0 != color
-            {
-                background.0 = color;
+            if let Some(effect) = effect {
+                shader.effect = effect;
             }
-        } else if !enabled && world.get::<ProtectedText>(entity).is_some() {
-            world
-                .entity_mut(entity)
-                .remove::<(bevy::text::TextBackgroundColor, ProtectedText)>();
+            if shader.quantity != quantity {
+                shader.quantity = quantity;
+            }
+            if shader.strength != strength.min(0.65) {
+                shader.strength = strength.min(0.65);
+            }
+            if shader.motion != motion {
+                shader.motion = motion;
+            }
+            if shader.frozen != frozen {
+                shader.frozen = frozen;
+            }
+            if shader.disabled == enabled {
+                shader.disabled = !enabled;
+            }
         }
+        text_owners.push(entity);
     }
-}
-
-pub(crate) fn protect_material_text(world: &mut World, owner: Entity) {
-    let active = !disabled(world)
-        && world
-            .get::<Surface>(owner)
-            .is_some_and(|value| !value.disabled)
-        && world
-            .get::<Background>(owner)
-            .and_then(|background| world.get::<shader::EffectPreview>(background.preview))
-            .is_some_and(|preview| !preview.disabled);
-    protect_text(world, owner, active);
+    refresh_text_protection(world, text_owners);
 }
 
 #[derive(Clone)]
@@ -3170,12 +3234,17 @@ mod tests {
         );
         let snapshot = ServerMessage::Snapshot {
             id: "record-feed".into(),
-            rows: vec![serde_json::json!({"uid":uid,"quantity":"12"})],
+            rows: vec![serde_json::json!({"uid":uid,"quantity":"12"})].into(),
         };
         receive(&mut world, &Source::Local, &snapshot);
         assert_eq!(
-            world.resource::<Feeds>().0[&key].row.as_ref().unwrap()["quantity"],
-            "12"
+            world.resource::<Feeds>().0[&key]
+                .row
+                .as_ref()
+                .unwrap()
+                .quantity
+                .as_deref(),
+            Some("12")
         );
         receive(
             &mut world,
@@ -3384,7 +3453,9 @@ mod tests {
                 binding,
                 id: "cleaning".into(),
                 sent: true,
-                row: Some(serde_json::json!({"quantity":"0"})),
+                row: Some(Arc::new(EffectRecord::from(
+                    &serde_json::json!({"quantity":"0"}),
+                ))),
                 error: String::new(),
                 retry: Instant::now(),
             },
@@ -3418,8 +3489,9 @@ mod tests {
             .unwrap()
             .0
             .ambient_enabled = true;
-        world.resource_mut::<Feeds>().0.get_mut(&key).unwrap().row =
-            Some(serde_json::json!({"quantity":"5"}));
+        world.resource_mut::<Feeds>().0.get_mut(&key).unwrap().row = Some(Arc::new(
+            EffectRecord::from(&serde_json::json!({"quantity":"5"})),
+        ));
         update_presentations(&mut world);
         let data = world.get::<shader::EffectPreview>(preview).unwrap();
         assert!(!data.disabled);
@@ -3487,7 +3559,9 @@ mod tests {
                 binding,
                 id: "test".into(),
                 sent: true,
-                row: Some(serde_json::json!({"quantity":"2", "shader_effect":null})),
+                row: Some(Arc::new(EffectRecord::from(
+                    &serde_json::json!({"quantity":"2", "shader_effect":null}),
+                ))),
                 error: String::new(),
                 retry: Instant::now(),
             },
@@ -3498,14 +3572,17 @@ mod tests {
         assert_eq!(data.effect, local);
         assert_eq!(data.quantity.as_deref(), Some("2"));
         assert!(!data.disabled);
-        world
-            .resource_mut::<Feeds>()
-            .0
-            .get_mut(&key)
-            .unwrap()
-            .row
-            .as_mut()
-            .unwrap()["quantity"] = "5".into();
+        Arc::make_mut(
+            world
+                .resource_mut::<Feeds>()
+                .0
+                .get_mut(&key)
+                .unwrap()
+                .row
+                .as_mut()
+                .unwrap(),
+        )
+        .quantity = Some("5".into());
         update_presentations(&mut world);
         assert_eq!(
             world
@@ -3532,15 +3609,17 @@ mod tests {
                 .disabled
         );
         let remote = Effect::default();
-        world
-            .resource_mut::<Feeds>()
-            .0
-            .get_mut(&key)
-            .unwrap()
-            .row
-            .as_mut()
-            .unwrap()["shader_effect"] =
-            serde_json::to_value(Extension::single(1, remote.clone())).unwrap();
+        Arc::make_mut(
+            world
+                .resource_mut::<Feeds>()
+                .0
+                .get_mut(&key)
+                .unwrap()
+                .row
+                .as_mut()
+                .unwrap(),
+        )
+        .extension = Some(Extension::single(1, remote.clone()));
         update_presentations(&mut world);
         assert_eq!(
             world.get::<shader::EffectPreview>(preview).unwrap().effect,

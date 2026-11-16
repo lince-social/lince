@@ -5,20 +5,57 @@ use nucleus::trust_analysis::{
 };
 use std::{
     collections::BTreeMap,
+    ops::Deref,
+    sync::OnceLock,
     time::{Duration, Instant},
 };
+
+pub(super) struct ReviewSnapshot {
+    review: Review,
+    public: OnceLock<Snapshot>,
+}
+
+impl ReviewSnapshot {
+    fn new(review: Review) -> Arc<Self> {
+        Arc::new(Self {
+            review,
+            public: OnceLock::new(),
+        })
+    }
+
+    fn public(&self) -> &Snapshot {
+        self.public.get_or_init(|| {
+            json!({
+                "questions": self.review.questions,
+                "recipients": self.review.endpoints,
+                "deadline_seconds": 15,
+                "concurrent_requests": 4,
+                "aggregate_bytes": nucleus::trust_analysis::MAX_BYTES,
+            })
+            .into()
+        })
+    }
+}
+
+impl Deref for ReviewSnapshot {
+    type Target = Review;
+
+    fn deref(&self) -> &Self::Target {
+        &self.review
+    }
+}
 
 #[derive(Clone)]
 pub(super) struct Draft {
     pub include_contacts: bool,
     pub receipt_sources: Vec<model::ReceiptSource>,
     pub contact_subjects: Vec<Identity>,
-    pub review: Option<(Review, nucleus::karma::CanonicalHash)>,
+    pub review: Option<(Arc<ReviewSnapshot>, nucleus::karma::CanonicalHash)>,
     pub job: Option<String>,
-    pub result: Value,
-    pub document: Value,
-    pub local: Value,
-    pub verified: Value,
+    pub result: Snapshot,
+    pub document: Snapshot,
+    pub local: Snapshot,
+    pub verified: Snapshot,
     pub verified_page: usize,
     pub page: usize,
     pub next_poll: Instant,
@@ -32,10 +69,10 @@ impl Default for Draft {
             contact_subjects: Vec::new(),
             review: None,
             job: None,
-            result: Value::Null,
-            document: Value::Null,
-            local: Value::Null,
-            verified: Value::Null,
+            result: Snapshot::default(),
+            document: Snapshot::default(),
+            local: Snapshot::default(),
+            verified: Snapshot::default(),
             verified_page: 0,
             page: 0,
             next_poll: Instant::now(),
@@ -78,7 +115,7 @@ pub(super) fn selection(view: &View) -> Result<model::Draft, String> {
             vec![model::Series {
                 issuer: document.statement.issuer.clone(),
                 claim: document.statement.claim.clone(),
-                snapshot: Some(document.clone()),
+                snapshot: Some(document.as_ref().clone()),
             }]
         })
         .unwrap_or_default();
@@ -118,7 +155,7 @@ pub(super) fn request(view: &View, command: &UiCommand) -> Result<Request, Strin
                 return Err("The questions, reader or policy changed; preview again".into());
             }
             Request::Start {
-                review: Box::new(review),
+                review: Box::new(review.review.clone()),
                 expected_review,
             }
         }
@@ -141,37 +178,37 @@ pub(super) fn receive(view: &mut View, result: &Value) -> bool {
     {
         return false;
     }
+    let result = Snapshot::capture(result);
     view.remote.pending = false;
     if result["kind"] == "remote_review" {
-        view.remote.verified = Value::Null;
-        view.remote.review = serde_json::from_value(result["review"].clone())
+        view.remote.verified = Snapshot::default();
+        view.remote.review = decode(&result["review"])
             .ok()
-            .zip(serde_json::from_value(result["hash"].clone()).ok());
-        view.remote.local =
-            json!({"analysis":result["local"],"proof_records":result["proof_records"]});
+            .map(ReviewSnapshot::new)
+            .zip(decode(&result["hash"]).ok());
+        view.remote.local = result.clone();
         view.remote.page = 0;
     } else if result["kind"] == "remote_unavailable" {
         view.remote.review = None;
-        view.remote.local =
-            json!({"analysis":result["local"],"proof_records":result["proof_records"]});
+        view.remote.local = result.clone();
     } else if result["kind"] == "remote_started" {
-        view.remote.verified = Value::Null;
+        view.remote.verified = Snapshot::default();
         view.remote.job = result["job"].as_str().map(str::to_owned);
         view.remote.review = None;
         view.remote.next_poll = Instant::now();
     } else if result["kind"] == "remote_cancelled" {
-        view.remote.verified = Value::Null;
+        view.remote.verified = Snapshot::default();
         if result["forgotten"] == true {
             view.remote.job = None;
         }
         view.remote.review = None;
-        view.remote.document = Value::Null;
+        view.remote.document = Snapshot::default();
     } else if result["kind"] == "remote_verified" {
-        view.remote.verified = result.clone();
+        view.remote.verified = result;
         view.remote.verified_page = 0;
         return true;
     } else if result["kind"] == "remote_artifact" {
-        view.remote.document = result.clone();
+        view.remote.document = result;
         view.remote.page = 0;
         return true;
     } else if result["kind"] == "remote_progress" && view.remote.document.is_object() {
@@ -180,10 +217,10 @@ pub(super) fn receive(view: &mut View, result: &Value) -> bool {
             .as_array()
             .is_some_and(|rows| rows.iter().any(|row| row["hash"] == *hash))
         {
-            view.remote.document = Value::Null;
+            view.remote.document = Snapshot::default();
         }
     }
-    view.remote.result = result.clone();
+    view.remote.result = result;
     true
 }
 
@@ -313,15 +350,14 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
         if value["review_required"] != true {
             return;
         }
-        let Ok(document) = serde_json::from_value::<nucleus::trust_analysis::claims::Document>(
-            value["document"].clone(),
-        ) else {
+        let Ok(document) = decode::<nucleus::trust_analysis::claims::Document>(&value["document"])
+        else {
             return;
         };
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.generation = view.generation.wrapping_add(1);
         view.remote = Draft::default();
-        view.result = Value::Null;
+        view.result = Snapshot::default();
         super::profile_claims::load_snapshot(&mut view, &document);
         view.notice = "Review the newly selected claim scope and reader policy, then explicitly review and start any remote questions.".into();
         drop(view);
@@ -351,10 +387,10 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
         }
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.remote.job = None;
-        view.remote.result = Value::Null;
-        view.remote.document = Value::Null;
+        view.remote.result = Snapshot::default();
+        view.remote.document = Snapshot::default();
         view.remote.review = None;
-        view.remote.verified = Value::Null;
+        view.remote.verified = Snapshot::default();
     }
     if matches!(command, UiCommand::Context) {
         let mut view = world.get_mut::<View>(owner).unwrap();
@@ -362,12 +398,8 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
             view.notice = "Wait for the current request".into();
             return;
         }
-        let sources = serde_json::from_value::<Vec<model::ReceiptSource>>(
-            view.remote.verified["receipt_sources"].clone(),
-        );
-        let contacts = serde_json::from_value::<Vec<Identity>>(
-            view.remote.verified["contact_subjects"].clone(),
-        );
+        let sources = decode::<Vec<model::ReceiptSource>>(&view.remote.verified["receipt_sources"]);
+        let contacts = decode::<Vec<Identity>>(&view.remote.verified["contact_subjects"]);
         let (Ok(sources), Ok(contacts)) = (sources, contacts) else {
             view.notice = "Verify collected originals first".into();
             return;
@@ -413,7 +445,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
     }
     if matches!(command, UiCommand::Copy | UiCommand::Retain) {
         let view = world.get::<View>(owner).unwrap();
-        let artifact = serde_json::from_value::<Artifact>(view.remote.document["artifact"].clone());
+        let artifact = decode::<Artifact>(&view.remote.document["artifact"]);
         let result = artifact
             .map_err(|error| error.to_string())
             .and_then(|artifact| {
@@ -524,25 +556,22 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         "Review questions and replace prior transient query",
         UiCommand::Preview,
     );
-    if state.local["analysis"].is_object() {
-        analysis::render_result(world, owner, &state.local, 0);
+    if state.local["local"].is_object() {
+        analysis::render_local_result(world, owner, &state.local);
     }
     if let Some((review, _)) = &state.review {
-        let public = json!({"questions":review.questions,"recipients":review.endpoints,"deadline_seconds":15,"concurrent_requests":4,"aggregate_bytes":nucleus::trust_analysis::MAX_BYTES});
-        let text = serde_json::to_string_pretty(&public).unwrap_or_default();
-        let page = text
-            .chars()
-            .skip(state.page * 4096)
-            .take(4096)
-            .collect::<String>();
-        label(world, owner, &page);
+        let text = review
+            .public()
+            .text(JsonPart::Whole)
+            .expect("review projection is an object");
+        label(world, owner, text.page(state.page));
         button(
             world,
             owner,
             "Start exactly reviewed questions",
             UiCommand::Start,
         );
-        pages(world, owner, state.page, text.chars().count());
+        pages(world, owner, state.page, text.characters());
     }
     if state.job.is_some() {
         button(world, owner, "Refresh query progress", UiCommand::Poll);
@@ -612,27 +641,21 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 );
             }
         }
-        let text = serde_json::to_string_pretty(&state.verified).unwrap_or_default();
+        let text = state
+            .verified
+            .text(JsonPart::Whole)
+            .expect("verified result is an object");
         let signatures = state.verified["signatures"]
             .as_array()
-            .cloned()
+            .map(Vec::as_slice)
             .unwrap_or_default();
         let pages = text
-            .chars()
-            .count()
-            .div_ceil(4096)
+            .characters()
+            .div_ceil(snapshot::PAGE_CHARACTERS)
             .max(signatures.len().div_ceil(8))
             .max(1);
         let page = state.verified_page.min(pages - 1);
-        label(
-            world,
-            owner,
-            &text
-                .chars()
-                .skip(page * 4096)
-                .take(4096)
-                .collect::<String>(),
-        );
+        label(world, owner, text.page(page));
         for entry in signatures.iter().skip(page * 8).take(8) {
             label(
                 world,
@@ -648,7 +671,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                     "Open permitted local proof Record",
                     Command::Record(record.into()),
                 );
-            } else if let Ok(hash) = serde_json::from_value(original["hash"].clone()) {
+            } else if let Ok(hash) = decode(&original["hash"]) {
                 button(
                     world,
                     owner,
@@ -727,7 +750,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                         header["kind"], header["signature_snapshot"], header["checked_at"]
                     ),
                 );
-                if let Ok(hash) = serde_json::from_value(header["hash"].clone()) {
+                if let Ok(hash) = decode(&header["hash"]) {
                     button(
                         world,
                         owner,
@@ -764,17 +787,11 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 result["signature_state"], result["checked_at"]
             ),
         );
-        let text = serde_json::to_string_pretty(&result["artifact"]).unwrap_or_default();
-        label(
-            world,
-            owner,
-            &text
-                .chars()
-                .skip(state.page * 4096)
-                .take(4096)
-                .collect::<String>(),
-        );
-        pages(world, owner, state.page, text.chars().count());
+        let text = result
+            .text(JsonPart::Artifact)
+            .expect("artifact result is an object");
+        label(world, owner, text.page(state.page));
+        pages(world, owner, state.page, text.characters());
         button(
             world,
             owner,

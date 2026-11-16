@@ -85,7 +85,7 @@ fn long_queues_have_bounded_rows_and_reject_stale_updates() {
         owner,
         &ServerMessage::Snapshot {
             id,
-            rows: rows.clone(),
+            rows: rows.clone().into(),
         },
     );
     render(app.world_mut(), owner);
@@ -100,7 +100,7 @@ fn long_queues_have_bounded_rows_and_reject_stale_updates() {
         owner,
         &ServerMessage::Update {
             id: "stale".into(),
-            rows: Vec::new(),
+            rows: Vec::new().into(),
         },
     );
     assert_eq!(app.world().get::<TodoSand>(owner).unwrap().rows.len(), 1000);

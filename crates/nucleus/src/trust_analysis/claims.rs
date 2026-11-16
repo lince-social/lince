@@ -308,11 +308,7 @@ impl Document {
     pub fn validate(&self) -> Result<(), String> {
         self.signing_bytes()?;
         validate_signature(&self.signature)?;
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_DOCUMENT_BYTES
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_DOCUMENT_BYTES {
             return Err("Profile claim exceeds 32 KiB".into());
         }
         Ok(())

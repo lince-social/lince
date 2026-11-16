@@ -1,4 +1,5 @@
 use super::*;
+use bevy::ecs::system::RunSystemOnce;
 use crate::native::{
     edit_mode::{EditAction, EditControl, EditMode},
     icons::IconButton,
@@ -428,7 +429,7 @@ fn closing_focused_toast_restores_focus_and_panel_escape_keeps_history() {
     let bell = app.world().get::<NotificationCenter>(root).unwrap().button;
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(root));
     app.init_resource::<Assets<Image>>();
-    crate::native::canvas_controls::corner::update(app.world_mut());
+    app.world_mut().run_system_once(crate::native::canvas_controls::corner::update).unwrap();
     let toolbar = app.world().get::<ChildOf>(bell).unwrap().parent();
     assert_eq!(
         *app.world().get::<Visibility>(toolbar).unwrap(),

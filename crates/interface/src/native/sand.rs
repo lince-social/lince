@@ -110,6 +110,8 @@ fn button_borders(
             &mut Node,
             Option<&BorderColor>,
             Option<&mut Outline>,
+            Option<&mut crate::native::save_feedback::SaveFeedback>,
+            Has<Unsaved>,
         ),
         (
             Without<crate::native::canvas_controls::corner::ControlsCorner>,
@@ -132,14 +134,16 @@ fn button_borders(
         )
         .0
         .number()));
-    for (entity, mut node, color, outline) in &mut buttons {
+    for (entity, mut node, color, outline, feedback, unsaved) in &mut buttons {
         if let Some(mut outline) = outline
             && outline.width != px(0)
             && (!focus_visible.0 || (outline.width == px(1) && outline.offset == px(0)))
         {
             outline.width = px(0);
         }
-        if node.border != border {
+        if let Some(mut feedback) = feedback.filter(|_| unsaved) {
+            feedback.style_border(border);
+        } else if node.border != border {
             node.border = border;
         }
         if color.is_none_or(|color| color.top.is_fully_transparent()) {

@@ -54,7 +54,7 @@ pub(super) fn describe(arguments: Value, context: &Context) -> Result<Value, Str
         .collect();
     Ok(json!({
         "context":context,
-        "record_fields":protein::record_schema::fields(),
+        "record_fields":protein::record_schema::FIELDS,
         "protein_schema":*PROTEIN,
         "actions":names,
         "instructions":[

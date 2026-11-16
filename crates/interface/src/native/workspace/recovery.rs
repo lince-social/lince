@@ -433,8 +433,8 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
             .unwrap_or_default(),
         terrain_effects,
         hidden_records: values
-            .get("hidden_records")
-            .and_then(|value| serde_json::from_value(value.clone()).ok())
+            .remove("hidden_records")
+            .and_then(|value| serde_json::from_value(value).ok())
             .unwrap_or_default(),
         canvas_id,
         canvas_state,

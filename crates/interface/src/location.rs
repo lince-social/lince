@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use nucleus::location::{
     Choice, Command, Context, DEFAULT_DURATION_SECONDS, Fix, Settings, SourceKind, Status, View,
 };
+use serde::Deserialize;
 use std::time::{Duration, Instant};
 
 mod clock;
@@ -1196,7 +1197,7 @@ fn queue_saved(
     });
 }
 
-fn receive_saved(world: &mut World, id: &str, data: &Result<serde_json::Value, String>) -> bool {
+fn receive_saved(world: &mut World, id: &str, data: Result<&serde_json::Value, &str>) -> bool {
     let entity = world
         .query::<(Entity, &Panel)>()
         .iter(world)
@@ -1210,6 +1211,8 @@ fn receive_saved(world: &mut World, id: &str, data: &Result<serde_json::Value, S
     let Some(entity) = entity else {
         return false;
     };
+    let _reply = nucleus::performance::Span::new("saved-location-reply-application");
+    nucleus::performance::add("saved-location-replies-accepted", 1);
     let mut panel = world
         .entity_mut(entity)
         .take::<Panel>()
@@ -1218,15 +1221,14 @@ fn receive_saved(world: &mut World, id: &str, data: &Result<serde_json::Value, S
     let (_, command, _) = panel.saved_pending.take().expect("saved location request");
     let mut redraw = false;
     match data {
-        Err(error) => panel.notice = error.clone(),
+        Err(error) => panel.notice = error.to_owned(),
         Ok(data) => {
             if matches!(
                 command,
                 nucleus::vocabulary::SavedLocationCommand::Search { .. }
             ) {
-                match serde_json::from_value::<Vec<nucleus::vocabulary::LocationCandidate>>(
-                    data["addresses"].clone(),
-                ) {
+                match Vec::<nucleus::vocabulary::LocationCandidate>::deserialize(&data["addresses"])
+                {
                     Ok(addresses) => {
                         panel.addresses = addresses;
                         panel.notice = "Choose an address Record with saved coordinates".into();
@@ -1235,7 +1237,7 @@ fn receive_saved(world: &mut World, id: &str, data: &Result<serde_json::Value, S
                     Err(_) => panel.notice = "The saved address response was invalid".into(),
                 }
             } else {
-                match serde_json::from_value::<nucleus::vocabulary::SavedLocation>(data.clone()) {
+                match nucleus::vocabulary::SavedLocation::deserialize(data) {
                     Ok(location) if location.record_uid == panel.record => {
                         redraw = panel.saved_location.as_ref() != Some(&location);
                         panel.saved_location = Some(location);
@@ -1833,8 +1835,12 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
 }
 
 pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, String>) -> bool {
-    let stamp = Stamp::for_world(world);
-    if receive_saved(world, id, &data) {
+    receive_ref(world, id, data.as_ref().map_err(String::as_str))
+}
+
+/// Match pending ownership before decoding or copying any part of a wire reply.
+pub fn receive_ref(world: &mut World, id: &str, data: Result<&serde_json::Value, &str>) -> bool {
+    if receive_saved(world, id, data) {
         return true;
     }
     let entity = world
@@ -1850,6 +1856,9 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
     let Some(entity) = entity else {
         return false;
     };
+    let stamp = Stamp::for_world(world);
+    let _reply = nucleus::performance::Span::new("location-reply-application");
+    nucleus::performance::add("location-replies-accepted", 1);
     let mut panel = world
         .entity_mut(entity)
         .take::<Panel>()
@@ -1877,7 +1886,7 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
     let mut redraw = false;
     match data {
         Err(error) => {
-            panel.notice = error;
+            panel.notice = error.to_owned();
             panel.view = None;
         }
         Ok(data) => {
@@ -1896,9 +1905,7 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
                 radius_metres,
             } = &pending.command
             {
-                let invitation = serde_json::from_value::<nucleus::location::Invitation>(
-                    data["invitation"].clone(),
-                );
+                let invitation = nucleus::location::Invitation::deserialize(&data["invitation"]);
                 match invitation {
                     Ok(invitation)
                         if invitation.validate().is_ok()
@@ -1940,7 +1947,7 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
                         .into();
                 panel.next_poll = Instant::now() + Duration::from_secs(5);
             } else if matches!(pending.command, Command::Context { .. }) {
-                match serde_json::from_value::<Context>(data) {
+                match Context::deserialize(data) {
                     Ok(mut context) => {
                         context
                             .view
@@ -1974,12 +1981,8 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
                     Err(_) => panel.notice = "Location controls returned an invalid reply".into(),
                 }
             } else {
-                let view = if data.get("view").is_some() {
-                    data["view"].clone()
-                } else {
-                    data.clone()
-                };
-                if let Ok(mut view) = serde_json::from_value::<View>(view) {
+                let view = data.get("view").unwrap_or(data);
+                if let Ok(mut view) = View::deserialize(view) {
                     view.elapse(pending.sent.elapsed().as_millis() as u64);
                     redraw |= panel.view.as_ref().is_none_or(|(previous, _)| {
                         previous.status != view.status
@@ -2164,9 +2167,9 @@ fn masks(
             node.set_value(input.value().to_string());
         }
     }
-    for (mask, mut text) in &mut masks {
+    for (mask, text) in &mut masks {
         if let Ok(input) = inputs.get(mask.0) {
-            text.set_if_neq(Text::new("•".repeat(input.value().chars().count())));
+            controls::password_mask(text, input.value().chars().count());
         }
     }
 }

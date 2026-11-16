@@ -61,21 +61,38 @@ pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), St
     Ok(())
 }
 
-fn map_fact(r: sqlx::sqlite::SqliteRow) -> Result<Fact, StoreError> {
-    let at: String = r.get("at");
-    let cause_kind: String = r.get("cause_kind");
-    Ok(Fact {
-        uid: r.get("uid"),
-        record_uid: r.get("record_uid"),
-        delta: read_decimal(&r, "delta")?,
-        at: DateTime::parse_from_rfc3339(&at)
+pub struct Summary {
+    pub delta: DecimalValue,
+    pub at: DateTime<Utc>,
+    pub actor_uid: Option<String>,
+    pub cause: Cause,
+}
+
+fn summary(r: &sqlx::sqlite::SqliteRow) -> Result<Summary, StoreError> {
+    let at: &str = r.get("at");
+    let cause_kind: &str = r.get("cause_kind");
+    Ok(Summary {
+        delta: read_decimal(r, "delta")?,
+        at: DateTime::parse_from_rfc3339(at)
             .map(|d| d.with_timezone(&Utc))
             .unwrap_or_else(|_| nucleus::execution::now()),
         actor_uid: r.get("actor_uid"),
         cause: Cause {
-            kind: CauseKind::parse(&cause_kind).unwrap_or(CauseKind::UserEdit),
+            kind: CauseKind::parse(cause_kind).unwrap_or(CauseKind::UserEdit),
             uid: r.get("cause_uid"),
         },
+    })
+}
+
+fn map_fact(r: sqlx::sqlite::SqliteRow) -> Result<Fact, StoreError> {
+    let summary = summary(&r)?;
+    Ok(Fact {
+        uid: r.get("uid"),
+        record_uid: r.get("record_uid"),
+        delta: summary.delta,
+        at: summary.at,
+        actor_uid: summary.actor_uid,
+        cause: summary.cause,
         payload: r.get("payload"),
         prev_hash: r.get("prev_hash"),
         hash: r.get("hash"),
@@ -233,6 +250,37 @@ pub async fn for_record(
             .fetch_all(pool)
             .await?,
     )
+}
+
+pub async fn summaries_for_records(
+    pool: &SqlitePool,
+    records: &[&str],
+    limit: i64,
+) -> Result<std::collections::HashMap<String, Vec<Summary>>, StoreError> {
+    let mut output = std::collections::HashMap::<String, Vec<Summary>>::new();
+    if records.is_empty() || limit == 0 {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(records).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT f.record_uid, f.delta_mantissa, f.delta_scale, f.at,
+                f.actor_uid, f.cause_kind, f.cause_uid
+         FROM (SELECT DISTINCT value FROM json_each(?1)) selected
+         JOIN fact f ON f.rowid IN (
+             SELECT rowid FROM fact WHERE record_uid = selected.value
+             ORDER BY rowid DESC LIMIT ?2
+         ) ORDER BY f.record_uid, f.rowid DESC",
+    )
+    .bind(selected)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    for row in rows {
+        let fact = summary(&row)?;
+        output.entry(row.get("record_uid")).or_default().push(fact);
+    }
+    Ok(output)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

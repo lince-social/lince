@@ -108,7 +108,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
         frame = canvas.probe_frame().unwrap();
     }
     assert!(frame.input.keyboard_modal);
-    assert_eq!(frame.previewed, vec![snapshot.id]);
+    assert_eq!(frame.previewed.as_ref(), &[snapshot.id]);
     let caption = {
         let world = canvas.world_mut();
         world

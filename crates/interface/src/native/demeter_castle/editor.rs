@@ -64,7 +64,7 @@ pub(super) fn requirements(state: &DemeterCastle) -> Result<Requirements, String
         let refs: Vec<_> = refs
             .iter()
             .filter(|v| state.config.references.iter().any(|uid| v["uid"] == *uid))
-            .map(|v| serde_json::from_value(v["reference"].clone()).map_err(|e| e.to_string()))
+            .map(|v| demeter::Reference::deserialize(&v["reference"]).map_err(|e| e.to_string()))
             .collect::<Result<_, _>>()?;
         if refs.is_empty() {
             return Err("Import Nutrition Needs in Sync, then refresh the catalogue".into());
@@ -90,42 +90,66 @@ pub(super) fn requirements(state: &DemeterCastle) -> Result<Requirements, String
 }
 
 pub(super) fn capture(world: &mut World, owner: Entity) -> Result<(), String> {
+    let _capture = nucleus::performance::Span::new("demeter-input-capture");
     let Some(view) = world.get::<View>(owner) else {
         return Ok(());
     };
+    let state = world.get::<DemeterCastle>(owner).unwrap();
+    let mut edited = false;
     let values: Vec<_> = view
         .fields
         .iter()
-        .filter_map(|(key, e)| panel::value(world, *e).ok().map(|v| (key.clone(), v)))
+        .filter_map(|(key, entity)| {
+            let input = world.get::<bevy::text::EditableText>(*entity)?;
+            if input.is_composing() {
+                return None;
+            }
+            let value = input.value();
+            let previous = state.drafts.get(key).or_else(|| view.initial.get(key));
+            edited |= previous.is_none_or(|old| value != old.as_str());
+            if state
+                .drafts
+                .get(key)
+                .is_some_and(|old| value == old.as_str())
+            {
+                return None;
+            }
+            Some((key.clone(), value.to_string()))
+        })
         .collect();
-    let initial = view.initial.clone();
-    let bounds = view.bounds.clone();
-    let mut state = world.get::<DemeterCastle>(owner).unwrap().clone();
-    let before = serde_json::to_value(&state.config).unwrap();
-    let edited = values.iter().any(|(k, v)| initial.get(k) != Some(v));
-    for (k, v) in values {
-        state.drafts.insert(k, v);
-    }
-    if edited {
-        state.edit_version = state.edit_version.saturating_add(1);
-    }
-    let semantic_edit = state.drafts.iter().any(|(key, value)| {
-        initial.get(key).is_some_and(|initial| initial != value)
-            && (key.starts_with("nutrient:")
-                || key.starts_with("share:")
-                || key.starts_with("food:")
-                || key.contains("|production:")
-                || [
-                    "name", "start", "days", "currency", "age", "weight", "height", "activity",
-                    "energy", "volume", "horizon",
-                ]
-                .contains(&key.as_str()))
-    });
-    if semantic_edit {
-        state.changed = true;
-        state.stale = true;
-    }
-    world.entity_mut(owner).insert(state.clone());
+    nucleus::performance::add("demeter-field-values-prepared", values.len() as u64);
+    // Retain captured text and invalidation before parsing, exactly as for a
+    // failed save. Only the validated candidate may replace the configuration.
+    let mut state = {
+        let mut query = world.query::<(&mut DemeterCastle, &View)>();
+        let (mut state, view) = query.get_mut(world, owner).unwrap();
+        state.drafts.extend(values);
+        if edited {
+            state.edit_version = state.edit_version.saturating_add(1);
+        }
+        let semantic_edit = state.drafts.iter().any(|(key, value)| {
+            view.initial
+                .get(key)
+                .is_some_and(|initial| initial != value)
+                && (key.starts_with("nutrient:")
+                    || key.starts_with("share:")
+                    || key.starts_with("food:")
+                    || key.contains("|production:")
+                    || [
+                        "name", "start", "days", "currency", "age", "weight", "height", "activity",
+                        "energy", "volume", "horizon",
+                    ]
+                    .contains(&key.as_str()))
+        });
+        if semantic_edit {
+            state.changed = true;
+            state.stale = true;
+        }
+        state.clone()
+    };
+    let view = world.get::<View>(owner).unwrap();
+    let initial = &view.initial;
+    let bounds = &view.bounds;
     if state.drafts.contains_key("name") {
         state.config.name = text(&state, "name").into();
         state.config.start = text(&state, "start").into();
@@ -273,12 +297,12 @@ pub(super) fn capture(world: &mut World, owner: Entity) -> Result<(), String> {
             .try_into()
             .map_err(|_| "Projection horizon is too long")?;
     }
-    if serde_json::to_value(&state.config).unwrap() != before {
+    if state.config != world.get::<DemeterCastle>(owner).unwrap().config {
         state.changed = true;
         state.stale = true;
     }
     state.config.validate()?;
-    if !state.valid() {
+    if !state.editor_valid() {
         return Err("Editor state exceeds its limits".into());
     }
     world.entity_mut(owner).insert(state);
@@ -444,12 +468,12 @@ pub(super) fn operation(
         }
         Operation::Template(id) => {
             let food = selected.ok_or("Select a food first")?;
-            let item = state.catalog["templates"]
-                .as_array()
-                .and_then(|v| v.iter().find(|v| v["uid"] == *id))
+            let item = state
+                .catalog
+                .find(catalog::Rows::Templates, id)
                 .ok_or("Refresh production templates")?;
             let template: production::Template =
-                serde_json::from_value(item["template"].clone()).map_err(|e| e.to_string())?;
+                production::Template::deserialize(&item["template"]).map_err(|e| e.to_string())?;
             state.config.production.retain(|c| c.food != food);
             state.config.production.push(production::Choice {
                 food,

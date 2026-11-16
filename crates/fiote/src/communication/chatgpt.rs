@@ -327,9 +327,8 @@ impl Provider for ChatGpt {
             return Ok(None);
         }
         let request = self.request(system, messages, &[])?;
-        if serde_json::to_vec(&request["input"])
+        if nucleus::json::encoded_len(&request["input"])
             .map_err(|_| "Cannot encode compaction input.")?
-            .len()
             > crate::runtime::MAX_CONTEXT_BYTES
         {
             return Ok(None);

@@ -165,7 +165,7 @@ fn knowledge_controls_keep_keyboard_access_multilingual_text_and_bounded_content
         let mut view = app.world_mut().get_mut::<OntologySand>(owner).unwrap();
         view.ready = [true; 4];
         view.knowledge_item = Some(
-            serde_json::json!({"title":"العربية 日本語","content":"café ".repeat(100000),"source":"test","revision":"1"}),
+            serde_json::json!({"title":"العربية 日本語","content":"café ".repeat(100000),"source":"test","revision":"1"}).into(),
         );
     }
     ui::render(app.world_mut(), owner);
@@ -630,9 +630,9 @@ fn selections_are_validated_and_large_catalogs_have_bounded_controls() {
     {
         let mut view = app.world_mut().get_mut::<OntologySand>(owner).unwrap();
         view.ready = [true; 4];
-        view.rows[0] = vec![serde_json::json!({"uid":"g_local", "name":"local"})];
-        view.rows[1] = (0..1000).map(|index| serde_json::json!({"uid":format!("c_{index}"),"name":format!("concept {index}")})).collect();
-        view.rows[2] = (0..1000).map(|index| serde_json::json!({"uid":format!("r_{index}"),"head":format!("record {index}")})).collect();
+        view.rows[0] = vec![serde_json::json!({"uid":"g_local", "name":"local"})].into();
+        view.rows[1] = (0..1000).map(|index| serde_json::json!({"uid":format!("c_{index}"),"name":format!("concept {index}")})).collect::<Vec<_>>().into();
+        view.rows[2] = (0..1000).map(|index| serde_json::json!({"uid":format!("r_{index}"),"head":format!("record {index}")})).collect::<Vec<_>>().into();
     }
     assert!(
         mutation(app.world(), owner, &Command::Delete)
@@ -657,7 +657,7 @@ fn selections_are_validated_and_large_catalogs_have_bounded_controls() {
         owner,
         &ServerMessage::Update {
             id: "stale".into(),
-            rows: vec![],
+            rows: vec![].into(),
         },
     );
     assert_eq!(

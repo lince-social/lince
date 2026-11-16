@@ -7,6 +7,7 @@ pub(super) struct State {
     cursor: MessageCursor<WindowEvent>,
     events: VecDeque<(MouseButtonInput, Modifiers, Option<Vec2>)>,
     positions: HashMap<Entity, Vec2>,
+    observed: HashSet<Entity>,
 }
 
 impl State {
@@ -24,6 +25,7 @@ impl State {
     pub fn clear(&mut self, world: &World) {
         self.events.clear();
         self.positions.clear();
+        self.observed.clear();
         if let Some(events) = world.get_resource::<Messages<WindowEvent>>() {
             self.cursor.clear(events);
         }
@@ -34,13 +36,14 @@ pub(super) fn prepare(
     world: &World,
     state: &mut super::State,
     mut masks: HashMap<Entity, Modifiers>,
-) {
+) -> HashMap<Entity, Modifiers> {
+    let _preparation = engine::performance::Span::new("keyboard-pointer-preparation");
     state.pointer.events.clear();
+    state.pointer.observed.clear();
     let Some(events) = world.get_resource::<Messages<WindowEvent>>() else {
-        return;
+        return masks;
     };
     let mut next_key = 0;
-    let mut observed = HashSet::new();
     for event in state.pointer.cursor.read(events) {
         match event {
             WindowEvent::CursorMoved(event) => {
@@ -54,13 +57,13 @@ pub(super) fn prepare(
                     next_key += index;
                     let event = &state.events[next_key];
                     masks.insert(input.window, event.after);
-                    observed.insert(input.window);
+                    state.pointer.observed.insert(input.window);
                     next_key += 1;
                 }
             }
             WindowEvent::MouseButtonInput(input) => {
                 let host = state.host.button(input);
-                let modifiers = if observed.contains(&input.window) {
+                let modifiers = if state.pointer.observed.contains(&input.window) {
                     masks.get(&input.window).copied()
                 } else {
                     host.or_else(|| masks.get(&input.window).copied())
@@ -84,6 +87,7 @@ pub(super) fn prepare(
             _ => {}
         }
     }
+    masks
 }
 
 #[cfg(test)]

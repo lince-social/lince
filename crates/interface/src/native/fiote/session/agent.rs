@@ -377,8 +377,13 @@ pub(super) fn activity(world: &mut World, saved: &FioteStatus) {
             .agent_activity
             .iter()
             .find(|item| item.thread == thread && item.permission.is_none())
+            && world.get::<Text>(label).unwrap().0 != item.title
         {
-            world.get_mut::<Text>(label).unwrap().0 = item.title.clone();
+            world
+                .get_mut::<Text>(label)
+                .unwrap()
+                .0
+                .clone_from(&item.title);
         }
         let pending = saved
             .agent_activity

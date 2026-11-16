@@ -30,6 +30,15 @@ struct PurposeHint {
     purpose: EnvelopePurpose,
 }
 
+#[derive(serde::Serialize)]
+struct SearchReply<'a> {
+    results: &'a [Value],
+    updates: &'a [Value],
+    authorities: &'a [Delegation],
+    posting_authorities: &'a [PostingAuthority],
+    refresh_incomplete: bool,
+}
+
 fn hinted_budget_class(bytes: &[u8], verb: &str) -> store::social::BudgetClass {
     let control = match verb {
         "publish-snippet" | "end-reply-post" if bytes.len() <= MAX_FRAME_BYTES => {
@@ -404,7 +413,7 @@ impl Engine {
                     settings.storage_bytes,
                     &document.authority.organ,
                     "profile",
-                    serde_json::to_vec(&document)?.len(),
+                    nucleus::json::encoded_len(&document)?,
                 )
                 .await?;
                 store::social::put_profile_on(&mut tx, &document, &hash, "profile host").await?;
@@ -454,7 +463,7 @@ impl Engine {
                     }
                     if let Some(row) = store::sqlx::query("SELECT body,hash FROM social_document WHERE kind='snippet' AND state NOT IN ('revoked','conflict') AND (state='withdrawn' OR NOT EXISTS(SELECT 1 FROM social_listing_removal WHERE post=social_document.id)) AND id=? AND hash<>? AND expires_at>? AND (EXISTS(SELECT 1 FROM json_each(body,'$.destinations') WHERE value=?) OR (json_extract(body,'$.redistribute')=1 AND json_array_length(body,'$.destinations')>0))")
                         .bind(id).bind(hash).bind(now).bind(node_id).fetch_optional(&self.store.pool).await? {
-                        updates.push(json!({"document":serde_json::from_str::<Value>(&row.get::<String,_>("body"))?,"hash":row.get::<String,_>("hash"),"source":"directory"}));
+                        updates.push(json!({"document":serde_json::from_str::<Value>(row.get::<&str,_>("body"))?,"hash":row.get::<String,_>("hash"),"source":"directory"}));
                         updated_ids.insert(id.to_owned());
                     }
                 }
@@ -469,11 +478,13 @@ impl Engine {
                 let mut authorities: Vec<_> = authorities.into_values().collect();
                 let mut posting_authorities: Vec<_> = posting_authorities.into_values().collect();
                 let mut refresh_incomplete = false;
-                while serde_json::to_vec(
-                    &json!({"results":results,"updates":updates,"authorities":authorities,"posting_authorities":posting_authorities,"refresh_incomplete":refresh_incomplete}),
-                )?
-                .len()
-                    > MAX_FRAME_BYTES - 1024
+                while nucleus::json::encoded_len(&SearchReply {
+                    results: &results,
+                    updates: &updates,
+                    authorities: &authorities,
+                    posting_authorities: &posting_authorities,
+                    refresh_incomplete,
+                })? > MAX_FRAME_BYTES - 1024
                 {
                     refresh_incomplete = true;
                     if results.pop().is_none() && updates.pop().is_none()
@@ -491,7 +502,7 @@ impl Engine {
                 let row=store::sqlx::query("SELECT body,state FROM social_document WHERE kind='profile' AND id=? AND expires_at>?").bind(&organ).bind(now).fetch_optional(&self.store.pool).await?;
                 match row {
                     Some(row) => {
-                        let doc: Profile = serde_json::from_str(&row.get::<String, _>("body"))?;
+                        let doc: Profile = serde_json::from_str(row.get::<&str, _>("body"))?;
                         if doc.destinations.iter().any(|host| host == node_id) {
                             json!({"profile":doc,"state":row.get::<String,_>("state")})
                         } else {
@@ -502,7 +513,7 @@ impl Engine {
                 }
             }
         };
-        let response_bytes = serde_json::to_vec(&response)?.len();
+        let response_bytes = nucleus::json::encoded_len(&response)?;
         if response_bytes > frame_limit - 1024 {
             return Err(invalid("The social response is too large"));
         }
@@ -546,7 +557,7 @@ impl Engine {
                 settings.storage_bytes,
                 &document.id,
                 "snippet",
-                serde_json::to_vec(document)?.len(),
+                nucleus::json::encoded_len(document)?,
             )
             .await?;
         }
@@ -655,7 +666,7 @@ impl Engine {
                     settings.storage_bytes,
                     organ,
                     "profile",
-                    serde_json::to_vec(&doc)?.len(),
+                    nucleus::json::encoded_len(&doc)?,
                 )
                 .await?;
                 store::social::put_profile_on(&mut tx, &doc, &hash, &service).await?;
@@ -670,7 +681,7 @@ impl Engine {
         let row = store::sqlx::query("SELECT body,state,source,hash FROM social_document WHERE kind='profile' AND id=? AND expires_at>?").bind(organ).bind(now).fetch_optional(&self.store.pool).await?;
         Ok(match row {
             Some(row) => {
-                json!({"profile":serde_json::from_str::<Value>(&row.get::<String,_>("body"))?,"state":row.get::<String,_>("state"),"source":row.get::<String,_>("source"),"hash":row.get::<String,_>("hash"),"failures":failures,"status":"Signed cached profile; identity is unverified until you recognize its key"})
+                json!({"profile":serde_json::from_str::<Value>(row.get::<&str,_>("body"))?,"state":row.get::<String,_>("state"),"source":row.get::<String,_>("source"),"hash":row.get::<String,_>("hash"),"failures":failures,"status":"Signed cached profile; identity is unverified until you recognize its key"})
             }
             None => {
                 json!({"profile":null,"state":"unavailable","failures":failures,"status":"No current public profile is available"})
@@ -809,7 +820,7 @@ impl Engine {
         now: i64,
         guard: Option<&subscriptions::Guard>,
     ) -> Result<(), EngineError> {
-        if serde_json::to_vec(data)?.len() > MAX_FRAME_BYTES - 1024 {
+        if nucleus::json::encoded_len(data)? > MAX_FRAME_BYTES - 1024 {
             return Err(invalid("The directory result page is too large"));
         }
         let rows = data["results"]

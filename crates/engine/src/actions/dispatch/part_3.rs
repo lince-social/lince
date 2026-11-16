@@ -19,10 +19,7 @@ impl Engine {
                 Action::CreateThread { target, head } => {
                     let _thread_guard = self.thread_creation_lock.lock().await;
                     let target_uid = self.resolve(&target).await?;
-                    if store::transfers::get(&self.store.pool, &target_uid)
-                        .await?
-                        .is_some()
-                    {
+                    if store::transfers::exists(&self.store.pool, &target_uid).await? {
                         self.require_transfer_thread_writer(&target_uid, actor.as_deref(), now)
                             .await?;
                     }
@@ -30,20 +27,18 @@ impl Engine {
                     let title = if head.trim().is_empty() {
                         let predicate =
                             store::vocabulary::feature_write(&self.store.pool, "thread").await?;
-                        let threads = store::assertions::subjects_pointing_to(
+                        let heads: std::collections::HashSet<_> = store::assertions::subject_heads(
                             &self.store.pool,
                             &predicate,
                             &target_uid,
                         )
-                        .await?;
-                        let number = (1..)
-                            .find(|number| {
-                                !threads
-                                    .iter()
-                                    .any(|thread| thread.head == format!("Thread {number}"))
-                            })
+                        .await?
+                        .into_iter()
+                        .collect();
+                        generated = (1..)
+                            .map(|number| format!("Thread {number}"))
+                            .find(|head| !heads.contains(head))
                             .unwrap();
-                        generated = format!("Thread {number}");
                         generated.as_str()
                     } else {
                         head.trim()
@@ -282,7 +277,7 @@ impl Engine {
                     }
                     if let Some(parent) = parent {
                         let parent_uid = self.resolve(&parent).await?;
-                        let parent_row = store::records::get(&self.store.pool, &parent_uid)
+                        let parent_row = store::records::routing(&self.store.pool, &parent_uid)
                             .await?
                             .ok_or_else(|| EngineError::UnknownRecord(parent.clone()))?;
                         if parent_row.kind != RecordKind::Message.as_str() {
@@ -291,13 +286,14 @@ impl Engine {
                                 parent_row.kind
                             )));
                         }
-                        let parent_threads = store::assertions::objects_from_subject(
+                        if !store::assertions::object_exists(
                             &self.store.pool,
                             &parent_uid,
                             &message_in,
+                            Some(&thread_uid),
                         )
-                        .await?;
-                        if !parent_threads.iter().any(|row| row.uid == thread_uid) {
+                        .await?
+                        {
                             return Err(EngineError::Consequence(
                                 "reply parent is not in the target thread".into(),
                             ));
@@ -431,13 +427,15 @@ impl Engine {
                         let references =
                             store::vocabulary::feature_read(&self.store.pool, "reference").await?;
                         let has_references = match references {
-                            Some(predicate) => !store::assertions::objects_from_subject(
-                                &self.store.pool,
-                                &message_uid,
-                                &predicate,
-                            )
-                            .await?
-                            .is_empty(),
+                            Some(predicate) => {
+                                store::assertions::object_exists(
+                                    &self.store.pool,
+                                    &message_uid,
+                                    &predicate,
+                                    None,
+                                )
+                                .await?
+                            }
                             None => false,
                         };
                         let has_content = store::records::get_extension(

@@ -72,6 +72,7 @@ impl Grouping {
 struct Category {
     key: String,
     title: String,
+    order: String,
     missing: bool,
 }
 
@@ -80,6 +81,7 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
         return Category {
             key: String::new(),
             title: String::new(),
+            order: String::new(),
             missing: false,
         };
     };
@@ -99,11 +101,7 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
         people.sort_by(|a, b| a.0.cmp(&b.0));
         people.dedup_by(|a, b| a.0 == b.0);
         let key = serde_json::to_string(&people.iter().map(|p| &p.0).collect::<Vec<_>>()).unwrap();
-        people.sort_by(|a, b| {
-            a.1.to_lowercase()
-                .cmp(&b.1.to_lowercase())
-                .then(a.0.cmp(&b.0))
-        });
+        people.sort_by_cached_key(|(uid, name)| (name.to_lowercase(), uid.clone()));
         (
             key,
             people
@@ -128,7 +126,7 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
             .as_array()
             .into_iter()
             .flatten()
-            .map(|a| rows::display(&Value::Array(vec![a.clone()])))
+            .map(|a| lince_interface::records::display_list(std::slice::from_ref(a)))
             .collect();
         titles.sort();
         titles.dedup();
@@ -141,6 +139,11 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
         (title.clone(), title)
     };
     let missing = value.is_null() || title.trim().is_empty();
+    let order = if missing {
+        "unset".into()
+    } else {
+        title.to_lowercase()
+    };
     Category {
         key: if missing {
             "null".into()
@@ -148,6 +151,7 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
             format!("value:{key}")
         },
         title: if missing { "Unset".into() } else { title },
+        order,
         missing,
     }
 }
@@ -155,16 +159,16 @@ fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
 fn decimal_order(a: &str, b: &str) -> Ordering {
     let negative_a = a.starts_with('-');
     let negative_b = b.starts_with('-');
-    let parts = |value: &str| {
+    fn parts(value: &str) -> (&str, &str) {
         let (integer, fraction) = value
             .trim_start_matches('-')
             .split_once('.')
             .unwrap_or((value.trim_start_matches('-'), ""));
         (
-            integer.trim_start_matches('0').to_string(),
-            fraction.trim_end_matches('0').to_string(),
+            integer.trim_start_matches('0'),
+            fraction.trim_end_matches('0'),
         )
-    };
+    }
     let a = parts(a);
     let b = parts(b);
     let negative_a = negative_a && (!a.0.is_empty() || !a.1.is_empty());
@@ -195,7 +199,7 @@ fn compare(a: &Category, b: &Category, axis: Option<&GroupAxis>) -> Ordering {
     ) {
         decimal_order(&a.title, &b.title)
     } else {
-        a.title.to_lowercase().cmp(&b.title.to_lowercase())
+        a.order.cmp(&b.order)
     }
     .then(a.key.cmp(&b.key));
     if axis.descending {
@@ -205,9 +209,13 @@ fn compare(a: &Category, b: &Category, axis: Option<&GroupAxis>) -> Ordering {
     }
 }
 
-pub(super) fn page(data: &[Value], config: &Config, page: usize) -> Vec<Value> {
+pub(super) fn page<'a>(data: &'a [Value], config: &Config, page: usize) -> Vec<&'a Value> {
+    let start = page.saturating_mul(200);
+    if start >= data.len() {
+        return Vec::new();
+    }
     if !config.grouping.active() {
-        return data.iter().skip(page * 200).take(200).cloned().collect();
+        return data.iter().skip(start).take(200).collect();
     }
     let mut indices: Vec<_> = data
         .iter()
@@ -220,17 +228,24 @@ pub(super) fn page(data: &[Value], config: &Config, page: usize) -> Vec<Value> {
             )
         })
         .collect();
-    indices.sort_by(|a, b| {
+    let order = |a: &(usize, Category, Category), b: &(usize, Category, Category)| {
         compare(&a.2, &b.2, config.grouping.vertical.as_ref())
             .then_with(|| compare(&a.1, &b.1, config.grouping.horizontal.as_ref()))
             .then(a.0.cmp(&b.0))
-    });
-    indices
-        .into_iter()
-        .skip(page * 200)
-        .take(200)
-        .map(|(index, _, _)| data[index].clone())
-        .collect()
+    };
+    // Only the displayed page needs a full ordering. The source index keeps
+    // equal categories in their original order through both partitions.
+    if start > 0 {
+        indices.select_nth_unstable_by(start, order);
+    }
+    let remaining = &mut indices[start..];
+    let count = remaining.len().min(200);
+    if count < remaining.len() {
+        remaining.select_nth_unstable_by(count, order);
+    }
+    let visible = &mut remaining[..count];
+    visible.sort_unstable_by(order);
+    visible.iter().map(|(index, _, _)| &data[*index]).collect()
 }
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
@@ -274,32 +289,46 @@ impl GeneratedGroup {
 pub(super) fn prepare(
     world: &mut World,
     owner: Entity,
-    state: &mut State,
-    rows: &[Value],
+    groups: &mut HashMap<(bool, String), Entity>,
+    rows: &[&Value],
     config: &Config,
 ) -> HashMap<String, Cell> {
+    if !config.grouping.active() {
+        for (_, entity) in groups.drain() {
+            let _ = world.despawn(entity);
+        }
+        return HashMap::new();
+    }
+    let categories: Vec<_> = rows
+        .iter()
+        .map(|row| {
+            [
+                category(row, config.grouping.horizontal.as_ref()),
+                category(row, config.grouping.vertical.as_ref()),
+            ]
+        })
+        .collect();
     let mut axes = [Vec::new(), Vec::new()];
     for (horizontal, axis) in [
         (true, config.grouping.horizontal.as_ref()),
         (false, config.grouping.vertical.as_ref()),
     ] {
-        let mut categories: BTreeMap<String, Category> = rows
+        let unique: BTreeMap<&str, &Category> = categories
             .iter()
-            .map(|row| {
-                let category = category(row, axis);
-                (category.key.clone(), category)
+            .map(|categories| {
+                let category = &categories[usize::from(!horizontal)];
+                (category.key.as_str(), category)
             })
             .collect();
         let values = &mut axes[usize::from(!horizontal)];
-        values.extend(std::mem::take(&mut categories).into_values());
+        values.extend(unique.into_values());
         values.sort_by(|a, b| compare(a, b, axis));
         if axis.is_none() {
             continue;
         }
         for (index, category) in values.iter().enumerate() {
             let key = (horizontal, category.key.clone());
-            let existing = state
-                .groups
+            let existing = groups
                 .get(&key)
                 .copied()
                 .filter(|e| world.get_entity(*e).is_ok());
@@ -348,28 +377,53 @@ pub(super) fn prepare(
             if let Some(children) = world.get::<Children>(entity) {
                 let children: Vec<_> = children.iter().collect();
                 for child in children {
-                    if let Some(mut text) = world.get_mut::<Text>(child) {
-                        text.0 = category.title.clone();
+                    if let Some(mut text) = world.get_mut::<Text>(child)
+                        && text.0 != category.title
+                    {
+                        text.0.clone_from(&category.title);
                     }
                 }
             }
-            world.entity_mut(entity).insert((
-                GeneratedGroup {
+            if let Some(mut group) = world.get_mut::<GeneratedGroup>(entity) {
+                if group.owner != owner || group.horizontal != horizontal || group.index != index {
+                    group.owner = owner;
+                    group.horizontal = horizontal;
+                    group.index = index;
+                }
+            } else {
+                world.entity_mut(entity).insert(GeneratedGroup {
                     owner,
                     horizontal,
                     index,
                     targets: HashMap::new(),
-                },
-                Tooltip(category.title.clone()),
-            ));
+                });
+            }
+            if world
+                .get::<Tooltip>(entity)
+                .is_none_or(|tooltip| tooltip.0 != category.title)
+            {
+                world
+                    .entity_mut(entity)
+                    .insert(Tooltip(category.title.clone()));
+            }
             let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
-            area.name = category.title.trim().chars().take(80).collect();
-            area.strength = config.grouping.strength;
-            state.groups.insert(key, entity);
+            let name: String = category.title.trim().chars().take(80).collect();
+            if area.name != name {
+                area.name = name;
+            }
+            if area.strength != config.grouping.strength {
+                area.strength = config.grouping.strength;
+            }
+            groups.insert(key, entity);
         }
     }
-    let stale: Vec<_> = state
-        .groups
+    let positions = axes.each_ref().map(|axis| {
+        axis.iter()
+            .enumerate()
+            .map(|(index, category)| (category.key.as_str(), index))
+            .collect::<HashMap<_, _>>()
+    });
+    let stale: Vec<_> = groups
         .keys()
         .filter(|(horizontal, key)| {
             let axis = if *horizontal {
@@ -377,31 +431,27 @@ pub(super) fn prepare(
             } else {
                 &config.grouping.vertical
             };
-            axis.is_none()
-                || !axes[usize::from(!*horizontal)]
-                    .iter()
-                    .any(|c| &c.key == key)
+            axis.is_none() || !positions[usize::from(!*horizontal)].contains_key(key.as_str())
         })
         .cloned()
         .collect();
     for key in stale {
-        if let Some(entity) = state.groups.remove(&key) {
+        if let Some(entity) = groups.remove(&key) {
             let _ = world.despawn(entity);
         }
     }
     let mut counts = HashMap::new();
     rows.iter()
-        .filter_map(|row| {
+        .zip(&categories)
+        .filter_map(|(row, categories)| {
             let uid = row["uid"].as_str()?;
-            let horizontal = category(row, config.grouping.horizontal.as_ref());
-            let vertical = category(row, config.grouping.vertical.as_ref());
-            let x = axes[0]
-                .iter()
-                .position(|c| c.key == horizontal.key)
+            let x = positions[0]
+                .get(categories[0].key.as_str())
+                .copied()
                 .unwrap_or(0);
-            let y = axes[1]
-                .iter()
-                .position(|c| c.key == vertical.key)
+            let y = positions[1]
+                .get(categories[1].key.as_str())
+                .copied()
                 .unwrap_or(0);
             let slot = counts.entry((x, y)).or_insert(0);
             let cell = Cell { x, y, slot: *slot };
@@ -431,8 +481,17 @@ pub(super) fn layout(
         *value = value.max(f64::from(*height));
     }
     let mut band_heights = BTreeMap::<usize, f64>::new();
-    for ((y, _), height) in &heights {
-        *band_heights.entry(*y).or_insert(48.0) += height + gap;
+    let mut line_offsets = BTreeMap::new();
+    let mut previous_band = None;
+    let mut offset = 0.0;
+    for (&(y, line), height) in &heights {
+        if previous_band != Some(y) {
+            previous_band = Some(y);
+            offset = 0.0;
+        }
+        line_offsets.insert((y, line), offset);
+        offset += height + gap;
+        *band_heights.entry(y).or_insert(48.0) += height + gap;
     }
     let ys: BTreeMap<_, _> = band_heights
         .iter()
@@ -462,14 +521,11 @@ pub(super) fn layout(
             ys[&y]
         }
     };
-    let mut targets = HashMap::new();
+    let mut targets: [HashMap<usize, Vec<(Entity, DVec2)>>; 2] = default();
     for (entity, cell, _) in rows {
         let line = cell.slot / columns;
         let height = heights[&(cell.y, line)];
-        let y: f64 = heights
-            .range((cell.y, 0)..(cell.y, line))
-            .map(|(_, height)| height + gap)
-            .sum();
+        let y = line_offsets[&(cell.y, line)];
         let position = origin
             + DVec2::new(
                 180.0
@@ -485,7 +541,14 @@ pub(super) fn layout(
             position,
             Vec2::new(config.width, height as f32),
         );
-        targets.insert(*entity, position);
+        targets[0]
+            .entry(cell.x)
+            .or_default()
+            .push((*entity, position));
+        targets[1]
+            .entry(cell.y)
+            .or_default()
+            .push((*entity, position));
     }
     let nx = rows.iter().map(|(_, c, _)| c.x).max().map_or(0, |x| x + 1);
     let min_x = if reverse_x {
@@ -501,39 +564,40 @@ pub(super) fn layout(
         .query::<(Entity, &GeneratedGroup)>()
         .iter(world)
         .filter(|(_, g)| g.owner == owner)
-        .map(|(e, g)| (e, g.clone()))
+        .map(|(e, g)| (e, g.horizontal, g.index))
         .collect();
-    for (entity, mut group) in groups {
+    let owner_placement = crate::native::topology::spatial(world, owner);
+    let owner_center = world
+        .get::<InfluenceArea>(owner)
+        .map_or(DVec2::ZERO, |area| DVec2::from_array(area.center));
+    for (entity, horizontal, index) in groups {
         if rows.is_empty() {
             continue;
         }
-        let (start, size) = if group.horizontal {
+        let (start, size) = if horizontal {
             (
-                DVec2::new(180.0 + x_start(group.index), min_y),
+                DVec2::new(180.0 + x_start(index), min_y),
                 DVec2::new(cell_width, total_height + 48.0),
             )
         } else {
             (
-                DVec2::new(min_x, 48.0 + y_start(group.index)),
-                DVec2::new(total_width + 180.0, band_heights[&group.index]),
+                DVec2::new(min_x, 48.0 + y_start(index)),
+                DVec2::new(total_width + 180.0, band_heights[&index]),
             )
         };
         let center = origin + start + size * 0.5;
-        let owner_placement = crate::native::topology::spatial(world, owner);
-        let owner_center = world
-            .get::<InfluenceArea>(owner)
-            .map_or(DVec2::ZERO, |area| DVec2::from_array(area.center));
         let local = center - owner_center;
         let point = owner_placement.position(owner_center)
             + owner_placement.rotation() * bevy::math::DVec3::new(local.x, 0.0, local.y);
         let world_center = DVec2::new(point.x, point.z);
-        world
-            .entity_mut(entity)
-            .insert(crate::native::topology::Spatial {
-                elevation: point.y,
-                rotation: owner_placement.rotation,
-                ..default()
-            });
+        let placement = crate::native::topology::Spatial {
+            elevation: point.y,
+            rotation: owner_placement.rotation,
+            ..default()
+        };
+        if world.get::<crate::native::topology::Spatial>(entity) != Some(&placement) {
+            world.entity_mut(entity).insert(placement);
+        }
         if let Some(mut area) = world.get_mut::<InfluenceArea>(entity) {
             if area.center != world_center.to_array()
                 || area.size != size.to_array()
@@ -544,17 +608,17 @@ pub(super) fn layout(
                 area.reach = reach;
             }
         }
-        group.targets = rows
-            .iter()
-            .filter(|(_, cell, _)| {
-                if group.horizontal {
-                    cell.x == group.index
-                } else {
-                    cell.y == group.index
-                }
-            })
-            .map(|(e, _, _)| (*e, world_center + targets[e] - center))
-            .collect();
+        let group = GeneratedGroup {
+            owner,
+            horizontal,
+            index,
+            targets: targets[usize::from(!horizontal)]
+                .get(&index)
+                .into_iter()
+                .flatten()
+                .map(|(entity, position)| (*entity, world_center + *position - center))
+                .collect(),
+        };
         if world.get::<GeneratedGroup>(entity) != Some(&group) {
             world.entity_mut(entity).insert(group);
         }

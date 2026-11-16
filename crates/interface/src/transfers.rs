@@ -7,7 +7,7 @@ pub mod workspace;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 pub const FILTERS: [(&str, &str); 7] = [
     ("all", "Any status"),
@@ -41,10 +41,14 @@ pub fn text(value: &Value, key: &str) -> String {
 }
 
 pub fn display(value: &Value) -> String {
+    display_ref(value).into_owned()
+}
+
+pub fn display_ref(value: &Value) -> std::borrow::Cow<'_, str> {
     match value {
-        Value::Null => String::new(),
-        Value::String(value) => value.clone(),
-        _ => value.to_string(),
+        Value::Null => "".into(),
+        Value::String(value) => value.as_str().into(),
+        _ => value.to_string().into(),
     }
 }
 
@@ -269,7 +273,10 @@ impl Form {
     }
 
     pub fn commit_fields(&mut self) -> Result<(), String> {
-        let mut data = self.data.clone();
+        let _preparation = nucleus::performance::Span::new("transfer-form-preparation");
+        // Keep validation and overlapping JSON-pointer edits in their original
+        // order. A failed field discards the candidate without touching data.
+        let mut data = Cow::Borrowed(&self.data);
         for field in &self.fields {
             let raw = field.value.trim();
             let value = match &field.kind {
@@ -360,18 +367,30 @@ impl Form {
                 _ => json!(raw),
             };
             let target = data
-                .pointer_mut(&field.path)
+                .pointer(&field.path)
                 .ok_or("This field is no longer available")?;
-            *target = value;
+            if !nucleus::json::same_value_encoding(target, &value) {
+                *data.to_mut().pointer_mut(&field.path).unwrap() = value;
+            }
         }
         for path in ["/public_history/audience", "/request/scope/audience"] {
-            if let Some(audience) = data.pointer_mut(path).and_then(Value::as_object_mut) {
+            if let Some(audience) = data.pointer(path).and_then(Value::as_object) {
                 match audience.get("kind").and_then(Value::as_str) {
-                    Some("public") => {
-                        audience.remove("viewers");
+                    Some("public") if audience.contains_key("viewers") => {
+                        data.to_mut()
+                            .pointer_mut(path)
+                            .unwrap()
+                            .as_object_mut()
+                            .unwrap()
+                            .remove("viewers");
                     }
-                    Some("selected") => {
-                        audience.entry("viewers").or_insert_with(|| json!([]));
+                    Some("selected") if !audience.contains_key("viewers") => {
+                        data.to_mut()
+                            .pointer_mut(path)
+                            .unwrap()
+                            .as_object_mut()
+                            .unwrap()
+                            .insert("viewers".into(), json!([]));
                     }
                     _ => {}
                 }
@@ -379,15 +398,17 @@ impl Form {
         }
         if data["public_history"].is_object() {
             if let Some(raw) = data["public_history"]["measurements"].as_str() {
-                data["public_history"]["measurements"] = serde_json::from_str(raw)
+                let measurements = serde_json::from_str(raw)
                     .map_err(|_| "Use the reviewed public measurement proposal array")?;
+                data.to_mut()["public_history"]["measurements"] = measurements;
             }
             let terms: nucleus::transfer::public_history::Terms =
-                serde_json::from_value(data["public_history"].clone())
+                Deserialize::deserialize(&data["public_history"])
                     .map_err(|error| error.to_string())?;
             terms.validate()?;
         }
-        if self.data != data {
+        if self.data != *data {
+            nucleus::performance::add("transfer-form-updates", 1);
             if data["action"] == "transfer-receipt"
                 && data["request"]["kind"] == "authorize_participation"
             {
@@ -399,10 +420,12 @@ impl Form {
             }
             self.request_id = nucleus::new_uid("transfer-ui");
             if self.step.is_none() && data.get("request_id").is_some() {
-                data["request_id"] = json!(self.request_id);
+                data.to_mut()["request_id"] = json!(self.request_id);
             }
         }
-        self.data = data;
+        if let Cow::Owned(data) = data {
+            self.data = data;
+        }
         Ok(())
     }
 

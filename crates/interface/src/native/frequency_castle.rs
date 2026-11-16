@@ -22,13 +22,46 @@ pub struct FrequencyCastle {
     pub search: String,
 }
 
+#[derive(Default)]
+struct Rows {
+    values: Vec<Frequency>,
+    by_uid: HashMap<String, usize>,
+}
+
+impl From<Vec<Frequency>> for Rows {
+    fn from(values: Vec<Frequency>) -> Self {
+        let _prepare = nucleus::performance::Span::new("frequency-row-preparation");
+        let mut by_uid = HashMap::with_capacity(values.len());
+        for (index, row) in values.iter().enumerate() {
+            // Match the former first-row lookup if a source repeats an ID.
+            by_uid.entry(row.uid.clone()).or_insert(index);
+        }
+        nucleus::performance::add("frequency-rows-prepared", values.len() as u64);
+        Self { values, by_uid }
+    }
+}
+
+impl std::ops::Deref for Rows {
+    type Target = [Frequency];
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl Rows {
+    fn by_uid(&self, uid: &str) -> Option<&Frequency> {
+        self.by_uid.get(uid).map(|&index| &self.values[index])
+    }
+}
+
 #[derive(Component)]
 struct View {
     controls: Entity,
     form: Entity,
     list: Entity,
     status: Entity,
-    rows: Vec<Frequency>,
+    rows: Rows,
     pending: Option<Pending>,
     deleting: Option<String>,
     page: usize,
@@ -129,7 +162,7 @@ pub fn spawn(
         form,
         list,
         status,
-        rows: Vec::new(),
+        rows: Rows::default(),
         pending: None,
         deleting: None,
         page: 0,
@@ -310,8 +343,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     continue;
                 };
                 let rows = match rows
-                    .into_iter()
-                    .map(|row| serde_json::from_value(row.clone()))
+                    .iter()
+                    .map(Frequency::deserialize)
                     .collect::<Result<Vec<Frequency>, _>>()
                 {
                     Ok(rows) => rows,
@@ -323,7 +356,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 let Some(mut view) = world.get_mut::<View>(owner) else {
                     continue;
                 };
-                if view.ready && view.rows == rows {
+                if view.ready && view.rows.values == rows {
                     continue;
                 }
                 let first = !view.ready;
@@ -335,7 +368,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         .zip(&rows)
                         .any(|(before, after)| !before.same_layout(after));
                 view.ready = true;
-                view.rows = rows;
+                view.rows = rows.into();
                 ui::refresh_next_date(world, owner);
                 if redraw {
                     ui::render_list(world, owner);

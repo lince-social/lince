@@ -20,7 +20,7 @@ fn fixture() -> (World, Entity, Entity, Entity) {
                 position: DVec2::new(100.0, 0.0),
                 size: Vec2::splat(20.0),
             },
-            RecordProperties(json!({"uid":"r_one", "quantity":-3})),
+            RecordProperties(json!({"uid":"r_one", "quantity":-3}).into()),
             ChildOf(root),
             WorkspaceMember(1),
         ))
@@ -56,7 +56,8 @@ fn simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes() {
         world.get::<AreaForces>(sand).unwrap().total(),
         DVec2::new(-250.0, 0.0)
     );
-    world.get_mut::<RecordProperties>(sand).unwrap().0["quantity"] = json!(4);
+    std::sync::Arc::make_mut(&mut world.get_mut::<RecordProperties>(sand).unwrap().0)["quantity"] =
+        json!(4);
     update(&mut world);
     assert_eq!(world.get::<AreaForces>(sand).unwrap().total(), DVec2::ZERO);
     world.despawn(sand);
@@ -281,7 +282,7 @@ fn independent_sorting_steers_existing_sands_and_immunity_stops_it() {
                 position: DVec2::ZERO,
                 size: Vec2::splat(20.0),
             },
-            RecordProperties(json!({"uid":"r_two", "quantity":-3})),
+            RecordProperties(json!({"uid":"r_two", "quantity":-3}).into()),
             ChildOf(root),
             WorkspaceMember(1),
         ))
@@ -452,7 +453,7 @@ fn retained_queries_follow_late_entities_filters_pins_and_workspace_moves() {
                     position: DVec2::new(20.0, 0.0),
                     size: Vec2::splat(10.0),
                 },
-                RecordProperties(json!({"uid":"r_late", "quantity":-3})),
+                RecordProperties(json!({"uid":"r_late", "quantity":-3}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))
@@ -688,7 +689,7 @@ fn simple_attraction_tapers_and_rests_at_sorted_slots_until_sorting_changes() {
                     position: DVec2::ZERO,
                     size: Vec2::splat(20.0),
                 },
-                RecordProperties(json!({"uid":"r_two", "quantity":-3})),
+                RecordProperties(json!({"uid":"r_two", "quantity":-3}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))

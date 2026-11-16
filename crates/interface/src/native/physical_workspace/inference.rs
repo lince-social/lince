@@ -56,6 +56,7 @@ pub(super) fn target(
         .get::<crate::native::area::RecordProperties>(owner)
         .ok_or("Wait for the Record snapshot.")?
         .0
+        .as_ref()
         .clone();
     let revision = model::revision(&serde_json::json!({
         "uid":properties["uid"], "head":properties["head"], "body":properties["body"], "quantity":properties["quantity"],

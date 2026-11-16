@@ -6,7 +6,7 @@ use bevy::{
 use cell::{ClientMessage, ServerMessage};
 #[cfg(test)]
 use loro::ExportMode;
-use loro::{LoroDoc, UndoManager, VersionVector, cursor::Cursor};
+use loro::{Frontiers, LoroDoc, UndoManager, VersionVector, cursor::Cursor};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -252,7 +252,25 @@ mod tests {
             }
             tokio::time::sleep(Duration::from_millis(2)).await;
         }
-        panic!("Record bindings did not settle");
+        let states = world
+            .resource::<Bindings>()
+            .documents
+            .values()
+            .map(|document| {
+                (
+                    &document.status,
+                    document.failed,
+                    document.inflight,
+                    document.pending.len(),
+                    document.saved,
+                    document.revision,
+                    document.saving,
+                    document.joined,
+                    document.sequence.cancelled(),
+                )
+            })
+            .collect::<Vec<_>>();
+        panic!("Record bindings did not settle: {states:?}");
     }
 
     #[tokio::test]
@@ -317,17 +335,322 @@ mod tests {
         assert_eq!(engine.doc_text(&uid).await.unwrap().1, expected);
     }
 
+    async fn hold_replies(world: &mut World, uid: &str) {
+        let outgoing = world
+            .non_send::<crate::native::cell_bridge::CellBridge>()
+            .outgoing
+            .clone();
+        for index in 0..65 {
+            let ClientMessage::Subscribe { mut protein, .. } =
+                crate::native::cell_bridge::records_subscription()
+            else {
+                unreachable!()
+            };
+            protein.filter = vec![protein::Predicate::UidEq(uid.into())];
+            outgoing
+                .send(ClientMessage::Subscribe {
+                    id: format!("held-edit-reply-{index}"),
+                    protein,
+                })
+                .await
+                .unwrap();
+        }
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while world
+                .non_send::<crate::native::cell_bridge::CellBridge>()
+                .incoming
+                .len()
+                < 64
+                || outgoing.capacity() < 64
+            {
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .expect("The reply-pressure precondition was not established");
+    }
+
+    #[tokio::test]
+    async fn durable_local_backlog_drains_after_reply_pressure_without_more_interface_updates() {
+        local_backlog_after_reply_pressure(false).await;
+    }
+
+    #[tokio::test]
+    async fn full_local_sender_keeps_the_unsent_suffix_durable_and_ordered() {
+        local_backlog_after_reply_pressure(true).await;
+    }
+
+    async fn local_backlog_after_reply_pressure(fill_sender: bool) {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        pump(&mut world, |world| {
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| {
+                    document.pending.is_empty()
+                        && !document.saving
+                        && document.saved == document.revision
+                })
+        })
+        .await;
+        hold_replies(&mut world, &uid).await;
+        if fill_sender {
+            let outgoing = &world
+                .non_send::<crate::native::cell_bridge::CellBridge>()
+                .outgoing;
+            assert_eq!(outgoing.capacity(), 64);
+            for _ in 0..63 {
+                outgoing
+                    .try_send(ClientMessage::Unsubscribe {
+                        id: "unused-subscription".into(),
+                    })
+                    .unwrap();
+            }
+        }
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        let values = ["Queued é", "Queued é新", "Queued é新 👩‍💻"];
+        for (index, value) in values.iter().enumerate() {
+            world
+                .get_mut::<EditableText>(first)
+                .unwrap()
+                .editor
+                .set_text(value);
+            tokio::time::timeout(Duration::from_secs(2), async {
+                loop {
+                    update(&mut world);
+                    let document = &world.resource::<Bindings>().documents[&key];
+                    assert!(!document.failed, "{}", document.status);
+                    if !document.saving && document.saved == document.revision {
+                        assert_eq!(document.pending.len(), index + 1);
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(2)).await;
+                }
+            })
+            .await
+            .expect("The queued edit did not become independently durable");
+        }
+        let recovered = engine
+            .load_record_edit_draft(&storage_source(&key, None), &uid)
+            .await
+            .unwrap()
+            .recovered
+            .unwrap();
+        assert_eq!(recovered.pending.len(), values.len());
+        let durable = LoroDoc::new();
+        durable.import(&recovered.snapshot).unwrap();
+        assert_eq!(durable.get_text("body").to_string(), values[2]);
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 עולם");
+
+        let mut replies = Vec::new();
+        let drained = if fill_sender {
+            assert_eq!(world.resource::<Bindings>().documents[&key].inflight, 1);
+            pump(&mut world, |world| {
+                world.resource::<Bindings>().documents[&key]
+                    .pending
+                    .is_empty()
+            })
+            .await;
+            Ok(())
+        } else {
+            tokio::time::timeout(Duration::from_secs(2), async {
+                loop {
+                    let mut bridge = world.non_send_mut::<crate::native::cell_bridge::CellBridge>();
+                    while let Ok(message) = bridge.incoming.try_recv() {
+                        replies.push(message);
+                    }
+                    drop(bridge);
+                    if engine.doc_text(&uid).await.unwrap().1 == values[2] {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(2)).await;
+                }
+            })
+            .await
+        };
+        let canonical = engine.doc_text(&uid).await.unwrap().1;
+        let committed = store::sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM record_change_receipt WHERE record_uid=?",
+        )
+        .bind(&uid)
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+        assert!(
+            drained.is_ok(),
+            "Durable queued edits still require a UI acknowledgement between saves: canonical={canonical:?}, committed={committed}",
+        );
+        for request in &recovered.pending {
+            assert_eq!(
+                store::sqlx::query_scalar::<_, i64>(
+                    "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid=?",
+                )
+                .bind(&request.id)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap(),
+                1,
+            );
+        }
+        for message in replies {
+            receive(&mut world, Source::Local, message);
+        }
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.pending.is_empty() && !document.saving && document.saved == document.revision
+        })
+        .await;
+        assert_eq!(
+            world.get::<EditableText>(second).unwrap().value(),
+            values[2]
+        );
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, values[2]);
+    }
+
+    #[tokio::test]
+    async fn failed_local_edit_stops_admitted_dependents_until_the_field_is_corrected() {
+        let (mut world, engine, uid, first, _) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let key = key(&record);
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            document.pending.is_empty() && !document.saving && document.saved == document.revision
+        })
+        .await;
+        hold_replies(&mut world, &uid).await;
+        let [failed, dependent, corrected] = std::array::from_fn(|_| nucleus::new_uid("op"));
+        let request = |id: &str, value: &str| engine::record_change::Request {
+            id: id.into(),
+            record_uid: uid.clone(),
+            mutation: engine::record_change::Mutation::Quantity {
+                value: value.into(),
+            },
+        };
+        submit(&mut world, &record, request(&failed, "incomplete")).unwrap();
+        submit(&mut world, &record, request(&dependent, "7")).unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                update(&mut world);
+                let document = &world.resource::<Bindings>().documents[&key];
+                assert!(!document.failed, "{}", document.status);
+                if !document.saving && document.saved == document.revision {
+                    assert_eq!(document.inflight, 2);
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        })
+        .await
+        .unwrap();
+        let ClientMessage::Subscribe { protein, .. } =
+            crate::native::cell_bridge::records_subscription()
+        else {
+            unreachable!()
+        };
+        world
+            .non_send::<crate::native::cell_bridge::CellBridge>()
+            .outgoing
+            .send(ClientMessage::Unsubscribe {
+                id: "held-edit-reply-0".into(),
+            })
+            .await
+            .unwrap();
+        world
+            .non_send::<crate::native::cell_bridge::CellBridge>()
+            .outgoing
+            .send(ClientMessage::Subscribe {
+                id: "backlog-barrier".into(),
+                protein,
+            })
+            .await
+            .unwrap();
+        let mut replies = Vec::new();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                while let Ok(message) = world.non_send_mut::<crate::native::cell_bridge::CellBridge>().incoming.try_recv() {
+                    let barrier = matches!(&message, ServerMessage::Snapshot { id, .. } if id == "backlog-barrier");
+                    replies.push(message);
+                    if barrier { return; }
+                }
+                tokio::time::sleep(Duration::from_millis(2)).await;
+            }
+        }).await.unwrap();
+        assert!(
+            replies
+                .iter()
+                .any(|reply| matches!(reply, ServerMessage::Error { id, .. } if id == &failed))
+        );
+        assert_eq!(
+            store::sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid IN (?,?)",
+            )
+            .bind(&failed)
+            .bind(&dependent)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap(),
+            0
+        );
+        for reply in replies {
+            receive(&mut world, Source::Local, reply);
+        }
+        update(&mut world);
+        assert!(world.resource::<Bindings>().documents[&key].failed);
+        assert_eq!(
+            world.resource::<Bindings>().documents[&key].pending.len(),
+            2
+        );
+        submit(&mut world, &record, request(&corrected, "9")).unwrap();
+        pump(&mut world, |world| {
+            let document = &world.resource::<Bindings>().documents[&key];
+            !document.failed
+                && document.pending.is_empty()
+                && !document.saving
+                && document.saved == document.revision
+        })
+        .await;
+        for id in [&dependent, &corrected] {
+            assert_eq!(
+                store::sqlx::query_scalar::<_, i64>(
+                    "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid=?",
+                )
+                .bind(id)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap(),
+                1
+            );
+        }
+        assert_eq!(
+            store::sqlx::query_scalar::<_, String>(
+                "SELECT quantity_mantissa FROM record WHERE uid=?",
+            )
+            .bind(&uid)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap(),
+            "9"
+        );
+    }
+
     #[tokio::test]
     async fn disconnect_during_recovery_keeps_the_draft_for_the_next_connection() {
-        recovery_after_disconnect(false).await;
+        recovery_after_disconnect(false, false).await;
     }
 
     #[tokio::test]
     async fn closing_all_views_during_disconnect_keeps_the_draft_for_the_next_connection() {
-        recovery_after_disconnect(true).await;
+        recovery_after_disconnect(true, false).await;
     }
 
-    async fn recovery_after_disconnect(close_views: bool) {
+    #[tokio::test]
+    async fn submitting_after_connection_replacement_preserves_the_old_pending_prefix() {
+        recovery_after_disconnect(false, true).await;
+    }
+
+    async fn recovery_after_disconnect(close_views: bool, submit_on_replacement: bool) {
         let (mut world, engine, uid, first, second) = fixture().await;
         pump(&mut world, |world| {
             world
@@ -385,6 +708,19 @@ mod tests {
             runtime,
             crate::native::wake::WakeSignal::new(|| {}),
         ));
+        let replacement_request = nucleus::new_uid("op");
+        if submit_on_replacement {
+            submit(
+                &mut world,
+                &record,
+                engine::record_change::Request {
+                    id: replacement_request.clone(),
+                    record_uid: uid.clone(),
+                    mutation: engine::record_change::Mutation::Quantity { value: "9".into() },
+                },
+            )
+            .unwrap();
+        }
         pump(&mut world, |world| {
             let document = &world.resource::<Bindings>().documents[&key];
             document.pending.is_empty() && !document.saving && document.saved == document.revision
@@ -401,6 +737,28 @@ mod tests {
             .unwrap(),
             1,
         );
+        if submit_on_replacement {
+            assert_eq!(
+                store::sqlx::query_scalar::<_, i64>(
+                    "SELECT COUNT(*) FROM record_change_receipt WHERE change_uid=?",
+                )
+                .bind(&replacement_request)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap(),
+                1
+            );
+            assert_eq!(
+                store::sqlx::query_scalar::<_, String>(
+                    "SELECT quantity_mantissa FROM record WHERE uid=?",
+                )
+                .bind(&uid)
+                .fetch_one(&engine.store.pool)
+                .await
+                .unwrap(),
+                "9"
+            );
+        }
     }
 
     #[tokio::test]
@@ -894,11 +1252,7 @@ mod tests {
         let first_id = world.resource::<Bindings>().documents[&key].pending[0]
             .id
             .clone();
-        assert!(
-            world.resource::<Bindings>().documents[&key]
-                .inflight
-                .is_none()
-        );
+        assert_eq!(world.resource::<Bindings>().documents[&key].inflight, 0);
         let deadline = Instant::now() + Duration::from_secs(5);
         while world.resource::<Bindings>().incoming.is_empty() {
             assert!(Instant::now() < deadline);
@@ -923,11 +1277,7 @@ mod tests {
             .editor
             .set_text("AlphaBeta");
         update(&mut world);
-        assert!(
-            world.resource::<Bindings>().documents[&key]
-                .inflight
-                .is_none()
-        );
+        assert_eq!(world.resource::<Bindings>().documents[&key].inflight, 0);
         assert_eq!(
             world.resource::<Bindings>().documents[&key].pending[0].id,
             first_id
@@ -941,7 +1291,8 @@ mod tests {
             let bindings = world.resource::<Bindings>();
             let document = &bindings.documents[&key];
             assert!(document.saved < document.revision && document.saving);
-            assert_eq!(document.inflight.as_ref().unwrap().0, first_id);
+            assert_eq!(document.inflight, 1);
+            assert_eq!(document.pending.front().unwrap().id, first_id);
             assert_eq!(document.pending.len(), 2);
         }
         match commands.try_recv().unwrap() {
@@ -1191,7 +1542,18 @@ mod tests {
     }
 }
 
-type Key = (String, String);
+type Key = (Source, String);
+
+const PRESENCE_INTERVAL: Duration = Duration::from_millis(150);
+const PRESENCE_KEEPALIVE: Duration = Duration::from_secs(5);
+
+struct Presence {
+    entity: Entity,
+    selection: [usize; 2],
+    version: Frontiers,
+    value: (String, String, String),
+    sent_at: Instant,
+}
 
 #[derive(Component, Clone)]
 #[require(crate::native::sand::Unsaved(false))]
@@ -1199,13 +1561,17 @@ pub struct TextBinding {
     pub record: RecordBinding,
     pub property: String,
     pub status: Option<Entity>,
-    observed: String,
-    confirmed: String,
+    observed: Arc<str>,
+    confirmed: Arc<str>,
 }
 
 impl TextBinding {
     pub(crate) fn unsaved(&self, value: &str) -> bool {
-        value != self.confirmed
+        value != self.confirmed.as_ref()
+    }
+
+    pub(crate) fn editor_unsaved(&self, text: &EditableText) -> bool {
+        text.value() != self.confirmed.as_ref()
     }
 }
 
@@ -1242,7 +1608,7 @@ pub fn observe_edit(world: &World, entity: Entity) -> Option<EditObservation> {
             .collect(),
         saving: document.saving,
         writable: document.joined && document.writable.contains(&binding.property),
-        applied: binding.observed == value
+        applied: binding.observed.as_ref() == value
             && document.doc.get_text(binding.property.as_str()).to_string() == value,
         unsaved: binding.unsaved(&value),
         warning: crate::native::save_feedback::warning(world, entity),
@@ -1317,12 +1683,16 @@ pub(crate) fn pending(world: &World, record: &RecordBinding) -> bool {
 struct Document {
     doc: LoroDoc,
     undo: UndoManager,
+    text_version: Frontiers,
+    text: HashMap<String, Arc<str>>,
     source: Source,
     principal: Option<String>,
     sender: Option<crate::native::cell_bridge::Sender>,
     pending: VecDeque<Arc<engine::record_change::Request>>,
     journal: journal::Journal,
-    inflight: Option<(String, Instant)>,
+    inflight: usize,
+    dispatched: Option<Instant>,
+    sequence: crate::native::cell_bridge::EditSequence,
     loaded: bool,
     joined: bool,
     joining: Option<Instant>,
@@ -1335,8 +1705,7 @@ struct Document {
     failed: bool,
     incoming: VecDeque<ServerMessage>,
     cursors: Vec<cell::CollabCursor>,
-    presence_at: Option<Instant>,
-    presence_value: Option<(String, String, String)>,
+    presence: Option<Presence>,
     touched: Instant,
 }
 
@@ -1346,6 +1715,8 @@ impl Document {
         let mut undo = UndoManager::new(&doc);
         undo.set_merge_interval(500);
         Self {
+            text_version: doc.state_frontiers(),
+            text: HashMap::new(),
             doc,
             undo,
             source,
@@ -1353,7 +1724,9 @@ impl Document {
             sender: None,
             pending: VecDeque::new(),
             journal: journal::Journal::default(),
-            inflight: None,
+            inflight: 0,
+            dispatched: None,
+            sequence: Default::default(),
             loaded: false,
             joined: false,
             joining: None,
@@ -1366,19 +1739,120 @@ impl Document {
             failed: false,
             incoming: VecDeque::new(),
             cursors: Vec::new(),
-            presence_at: None,
-            presence_value: None,
+            presence: None,
             touched: Instant::now(),
         }
     }
 
-    fn dispatchable(&self, needs_text: bool) -> bool {
-        (self.joined || !needs_text)
-            && !self.failed
-            && self
-                .inflight
-                .as_ref()
-                .is_none_or(|(_, at)| at.elapsed().as_secs() >= 5)
+    fn refresh_text(&mut self) {
+        let version = self.doc.state_frontiers();
+        if self.text_version != version {
+            self.text.clear();
+            self.text_version = version;
+        }
+    }
+
+    fn text(&mut self, property: &str) -> Arc<str> {
+        if let Some(value) = self.text.get(property) {
+            return value.clone();
+        }
+        let value: Arc<str> = self.doc.get_text(property).to_string().into();
+        self.text.insert(property.into(), value.clone());
+        value
+    }
+
+    fn reset_dispatch(&mut self) {
+        if self.inflight != 0 || self.sequence.cancelled() {
+            self.sequence.cancel();
+            self.sequence = Default::default();
+        }
+        self.inflight = 0;
+        self.dispatched = None;
+    }
+
+    fn replace_sender(&mut self, sender: Option<crate::native::cell_bridge::Sender>) {
+        let same = match (&self.sender, &sender) {
+            (Some(previous), Some(next)) => previous.same_channel(next),
+            (None, None) => true,
+            _ => false,
+        };
+        if !same {
+            self.reset_dispatch();
+            self.joined = false;
+            self.joining = None;
+        }
+        self.sender = sender;
+    }
+
+    fn dispatch(
+        &mut self,
+        needs_text: bool,
+        draft: Option<&engine::record_edit::Write>,
+    ) -> Vec<tokio::sync::oneshot::Sender<bool>> {
+        let mut gates = Vec::new();
+        if (!self.joined && needs_text) || self.failed || self.sequence.cancelled() {
+            return gates;
+        }
+        let Some(sender) = &self.sender else {
+            return gates;
+        };
+        let previous_inflight = self.inflight;
+        if sender.ordered() {
+            for request in self.pending.iter().skip(self.inflight) {
+                let durable = self
+                    .journal
+                    .metadata
+                    .as_ref()
+                    .is_some_and(|metadata| metadata.pending.contains(&request.id));
+                let (gate, ready) = if durable {
+                    (None, None)
+                } else if draft
+                    .is_some_and(|draft| draft.pending.iter().any(|item| item.id == request.id))
+                {
+                    let (gate, ready) = tokio::sync::oneshot::channel();
+                    (Some(gate), Some(ready))
+                } else {
+                    break;
+                };
+                if !sender.try_send_edit(request, &self.sequence, ready) {
+                    break;
+                }
+                self.inflight += 1;
+                if let Some(gate) = gate {
+                    gates.push(gate);
+                }
+            }
+        } else if self.inflight == 0
+            || self
+                .dispatched
+                .is_some_and(|at| at.elapsed().as_secs() >= 5)
+        {
+            if let Some(request) = self.pending.front()
+                && self
+                    .journal
+                    .metadata
+                    .as_ref()
+                    .is_some_and(|metadata| metadata.pending.contains(&request.id))
+                && sender
+                    .try_send(ClientMessage::Act {
+                        id: request.id.clone(),
+                        action: engine::actions::Action::ChangeRecord {
+                            request: request.as_ref().clone(),
+                        },
+                    })
+                    .is_ok()
+            {
+                self.inflight = 1;
+                self.dispatched = Some(Instant::now());
+            }
+        }
+        if self.inflight > previous_inflight && gates.is_empty() {
+            self.status = match self.source {
+                Source::Local => "Saved locally · syncing…".into(),
+                Source::Organ(_) => "Waiting for origin…".into(),
+            };
+        }
+        gates
     }
 
     fn queue(&mut self, uid: &str, before: &VersionVector) -> Result<(), String> {
@@ -1416,8 +1890,8 @@ struct Bindings {
     documents: HashMap<Key, Document>,
     sender: tokio::sync::mpsc::UnboundedSender<StorageEvent>,
     incoming: tokio::sync::mpsc::UnboundedReceiver<StorageEvent>,
-    wake_at: Option<Instant>,
-    principals: HashMap<String, String>,
+    wake: crate::host::WakeDeadline,
+    principals: HashMap<Source, String>,
     cleanup: Option<journal::Cleanup>,
 }
 
@@ -1428,7 +1902,7 @@ impl Default for Bindings {
             documents: HashMap::new(),
             sender,
             incoming,
-            wake_at: None,
+            wake: Default::default(),
             principals: HashMap::new(),
             cleanup: None,
         }
@@ -1516,17 +1990,16 @@ fn gate(
 }
 
 fn key(record: &RecordBinding) -> Key {
-    (
-        serde_json::to_string(&record.source).expect("Record source"),
-        record.uid.clone(),
-    )
+    (record.source.clone(), record.uid.clone())
 }
 
 fn storage_source(key: &Key, principal: Option<&str>) -> String {
-    principal.map_or_else(
-        || key.0.clone(),
-        |principal| format!("{}\n{principal}", key.0),
-    )
+    let mut source = serde_json::to_string(&key.0).expect("Record source");
+    if let Some(principal) = principal {
+        source.push('\n');
+        source.push_str(principal);
+    }
+    source
 }
 
 pub fn attach(
@@ -1542,10 +2015,11 @@ pub fn attach(
     if let Some(status) = status {
         world.entity_mut(status).insert(BindingStatus);
     }
-    let observed = world
+    let observed: Arc<str> = world
         .get::<EditableText>(entity)
         .map(|text| text.value().to_string())
-        .unwrap_or_default();
+        .unwrap_or_default()
+        .into();
     world.entity_mut(entity).insert((
         TextBinding {
             record,
@@ -1567,13 +2041,10 @@ pub fn receive(
     let Some(mut bindings) = world.get_resource_mut::<Bindings>() else {
         return;
     };
-    let source_key = serde_json::to_string(&source).expect("Record source");
     if let ServerMessage::SessionAuthenticated { person, .. } = &message {
-        bindings
-            .principals
-            .insert(source_key.clone(), person.clone());
+        bindings.principals.insert(source.clone(), person.clone());
         for ((origin, _), document) in &mut bindings.documents {
-            if origin == &source_key && document.principal.as_deref() != Some(person) {
+            if origin == &source && document.principal.as_deref() != Some(person) {
                 fail(
                     document,
                     "The login changed. Pending edits belong to the previous login",
@@ -1585,14 +2056,14 @@ pub fn receive(
         return;
     }
     for ((origin, uid), document) in &mut bindings.documents {
-        if origin != &source_key {
+        if origin != &source {
             continue;
         }
         if matches!(&message, ServerMessage::Error { id, .. } if id == "connection") {
             document.sender = None;
             document.joined = false;
             document.joining = None;
-            document.inflight = None;
+            document.reset_dispatch();
             document.status = "Saved locally · waiting for connection…".into();
             continue;
         }
@@ -1608,9 +2079,10 @@ pub fn receive(
             | ServerMessage::CollabCursors { record_uid, .. } => record_uid == uid,
             ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => {
                 document
-                    .inflight
-                    .as_ref()
-                    .is_some_and(|(pending, _)| pending == id)
+                    .pending
+                    .iter()
+                    .take(document.inflight)
+                    .any(|pending| &pending.id == id)
                     || document.recovery_join.as_ref().map_or_else(
                         || id == &format!("binding-join-{uid}"),
                         |expected| id == expected,
@@ -1646,6 +2118,7 @@ fn local_messages(
 }
 
 fn fail(document: &mut Document, error: impl std::fmt::Display) {
+    document.sequence.cancel();
     document.failed = true;
     document.status = format!("Not saved: {error}. Your draft is kept.");
 }
@@ -1738,10 +2211,7 @@ pub(crate) fn submit(
     if document.failed {
         let correcting = document.principal == principal
             && document.pending.front().is_some_and(|previous| {
-                document
-                    .inflight
-                    .as_ref()
-                    .is_some_and(|(id, _)| id == &previous.id)
+                document.inflight != 0
                     && match (&previous.mutation, &request.mutation) {
                         (engine::record_change::Mutation::Text { .. }, _) => false,
                         (
@@ -1757,13 +2227,13 @@ pub(crate) fn submit(
             return Err(document.status.clone());
         }
         document.pending.pop_front();
-        document.inflight = None;
+        document.reset_dispatch();
         document.failed = false;
     }
     if document.pending.len() >= 512 {
         return Err("Wait for pending edits to sync".into());
     }
-    document.sender = channel;
+    document.replace_sender(channel);
     nucleus::performance::Operation::new(&request.id).mark("record-edit-queued");
     document.pending.push_back(Arc::new(request));
     document.revision += 1;
@@ -1860,7 +2330,76 @@ fn set_text(world: &mut World, entity: Entity, value: &str, positions: Option<(u
     });
 }
 
+fn publish_presence(
+    world: &World,
+    document: &mut Document,
+    entity: Entity,
+    binding: &TextBinding,
+) -> Option<Instant> {
+    let text = world.get::<EditableText>(entity)?;
+    let selected = text.editor.raw_selection();
+    let indices = [selected.anchor().index(), selected.focus().index()];
+    let now = Instant::now();
+    if let Some(previous) = &document.presence {
+        if previous.entity == entity
+            && previous.selection == indices
+            && previous.version == document.text_version
+            && previous.value.0 == binding.property
+            && now < previous.sent_at + PRESENCE_KEEPALIVE
+        {
+            return Some(previous.sent_at + PRESENCE_KEEPALIVE);
+        }
+        if now < previous.sent_at + PRESENCE_INTERVAL {
+            return Some(previous.sent_at + PRESENCE_INTERVAL);
+        }
+    }
+    let (Some(anchor), Some(focus)) = selection(document, binding, text) else {
+        return Some(now + PRESENCE_INTERVAL);
+    };
+    let value = (
+        binding.property.clone(),
+        B64.encode(anchor.encode()),
+        B64.encode(focus.encode()),
+    );
+    let publish = document.presence.as_ref().is_none_or(|previous| {
+        previous.value != value || now >= previous.sent_at + PRESENCE_KEEPALIVE
+    });
+    if publish
+        && !document.sender.as_ref().is_some_and(|sender| {
+            sender
+                .try_send(ClientMessage::CollabPresence {
+                    record_uid: binding.record.uid.clone(),
+                    property: value.0.clone(),
+                    anchor: value.1.clone(),
+                    focus: value.2.clone(),
+                })
+                .is_ok()
+        })
+    {
+        return Some(now + PRESENCE_INTERVAL);
+    }
+    let sent_at = if publish {
+        now
+    } else {
+        document.presence.as_ref()?.sent_at
+    };
+    document.presence = Some(Presence {
+        entity,
+        selection: indices,
+        version: document.text_version.clone(),
+        value,
+        sent_at,
+    });
+    Some(sent_at + PRESENCE_KEEPALIVE)
+}
+
 fn update(world: &mut World) {
+    world
+        .run_system_cached(update_bindings)
+        .expect("update Record bindings");
+}
+
+fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static TextBinding)>) {
     let _timing = performance::Span::new(Stage::RecordBindingUpdate);
     let Some(mut bindings) = world.remove_resource::<Bindings>() else {
         return;
@@ -1876,26 +2415,25 @@ fn update(world: &mut World) {
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
+    let mut deadline: Option<Instant> = None;
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
-    let mut views: Vec<_> = world
-        .query::<(Entity, &TextBinding)>()
+    let mut views: Vec<_> = views
         .iter(world)
         .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
-        .map(|(entity, binding)| (entity, binding.clone()))
+        .map(|(entity, binding)| (entity, binding.clone(), key(&binding.record)))
         .collect();
-    views.sort_by_key(|(entity, _)| focus != Some(*entity));
-    for (entity, binding) in &views {
+    views.sort_by_key(|(entity, _, _)| focus != Some(*entity));
+    for (entity, binding, key) in &views {
         let Some(engine) = crate::native::practice_cells::engine(world, &binding.record.source)
         else {
             continue;
         };
-        let key = key(&binding.record);
         if focus != Some(*entity) && !visible(world, *entity) {
             continue;
         }
-        if !bindings.documents.contains_key(&key) {
+        if !bindings.documents.contains_key(key) {
             if bindings.documents.len() >= 64 {
                 if focus != Some(*entity) || bindings.cleanup.is_some() {
                     continue;
@@ -1924,7 +2462,7 @@ fn update(world: &mut World) {
                 key.clone(),
                 Document::new(binding.record.source.clone(), principal),
             );
-            let instance = bindings.documents[&key].journal.instance.clone();
+            let instance = bindings.documents[key].journal.instance.clone();
             let engine = engine.clone();
             let sender = bindings.sender.clone();
             let wake = wake.clone();
@@ -1940,7 +2478,7 @@ fn update(world: &mut World) {
                 }
             });
         }
-        let document = bindings.documents.get_mut(&key).unwrap();
+        let document = bindings.documents.get_mut(key).unwrap();
         document.touched = Instant::now();
         if document
             .sender
@@ -1950,7 +2488,7 @@ fn update(world: &mut World) {
             document.sender = crate::native::protein_area::editor_sender(world, &binding.record);
             document.joined = false;
             document.joining = None;
-            document.inflight = None;
+            document.reset_dispatch();
         }
     }
     while let Ok(event) = bindings.incoming.try_recv() {
@@ -1978,7 +2516,10 @@ fn update(world: &mut World) {
                         Ok(metadata) => {
                             if performance::enabled() {
                                 for id in &metadata.pending {
-                                    if document.journal.metadata.as_ref()
+                                    if document
+                                        .journal
+                                        .metadata
+                                        .as_ref()
                                         .is_none_or(|previous| !previous.pending.contains(id))
                                     {
                                         nucleus::performance::Operation::new(id)
@@ -2009,6 +2550,13 @@ fn update(world: &mut World) {
             (modifier && keys.just_pressed(KeyCode::KeyZ), redo)
         })
         .unwrap_or_default();
+    let mut members_by_document: HashMap<Key, Vec<(Entity, TextBinding)>> = HashMap::new();
+    for (entity, binding, key) in views {
+        members_by_document
+            .entry(key)
+            .or_default()
+            .push((entity, binding));
+    }
     for (key, document) in &mut bindings.documents {
         let Some(engine) = crate::native::practice_cells::engine(world, &document.source) else {
             continue;
@@ -2028,12 +2576,9 @@ fn update(world: &mut World) {
             );
             document.joined = false;
             document.joining = None;
-            document.inflight = None;
+            document.reset_dispatch();
         }
-        let members: Vec<_> = views
-            .iter()
-            .filter(|(_, binding)| key == &self::key(&binding.record))
-            .collect();
+        let members = members_by_document.get(key).map_or(&[][..], Vec::as_slice);
         let needs_text = !members.is_empty()
             || document.pending.iter().any(|request| {
                 matches!(
@@ -2048,12 +2593,30 @@ fn update(world: &mut World) {
         });
         let mut anchors = HashMap::new();
         if document.joined && !composing {
-            for (entity, binding) in &members {
+            let preserve_selection = document.text_version != document.doc.state_frontiers()
+                || document.incoming.iter().any(|message| {
+                    matches!(
+                        message,
+                        ServerMessage::CollabState { .. } | ServerMessage::CollabChange { .. }
+                    )
+                })
+                || (undo.0 && members.iter().any(|(entity, _)| focus == Some(*entity)))
+                || members.iter().any(|(entity, binding)| {
+                    world.get::<EditableText>(*entity).is_some_and(|text| {
+                        let value = text.value();
+                        value != binding.observed.as_ref()
+                            || document
+                                .text
+                                .get(&binding.property)
+                                .is_none_or(|published| value != published.as_ref())
+                    })
+                });
+            for (entity, binding) in members {
                 let Some(text) = world.get::<EditableText>(*entity) else {
                     continue;
                 };
                 let current = text.value();
-                let changed = current != binding.observed.as_str()
+                let changed = current != binding.observed.as_ref()
                     && !document.failed
                     && document.writable.contains(&binding.property);
                 let value = changed.then(|| current.to_string());
@@ -2069,10 +2632,12 @@ fn update(world: &mut World) {
                         fail(document, error);
                     }
                 }
-                let text = world.get::<EditableText>(*entity).unwrap();
-                anchors.insert(*entity, selection(document, binding, text));
+                if preserve_selection {
+                    let text = world.get::<EditableText>(*entity).unwrap();
+                    anchors.insert(*entity, selection(document, binding, text));
+                }
                 if let Some(value) = value {
-                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value;
+                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value.into();
                 }
             }
             if undo.0
@@ -2128,7 +2693,7 @@ fn update(world: &mut World) {
                             nucleus::performance::Operation::new(&id)
                                 .mark("record-edit-ack-observed");
                             document.pending.pop_front();
-                            document.inflight = None;
+                            document.inflight = document.inflight.saturating_sub(1);
                             document.revision += 1;
                             document.status = if document.pending.is_empty() {
                                 "Saved".into()
@@ -2142,7 +2707,7 @@ fn update(world: &mut World) {
                     {
                         document.joined = false;
                         document.joining = None;
-                        document.inflight = None;
+                        document.reset_dispatch();
                         document.status = format!("Disconnected: {message}. Your draft is kept.");
                     }
                     ServerMessage::Error { message, .. } => fail(document, message),
@@ -2172,6 +2737,15 @@ fn update(world: &mut World) {
                 document.joining = Some(Instant::now());
             }
         }
+        if needs_text && document.loaded && !document.joined && !document.failed {
+            let now = Instant::now();
+            let retry = document
+                .joining
+                .map(|started| started + Duration::from_secs(5))
+                .filter(|at| *at > now)
+                .unwrap_or(now + PRESENCE_INTERVAL);
+            deadline = Some(deadline.map_or(retry, |previous| previous.min(retry)));
+        }
         if document.loaded
             && document.revision > document.saved
             && !document.saving
@@ -2183,9 +2757,15 @@ fn update(world: &mut World) {
             match draft {
                 Ok((draft, cursor)) => {
                     let operations = if performance::enabled() {
-                        draft.pending.iter()
-                            .filter(|request| draft.expected.as_ref()
-                                .is_none_or(|previous| !previous.pending.contains(&request.id)))
+                        draft
+                            .pending
+                            .iter()
+                            .filter(|request| {
+                                draft
+                                    .expected
+                                    .as_ref()
+                                    .is_none_or(|previous| !previous.pending.contains(&request.id))
+                            })
                             .map(|request| nucleus::performance::Operation::new(&request.id))
                             .collect::<Vec<_>>()
                     } else {
@@ -2194,34 +2774,7 @@ fn update(world: &mut World) {
                     for operation in &operations {
                         operation.mark("record-edit-draft-queued");
                     }
-                    let durable = if document.dispatchable(needs_text)
-                        && let Some(request) = document.pending.front()
-                        && document
-                            .journal
-                            .metadata
-                            .as_ref()
-                            .is_none_or(|metadata| !metadata.pending.contains(&request.id))
-                        && draft.pending.iter().any(|pending| pending.id == request.id)
-                        && let Some(outgoing) = &document.sender
-                    {
-                        let (durable, ready) = tokio::sync::oneshot::channel();
-                        if outgoing.try_send_after(
-                            ClientMessage::Act {
-                                id: request.id.clone(),
-                                action: engine::actions::Action::ChangeRecord {
-                                    request: request.as_ref().clone(),
-                                },
-                            },
-                            ready,
-                        ) {
-                            document.inflight = Some((request.id.clone(), Instant::now()));
-                            Some(durable)
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    };
+                    let durable = document.dispatch(needs_text, Some(&draft));
                     let clearing = document.pending.is_empty();
                     document.saving = true;
                     let sender = bindings.sender.clone();
@@ -2256,8 +2809,8 @@ fn update(world: &mut World) {
                         let succeeded = result.is_ok();
                         let _ = sender
                             .send(StorageEvent::Saved(key, instance, revision, cursor, result));
-                        if let Some(durable) = durable {
-                            let _ = durable.send(succeeded);
+                        for gate in durable {
+                            let _ = gate.send(succeeded);
                         }
                         if let Some(wake) = wake {
                             wake.ring();
@@ -2270,40 +2823,16 @@ fn update(world: &mut World) {
                 }
             }
         }
-        if document.dispatchable(needs_text) {
-            if let Some(request) = document.pending.front() {
-                if document
-                    .journal
-                    .metadata
-                    .as_ref()
-                    .is_some_and(|metadata| metadata.pending.contains(&request.id))
-                    && document.sender.as_ref().is_some_and(|sender| {
-                        sender
-                            .try_send(ClientMessage::Act {
-                                id: request.id.clone(),
-                                action: engine::actions::Action::ChangeRecord {
-                                    request: request.as_ref().clone(),
-                                },
-                            })
-                            .is_ok()
-                    })
-                {
-                    document.inflight = Some((request.id.clone(), Instant::now()));
-                    document.status = match document.source {
-                        Source::Local => "Saved locally · syncing…".into(),
-                        Source::Organ(_) => "Waiting for origin…".into(),
-                    };
-                }
-            }
-        }
+        document.dispatch(needs_text, None);
+        document.refresh_text();
         let publication = performance::Span::new(Stage::RecordBindingPublish);
-        for (entity, binding) in &members {
+        for (entity, binding) in members {
             if document.joined && !composing && !document.failed {
                 performance::count(Count::RecordBindingViews);
-                let value = document.doc.get_text(binding.property.as_str()).to_string();
+                let value = document.text(&binding.property);
                 if world
                     .get::<EditableText>(*entity)
-                    .is_some_and(|text| text.value() != value.as_str())
+                    .is_some_and(|text| text.value() != value.as_ref())
                 {
                     performance::count(Count::RecordBindingViewChanged);
                     let positions = anchors.get(entity).and_then(|(anchor, focus)| {
@@ -2342,50 +2871,21 @@ fn update(world: &mut World) {
                 }
             }
             if document.joined && document.pending.is_empty() && binding.property == "head" {
+                let confirmed = document.text("head");
                 if let Some(mut record) =
                     world.get_mut::<crate::native::record_view::RecordEditor>(*entity)
                 {
-                    let confirmed = document.doc.get_text("head").to_string();
-                    if record.confirmed != confirmed {
-                        record.confirmed = confirmed;
+                    if record.confirmed != confirmed.as_ref() {
+                        record.confirmed = confirmed.to_string();
                     }
                 }
             }
             if focus == Some(*entity)
                 && document.joined
                 && !composing
-                && document
-                    .presence_at
-                    .is_none_or(|at| at.elapsed() >= Duration::from_millis(150))
+                && let Some(at) = publish_presence(world, document, *entity, binding)
             {
-                let text = world.get::<EditableText>(*entity).unwrap();
-                let selected = selection(document, binding, text);
-                if let (Some(anchor), Some(focus)) = selected {
-                    let payload = (
-                        binding.property.clone(),
-                        B64.encode(anchor.encode()),
-                        B64.encode(focus.encode()),
-                    );
-                    let changed = document.presence_value.as_ref() != Some(&payload)
-                        || document
-                            .presence_at
-                            .is_none_or(|at| at.elapsed().as_secs() >= 5);
-                    if changed
-                        && document.sender.as_ref().is_some_and(|sender| {
-                            sender
-                                .try_send(ClientMessage::CollabPresence {
-                                    record_uid: key.1.clone(),
-                                    property: payload.0.clone(),
-                                    anchor: payload.1.clone(),
-                                    focus: payload.2.clone(),
-                                })
-                                .is_ok()
-                        })
-                    {
-                        document.presence_at = Some(Instant::now());
-                        document.presence_value = Some(payload);
-                    }
-                }
+                deadline = Some(deadline.map_or(at, |previous| previous.min(at)));
             }
         }
         drop(publication);
@@ -2410,23 +2910,19 @@ fn update(world: &mut World) {
     if !retired.is_empty() {
         bindings.cleanup = Some(journal::Cleanup::start(retired, wake.clone()));
     }
-    let active = bindings
+    let retrying = bindings
         .documents
         .values()
-        .any(|document| !document.pending.is_empty() || document.joining.is_some())
-        || focus.is_some_and(|entity| world.get::<TextBinding>(entity).is_some());
-    if active
-        && bindings
-            .wake_at
-            .is_none_or(|at| at.elapsed() >= Duration::from_millis(150))
-    {
-        if let Some(wake) = wake {
-            bindings.wake_at = Some(Instant::now());
-            tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_millis(150)).await;
-                wake.ring();
-            });
-        }
+        .any(|document| !document.failed && !document.pending.is_empty());
+    let now = Instant::now();
+    if retrying {
+        let retry = now + PRESENCE_INTERVAL;
+        deadline = Some(deadline.map_or(retry, |previous| previous.min(retry)));
+    }
+    if let Some((deadline, wake)) = deadline.zip(wake) {
+        bindings.wake.at(&wake, deadline);
+    } else {
+        bindings.wake.cancel();
     }
     world.insert_resource(bindings);
 }
@@ -2434,9 +2930,12 @@ fn update(world: &mut World) {
 #[derive(Component)]
 struct RemoteCursor(String);
 
-fn paint_cursors(world: &mut World) {
-    let mut old: HashMap<_, _> = world
-        .query::<(Entity, &RemoteCursor)>()
+fn paint_cursors(
+    world: &mut World,
+    old: &mut QueryState<(Entity, &'static RemoteCursor)>,
+    editors: &mut QueryState<(Entity, &'static TextBinding, &'static EditableText)>,
+) {
+    let mut old: HashMap<_, _> = old
         .iter(world)
         .map(|(entity, cursor)| (cursor.0.clone(), entity))
         .collect();
@@ -2444,10 +2943,7 @@ fn paint_cursors(world: &mut World) {
         return;
     };
     let mut cursors = Vec::new();
-    for (entity, binding, text) in world
-        .query::<(Entity, &TextBinding, &EditableText)>()
-        .iter(world)
-    {
+    for (entity, binding, text) in editors.iter(world) {
         if crate::native::laboratory::blocked(world, entity) {
             continue;
         }
@@ -2465,11 +2961,12 @@ fn paint_cursors(world: &mut World) {
                 .and_then(|cursor| document.doc.get_cursor_pos(&cursor).ok())
                 .map(|position| position.current.pos);
             if let Some(position) = position {
-                let value = text.value().to_string();
-                let byte = value
-                    .char_indices()
-                    .nth(position)
-                    .map_or(value.len(), |(index, _)| index);
+                let byte = text
+                    .value()
+                    .chars()
+                    .take(position)
+                    .map(char::len_utf8)
+                    .sum();
                 cursors.push((
                     entity,
                     byte,
@@ -2484,20 +2981,33 @@ fn paint_cursors(world: &mut World) {
         }
     }
     for (entity, byte, name, session) in cursors {
-        let Some(mut fonts) = world.remove_resource::<FontCx>() else {
-            break;
-        };
-        let Some(mut layout) = world.remove_resource::<LayoutCx>() else {
+        let text = world.get::<EditableText>(entity).unwrap();
+        let geometry = if let Some(layout) = text.editor.try_layout() {
+            let affinity = if byte == text.value().into_iter().map(str::len).sum::<usize>() {
+                parley::Affinity::Upstream
+            } else {
+                parley::Affinity::Downstream
+            };
+            text.editor.cursor_geometry(2.0).map(|_| {
+                parley::Cursor::from_byte_index(layout, byte, affinity).geometry(layout, 2.0)
+            })
+        } else {
+            let Some(mut fonts) = world.remove_resource::<FontCx>() else {
+                break;
+            };
+            let Some(mut layout) = world.remove_resource::<LayoutCx>() else {
+                world.insert_resource(fonts);
+                break;
+            };
+            let mut editor = world.get::<EditableText>(entity).unwrap().editor.clone();
+            editor
+                .driver(&mut fonts.context, &mut layout.0)
+                .move_to_byte(byte);
+            let geometry = editor.cursor_geometry(2.0);
             world.insert_resource(fonts);
-            break;
+            world.insert_resource(layout);
+            geometry
         };
-        let mut editor = world.get::<EditableText>(entity).unwrap().editor.clone();
-        editor
-            .driver(&mut fonts.context, &mut layout.0)
-            .move_to_byte(byte);
-        let geometry = editor.cursor_geometry(2.0);
-        world.insert_resource(fonts);
-        world.insert_resource(layout);
         if let Some(rect) = geometry {
             let key = format!("{}:{session}", entity.to_bits());
             let computed = world

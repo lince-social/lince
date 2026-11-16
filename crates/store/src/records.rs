@@ -141,7 +141,9 @@ impl<Body> RecordRow<Body> {
     }
 }
 
-fn map_row<Body: RecordBody>(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow<Body>, StoreError> {
+pub(crate) fn map_row<Body: RecordBody>(
+    r: sqlx::sqlite::SqliteRow,
+) -> Result<RecordRow<Body>, StoreError> {
     let row = RecordRow {
         uid: r.get("uid"),
         slug: r.get("slug"),
@@ -176,11 +178,25 @@ pub enum RecordSelection<'a> {
     Uids(&'a [&'a str]),
 }
 
-pub async fn read<Body: RecordBody>(
-    pool: &SqlitePool,
+pub(crate) const METADATA_COLUMNS: &str = "r.uid, r.slug, r.kind, r.head, NULL AS body, r.quantity_mantissa, r.quantity_scale, r.unit_uid, r.place_uid, r.organ_uid, r.created_at, r.updated_at, r.created_hlc";
+
+pub async fn read<'e, Body: RecordBody>(
+    executor: impl sqlx::Executor<'e, Database = Sqlite>,
     selection: RecordSelection<'_>,
     with_body: bool,
 ) -> Result<Vec<RecordRow<Body>>, StoreError> {
+    read_rows(executor, selection, with_body)
+        .await?
+        .into_iter()
+        .map(map_row)
+        .collect()
+}
+
+pub(crate) async fn read_rows<'e>(
+    executor: impl sqlx::Executor<'e, Database = Sqlite>,
+    selection: RecordSelection<'_>,
+    with_body: bool,
+) -> Result<Vec<sqlx::sqlite::SqliteRow>, StoreError> {
     if let RecordSelection::Uids(uids) = selection {
         if uids.is_empty() {
             return Ok(Vec::new());
@@ -190,11 +206,7 @@ pub async fn read<Body: RecordBody>(
         }
     }
     let mut query = sqlx::QueryBuilder::<Sqlite>::new("SELECT ");
-    query.push(if with_body {
-        "r.*"
-    } else {
-        "r.uid, r.slug, r.kind, r.head, NULL AS body, r.quantity_mantissa, r.quantity_scale, r.unit_uid, r.place_uid, r.organ_uid, r.created_at, r.updated_at, r.created_hlc"
-    });
+    query.push(if with_body { "r.*" } else { METADATA_COLUMNS });
     query.push(
         ", (SELECT predicate_uid FROM record_assertion a WHERE a.subject_uid = r.uid AND a.role = 'identity' AND a.retracted_at IS NULL) AS identity_predicate_uid FROM record r WHERE r.deleted_at IS NULL",
     );
@@ -221,13 +233,7 @@ pub async fn read<Body: RecordBody>(
                 .push(")) ORDER BY r.created_at, r.uid");
         }
     }
-    query
-        .build()
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .map(map_row)
-        .collect()
+    query.build().fetch_all(executor).await
 }
 
 pub struct NewRecord<'a> {
@@ -397,6 +403,16 @@ pub async fn create_with_uid_on(
     inserted_on(tx, uid).await
 }
 
+/// Check an active Record without loading fields that the caller will discard.
+pub async fn exists(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND deleted_at IS NULL)",
+    )
+    .bind(uid)
+    .fetch_one(pool)
+    .await?)
+}
+
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, StoreError> {
     sqlx::query(
         "SELECT r.*,
@@ -410,6 +426,78 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, Stor
     .await?
     .map(map_row)
     .transpose()
+}
+
+/// Text from the current active Record, without unrelated columns or the
+/// identity-assertion lookup. These projections do not grant access.
+pub struct RecordText {
+    pub head: String,
+    pub body: String,
+}
+
+pub async fn text(pool: &SqlitePool, uid: &str) -> Result<Option<RecordText>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-text-read-await");
+    let row: Option<(String, String)> =
+        sqlx::query_as("SELECT head, body FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?;
+    Ok(row.map(|(head, body)| RecordText { head, body }))
+}
+
+pub async fn head(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-head-read-await");
+    sqlx::query_scalar("SELECT head FROM record WHERE uid = ? AND deleted_at IS NULL")
+        .bind(uid)
+        .fetch_optional(pool)
+        .await
+}
+
+pub async fn body(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-body-read-await");
+    sqlx::query_scalar("SELECT body FROM record WHERE uid = ? AND deleted_at IS NULL")
+        .bind(uid)
+        .fetch_optional(pool)
+        .await
+}
+
+/// Current routing metadata, not an access grant. Readers must still apply
+/// their existing contact, visibility, field and operation policies.
+pub struct RecordRouting {
+    pub kind: String,
+    pub organ_uid: Option<String>,
+}
+
+pub async fn routing(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRouting>, StoreError> {
+    let row: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT kind, organ_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?;
+    Ok(row.map(|(kind, organ_uid)| RecordRouting { kind, organ_uid }))
+}
+
+/// A missing/deleted Record and an unowned Record both have no active owner.
+pub async fn organ_uid(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query_scalar("SELECT organ_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .flatten(),
+    )
+}
+
+/// Resolve the same active slug/UID relation as `resolve`, projecting only its ID.
+pub async fn resolve_uid(pool: &SqlitePool, token: &str) -> Result<Option<String>, StoreError> {
+    Ok(sqlx::query_scalar(
+        "SELECT r.uid FROM record r
+         WHERE (r.slug = ? OR r.uid = ?) AND r.deleted_at IS NULL LIMIT 1",
+    )
+    .bind(token)
+    .bind(token)
+    .fetch_optional(pool)
+    .await?)
 }
 
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
@@ -1227,11 +1315,11 @@ fn extension_decimal(raw: &str) -> Result<DecimalValue, StoreError> {
 
 fn extension_raw_fields(
     raw: &str,
-) -> Result<std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>, StoreError> {
+) -> Result<std::collections::BTreeMap<String, &serde_json::value::RawValue>, StoreError> {
     if raw.len() > MAX_EXTENSION_BYTES {
         return Err(protocol("Record extension exceeds its byte limit"));
     }
-    let fields: std::collections::BTreeMap<String, Box<serde_json::value::RawValue>> =
+    let fields: std::collections::BTreeMap<String, &serde_json::value::RawValue> =
         serde_json::from_str(raw)
             .map_err(|error| protocol(format!("Extension is not a JSON object: {error}")))?;
     if fields.len() > MAX_EXTENSION_KEYS {
@@ -1271,38 +1359,83 @@ pub async fn numeric_extensions(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Vec<Value>, StoreError> {
-    let rows = sqlx::query("SELECT namespace, substr(fds, 1, ?) AS fds FROM record_extension WHERE record_uid = ? ORDER BY namespace")
-        .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap()).bind(record_uid).fetch_all(pool).await?;
-    let mut readings = Vec::new();
+    Ok(numeric_extensions_for_records(pool, &[record_uid])
+        .await?
+        .remove(record_uid)
+        .unwrap_or_default())
+}
+
+pub async fn numeric_extensions_for_records(
+    pool: &SqlitePool,
+    records: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<Value>>, StoreError> {
+    let mut output = std::collections::HashMap::<String, Vec<Value>>::new();
+    if records.is_empty() {
+        return Ok(output);
+    }
+    let selected = serde_json::to_string(records).map_err(|error| protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT record_uid, namespace, substr(fds, 1, ?) AS fds FROM record_extension
+         WHERE record_uid IN (SELECT value FROM json_each(?)) ORDER BY record_uid, namespace",
+    )
+    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap())
+    .bind(selected)
+    .fetch_all(pool)
+    .await?;
     for row in rows {
+        let readings = output.entry(row.get("record_uid")).or_default();
         let namespace: String = row.get("namespace");
-        for (property, raw) in extension_raw_fields(&row.get::<String, _>("fds"))? {
+        for (property, raw) in extension_raw_fields(row.get::<&str, _>("fds"))? {
             if let Ok(number) = extension_decimal(raw.get()) {
                 readings.push(serde_json::json!({"namespace": namespace, "property": property, "value": number.to_string()}));
             }
         }
     }
-    Ok(readings)
+    Ok(output)
 }
 
 pub fn extension_numeric_at(raw: &str, path: &[String]) -> Result<DecimalValue, StoreError> {
-    if path.is_empty()
-        || path.len() > 8
-        || path.iter().any(|part| part.is_empty() || part.len() > 128)
-        || path.iter().map(String::len).sum::<usize>() > 512
-    {
-        return Err(protocol("Numeric extension paths exceed their bounds"));
+    ExtensionNumbers::new(raw).get(path)
+}
+
+/// Reads exact numbers while sharing object decoding between requested paths.
+pub struct ExtensionNumbers<'a> {
+    raw: &'a str,
+    fields: Option<std::collections::BTreeMap<String, ExtensionNumbers<'a>>>,
+}
+
+impl<'a> ExtensionNumbers<'a> {
+    pub fn new(raw: &'a str) -> Self {
+        Self { raw, fields: None }
     }
-    let mut fields = extension_raw_fields(raw)?;
-    let mut value = fields
-        .remove(&path[0])
-        .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
-    for part in &path[1..] {
-        value = extension_raw_fields(value.get())?
-            .remove(part)
-            .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
+
+    pub fn get(&mut self, path: &[String]) -> Result<DecimalValue, StoreError> {
+        if path.is_empty()
+            || path.len() > 8
+            || path.iter().any(|part| part.is_empty() || part.len() > 128)
+            || path.iter().map(String::len).sum::<usize>() > 512
+        {
+            return Err(protocol("Numeric extension paths exceed their bounds"));
+        }
+        let mut value = self;
+        for part in path {
+            if value.fields.is_none() {
+                value.fields = Some(
+                    extension_raw_fields(value.raw)?
+                        .into_iter()
+                        .map(|(key, raw)| (key, Self::new(raw.get())))
+                        .collect(),
+                );
+            }
+            value = value
+                .fields
+                .as_mut()
+                .unwrap()
+                .get_mut(part)
+                .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
+        }
+        extension_decimal(value.raw)
     }
-    extension_decimal(value.get())
 }
 
 pub async fn get_extension(
@@ -1316,32 +1449,69 @@ pub async fn get_extension(
             .bind(namespace)
             .fetch_optional(pool)
             .await?
-            .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok()),
+            .and_then(|r| serde_json::from_str(r.get::<&str, _>("fds")).ok()),
     )
 }
 
-pub async fn all_extensions(
+pub async fn get_extensions(
     pool: &SqlitePool,
+    records: &[&str],
+    namespace: &str,
+) -> Result<std::collections::HashMap<String, Value>, StoreError> {
+    let mut output = std::collections::HashMap::new();
+    if records.is_empty() {
+        return Ok(output);
+    }
+    let selected = serde_json::to_string(records).map_err(|error| protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT record_uid, fds FROM record_extension
+         WHERE namespace = ? AND record_uid IN (SELECT value FROM json_each(?))",
+    )
+    .bind(namespace)
+    .bind(selected)
+    .fetch_all(pool)
+    .await?;
+    for row in rows {
+        if let Ok(value) = serde_json::from_str(row.get::<&str, _>("fds")) {
+            output.insert(row.get("record_uid"), value);
+        }
+    }
+    Ok(output)
+}
+
+pub async fn all_extensions<'e>(
+    executor: impl sqlx::Executor<'e, Database = Sqlite>,
     namespace: &str,
 ) -> Result<std::collections::HashMap<String, serde_json::Value>, StoreError> {
-    let rows = sqlx::query(
+    Ok(map_extensions(extension_rows(executor, namespace).await?))
+}
+
+pub(crate) async fn extension_rows<'e>(
+    executor: impl sqlx::Executor<'e, Database = Sqlite>,
+    namespace: &str,
+) -> Result<Vec<sqlx::sqlite::SqliteRow>, StoreError> {
+    sqlx::query(
         "SELECT e.record_uid, e.fds
            FROM record_extension e
            JOIN record r ON r.uid = e.record_uid
           WHERE e.namespace = ? AND r.deleted_at IS NULL",
     )
     .bind(namespace)
-    .fetch_all(pool)
-    .await?;
-    Ok(rows
-        .into_iter()
+    .fetch_all(executor)
+    .await
+}
+
+pub(crate) fn map_extensions(
+    rows: Vec<sqlx::sqlite::SqliteRow>,
+) -> std::collections::HashMap<String, serde_json::Value> {
+    rows.into_iter()
         .filter_map(|row| {
             let uid = row.get::<String, _>("record_uid");
-            serde_json::from_str(&row.get::<String, _>("fds"))
+            serde_json::from_str(row.get::<&str, _>("fds"))
                 .ok()
                 .map(|value| (uid, value))
         })
-        .collect())
+        .collect()
 }
 
 pub async fn extensions_for_records(
@@ -1654,18 +1824,33 @@ pub async fn heads_for(
     pool: &SqlitePool,
     uids: &[String],
 ) -> Result<std::collections::HashMap<String, String>, StoreError> {
+    let uids: Vec<_> = uids.iter().map(String::as_str).collect();
+    selected_heads(pool, &uids, true).await
+}
+
+pub async fn live_heads_for(
+    pool: &SqlitePool,
+    uids: &[&str],
+) -> Result<std::collections::HashMap<String, String>, StoreError> {
+    selected_heads(pool, uids, false).await
+}
+
+async fn selected_heads(
+    pool: &SqlitePool,
+    uids: &[&str],
+    include_deleted: bool,
+) -> Result<std::collections::HashMap<String, String>, StoreError> {
     if uids.is_empty() {
         return Ok(std::collections::HashMap::new());
     }
-    let holes = std::iter::repeat_n("?", uids.len())
-        .collect::<Vec<_>>()
-        .join(",");
-    let sql = format!("SELECT uid, head FROM record WHERE uid IN ({holes})");
-    let mut query = sqlx::query(&sql);
-    for uid in uids {
-        query = query.bind(uid);
-    }
-    Ok(query
+    let ids = serde_json::to_string(uids).map_err(|error| protocol(error.to_string()))?;
+    let sql = if include_deleted {
+        "SELECT uid, head FROM record WHERE uid IN (SELECT value FROM json_each(?))"
+    } else {
+        "SELECT uid, head FROM record WHERE deleted_at IS NULL AND uid IN (SELECT value FROM json_each(?))"
+    };
+    Ok(sqlx::query(sql)
+        .bind(ids)
         .fetch_all(pool)
         .await?
         .into_iter()

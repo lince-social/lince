@@ -1,0 +1,30 @@
+Kamalie definitions and data loading (@kamalie-data: 0, is #chapter, #part-of @ws-kamalie-games) {
+## Definitions and instances
+
+Game projects commonly separate code, content definitions, assets and transient state. Code implements movement, generation, collisions and behavior. Structured definitions such as JSON, TOML or engine assets describe item IDs, material integrity, damage coefficients, allowed size ranges and weighted spawn/drop tables. Images, sound and meshes are separate assets. A runtime item instance references a definition and stores its rolled shape, remaining integrity, pose and attachments.
+
+For this small game, load and validate the compact definition catalog when the first Castle starts and share the immutable catalog across sessions. Each Castle owns its random stream and mutable run. Generate a level when it is entered: select content by validated weights, roll geometry and values, then instantiate the resulting parts. Retain only the current level plus the carried build. Per-frame gameplay reads prepared typed memory, not files or the Record database. Larger games can load large assets asynchronously and stream regions as needed; that is unnecessary for the first flat-color prototype.
+
+A weighted drop value is relative: weight 3 among total weight 10 means a 30% conditional selection probability. The chance that a drop happens at all is a separate value. Random generation chooses from bounded mechanics and compatible parts; arbitrary random numbers alone do not ensure a playable weapon or connected level.
+
+## Record authoring boundary
+
+Records provide stable identity, descriptions and relations. Record extensions provide typed definition fields. Lince already has lince.extension-schema and lince.extension-values with numeric, text, boolean and choice fields. The game should accept a validated snapshot exported from those values. Record/extension types belong in the Lince adapter, outside the Bevy gameplay package. Snapshot once per run or at an explicit reload boundary. Reject invalid values and missing IDs before spawning. Active runs retain their definition revision; no implicit live balance mutation.
+
+The first implementation uses a checked-in typed JSON catalog with the same boundary, embedded in the binary and parsed once into a shared immutable catalog. Stick.lingua and Bush.lingua contain corresponding custom kamalie.material Extension definitions. Runtime Record-extension import and automatic synchronization of those definitions with materials.json are not implemented yet. Do not confuse a checked-in JSON file with a persisted Lince Record extension.
+
+[Stick definition](Stick.lingua) · [Bush definition](Bush.lingua) · [Initial runtime snapshot](../../../../../../crates/interface/src/native/castles/sand/kamalie/materials.json)
+
+Bevy can load larger assets asynchronously into its Assets storage and share existing handles for repeated loads. That is a later option for textures and audio, independent of generation timing. [Bevy AssetServer documentation](https://docs.rs/bevy/latest/bevy/asset/struct.AssetServer.html)
+
+## Planned authoring work
+
+- [x] Define stable Records for material and procedural weapon families.
+- [ ] Define extension schemas for integrity, damage transfer, wear and spawn weights.
+- [x] Validate positive finite material values and bounded generation ranges.
+- [ ] Export extension values into a versioned immutable gameplay catalog.
+- [ ] Resolve definition IDs and relationships before a run begins.
+- [ ] Pin each run to the validated definition revision it consumed.
+- [ ] Add explicit authoring reload that starts a fresh run on incompatible changes.
+- [ ] Keep large asset loading asynchronous if future content makes it necessary.
+}

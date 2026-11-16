@@ -188,7 +188,7 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
             [144.0, 96.0],
         );
         world.entity_mut(pebble).insert(RecordProperties(
-            serde_json::json!({"kind": "showoff-physics"}),
+            serde_json::json!({"kind": "showoff-physics"}).into(),
         ));
         let mut tokens = crate::native::tokens::TokenOverrides::default();
         tokens.set(

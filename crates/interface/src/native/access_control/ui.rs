@@ -51,6 +51,7 @@ struct PolicyForm {
     raw: Entity,
     controls: Entity,
     signature: String,
+    invalid: Option<String>,
 }
 
 #[derive(Clone)]
@@ -64,7 +65,7 @@ impl Action for AcceptSelector {
         let Some(castle) = world.get::<crate::native::protein_castle::ProteinCastle>(owner) else {
             return;
         };
-        let Ok(query) = castle.draft.compile() else {
+        let Ok(query) = castle.draft.compile_shared() else {
             return;
         };
         if query.source != protein::Source::Record {
@@ -80,7 +81,7 @@ impl Action for AcceptSelector {
         let Ok(mut policy) = serde_json::from_str::<protein::authority::RolePolicy>(&text) else {
             return;
         };
-        let selector = protein::Predicate::All(query.filter);
+        let selector = protein::Predicate::All(query.filter.clone());
         if let Some(index) = self.grant {
             let Some(grant) = policy.grants.get_mut(index) else {
                 return;
@@ -257,13 +258,19 @@ impl Action for Command {
 }
 
 fn value(world: &World, entity: Entity) -> Result<String, String> {
+    ready_input(world, entity)
+        .map(|text| text.value().to_string())
+        .map_err(str::to_owned)
+}
+
+fn ready_input(world: &World, entity: Entity) -> Result<&EditableText, &'static str> {
     let text = world
         .get::<EditableText>(entity)
         .ok_or("Open the editor again.")?;
     if text.is_composing() || text.pending_paste.is_some() {
-        return Err("Finish typing or pasting before saving.".into());
+        return Err("Finish typing or pasting before saving.");
     }
-    Ok(text.value().to_string())
+    Ok(text)
 }
 
 fn mutation(
@@ -313,8 +320,7 @@ fn mutation(
                 .ok_or("Open the user editor again.")?;
             let entry = catalog(world, owner)
                 .rows
-                .iter()
-                .find(|entry| entry["kind"] == "user" && entry["id"] == person)
+                .find(Tab::Users, Some(&person))
                 .ok_or("User no longer exists. Refresh the list.")?;
             let active = matches!(command, Command::Restore);
             if active == (entry["active"] != false) {
@@ -405,11 +411,7 @@ fn mutation(
             if name.is_empty() || name.len() > 100 || name.chars().any(char::is_control) {
                 return Err("Enter a Role name of up to 100 bytes.".into());
             }
-            if catalog(world, owner)
-                .rows
-                .iter()
-                .any(|row| row["kind"] == "role" && row["name"] == name)
-            {
+            if catalog(world, owner).rows.has_role(&name) {
                 return Err("That Role already exists. Select it to edit permissions.".into());
             }
             Ok((Backend::CreateRole { name }, Mutation::Role))
@@ -453,13 +455,7 @@ fn mutation(
         }
         Command::Permission(permission, grant) => {
             let catalog = catalog(world, owner);
-            let known = catalog
-                .rows
-                .iter()
-                .filter(|row| row["kind"] == "permission_catalog")
-                .filter_map(|row| row["keys"].as_array())
-                .flatten()
-                .any(|key| key.as_str() == Some(permission));
+            let known = catalog.rows.permissions().any(|key| key == permission);
             if !known {
                 return Err("This permission is not in the Organ's catalog.".into());
             }
@@ -469,8 +465,7 @@ fn mutation(
                 .ok_or("Select a Role first.")?;
             let role = catalog
                 .rows
-                .iter()
-                .find(|row| row["kind"] == "role" && row["id"].as_str() == Some(selected))
+                .find(Tab::Roles, Some(selected))
                 .ok_or("Role no longer exists. Refresh the list.")?;
             let name = role["name"].as_str().ok_or("Role has no name.")?.to_owned();
             Ok((
@@ -639,19 +634,14 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
 }
 
 pub(super) fn list(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("access-catalog-list");
     let view = world.get::<AccessControlSand>(owner).unwrap();
     let parent = view.list;
     let tab = view.tab;
     let selected = view.selected.clone();
-    let kind = if tab == Tab::Users { "user" } else { "role" };
-    let mut rows: Vec<_> = catalog(world, owner)
-        .rows
-        .iter()
-        .filter(|row| row["kind"] == kind)
-        .cloned()
-        .collect();
-    rows.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
-    let page = view.page.min(rows.len().saturating_sub(1) / 8);
+    let entries = catalog(world, owner).rows.clone();
+    let count = entries.ordered(tab).len();
+    let page = view.page.min(count.saturating_sub(1) / 8);
     world.get_mut::<AccessControlSand>(owner).unwrap().page = page;
     world.entity_mut(parent).despawn_children();
     let heading = row(world, parent);
@@ -665,7 +655,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
             } else {
                 Tr::Roles.text()
             },
-            rows.len()
+            count
         ),
         18.0,
     );
@@ -680,7 +670,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
         },
         Command::New,
     );
-    for entry in rows.iter().skip(page * 8).take(8) {
+    for entry in entries.ordered(tab).skip(page * 8).take(8) {
         let Some(id) = entry["id"].as_str() else {
             continue;
         };
@@ -709,10 +699,10 @@ pub(super) fn list(world: &mut World, owner: Entity) {
         };
         button(world, parent, owner, &title, Command::Select(id.into()));
     }
-    if rows.is_empty() {
+    if count == 0 {
         label(world, parent, "No entries to show.", 14.0);
     }
-    if rows.len() > 8 {
+    if count > 8 {
         let controls = row(world, parent);
         if page > 0 {
             button(
@@ -726,10 +716,10 @@ pub(super) fn list(world: &mut World, owner: Entity) {
         label(
             world,
             controls,
-            &format!("Page {} of {}", page + 1, rows.len().div_ceil(8)),
+            &format!("Page {} of {}", page + 1, count.div_ceil(8)),
             14.0,
         );
-        if (page + 1) * 8 < rows.len() {
+        if (page + 1) * 8 < count {
             button(world, controls, owner, Tr::Next.text(), Command::Page(true));
         }
     }
@@ -748,9 +738,14 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
     let parent = view.editor;
     let tab = view.tab;
     let selected = view.selected.clone();
-    world
-        .entity_mut(owner)
-        .remove::<(UserForm, StandingEditor, RoleForm, RoleEdit, PolicyForm)>();
+    world.entity_mut(owner).remove::<(
+        UserForm,
+        StandingEditor,
+        RoleForm,
+        RoleEdit,
+        PermissionsOnlyRole,
+        PolicyForm,
+    )>();
     world.entity_mut(parent).despawn_children();
     if !catalog(world, owner).ready {
         label(
@@ -770,12 +765,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         .unwrap()
         .reload_editor = false;
     let entries = catalog(world, owner).rows.clone();
-    let kind = if tab == Tab::Users { "user" } else { "role" };
-    let entry = selected.as_ref().and_then(|id| {
-        entries
-            .iter()
-            .find(|entry| entry["kind"] == kind && entry["id"].as_str() == Some(id))
-    });
+    let entry = selected
+        .as_deref()
+        .and_then(|id| entries.find(tab, Some(id)));
     if selected.is_some() && entry.is_none() {
         label(
             world,
@@ -966,7 +958,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
         });
     } else if let Some(entry) = entry {
         let name = entry["name"].as_str().unwrap_or_default();
-        label(world, parent, "Edit Role", 18.0);
+        let heading = label(world, parent, "Edit Role", 18.0);
         if let (Some(role), Some(revision)) = (
             entry["id"].as_str().and_then(|id| id.parse::<i64>().ok()),
             entry["revision"].as_i64(),
@@ -1014,6 +1006,9 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             return;
         }
         role_permissions(world, owner, parent, entry);
+        world
+            .entity_mut(owner)
+            .insert(PermissionsOnlyRole { parent, heading });
     } else {
         label(world, parent, "New Role", 18.0);
         let name = input(world, parent, "Role name", "", 100);
@@ -1039,13 +1034,15 @@ fn policy_editor(world: &mut World, owner: Entity, parent: Entity, entry: &Value
     let policy = entry
         .get("policy")
         .filter(|value| !value.is_null())
-        .cloned()
-        .unwrap_or_else(|| serde_json::json!({"read":{"all":[]},"grants":[]}));
+        .map(std::borrow::Cow::Borrowed)
+        .unwrap_or_else(|| {
+            std::borrow::Cow::Owned(serde_json::json!({"read":{"all":[]},"grants":[]}))
+        });
     let raw = input(
         world,
         parent,
         "Policy",
-        &serde_json::to_string_pretty(&policy).unwrap_or_default(),
+        &serde_json::to_string_pretty(policy.as_ref()).unwrap_or_default(),
         65536,
     );
     world.get_mut::<EditableText>(raw).unwrap().allow_newlines = true;
@@ -1057,6 +1054,7 @@ fn policy_editor(world: &mut World, owner: Entity, parent: Entity, entry: &Value
         raw,
         controls,
         signature: String::new(),
+        invalid: None,
     });
     policy_controls(world, owner);
     button(
@@ -1287,18 +1285,33 @@ pub(super) fn policy_controls(world: &mut World, owner: Entity) {
     let Some(form) = world.get::<PolicyForm>(owner) else {
         return;
     };
+    let _controls = nucleus::performance::Span::new("access-policy-controls");
     let parent = form.controls;
     let field = form.raw;
-    let Ok(raw) = value(world, form.raw) else {
+    let Ok(input) = ready_input(world, form.raw) else {
         return;
     };
-    if raw == form.signature {
+    let raw = input.value();
+    if raw == form.signature.as_str()
+        || form
+            .invalid
+            .as_deref()
+            .is_some_and(|invalid| raw == invalid)
+    {
         return;
     }
-    let Ok(policy) = serde_json::from_str::<protein::authority::RolePolicy>(&raw) else {
+    nucleus::performance::add("access-policy-drafts-parsed", 1);
+    let raw = raw.to_string();
+    let parsed = serde_json::from_str::<protein::authority::RolePolicy>(&raw);
+    let mut form = world.get_mut::<PolicyForm>(owner).unwrap();
+    let Ok(policy) = parsed else {
+        // Retain the last valid controls while avoiding repeated invalid-draft parsing.
+        // Explicit saves still validate the current text independently.
+        form.invalid = Some(raw);
         return;
     };
-    world.get_mut::<PolicyForm>(owner).unwrap().signature = raw;
+    form.signature = raw;
+    form.invalid = None;
     crate::native::sand_panel::clear(world, parent);
     button(
         world,
@@ -1512,11 +1525,7 @@ fn refresh_standing(world: &mut World, owner: Entity) {
     else {
         return;
     };
-    let Some(entry) = catalog(world, owner)
-        .rows
-        .iter()
-        .find(|entry| entry["kind"] == "user" && entry["id"].as_str() == Some(person))
-    else {
+    let Some(entry) = catalog(world, owner).rows.find(Tab::Users, Some(person)) else {
         return;
     };
     let state = standing_state(entry);
@@ -1529,104 +1538,205 @@ fn refresh_standing(world: &mut World, owner: Entity) {
 }
 
 fn refresh_role(world: &mut World, owner: Entity) {
-    let selected = world
-        .get::<AccessControlSand>(owner)
-        .unwrap()
-        .selected
-        .clone();
-    let entry = catalog(world, owner)
-        .rows
-        .iter()
-        .find(|entry| entry["kind"] == "role" && entry["id"].as_str() == selected.as_deref())
-        .cloned();
+    let entries = catalog(world, owner).rows.clone();
+    let entry = entries.find(
+        Tab::Roles,
+        world
+            .get::<AccessControlSand>(owner)
+            .unwrap()
+            .selected
+            .as_deref(),
+    );
     let Some(entry) = entry else {
         editor(world, owner);
         return;
     };
     let Some(edit) = world.get::<RoleEdit>(owner) else {
-        editor(world, owner);
+        let has_edit_metadata = entry["id"]
+            .as_str()
+            .is_some_and(|id| id.parse::<i64>().is_ok())
+            && entry["revision"].as_i64().is_some();
+        let retained = world
+            .get::<PermissionsOnlyRole>(owner)
+            .filter(|view| {
+                catalog(world, owner).ready
+                    && !has_edit_metadata
+                    && world
+                        .get::<ChildOf>(view.heading)
+                        .is_some_and(|child| child.parent() == view.parent)
+            })
+            .map(|view| view.parent);
+        if let Some(parent) = retained {
+            role_permissions(world, owner, parent, entry);
+        } else {
+            editor(world, owner);
+        }
         return;
     };
     let permissions = edit.permissions;
     let field = world.get::<RoleForm>(owner).unwrap().0;
-    let pristine = value(world, field).is_ok_and(|value| value == edit.original_name)
+    let pristine = world
+        .get::<EditableText>(field)
+        .is_some_and(|text| !text.is_composing() && text.value() == edit.original_name)
         && world
             .get::<Node>(edit.confirm)
             .is_some_and(|node| node.display == Display::None);
     if pristine
         && let (Some(name), Some(revision)) = (entry["name"].as_str(), entry["revision"].as_i64())
     {
-        world
-            .get_mut::<EditableText>(field)
-            .unwrap()
-            .editor
-            .set_text(name);
-        let mut edit = world.get_mut::<RoleEdit>(owner).unwrap();
-        edit.original_name = name.into();
-        edit.revision = revision;
+        let name_changed = edit.original_name != name;
+        let revision_changed = edit.revision != revision;
+        if name_changed {
+            world
+                .get_mut::<EditableText>(field)
+                .unwrap()
+                .editor
+                .set_text(name);
+        }
+        if name_changed || revision_changed {
+            let mut edit = world.get_mut::<RoleEdit>(owner).unwrap();
+            if name_changed {
+                name.clone_into(&mut edit.original_name);
+            }
+            edit.revision = revision;
+        }
     }
-    world.entity_mut(permissions).despawn_children();
-    role_permissions(world, owner, permissions, &entry);
+    role_permissions(world, owner, permissions, entry);
+}
+
+#[derive(Component)]
+struct PermissionsOnlyRole {
+    parent: Entity,
+    heading: Entity,
+}
+
+#[derive(Component)]
+struct PermissionsView {
+    children: Vec<Entity>,
+    values: Vec<(String, bool)>,
 }
 
 fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Value) {
-    label(
+    let _presentation = nucleus::performance::Span::new("access-role-permissions");
+    let rows = catalog(world, owner).rows.clone();
+    let granted: std::collections::HashSet<_> = entry["permissions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
+    let values: Vec<_> = rows
+        .permissions()
+        .map(|key| (key, granted.contains(key)))
+        .collect();
+    let live = |entity| {
+        world
+            .get::<ChildOf>(entity)
+            .is_some_and(|child| child.parent() == parent)
+    };
+    if world
+        .get::<PermissionsView>(parent)
+        .is_some_and(|previous| {
+            previous.children.iter().copied().all(live)
+                && previous
+                    .values
+                    .iter()
+                    .map(|(key, value)| (key.as_str(), *value))
+                    .eq(values.iter().copied())
+        })
+    {
+        return;
+    }
+    // Retire only this presentation's children. The permissions-only editor shares
+    // its parent with a Role heading that must survive permission refreshes.
+    if let Some(previous) = world.entity_mut(parent).take::<PermissionsView>() {
+        for child in previous.children {
+            if world
+                .get::<ChildOf>(child)
+                .is_some_and(|relation| relation.parent() == parent)
+            {
+                world.despawn(child);
+            }
+        }
+    }
+    nucleus::performance::add("access-permission-regions-rebuilt", 1);
+    let heading = label(
         world,
         parent,
         "Permissions · changes save immediately for everyone with this Role",
         14.0,
     );
-    label(
+    let explanation = label(
         world,
         parent,
         "Managing Record visibility and Concepts requires permission:assign. Workspace editing grants no Record authority. Manual and resumed Rules execute as the person invoking them.",
         12.0,
     );
-    let keys: Vec<String> = catalog(world, owner)
-        .rows
-        .iter()
-        .filter(|entry| entry["kind"] == "permission_catalog")
-        .filter_map(|entry| entry["keys"].as_array())
-        .flatten()
-        .filter_map(Value::as_str)
-        .map(str::to_owned)
-        .collect();
     let controls = row(world, parent);
-    for key in &keys {
-        let granted = entry["permissions"].as_array().is_some_and(|permissions| {
-            permissions
-                .iter()
-                .any(|permission| permission.as_str() == Some(key))
-        });
+    for &(key, granted) in &values {
         let title = format!("{} {key}", if granted { "On" } else { "Off" });
         button(
             world,
             controls,
             owner,
             &title,
-            Command::Permission(key.clone(), !granted),
+            Command::Permission(key.to_owned(), !granted),
         );
     }
-    if keys.is_empty() {
-        label(world, parent, "Permission catalog unavailable.", 14.0);
+    let mut children = vec![heading, explanation, controls];
+    if values.is_empty() {
+        children.push(label(
+            world,
+            parent,
+            "Permission catalog unavailable.",
+            14.0,
+        ));
     }
+    world.entity_mut(parent).insert(PermissionsView {
+        children,
+        values: values
+            .into_iter()
+            .map(|(key, value)| (key.to_owned(), value))
+            .collect(),
+    });
+}
+
+#[derive(Component)]
+struct RoleChoicesView {
+    dropdown: Entity,
+    names: Vec<String>,
 }
 
 fn role_choices(world: &mut World, owner: Entity, parent: Entity) {
-    let choices = catalog(world, owner)
-        .rows
+    let _presentation = nucleus::performance::Span::new("access-role-choices");
+    let rows = catalog(world, owner).rows.clone();
+    if world
+        .get::<RoleChoicesView>(parent)
+        .is_some_and(|previous| {
+            world
+                .get::<ChildOf>(previous.dropdown)
+                .is_some_and(|child| child.parent() == parent)
+                && previous
+                    .names
+                    .iter()
+                    .map(String::as_str)
+                    .eq(rows.role_names())
+        })
+    {
+        return;
+    }
+    let names: Vec<_> = rows.role_names().map(str::to_owned).collect();
+    let choices = names
         .iter()
-        .filter(|entry| entry["kind"] == "role")
-        .filter_map(|entry| entry["name"].as_str())
         .map(|name| {
             (
-                name.into(),
-                crate::native::actions![Command::ChooseRole(name.into())],
+                name.clone(),
+                crate::native::actions![Command::ChooseRole(name.clone())],
             )
         })
         .collect();
     world.entity_mut(parent).despawn_children();
-    crate::native::dropdown::spawn(
+    let dropdown = crate::native::dropdown::spawn(
         world,
         parent,
         owner,
@@ -1634,6 +1744,10 @@ fn role_choices(world: &mut World, owner: Entity, parent: Entity) {
         "Choose Role…",
         choices,
     );
+    world
+        .entity_mut(parent)
+        .insert(RoleChoicesView { dropdown, names });
+    nucleus::performance::add("access-role-choosers-rebuilt", 1);
 }
 
 pub(super) fn clear_password(world: &mut World, owner: Entity) {
@@ -1656,13 +1770,13 @@ pub(super) fn masks(world: &mut World) {
                 entity,
                 world
                     .get::<EditableText>(mask.0)
-                    .map_or(0, |text| text.value().chars().count()),
+                    .map_or(0, |text| text.value().chars().take(32).count()),
             )
         })
         .collect();
     for (entity, count) in changes {
-        if let Some(mut text) = world.get_mut::<Text>(entity) {
-            text.set_if_neq(Text::new("•".repeat(count.min(32))));
+        if let Some(text) = world.get_mut::<Text>(entity) {
+            crate::controls::password_mask(text, count);
         }
     }
 }

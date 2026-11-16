@@ -8,6 +8,7 @@ use nucleus::execution::Execution;
 use nucleus::karma::{ReferenceKind, TypedUid};
 use nucleus::projection::{Context, Incomplete, MAX_SPANS, MAX_STEPS, Scheduled, Span};
 use nucleus::simulation::{Cause, Quantity, RuleOccurrence};
+use store::sqlx::Row;
 
 use crate::{Engine, EngineError};
 
@@ -131,10 +132,12 @@ impl Engine {
         };
         store::projection::set_runtime(&self.store.pool, config.projection_identity()?.as_str())
             .await?;
-        if let Some(cached) = store::projection::read(&self.store, &context, now).await? {
+        if let Some(expires_ms) =
+            store::projection::cached_until(&self.store, &context, now).await?
+        {
             arm_expiry(
                 &self.projection.expiry,
-                cached.expires_ms,
+                expires_ms,
                 self.query_changed.clone(),
             );
             self.projection.metrics.hits.fetch_add(1, Ordering::Relaxed);
@@ -171,6 +174,7 @@ impl Engine {
             {
                 if previous.revision == request.revision
                     && previous.context.actor == request.context.actor
+                    && previous.context.window.timezone == request.context.window.timezone
                 {
                     extend_window(
                         &mut request.context.window,
@@ -277,10 +281,10 @@ impl Engine {
 fn covers(existing: &Request, requested: &Request) -> bool {
     existing.revision == requested.revision
         && existing.context.actor == requested.context.actor
+        && existing.context.window.timezone == requested.context.window.timezone
         && existing.context.window.from_ms <= requested.context.window.from_ms
         && existing.context.window.until_ms >= requested.context.window.until_ms
 }
-
 
 fn extend_window(window: &mut nucleus::projection::Window, from_ms: i64, until_ms: i64) {
     window.until_ms = window.until_ms.max(until_ms);
@@ -362,6 +366,37 @@ pub async fn calculate(
         result.incomplete = Some(Incomplete::Budget {});
         return Ok(result);
     }
+    if base_ms >= 0
+        && config.is_some()
+        && let Some(inputs) = store::projection::manual_inputs(&source.pool).await?
+    {
+        result.source_revision = inputs.revision;
+        let existing = inputs
+            .records
+            .iter()
+            .map(|record| record.uid.clone())
+            .collect();
+        schedule::manual_entries(
+            &inputs.records,
+            &inputs.work,
+            context,
+            &existing,
+            &mut result.schedule,
+            &std::collections::HashMap::new(),
+        )?;
+        // Preserve the seed validation and budgets of an isolated calculation.
+        for record in &inputs.records {
+            TypedUid::new(ReferenceKind::Record, &record.uid).map_err(boundary)?;
+            if let Some(unit) = &record.unit_uid {
+                TypedUid::new(ReferenceKind::Unit, unit).map_err(boundary)?;
+            }
+        }
+        if inputs.records.len() > MAX_SPANS || result.schedule.len() >= MAX_SPANS {
+            result.incomplete = Some(Incomplete::Budget {});
+        }
+        crate::performance::add("schedule-projection-manual-reads", 1);
+        return finish_calculation(result);
+    }
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("projection.sqlite");
     metrics.snapshots.fetch_add(1, Ordering::Relaxed);
@@ -397,17 +432,25 @@ pub async fn calculate(
         engine.install_karma_runtime_config(config)?;
         drop(setup);
         let preparation = crate::performance::Span::new("schedule-projection-prepare-await");
-        let mut position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM fact").fetch_one(&private.pool).await?;
-        let application_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_rule_application").fetch_one(&private.pool).await?;
+        let positions = store::sqlx::query("SELECT revision, (SELECT COALESCE(MAX(rowid), 0) FROM fact) AS fact_position, (SELECT COALESCE(MAX(rowid), 0) FROM karma_rule_application) AS application_position, (SELECT COALESCE(MAX(rowid), 0) FROM karma_run) AS program_position FROM projection_source WHERE id = 1").fetch_one(&private.pool).await?;
+        let initial_revision: i64 = positions.get("revision");
+        let mut position: i64 = positions.get("fact_position");
+        let application_position: i64 = positions.get("application_position");
+        let program_position: i64 = positions.get("program_position");
         let mut schedule_position = application_position;
-        let existing_records: std::collections::HashSet<String> = store::sqlx::query_scalar("SELECT uid FROM record WHERE deleted_at IS NULL").fetch_all(&private.pool).await?.into_iter().collect();
-        schedule::manual(&private.pool, context, &existing_records, &mut result.schedule, &std::collections::HashMap::new()).await?;
+        let initial_records = store::records::read::<Option<String>>(
+            &private.pool,
+            store::records::RecordSelection::All,
+            false,
+        ).await?;
+        let existing_records: std::collections::HashSet<_> = initial_records.iter()
+            .map(|record| record.uid.clone()).collect();
+        schedule::manual(&private.pool, &initial_records, context, &existing_records, &mut result.schedule, &std::collections::HashMap::new()).await?;
         schedule::occurrences(&private.pool, context, 0, &existing_records, &mut result.schedule).await?;
-        let program_position: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(rowid), 0) FROM karma_run").fetch_one(&private.pool).await?;
         let mut active = BTreeMap::new();
         let mut changed = std::collections::BTreeSet::new();
         let mut loan_offsets = BTreeMap::new();
-        for record in store::records::list_all(&private.pool).await? {
+        for record in initial_records {
             let span = Span {
                 id: format!("initial:{}", record.uid),
                 record: TypedUid::new(ReferenceKind::Record, record.uid.clone()).map_err(boundary)?,
@@ -487,13 +530,26 @@ pub async fn calculate(
             }
         }
         if !complete && result.incomplete.is_none() { result.incomplete = Some(Incomplete::Budget {}); }
-        let schedule_origins = active.iter().filter(|(uid, _)| !existing_records.contains(*uid)).map(|(uid, span)| (uid.clone(), span.cause.clone())).collect();
+        // An unchanged private calculation already has its complete manual schedule.
+        let data_changed = store::projection::revision(&private.pool).await? != initial_revision;
+        let schedule_origins = if data_changed {
+            active.iter().filter(|(uid, _)| !existing_records.contains(*uid)).map(|(uid, span)| (uid.clone(), span.cause.clone())).collect()
+        } else {
+            std::collections::HashMap::new()
+        };
         for mut span in active.into_values() {
             if !complete { span.until_ms = now; }
             if span.from_ms < span.until_ms && result.spans.len() < MAX_SPANS { result.spans.push(span); }
         }
         result.spans.retain(|span| changed.contains(span.record.as_str()));
-        schedule::manual(&private.pool, context, &existing_records, &mut result.schedule, &schedule_origins).await?;
+        if data_changed {
+            let final_records = store::records::read::<Option<String>>(
+                &private.pool,
+                store::records::RecordSelection::All,
+                false,
+            ).await?;
+            schedule::manual(&private.pool, &final_records, context, &existing_records, &mut result.schedule, &schedule_origins).await?;
+        }
         result.schedule.sort_by(|a, b| a.id.cmp(&b.id));
         result.schedule.dedup_by(|a, b| a.id == b.id);
         Ok::<_, EngineError>(())
@@ -502,6 +558,10 @@ pub async fn calculate(
     private.pool.close().await;
     drop(close);
     outcome?;
+    finish_calculation(result)
+}
+
+fn finish_calculation(mut result: Calculated) -> Result<Calculated, EngineError> {
     result
         .spans
         .sort_by(|a, b| a.from_ms.cmp(&b.from_ms).then_with(|| a.id.cmp(&b.id)));
@@ -526,11 +586,11 @@ fn retain_payload_budget<T: serde::Serialize>(
 ) -> Result<bool, EngineError> {
     let mut limited = false;
     let mut error = None;
-    entries.retain(|entry| match serde_json::to_vec(entry) {
-        Ok(encoded)
-            if encoded.len() <= nucleus::projection::MAX_CACHE_BYTES.saturating_sub(*bytes) =>
+    entries.retain(|entry| match nucleus::json::encoded_len(entry) {
+        Ok(encoded_bytes)
+            if encoded_bytes <= nucleus::projection::MAX_CACHE_BYTES.saturating_sub(*bytes) =>
         {
-            *bytes += encoded.len();
+            *bytes += encoded_bytes;
             true
         }
         Ok(_) => {

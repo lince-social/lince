@@ -565,7 +565,7 @@ impl Engine {
             .await?;
         }
         state[format!("request_{}", cell.uid)] = serde_json::to_value(request)?;
-        if serde_json::to_vec(&state)?.len() > 256 * 1024 {
+        if nucleus::json::encoded_len(&state)? > 256 * 1024 {
             return Err(invalid("Private reply authorization state is full"));
         }
         store::records::set_extension_on(&mut tx, context, SESSION_AUTHORITY_NAMESPACE, &state)
@@ -906,7 +906,7 @@ impl Engine {
                 "Device authorization requests changed; retry with their latest state",
             ));
         }
-        if serde_json::to_vec(&state)?.len() > 256 * 1024 {
+        if nucleus::json::encoded_len(&state)? > 256 * 1024 {
             return Err(invalid("Private reply authorization state is full"));
         }
         store::social::put_device_state_on(
@@ -1049,7 +1049,7 @@ impl Engine {
         let mut ready = 0;
         for row in rows {
             let context: String = row.get("record_uid");
-            let state: Value = serde_json::from_str(&row.get::<String, _>("fds"))?;
+            let state: Value = serde_json::from_str(row.get::<&str, _>("fds"))?;
             let account_id = format!("account:{context}");
             let account = store::social::device_state(&self.store.pool, &account_id).await?;
             let expired = if let Some((body, _)) = &account {

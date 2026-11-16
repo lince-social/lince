@@ -211,11 +211,11 @@ impl Action for Control {
             Self::Run if !live.running => {
                 live.options.model = world
                     .get::<bevy::text::EditableText>(live.model)
-                    .map(|text| text.value().to_string().trim().to_string())
+                    .map(|text| text.value().to_cow().trim().to_string())
                     .filter(|value| !value.is_empty());
                 live.options.reasoning = world
                     .get::<bevy::text::EditableText>(live.reasoning)
-                    .map(|text| text.value().to_string().trim().to_string())
+                    .map(|text| text.value().to_cow().trim().to_string())
                     .filter(|value| !value.is_empty());
                 live.report = None;
                 live.pending_report = None;

@@ -1,0 +1,61 @@
+Making Kamalie as a standalone Castle (@kamalie-standalone: 0, is #chapter, #part-of @ws-kamalie-games) {
+## Owner direction and scope
+
+This is the first playable slice of KAM.T00/KAM.T01, preceding area integration. Its vibe is defined in Vibe-and-runs.lingua. The initial game has a white player circle, generated mossy dungeon, dark one-way exit, sticks and bushes. Enemy generation and a larger vocabulary of weapons are future tasks. The owner requested coding only: no builds, runs, tests or deployment. Checked tasks below mean implemented in source, not verified at runtime. Verification tasks remain unchecked. Implementation.md records source evidence and limits.
+
+## Native Castle
+
+- [x] KAM.S01 Register Kamalie in the ordinary native Castle store.
+- [x] KAM.S02 Render the game with native Bevy GPU primitives inside the Castle.
+- [x] KAM.S03 Focus the viewport by pointer or keyboard.
+- [x] KAM.S04 Release focus through a key and when another component receives focus.
+- [x] KAM.S05 Release held input when the application loses focus or the workspace changes.
+- [x] KAM.S06 Pause the game with a key unused by default Park bindings.
+- [x] KAM.S07 Restart the run with a different unused key.
+- [x] KAM.S08 Keep all controls and their bindings readable in executable source without code comments.
+- [x] KAM.S09 Preserve ordinary Castle placement, resize and saved placement restoration.
+- [x] KAM.S10 Suspend hidden or unfocused sessions and release game resources on removal.
+- [x] KAM.S11a Give each Castle its own run, random stream, clock, input and reserved render layer.
+- [ ] KAM.S11 Verify that two Castles keep independent input, maps, random streams and run state.
+
+## First dungeon
+
+- [x] KAM.S12 Draw the player as a small white circle from above.
+- [x] KAM.S13 Draw a flat dark moss-green floor and a distinct flat wall color with crisp edges.
+- [x] KAM.S14 Move with directional keys and collide with walls.
+- [x] KAM.S15 Generate a connected labyrinth from a per-run random stream.
+- [x] KAM.S16 Vary corridor lengths and widths.
+- [x] KAM.S17 Add branches, shortcuts, wider spaces and intersections with converging paths.
+- [x] KAM.S18 Place a reachable dark square that leads only to the next level.
+- [x] KAM.S19 Generate a fresh unpredictable destination when the player enters that square.
+- [x] KAM.S20 Discard the old dungeon and prevent returning to it.
+- [x] KAM.S21 Preserve carried parts across a level transition within the current run.
+
+## Physical objects and expression
+
+- [x] KAM.S22 Spawn a thin brown stick within reach of the player.
+- [x] KAM.S23 Spawn passive bushes and additional loose sticks in traversable places.
+- [x] KAM.S24 Aim pickup and release with the mouse direction from the central body.
+- [x] KAM.S25 Attach a nearby directional object to the central body by pressing Z.
+- [x] KAM.S26 Release the directional attachment by pressing X.
+- [x] KAM.S27 Weight held-object activation by proximity to the mouse direction while left click is held.
+- [x] KAM.S28 Swing a held stick continuously by moving the mouse sideways.
+- [x] KAM.S29 Thrust a held stick continuously by moving the mouse outward.
+- [x] KAM.S30 Apply contact damage according to local impact and movement rather than an active-skill timer.
+- [x] KAM.S31 Store integrity in local parts of a stick and bush.
+- [x] KAM.S32 Give stick parts more integrity than bush parts.
+- [x] KAM.S33 Split a stick at the struck section, retaining the attached fragment when possible.
+- [x] KAM.S34 Split a centrally struck bush into several nearby smaller clumps.
+- [x] KAM.S35 Remove and scatter an edge-struck region farther while preserving unaffected regions.
+- [x] KAM.S36 Wear the striking stick through repeated use and collisions.
+- [x] KAM.S37 Bound fragments and collision work to keep repeated destruction responsive.
+
+## Verification
+
+- [ ] KAM.S38 Verify reachable exits and sealed map boundaries over many seeds.
+- [ ] KAM.S39 Verify directional pickup, release and graded activation.
+- [ ] KAM.S40 Verify local fracture and the different center/edge scatter behavior.
+- [ ] KAM.S41 Verify restart clears the build while next-level travel retains it.
+- [ ] KAM.S42 Exercise focus, pause, resize and removal in the native host.
+- [ ] KAM.S43 Inspect the rendered Castle and record actual verification limits.
+}

@@ -21,7 +21,7 @@ pub(super) fn payload_identity(payload: &Payload) -> Result<(&'static str, Strin
 
 pub(super) fn validate_payload(payload: &Payload, now: i64) -> Result<(), EngineError> {
     let proof = payload.proof();
-    if serde_json::to_vec(payload)?.len() > contract::MAX_PAYLOAD_BYTES
+    if nucleus::json::encoded_len(payload)? > contract::MAX_PAYLOAD_BYTES
         || !proof.redistribute
         || proof.destinations.is_empty()
         || proof.issued_at > now + 300

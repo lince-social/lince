@@ -1,0 +1,33 @@
+Fiote vision tasks and event watches (@ws-vision-tasks: 0, is #chapter, #part-of @workspace-development, #requires @ws-camera-feeds, #requires @ws-agent-context) { r_61HAA09Z8M9R7VZNVG7DG3R1H2
+Status: Pending. Owner refinement, 2026-11-15: Fiote can consume a feed with its metadata, select an implemented vision model, inspect once or watch for defined events.
+
+[Development graph](../Workspace-Development.lingua) · [Camera and vision contracts](../contracts/Camera-vision-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Camera feeds](Camera-Feeds.lingua) and [Agent context](Agent-Context.lingua). Deliver an actual image-capable model adapter and bounded native/Fiote task interface with typed observations/events. Native source use and metadata remain available without a model provider. Event detection does not wait for world reconstruction, geographic integration or agent geometry authoring.
+
+## Ownership and ordered work
+
+Own vision-worker/task adapters over existing delegated operations, bounded jobs and activities. Fiote orchestrates supported models; decoding/tracking/inference runs in admitted workers rather than a compulsory language-model request per frame. Reserve shared provider, scheduler and media-contract changes with their owners.
+
+### Task VSN.T01
+
+- [ ] Expose native and Fiote operations to describe a source, obtain a permitted expiring frame/window reference with its metadata, run an implemented vision operator, start/query/update/stop a watch and inspect resulting observations. Pass actual image content through the authorized media/model-provider path with camera/view/frame IDs, timestamps, pose/calibration revisions and preprocessing mappings. Text describing a URL or a stub response cannot satisfy the image-consumption proof. Operators declare supported input modalities, frame/window count, model/build/version, outputs, resource limits and calibration/time requirements. Unsupported providers remain unavailable without preventing ordinary feed viewing.
+
+### Task VSN.T02
+
+- [ ] A task specifies source(s), region/target, observation purpose or event predicate, selected model, mode, sampling/cadence, duration, output destination and compute/network limits. Implement Inspect once and Watch events using one actual vision model on CV.F01, with an independently known expected sequence. Support confidence/unknown status, debounce/hold where needed, enter/exit or state-change semantics, duplicate suppression and bounded result rate. Report missed coverage, dropped frames and source age; an interval with no samples cannot establish that no event occurred.
+
+### Task VSN.T03
+
+- [ ] Deliver bounded multi-source windows with frame identities, capture-time quality and an explicit alignment/skew policy; never treat simultaneous arrival as synchronized capture. Each worker pins its source/model/calibration/task generation and maps cropped/resized pixels back to the delivered/source view correctly. Handle unavailable inputs, cancellation, revoke, source movement and stale worker results. No unbounded catch-up, queue growth or silent inference using old calibration. Offscreen watches retain admitted source demand until stopped or their declared limit expires; closing a view alone does not end a separately retained task.
+
+### Task VSN.T04
+
+- [ ] Prove CV.W02/CV.W04: Fiote selects the source/model and starts a real watch, native controls inspect/change/stop it, and declared events match the independent fixture oracle. Include provider failure, unavailable modality, frame expiry, event bursts, interruption and budget exhaustion. Keep frames transient and verify no raw-media storage or logging. Persist task configuration and permitted derived observations/provenance, not opaque image windows in chat/history. Define explicit restart policy without replaying missed events. Export the same task/result path for one-shot/periodic model jobs; [Observed models](Observed-Models.lingua) owns actual scene publication.
+
+## Completion and handoff
+
+Read CV.R03–CV.R10. Publish the working model adapter, frame/context interface, task lifecycle, observed accuracy/latency/cost and unsupported cases. Consumers: [Observed models](Observed-Models.lingua) and [Federation](Federation.lingua). Current outcome: unbuilt and unverified.
+} r_61HAA09Z8M9R7VZNVG7DG3R1H2

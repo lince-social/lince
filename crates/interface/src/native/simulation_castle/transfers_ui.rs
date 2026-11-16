@@ -1,6 +1,6 @@
 use super::*;
 use simulation::assumptions::{Direction, TransferAssumption, TransferSource};
-use simulation::scenario::{Event, Input as ScenarioInput, Scenario};
+use simulation::scenario::{Event, Input as ScenarioInput};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -101,7 +101,21 @@ pub(super) fn capture(world: &mut World) {
     let inputs: Vec<_> = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .map(|(input, text)| (input.owner, input.field, text.value().to_string()))
+        .filter_map(|(input, text)| {
+            let model = world.get::<SimulationCastle>(input.owner)?;
+            let form = &model.transfer_form;
+            let current = match input.field {
+                Field::LoanUntil => &form.loan_until,
+                Field::LoanReturned => &form.loan_returned,
+                Field::Title => &form.title,
+                Field::Person => &form.person,
+                Field::Record => &form.record,
+                Field::Amount => &form.amount,
+                Field::Hours => &form.hours,
+                Field::Unit => &form.unit,
+            };
+            super::changed_text(text, current).map(|value| (input.owner, input.field, value))
+        })
         .collect();
     for (owner, field, value) in inputs {
         if let Some(mut model) = world.get_mut::<SimulationCastle>(owner) {
@@ -133,7 +147,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         "Transfer assumptions · changes happen only in the copied database",
         14.0,
     );
-    let Ok(scenario) = serde_json::from_str::<Scenario>(&model.scenario) else {
+    let Ok(scenario) = model.scenario.parsed() else {
         return;
     };
     for (index, input) in scenario.inputs.iter().enumerate() {
@@ -281,7 +295,7 @@ fn button(world: &mut World, parent: Entity, owner: Entity, label: &str, command
 
 pub(super) fn apply(command: Command, world: &mut World, owner: Entity) -> simulation::Result<()> {
     let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
-    let mut scenario: Scenario = serde_json::from_str(&model.scenario)?;
+    let mut scenario = model.scenario.draft()?;
     match command {
         Command::New => model.transfer_form = Form::default(),
         Command::Direction => model.transfer_form.incoming = !model.transfer_form.incoming,
@@ -417,7 +431,7 @@ pub(super) fn apply(command: Command, world: &mut World, owner: Entity) -> simul
             }
         }
     }
-    model.scenario = serde_json::to_string_pretty(&scenario)?;
+    model.scenario.set(serde_json::to_string_pretty(&scenario)?);
     let editor = world.get::<View>(owner).unwrap().editor;
     world
         .get_mut::<EditableText>(editor)

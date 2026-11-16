@@ -18,7 +18,6 @@ use fiote::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use tokio::sync::Mutex;
 
 use crate::{ClientMessage, ServerMessage, Session};
@@ -315,7 +314,7 @@ impl Tool for NativeTool {
     }
 
     async fn run(&self, arguments: Value) -> Result<Value, String> {
-        if serde_json::to_vec(&arguments).map_err(error)?.len() > MAX_RESULT_BYTES {
+        if nucleus::json::encoded_len(&arguments).map_err(error)? > MAX_RESULT_BYTES {
             return Err("Tool arguments exceed 128 KiB.".into());
         }
         if matches!(self.kind, Kind::Fiotes | Kind::Delegate | Kind::Handoffs) {
@@ -469,7 +468,7 @@ fn error(error: impl std::fmt::Display) -> String {
 }
 
 fn bounded(value: Value) -> Result<Value, String> {
-    if serde_json::to_vec(&value).map_err(error)?.len() > MAX_RESULT_BYTES {
+    if nucleus::json::encoded_len(&value).map_err(error)? > MAX_RESULT_BYTES {
         Err("Result exceeds 128 KiB. Narrow the query or select fewer fields. No partial data was returned.".into())
     } else {
         Ok(value)
@@ -739,9 +738,7 @@ impl State {
         self.receipt_bytes += id.len()
             + 32
             + match &result {
-                Ok(value) => {
-                    serde_json::to_vec(value).map_or(MAX_RESULT_BYTES, |bytes| bytes.len())
-                }
+                Ok(value) => nucleus::json::encoded_len(value).unwrap_or(MAX_RESULT_BYTES),
                 Err(error) => error.len(),
             };
         self.receipts.insert(id, (fingerprint(arguments), result));
@@ -868,7 +865,7 @@ impl State {
 fn fingerprint(arguments: &Value) -> [u8; 32] {
     let mut value = arguments.clone();
     value.sort_all_objects();
-    Sha256::digest(serde_json::to_vec(&value).expect("JSON value serialization")).into()
+    nucleus::json::sha256(&value).expect("JSON value serialization")
 }
 
 fn properties(mut record: Value, include_text: bool) -> Value {

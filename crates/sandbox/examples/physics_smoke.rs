@@ -69,7 +69,7 @@ fn exercise(world: &mut World) {
             world.get_mut::<CanvasItem>(sand).unwrap().size = Vec2::new(155.0, 90.0);
             world
                 .entity_mut(sand)
-                .insert(RecordProperties(serde_json::json!({"quantity":-3})));
+                .insert(RecordProperties(serde_json::json!({"quantity":-3}).into()));
             world.resource_mut::<Exercise>().sand = Some(sand);
             activate(world, EditAction::Toggle);
         }

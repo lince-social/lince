@@ -76,36 +76,72 @@ pub struct WorkMetadata {
 
 impl WorkMetadata {
     pub fn parse(value: &Value) -> Result<Self, WorkError> {
+        nucleus::performance::add("work-metadata-parse-requests", 1);
+        Self::read(value, |entries| entries.iter().map(parse_log).collect())
+    }
+
+    /// Apply the same validation without retaining a vector of parsed logs.
+    pub fn validate(value: &Value) -> Result<(), WorkError> {
+        Self::read_without_logs(value).map(|_| ())
+    }
+
+    /// Validate the same single-log metadata request without constructing its
+    /// temporary object/array or copying the log. Include the envelope's budget.
+    pub fn validate_log(value: &Value) -> Result<(), WorkError> {
+        let _validation = nucleus::performance::Span::new("work-log-validation");
+        nucleus::performance::add("work-log-validation-requests", 1);
+        validate_log_shape(value)?;
+        let mut bytes = encoded_size(value)?;
+        add_size(&mut bytes, b"{\"logs\":[]}".len())?;
+        parse_log(value).map(|_| ())
+    }
+
+    /// Validate all metadata, then derive its range from the already parsed fields.
+    pub fn time_range(
+        value: &Value,
+        occurrence_ms: Option<i64>,
+    ) -> Result<Option<nucleus::schedule::TimeRange>, String> {
+        let work = Self::read_without_logs(value).map_err(|error| error.to_string())?;
+        nucleus::schedule::Endpoints::new(work.start.as_ref(), work.due.as_ref())?
+            .range(work.estimate_minutes, occurrence_ms)
+    }
+
+    fn read_without_logs(value: &Value) -> Result<Self, WorkError> {
+        nucleus::performance::add("work-metadata-validation-requests", 1);
+        Self::read(value, |entries| {
+            for entry in entries {
+                parse_log(entry)?;
+            }
+            Ok(Vec::new())
+        })
+    }
+
+    fn read(
+        value: &Value,
+        logs: impl FnOnce(&[Value]) -> Result<Vec<WorkLog>, WorkError>,
+    ) -> Result<Self, WorkError> {
+        let _preparation = nucleus::performance::Span::new("work-metadata-preparation");
         let object = value.as_object().ok_or(WorkError::NotObject)?;
         validate_shape(object)?;
         encoded_size(value)?;
         let start = optional_date(object.get("start"))?;
         let due = optional_date(object.get("due"))?;
-        nucleus::schedule::validate_endpoints(
-            object.get("start").and_then(Value::as_str),
-            object.get("due").and_then(Value::as_str),
-        )
-        .map_err(|_| WorkError::EndBeforeStart)?;
+        let endpoints = nucleus::schedule::Endpoints::new(start.as_ref(), due.as_ref())
+            .map_err(|_| WorkError::EndBeforeStart)?;
         let estimate_minutes = optional_estimate(object.get("estimate_min"))?;
-        nucleus::schedule::range(
-            object.get("start").and_then(Value::as_str),
-            object.get("due").and_then(Value::as_str),
-            estimate_minutes,
-            None,
-        )
-        .map_err(|_| WorkError::InvalidTimestamp)?;
+        endpoints
+            .range(estimate_minutes, None)
+            .map_err(|_| WorkError::InvalidTimestamp)?;
         let logs = match object.get("logs") {
             None => Vec::new(),
-            Some(Value::Array(entries)) => {
-                entries.iter().map(parse_log).collect::<Result<_, _>>()?
-            }
+            Some(Value::Array(entries)) => logs(entries)?,
             Some(_) => return Err(WorkError::InvalidLogs),
         };
         let occurrence = match object.get("projection_occurrence") {
             None | Some(Value::Null) => None,
             Some(value) => {
-                let link: nucleus::projection::OccurrenceLink =
-                    serde_json::from_value(value.clone())
+                let link =
+                    <nucleus::projection::OccurrenceLink as serde::Deserialize>::deserialize(value)
                         .map_err(|_| WorkError::InvalidOccurrenceLink)?;
                 if link.record.kind() != nucleus::karma::ReferenceKind::Record
                     || !nucleus::valid_uid(&link.occurrence.rule_uid, "rec")
@@ -194,22 +230,26 @@ fn validate_shape(object: &Map<String, Value>) -> Result<(), WorkError> {
         return Err(WorkError::TooManyLogs);
     }
     for log in logs {
-        let object = log.as_object().ok_or(WorkError::InvalidLog)?;
-        if object
-            .keys()
-            .any(|key| !matches!(key.as_str(), "start" | "end"))
-        {
-            return Err(WorkError::UnknownLogField);
-        }
-        if !matches!(object.get("start"), Some(Value::String(_))) {
-            return Err(WorkError::InvalidLog);
-        }
-        if !matches!(
+        validate_log_shape(log)?;
+    }
+    Ok(())
+}
+
+fn validate_log_shape(value: &Value) -> Result<(), WorkError> {
+    let object = value.as_object().ok_or(WorkError::InvalidLog)?;
+    if object
+        .keys()
+        .any(|key| !matches!(key.as_str(), "start" | "end"))
+    {
+        return Err(WorkError::UnknownLogField);
+    }
+    if !matches!(object.get("start"), Some(Value::String(_)))
+        || !matches!(
             object.get("end"),
             None | Some(Value::Null | Value::String(_))
-        ) {
-            return Err(WorkError::InvalidLog);
-        }
+        )
+    {
+        return Err(WorkError::InvalidLog);
     }
     Ok(())
 }

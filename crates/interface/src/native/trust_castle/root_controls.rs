@@ -11,7 +11,7 @@ pub(super) struct Draft {
     pub focused: bool,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Subject,
     Document,
@@ -93,8 +93,7 @@ pub(super) fn request(view: &View, command: &UiCommand) -> Result<Request, Strin
             if view.result["kind"] != "identity" || value["kind"] != "organ_root_preview" {
                 return Err("Compare this Organ's exact fresh root review first".into());
             }
-            let review: Review = serde_json::from_value(value["review"].clone())
-                .map_err(|error| error.to_string())?;
+            let review: Review = decode(&value["review"]).map_err(|error| error.to_string())?;
             let proof = Proof::parse(view.roots.document.as_bytes())?;
             let hash = review.hash()?;
             if review.person != view.person
@@ -170,7 +169,8 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         return;
     };
     let draft = view.roots.clone();
-    let result = view.result["value"].clone();
+    let snapshot = view.result.clone();
+    let result = &snapshot["value"];
     let admin = view.context["organ_admin"] == true;
     let local = view.context["organ"]
         .as_str()

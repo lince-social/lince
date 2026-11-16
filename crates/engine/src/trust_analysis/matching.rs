@@ -194,7 +194,7 @@ impl Engine {
                     continue;
                 }
                 let candidate = json!({"transfer":offer,"revision":row["revision"],"promise":promise["uid"],"giver":giver,"available":available,"experience":experience,"weighted_index":index,"experience_by_evidence":analysis.analysis.groups,"offer":row,"draft_only":true});
-                let size = serde_json::to_vec(&candidate)?.len();
+                let size = nucleus::json::encoded_len(&candidate)?;
                 let maximum = nucleus::trust_analysis::MAX_BYTES
                     .min(nucleus::social::MAX_FRAME_BYTES.saturating_sub(16 * 1024));
                 if bytes + size > maximum {

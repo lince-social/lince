@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn render(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("trust-view-presentation");
     let Some(view) = world.get::<View>(owner) else {
         return;
     };
@@ -530,7 +531,10 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             label(
                 world,
                 owner,
-                &serde_json::to_string_pretty(&result["document"]).unwrap_or_default(),
+                result
+                    .text(JsonPart::Document)
+                    .expect("contact result is an object")
+                    .as_str(),
             );
             if result["export"].is_string() {
                 panel::button(

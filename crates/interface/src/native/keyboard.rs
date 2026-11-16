@@ -1,7 +1,7 @@
 use super::actions::Modifiers;
 use crate::host::input::KeyboardSnapshot;
 use bevy::{
-    ecs::message::MessageCursor,
+    ecs::{message::MessageCursor, query::QueryState},
     input::{
         InputSystems,
         keyboard::{Key, KeyboardFocusLost, KeyboardInput},
@@ -9,8 +9,12 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+};
 
+mod held;
 mod host;
 mod pointer;
 
@@ -24,20 +28,23 @@ pub(crate) struct PreparedKey {
     pub modifier: bool,
     pub after: Modifiers,
     pub roles: Modifiers,
-    pub held: Vec<KeyCode>,
+    pub held: Arc<[KeyCode]>,
 }
 
 #[derive(Resource)]
 pub(crate) struct Dispatch {
     pub window: Entity,
     pub modifiers: Modifiers,
-    pub held: Vec<KeyCode>,
+    pub held: Arc<[KeyCode]>,
 }
 
 #[derive(Resource, Default)]
 struct State {
     events: Vec<PreparedKey>,
-    held: HashMap<Entity, BTreeMap<KeyCode, Key>>,
+    raw: Vec<KeyboardInput>,
+    held: HashMap<Entity, held::Held>,
+    mentioned: HashSet<KeyCode>,
+    pointer_before: HashMap<Entity, Modifiers>,
     seeded: HashSet<(Entity, KeyCode)>,
     active: Option<Entity>,
     ordered_loss: bool,
@@ -89,6 +96,7 @@ pub fn synchronize_modifiers(world: &mut World, window: Entity, pressed: &[(KeyC
     let state = world.get_resource::<State>();
     let mut held = state
         .and_then(|state| state.held.get(&window))
+        .map(|held| &**held)
         .cloned()
         .unwrap_or_default();
     if let Some(messages) = world.get_resource::<Messages<KeyboardInput>>() {
@@ -136,7 +144,10 @@ pub fn synchronize_modifiers(world: &mut World, window: Entity, pressed: &[(KeyC
 
 fn discard(world: &mut World, state: &mut State) {
     state.events.clear();
+    state.raw.clear();
     state.held.clear();
+    state.mentioned.clear();
+    state.pointer_before.clear();
     state.seeded.clear();
     state.active = None;
     state.ordered_loss = false;
@@ -156,6 +167,16 @@ pub(crate) fn take(world: &mut World) -> Vec<PreparedKey> {
 
 pub(crate) fn replace(world: &mut World, events: Vec<PreparedKey>) {
     if let Some(mut state) = world.get_resource_mut::<State>() {
+        state.events = events;
+    }
+}
+
+pub(crate) fn recycle(world: &mut World, mut events: Vec<PreparedKey>) {
+    events.clear();
+    if let Some(mut state) = world.get_resource_mut::<State>()
+        && state.events.is_empty()
+        && events.capacity() > state.events.capacity()
+    {
         state.events = events;
     }
 }
@@ -216,10 +237,13 @@ pub(crate) fn logical(world: &mut World, modifiers: Modifiers) {
         (Key::Shift, modifiers.shift),
         (Key::Super, modifiers.super_key),
     ] {
-        if pressed {
-            keys.press(key);
-        } else {
-            keys.release(key);
+        if keys.pressed(key.clone()) != pressed {
+            if pressed {
+                keys.press(key);
+            } else {
+                keys.release(key);
+            }
+            engine::performance::add("keyboard-logical-writes", 1);
         }
     }
 }
@@ -300,33 +324,41 @@ fn aggregate(
         .map(|held| modifiers(held, keyboard))
 }
 
-fn prepare(world: &mut World) {
+fn prepare(
+    world: &mut World,
+    mut primary: Local<Option<QueryState<(Entity, &'static Window), With<PrimaryWindow>>>>,
+) {
+    let _preparation = engine::performance::Span::new("keyboard-preparation");
     let mut state = world.remove_resource::<State>().unwrap_or_default();
     state.events.clear();
     state.host.prepare(world);
     let lost = world
         .get_resource::<Messages<KeyboardFocusLost>>()
         .is_some_and(|events| state.focus.read(events).count() > 0);
-    let events: Vec<_> = world
-        .get_resource::<Messages<KeyboardInput>>()
-        .map(|messages| state.cursor.read(messages).cloned().collect())
-        .unwrap_or_default();
+    if lost {
+        if let Some(events) = world.get_resource::<Messages<KeyboardInput>>() {
+            state.cursor.clear(events);
+        }
+        discard(world, &mut state);
+        world.insert_resource(state);
+        return;
+    }
+    state.raw.clear();
+    if let Some(messages) = world.get_resource::<Messages<KeyboardInput>>() {
+        state.raw.extend(state.cursor.read(messages).cloned());
+    }
     state.held.retain(|entity, _| {
         world.get_entity(*entity).is_ok()
             && world
                 .get::<Window>(*entity)
                 .is_none_or(|window| window.focused)
     });
-    if lost {
-        discard(world, &mut state);
-        world.insert_resource(state);
-        return;
-    }
     let window = state
         .host
         .active()
         .or_else(|| {
-            events
+            state
+                .raw
                 .iter()
                 .find(|event| {
                     world
@@ -336,8 +368,8 @@ fn prepare(world: &mut World) {
                 .map(|event| event.window)
         })
         .or_else(|| {
-            world
-                .query_filtered::<(Entity, &Window), With<PrimaryWindow>>()
+            primary
+                .get_or_insert_with(|| world.query_filtered())
                 .single(world)
                 .ok()
                 .filter(|(_, window)| window.focused)
@@ -363,13 +395,19 @@ fn prepare(world: &mut World) {
         if let Some(window) = window
             && state.host.current(window).is_none()
         {
-            let mentioned: HashSet<_> = events.iter().map(|event| event.key_code).collect();
-            for key in keys.get_pressed().filter(|key| !mentioned.contains(key)) {
+            state.mentioned.clear();
+            state
+                .mentioned
+                .extend(state.raw.iter().map(|event| event.key_code));
+            for key in keys
+                .get_pressed()
+                .filter(|key| !state.mentioned.contains(key))
+            {
                 let held = state.held.entry(window).or_default();
                 if !held.contains_key(key) {
-                    held.insert(
+                    held.press(
                         *key,
-                        Key::Unidentified(bevy::input::keyboard::NativeKey::Unidentified),
+                        &Key::Unidentified(bevy::input::keyboard::NativeKey::Unidentified),
                     );
                     state.seeded.insert((window, *key));
                 }
@@ -377,12 +415,15 @@ fn prepare(world: &mut World) {
         }
     }
     let keyboard = world.get_resource::<KeyboardSnapshot>();
-    let pointer_before = state
-        .held
-        .iter()
-        .map(|(window, held)| (*window, modifiers(held, keyboard)))
-        .collect();
-    for event in events {
+    let mut pointer_before = std::mem::take(&mut state.pointer_before);
+    pointer_before.clear();
+    pointer_before.extend(
+        state
+            .held
+            .iter()
+            .map(|(window, held)| (*window, modifiers(held, keyboard))),
+    );
+    for event in state.raw.drain(..) {
         if world.get_entity(event.window).is_err() {
             continue;
         }
@@ -395,7 +436,7 @@ fn prepare(world: &mut World) {
         if !focused {
             held.clear();
         } else if event.state.is_pressed() {
-            held.insert(event.key_code, event.logical_key.clone());
+            held.press(event.key_code, &event.logical_key);
         } else {
             held.remove(&event.key_code);
         }
@@ -427,7 +468,7 @@ fn prepare(world: &mut World) {
             modifier,
             after,
             roles,
-            held: held.keys().copied().collect(),
+            held: held.snapshot(),
         });
     }
     if state.active.is_none_or(|entity| {
@@ -453,7 +494,8 @@ fn prepare(world: &mut World) {
         }
         state.ordered_loss = false;
     }
-    pointer::prepare(world, &mut state, pointer_before);
+    engine::performance::add("keyboard-events-prepared", state.events.len() as u64);
+    state.pointer_before = pointer::prepare(world, &mut state, pointer_before);
     logical(world, final_modifiers);
     world.insert_resource(state);
 }

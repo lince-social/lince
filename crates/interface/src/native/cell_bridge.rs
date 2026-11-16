@@ -12,6 +12,7 @@ use tokio::{
 };
 
 mod requests;
+pub(crate) use requests::EditSequence;
 pub use requests::Sender;
 
 mod recovery;
@@ -309,7 +310,8 @@ fn connect_session(
                     }
                     let started = matches!(&request, ClientMessage::Act { action: engine::actions::Action::ChangeRecord { .. }, .. })
                         .then(crate::host::performance::start).flatten();
-                    let messages = session.handle(request).await;
+                    let mut messages = session.handle(request).await;
+                    requests.complete(&mut messages);
                     edit.mark("record-edit-service-finished");
                     crate::host::performance::record_since(crate::host::performance::Stage::RecordChangeService, started);
                     messages
@@ -437,7 +439,10 @@ pub(crate) mod tests {
             messages.write(CellMessage::new(if id == "acknowledgement" {
                 ServerMessage::ActionOk { id: id.into(), created: None, facts: 1, warnings: vec![], data: None }
             } else {
-                ServerMessage::Snapshot { id: id.into(), rows: vec![serde_json::json!({"body":"x".repeat(65536)})] }
+                ServerMessage::Snapshot {
+                    id: id.into(),
+                    rows: vec![serde_json::json!({"body":"x".repeat(65536)})].into(),
+                }
             }));
         }
         let mut first = bevy::ecs::message::MessageCursor::<CellMessage>::default();

@@ -257,8 +257,8 @@ impl Action for Control {
                 {
                     return;
                 }
-                let script = value(world, castle.script);
-                let cwd = value(world, castle.cwd);
+                let script = value(world, castle.script).map(str::to_owned);
+                let cwd = value(world, castle.cwd).map(str::to_owned);
                 script.and_then(|script| {
                     cwd.and_then(|cwd| {
                         send(
@@ -301,14 +301,14 @@ impl Action for Control {
     }
 }
 
-fn value(world: &World, entity: Entity) -> Result<String, String> {
+fn value(world: &World, entity: Entity) -> Result<&str, String> {
     let text = world
         .get::<EditableText>(entity)
         .ok_or("The field is unavailable")?;
     if text.is_composing() || text.pending_paste.is_some() {
         return Err("Finish typing or pasting before running".into());
     }
-    Ok(text.value().to_string())
+    Ok(text.value())
 }
 
 fn send(world: &mut World, owner: Entity, request: Request) -> Result<(), String> {
@@ -351,9 +351,9 @@ fn settings(world: &mut World) {
             let dirty = world
                 .get::<crate::native::record_binding::TextBinding>(field)
                 .zip(world.get::<EditableText>(field))
-                .is_some_and(|(binding, text)| binding.unsaved(&text.value().to_string()));
+                .is_some_and(|(binding, text)| binding.editor_unsaved(text));
             if let Some(mut unsaved) = world.get_mut::<crate::native::sand::Unsaved>(field) {
-                unsaved.0 = dirty;
+                unsaved.set_if_neq(crate::native::sand::Unsaved(dirty));
             }
         }
         let castle = world.get::<CommandCastle>(owner).unwrap();
@@ -361,6 +361,7 @@ fn settings(world: &mut World) {
             && cwd != castle.settings.cwd
             && cwd.len() <= 4096
         {
+            let cwd = cwd.to_owned();
             world.get_mut::<CommandCastle>(owner).unwrap().settings.cwd = cwd;
             save_settings(world, owner);
         }
@@ -377,6 +378,12 @@ fn update(
     };
     let messages: Vec<_> = cursor
         .read(messages)
+        .filter(|message| {
+            matches!(
+                message.0.as_ref(),
+                ServerMessage::Command { .. } | ServerMessage::Error { .. }
+            )
+        })
         .map(|message| message.0.clone())
         .collect();
     for message in messages.iter().map(|message| message.as_ref()) {
@@ -393,7 +400,11 @@ fn update(
             .map(|(owner, _)| owner)
             .collect();
         for owner in owners {
-            if world.get::<CommandCastle>(owner).and_then(|castle| castle.changes.as_ref()).is_some_and(|changes| !changes.current(world, owner)) {
+            if world
+                .get::<CommandCastle>(owner)
+                .and_then(|castle| castle.changes.as_ref())
+                .is_some_and(|changes| !changes.current(world, owner))
+            {
                 let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
                 castle.changes.as_ref().unwrap().cancel();
                 castle.waiting = false;
@@ -449,7 +460,10 @@ fn update(
                     castle.requested = true;
                     if castle.history_request == *id {
                         castle.next = Instant::now() + Duration::from_secs(1);
-                        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() { wake.after(Duration::from_secs(1)); }
+                        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
+                        {
+                            wake.after(Duration::from_secs(1));
+                        }
                     } else {
                         castle.next = Instant::now();
                     }
@@ -464,17 +478,34 @@ fn update(
         .iter(world)
         .collect();
     for owner in owners {
-        if crate::native::laboratory::blocked(world, owner) { continue; }
-        if world.get::<CommandCastle>(owner).is_some_and(|castle| castle.waiting || Instant::now() < castle.next) { continue; }
+        if crate::native::laboratory::blocked(world, owner) {
+            continue;
+        }
+        if world
+            .get::<CommandCastle>(owner)
+            .is_some_and(|castle| castle.waiting || Instant::now() < castle.next)
+        {
+            continue;
+        }
         {
             let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
-            if castle.changes.as_ref().is_some_and(|changes| changes.take()) {
+            if castle
+                .changes
+                .as_ref()
+                .is_some_and(|changes| changes.take())
+            {
                 castle.requested = true;
             }
         }
         let castle = world.get::<CommandCastle>(owner).unwrap();
-        if castle.waiting || !castle.requested || Instant::now() < castle.next { continue; }
-        if castle.changes.as_ref().is_some_and(|changes| !changes.current(world, owner)) {
+        if castle.waiting || !castle.requested || Instant::now() < castle.next {
+            continue;
+        }
+        if castle
+            .changes
+            .as_ref()
+            .is_some_and(|changes| !changes.current(world, owner))
+        {
             castle.changes.as_ref().unwrap().cancel();
             let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
             castle.requested = false;
@@ -501,7 +532,9 @@ fn update(
             let due = crate::native::cell_bridge::CommandChanges::retry(world, owner);
             let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
             castle.next = due;
-            if let Some(changes) = &castle.changes { changes.retain(); }
+            if let Some(changes) = &castle.changes {
+                changes.retain();
+            }
         }
     }
 }

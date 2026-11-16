@@ -71,7 +71,7 @@ impl Engine {
                 .await?;
             if response["service"] != *host
                 || response["owner"] != p.peer_owner
-                || serde_json::to_vec(&response)?.len() > MAX_FRAME_BYTES
+                || nucleus::json::encoded_len(&response)? > MAX_FRAME_BYTES
             {
                 return Err(invalid(
                     "The selected host returned another participant's routes",
@@ -119,7 +119,7 @@ impl Engine {
             .ok_or_else(|| invalid("No current peer authority"))?;
         routes.retain(|_, r| r.control.generation.parse::<i64>().ok() == Some(generation));
         p.routes = routes.into_values().collect();
-        if serde_json::to_vec(&p)?.len() > 256 * 1024 {
+        if nucleus::json::encoded_len(&p)? > 256 * 1024 {
             return Err(invalid("The peer's device routing state exceeds its bound"));
         }
         let mut tx = self.social_write_tx().await?;
@@ -180,7 +180,7 @@ impl Engine {
             }
             let context: String = row.get("context");
             let service: String = row.get("service");
-            let stored: Value = serde_json::from_str(&row.get::<String, _>("body"))?;
+            let stored: Value = serde_json::from_str(row.get::<&str, _>("body"))?;
             let result = self
                 .social_try_private_destination(
                     &network,
@@ -434,7 +434,7 @@ impl Engine {
             .await?;
         for row in contexts {
             let context: String = row.get("record_uid");
-            let state: Value = serde_json::from_str(&row.get::<String, _>("fds"))?;
+            let state: Value = serde_json::from_str(row.get::<&str, _>("fds"))?;
             if let Ok(route) = serde_json::from_value::<CertifiedRoute>(
                 state[format!("authorized_{cell}")].clone(),
             ) && request_auth::validate_route(&route, now).is_ok()
@@ -495,7 +495,7 @@ impl Engine {
         let envelopes = value["envelopes"]
             .as_array()
             .ok_or_else(|| invalid("Incomplete private mailbox response"))?;
-        if envelopes.len() > 8 || serde_json::to_vec(&value)?.len() > MAX_PRIVATE_FRAME_BYTES {
+        if envelopes.len() > 8 || nucleus::json::encoded_len(&value)? > MAX_PRIVATE_FRAME_BYTES {
             return Err(invalid(
                 "The private mailbox response exceeds its collection bound",
             ));

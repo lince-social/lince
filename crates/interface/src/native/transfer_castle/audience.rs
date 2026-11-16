@@ -5,6 +5,8 @@ use nucleus::visibility::{
     Context, Data, Policy,
     plan::{self, Definition, Review, Saved, Stage},
 };
+use serde::Deserialize;
+use std::borrow::Cow;
 
 #[path = "audience_tests.rs"]
 pub(super) mod tests;
@@ -49,17 +51,28 @@ fn delay_millis(text: &str) -> Result<u64, String> {
 }
 
 fn scope(world: &World, owner: Entity) -> Option<Scope> {
+    let (source, person, revision) = scope_parts(world, owner)?;
+    Some(Scope {
+        source: source.into(),
+        person: person.into_owned(),
+        revision,
+    })
+}
+
+fn scope_parts(world: &World, owner: Entity) -> Option<(&str, Cow<'_, str>, u64)> {
     let castle = world.get::<TransferCastle>(owner)?;
     let view = world.get::<View>(owner)?;
     let source = view
         .rows
         .iter()
-        .find(|record| text(record, "uid") == castle.selected)?;
-    let person = super::person(world, owner);
-    (!person.is_empty()).then(|| Scope {
-        source: castle.selected.clone(),
-        person,
-        revision: source["revision"].as_u64().unwrap_or(0),
+        .find(|record| model::display_ref(&record["uid"]).as_ref() == castle.selected)?;
+    let person = super::person_ref(world, owner);
+    (!person.is_empty()).then(|| {
+        (
+            castle.selected.as_str(),
+            person,
+            source["revision"].as_u64().unwrap_or(0),
+        )
     })
 }
 
@@ -123,24 +136,44 @@ fn send(
 }
 
 fn collect(world: &mut World, panel: &mut Panel) -> Result<(), String> {
-    let mut definition = panel.definition.clone();
+    let _capture = nucleus::performance::Span::new("transfer-audience-capture");
+    let mut definition = Cow::Borrowed(&panel.definition);
     for (key, entity) in &panel.fields {
         let Some(input) = world.get::<bevy::text::EditableText>(*entity) else {
             continue;
         };
-        let value = input.value().to_string().trim().to_owned();
+        let text = input.value().to_cow();
+        let value = text.trim();
+        let optional = (!value.is_empty()).then_some(value);
         match key.as_str() {
-            "title" => definition.projection.title = value,
-            "text" => definition.projection.text = value,
-            "quantity" => definition.projection.quantity = (!value.is_empty()).then_some(value),
-            "unit" => definition.projection.unit = (!value.is_empty()).then_some(value),
-            "concept" => definition.projection.concept = (!value.is_empty()).then_some(value),
-            "area" => definition.projection.area = value,
-            "availability" => definition.projection.availability = value,
+            "title" if definition.projection.title != value => {
+                definition.to_mut().projection.title = value.into()
+            }
+            "text" if definition.projection.text != value => {
+                definition.to_mut().projection.text = value.into()
+            }
+            "quantity" if definition.projection.quantity.as_deref() != optional => {
+                definition.to_mut().projection.quantity = optional.map(str::to_owned)
+            }
+            "unit" if definition.projection.unit.as_deref() != optional => {
+                definition.to_mut().projection.unit = optional.map(str::to_owned)
+            }
+            "concept" if definition.projection.concept.as_deref() != optional => {
+                definition.to_mut().projection.concept = optional.map(str::to_owned)
+            }
+            "area" if definition.projection.area != value => {
+                definition.to_mut().projection.area = value.into()
+            }
+            "availability" if definition.projection.availability != value => {
+                definition.to_mut().projection.availability = value.into()
+            }
             "expiry" => {
-                definition.expires_at_ms = chrono::DateTime::parse_from_rfc3339(&value)
+                let expires_at_ms = chrono::DateTime::parse_from_rfc3339(value)
                     .map_err(|_| "Choose an expiry date/time with timezone")?
-                    .timestamp_millis()
+                    .timestamp_millis();
+                if definition.expires_at_ms != expires_at_ms {
+                    definition.to_mut().expires_at_ms = expires_at_ms;
+                }
             }
             _ => {}
         }
@@ -149,34 +182,52 @@ fn collect(world: &mut World, panel: &mut Panel) -> Result<(), String> {
         if world.get_entity(*editor).is_err() {
             continue;
         }
-        definition.stages[index].include =
-            crate::visibility::edited_policy(world, *editor)?.include;
+        let policy = crate::visibility::edited_policy_shared(world, *editor)?;
+        if definition.stages[index].include != policy.include {
+            definition.to_mut().stages[index]
+                .include
+                .clone_from(&policy.include);
+        }
         if let Some(input) = delay.and_then(|entity| world.get::<bevy::text::EditableText>(entity))
         {
-            definition.stages[index].after_ms = delay_millis(input.value().to_string().trim())?;
+            let after_ms = delay_millis(input.value().to_cow().trim())?;
+            if definition.stages[index].after_ms != after_ms {
+                definition.to_mut().stages[index].after_ms = after_ms;
+            }
         }
     }
     if let Some(editor) = panel
         .exclusions
         .filter(|entity| world.get_entity(*entity).is_ok())
     {
-        definition.exclude = crate::visibility::edited_policy(world, editor)?.exclude;
+        let policy = crate::visibility::edited_policy_shared(world, editor)?;
+        if definition.exclude != policy.exclude {
+            definition.to_mut().exclude.clone_from(&policy.exclude);
+        }
     }
-    if definition != panel.definition {
+    if let Cow::Owned(definition) = definition
+        && definition != panel.definition
+    {
+        panel.definition = definition;
         panel.review = None;
+        nucleus::performance::add("transfer-audience-drafts-updated", 1);
     }
-    panel.definition = definition;
     Ok(())
 }
 
 pub(super) fn capture(world: &mut World, owner: Entity) {
-    let current = scope(world, owner);
-    let Some(mut panel) = world.entity_mut(owner).take::<Panel>() else {
+    let Some(panel) = world.get::<Panel>(owner) else {
         return;
     };
-    if current.as_ref() != Some(&panel.scope) {
+    if !scope_parts(world, owner).is_some_and(|(source, person, revision)| {
+        source == panel.scope.source
+            && person.as_ref() == panel.scope.person
+            && revision == panel.scope.revision
+    }) {
+        world.entity_mut(owner).remove::<Panel>();
         return;
     }
+    let mut panel = world.entity_mut(owner).take::<Panel>().unwrap();
     if let Err(error) = collect(world, &mut panel) {
         panel.review = None;
         panel.notice = error;
@@ -600,12 +651,11 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         let result = (|| -> Result<(), String> {
             match pending {
                 Pending::Context => {
-                    panel.context = Some(
-                        serde_json::from_value(data.clone()).map_err(|error| error.to_string())?,
-                    )
+                    panel.context =
+                        Some(Context::deserialize(data).map_err(|error| error.to_string())?)
                 }
                 Pending::Inspect => {
-                    let plans: Vec<Saved> = serde_json::from_value(data["plans"].clone())
+                    let plans = Vec::<Saved>::deserialize(&data["plans"])
                         .map_err(|error| error.to_string())?;
                     if plans.iter().any(|saved| {
                         saved.review.definition.controller_uid != panel.scope.person
@@ -625,8 +675,8 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                     panel.plans = plans;
                 }
                 Pending::Review(definition) => {
-                    let review: Review = serde_json::from_value(data["review"].clone())
-                        .map_err(|error| error.to_string())?;
+                    let review =
+                        Review::deserialize(&data["review"]).map_err(|error| error.to_string())?;
                     let commitment = data["commitment"]
                         .as_str()
                         .ok_or("Audience review is missing its commitment")?
@@ -643,8 +693,8 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                     panel.notice="Public fields, every audience, exclusions, delays and expiry reviewed. Enable to publish.".into();
                 }
                 Pending::Mutation => {
-                    let saved: Saved = serde_json::from_value(data["plan"].clone())
-                        .map_err(|error| error.to_string())?;
+                    let saved =
+                        Saved::deserialize(&data["plan"]).map_err(|error| error.to_string())?;
                     if saved.review.definition.controller_uid != panel.scope.person
                         || saved.review.definition.source_uid != panel.scope.source
                     {

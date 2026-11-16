@@ -1,3 +1,4 @@
+use super::super::rows::property_containers as containers;
 use super::*;
 use crate::native::sand_settings::{
     Changed, Configuration, Control, Declaration, Definition, Value as Setting,
@@ -66,17 +67,49 @@ pub(super) fn definitions(property: &str) -> Vec<Definition> {
     ]
 }
 
-fn containers(world: &World, row: Entity) -> Vec<(Entity, String)> {
-    let mut todo = vec![row];
-    let mut out = Vec::new();
-    while let Some(entity) = todo.pop() {
-        if let Some(container) = world.get::<super::super::rows::PropertyContainer>(entity) {
-            out.push((entity, container.0.clone()));
-        } else if let Some(children) = world.get::<Children>(entity) {
-            todo.extend(children.iter().rev());
+fn capture_content(world: &World, entity: Entity, field: &mut Field) {
+    field.wrapping.clear();
+    field.editors.clear();
+    let mut pending = vec![entity];
+    while let Some(child) = pending.pop() {
+        if let Some(layout) = world.get::<TextLayout>(child) {
+            field.wrapping.push((child, layout.clone()));
+        }
+        if world.get::<bevy::text::EditableText>(child).is_some()
+            && let Some(node) = world.get::<Node>(child)
+        {
+            field.editors.push((child, node.clone()));
+        }
+        if let Some(children) = world.get::<Children>(child) {
+            pending.extend(children.iter());
         }
     }
-    out
+}
+
+pub(super) fn content_created(world: &mut World, entity: Entity) {
+    let children = world
+        .get::<Children>(entity)
+        .map(|children| children.iter().collect::<Vec<_>>())
+        .unwrap_or_default();
+    if children.iter().any(|child| {
+        world
+            .get::<super::super::rows::PropertyLabel>(*child)
+            .is_some()
+            && world.get::<PresentationLabel>(*child).is_none()
+    }) {
+        for child in children {
+            if world.get::<PresentationLabel>(child).is_some() {
+                world.despawn(child);
+            }
+        }
+    }
+    if let Some(mut field) = world.get::<Field>(entity).cloned() {
+        capture_content(world, entity, &mut field);
+        world
+            .entity_mut(entity)
+            .insert(field)
+            .remove::<AppliedFieldSettings>();
+    }
 }
 
 pub(super) fn prepare(world: &mut World, row: Entity) {
@@ -110,22 +143,6 @@ pub(super) fn prepare(world: &mut World, row: Entity) {
         let Some(node) = world.get::<Node>(entity).cloned() else {
             continue;
         };
-        let mut wrapping = Vec::new();
-        let mut editors = Vec::new();
-        let mut todo = vec![entity];
-        while let Some(child) = todo.pop() {
-            if let Some(layout) = world.get::<TextLayout>(child) {
-                wrapping.push((child, layout.clone()));
-            }
-            if world.get::<bevy::text::EditableText>(child).is_some()
-                && let Some(node) = world.get::<Node>(child)
-            {
-                editors.push((child, node.clone()));
-            }
-            if let Some(children) = world.get::<Children>(child) {
-                todo.extend(children.iter());
-            }
-        }
         let values = world
             .get::<State>(row)
             .and_then(|state| state.fields.get(&property))
@@ -157,15 +174,17 @@ pub(super) fn prepare(world: &mut World, row: Entity) {
             },
             values,
         );
+        let mut field = Field {
+            row,
+            property,
+            node,
+            wrapping: Vec::new(),
+            editors: Vec::new(),
+        };
+        capture_content(world, entity, &mut field);
         world
             .entity_mut(entity)
-            .insert(Field {
-                row,
-                property,
-                node,
-                wrapping,
-                editors,
-            })
+            .insert(field)
             .observe(field_changed);
         apply_field(world, entity);
     }
@@ -391,6 +410,9 @@ pub(super) fn arrange(world: &mut World, row: Entity, view: &Presentation) {
                 Display::None
             };
         }
+        if visible {
+            super::super::rows::materialize_field(world, row, *entity);
+        }
         if let Some(added) = world.get::<Added>(*entity) {
             let text = added.0;
             let data = world
@@ -420,8 +442,8 @@ pub(super) fn arrange(world: &mut World, row: Entity, view: &Presentation) {
                 .get::<super::super::rows::PropertyLabel>(*child)
                 .is_some()
         }) {
-            let caption = protein::record_schema::fields()
-                .into_iter()
+            let caption = protein::record_schema::FIELDS
+                .iter()
                 .find(|definition| definition.key == field)
                 .map(|definition| definition.title.to_string())
                 .unwrap_or_else(|| field.clone());
@@ -611,8 +633,8 @@ fn apply_native(world: &mut World, row: Entity) {
             }
         }
         if !labelled && explicit == Some(&Setting::Toggle(true)) {
-            let caption = protein::record_schema::fields()
-                .into_iter()
+            let caption = protein::record_schema::FIELDS
+                .iter()
                 .find(|field| field.key == property)
                 .map(|field| field.title.to_string())
                 .unwrap_or(property);

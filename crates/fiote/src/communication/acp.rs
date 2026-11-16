@@ -96,11 +96,7 @@ impl Config {
             }
         }
         self.additional_directories = directories;
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > 16_384
-        {
+        if nucleus::json::encoded_len(self).map_err(|error| error.to_string())? > 16_384 {
             return Err("Agent configuration exceeds 16 KiB.".into());
         }
         Ok(())

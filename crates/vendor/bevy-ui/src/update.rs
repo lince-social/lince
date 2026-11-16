@@ -2,7 +2,7 @@
 
 use crate::{
     CalculatedClip, ComputedUiRenderTargetInfo, ComputedUiTargetCamera, DefaultUiCamera, Display,
-    Node, OverrideClip, UiScale, UiTargetCamera,
+    Node, OverrideClip, UiClippingBoundary, UiScale, UiTargetCamera,
     experimental::{UiChildren, UiRootNodes},
     ui_transform::UiGlobalTransform,
 };
@@ -31,6 +31,7 @@ pub fn update_clipping_system(
             &UiGlobalTransform,
             Option<&mut CalculatedClip>,
             Has<OverrideClip>,
+            Option<&mut UiClippingBoundary>,
         )>,
         Query<
             Entity,
@@ -42,6 +43,7 @@ pub fn update_clipping_system(
                 Changed<ChildOf>,
                 Changed<OverrideClip>,
                 Changed<CalculatedClip>,
+                Added<UiClippingBoundary>,
             )>,
         >,
     )>,
@@ -54,6 +56,7 @@ pub fn update_clipping_system(
         RemovedComponents<OverrideClip>,
         RemovedComponents<CalculatedClip>,
         RemovedComponents<Disabled>,
+        RemovedComponents<UiClippingBoundary>,
     ),
     #[cfg(feature = "ghost_nodes")] ghosts: Query<Entity, Added<crate::experimental::GhostNode>>,
     #[cfg(feature = "ghost_nodes")] mut removed_ghosts: RemovedComponents<
@@ -71,6 +74,7 @@ pub fn update_clipping_system(
         .chain(removed.2.read())
         .chain(removed.3.read())
         .chain(removed.4.read())
+        .chain(removed.6.read())
     {
         ui_children.affected_roots(entity, &mut dirty);
     }
@@ -102,15 +106,23 @@ fn update_clipping(
         &UiGlobalTransform,
         Option<&mut CalculatedClip>,
         Has<OverrideClip>,
+        Option<&mut UiClippingBoundary>,
     )>,
     entity: Entity,
     mut maybe_inherited_clip: Option<Rect>,
 ) {
-    let Ok((node, computed_node, transform, maybe_calculated_clip, has_override_clip)) =
+    let Ok((node, computed_node, transform, maybe_calculated_clip, has_override_clip, boundary)) =
         node_query.get_mut(entity)
     else {
         return;
     };
+
+    if let Some(mut boundary) = boundary {
+        if boundary.inherited_clip != maybe_inherited_clip {
+            boundary.inherited_clip = maybe_inherited_clip;
+        }
+        return;
+    }
 
     // If the UI node entity has an `OverrideClip` component, discard any inherited clip rect
     if has_override_clip {
@@ -729,6 +741,7 @@ pub(crate) fn reference_clipping_system(
         &UiGlobalTransform,
         Option<&mut CalculatedClip>,
         Has<OverrideClip>,
+        Option<&mut UiClippingBoundary>,
     )>,
     ui_children: UiChildren,
 ) {

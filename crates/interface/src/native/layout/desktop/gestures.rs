@@ -1,4 +1,6 @@
-use super::input_settings::{button, disable, feedback, field, text};
+use super::input_settings::{button, caption, disable, feedback, field, text, prepared::Prepared};
+use bevy::ecs::query::QueryState;
+use std::collections::HashMap;
 use crate::{
     host::input::GestureSettings,
     native::{
@@ -147,19 +149,6 @@ pub(crate) fn panel(world: &mut World, parent: Entity) {
     refresh(world);
 }
 
-fn caption(world: &mut World, control: (Entity, Entity), value: &str) {
-    text(world, control.1, value);
-    if world
-        .get::<bevy::a11y::AccessibilityNode>(control.0)
-        .is_some_and(|node| node.label() != Some(value))
-    {
-        world
-            .get_mut::<bevy::a11y::AccessibilityNode>(control.0)
-            .unwrap()
-            .set_label(value);
-    }
-}
-
 fn load(world: &mut World, page: Entity, value: GestureSettings) {
     let state = world.get::<Page>(page).unwrap();
     let fields = [
@@ -182,6 +171,22 @@ fn candidate(world: &World, page: Entity) -> Result<GestureSettings, String> {
     let state = world
         .get::<Page>(page)
         .ok_or("The gesture settings are unavailable.")?;
+    let fields = [state.sensitivity, state.threshold];
+    if let Some(value) = world
+        .get_resource::<Presentation>()
+        .and_then(|presentation| presentation.drafts.get(&page))
+        .and_then(|draft| draft.get(world, fields, &state.draft_enabled))
+    {
+        return value.clone();
+    }
+    parse_fields(world, fields, state.draft_enabled)
+}
+
+fn parse_fields(
+    world: &World,
+    fields: [Entity; 2],
+    enabled: bool,
+) -> Result<GestureSettings, String> {
     let value = |entity| -> Result<u16, String> {
         let input = world
             .get::<EditableText>(entity)
@@ -192,15 +197,15 @@ fn candidate(world: &World, page: Entity) -> Result<GestureSettings, String> {
         }
         input
             .value()
-            .to_string()
+            .to_cow()
             .trim()
             .parse()
             .map_err(|_| "Use whole numbers for gesture sensitivity and threshold.".into())
     };
     let result = GestureSettings {
-        enabled: state.draft_enabled,
-        sensitivity_percent: value(state.sensitivity)?,
-        commit_threshold: value(state.threshold)?,
+        enabled,
+        sensitivity_percent: value(fields[0])?,
+        commit_threshold: value(fields[1])?,
     };
     result.validate()?;
     Ok(result)
@@ -287,34 +292,54 @@ impl Action for Change {
     }
 }
 
+#[derive(Resource)]
+struct Presentation {
+    pages: QueryState<Entity, With<Page>>,
+    pending: Vec<Entity>,
+    drafts: HashMap<Entity, Prepared<bool, GestureSettings>>,
+    summary: Option<(GestureSettings, String)>,
+}
+
+impl FromWorld for Presentation {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            pages: world.query_filtered(),
+            pending: Vec::new(),
+            drafts: HashMap::new(),
+            summary: None,
+        }
+    }
+}
+
 fn refresh(world: &mut World) {
+    let _presentation = engine::performance::Span::new("gesture-settings-presentation");
+    let mut presentation = world
+        .remove_resource::<Presentation>()
+        .unwrap_or_else(|| Presentation::from_world(world));
+    render(world, &mut presentation);
+    world.insert_resource(presentation);
+}
+
+fn render(world: &mut World, presentation: &mut Presentation) {
+    presentation.pending.clear();
+    presentation.pending.extend(presentation.pages.iter(world));
+    presentation
+        .drafts
+        .retain(|page, _| world.get::<Page>(*page).is_some());
+    if presentation.pending.is_empty() {
+        return;
+    }
     let active = settings(world);
     let supported = world
         .get_resource::<GestureSupport>()
         .is_some_and(|support| support.0);
-    let pages: Vec<_> = world
-        .query_filtered::<Entity, With<Page>>()
-        .iter(world)
-        .collect();
-    for page in pages {
-        let state = world.get::<Page>(page).unwrap();
-        let (summary, availability, enabled, save, origin, status, previous_error) = (
-            state.summary,
-            state.availability,
-            state.enabled,
-            state.save,
-            state.origin,
-            state.status,
-            state.validation_error.clone(),
-        );
-        let mut draft = candidate(world, page);
-        if draft.as_ref().is_ok_and(|draft| *draft == origin) && origin != active {
-            load(world, page, active);
-            draft = candidate(world, page);
-        }
-        text(
-            world,
-            summary,
+    if presentation
+        .summary
+        .as_ref()
+        .is_none_or(|(previous, _)| *previous != active)
+    {
+        presentation.summary = Some((
+            active,
             format!(
                 "{} · Sensitivity {}% · Commit threshold {}",
                 if active.enabled {
@@ -325,7 +350,33 @@ fn refresh(world: &mut World) {
                 active.sensitivity_percent,
                 active.commit_threshold
             ),
+        ));
+        engine::performance::add("settings-summaries-prepared", 1);
+    }
+    for page in presentation.pending.drain(..) {
+        let state = world.get::<Page>(page).unwrap();
+        let (fields, summary, availability, enabled, save, origin, status, mut draft_enabled) = (
+            [state.sensitivity, state.threshold],
+            state.summary,
+            state.availability,
+            state.enabled,
+            state.save,
+            state.origin,
+            state.status,
+            state.draft_enabled,
         );
+        let prepared = presentation.drafts.entry(page).or_default();
+        let mut draft = prepared.prepare(world, fields, &draft_enabled, || {
+            parse_fields(world, fields, draft_enabled)
+        });
+        if draft.as_ref().is_ok_and(|draft| *draft == origin) && origin != active {
+            load(world, page, active);
+            draft_enabled = world.get::<Page>(page).unwrap().draft_enabled;
+            draft = prepared.prepare(world, fields, &draft_enabled, || {
+                parse_fields(world, fields, draft_enabled)
+            });
+        }
+        text(world, summary, &presentation.summary.as_ref().unwrap().1);
         text(
             world,
             availability,
@@ -335,7 +386,6 @@ fn refresh(world: &mut World) {
                 "This host has no desktop touchpad gesture stream. Saved preferences apply when available; keyboard commands remain usable."
             },
         );
-        let draft_enabled = world.get::<Page>(page).unwrap().draft_enabled;
         caption(
             world,
             enabled,
@@ -346,18 +396,25 @@ fn refresh(world: &mut World) {
             },
         );
         let origin = world.get::<Page>(page).unwrap().origin;
-        let error = draft.as_ref().err().cloned().or_else(|| (origin != active).then(|| "Gesture settings changed. Reload active values or Review the draft against the file; your draft is preserved.".into()));
-        if let Some(error) = &error {
-            text(world, status, error.clone());
-        } else if previous_error.as_ref().is_some_and(|previous| {
-            world
-                .get::<Text>(status)
-                .is_some_and(|text| &text.0 == previous)
-        }) {
+        let error = draft.as_ref().err().map(String::as_str).or_else(|| (origin != active)
+            .then_some("Gesture settings changed. Reload active values or Review the draft against the file; your draft is preserved."));
+        if let Some(error) = error {
+            text(world, status, error);
+        } else if world
+            .get::<Page>(page)
+            .unwrap()
+            .validation_error
+            .as_ref()
+            .is_some_and(|previous| {
+                world
+                    .get::<Text>(status)
+                    .is_some_and(|text| &text.0 == previous)
+            })
+        {
             text(world, status, "");
         }
-        if error != previous_error {
-            world.get_mut::<Page>(page).unwrap().validation_error = error.clone();
+        if world.get::<Page>(page).unwrap().validation_error.as_deref() != error {
+            world.get_mut::<Page>(page).unwrap().validation_error = error.map(str::to_owned);
         }
         disable(
             world,
@@ -367,9 +424,9 @@ fn refresh(world: &mut World) {
     }
 }
 
-fn review_snapshot(world: &World, page: Entity) -> Result<configuration::review::Snapshot, String> {
+fn review_snapshot(world: &World, page: Entity, previous: Option<&configuration::review::Snapshot>) -> Result<configuration::review::Snapshot, String> {
     let state = world.get::<Page>(page).ok_or("The gesture editor is unavailable.")?;
-    configuration::review::Snapshot::new(&state.origin, &candidate(world, page)?, &settings(world))
+    configuration::review::Snapshot::new(&state.origin, &candidate(world, page)?, &settings(world), previous)
 }
 
 fn review_apply(world: &mut World, page: Entity, active: serde_json::Value, draft: serde_json::Value) -> Result<(), String> {

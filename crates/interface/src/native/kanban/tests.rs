@@ -449,7 +449,7 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
                     position: outside,
                     size: Vec2::splat(40.0),
                 },
-                RecordProperties(json!({"uid":"r_lone", "quantity":"0"})),
+                RecordProperties(json!({"uid":"r_lone", "quantity":"0"}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))

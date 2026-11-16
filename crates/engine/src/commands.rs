@@ -81,7 +81,7 @@ impl Definition {
             Some(self.revision) == row.get::<Option<i64>, _>("command_revision")
                 && self.host == row.get::<Option<String>, _>("host_uid")
                 && self.configuration
-                    == serde_json::from_str::<Command>(&row.get::<String, _>("configuration"))?,
+                    == serde_json::from_str::<Command>(row.get::<&str, _>("configuration"))?,
         )
     }
 }

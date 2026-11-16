@@ -10,7 +10,7 @@ Park — 4. Pay for changes once; make unchanged interface reads cheap (
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-Styling is not assumed optimal. The runtime already caches token results, but each Tokens system parameter owns a Local HashMap; refresh can clear that system's whole cache after any matching source change, and presentation/metric consumers still scan on native updates. Changed<SandText> still invalidates style for real non-token metadata changes. Direct Record typing does not mutate that component; the completed Edit panel no-op repair is recorded in 00. Select a remaining actual source before changing resolver ownership.
+Styling is not assumed optimal. Each Tokens system parameter still owns a Local cache, but the source batch already narrows ordinary invalidation to affected entities/descendants and compares SandText editable-kind/override inputs independently of content and other metadata. Theme changes, initial resolution or missed removal history retain conservative full invalidation. Changed-input consumer selection, inherited-font ordering and linear metric traversal are implemented; P78/P109/P111 own their verification. Any further resolver ownership/representation work must address a remaining cost, rather than reimplement these reductions.
 
 The preferred direction is to spend more bounded work on real style writes and much less CPU on repeated reads. Persisted tokens and runtime resolved values need not share the same representation. Keep cheap steady reads, correct live dynamic styles and bounded memory together. P91's scheduling result is evidence about rare changing-theme work, not proof of good steady performance. P109 reassesses its tradeoff before choosing the representation.
 
@@ -19,17 +19,16 @@ Layout, text, paint, transform, input and capture revisions need explicit depend
 **Continue through these Records:**
 
 - [P122 — Resolve only the layout root affected by one ordinary edit.](record:r_1QNJKH1TQ6VHYJXVKP95M0RN0E)
-- [P48 — Define one safe hidden-subtree presentation-demand boundary.](record:r_45GB38DS8T74GQD5GMCWG9CCNS)
+- [P48 — Verify hidden presentation demand after the source batch.](record:r_45GB38DS8T74GQD5GMCWG9CCNS)
 - [P74 — Test a translation-only canvas-pan path.](record:r_25KXXVAXE06K8K87Y8NTTEGE9T)
 - [P75 — Test transform retention during an ordinary item drag.](record:r_62Y5RSBWZX1QB494T35WQDX4AF)
 - [P76 — Test scrolling through one retained presentation transform.](record:r_3JHQMSAT7R2NZH8GH21EFCPZ41)
-- [P109 — Measure the read-heavy styling cost before choosing its representation.](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8)
-- [P78 — Narrow one overly broad style or layout invalidation.](record:r_7V8V15DFDKXCGGT99VR6KJ25G4)
-- [P111 — Apply resolved styles only to affected consumers.](record:r_6TZTP766V7XVXM52YEHB3EMJKZ)
+- [P109 — Evaluate the retained read-heavy styling reductions.](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8)
+- [P78 — Verify narrowed text and style invalidation.](record:r_7V8V15DFDKXCGGT99VR6KJ25G4)
+- [P111 — Verify changed-consumer style application.](record:r_6TZTP766V7XVXM52YEHB3EMJKZ)
 - [P110 — Compare a compact resolved-style read representation.](record:r_7EVHK9QKV4WZHW8NB2Y2SKN421)
 - [P112 — Publish expensive style edits as one coherent revision.](record:r_7G9YA455AKWX5F0Z31Y2N2MHJP)
-- [P51 — Reduce validation work in the existing native-surface cache.](record:r_6PM3E9E02BSEFYC3MVV906SD83)
-- [P80 — Distinguish texture capability from actual texture updates.](record:r_4MPVWB5R7J40MNV571W780DQ9W)
+- [P80 — Verify dormant camera-image retention.](record:r_4MPVWB5R7J40MNV571W780DQ9W)
 } r_3Q6DANX7XHJ5WTV7FX6S6WAMY6
 
 P122 — Resolve only the layout root affected by one ordinary edit. (
@@ -58,7 +57,7 @@ Extension @park-p122 "lince.controls" {
     }]
 }
 
-P48 — Define one safe hidden-subtree presentation-demand boundary. (
+P48 — Verify hidden presentation demand after the source batch. (
     @park-p48: 0,
     is #task,
     #park-performance-task,
@@ -66,12 +65,13 @@ P48 — Define one safe hidden-subtree presentation-demand boundary. (
     #part-of @park-dev-04-style-layout-and-retention: 15,
     #park-workflow @park-development-cycle
 ) { r_45GB38DS8T74GQD5GMCWG9CCNS
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Inactive-camera extraction, hidden text preparation, deferred hidden-row refresh and lazy collapsed-field construction are implemented. Already materialized editors retain their drafts and state.
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Verify re-entry after data/style changes, focus, intrinsic sizes, output/overview/capture demand and revocation. RENDER-1 covers physical acceptance; FOREGROUND-1 covers reveal cost. Hidden semantic state and automation remain live.
 
+**Why:** Avoiding invisible presentation work must preserve the content and size that later becomes visible.
 
-**Why:** off-screen/inactive trees still add CPU preparation even when raster cameras are disabled. **Scope:** one contained native subtree family, with demand from every output, overview and capture consumer. Separate skippable presentation from state/subscriptions and sizing dependencies. **Verify:** re-entry after hidden data edits, focus/editor retention, inherited styles, intrinsic/Fit sizes, previews and private capture. Do not use Display::None/Disabled to suspend arbitrary semantics or infer full occlusion from translucent overlap. If containment cannot be proved, retain the necessary work.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_45GB38DS8T74GQD5GMCWG9CCNS
 
 Extension @park-p48 "lince.controls" {
@@ -162,7 +162,7 @@ Extension @park-p76 "lince.controls" {
     }]
 }
 
-P109 — Measure the read-heavy styling cost before choosing its representation. (
+P109 — Evaluate the retained read-heavy styling reductions. (
     @park-p109: 0,
     is #task,
     #park-performance-task,
@@ -170,12 +170,13 @@ P109 — Measure the read-heavy styling cost before choosing its representation.
     #part-of @park-dev-04-style-layout-and-retention: 31,
     #park-workflow @park-development-cycle
 ) { r_0DFPHA7M8KBYDS8GQVG89MJAZ8
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Resolver/metric counters and real named system attribution exist. The current source batch narrows style dependencies, reuses resolved colors/configuration and applies changed consumers; P78/P111 own correctness verification.
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · baseline.
+**Still to verify:** Compare unchanged scenes, caret/text-only changes, local overrides, reparenting and theme changes at small/normal/dense sizes. Use their actual cost before promoting P110/P112; no duplicate instrumentation or speculative style storage rewrite.
 
+**Why:** Read cost dominates rare styling writes, but representation changes need evidence after the current reductions.
 
-**Why:** P91 improved large theme-change latency, but typical styling reads greatly outnumber authored theme edits; cached lookup and consumer scanning still cost CPU. **Scope:** instrument resolver hits/misses/direct ancestor walks, per-system refresh/clear, consumers scanned/applied and style-caused layout work. Compare zero authored style changes, one hover/caret change, one local token override, text-only editing, reparent/rule changes and a continuous theme slider across small/normal/dense scenes. Distinguish persisted token-file parsing/writing from runtime reads. Include P91 serial versus independent scheduling as a control using the same current source. **Close with:** read/write frequency and total CPU/latency/memory evidence, a selected read-optimized candidate, and a recommendation to keep/adjust P91 if its steady cost matters. Do not extrapolate a 10% rare-write microbenchmark into a daily-use win. Run before the style-specific representation/application experiments.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_0DFPHA7M8KBYDS8GQVG89MJAZ8
 
 Extension @park-p109 "lince.controls" {
@@ -188,7 +189,7 @@ Extension @park-p109 "lince.controls" {
     }]
 }
 
-P78 — Narrow one overly broad style or layout invalidation. (
+P78 — Verify narrowed text and style invalidation. (
     @park-p78: 0,
     is #task,
     #park-performance-task,
@@ -196,12 +197,13 @@ P78 — Narrow one overly broad style or layout invalidation. (
     #part-of @park-dev-04-style-layout-and-retention: 35,
     #park-workflow @park-development-cycle
 ) { r_7V8V15DFDKXCGGT99VR6KJ25G4
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** The source batch tracks style-bearing SandText inputs, retains unchanged icon/style state, reuses static shaping inputs and preserves same-tick inherited-font ordering. Content/caret changes no longer intentionally invalidate unrelated styling.
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Check source changes, inheritance, reparenting, binding removal/addition, theme transitions and authored zero values. Compare actual resolution/layout writes and complete response, including small scenes.
 
+**Why:** Text changes should not repeatedly resolve unchanged styling across unrelated trees.
 
-**Why:** an edit to one source should not repeatedly resolve unrelated trees. **Scope:** use resolver/metric counters to select one actual global invalidation and propagate its real dependency scope through existing retained caches. **Verify:** source edits, inheritance, moves, added/removed bindings, authored zero values and dynamic themes; unrelated layout/text ticks should remain stable. Measure invalidation bookkeeping and small scenes. Existing style/metric caches already work; this task is about an evidenced remaining invalidation, not adding another cache layer.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_7V8V15DFDKXCGGT99VR6KJ25G4
 
 Extension @park-p78 "lince.controls" {
@@ -214,7 +216,7 @@ Extension @park-p78 "lince.controls" {
     }]
 }
 
-P111 — Apply resolved styles only to affected consumers. (
+P111 — Verify changed-consumer style application. (
     @park-p111: 0,
     is #task,
     #park-performance-task,
@@ -222,12 +224,13 @@ P111 — Apply resolved styles only to affected consumers. (
     #part-of @park-dev-04-style-layout-and-retention: 39,
     #park-workflow @park-development-cycle
 ) { r_6TZTP766V7XVXM52YEHB3EMJKZ
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Changed-input filtering, linear bulk metric traversal, existing resolver reuse and changed-only control writes are implemented. This task no longer asks for another dirty journal or a duplicate style cache. Authored-item maintenance now shares its recovery snapshot, borrows definitions and applies only differing live style/geometry fields; AUTHORING-VERIFY in Overhaul.md owns its lifecycle, validation, serialization and total-cost checks. Repeated full state copies and whole-part lookups are no longer pending implementation. Shared component reference collection also uses one output buffer through nested parts, including mutable-reference consumers, and rebinding prepares declared keys once. AUTHORING-VERIFY covers those ordered-reference and backend-consumer contracts.
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Check first creation, explicit writes, reparenting, reset/zero values, theme changes and unrelated caret/text changes before same-tick consumers. Account for scanning and invalidation maintenance as well as avoided writes.
 
+**Why:** Cheap steady reads must remain correct when a real style dependency changes.
 
-**Why:** presentation::apply/icons and token_metrics still traverse their consumers even when the resolved values are unchanged. **Scope:** select P109's most expensive stable consumer family and drive its application from actual resolved-style/input changes, initialization and removals. Test an existing revision/producer dirty journal against change-filtered scans; Changed queries themselves are not sparse indexes. Track authored numeric metrics separately from their applied scaled result to avoid feedback and preserve restored zero values. **Verify:** unrelated text/caret/pixel changes cause zero style writes and no unnecessary consumer work, while new bindings, explicit writes, reparenting and live themes update correctly before same-tick consumers. Include bookkeeping cost and bounded retirement. Do not skip all styles solely because ThemeSettings is unchanged. **Depends on:** scoped invalidation P78; pair with P110 only if they independently help.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_6TZTP766V7XVXM52YEHB3EMJKZ
 
 Extension @park-p111 "lince.controls" {
@@ -292,33 +295,18 @@ Extension @park-p112 "lince.controls" {
     }]
 }
 
-P51 — Reduce validation work in the existing native-surface cache. (
-    @park-p51: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a1,
+P51 — Surface fingerprint lookup reduction is complete. (
+    @park-p51: 1,
+    is #chapter,
     #part-of @park-dev-04-style-layout-and-retention: 51,
     #park-workflow @park-development-cycle
 ) { r_6PM3E9E02BSEFYC3MVV906SD83
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** The scoped fingerprint lookup simplification has matched optimized verification. The additional hashing rewrite was rejected and removed. Neither a whole-scene temporal cache nor broader dirty-subtree invalidation is established by this result; propose another mechanism only from new evidence.
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
-
-
-**Why:** reusing a raster can still require a full node/glyph fingerprint traversal every update. **Scope:** profile topology/surface_render.rs, then make one measured owner/subtree validation incremental using actual content, geometry, asset and policy revisions. **Verify:** changed text/fonts/wrap, clips, new/replaced sources, captures and animated images, including the missing-text/flashing-controls regression. Account for memory and invalidation cost. Do not cache authority decisions, weaken private capture or assume that a retained image can never change.
+**Evidence:** [Overhaul.md](Overhaul.md#optimized-surface-fingerprint-and-export-attribution--2026-11-14-1639-utc). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_6PM3E9E02BSEFYC3MVV906SD83
 
-Extension @park-p51 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
-
-P80 — Distinguish texture capability from actual texture updates. (
+P80 — Verify dormant camera-image retention. (
     @park-p80: 0,
     is #task,
     #park-performance-task,
@@ -328,10 +316,10 @@ P80 — Distinguish texture capability from actual texture updates. (
 ) { r_4MPVWB5R7J40MNV571W780DQ9W
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
-**Context:** [Source chapter](record:r_3Q6DANX7XHJ5WTV7FX6S6WAMY6); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Implementation is complete for the dormant-camera case; verification only.** The source-only capture-write receipt in [Overhaul.md](Overhaul.md) records encoded-write revisions and a single current-writer/dependency table. An image with known inactive camera writers can retain its containing capture until its content revision, texture identity, CPU asset or other visual input changes. Active cameras, storage textures, unknown/removed writers and filtered capture keep conservative invalidation. Provenance seeding cannot manufacture a write revision. This does not skip active camera producers or claim GPU completion.
 
+**Why:** attachment capability alone forced repeated capture rasterization even between camera writes. **Verify:** CAPTURE-WRITE-VERIFY in Overhaul.md owns static/animated previews, first completion, inactive/active transitions, multiple writers, producer removal, replacement/resize, CPU uploads, private/public aliases and missing assets/pipelines. Compare fingerprint/registry CPU and allocations with encoded/reused pass counts and total input/resource cost. Require fresh pixels, privacy and existing wake/order behavior. The new batch is unbuilt, untested and unmeasured; broader producer scheduling remains conditional, not another required implementation under this task.
 
-**Why:** a texture usable as a render attachment is not necessarily rewritten every frame. **Scope:** test producer content/completion epochs for one measured over-invalidating image path in surface_render rather than marking every such image dirty solely by usage flags. Keep a conservative fallback for untracked producers. **Verify:** static retained images, active video/shaders, aliases, producer removal and private/public capture updates. Accept only if repeated raster work falls without stale pixels, feedback loops or missed wakeups.
 } r_4MPVWB5R7J40MNV571W780DQ9W
 
 Extension @park-p80 "lince.controls" {

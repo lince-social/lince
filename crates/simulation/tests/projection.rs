@@ -210,9 +210,9 @@ fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<lince_interface::tim
             cell::ServerMessage::Error { message, .. } => panic!("{message}"),
             cell::ServerMessage::Snapshot { id, rows } if id == "recurrence-a" => {
                 return rows
-                    .into_iter()
+                    .iter()
                     .filter(|row| row["kind"] == "schedule-entry")
-                    .map(|row| serde_json::from_value(row).unwrap())
+                    .map(|row| serde::Deserialize::deserialize(row).unwrap())
                     .collect();
             }
             _ => {}

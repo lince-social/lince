@@ -28,7 +28,7 @@ struct View {
     list: Entity,
     rows: Vec<Item>,
     choices: Vec<Selection>,
-    feed: String,
+    feed: Option<crate::native::protein_area::FeedVersion<'static>>,
     page: usize,
     selecting: bool,
     message: String,
@@ -103,7 +103,7 @@ pub fn spawn(
             list,
             rows: Vec::new(),
             choices: Vec::new(),
-            feed: String::new(),
+            feed: None,
             page: 0,
             selecting: false,
             message: String::new(),
@@ -137,20 +137,18 @@ fn update(world: &mut World) {
         }
         advance(world, owner);
         let area = world.get::<Frame>(owner).unwrap().area;
-        let feed = crate::native::protein_area::calendar_feed(world, area)
-            .map(|(_, key)| key)
-            .unwrap_or_default();
+        let (data, feed) = crate::native::protein_area::calendar_feed(world, area)
+            .map_or((&[][..], None), |(rows, version)| (rows, Some(version)));
         let view = world.get::<View>(owner).unwrap();
         if view.batch.is_none() && !view.dragging && view.feed != feed {
-            let data = crate::native::protein_area::calendar_feed(world, area)
-                .map(|(rows, _)| rows.to_vec())
-                .unwrap_or_default();
             let selection = world
                 .get::<AssertionCastle>(owner)
                 .unwrap()
                 .selection
-                .clone();
-            let rows = model::ordered(&data, selection.as_ref());
+                .as_ref();
+            let rows = model::ordered(data, selection);
+            let choices = model::choices(data);
+            let feed = feed.map(crate::native::protein_area::FeedVersion::into_owned);
             let current_config = config(world, owner);
             let mut view = world.get_mut::<View>(owner).unwrap();
             if view.feed_config != current_config {
@@ -158,7 +156,7 @@ fn update(world: &mut World) {
                 view.feed_config = current_config;
             }
             view.feed = feed;
-            view.choices = model::choices(&data);
+            view.choices = choices;
             match rows {
                 Ok(mut rows) => {
                     model::apply_order(&mut rows, &view.manual_order);
@@ -205,7 +203,7 @@ fn renumber(world: &mut World, owner: Entity) -> Result<(), String> {
     }
     let (data, feed) = crate::native::protein_area::calendar_feed(world, area)
         .ok_or("Wait for the Protein to load")?;
-    if view.feed != feed {
+    if view.feed.as_ref() != Some(&feed) {
         return Err("The list changed; review it before renumbering".into());
     }
     let mut rows = model::ordered(data, Some(&selection))?;
@@ -287,7 +285,7 @@ fn stop(world: &mut World, owner: Entity, error: &str) {
             batch.rows.len()
         );
     }
-    view.feed.clear();
+    view.feed = None;
     if let Some(pending) = pending
         && world.get_entity(pending).is_ok()
     {
@@ -323,7 +321,7 @@ pub(crate) fn finished(world: &mut World, submission: Entity, error: Option<Stri
         if batch.next == batch.rows.len() {
             view.message = format!("Renumbered {} Records", batch.next);
             view.batch = None;
-            view.feed.clear();
+            view.feed = None;
         }
     }
     true
@@ -385,7 +383,7 @@ impl Action for Command {
                 world.get_mut::<AssertionCastle>(owner).unwrap().selection =
                     Some(selection.clone());
                 let mut view = world.get_mut::<View>(owner).unwrap();
-                view.feed.clear();
+                view.feed = None;
                 view.manual_order.clear();
                 view.page = 0;
                 view.selecting = false;

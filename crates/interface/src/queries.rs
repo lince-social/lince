@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+mod draft_query;
+pub use draft_query::DraftQuery;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ProteinDraft {
     pub name: String,
     pub slug: String,
-    pub query: Value,
+    pub query: DraftQuery,
 }
 
 impl Default for ProteinDraft {
@@ -13,12 +16,17 @@ impl Default for ProteinDraft {
         Self {
             name: "Protein".into(),
             slug: String::new(),
-            query: json!({"source":"record", "where":[{"all":[]}], "order":[], "include":{}, "fields":null, "aggregate":null, "limit":100}),
+            query: json!({"source":"record", "where":[{"all":[]}], "order":[], "include":{}, "fields":null, "aggregate":null, "limit":100}).into(),
         }
     }
 }
 
 impl ProteinDraft {
+    /// Retained compilation must also notice representation-only input edits.
+    pub fn same_preparation_inputs(&self, other: &Self) -> bool {
+        self.name == other.name && self.slug == other.slug && self.query.same_encoding(&other.query)
+    }
+
     pub fn from_protein(name: String, slug: String, query: protein::Protein) -> Self {
         let mut value = serde_json::to_value(query).unwrap();
         let filters = value["where"].as_array().unwrap();
@@ -59,41 +67,53 @@ impl ProteinDraft {
         Self {
             name,
             slug,
-            query: value,
+            query: value.into(),
         }
     }
 
     pub fn valid_storage(&self) -> bool {
-        self.name.len() <= 1024
-            && self.slug.len() <= 1024
-            && serde_json::to_vec(&self.query).is_ok_and(|bytes| bytes.len() <= 131_072)
-            && bounded(&self.query, 0, &mut 0)
-            && self.query.is_object()
-            && self.query["source"].is_string()
-            && self.query["where"].is_array()
+        self.name.len() <= 1024 && self.slug.len() <= 1024 && self.query.valid_storage()
     }
 
     pub fn compile(&self) -> Result<protein::Protein, String> {
+        self.compile_shared().map(|query| (*query).clone())
+    }
+
+    pub fn compile_shared(&self) -> Result<std::sync::Arc<protein::Protein>, String> {
         if !self.valid_storage() {
             return Err("Protein is too large or malformed".into());
         }
-        let mut query = self.query.clone();
-        normalize(&mut query, "")?;
-        options(&query)?;
-        let protein: protein::Protein =
-            serde_json::from_value(query).map_err(|error| error.to_string())?;
-        protein::validate(&protein).map_err(|error| error.to_string())?;
-        if protein.limit == Some(0) {
-            return Err("Limit must be positive; leave it blank for unlimited rows".into());
-        }
-        for predicate in &protein.filter {
-            complete(predicate, true)?;
-        }
-        if protein.order.len() > 16 {
-            return Err("Use at most 16 sort rules".into());
-        }
-        Ok(protein)
+        let query = self.query.decoded()?;
+        validate_compiled(query.as_ref())?;
+        Ok(query)
     }
+}
+
+fn decode_query(value: &Value) -> Result<protein::Protein, String> {
+    let mut query = value.clone();
+    normalize(&mut query, "")?;
+    options(&query)?;
+    let protein: protein::Protein =
+        serde_json::from_value(query).map_err(|error| error.to_string())?;
+    Ok(protein)
+}
+
+fn validate_compiled(protein: &protein::Protein) -> Result<(), String> {
+    // Rolling-window validation resolves against the current clock. Keep
+    // the original validation and error order live for every compilation.
+    let _validation = nucleus::performance::Span::new("protein-draft-validation");
+    nucleus::performance::add("protein-draft-validations", 1);
+    protein::validate(protein).map_err(|error| error.to_string())?;
+    if protein.limit == Some(0) {
+        return Err("Limit must be positive; leave it blank for unlimited rows".into());
+    }
+    for predicate in &protein.filter {
+        complete(predicate, true)?;
+    }
+    if protein.order.len() > 16 {
+        return Err("Use at most 16 sort rules".into());
+    }
+    Ok(())
 }
 
 fn bounded(value: &Value, depth: usize, count: &mut usize) -> bool {

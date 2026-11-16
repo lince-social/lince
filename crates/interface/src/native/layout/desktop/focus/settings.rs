@@ -4,11 +4,12 @@ use crate::{
     native::{
         actions::Action,
         edit_mode::label,
-        layout::desktop::input_settings::{button, disable, feedback, text},
+        layout::desktop::input_settings::{button, caption, disable, display, feedback, text},
         shortcuts::{Settings, configuration::{self, LayoutSettings}},
     },
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::query::QueryState};
+use std::collections::HashMap;
 
 #[derive(Component)]
 struct Page {
@@ -72,13 +73,6 @@ pub(crate) fn panel(world: &mut World, parent: Entity) {
     refresh(world);
 }
 
-fn caption(world: &mut World, control: (Entity, Entity), value: &str) {
-    text(world, control.1, value);
-    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(control.0) {
-        node.set_label(value);
-    }
-}
-
 impl Action for Change {
     fn apply(&self, world: &mut World, page: Entity) {
         if crate::native::shortcuts::keyboard_owned(world) || world.get::<Page>(page).is_none() { return; }
@@ -127,11 +121,93 @@ impl Action for Change {
     }
 }
 
+#[derive(Default)]
+struct Feedback {
+    stale: bool,
+    message: Option<String>,
+    value: String,
+}
+
+impl Feedback {
+    fn prepare(&mut self, stale: bool, message: Option<&str>) -> &str {
+        if self.stale != stale || self.message.as_deref() != message {
+            self.stale = stale;
+            self.message = message.map(str::to_owned);
+            self.value.clear();
+            if stale {
+                self.value.push_str("Saved focus settings changed. Your draft is kept. Reload active values or Review the draft against the file.");
+                if message.is_some() {
+                    self.value.push('\n');
+                }
+            }
+            if let Some(message) = message {
+                self.value.push_str(message);
+            }
+            engine::performance::add("settings-feedback-prepared", 1);
+        }
+        &self.value
+    }
+}
+
+#[derive(Resource)]
+struct Presentation {
+    pages: QueryState<Entity, With<Page>>,
+    pending: Vec<Entity>,
+    summary: Option<(FocusPolicy, String)>,
+    feedback: HashMap<Entity, Feedback>,
+}
+
+impl FromWorld for Presentation {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            pages: world.query_filtered(),
+            pending: Vec::new(),
+            summary: None,
+            feedback: HashMap::new(),
+        }
+    }
+}
+
 fn refresh(world: &mut World) {
+    let _presentation = engine::performance::Span::new("focus-settings-presentation");
+    let mut presentation = world
+        .remove_resource::<Presentation>()
+        .unwrap_or_else(|| Presentation::from_world(world));
+    render(world, &mut presentation);
+    world.insert_resource(presentation);
+}
+
+fn render(world: &mut World, presentation: &mut Presentation) {
+    presentation.pending.clear();
+    presentation.pending.extend(presentation.pages.iter(world));
+    presentation
+        .feedback
+        .retain(|page, _| world.get::<Page>(*page).is_some());
+    if presentation.pending.is_empty() {
+        return;
+    }
     let active = policy(world);
-    let support = world.get_resource::<CursorWarpSupport>().is_some_and(|support| support.0);
-    let pages: Vec<_> = world.query_filtered::<Entity, With<Page>>().iter(world).collect();
-    for page in pages {
+    let support = world
+        .get_resource::<CursorWarpSupport>()
+        .is_some_and(|support| support.0);
+    if presentation
+        .summary
+        .as_ref()
+        .is_none_or(|(source, _)| *source != active)
+    {
+        let enabled = |value| if value { "On" } else { "Off" };
+        presentation.summary = Some((
+            active,
+            format!(
+                "Click: {} · pointer focus: {} · cursor warp: {}",
+                enabled(active.click),
+                enabled(active.pointer_follow),
+                enabled(active.warp)
+            ),
+        ));
+        engine::performance::add("settings-summaries-prepared", 1);
+    }
+    for page in presentation.pending.drain(..) {
         let state = world.get::<Page>(page).unwrap();
         if state.draft == state.origin && state.origin != active {
             let mut state = world.get_mut::<Page>(page).unwrap();
@@ -140,24 +216,77 @@ fn refresh(world: &mut World) {
             state.message = None;
         }
         let state = world.get::<Page>(page).unwrap();
-        let (body, toggle, choices, summary, support_label, status, save, draft, origin, expanded, message) =
-            (state.body, state.toggle, state.choices, state.summary, state.support, state.status, state.save, state.draft, state.origin, state.expanded, state.message.clone());
-        world.get_mut::<Node>(body).unwrap().display = if expanded { Display::Flex } else { Display::None };
-        caption(world, toggle, if expanded { "Hide focus settings" } else { "Edit focus settings" });
-        let enabled = |value| if value { "On" } else { "Off" };
-        for (index, (label, value)) in [("Click to focus", draft.click), ("Focus follows pointer", draft.pointer_follow), ("Warp cursor after keyboard focus", draft.warp)].into_iter().enumerate() {
-            caption(world, choices[index], &format!("{label}: {}", enabled(value)));
+        let (body, toggle, choices, summary, support_label, status, save, draft, origin, expanded) = (
+            state.body,
+            state.toggle,
+            state.choices,
+            state.summary,
+            state.support,
+            state.status,
+            state.save,
+            state.draft,
+            state.origin,
+            state.expanded,
+        );
+        let message = presentation
+            .feedback
+            .entry(page)
+            .or_default()
+            .prepare(origin != active, state.message.as_deref());
+        display(
+            world,
+            body,
+            if expanded {
+                Display::Flex
+            } else {
+                Display::None
+            },
+        );
+        caption(
+            world,
+            toggle,
+            if expanded {
+                "Hide focus settings"
+            } else {
+                "Edit focus settings"
+            },
+        );
+        for (index, (value, off, on)) in [
+            (draft.click, "Click to focus: Off", "Click to focus: On"),
+            (
+                draft.pointer_follow,
+                "Focus follows pointer: Off",
+                "Focus follows pointer: On",
+            ),
+            (
+                draft.warp,
+                "Warp cursor after keyboard focus: Off",
+                "Warp cursor after keyboard focus: On",
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            caption(world, choices[index], if value { on } else { off });
         }
-        text(world, summary, format!("Click: {} · pointer focus: {} · cursor warp: {}", enabled(active.click), enabled(active.pointer_follow), enabled(active.warp)));
-        text(world, support_label, if support { "Cursor warping is available in this Park session." } else { "This window host cannot warp the system cursor. You can save the preference for a physical Park session." });
-        text(world, status, if origin != active { format!("Saved focus settings changed. Your draft is kept. Reload active values or Review the draft against the file.{}", message.map(|message| format!("\n{message}")).unwrap_or_default()) } else { message.unwrap_or_default() });
+        text(world, summary, &presentation.summary.as_ref().unwrap().1);
+        text(
+            world,
+            support_label,
+            if support {
+                "Cursor warping is available in this Park session."
+            } else {
+                "This window host cannot warp the system cursor. You can save the preference for a physical Park session."
+            },
+        );
+        text(world, status, message);
         disable(world, save, draft == active || origin != active);
     }
 }
 
-fn review_snapshot(world: &World, page: Entity) -> Result<configuration::review::Snapshot, String> {
+fn review_snapshot(world: &World, page: Entity, previous: Option<&configuration::review::Snapshot>) -> Result<configuration::review::Snapshot, String> {
     let state = world.get::<Page>(page).ok_or("The focus editor is unavailable.")?;
-    configuration::review::Snapshot::new(&state.origin, &state.draft, &policy(world))
+    configuration::review::Snapshot::new(&state.origin, &state.draft, &policy(world), previous)
 }
 
 fn review_apply(world: &mut World, page: Entity, active: serde_json::Value, draft: serde_json::Value) -> Result<(), String> {

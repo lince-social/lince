@@ -40,7 +40,10 @@ pub(super) fn sort(state: &mut State) {
     if state.ordered_day == Some(day) && !state.dirty {
         return;
     }
-    state.data.sort_by(|a, b| key(a, day).cmp(&key(b, day)));
+    std::sync::Arc::make_mut(&mut state.data).sort_by_cached_key(|row| {
+        let (distance, date, uid) = key(row, day);
+        (distance, date, uid.to_owned())
+    });
     let order: Vec<_> = state
         .data
         .iter()

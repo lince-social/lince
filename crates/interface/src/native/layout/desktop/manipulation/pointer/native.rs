@@ -9,7 +9,9 @@ use bevy::{
     picking::pointer::{PointerAction, PointerButton, PointerId, PointerInput},
     window::WindowEvent,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
+
+mod batch;
 
 #[derive(Resource, Default)]
 struct Native {
@@ -20,6 +22,7 @@ struct Native {
     swallowed: HashSet<(Entity, MouseButton)>,
     escapes: HashSet<Entity>,
     keys: Vec<(KeyboardInput, bool)>,
+    batch: batch::Batch,
 }
 
 fn button(button: PointerButton) -> MouseButton {
@@ -60,11 +63,7 @@ fn mouse(world: &mut World, state: &mut Native, event: &MouseButtonInput) -> boo
     if !event.state.is_pressed() {
         return false;
     }
-    let binding = crate::native::shortcuts::pointer_bindings(world)
-        .into_iter()
-        .find(|binding| {
-            binding.chord.button == event.button && binding.chord.modifiers == modifiers
-        });
+    let binding = crate::native::shortcuts::pointer_binding(world, event.button, modifiers);
     let Some(binding) = binding else {
         return false;
     };
@@ -87,168 +86,96 @@ fn mouse(world: &mut World, state: &mut Native, event: &MouseButtonInput) -> boo
 }
 
 pub(crate) fn input(world: &mut World) {
+    let _input = engine::performance::Span::new("native-manipulation-input");
     world.init_resource::<Native>();
     let mut state = world.remove_resource::<Native>().unwrap();
     state.keys.clear();
     if !super::super::active(world) {
         state.owner = None;
     }
-    let mut raw: Vec<_> = world
-        .get_resource::<Messages<MouseButtonInput>>()
-        .map(|messages| state.raw.read(messages).cloned().collect())
-        .unwrap_or_default();
-    let events: Vec<_> = world
-        .get_resource::<Messages<WindowEvent>>()
-        .map(|messages| state.windows.read(messages).cloned().collect())
-        .unwrap_or_default();
-    let keys = crate::native::keyboard::pending(world).to_vec();
-    let mut next_key = 0;
-    let initial = state.swallowed.clone();
-    let mut decisions = Vec::new();
-    for event in events {
+    let mut batch = std::mem::take(&mut state.batch);
+    batch.read(world, &mut state.windows, &mut state.raw);
+    batch
+        .decisions
+        .swallow(state.swallowed.iter().map(|(_, button)| *button));
+    for event in batch.events.drain(..) {
         match event {
-            WindowEvent::CursorMoved(event) => {
-                if state
-                    .owner
-                    .is_some_and(|(window, _)| window == event.window)
-                    && !motion(world, event.position)
+            batch::Event::Motion(window, position) => {
+                if state.owner.is_some_and(|(owner, _)| owner == window) && !motion(world, position)
                 {
                     state.owner = None;
                 }
             }
-            WindowEvent::MouseButtonInput(event) => {
-                if let Some(index) = raw.iter().position(|input| input == &event) {
-                    raw.remove(index);
-                    let consumed = mouse(world, &mut state, &event);
-                    decisions.push((event, consumed));
-                }
+            batch::Event::Button(event) => {
+                let consumed = mouse(world, &mut state, &event);
+                batch.decisions.push(event, consumed);
             }
-            WindowEvent::WindowFocused(event) if !event.focused => {
-                if state
-                    .owner
-                    .is_some_and(|(window, _)| window == event.window)
-                {
+            batch::Event::FocusLost(window) => {
+                if state.owner.is_some_and(|(owner, _)| owner == window) {
                     cancel(world);
                     state.owner = None;
                 }
             }
-            WindowEvent::KeyboardInput(event) => {
-                let modifiers = keys[next_key..]
-                    .iter()
-                    .position(|key| key.input == event)
-                    .map(|index| {
-                        next_key += index;
-                        let value = keys[next_key].modifiers;
-                        next_key += 1;
-                        value
-                    })
+            batch::Event::Escape(event, modifiers) => {
+                let modifiers = modifiers
                     .or_else(|| crate::native::keyboard::current(world))
                     .or_else(|| {
                         world
                             .get_resource::<ButtonInput<KeyCode>>()
                             .map(Modifiers::pressed)
                     });
-                if event.key_code == KeyCode::Escape {
-                    let mut consumed = state.escapes.contains(&event.window);
-                    if event.state.is_pressed()
-                        && modifiers == Some(Modifiers::NONE)
-                        && super::super::active(world)
-                    {
-                        cancel(world);
-                        state.owner = None;
-                        state.escapes.insert(event.window);
-                        consumed = true;
-                    }
-                    if !event.state.is_pressed() {
-                        state.escapes.remove(&event.window);
-                    }
-                    state.keys.push((event, consumed));
+                let mut consumed = state.escapes.contains(&event.window);
+                if event.state.is_pressed()
+                    && modifiers == Some(Modifiers::NONE)
+                    && super::super::active(world)
+                {
+                    cancel(world);
+                    state.owner = None;
+                    state.escapes.insert(event.window);
+                    consumed = true;
                 }
+                if !event.state.is_pressed() {
+                    state.escapes.remove(&event.window);
+                }
+                state.keys.push((event, consumed));
             }
-            _ => {}
         }
     }
-    for event in raw {
-        let consumed = mouse(world, &mut state, &event);
-        decisions.push((event, consumed));
-    }
-    let consumed: HashSet<_> = decisions
-        .iter()
-        .filter(|(_, consumed)| *consumed)
-        .map(|(event, _)| event.button)
-        .chain(initial.iter().map(|(_, button)| *button))
-        .chain(state.swallowed.iter().map(|(_, button)| *button))
-        .collect();
-    if !consumed.is_empty() {
+    batch
+        .decisions
+        .swallow(state.swallowed.iter().map(|(_, button)| *button));
+    if batch.decisions.any() {
+        let _rewrite = engine::performance::Span::new("native-manipulation-rewrite");
         if let Some(mut buttons) = world.get_resource_mut::<ButtonInput<MouseButton>>() {
-            for button in &consumed {
-                buttons.reset(*button);
-                let last = decisions
-                    .iter()
-                    .rposition(|(event, consumed)| event.button == *button && *consumed);
-                for (event, swallowed) in decisions
-                    .iter()
-                    .skip(last.map_or(0, |index| index + 1))
-                    .filter(|(event, _)| event.button == *button)
-                {
-                    if !swallowed {
-                        if event.state.is_pressed() {
-                            buttons.press(*button);
-                        } else {
-                            buttons.release(*button);
-                        }
-                    }
-                }
-            }
+            batch.decisions.replay(&mut buttons);
         }
         if let Some(mut messages) = world.get_resource_mut::<Messages<MouseButtonInput>>() {
             messages.clear();
-            messages.write_batch(
-                decisions
-                    .iter()
-                    .filter(|(_, consumed)| !consumed)
-                    .map(|(event, _)| event.clone()),
-            );
+            messages.write_batch(batch.decisions.forwarded());
             state.raw.clear(&messages);
         }
         if let Some(mut messages) = world.get_resource_mut::<Messages<PointerInput>>() {
-            let mut positions: HashMap<PointerId, usize> = HashMap::new();
-            let retained: Vec<_> = state
-                .pointers
-                .read(&messages)
-                .filter(|event| {
-                    if event.pointer_id != PointerId::Mouse
-                        && event.pointer_id != crate::native::topology::input::CONTENT_POINTER
-                    {
-                        return true;
-                    }
-                    let (button, pressed) = match event.action {
-                        PointerAction::Press(button) => (button, true),
-                        PointerAction::Release(button) => (button, false),
-                        _ => return true,
-                    };
-                    let button = self::button(button);
-                    let cursor = positions.entry(event.pointer_id).or_default();
-                    if let Some(index) = decisions[*cursor..].iter().position(|(input, _)| {
-                        input.button == button && input.state.is_pressed() == pressed
-                    }) {
-                        *cursor += index;
-                        let consumed = decisions[*cursor].1;
-                        *cursor += 1;
-                        !consumed
-                    } else {
-                        !consumed.contains(&button)
-                    }
-                })
-                .cloned()
-                .collect();
+            batch.decisions.index();
+            let mut positions = [0; 2];
+            batch.pointers.extend(
+                state
+                    .pointers
+                    .read(&messages)
+                    .filter(|event| batch.decisions.keep(event, &mut positions))
+                    .cloned(),
+            );
+            engine::performance::add(
+                "native-manipulation-pointer-retained",
+                batch.pointers.len() as u64,
+            );
             messages.clear();
-            messages.write_batch(retained);
+            messages.write_batch(batch.pointers.drain(..));
             state.pointers.clear(&messages);
         }
     } else if let Some(messages) = world.get_resource::<Messages<PointerInput>>() {
         state.pointers.clear(messages);
     }
+    state.batch = batch;
     world.insert_resource(state);
 }
 

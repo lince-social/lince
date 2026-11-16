@@ -34,7 +34,7 @@ pub(super) fn begin_frame(world: &mut World) {
 
 struct Target {
     entity: Entity,
-    area: InfluenceArea,
+    id: String,
     spatial: Spatial,
     order: usize,
 }
@@ -47,6 +47,7 @@ pub(super) fn initial(
     fallback: DVec3,
     size: Vec2,
 ) -> Option<DVec3> {
+    let _preparation = nucleus::performance::Span::new("protein-placement-preparation");
     if config.placement == SpawnPlacement::Source {
         return Some(fallback);
     }
@@ -65,10 +66,11 @@ pub(super) fn initial(
                     == crate::native::influence_report::Outcome::Active
                 && (config.spawn_targets.is_empty() || config.spawn_targets.contains(&area.id))
         })
-        .map(|(e, area, _, _)| (e, area.clone()))
+        .map(|(e, _, _, _)| e)
         .collect();
     let mut targets = Vec::new();
-    for (target, area) in candidates {
+    for target in candidates {
+        let area = world.get::<InfluenceArea>(target).unwrap();
         let matches = if area.filter.is_some() {
             let Some(matches) = world.get::<filter::Matches>(target).filter(|m| m.current) else {
                 return None;
@@ -80,10 +82,12 @@ pub(super) fn initial(
         if !matches {
             continue;
         }
+        let id = area.id.clone();
+        let reverse = area.sorting.as_ref().is_some_and(|sort| sort.reverse);
         let order = super::ordered_records(world, target)
             .and_then(|(_, ids)| {
                 ids.iter().position(|id| id == &binding.uid).map(|index| {
-                    if area.sorting.as_ref().is_some_and(|sort| sort.reverse) {
+                    if reverse {
                         ids.len() - 1 - index
                     } else {
                         index
@@ -93,12 +97,12 @@ pub(super) fn initial(
             .unwrap_or(0);
         targets.push(Target {
             entity: target,
-            area,
+            id,
             spatial: crate::native::topology::spatial(world, target),
             order,
         });
     }
-    targets.sort_by(|a, b| a.area.id.cmp(&b.area.id));
+    targets.sort_by(|a, b| a.id.cmp(&b.id));
     if config.placement == SpawnPlacement::MatchingAreas {
         let Some(target) = targets.first() else {
             return Some(fallback);
@@ -106,13 +110,14 @@ pub(super) fn initial(
         if config.motion.is_none() {
             world.entity_mut(entity).insert(RoomFrame(target.entity));
         }
-        let center = DVec2::from_array(target.area.center);
-        let mut offset = target.area.target_position() - center;
-        if let Some(sort) = &target.area.sorting {
+        let area = world.get::<InfluenceArea>(target.entity).unwrap();
+        let center = DVec2::from_array(area.center);
+        let mut offset = area.target_position() - center;
+        if let Some(sort) = &area.sorting {
             let available = if sort.horizontal {
-                target.area.size[0]
+                area.size[0]
             } else {
-                target.area.size[1]
+                area.size[1]
             };
             let extent = if sort.horizontal { size.x } else { size.y };
             let value = -available * 0.5
@@ -147,32 +152,45 @@ pub(super) fn initial(
     if let Some(mut budget) = world.get_resource_mut::<Budget>() {
         budget.0 -= steps * targets.len().max(1);
     }
+    // Only the trial point changes during these settling steps. Keep barriers
+    // borrowed for this operation and retire them before changing the World.
+    let blockers: Vec<_> = if steps == 0 {
+        Vec::new()
+    } else {
+        let mut query = crate::native::topology::influence::BlockerQuery::new(world);
+        targets
+            .iter()
+            .map(|target| {
+                let area = world.get::<InfluenceArea>(target.entity).unwrap();
+                let barriers = crate::native::topology::influence::Blockers::prepare(
+                    world,
+                    &mut query,
+                    root,
+                    workspace,
+                    target.entity,
+                    true,
+                );
+                (target, area, barriers)
+            })
+            .collect()
+    };
     for _ in 0..steps {
         let mut force = DVec3::ZERO;
-        for target in &targets {
-            if crate::native::topology::influence::blocked(
-                world,
-                root,
-                workspace,
-                target.entity,
-                state.point,
-                Some(&record),
-                Some(&binding),
-                true,
-            ) {
+        for (target, area, barriers) in &blockers {
+            if barriers.blocks(state.point, Some(&record), Some(&binding)) {
                 continue;
             }
             force += crate::native::topology::influence::attraction_force(
-                &target.area,
+                area,
                 target.spatial,
                 state.point,
             );
-            if let Some(sort) = &target.area.sorting {
+            if let Some(sort) = &area.sorting {
                 if let Some(point) = world
                     .get_resource::<crate::native::area_effects::Influences>()
                     .and_then(|fields| fields.topology_target(target.entity, entity))
                 {
-                    let center = DVec2::from_array(target.area.center);
+                    let center = DVec2::from_array(area.center);
                     let offset = point - center;
                     let destination = target.spatial.position(center)
                         + target.spatial.rotation() * DVec3::new(offset.x, 0.0, offset.y);
@@ -183,6 +201,7 @@ pub(super) fn initial(
         step(&mut state.point, &mut state.velocity, force);
         state.remaining -= 1;
     }
+    drop(blockers);
     if state.remaining == 0 {
         Some(state.point)
     } else {
@@ -245,7 +264,7 @@ mod tests {
             .spawn(crate::native::workspace::Workspaces::default())
             .id();
         let source = world.spawn((ChildOf(root), WorkspaceMember(1))).id();
-        let record = RecordProperties(serde_json::json!({"uid":"r_task", "quantity":-1}));
+        let record = RecordProperties(serde_json::json!({"uid":"r_task", "quantity":-1}).into());
         let sand = world
             .spawn((
                 record,
@@ -348,7 +367,7 @@ mod tests {
         let properties = serde_json::json!({"uid":"r_task", "quantity":-1});
         let sand = world
             .spawn((
-                RecordProperties(properties.clone()),
+                RecordProperties(properties.clone().into()),
                 RecordBinding {
                     area: source,
                     uid: "r_task".into(),
@@ -390,7 +409,10 @@ mod tests {
         begin_frame(&mut world);
         let point = initial(&mut world, sand, source, &config, start, Vec2::splat(40.0)).unwrap();
         assert!(point.x < start.x && point.y > start.y);
-        assert_eq!(world.get::<RecordProperties>(sand).unwrap().0, properties);
+        assert_eq!(
+            world.get::<RecordProperties>(sand).unwrap().0.as_ref(),
+            &properties
+        );
     }
 
     #[test]

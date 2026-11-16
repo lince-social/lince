@@ -64,7 +64,7 @@ impl Unit {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Bounds {
     pub lower: Option<DecimalValue>,
@@ -97,7 +97,7 @@ pub enum Period {
     Horizon,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FoodBound {
     pub period: Period,
@@ -114,7 +114,7 @@ pub enum Acquisition {
     Grow,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FoodChoice {
     pub food: String,
@@ -180,7 +180,7 @@ pub struct Offer {
     pub max_packages: Option<DecimalValue>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Stock {
     pub id: String,
@@ -190,7 +190,7 @@ pub struct Stock {
     pub expires_on: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Forecast {
     pub stock: Stock,

@@ -230,18 +230,22 @@ fn read_preferences(path: &std::path::Path) -> Result<Preferences, String> {
 }
 
 fn save_preferences(path: &std::path::Path, preferences: Preferences) -> Result<(), String> {
-    use std::io::Write;
+    use std::io::{BufWriter, Write};
     let directory = path
         .parent()
         .ok_or("Appearance settings have no directory")?;
     std::fs::create_dir_all(directory).map_err(|error| error.to_string())?;
     let mut temporary =
         tempfile::NamedTempFile::new_in(directory).map_err(|error| error.to_string())?;
-    serde_json::to_writer_pretty(&mut temporary, &preferences)
-        .map_err(|error| error.to_string())?;
-    temporary
-        .write_all(b"\n")
-        .map_err(|error| error.to_string())?;
+    {
+        let mut buffered = BufWriter::new(&mut temporary);
+        serde_json::to_writer_pretty(&mut buffered, &preferences)
+            .map_err(|error| error.to_string())?;
+        buffered
+            .write_all(b"\n")
+            .map_err(|error| error.to_string())?;
+        buffered.flush().map_err(|error| error.to_string())?;
+    }
     temporary
         .as_file()
         .sync_all()
@@ -271,22 +275,23 @@ pub fn set_preferences(world: &mut World, preferences: Preferences) {
 }
 
 fn density(world: &mut World) -> u32 {
+    let mut avatars = world.query_filtered::<(Entity, &ComputedNode), With<Avatar>>();
+    let measured = avatars
+        .iter(world)
+        .filter(|(entity, _)| visible(world, *entity))
+        .map(|(_, node)| node.size().max_element())
+        .fold(0.0_f32, f32::max);
+    density_at(world, measured)
+}
+
+fn density_at(world: &mut World, measured: f32) -> u32 {
+    nucleus::performance::add("fiote-avatar-density-preparations", 1);
     let scale = world
         .query_filtered::<&Window, With<PrimaryWindow>>()
         .iter(world)
         .next()
         .map_or(1.0, Window::scale_factor);
     let ui_scale = world.get_resource::<UiScale>().map_or(1.0, |scale| scale.0);
-    let nodes: Vec<(Entity, f32)> = world
-        .query_filtered::<(Entity, &ComputedNode), With<Avatar>>()
-        .iter(world)
-        .map(|(entity, node)| (entity, node.size().max_element()))
-        .collect();
-    let measured = nodes
-        .into_iter()
-        .filter(|(entity, _)| visible(world, *entity))
-        .map(|(_, size)| size)
-        .fold(0.0_f32, f32::max);
     ((56.0 * scale * ui_scale).max(measured).ceil() as u32)
         .clamp(64, 512)
         .next_power_of_two()
@@ -326,16 +331,18 @@ fn rasterize(edge: u32, palette: Palette) -> Result<Image, String> {
 pub(super) fn portrait(world: &mut World, source: Entity) -> Handle<Image> {
     initialize(world);
     let palette = Palette::resolve(world, source);
-    portrait_for(world, palette)
+    let edge = density(world);
+    portrait_for(world, palette, edge)
 }
 
-fn portrait_for(world: &mut World, palette: Palette) -> Handle<Image> {
-    let edge = density(world);
+fn portrait_for(world: &mut World, palette: Palette, edge: u32) -> Handle<Image> {
     if let Some((size, image)) = world.resource::<Character>().portraits.get(&palette) {
         if *size == edge {
             return image.clone();
         }
     }
+    let _rasterize = nucleus::performance::Span::new("fiote-avatar-portrait-preparation");
+    nucleus::performance::add("fiote-avatar-portraits-created", 1);
     let image = rasterize(edge, palette).unwrap_or_else(|_| {
         let image = image::load_from_memory(include_bytes!(
             "../../../../../institute/assets/characters/fiote/fiote-seated.png"
@@ -511,115 +518,43 @@ fn descendants(world: &World, root: Entity) -> Vec<Entity> {
 
 fn update(world: &mut World) {
     initialize(world);
-    let avatars: Vec<Entity> = world
-        .query_filtered::<Entity, With<Avatar>>()
-        .iter(world)
-        .collect();
+    let demand = residency::Demand::capture(world);
+    let groups = &demand.groups;
     let (window_visible, window_focused) = world
         .query_filtered::<&Window, With<PrimaryWindow>>()
         .iter(world)
         .next()
         .map_or((true, true), |window| (window.visible, window.focused));
     let content_visible = !world.resource::<Character>().occluded && window_visible;
-    let showing =
-        content_visible && window_focused && avatars.iter().any(|entity| visible(world, *entity));
+    let showing = content_visible && window_focused && groups.values().any(|group| group.visible);
     let animated = world.resource::<Character>().preferences.animated()
         && !world.resource::<Character>().failure;
-    let groups: std::collections::BTreeMap<Palette, Vec<Entity>> =
-        avatars
-            .iter()
-            .fold(std::collections::BTreeMap::new(), |mut groups, entity| {
-                groups
-                    .entry(Palette::resolve(world, *entity))
-                    .or_default()
-                    .push(*entity);
-                groups
-            });
-    if !animated || avatars.is_empty() {
+    if !animated || groups.is_empty() {
         destroy_scene(world);
     } else if showing {
-        let mut wanted: Vec<Palette> = groups
-            .iter()
-            .filter(|(_, entities)| entities.iter().any(|entity| visible(world, *entity)))
-            .map(|(palette, _)| *palette)
-            .collect();
-        let slots = crate::native::render_layers::FIOTE;
-        world.resource_mut::<Character>().limited_palettes = wanted.len().saturating_sub(slots.len);
-        wanted.truncate(slots.len);
-        let mut previous = std::mem::take(&mut world.resource_mut::<Character>().scenes);
-        let mut scenes = Vec::new();
-        for (index, palette) in wanted.iter().enumerate() {
-            let layer = slots.get(index).unwrap();
-            let position = previous
-                .iter()
-                .position(|scene| scene.palette == *palette)
-                .or_else(|| {
-                    if world.resource::<Character>().saved.contains_key(palette) {
-                        return None;
-                    }
-                    groups[palette]
-                        .iter()
-                        .filter_map(|entity| world.get::<RenderedPalette>(*entity))
-                        .find_map(|old| {
-                            (!wanted.contains(&old.0))
-                                .then(|| previous.iter().position(|scene| scene.palette == old.0))
-                                .flatten()
-                        })
-                });
-            if let Some(position) = position {
-                let mut scene = previous.remove(position);
-                if scene.palette != *palette {
-                    scene.palette = *palette;
-                    scene.rendered = None;
-                    for binding in &scene.materials {
-                        if let Some(mut material) = world
-                            .resource_mut::<Assets<StandardMaterial>>()
-                            .get_mut(&binding.material)
-                        {
-                            binding.role.apply(&mut material, *palette, binding.motion);
-                        }
-                    }
-                    world.resource_mut::<Character>().alarm = None;
-                }
-                if scene.layer != layer {
-                    let children = descendants(world, scene.root);
-                    for child in children {
-                        world
-                            .entity_mut(child)
-                            .insert(RenderLayers::none().with(layer));
-                    }
-                    scene.layer = layer;
-                }
-                scenes.push(scene);
-            } else if let Some(scene) = load_scene(world, *palette, layer) {
-                scenes.push(scene);
-            }
-        }
-        for scene in previous {
-            residency::remember(world, &scene);
-            world.entity_mut(scene.root).despawn();
-        }
-        world.resource_mut::<Character>().scenes = scenes;
-        if world.resource::<Character>().failure {
-            destroy_scene(world);
-        }
+        synchronize_scenes(world, &demand);
     }
-    residency::synchronize(world, &groups, content_visible);
-    for (palette, entities) in &groups {
-        let static_image = portrait_for(world, *palette);
-        let handle = world
+    residency::synchronize(world, &demand, content_visible);
+    for (palette, group) in groups {
+        let animated_image = world
             .resource::<Character>()
             .scenes
             .iter()
             .find(|scene| scene.palette == *palette && !scene.players.is_empty())
-            .map_or(static_image, |scene| scene.image.clone());
-        for entity in entities {
+            .map(|scene| scene.image.clone());
+        let handle = animated_image.unwrap_or_else(|| portrait_for(world, *palette, demand.edge));
+        for entity in &group.entities {
             if let Some(mut image) = world.get_mut::<ImageNode>(*entity) {
                 if image.image != handle {
                     image.image = handle.clone();
                 }
             }
-            world.entity_mut(*entity).insert(RenderedPalette(*palette));
+            if world
+                .get::<RenderedPalette>(*entity)
+                .is_none_or(|old| old.0 != *palette)
+            {
+                world.entity_mut(*entity).insert(RenderedPalette(*palette));
+            }
         }
     }
     world
@@ -632,6 +567,89 @@ fn update(world: &mut World) {
         .retain(|palette, _| groups.contains_key(palette));
     animate(world, showing && animated);
     refresh_status(world);
+}
+
+fn synchronize_scenes(world: &mut World, demand: &residency::Demand) {
+    let _selection = nucleus::performance::Span::new("fiote-avatar-scene-selection");
+    let groups = &demand.groups;
+    let slots = crate::native::render_layers::FIOTE;
+    let wanted = groups
+        .iter()
+        .filter(|(_, group)| group.visible)
+        .map(|(palette, _)| *palette)
+        .take(slots.len);
+    let unchanged = world
+        .resource::<Character>()
+        .scenes
+        .iter()
+        .map(|scene| (scene.palette, scene.layer))
+        .eq(wanted
+            .clone()
+            .enumerate()
+            .map(|(index, palette)| (palette, slots.get(index).unwrap())));
+    if unchanged {
+        return;
+    }
+    nucleus::performance::add("fiote-avatar-scene-reconciliations", 1);
+    let wanted: Vec<_> = wanted.collect();
+    let mut previous = std::mem::take(&mut world.resource_mut::<Character>().scenes);
+    let mut scenes = Vec::new();
+    for (index, palette) in wanted.iter().enumerate() {
+        let layer = slots.get(index).unwrap();
+        let position = previous
+            .iter()
+            .position(|scene| scene.palette == *palette)
+            .or_else(|| {
+                if world.resource::<Character>().saved.contains_key(palette) {
+                    return None;
+                }
+                groups[palette]
+                    .entities
+                    .iter()
+                    .filter_map(|entity| world.get::<RenderedPalette>(*entity))
+                    .find_map(|old| {
+                        (!wanted.contains(&old.0))
+                            .then(|| previous.iter().position(|scene| scene.palette == old.0))
+                            .flatten()
+                    })
+            });
+        if let Some(position) = position {
+            let mut scene = previous.remove(position);
+            if scene.palette != *palette {
+                scene.palette = *palette;
+                scene.rendered = None;
+                for binding in &scene.materials {
+                    if let Some(material) = world
+                        .resource_mut::<Assets<StandardMaterial>>()
+                        .get_mut(&binding.material)
+                    {
+                        binding.role.apply(material, *palette, binding.motion);
+                    }
+                }
+                world.resource_mut::<Character>().alarm = None;
+            }
+            if scene.layer != layer {
+                let children = descendants(world, scene.root);
+                for child in children {
+                    world
+                        .entity_mut(child)
+                        .insert(RenderLayers::none().with(layer));
+                }
+                scene.layer = layer;
+            }
+            scenes.push(scene);
+        } else if let Some(scene) = load_scene(world, *palette, layer, demand.edge) {
+            scenes.push(scene);
+        }
+    }
+    for scene in previous {
+        residency::remember(world, &scene);
+        world.entity_mut(scene.root).despawn();
+    }
+    world.resource_mut::<Character>().scenes = scenes;
+    if world.resource::<Character>().failure {
+        destroy_scene(world);
+    }
 }
 
 fn destroy_scene(world: &mut World) {
@@ -655,7 +673,7 @@ fn failed(world: &mut World, error: String) {
     ));
 }
 
-fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene> {
+fn load_scene(world: &mut World, palette: Palette, layer: usize, edge: u32) -> Option<Scene> {
     if world.resource::<Character>().loading.is_none() {
         let handle = world.resource::<AssetServer>().load(GLB_PATH);
         world.resource_mut::<Character>().loading = Some(handle);
@@ -704,7 +722,7 @@ fn load_scene(world: &mut World, palette: Palette, layer: usize) -> Option<Scene
         .zip(durations)
         .map(|((activity, index), duration)| (activity.clip(), (index, duration)))
         .collect();
-    let edge = density(world).clamp(128, 256);
+    let edge = edge.clamp(128, 256);
     let mut image = Image::new_uninit(
         Extent3d {
             width: edge,
@@ -894,6 +912,7 @@ fn scene_ready(
 }
 
 fn animate(world: &mut World, active: bool) {
+    let _animation = nucleus::performance::Span::new("fiote-avatar-animation");
     let now = Instant::now();
     let period = world
         .resource::<Character>()
@@ -939,7 +958,12 @@ fn animate(world: &mut World, active: bool) {
             scene.rendered = Some(now);
         }
         if let Some(mut camera) = world.get_mut::<Camera>(scene.camera) {
-            camera.is_active = render_due;
+            if camera
+                .map_unchanged(|camera| &mut camera.is_active)
+                .set_if_neq(render_due)
+            {
+                nucleus::performance::add("fiote-avatar-camera-updates", 1);
+            }
         }
         let duration = scene.clips[scene.behavior.activity.clip()].1;
         let changed =
@@ -956,8 +980,13 @@ fn animate(world: &mut World, active: bool) {
             }
             if let Some(mut player) = world.get_mut::<AnimationPlayer>(*entity) {
                 if scene_active && delta > 0.0 {
-                    player.resume_all();
-                } else {
+                    if player
+                        .playing_animations()
+                        .any(|(_, animation)| animation.is_paused())
+                    {
+                        player.resume_all();
+                    }
+                } else if !player.all_paused() {
                     player.pause_all();
                 }
             }
@@ -976,9 +1005,13 @@ fn animate(world: &mut World, active: bool) {
             }
         }
         if let Some(mut transform) = world.get_mut::<Transform>(scene.model) {
-            transform.translation =
-                Vec3::new(scene.behavior.position.x, 0.0, scene.behavior.position.y);
-            transform.rotation = Quat::from_rotation_y(scene.behavior.yaw);
+            let translation = Vec3::new(scene.behavior.position.x, 0.0, scene.behavior.position.y);
+            let rotation = Quat::from_rotation_y(scene.behavior.yaw);
+            if transform.translation != translation || transform.rotation != rotation {
+                transform.translation = translation;
+                transform.rotation = rotation;
+                nucleus::performance::add("fiote-avatar-transform-updates", 1);
+            }
         }
     }
     let next_period = scenes
@@ -996,6 +1029,14 @@ fn animate(world: &mut World, active: bool) {
 }
 
 fn refresh_status(world: &mut World) {
+    let labels: Vec<Entity> = world
+        .query::<&SettingsPanel>()
+        .iter(world)
+        .map(|panel| panel.status)
+        .collect();
+    if labels.is_empty() {
+        return;
+    }
     let character = world.resource::<Character>();
     let settings = character.preferences;
     let state = if settings.reduced_motion {
@@ -1038,11 +1079,6 @@ fn refresh_status(world: &mut World) {
             },
         ));
     }
-    let labels: Vec<Entity> = world
-        .query::<&SettingsPanel>()
-        .iter(world)
-        .map(|panel| panel.status)
-        .collect();
     for label in labels {
         if let Some(mut value) = world.get_mut::<Text>(label) {
             if value.0 != text {

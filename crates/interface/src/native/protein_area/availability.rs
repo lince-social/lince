@@ -153,7 +153,7 @@ pub(super) fn synchronize(world: &mut World, owner: Entity, state: &State) {
         .into_iter()
         .collect();
     for (panel, row, uid, label, retry, retry_label) in panels {
-        let creating = state.applied.as_ref().is_some_and(Config::creating);
+        let creating = state.applied.as_deref().is_some_and(Config::creating);
         let creation = world.get::<crate::native::full_record::window::Creation>(owner);
         let can_retry_creation = creation.is_some_and(|creation| creation.retry_available());
         let available = !creating
@@ -251,12 +251,13 @@ pub(super) fn synchronize(world: &mut World, owner: Entity, state: &State) {
                 world.despawn(form);
             }
         }
+        let restored = available && hidden(world, row);
         if !available && !hidden(world, row) {
             world.entity_mut(row).insert(Missing);
             world
                 .entity_mut(row)
                 .remove::<crate::native::area::RecordProperties>();
-        } else if available && hidden(world, row) {
+        } else if restored {
             world.entity_mut(row).remove::<Missing>();
             if let Some(data) = state
                 .data
@@ -265,7 +266,7 @@ pub(super) fn synchronize(world: &mut World, owner: Entity, state: &State) {
             {
                 world
                     .entity_mut(row)
-                    .insert(crate::native::area::RecordProperties(data.clone()));
+                    .insert(crate::native::area::RecordProperties(data.clone().into()));
             }
         }
         let children = world
@@ -288,6 +289,11 @@ pub(super) fn synchronize(world: &mut World, owner: Entity, state: &State) {
             } else if let Some(previous) = world.entity_mut(child).take::<Hidden>() {
                 set_display(world, child, previous.0);
             }
+        }
+        if restored {
+            super::record_layout::restore(world, row);
+            super::rows::materialize_visible(world, row);
+            super::presentation::refresh_fields(world, row);
         }
         if !available
             && let Some(focused) = world
@@ -470,7 +476,7 @@ mod tests {
             owner,
             ServerMessage::Update {
                 id: subscription,
-                rows: Vec::new(),
+                rows: Vec::new().into(),
             },
         );
         rows::reconcile(app.world_mut(), owner);

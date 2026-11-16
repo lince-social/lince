@@ -86,7 +86,7 @@ fn renewed_authentication_uses_the_existing_form_without_losing_the_record_draft
         owner,
         ServerMessage::Snapshot {
             id: "record-authentication".into(),
-            rows: vec![data],
+            rows: vec![data].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);

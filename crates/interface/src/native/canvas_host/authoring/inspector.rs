@@ -247,8 +247,10 @@ impl Action for Select {
                 .iter()
                 .find(|item| item.id == placement)
                 .ok_or("The placement was removed.")?;
-            let edits = api::authoring::edits(&item.component);
-            let edit = edits.parts.get(&self.0).cloned().unwrap_or_default();
+            let edit = api::authoring::edits_ref(&item.component)
+                .and_then(|edits| edits.parts.get(&self.0))
+                .cloned()
+                .unwrap_or_default();
             let changes = vec![api::authoring::Change::SetPart {
                 part: self.0.clone(),
                 edit,
@@ -388,9 +390,8 @@ impl Action for Property {
                 .iter()
                 .find(|item| item.id == placement)
                 .ok_or("The placement is no longer available.")?;
-            let mut edit = api::authoring::edits(&item.component)
-                .parts
-                .get(&part)
+            let mut edit = api::authoring::edits_ref(&item.component)
+                .and_then(|edits| edits.parts.get(&part))
                 .cloned()
                 .unwrap_or_default();
             let mut changes = Vec::new();

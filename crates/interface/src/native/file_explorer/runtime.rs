@@ -1,4 +1,5 @@
 use super::*;
+use crate::host::performance::{self, Count};
 
 #[derive(Resource, Default)]
 pub(super) struct Watching {
@@ -39,7 +40,7 @@ pub(super) fn update(world: &mut World) {
             }
         }
         request(world, owner);
-        render(world, owner);
+        super::presentation::render(world, owner);
     }
 }
 
@@ -48,17 +49,26 @@ fn request(world: &mut World, owner: Entity) {
     let abandoned: Vec<_> = view
         .listings
         .keys()
-        .filter(|path| !view.pending.contains(*path) || !view.expanded.contains(*path))
+        .filter(|path| {
+            view.search_results || !view.pending.contains(*path) || !view.expanded.contains(*path)
+        })
         .cloned()
         .collect();
     for path in abandoned {
         if let Some(cancel) = view.listings.remove(&path) {
             cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+            performance::count(Count::ExplorerDirectoryCancellations);
         }
         view.pending.remove(&path);
         view.cache.remove(&path);
+        view.pending_sorts.remove(&path);
     }
     let view = world.get::<View>(owner).unwrap();
+    // Search already owns the visible row model. Directory prefetch has no
+    // consumer until navigation returns to the tree/grid directory view.
+    if view.search_results {
+        return;
+    }
     let ignored = world.get::<FileExplorer>(owner).unwrap().ignored;
     let generation = view.generation;
     let requests: Vec<_> = view
@@ -120,9 +130,12 @@ fn request(world: &mut World, owner: Entity) {
                                     entries: Vec::new(),
                                     truncated: false,
                                 });
+                        let needs_sort = !listing.entries.is_empty() && !batch.entries.is_empty();
                         listing.entries.extend(batch.entries);
-                        lince_editor::explorer::sort(&mut listing.entries);
                         listing.truncated = limited;
+                        if needs_sort {
+                            view.pending_sorts.insert(reply_path.clone());
+                        }
                         view.dirty = true;
                         if limited {
                             status(
@@ -137,6 +150,7 @@ fn request(world: &mut World, owner: Entity) {
                         view.listings.remove(&reply_path);
                         view.expanded.remove(&reply_path);
                         view.cache.remove(&reply_path);
+                        view.pending_sorts.remove(&reply_path);
                         view.dirty = true;
                         status(world, owner, e);
                     }
@@ -144,218 +158,10 @@ fn request(world: &mut World, owner: Entity) {
             },
         );
         if result.is_ok() {
+            performance::count(Count::ExplorerDirectoryRequests);
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.pending.insert(path.clone());
             view.listings.insert(path, cancel);
-        }
-    }
-}
-
-fn render(world: &mut World, owner: Entity) {
-    if world.get::<View>(owner).unwrap().dirty {
-        let config = world.get::<FileExplorer>(owner).unwrap();
-        let view = world.get::<View>(owner).unwrap();
-        let rows = if let Some(rows) = &view.search_rows {
-            rows.clone()
-        } else {
-            let mut rows = Vec::new();
-            let directories = view.directory.iter().collect::<Vec<_>>();
-            let roots = if directories.is_empty() {
-                config.roots.iter().collect()
-            } else {
-                directories
-            };
-            for directory in roots {
-                let root = view
-                    .scopes
-                    .keys()
-                    .filter(|root| directory.starts_with(root))
-                    .max_by_key(|root| root.components().count())
-                    .unwrap_or(directory);
-                if config.grid && view.directory.is_some() {
-                    if let Some(listing) = view.cache.get(directory) {
-                        rows.extend(listing.entries.iter().cloned().map(|entry| Row {
-                            entry,
-                            root: root.clone(),
-                            depth: 1,
-                        }));
-                    }
-                    continue;
-                }
-                rows.push(Row {
-                    entry: Entry {
-                        path: directory.clone(),
-                        directory: true,
-                        link: false,
-                    },
-                    root: root.clone(),
-                    depth: 0,
-                });
-                if !config.grid {
-                    flatten(view, root, directory, 1, &mut rows);
-                }
-            }
-            rows
-        };
-        let mut view = world.get_mut::<View>(owner).unwrap();
-        view.rows = rows;
-        view.shown = None;
-        view.dirty = false;
-        let location = view.location;
-        let caption = view.directory.as_ref().map_or_else(
-            || "Selected roots".to_owned(),
-            |path| path.display().to_string(),
-        );
-        crate::native::sand_panel::status(world, location, caption);
-    }
-    let view = world.get::<View>(owner).unwrap();
-    let grid = world.get::<FileExplorer>(owner).unwrap().grid;
-    let columns = if grid {
-        world.get::<ComputedNode>(view.viewport).map_or(2, |node| {
-            ((node.size().x * node.inverse_scale_factor()) / 150.0)
-                .floor()
-                .max(1.0) as usize
-        })
-    } else {
-        1
-    };
-    let height = if grid { 76.0 } else { 30.0 };
-    let offset = world
-        .get::<ScrollPosition>(view.viewport)
-        .map_or(0.0, |scroll| scroll.y);
-    let first = (offset.max(0.0) / height).floor() as usize * columns;
-    let count = world.get::<ComputedNode>(view.viewport).map_or(30, |node| {
-        ((node.size().y * node.inverse_scale_factor()) / height).ceil() as usize + 2
-    }) * columns;
-    let first = first.min(view.rows.len());
-    let key = (first, columns, count, grid);
-    if view.shown == Some(key) {
-        return;
-    }
-    let content = view.content;
-    let total = view.rows.len().div_ceil(columns);
-    let rows: Vec<_> = view
-        .rows
-        .iter()
-        .skip(first)
-        .take(count.min(160))
-        .cloned()
-        .collect();
-    let expanded = view.expanded.clone();
-    let search = view.search_rows.is_some();
-    let selected = view.selected.as_ref().map(|row| row.entry.path.clone());
-    crate::native::sand_panel::clear(world, content);
-    world.get_mut::<Node>(content).unwrap().height = px(total as f32 * height);
-    for (index, row) in rows.into_iter().enumerate() {
-        let n = first + index;
-        let prefix = if row.entry.directory {
-            if expanded.contains(&row.entry.path) {
-                "▾ "
-            } else {
-                "▸ "
-            }
-        } else {
-            ""
-        };
-        let name = if search {
-            row.entry
-                .path
-                .strip_prefix(&row.root)
-                .unwrap_or(&row.entry.path)
-                .to_string_lossy()
-                .into_owned()
-        } else if row.depth == 0 {
-            row.entry.path.display().to_string()
-        } else {
-            row.entry
-                .path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .into_owned()
-        };
-        let caption = if grid {
-            format!(
-                "{}\n{name}{}",
-                if row.entry.directory { "▣" } else { "▤" },
-                if row.entry.link { " ↗" } else { "" }
-            )
-        } else {
-            format!("{prefix}{name}{}", if row.entry.link { " ↗" } else { "" })
-        };
-        let button = crate::native::sand_panel::button(
-            world,
-            content,
-            owner,
-            &caption,
-            actions::Control::Entry(row.clone()),
-        );
-        if selected.as_ref() == Some(&row.entry.path) {
-            world
-                .entity_mut(button)
-                .insert(BackgroundColor(Color::srgba(0.25, 0.45, 0.7, 0.35)));
-        }
-        world.entity_mut(button).insert(Node {
-            position_type: PositionType::Absolute,
-            left: if grid {
-                percent((n % columns) as f32 * 100.0 / columns as f32)
-            } else {
-                px(0)
-            },
-            top: px((n / columns) as f32 * height),
-            width: percent(100.0 / columns as f32),
-            height: px(height),
-            padding: UiRect {
-                left: px(if grid {
-                    6.0
-                } else {
-                    row.depth as f32 * 14.0 + 4.0
-                }),
-                right: px(4),
-                top: px(4),
-                bottom: px(4),
-            },
-            overflow: Overflow::clip(),
-            ..default()
-        });
-        if !grid && row.depth == 0 && row.entry.path == row.root {
-            let remove = crate::native::sand_panel::button(
-                world,
-                content,
-                owner,
-                "×",
-                actions::Control::RemoveRoot(row.root),
-            );
-            world.entity_mut(remove).insert(Node {
-                position_type: PositionType::Absolute,
-                right: px(0),
-                top: px(n as f32 * height),
-                width: px(24),
-                height: px(height),
-                ..default()
-            });
-        }
-    }
-    world.get_mut::<View>(owner).unwrap().shown = Some(key);
-}
-
-fn flatten(view: &View, root: &PathBuf, path: &PathBuf, depth: usize, rows: &mut Vec<Row>) {
-    if depth > 64 || rows.len() >= 100_000 || !view.expanded.contains(path) {
-        return;
-    }
-    if let Some(listing) = view.cache.get(path) {
-        for entry in &listing.entries {
-            if rows.len() >= 100_000 {
-                break;
-            }
-            rows.push(Row {
-                entry: entry.clone(),
-                root: root.clone(),
-                depth,
-            });
-            if entry.directory && &entry.path != path {
-                flatten(view, root, &entry.path, depth + 1, rows);
-            }
         }
     }
 }

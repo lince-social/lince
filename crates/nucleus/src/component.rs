@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::ops::ControlFlow;
 
 pub mod composition;
 pub use composition::{Composition, Document, EventBinding, Immunity, Part};
@@ -160,9 +161,9 @@ impl ComponentState {
         }
     }
 
-    pub fn visit(
-        &self,
-        visitor: &mut impl FnMut(&Self) -> Result<(), String>,
+    pub fn visit<'a>(
+        &'a self,
+        visitor: &mut impl FnMut(&'a Self) -> Result<(), String>,
     ) -> Result<(), String> {
         visitor(self)?;
         if let Self::Composition { composition } = self {
@@ -174,43 +175,62 @@ impl ComponentState {
     }
 
     pub fn records_mut(&mut self) -> Vec<&mut String> {
+        let mut records = Vec::new();
+        self.append_records_mut(&mut records);
+        records
+    }
+
+    fn append_records_mut<'a>(&'a mut self, records: &mut Vec<&'a mut String>) {
         match self {
             Self::Record {
                 record, start_call, ..
             } => {
-                let mut records = vec![record];
+                records.push(record);
                 if let Some(start) = start_call {
                     records.extend([&mut start.thread, &mut start.person]);
                 }
-                records
             }
-            Self::Composition { composition } => composition
-                .parts
-                .iter_mut()
-                .flat_map(|part| part.component.records_mut())
-                .collect(),
-            _ => Vec::new(),
+            Self::Composition { composition } => {
+                for part in &mut composition.parts {
+                    part.component.append_records_mut(records);
+                }
+            }
+            _ => {}
         }
     }
 
     pub fn records(&self) -> Vec<&str> {
+        let mut records = Vec::new();
+        let _: ControlFlow<()> = self.visit_records(&mut |record| {
+            records.push(record);
+            ControlFlow::Continue(())
+        });
+        records
+    }
+
+    /// Visits declared references in presentation order, including duplicates.
+    pub fn visit_records<'a, B>(
+        &'a self,
+        visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
         match self {
             Self::Record {
                 record, start_call, ..
             } => {
-                let mut records = vec![record.as_str()];
+                visit(record)?;
                 if let Some(start) = start_call {
-                    records.extend([start.thread.as_str(), start.person.as_str()]);
+                    visit(&start.thread)?;
+                    visit(&start.person)?;
                 }
-                records
             }
-            Self::Composition { composition } => composition
-                .parts
-                .iter()
-                .flat_map(|part| part.component.records())
-                .collect(),
-            _ => Vec::new(),
+            Self::Composition { composition } => {
+                for part in &composition.parts {
+                    part.component.visit_records(visit)?;
+                }
+            }
+            _ => {}
         }
+        ControlFlow::Continue(())
     }
 }
 

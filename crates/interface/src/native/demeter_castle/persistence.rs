@@ -43,6 +43,7 @@ impl SavedDemeterCastle {
 }
 
 pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDemeterCastle> {
+    let _capture = nucleus::performance::Span::new("demeter-workspace-capture");
     let entities: Vec<_> = world
         .query::<(
             Entity,
@@ -58,23 +59,21 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDemeterCastl
                     .get::<crate::native::canvas_item::Ephemeral>(*e)
                     .is_none()
         })
-        .map(|(e, _, member, item, state)| (e, member.0, item.position, item.size, state.clone()))
+        .map(|(e, _, member, item, _)| (e, member.0, item.position, item.size))
         .collect();
     entities
         .into_iter()
-        .map(|(e, workspace, position, size, mut castle)| {
+        .filter_map(|(e, workspace, position, size)| {
             let _ = editor::capture(world, e);
-            if let Some(current) = world.get::<DemeterCastle>(e) {
-                castle = current.clone();
-            }
-            SavedDemeterCastle {
+            let castle = world.get::<DemeterCastle>(e)?.clone();
+            Some(SavedDemeterCastle {
                 workspace,
                 castle,
                 position: position.to_array(),
                 size: size.to_array(),
                 placement: crate::native::sand_placement::Placement::capture(world, e),
                 tokens: crate::native::token_style::overrides(world, e),
-            }
+            })
         })
         .collect()
 }

@@ -113,11 +113,7 @@ impl Delivery {
                 }
             }
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES {
             return Err("Delivery exceeds its byte budget".into());
         }
         Ok(())

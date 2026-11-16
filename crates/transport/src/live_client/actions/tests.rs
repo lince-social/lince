@@ -95,7 +95,7 @@ fn unrelated_updates_and_duplicate_replies_cannot_consume_another_action_mapping
     let (wire, _) = signed(actions.prepare("autosave".into(), edit()).unwrap());
     let mut snapshot = ServerMessage::Snapshot {
         id: wire.clone(),
-        rows: Vec::new(),
+        rows: Vec::new().into(),
     };
     actions.restore(&mut snapshot);
     assert!(matches!(snapshot, ServerMessage::Snapshot { id, .. } if id == wire));

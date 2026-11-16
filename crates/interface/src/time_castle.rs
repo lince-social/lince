@@ -108,13 +108,22 @@ pub struct ScheduleSource {
 
 impl ScheduleSource {
     pub fn valid(&self) -> bool {
-        (match &self.cell {
+        self.query().is_ok()
+    }
+
+    pub fn query(&self) -> Result<protein::Protein, String> {
+        let invalid = || "Invalid clock schedule source".to_owned();
+        if !(match &self.cell {
             crate::records::Source::Local => true,
             crate::records::Source::Organ(uid) => !uid.is_empty() && uid.len() <= 128,
-        }) && self
-            .draft
-            .compile()
-            .is_ok_and(|query| query.source == protein::Source::Record)
+        }) {
+            return Err(invalid());
+        }
+        let query = self.draft.compile().map_err(|_| invalid())?;
+        if query.source != protein::Source::Record {
+            return Err(invalid());
+        }
+        Ok(query)
     }
 }
 

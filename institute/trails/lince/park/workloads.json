@@ -243,8 +243,8 @@
     "W27",
     "W28"
   ],
-  "factor_registry": "09-workflows.md",
-  "required_triples": "09-workflows.md mandatory combinations table",
+  "factor_registry": "09-workflows.lingua",
+  "required_triples": "09-workflows.lingua mandatory combinations table",
   "existing_selectors": [
     {
       "id": "style-control",
@@ -318,12 +318,10 @@
     "no_percentage_addition": true
   },
   "missing_setup": [
-    "P101 causal native/client input-visible links where existing reporting is insufficient",
-    "P102 file-backed Record edit timing rather than profile JSON timing",
-    "P104/P134 complete mixed-scene adapters/coverage wiring",
-    "P124 actual aggregate daily-scene inventory",
-    "P67/P70 actual graphics placement/execution timing",
-    "matched actual installed performance observation with source-stamped manifest"
+    "P134: broader finite cross-feature coverage beyond the existing complete mixed fixture; P104 Laboratory productization remains deferred",
+    "P124: reconcile the actual populated daily desktop inventory against the frozen synthetic scenes",
+    "P67/P70/P153: complete consumer GPU/source-frame/physical-output correlation; existing native/export GPU and input/edit hooks are implemented",
+    "matched installed source-batch observation on both physical outputs; private fixture passes do not establish daily acceptance"
   ],
   "normal_families": [
     {

@@ -1,0 +1,39 @@
+Native behavior composition (@ws-behavior-authoring: 0, is #chapter, #part-of @workspace-development, #requires @ws-object-recipes, #requires @ws-functional) { r_0BAJWB6BRA8P7VNMP58943PSFR
+Status: Pending. Owner refinement, 2026-11-15: users can compose new supported behaviors, expose their actions and reuse the result instead of only choosing built-in device templates.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Object recipes](Object-Recipes.lingua) and [Functional devices](Functional.lingua). Consume their real typed interface, event/timer semantics, source variants, activity isolation and one-writer policy. Deliver native composition of bounded actions, predicates, state, timing and supported effects. Exact CAD, new numerical solvers, advanced recording and scientific Laboratory are not prerequisites.
+
+## Ownership and parallel work
+
+Own behavior authoring and its bounded operator adapters; the Functional owner retains runtime/model scheduling. Reuse existing Rules/Signals/Areas where their actual semantics fit. Reserve shared runtime or schema edits with their owner. Procedural appearance can develop independently on the recipe export; its live-output integration is an explicit downstream join.
+
+## Ordered work
+
+### Task BHV.T01
+
+- [ ] Implement native composition over a small trusted operator set: typed input/event, predicate, bounded expression, state transition, timer/delay, curve/envelope and invocation of an already supported output/action. Include one-shot and held inputs, activation/update/release/cancel, retrigger and interruption semantics. Inspect types and current values before connecting. Cyclic discrete feedback needs explicit state/delay and bounded same-time work; continuous physical cycles remain owned by their domain solver. No arbitrary embedded executable or universal equation solver is introduced.
+
+### Task BHV.T02
+
+- [ ] Author OA.F01's signal-controlled lamp and proximity-operated hatch from reusable behavior fragments, with native parameters, connection editing and inspector action buttons. Expose Activate/Stop or Open/Close and the relevant observable state. Region, target predicate, clock, frame and units are explicit; bindings use supported scene queries/Areas and device outputs. The lamp uses the existing emission binding and the hatch the existing kinematic actuator. No infrared sensing, forces, electrical consumption or thermal effects are inferred.
+
+### Task BHV.T03
+
+- [ ] Package, inspect, duplicate and revise a behavior through the same recipe/definition lifecycle. Keep appearance and internal geometry independently replaceable. Use model initialization/state schemas and supported transitions when changing a running recipe; unsupported transfer keeps the previous usable model or offers an explicit restart. Source undo does not reverse elapsed activity time. Budget recurring events, temporary outputs, subscriptions and child activities; cancellation/deletion/last demand releases them under existing admission and authority.
+
+### Task BHV.T04
+
+- [ ] Deliver a bounded local trial with Run/Pause/Step/Reset where supported, value/state/timer inspection and an input-to-output causal trace linked to source nodes. Reuse existing tracing concepts and adapters; do not turn each rendered frame into a durable operational fact. Declare logical-event versus solver-step semantics and trace truncation. Trial events remain in their activity; adoption uses normal explicit commands. Basic debugging, save/offline closure and native usability are part of this package, not deferred to a laboratory join.
+
+### Task BHV.T05
+
+- [ ] Prove OA.W02 with captured input/time cases and independent expected event/state sequences: hold/retrigger, equal-time events, disallowed cycles, lost support, stale recipe, two occurrences and cancel/revoke. Confirm offscreen causal demand, one output writer and native/authorized-agent operation parity. Record actual queue, timer, trace, CPU/memory and stop/release limits. Unsupported outputs prevent an incompatible cheaper model from being selected; no automatic reduction of arbitrary recipes is promised.
+
+## Completion and handoff
+
+Publish the implemented operator/action/state interface, native proof, source/runtime ownership, model-transition restrictions and measured limits. Read OA.R01–OA.R07/OA.R10–OA.R12. Consumers: [CAD bindings](Cad-Behavior-Bindings.lingua), [Object controls](Object-Control-Bindings.lingua), [Authoring experiments](Authoring-Experiments.lingua), and later verified domain adapters. Current outcome: unbuilt and unverified.
+} r_0BAJWB6BRA8P7VNMP58943PSFR

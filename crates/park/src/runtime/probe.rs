@@ -152,7 +152,7 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                 revision = server.revision();
             }
             if let Some(completed) = worker.frame() {
-                for window in &completed.frame.windows {
+                for window in completed.frame.windows.iter() {
                     server
                         .configure_state(
                             window.surface,

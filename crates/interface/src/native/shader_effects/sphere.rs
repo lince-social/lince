@@ -65,7 +65,7 @@ fn update(world: &mut World) {
         let Some(data) = world.get::<RecordData>(record) else {
             continue;
         };
-        let Some(config) = crate::native::protein_area::configuration(world, data.binding.area)
+        let Some(config) = crate::native::protein_area::configuration_ref(world, data.binding.area)
         else {
             continue;
         };

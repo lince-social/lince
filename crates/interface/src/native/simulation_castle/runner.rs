@@ -79,8 +79,7 @@ pub(super) async fn run(
         Job::SaveChecks | Job::LoadChecks | Job::ListChecks => {
             let runtime = runtime.ok_or("Current Cell unavailable")?;
             let sets = simulation::saved_checks::list(&runtime.store.pool).await?;
-            let mut scenario: simulation::scenario::Scenario =
-                serde_json::from_str(&model.scenario)?;
+            let mut scenario = model.scenario.draft()?;
             let selected = if matches!(job, Job::SaveChecks) {
                 scenario.validate()?;
                 let saved = model
@@ -251,11 +250,10 @@ pub(super) async fn run(
                 return Err("Choose between 1 and 100000 search cases".into());
             }
             let selection = if matches!(job, Job::SearchSelected) {
-                let scenario: simulation::scenario::Scenario =
-                    serde_json::from_str(&model.scenario)?;
+                let scenario = model.scenario.parsed()?;
                 Some(simulation::campaign::CheckSelection {
-                    checks: scenario.checks,
-                    checking: scenario.checking,
+                    checks: scenario.checks.clone(),
+                    checking: scenario.checking.clone(),
                 })
             } else {
                 None
@@ -383,7 +381,7 @@ async fn capture_record(
     runtime: cell::CellRuntime,
     fresh: bool,
 ) -> Result<Prepared> {
-    let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
+    let mut scenario = model.scenario.draft()?;
     let previous = scenario.proposal.clone();
     let mut references: Vec<_> = previous
         .as_ref()
@@ -487,7 +485,7 @@ async fn prepare(
     if model.transfer_form.pending || !model.pending_transfers.is_empty() {
         return Err("Choose your Record and add the Transfer assumption before running".into());
     }
-    let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
+    let mut scenario = model.scenario.draft()?;
     scenario.validate()?;
     let temporary = tempfile::tempdir()?;
     let mut sources = PathBuf::from(&model.source_directory);

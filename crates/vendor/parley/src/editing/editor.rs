@@ -3,7 +3,11 @@
 
 //! A simple plain text editor and related types.
 
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{
+    borrow::{Cow, ToOwned},
+    string::String,
+    vec::Vec,
+};
 use core::{
     cmp::PartialEq,
     default::Default,
@@ -47,6 +51,21 @@ impl Generation {
 pub struct SplitString<'source>([&'source str; 2]);
 
 impl<'source> SplitString<'source> {
+    /// Borrows contiguous text, joining the two sides of an IME preedit when needed.
+    pub fn to_cow(self) -> Cow<'source, str> {
+        let [first, second] = self.0;
+        if second.is_empty() {
+            return Cow::Borrowed(first);
+        }
+        if first.is_empty() {
+            return Cow::Borrowed(second);
+        }
+        let mut text = String::with_capacity(first.len() + second.len());
+        text.push_str(first);
+        text.push_str(second);
+        Cow::Owned(text)
+    }
+
     /// Get the characters of this string.
     pub fn chars(self) -> impl Iterator<Item = char> + 'source {
         self.into_iter().flat_map(str::chars)
@@ -120,6 +139,7 @@ where
     // alignment_dirty: bool,
     alignment: Alignment,
     generation: Generation,
+    layout_generation: Generation,
 }
 
 impl<T> PlainEditor<T>
@@ -147,6 +167,7 @@ where
             // will choose to use that as their initial value, but will probably need
             // to redraw if they haven't already.
             generation: Generation(1),
+            layout_generation: Generation(1),
         }
     }
 }
@@ -874,6 +895,29 @@ where
         self.selection.geometry_with(&self.layout, f);
     }
 
+    /// Visit the geometry of a byte range without changing the editor selection.
+    ///
+    /// The range addresses [`Self::raw_text`], including any IME preedit text.
+    /// Returns `false`, without invoking the callback, if the layout needs
+    /// refreshing or either endpoint is not a character boundary. Callers can
+    /// refresh the layout through the usual driver before trying again.
+    /// A valid collapsed range returns `true` with no rectangles.
+    pub fn try_range_geometry_with(
+        &self,
+        range: Range<usize>,
+        f: impl FnMut(BoundingBox, usize),
+    ) -> bool {
+        if self.layout_dirty
+            || !self.buffer.is_char_boundary(range.start)
+            || !self.buffer.is_char_boundary(range.end)
+        {
+            return false;
+        }
+        Selection::new(self.cursor_at(range.start), self.cursor_at(range.end))
+            .geometry_with(&self.layout, f);
+        true
+    }
+
     /// Get a rectangle representing the current caret cursor position.
     ///
     /// There is not always a caret. For example, the IME may have indicated the caret should be
@@ -969,6 +1013,14 @@ where
     /// when the generation is different (`Generation` is [`PartialEq`], so supports the equality `==` operation).
     pub fn generation(&self) -> Generation {
         self.generation
+    }
+
+    /// Returns the generation of the laid-out glyphs and runs.
+    ///
+    /// Selection and caret changes leave this generation unchanged. Refresh a
+    /// dirty layout before comparing it with a previously rendered generation.
+    pub fn layout_generation(&self) -> Generation {
+        self.layout_generation
     }
 
     /// Replace the whole text buffer.
@@ -1245,6 +1297,7 @@ where
         self.selection = self.selection.refresh(&self.layout);
         self.layout_dirty = false;
         self.generation.nudge();
+        self.layout_generation.nudge();
     }
 
     #[cfg(feature = "accesskit")]

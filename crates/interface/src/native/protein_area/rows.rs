@@ -14,7 +14,7 @@ pub(super) use lince_interface::records::display;
 #[derive(Component)]
 pub(super) struct Row {
     pub(super) area: Entity,
-    pub(super) data: Value,
+    pub(super) data: std::sync::Arc<Value>,
     pub(super) config: std::sync::Arc<Config>,
     index: usize,
 }
@@ -30,6 +30,9 @@ struct EditorSize {
     observed: String,
     measuring: bool,
 }
+
+#[derive(Component, Default)]
+struct DeferredFields(Vec<(Entity, usize)>);
 
 #[derive(Component)]
 pub(super) struct PropertyContainer(pub(super) String);
@@ -109,7 +112,7 @@ pub(super) fn authoring_draft(world: &World, entity: Entity) -> bool {
         .get::<PropertyEditor>(entity)
         .zip(world.get::<EditableText>(entity))
         .is_some_and(|(editor, text)| {
-            editor.pending.is_some() || text.value().to_string() != editor.observed
+            editor.pending.is_some() || text.value() != editor.observed.as_str()
         })
 }
 
@@ -147,10 +150,9 @@ pub(super) fn save_indicators(
     )>,
 ) {
     for (editor, text, binding, mut unsaved) in &mut fields {
-        let value = text.value().to_string();
         let dirty = binding.map_or_else(
-            || editor.pending.is_some() || value != editor.observed,
-            |binding| binding.unsaved(&value),
+            || editor.pending.is_some() || text.value() != editor.observed.as_str(),
+            |binding| binding.editor_unsaved(text),
         );
         unsaved.set_if_neq(crate::native::sand::Unsaved(dirty));
     }
@@ -188,6 +190,7 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
+    world.entity_mut(row).remove::<DeferredFields>();
     super::availability::populate(world, row, config, binding.as_ref());
     if config.record_cards && (config.command.is_some() || data["kind"] == "command") {
         if let Some(binding) = binding {
@@ -308,14 +311,12 @@ pub(super) fn fields(
     binding: Option<RecordBinding>,
     sections: Option<&super::record_layout::Sections>,
 ) {
-    for property in &config.bindings {
+    let deferred = sections.is_some() && world.get::<Row>(row).is_some();
+    let mut pending = Vec::new();
+    for (index, property) in config.bindings.iter().enumerate() {
         let parent = sections
             .as_ref()
             .map_or(row, |sections| sections.parent(&property.property, data));
-        let horizontal = matches!(
-            property.overflow,
-            OverflowMode::ScrollRight | OverflowMode::GrowRight
-        );
         let grow_y = property.overflow == OverflowMode::GrowDown;
         let grow_x = property.overflow == OverflowMode::GrowRight;
         let width = property.width.min(config.width - 24.0).max(24.0);
@@ -365,7 +366,7 @@ pub(super) fn fields(
                 )),
                 ChildOf(parent),
                 Tooltip(
-                    protein::record_schema::fields()
+                    protein::record_schema::FIELDS
                         .iter()
                         .find(|f| f.key == property.property)
                         .map_or(property.property.clone(), |f| f.title.into()),
@@ -381,271 +382,370 @@ pub(super) fn fields(
         if let Some(binding) = binding.clone() {
             world.entity_mut(container).insert(binding).observe(click);
         }
-        let text = display(&data[&property.property]);
-        let editable = property.editable && binding.is_some();
-        if let Some((schema, field)) = nucleus::record_extension::column_binding(&property.property)
-        {
-            if let Some(binding) = binding.clone() {
-                crate::native::record_extensions::field(
-                    world, container, binding, schema, field, editable,
-                );
-            }
-            continue;
-        }
-        if config.show_labels
-            && !(config.record_cards && matches!(property.property.as_str(), "head" | "body"))
-            && !matches!(
-                property.property.as_str(),
-                "threads" | "assertions" | "work_logs"
-            )
-        {
-            let label = protein::record_schema::fields()
-                .into_iter()
-                .find(|field| field.key == property.property)
-                .map_or(property.property.clone(), |field| field.title.into());
-            let label = crate::native::edit_mode::label(world, container, &label, 13.0);
-            world
-                .entity_mut(label)
-                .insert((crate::native::record_binding::BindingStatus, PropertyLabel));
-        }
-        if let Some(binding) = binding.clone() {
-            if property.property == "work_timer" {
-                crate::native::work_timer::populate(world, container, Some(binding), data, None);
-                continue;
-            }
-            if property.property == "threads" {
-                crate::native::thread_castle::populate(world, container, binding, data);
-                continue;
-            }
-        }
-        if editable && property.property == "assignees" {
-            super::assignees::field(world, container, binding.clone().unwrap(), data);
-            continue;
-        }
-        if editable && property.property == "assertions" {
-            crate::native::assertion_editor::spawn(
-                world,
-                container,
-                binding.clone().unwrap(),
-                data,
-                false,
-            );
-            continue;
-        }
-        if editable && property.property == "work_logs" {
-            property_actions::spawn(
-                world,
-                container,
-                &property.property,
-                binding.clone().unwrap(),
-                data,
-                0,
-            );
-            continue;
-        }
-        if property.property == "body" && !editable {
-            crate::native::description::readonly(
-                world,
-                container,
-                &text,
-                crate::native::description::Context {
-                    owner: row,
-                    source: binding
-                        .as_ref()
-                        .map_or(Source::Local, |binding| binding.source.clone()),
-                },
-            );
-            continue;
-        }
-        let text_entity = if editable {
-            let bundle = crate::native::sand::text_editor(
-                &text,
-                world.resource::<crate::native::theme::Typography>(),
-                0,
-            );
-            let entity = world.spawn(bundle).id();
-            let mut editor = world.get_mut::<EditableText>(entity).unwrap();
-            editor.max_characters = Some(65_536);
-            editor.visible_lines =
-                if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
-                    Some(1.0)
-                } else {
-                    None
-                };
-            editor.allow_newlines = matches!(property.property.as_str(), "head" | "body");
-            world.entity_mut(entity).insert((
-                PropertyEditor {
-                    property: property.property.clone(),
-                    observed: text,
-                    baseline: baseline(data, &property.property),
-                    pending: None,
-                    attempted: None,
-                },
-                binding.clone().unwrap(),
-            ));
-            if matches!(property.property.as_str(), "head" | "body")
-                && crate::native::record_binding::enabled(world)
-            {
-                let status = (!config.record_cards).then(|| {
-                    crate::native::edit_mode::label(world, container, "Opening Record…", 12.0)
-                });
-                crate::native::record_binding::attach(
-                    world,
-                    entity,
-                    binding.clone().unwrap(),
-                    &property.property,
-                    status,
-                );
-            }
-            if !matches!(property.property.as_str(), "head" | "body")
-                || !crate::native::record_binding::enabled(world)
-            {
-                super::history::attach_text(world, entity);
-            }
-            entity
+        if deferred {
+            pending.push((container, index));
         } else {
-            let font = world
-                .resource::<crate::native::theme::Typography>()
-                .text(18.0);
-            world
-                .spawn((
-                    Text::new(text),
-                    font,
-                    crate::native::token_style::text(Token::Ink),
-                ))
-                .id()
-        };
-        world.entity_mut(text_entity).insert((
-            Node {
-                width: if config.record_cards {
-                    percent(100)
-                } else if horizontal && !editable {
-                    Val::Auto
-                } else {
-                    px((width - 8.0).max(16.0))
-                },
-                height: if editable {
-                    px(if config.record_cards {
-                        32.0
-                    } else {
-                        (property.height - 8.0).max(24.0)
-                    })
-                } else {
-                    Val::Auto
-                },
-                min_width: if horizontal { Val::Auto } else { px(0) },
-                flex_shrink: 0.0,
-                max_width: if config.record_cards {
-                    percent(100)
-                } else if horizontal && !grow_x {
-                    Val::Auto
-                } else {
-                    px((config.width - 32.0).max(16.0))
-                },
-                ..default()
+            field_content(
+                world,
+                row,
+                container,
+                config,
+                data,
+                binding.clone(),
+                property,
+            );
+        }
+    }
+    if pending.is_empty() {
+        world.entity_mut(row).remove::<DeferredFields>();
+    } else {
+        world.entity_mut(row).insert(DeferredFields(pending));
+    }
+}
+
+fn field_content(
+    world: &mut World,
+    row: Entity,
+    container: Entity,
+    config: &Config,
+    data: &Value,
+    binding: Option<RecordBinding>,
+    property: &Binding,
+) {
+    let horizontal = matches!(
+        property.overflow,
+        OverflowMode::ScrollRight | OverflowMode::GrowRight
+    );
+    let grow_x = property.overflow == OverflowMode::GrowRight;
+    let width = property.width.min(config.width - 24.0).max(24.0);
+    let editable = property.editable && binding.is_some();
+    if let Some((schema, field)) = nucleus::record_extension::column_binding(&property.property) {
+        if let Some(binding) = binding.clone() {
+            crate::native::record_extensions::field(
+                world, container, binding, schema, field, editable,
+            );
+        }
+        return;
+    }
+    if config.show_labels
+        && !(config.record_cards && matches!(property.property.as_str(), "head" | "body"))
+        && !matches!(
+            property.property.as_str(),
+            "threads" | "assertions" | "work_logs"
+        )
+    {
+        let label = protein::record_schema::FIELDS
+            .iter()
+            .find(|field| field.key == property.property)
+            .map_or(property.property.clone(), |field| field.title.into());
+        let label = crate::native::edit_mode::label(world, container, &label, 13.0);
+        world
+            .entity_mut(label)
+            .insert((crate::native::record_binding::BindingStatus, PropertyLabel));
+    }
+    if let Some(binding) = binding.clone() {
+        if property.property == "work_timer" {
+            crate::native::work_timer::populate(world, container, Some(binding), data, None);
+            return;
+        }
+        if property.property == "threads" {
+            crate::native::thread_castle::populate(world, container, binding, data);
+            return;
+        }
+    }
+    if editable && property.property == "assignees" {
+        super::assignees::field(world, container, binding.clone().unwrap(), data);
+        return;
+    }
+    if editable && property.property == "assertions" {
+        crate::native::assertion_editor::spawn(
+            world,
+            container,
+            binding.clone().unwrap(),
+            data,
+            false,
+        );
+        return;
+    }
+    if editable && property.property == "work_logs" {
+        property_actions::spawn(
+            world,
+            container,
+            &property.property,
+            binding.clone().unwrap(),
+            data,
+            0,
+        );
+        return;
+    }
+    let text = display(&data[&property.property]);
+    if property.property == "body" && !editable {
+        crate::native::description::readonly(
+            world,
+            container,
+            &text,
+            crate::native::description::Context {
+                owner: row,
+                source: binding
+                    .as_ref()
+                    .map_or(Source::Local, |binding| binding.source.clone()),
             },
-            TextLayout::linebreak(
-                if (horizontal && !grow_x)
-                    || (config.record_cards
-                        && !matches!(property.property.as_str(), "head" | "body"))
-                {
-                    bevy::text::LineBreak::NoWrap
-                } else {
-                    bevy::text::LineBreak::WordBoundary
-                },
-            ),
-            ChildOf(container),
+        );
+        return;
+    }
+    let text_entity = if editable {
+        let bundle = crate::native::sand::text_editor(
+            &text,
+            world.resource::<crate::native::theme::Typography>(),
+            0,
+        );
+        let entity = world.spawn(bundle).id();
+        let mut editor = world.get_mut::<EditableText>(entity).unwrap();
+        editor.max_characters = Some(65_536);
+        editor.visible_lines =
+            if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
+                Some(1.0)
+            } else {
+                None
+            };
+        editor.allow_newlines = matches!(property.property.as_str(), "head" | "body");
+        world.entity_mut(entity).insert((
+            PropertyEditor {
+                property: property.property.clone(),
+                observed: text,
+                baseline: baseline(data, &property.property),
+                pending: None,
+                attempted: None,
+            },
+            binding.clone().unwrap(),
         ));
-        if config.record_cards && property.property == "head" {
-            world
-                .entity_mut(text_entity)
-                .insert(crate::native::sand::Borderless);
-            world.get_mut::<Node>(text_entity).unwrap().border = UiRect::all(px(0));
-        }
-        if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
-            let font = world
-                .resource::<crate::native::theme::Typography>()
-                .text(16.0);
-            world.entity_mut(text_entity).insert(font);
-            world.get_mut::<Node>(text_entity).unwrap().padding = UiRect::all(px(4));
-        }
-        if editable && property.overflow != OverflowMode::Clip {
-            world.entity_mut(text_entity).insert(EditorSize {
-                mode: property.overflow,
-                minimum: if config.record_cards {
-                    Vec2::new(48.0, 32.0)
-                } else {
-                    Vec2::new((width - 8.0).max(16.0), (property.height - 8.0).max(24.0))
-                },
-                maximum_width: (config.width - 32.0).max(16.0),
-                observed: String::new(),
-                measuring: false,
+        if matches!(property.property.as_str(), "head" | "body")
+            && crate::native::record_binding::enabled(world)
+        {
+            let status = (!config.record_cards).then(|| {
+                crate::native::edit_mode::label(world, container, "Opening Record…", 12.0)
             });
+            crate::native::record_binding::attach(
+                world,
+                entity,
+                binding.clone().unwrap(),
+                &property.property,
+                status,
+            );
         }
-        if property.property == "body" && editable {
-            world.entity_mut(text_entity).remove::<EditorSize>();
-            let font = world
-                .resource::<crate::native::theme::Typography>()
-                .text(14.0);
-            world.entity_mut(text_entity).insert(font);
-            crate::native::description::attach_editor(
+        if !matches!(property.property.as_str(), "head" | "body")
+            || !crate::native::record_binding::enabled(world)
+        {
+            super::history::attach_text(world, entity);
+        }
+        entity
+    } else {
+        let font = world
+            .resource::<crate::native::theme::Typography>()
+            .text(18.0);
+        world
+            .spawn((
+                Text::new(text),
+                font,
+                crate::native::token_style::text(Token::Ink),
+            ))
+            .id()
+    };
+    world.entity_mut(text_entity).insert((
+        Node {
+            width: if config.record_cards {
+                percent(100)
+            } else if horizontal && !editable {
+                Val::Auto
+            } else {
+                px((width - 8.0).max(16.0))
+            },
+            height: if editable {
+                px(if config.record_cards {
+                    32.0
+                } else {
+                    (property.height - 8.0).max(24.0)
+                })
+            } else {
+                Val::Auto
+            },
+            min_width: if horizontal { Val::Auto } else { px(0) },
+            flex_shrink: 0.0,
+            max_width: if config.record_cards {
+                percent(100)
+            } else if horizontal && !grow_x {
+                Val::Auto
+            } else {
+                px((config.width - 32.0).max(16.0))
+            },
+            ..default()
+        },
+        TextLayout::linebreak(
+            if (horizontal && !grow_x)
+                || (config.record_cards && !matches!(property.property.as_str(), "head" | "body"))
+            {
+                bevy::text::LineBreak::NoWrap
+            } else {
+                bevy::text::LineBreak::WordBoundary
+            },
+        ),
+        ChildOf(container),
+    ));
+    if config.record_cards && property.property == "head" {
+        world
+            .entity_mut(text_entity)
+            .insert(crate::native::sand::Borderless);
+        world.get_mut::<Node>(text_entity).unwrap().border = UiRect::all(px(0));
+    }
+    if config.record_cards && !matches!(property.property.as_str(), "head" | "body") {
+        let font = world
+            .resource::<crate::native::theme::Typography>()
+            .text(16.0);
+        world.entity_mut(text_entity).insert(font);
+        world.get_mut::<Node>(text_entity).unwrap().padding = UiRect::all(px(4));
+    }
+    if editable && property.overflow != OverflowMode::Clip {
+        world.entity_mut(text_entity).insert(EditorSize {
+            mode: property.overflow,
+            minimum: if config.record_cards {
+                Vec2::new(48.0, 32.0)
+            } else {
+                Vec2::new((width - 8.0).max(16.0), (property.height - 8.0).max(24.0))
+            },
+            maximum_width: (config.width - 32.0).max(16.0),
+            observed: String::new(),
+            measuring: false,
+        });
+    }
+    if property.property == "body" && editable {
+        world.entity_mut(text_entity).remove::<EditorSize>();
+        let font = world
+            .resource::<crate::native::theme::Typography>()
+            .text(14.0);
+        world.entity_mut(text_entity).insert(font);
+        crate::native::description::attach_editor(
+            world,
+            container,
+            text_entity,
+            crate::native::description::Context {
+                owner: row,
+                source: binding.as_ref().unwrap().source.clone(),
+            },
+        );
+        let shader_castle = binding.as_ref().is_some_and(|binding| {
+            world
+                .get::<crate::native::shader_castle::ShaderFeed>(binding.area)
+                .is_some()
+        });
+        if shader_castle {
+            world.get_mut::<Node>(text_entity).unwrap().height = px(480);
+        } else if config.record_cards {
+            crate::native::description::set_mode(
                 world,
                 container,
-                text_entity,
-                crate::native::description::Context {
-                    owner: row,
-                    source: binding.as_ref().unwrap().source.clone(),
-                },
+                crate::native::description::Mode::Pretty,
             );
-            let shader_castle = binding.as_ref().is_some_and(|binding| {
-                world
-                    .get::<crate::native::shader_castle::ShaderFeed>(binding.area)
-                    .is_some()
-            });
-            if shader_castle {
-                world.get_mut::<Node>(text_entity).unwrap().height = px(480);
-            } else if config.record_cards {
-                crate::native::description::set_mode(
-                    world,
-                    container,
-                    crate::native::description::Mode::Pretty,
-                );
-                world.get_mut::<Node>(text_entity).unwrap().height = px(280);
-            }
+            world.get_mut::<Node>(text_entity).unwrap().height = px(280);
         }
-        if editable && !matches!(property.property.as_str(), "head" | "body") {
-            if matches!(property.property.as_str(), "start_date" | "due_date") {
-                let controls = world
-                    .spawn((
-                        Node {
-                            width: percent(100),
-                            min_width: px(0),
-                            column_gap: px(4),
-                            align_items: AlignItems::Center,
-                            flex_shrink: 0.0,
-                            ..default()
-                        },
-                        ChildOf(container),
-                    ))
-                    .id();
-                world.entity_mut(text_entity).insert(ChildOf(controls));
+    }
+    if editable && !matches!(property.property.as_str(), "head" | "body") {
+        if matches!(property.property.as_str(), "start_date" | "due_date") {
+            let controls = world
+                .spawn((
+                    Node {
+                        width: percent(100),
+                        min_width: px(0),
+                        column_gap: px(4),
+                        align_items: AlignItems::Center,
+                        flex_shrink: 0.0,
+                        ..default()
+                    },
+                    ChildOf(container),
+                ))
+                .id();
+            world.entity_mut(text_entity).insert(ChildOf(controls));
+            {
+                let mut node = world.get_mut::<Node>(text_entity).unwrap();
+                node.width = px(0);
+                node.flex_grow = 1.0;
+                node.flex_shrink = 1.0;
+                node.min_width = px(48);
+            }
+            let button =
+                crate::native::calendar::date_button(world, row, text_entity, &property.property);
+            world.entity_mut(button).insert(ChildOf(controls));
+            crate::native::schedule_editor::attach(world, controls, text_entity);
+        }
+    }
+}
+
+pub(super) fn materialize_field(world: &mut World, row: Entity, container: Entity) {
+    if super::availability::hidden(world, row) {
+        return;
+    }
+    let Some(position) = world
+        .get::<DeferredFields>(row)
+        .and_then(|fields| fields.0.iter().position(|(entity, _)| *entity == container))
+    else {
+        return;
+    };
+    let Some(record) = world.get::<Row>(row) else {
+        return;
+    };
+    let config = record.config.clone();
+    let data = record.data.clone();
+    let binding = world.get::<RecordBinding>(row).cloned();
+    let index = world
+        .get_mut::<DeferredFields>(row)
+        .unwrap()
+        .0
+        .swap_remove(position)
+        .1;
+    if world
+        .get::<DeferredFields>(row)
+        .is_some_and(|fields| fields.0.is_empty())
+    {
+        world.entity_mut(row).remove::<DeferredFields>();
+    }
+    let Some(property) = config.bindings.get(index) else {
+        return;
+    };
+    if world
+        .get::<PropertyContainer>(container)
+        .is_none_or(|field| field.0 != property.property)
+    {
+        return;
+    }
+    field_content(world, row, container, &config, &data, binding, property);
+    super::presentation::field_content_created(world, container);
+}
+
+pub(super) fn materialize_visible(world: &mut World, row: Entity) {
+    let Some(fields) = world.get::<DeferredFields>(row) else {
+        return;
+    };
+    let visible: Vec<_> = fields
+        .0
+        .iter()
+        .filter_map(|(entity, _)| {
+            let mut current = *entity;
+            for _ in 0..crate::native::layout::MAX_DEPTH {
+                if world
+                    .get::<Node>(current)
+                    .is_some_and(|node| node.display == Display::None)
                 {
-                    let mut node = world.get_mut::<Node>(text_entity).unwrap();
-                    node.width = px(0);
-                    node.flex_grow = 1.0;
-                    node.flex_shrink = 1.0;
-                    node.min_width = px(48);
+                    return None;
                 }
-                let button = crate::native::calendar::date_button(
-                    world,
-                    row,
-                    text_entity,
-                    &property.property,
-                );
-                world.entity_mut(button).insert(ChildOf(controls));
-                crate::native::schedule_editor::attach(world, controls, text_entity);
+                if current == row {
+                    return Some(*entity);
+                }
+                current = world.get::<ChildOf>(current)?.parent();
             }
-        }
+            None
+        })
+        .collect();
+    for entity in visible {
+        materialize_field(world, row, entity);
     }
 }
 
@@ -683,15 +783,24 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         return;
     }
     let parent = world.get::<ChildOf>(owner).map(ChildOf::parent);
-    let workspace = world.get::<WorkspaceMember>(owner).map_or(1, |member| member.0);
-    if state.ready && parent.is_some_and(|root| !crate::native::output_views::presents(world, root, workspace)) {
-        if state.dirty && !state.row_entities.is_empty()
+    let workspace = world
+        .get::<WorkspaceMember>(owner)
+        .map_or(1, |member| member.0);
+    if state.ready
+        && parent.is_some_and(|root| !crate::native::output_views::presents(world, root, workspace))
+    {
+        if state.dirty
+            && !state.row_entities.is_empty()
             && let Some(config) = &state.applied
         {
-            let current: std::collections::HashSet<_> = state.data.iter()
-                .filter_map(|row| row["uid"].as_str()).collect();
+            let current: std::collections::HashSet<_> = state
+                .data
+                .iter()
+                .filter_map(|row| row["uid"].as_str())
+                .collect();
             state.row_entities.retain(|uid, entity| {
-                let same_source = world.get::<Row>(*entity)
+                let same_source = world
+                    .get::<Row>(*entity)
                     .is_some_and(|row| row.config.source == config.source);
                 if (same_source && current.contains(uid.as_str()))
                     || super::availability::retain(world, *entity, config)
@@ -714,7 +823,6 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         return;
     };
     state.single_record = super::availability::target(&config);
-    let shared_config = std::sync::Arc::new(config.clone());
     let Some(parent) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
@@ -723,23 +831,24 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         .get::<WorkspaceMember>(owner)
         .map_or(1, |member| member.0);
     state.page = state.page.min(state.data.len().saturating_sub(1) / 200);
-    if let Some(entity) = state.navigation.take() {
-        let _ = world.despawn(entity);
-    }
-    if state.data.len() > 200 {
-        state.navigation = Some(ui::navigation(world, owner, state.page, state.data.len()));
-    }
+    ui::navigation(
+        world,
+        owner,
+        &mut state.navigation,
+        state.page,
+        state.data.len(),
+    );
     let rows = if config.creating() {
         Vec::new()
     } else {
         grouping::page(&state.data, &config, state.page)
     };
-    let cells = grouping::prepare(world, owner, &mut state, &rows, &config);
+    let cells = grouping::prepare(world, owner, &mut state.groups, &rows, &config);
+    let current: std::collections::HashSet<_> =
+        rows.iter().filter_map(|row| row["uid"].as_str()).collect();
     if let Some(uid) = state.single_record.clone()
         && !state.row_entities.contains_key(&uid)
-        && !rows
-            .iter()
-            .any(|data| data["uid"].as_str() == Some(uid.as_str()))
+        && !current.contains(uid.as_str())
     {
         let binding = RecordBinding {
             area: owner,
@@ -751,8 +860,8 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             Loading,
             Row {
                 area: owner,
-                data: Value::Null,
-                config: shared_config.clone(),
+                data: Value::Null.into(),
+                config: config.clone(),
                 index: 0,
             },
         ));
@@ -766,7 +875,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
     let stale: Vec<_> = state
         .row_entities
         .iter()
-        .filter(|(uid, _)| !rows.iter().any(|row| row["uid"].as_str() == Some(uid)))
+        .filter(|(uid, _)| !current.contains(uid.as_str()))
         .map(|(uid, entity)| (uid.clone(), *entity))
         .collect();
     for (uid, entity) in stale {
@@ -807,9 +916,14 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         } else {
             world.entity_mut(entity).remove::<grouping::Cell>();
         }
-        let same = world.get::<Row>(entity).is_some_and(|row| {
-            row.data == data && row.config.as_ref() == &config && row.index == index
-        });
+        let data_changed = world
+            .get::<Row>(entity)
+            .is_none_or(|row| row.data.as_ref() != data);
+        let same = !data_changed
+            && !state.template_dirty
+            && world.get::<Row>(entity).is_some_and(|row| {
+                std::sync::Arc::ptr_eq(&row.config, &config) && row.index == index
+            });
         if world.get::<RecordBinding>(entity).is_none() {
             world
                 .entity_mut(entity)
@@ -825,6 +939,28 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             if template_changed {
                 world.entity_mut(entity).remove::<Loading>();
                 super::presentation::rebuilding(world, entity);
+            }
+            let snapshot = world
+                .get::<Row>(entity)
+                .filter(|_| !data_changed)
+                .map(|row| row.data.clone())
+                .unwrap_or_else(|| std::sync::Arc::new(data.clone()));
+            if let Some(mut row) = world.get_mut::<Row>(entity) {
+                if data_changed {
+                    row.data = snapshot.clone();
+                }
+                row.area = owner;
+                row.config = config.clone();
+                row.index = index;
+            } else {
+                world.entity_mut(entity).insert(Row {
+                    area: owner,
+                    data: snapshot.clone(),
+                    config: config.clone(),
+                    index,
+                });
+            }
+            if template_changed {
                 if let Some(children) = world.get::<Children>(entity) {
                     let children: Vec<_> = children.iter().collect();
                     for child in children {
@@ -834,20 +970,18 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                 if config.viewport_height.is_some() || config.max_height.is_some() {
                     crate::native::scroll_sand::attach(world, entity);
                 }
-                content(world, entity, &config, &data, Some(binding));
+                content(world, entity, &config, data, Some(binding));
             } else {
-                refresh(world, entity, &data);
+                refresh(world, entity, data);
             }
-            let properties = data.clone();
-            world.entity_mut(entity).insert((
-                Row {
-                    area: owner,
-                    data: data.clone(),
-                    config: shared_config.clone(),
-                    index,
-                },
-                crate::native::area::RecordProperties(properties),
-            ));
+            if world
+                .get::<crate::native::area::RecordProperties>(entity)
+                .is_none_or(|properties| properties.0 != snapshot)
+            {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::native::area::RecordProperties(snapshot));
+            }
         }
     }
     state.dirty = false;
@@ -873,6 +1007,19 @@ fn descendants(world: &World, entity: Entity) -> Vec<Entity> {
         }
     }
     out
+}
+
+pub(super) fn property_containers(world: &World, row: Entity) -> Vec<(Entity, String)> {
+    let mut pending = vec![row];
+    let mut containers = Vec::new();
+    while let Some(entity) = pending.pop() {
+        if let Some(container) = world.get::<PropertyContainer>(entity) {
+            containers.push((entity, container.0.clone()));
+        } else if let Some(children) = world.get::<Children>(entity) {
+            pending.extend(children.iter().rev());
+        }
+    }
+    containers
 }
 
 pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Draft> {
@@ -920,15 +1067,15 @@ pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Dra
 
 fn refresh(world: &mut World, row: Entity, data: &Value) {
     crate::native::shader_effects::refresh_record(world, row, data);
-    let children: Vec<_> = descendants(world, row)
-        .into_iter()
-        .filter_map(|child| {
-            world
-                .get::<PropertyContainer>(child)
-                .map(|property| (child, property.0.clone()))
-        })
-        .collect();
-    for (container, property) in children {
+    for (container, property) in property_containers(world, row) {
+        if world
+            .get::<DeferredFields>(row)
+            .is_some_and(|fields| fields.0.iter().any(|(pending, _)| *pending == container))
+        {
+            // The first reveal reads the current Row snapshot. There is no
+            // editor or displayed value to refresh before it exists.
+            continue;
+        }
         if nucleus::record_extension::column_binding(&property).is_some() {
             continue;
         }
@@ -943,9 +1090,11 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
         {
             continue;
         }
-        let text = display(&data[&property]);
-        if property == "body" {
-            crate::native::description::refresh_readonly(world, container, &text);
+        let text = lince_interface::records::display_ref(&data[&property]);
+        if property == "body"
+            && crate::native::description::refresh_readonly(world, container, &text)
+        {
+            continue;
         }
         for entity in descendants(world, container) {
             if crate::native::description::protects(world, entity) {
@@ -964,17 +1113,11 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
             if let Some(editor) = world.get::<PropertyEditor>(entity) {
                 let dirty = world
                     .get::<EditableText>(entity)
-                    .is_some_and(|value| value.value().to_string() != editor.observed);
+                    .is_some_and(|value| value.value() != editor.observed.as_str());
                 if editor.pending.is_some() || dirty {
                     continue;
                 }
-                if world
-                    .get::<EditableText>(entity)
-                    .unwrap()
-                    .value()
-                    .to_string()
-                    != text
-                {
+                if world.get::<EditableText>(entity).unwrap().value() != text.as_ref() {
                     world
                         .get_mut::<EditableText>(entity)
                         .unwrap()
@@ -983,10 +1126,16 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
                 }
                 super::history::synced_text(world, entity, &text);
                 let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
-                editor.observed = text.clone();
-                editor.baseline = baseline(data, &property);
-            } else if let Some(mut value) = world.get_mut::<Text>(entity) {
-                value.0 = text.clone();
+                if editor.observed != text.as_ref() {
+                    text.as_ref().clone_into(&mut editor.observed);
+                }
+                if !lince_interface::records::baseline_matches(&editor.baseline, data, &property) {
+                    editor.baseline = baseline(data, &property);
+                }
+            } else if let Some(mut value) = world.get_mut::<Text>(entity)
+                && value.0 != text.as_ref()
+            {
+                text.as_ref().clone_into(&mut value.0);
             }
         }
     }
@@ -1088,11 +1237,17 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
     if editor.pending.is_some() || text.is_composing() || text.pending_paste.is_some() {
         return;
     }
-    let value = text.value().to_string();
-    let submitted = value.clone();
-    if value == editor.observed || editor.attempted.as_ref() == Some(&value) {
+    let value = text.value();
+    if value == editor.observed.as_str()
+        || editor
+            .attempted
+            .as_ref()
+            .is_some_and(|attempted| value == attempted.as_str())
+    {
         return;
     }
+    let value = value.to_string();
+    let submitted = value.clone();
     let property = editor.property.clone();
     world.get_mut::<PropertyEditor>(entity).unwrap().attempted = Some(value.clone());
     let mutation = match property.as_str() {
@@ -1157,15 +1312,31 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
 }
 
 pub(super) fn commit_edits(world: &mut World) {
-    let editors: Vec<_> = world
-        .query_filtered::<Entity, With<PropertyEditor>>()
-        .iter(world)
-        .collect();
+    world
+        .run_system_cached(save_changed_fields)
+        .expect("save changed Record fields");
+    super::record_layout::update(world);
+    super::presentation::update(world);
+}
+
+fn save_changed_fields(
+    world: &mut World,
+    editors: &mut QueryState<
+        Entity,
+        (
+            With<PropertyEditor>,
+            Or<(
+                Changed<PropertyEditor>,
+                Changed<EditableText>,
+                Changed<RecordBinding>,
+            )>,
+        ),
+    >,
+) {
+    let editors: Vec<_> = editors.iter(world).collect();
     for entity in editors {
         save_field(world, entity);
     }
-    super::record_layout::update(world);
-    super::presentation::update(world);
 }
 
 pub(super) fn layout(world: &mut World) {
@@ -1189,9 +1360,9 @@ pub(super) fn layout(world: &mut World) {
         let fixed_height = settings.is_some_and(|settings| settings.contains_key("height"));
         let fixed_wrap = settings.is_some_and(|settings| settings.contains_key("wrap"));
         if size.mode == OverflowMode::GrowRight && !fixed_width && !fixed_wrap {
-            let content = text.value().to_string();
-            if size.observed != content {
-                size.observed = content;
+            let content = text.value();
+            if content != size.observed.as_str() {
+                size.observed = content.to_string();
                 size.measuring = true;
                 wrapping.linebreak = bevy::text::LineBreak::NoWrap;
                 resized = true;
@@ -1244,10 +1415,10 @@ pub(super) fn layout(world: &mut World) {
         .iter(world)
         .map(|(entity, row)| (entity, row.area, row.index, row.config.clone()))
         .collect();
-    let mut heights = HashMap::<(Entity, usize), f32>::new();
+    let mut heights = HashMap::<Entity, Vec<f32>>::new();
     let mut grouped = HashMap::<Entity, Vec<(Entity, grouping::Cell, f32)>>::new();
     for (entity, area, index, config) in &rows {
-        let visible: Vec<_> = world
+        let (count, content_height) = world
             .get::<Children>(*entity)
             .into_iter()
             .flatten()
@@ -1257,14 +1428,13 @@ pub(super) fn layout(world: &mut World) {
                 })
             })
             .filter_map(|child| world.get::<ComputedNode>(*child))
-            .collect();
-        let count = visible.len();
-        let height = visible
-            .into_iter()
-            .map(|node| node.size().y * node.inverse_scale_factor())
-            .sum::<f32>()
-            + 24.0
-            + (count.saturating_sub(1) as f32 * 8.0);
+            .fold((0usize, 0.0f32), |(count, height), node| {
+                (
+                    count + 1,
+                    height + node.size().y * node.inverse_scale_factor(),
+                )
+            });
+        let height = content_height + 24.0 + (count.saturating_sub(1) as f32 * 8.0);
         let height = config
             .viewport_height
             .unwrap_or(height)
@@ -1276,11 +1446,15 @@ pub(super) fn layout(world: &mut World) {
                 .push((*entity, cell, height.max(48.0)));
             continue;
         }
-        let value = heights
-            .entry((*area, index / config.columns))
-            .or_insert(0.0);
+        let bands = heights.entry(*area).or_default();
+        let band = index / config.columns;
+        if bands.len() <= band {
+            bands.resize(band + 1, 0.0);
+        }
+        let value = &mut bands[band];
         *value = value.max(height.max(48.0));
     }
+    let mut offsets = HashMap::<(Entity, u32), Vec<f32>>::new();
     for (entity, area, index, config) in rows {
         if let Some(rows) = grouped.remove(&area) {
             grouping::layout(world, area, &config, &rows);
@@ -1293,10 +1467,22 @@ pub(super) fn layout(world: &mut World) {
         };
         let origin = DVec2::from_array(influence.center) - DVec2::from_array(influence.size) * 0.5;
         let group = index / config.columns;
-        let height = heights.get(&(area, group)).copied().unwrap_or(160.0);
-        let y = (0..group)
-            .map(|index| heights.get(&(area, index)).copied().unwrap_or(0.0) + config.gap)
-            .sum::<f32>();
+        let bands = heights.get(&area).map(Vec::as_slice).unwrap_or_default();
+        let height = bands.get(group).copied().unwrap_or(160.0);
+        let offsets = offsets
+            .entry((area, config.gap.to_bits()))
+            .or_insert_with(|| {
+                let mut offset = 0.0;
+                bands
+                    .iter()
+                    .map(|height| {
+                        let current = offset;
+                        offset += height + config.gap;
+                        current
+                    })
+                    .collect()
+            });
+        let y = offsets.get(group).copied().unwrap_or(0.0);
         let inset = if config.group_with_source { 0.0 } else { 12.0 };
         let position = if config.group_with_source && index == 0 {
             DVec2::from_array(influence.center)
@@ -1338,10 +1524,17 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
                 let offset = position - center;
                 let target = spatial.position(center)
                     + spatial.rotation() * bevy::math::DVec3::new(offset.x, 0.0, offset.y);
-                world.entity_mut(entity).insert(LastLayout(target));
+                if world
+                    .get::<LastLayout>(entity)
+                    .is_none_or(|last| last.0 != target)
+                {
+                    world.entity_mut(entity).insert(LastLayout(target));
+                }
             }
         }
-        if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
+        if let Some(mut item) = world.get_mut::<CanvasItem>(entity)
+            && item.size != size
+        {
             item.size = size;
         }
         fit_height(world, entity, size.y);
@@ -1415,7 +1608,9 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
                 .get::<crate::native::layout::LayoutBox>(entity)
                 .is_none()
         {
-            if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
+            if let Some(mut item) = world.get_mut::<CanvasItem>(entity)
+                && item.size != size
+            {
                 item.size = size;
             }
             return;
@@ -1692,10 +1887,11 @@ mod room_tests {
         world.resource_mut::<Runtime>().areas.insert(
             owner,
             super::super::State {
-                applied: Some(config),
+                applied: Some(config.into()),
                 data: vec![
                     serde_json::json!({"uid":"matching", "head":"Matching", "quantity":"2"}),
-                ],
+                ]
+                .into(),
                 ready: true,
                 dirty: true,
                 ..default()
@@ -1743,11 +1939,12 @@ mod room_tests {
         world.resource_mut::<Runtime>().areas.insert(
             owner,
             super::super::State {
-                applied: Some(config),
+                applied: Some(config.into()),
                 data: vec![
                     serde_json::json!({"uid":"first", "head":"First", "quantity":"7"}),
                     serde_json::json!({"uid":"second", "head":"Second", "quantity":"3"}),
-                ],
+                ]
+                .into(),
                 ready: true,
                 dirty: true,
                 ..default()
@@ -1874,8 +2071,7 @@ mod room_tests {
         {
             let mut runtime = world.resource_mut::<Runtime>();
             let state = runtime.areas.get_mut(&owner).unwrap();
-            state
-                .data
+            std::sync::Arc::make_mut(&mut state.data)
                 .push(serde_json::json!({"uid":"third", "head":"Third", "quantity":"9"}));
             state.dirty = true;
         }

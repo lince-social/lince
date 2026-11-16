@@ -546,7 +546,7 @@ fn run(
         let mut pixel_attempted = false;
         synchronize_focus(&mut canvas, &mut focus_revision)?;
         if !started {
-            canvas.frame()?;
+            let _ = canvas.try_frame()?;
             lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
             started = true;
         }
@@ -864,11 +864,17 @@ fn run(
         }
         let pixels = pixel_work && !update && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
         if settling && !pixels { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
-        let frame = if pixels { canvas.pixel_frame()? } else {
+        let frame = if pixels { canvas.try_pixel_frame()? } else {
             pixel_imports = false;
-            canvas.frame()?
+            canvas.try_frame()?
         };
         pixel_work = false;
+        let Some(frame) = frame else {
+            // Pipeline completion wakes the worker. Preserve pending input and
+            // its timing until a complete frame can publish its acknowledgement.
+            update = false;
+            continue;
+        };
         lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
         active.progress.applied.fetch_max(input_serial, Ordering::Release);
         canvas.accessibility_input_completed();

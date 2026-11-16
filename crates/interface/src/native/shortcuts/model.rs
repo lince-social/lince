@@ -2,7 +2,13 @@ use crate::host::external::Action as ExternalAction;
 use crate::native::actions::Modifiers;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::{Arc, OnceLock},
+};
+
+mod prepared;
+use prepared::Prepared;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(into = "String", try_from = "String")]
@@ -845,21 +851,97 @@ impl Chord {
     }
 }
 
-#[derive(Resource, Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Settings {
+#[derive(Resource, Clone, Default)]
+pub struct Settings(Arc<SettingsData>);
+
+#[derive(Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename = "Settings")]
+struct SettingsData {
     #[serde(default)]
     overrides: BTreeMap<Shortcut, Option<String>>,
     #[serde(default)]
     mod_key: ModKey,
+    #[serde(skip)]
+    prepared: OnceLock<Prepared>,
+}
+
+impl Clone for SettingsData {
+    fn clone(&self) -> Self {
+        Self {
+            overrides: self.overrides.clone(),
+            mod_key: self.mod_key,
+            prepared: OnceLock::new(),
+        }
+    }
+}
+
+impl std::fmt::Debug for Settings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Settings")
+            .field("overrides", &self.0.overrides)
+            .field("mod_key", &self.0.mod_key)
+            .finish()
+    }
+}
+
+impl PartialEq for Settings {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+            || self.0.overrides == other.0.overrides && self.0.mod_key == other.0.mod_key
+    }
+}
+impl Eq for Settings {}
+
+impl Serialize for Settings {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.as_ref().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Settings {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        SettingsData::deserialize(deserializer).map(|data| Self(Arc::new(data)))
+    }
 }
 
 impl Settings {
+    fn prepared(&self) -> &Prepared {
+        self.0.prepared.get_or_init(|| Prepared::new(self))
+    }
+
+    fn data_mut(&mut self) -> &mut SettingsData {
+        let data = Arc::make_mut(&mut self.0);
+        data.prepared.take();
+        data
+    }
+
+    fn put_override(&mut self, shortcut: Shortcut, value: Option<String>) {
+        if self.0.overrides.get(&shortcut) != Some(&value) {
+            self.data_mut().overrides.insert(shortcut, value);
+        }
+    }
+
+    fn checked_trigger(&self, shortcut: Shortcut) -> Result<Option<Trigger>, String> {
+        self.prepared()
+            .triggers
+            .get(&shortcut)
+            .cloned()
+            .unwrap_or_else(|| self.parse(shortcut, self.text(shortcut)).map(Some))
+    }
+
+    pub(super) fn desktop(&self) -> &[super::DesktopBinding] {
+        &self.prepared().desktop
+    }
+
+    pub(super) fn pointers(&self) -> &[super::PointerBinding] {
+        &self.prepared().pointers
+    }
+
     pub fn text(&self, shortcut: Shortcut) -> &str {
-        match self.overrides.get(&shortcut) {
+        match self.0.overrides.get(&shortcut) {
             Some(Some(value)) => value,
             Some(None) => "Unbound",
-            None if shortcut == Shortcut::ToggleEdit && self.mod_key == ModKey::Alt => "Unbound",
+            None if shortcut == Shortcut::ToggleEdit && self.0.mod_key == ModKey::Alt => "Unbound",
             None => shortcut.default_binding(),
         }
     }
@@ -879,7 +961,10 @@ impl Settings {
     }
 
     pub fn trigger(&self, shortcut: Shortcut) -> Option<Trigger> {
-        self.parse(shortcut, self.text(shortcut)).ok()
+        self.prepared().triggers.get(&shortcut).map_or_else(
+            || self.parse(shortcut, self.text(shortcut)).ok(),
+            |result| result.as_ref().ok().copied().flatten(),
+        )
     }
 
     pub fn display_text(
@@ -912,10 +997,9 @@ impl Settings {
     pub fn validate(&self) -> Result<(), String> {
         let mut assigned = HashMap::new();
         for shortcut in Shortcut::ALL {
-            if self.text(shortcut).eq_ignore_ascii_case("unbound") {
+            let Some(chord) = self.checked_trigger(shortcut)? else {
                 continue;
-            }
-            let chord = self.parse(shortcut, self.text(shortcut))?;
+            };
             if let Some(previous) = assigned.insert(chord, shortcut) {
                 return Err(format!(
                     "{} has a conflicting shortcut: {} also uses {}.",
@@ -957,22 +1041,15 @@ impl Settings {
     }
 
     pub fn modifier(&self) -> ModKey {
-        self.mod_key
+        self.0.mod_key
     }
 
     pub fn conflicts(&self) -> Vec<(Trigger, Vec<Shortcut>)> {
-        let mut groups: Vec<(Trigger, Vec<Shortcut>)> = Vec::new();
-        for shortcut in Shortcut::ALL {
-            if let Some(chord) = self.trigger(shortcut) {
-                if let Some((_, commands)) = groups.iter_mut().find(|(key, _)| *key == chord) {
-                    commands.push(shortcut);
-                } else {
-                    groups.push((chord, vec![shortcut]));
-                }
-            }
-        }
-        groups.retain(|(_, commands)| commands.len() > 1);
-        groups
+        self.conflict_groups().to_vec()
+    }
+
+    pub(super) fn conflict_groups(&self) -> &[(Trigger, Vec<Shortcut>)] {
+        self.prepared().conflicts()
     }
 
     pub fn stage(&mut self, shortcut: Shortcut, value: Option<&str>) -> Result<(), String> {
@@ -980,21 +1057,23 @@ impl Settings {
         let value = value
             .map(|value| self.normalize(shortcut, value))
             .transpose()?;
-        self.overrides.insert(shortcut, value);
+        self.put_override(shortcut, value);
         Ok(())
     }
 
     pub fn stage_reset(&mut self, shortcut: Shortcut) {
-        self.overrides.remove(&shortcut);
+        if self.0.overrides.contains_key(&shortcut) {
+            self.data_mut().overrides.remove(&shortcut);
+        }
     }
 
     pub fn stage_modifier(&mut self, modifier: ModKey) -> Result<(), String> {
         let mut candidate = self.clone();
-        candidate.mod_key = modifier;
+        if candidate.0.mod_key != modifier {
+            candidate.data_mut().mod_key = modifier;
+        }
         for shortcut in Shortcut::ALL {
-            if !candidate.text(shortcut).eq_ignore_ascii_case("unbound") {
-                candidate.parse(shortcut, candidate.text(shortcut))?;
-            }
+            candidate.checked_trigger(shortcut)?;
         }
         *self = candidate;
         Ok(())
@@ -1005,7 +1084,7 @@ impl Settings {
         physical
             .split('+')
             .map(|part| {
-                if part == self.mod_key.label() {
+                if part == self.0.mod_key.label() {
                     "Mod"
                 } else {
                     part
@@ -1029,7 +1108,7 @@ impl Settings {
                 return Err("Each modifier can appear only once.".into());
             }
             let physical = if name == "Mod" {
-                self.mod_key.label()
+                self.0.mod_key.label()
             } else {
                 name
             };
@@ -1059,7 +1138,8 @@ impl Settings {
     }
 
     pub fn overrides(&self) -> impl Iterator<Item = (Shortcut, Option<&str>)> {
-        self.overrides
+        self.0
+            .overrides
             .iter()
             .map(|(shortcut, value)| (*shortcut, value.as_deref()))
     }
@@ -1068,10 +1148,10 @@ impl Settings {
         mod_key: ModKey,
         values: impl IntoIterator<Item = (Shortcut, Option<String>)>,
     ) -> Result<Self, String> {
-        let mut settings = Self {
+        let mut settings = Self(Arc::new(SettingsData {
             mod_key,
             ..Default::default()
-        };
+        }));
         settings.apply(values)?;
         Ok(settings)
     }
@@ -1086,7 +1166,7 @@ impl Settings {
             let value = value
                 .map(|value| next.normalize(shortcut, &value))
                 .transpose()?;
-            next.overrides.insert(shortcut, value);
+            next.put_override(shortcut, value);
         }
         next.validate()?;
         *self = next;
@@ -1099,7 +1179,7 @@ impl Settings {
 
     pub fn reset(&mut self, shortcut: Shortcut) -> Result<(), String> {
         let mut next = self.clone();
-        next.overrides.remove(&shortcut);
+        next.stage_reset(shortcut);
         next.validate()?;
         *self = next;
         Ok(())

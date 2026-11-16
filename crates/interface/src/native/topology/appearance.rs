@@ -7,6 +7,7 @@ use bevy::{
 use nucleus::canvas::appearance::{self as model, LightDrive};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 mod lighting;
 mod overlay;
@@ -51,7 +52,7 @@ struct Painted {
     plate: Entity,
     original: Handle<StandardMaterial>,
     material: Handle<StandardMaterial>,
-    settings: Option<model::Material>,
+    settings: Option<Arc<model::Material>>,
     texture: Option<Handle<Image>>,
 }
 
@@ -78,17 +79,19 @@ pub(crate) fn extract_backgrounds(
 }
 
 fn shadows(world: &mut World, entity: Entity, cast: bool, receive: bool) {
-    if cast {
-        world.entity_mut(entity).remove::<NotShadowCaster>();
-    } else {
-        if world.get::<NotShadowCaster>(entity).is_none() {
+    let casts_shadows = world.get::<NotShadowCaster>(entity).is_none();
+    if casts_shadows != cast {
+        if cast {
+            world.entity_mut(entity).remove::<NotShadowCaster>();
+        } else {
             world.entity_mut(entity).insert(NotShadowCaster);
         }
     }
-    if receive {
-        world.entity_mut(entity).remove::<NotShadowReceiver>();
-    } else {
-        if world.get::<NotShadowReceiver>(entity).is_none() {
+    let receives_shadows = world.get::<NotShadowReceiver>(entity).is_none();
+    if receives_shadows != receive {
+        if receive {
+            world.entity_mut(entity).remove::<NotShadowReceiver>();
+        } else {
             world.entity_mut(entity).insert(NotShadowReceiver);
         }
     }
@@ -178,6 +181,7 @@ pub fn update(world: &mut World) {
         .copied()
         .filter(|owner| living.get(owner) != Some(&runtime.materials[owner].body))
         .collect();
+    let mut text_owners = stale.clone();
     for owner in stale {
         if let Ok(mut entity) = world.get_entity_mut(owner) {
             entity.remove::<Applied>();
@@ -195,21 +199,26 @@ pub fn update(world: &mut World) {
         world
             .resource_mut::<Assets<StandardMaterial>>()
             .remove(painted.material.id());
-        crate::native::shader_effects::protect_material_text(world, owner);
     }
     let mut used_textures = std::mem::take(&mut runtime.mesh_textures);
     for (owner, visual, body, face) in surfaces {
         room_order::foreground(world, owner, face);
         let opacity = opacity(world, owner);
-        world
-            .entity_mut(face)
-            .insert((NotShadowCaster, NotShadowReceiver));
+        shadows(world, face, false, false);
         if let Some(settings) = world
             .get::<Material>(owner)
-            .map(|value| value.0.clone())
-            .filter(|value| value.valid() && living.contains_key(&owner))
+            .filter(|_| living.contains_key(&owner))
+            .map(|value| {
+                runtime
+                    .materials
+                    .get(&owner)
+                    .and_then(|painted| painted.settings.as_ref())
+                    .filter(|settings| settings.as_ref() == &value.0)
+                    .cloned()
+                    .unwrap_or_else(|| Arc::new(value.0.clone()))
+            })
         {
-            crate::native::shader_effects::protect_text(world, owner, true);
+            text_owners.push(owner);
             if world.get::<Applied>(owner).is_none() {
                 world.entity_mut(owner).insert(Applied);
             }
@@ -275,33 +284,40 @@ pub fn update(world: &mut World) {
             }
             let [r, g, b, a] = settings.color;
             let alpha = a * opacity;
-            let desired = StandardMaterial {
-                base_color: Color::srgba(r, g, b, alpha),
-                base_color_texture: texture.clone(),
-                uv_transform: bevy::math::Affine2::from_scale(Vec2::from_array(settings.repeat)),
-                perceptual_roughness: settings.roughness,
-                metallic: settings.metallic,
-                emissive: Color::srgb(r, g, b).to_linear() * settings.emissive,
-                unlit: !settings.lit,
-                alpha_mode: if alpha < 1.0 {
-                    AlphaMode::Blend
-                } else {
-                    AlphaMode::Opaque
-                },
-                ..default()
-            };
+            let base_color = Color::srgba(r, g, b, alpha);
             let current = world
                 .resource::<Assets<StandardMaterial>>()
                 .get(&painted.material)
                 .unwrap();
-            if current.base_color != desired.base_color
-                || painted.settings.as_ref() != Some(&settings)
+            if current.base_color != base_color
+                || painted
+                    .settings
+                    .as_ref()
+                    .is_none_or(|previous| !Arc::ptr_eq(previous, &settings))
                 || painted.texture != texture
             {
                 *world
                     .resource_mut::<Assets<StandardMaterial>>()
                     .get_mut(&painted.material)
-                    .unwrap() = desired;
+                    .unwrap() = StandardMaterial {
+                    base_color,
+                    base_color_texture: texture.clone(),
+                    uv_transform: bevy::math::Affine2::from_scale(Vec2::from_array(
+                        settings.repeat,
+                    )),
+                    perceptual_roughness: settings.roughness,
+                    metallic: settings.metallic,
+                    emissive: Color::srgb(r, g, b).to_linear() * settings.emissive,
+                    unlit: !settings.lit,
+                    alpha_mode: if alpha < 1.0 {
+                        AlphaMode::Blend
+                    } else {
+                        AlphaMode::Opaque
+                    },
+                    ..default()
+                };
+                painted.settings = Some(settings.clone());
+                painted.texture = texture;
             }
             shadows(
                 world,
@@ -315,12 +331,10 @@ pub fn update(world: &mut World) {
                 settings.cast_shadows && alpha > 0.0,
                 settings.receive_shadows,
             );
-            painted.settings = Some(settings);
-            painted.texture = texture;
-            let settings = painted.settings.as_ref().unwrap().clone();
             overlay::update(world, owner, painted, &settings, opacity);
         }
     }
+    crate::native::shader_effects::refresh_text_protection(world, text_owners);
     let (lights, shadow_size) = lighting::synchronize(world, &mut runtime);
     let stale: Vec<_> = runtime
         .lights

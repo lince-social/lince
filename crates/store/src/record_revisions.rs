@@ -1,4 +1,4 @@
-use sqlx::SqliteConnection;
+use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool};
 
 use crate::StoreError;
 
@@ -71,4 +71,53 @@ pub async fn check_expected_on(
         )));
     }
     Ok(revision)
+}
+
+/// Observe whether captured revisions still describe live Records. This is a
+/// read-only display comparison, not a replacement for guarded-write checks.
+/// Missing revision rows and deleted Records compare unequal. Decode in requested
+/// order so an earlier mismatch still precedes a later malformed revision.
+pub async fn live_match(pool: &SqlitePool, expected: &[(String, i64)]) -> Result<bool, StoreError> {
+    let _read = nucleus::performance::Span::new("record-revision-observation-await");
+    for expected in expected.chunks(512) {
+        let mut query =
+            sqlx::QueryBuilder::<Sqlite>::new("WITH requested(position, uid) AS (VALUES ");
+        for (position, (uid, _)) in expected.iter().enumerate() {
+            if position != 0 {
+                query.push(", ");
+            }
+            query
+                .push("(")
+                .push(position)
+                .push(", ")
+                .push_bind(uid)
+                .push(")");
+        }
+        query.push(
+            ") SELECT rr.revision, rr.record_uid IS NOT NULL AS present,
+                      r.deleted_at IS NOT NULL AS deleted
+               FROM requested
+               LEFT JOIN record r ON r.uid = requested.uid
+               LEFT JOIN record_revision rr ON rr.record_uid = r.uid
+              ORDER BY requested.position",
+        );
+        let rows = query.build().fetch_all(pool).await?;
+        nucleus::performance::add("record-revision-observation-batches", 1);
+        nucleus::performance::add("record-revision-observation-rows", rows.len() as u64);
+        if rows.len() != expected.len() {
+            return Err(protocol(
+                "Live revision observation returned an invalid row count",
+            ));
+        }
+        for (row, (_, revision)) in rows.iter().zip(expected) {
+            if !row.try_get::<bool, _>("present")? {
+                return Ok(false);
+            }
+            let current = row.try_get::<i64, _>("revision")?;
+            if current != *revision || row.try_get::<bool, _>("deleted")? {
+                return Ok(false);
+            }
+        }
+    }
+    Ok(true)
 }

@@ -1,4 +1,8 @@
-use cell::ClientMessage;
+use cell::{ClientMessage, ServerMessage};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use tokio::sync::{mpsc, oneshot};
 
 #[derive(Clone)]
@@ -13,6 +17,20 @@ enum Kind {
 struct Request {
     message: ClientMessage,
     durable: Option<oneshot::Receiver<bool>>,
+    edit: Option<(String, EditSequence)>,
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct EditSequence(Arc<AtomicBool>);
+
+impl EditSequence {
+    pub(crate) fn cancel(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    pub(crate) fn cancelled(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
 }
 
 pub struct Permits<'a>(Reservations<'a>);
@@ -51,6 +69,7 @@ impl Permit<'_> {
             Reservation::Ordered(permit) => permit.send(Request {
                 message,
                 durable: None,
+                edit: None,
             }),
             Reservation::Direct(permit) => permit.send(message),
         }
@@ -60,6 +79,7 @@ impl Permit<'_> {
 pub(super) struct Receiver {
     incoming: mpsc::Receiver<Request>,
     pending: Option<Request>,
+    active_edit: Option<(String, EditSequence)>,
 }
 
 pub(super) fn channel(capacity: usize) -> (Sender, Receiver, impl Fn() -> u64 + Send + Sync) {
@@ -75,6 +95,7 @@ pub(super) fn channel(capacity: usize) -> (Sender, Receiver, impl Fn() -> u64 + 
         Receiver {
             incoming,
             pending: None,
+            active_edit: None,
         },
         queued,
     )
@@ -179,39 +200,90 @@ impl Sender {
         }
     }
 
-    pub(crate) fn try_send_after(
+    pub(crate) fn ordered(&self) -> bool {
+        matches!(self.0, Kind::Ordered(_))
+    }
+
+    pub(crate) fn try_send_edit(
         &self,
-        message: ClientMessage,
-        durable: oneshot::Receiver<bool>,
+        request: &engine::record_change::Request,
+        sequence: &EditSequence,
+        durable: Option<oneshot::Receiver<bool>>,
     ) -> bool {
+        if sequence.cancelled() {
+            return false;
+        }
         let Kind::Ordered(sender) = &self.0 else {
             return false;
         };
         let Ok(permit) = sender.try_reserve() else {
             return false;
         };
+        let message = ClientMessage::Act {
+            id: request.id.clone(),
+            action: engine::actions::Action::ChangeRecord {
+                request: request.clone(),
+            },
+        };
         admitted(&message);
         permit.send(Request {
             message,
-            durable: Some(durable),
+            durable,
+            edit: Some((request.id.clone(), sequence.clone())),
         });
         true
     }
 }
 
 impl Receiver {
+    pub(super) fn complete(&mut self, messages: &mut Vec<ServerMessage>) {
+        if let Some((id, sequence)) = self.active_edit.take()
+            && (!messages.iter().any(|message| matches!(message, ServerMessage::ActionOk { id: reply, .. } if reply == &id))
+                || messages.iter().any(|message| matches!(message, ServerMessage::Error { id: reply, .. } if reply == &id)))
+        {
+            sequence.cancel();
+            if !messages.iter().any(|message| matches!(message, ServerMessage::Error { id: reply, .. } if reply == &id)) {
+                let (message, code) = messages.iter().find_map(|message| match message {
+                    ServerMessage::Error { message, code, .. } => Some((message.clone(), code.clone())),
+                    _ => None,
+                }).unwrap_or_else(|| ("The local save did not return confirmation".into(), None));
+                messages.push(ServerMessage::Error { id, message, code });
+            }
+        }
+    }
+
     pub(super) async fn recv(&mut self) -> Option<ClientMessage> {
+        if let Some((_, sequence)) = self.active_edit.take() {
+            sequence.cancel();
+        }
         loop {
             if self.pending.is_none() {
                 self.pending = self.incoming.recv().await;
             }
             let pending = self.pending.as_mut()?;
+            if pending
+                .edit
+                .as_ref()
+                .is_some_and(|(_, sequence)| sequence.cancelled())
+            {
+                self.pending = None;
+                continue;
+            }
             let allowed = match &mut pending.durable {
                 Some(durable) => durable.await.unwrap_or(false),
                 None => true,
             };
             let request = self.pending.take().unwrap();
-            if allowed {
+            if !allowed {
+                if let Some((_, sequence)) = request.edit {
+                    sequence.cancel();
+                }
+            } else if request
+                .edit
+                .as_ref()
+                .is_none_or(|(_, sequence)| !sequence.cancelled())
+            {
+                self.active_edit = request.edit;
                 return Some(request.message);
             }
         }
@@ -232,9 +304,28 @@ mod tests {
         }
     }
 
+    fn edit(id: &str) -> engine::record_change::Request {
+        engine::record_change::Request {
+            id: id.into(),
+            record_uid: "synthetic-record".into(),
+            mutation: engine::record_change::Mutation::Quantity { value: "1".into() },
+        }
+    }
+
+    fn ok(id: &str) -> ServerMessage {
+        ServerMessage::ActionOk {
+            id: id.into(),
+            created: None,
+            facts: 1,
+            warnings: Vec::new(),
+            data: None,
+        }
+    }
+
     fn id(message: ClientMessage) -> String {
         match message {
             ClientMessage::CollabLeave { record_uid } => record_uid,
+            ClientMessage::Act { id, .. } => id,
             _ => panic!("Unexpected command"),
         }
     }
@@ -253,7 +344,7 @@ mod tests {
     async fn cancelled_receive_keeps_durable_command_before_later_control_commands() {
         let (sender, mut receiver, queued) = channel(2);
         let (durable, ready) = oneshot::channel();
-        assert!(sender.try_send_after(message("edit"), ready));
+        assert!(sender.try_send_edit(&edit("edit"), &EditSequence::default(), Some(ready)));
         sender
             .try_send(ClientMessage::LiveLogin {
                 username: "synthetic-account".into(),
@@ -267,6 +358,7 @@ mod tests {
         assert_eq!(queued(), 1);
         durable.send(true).unwrap();
         assert_eq!(id(receiver.recv().await.unwrap()), "edit");
+        receiver.complete(&mut vec![ok("edit")]);
         assert!(
             matches!(receiver.recv().await, Some(ClientMessage::LiveLogin { username, .. }) if username == "synthetic-account")
         );
@@ -280,8 +372,8 @@ mod tests {
         let (sender, mut receiver, _) = channel(3);
         let (failed, first) = oneshot::channel();
         let (abandoned, second) = oneshot::channel();
-        assert!(sender.try_send_after(message("failed"), first));
-        assert!(sender.try_send_after(message("abandoned"), second));
+        assert!(sender.try_send_edit(&edit("failed"), &EditSequence::default(), Some(first)));
+        assert!(sender.try_send_edit(&edit("abandoned"), &EditSequence::default(), Some(second)));
         sender.send(message("following")).await.unwrap();
         pending(&mut receiver);
         failed.send(false).unwrap();
@@ -300,7 +392,7 @@ mod tests {
         assert!(!sender.same_channel(&other));
         sender.try_send(message("occupied")).unwrap();
         let (durable, ready) = oneshot::channel();
-        assert!(!sender.try_send_after(message("refused"), ready));
+        assert!(!sender.try_send_edit(&edit("refused"), &EditSequence::default(), Some(ready)));
         assert!(durable.send(true).is_err());
         assert!(matches!(
             sender.try_send(message("full")),
@@ -316,8 +408,121 @@ mod tests {
         ));
         assert!(sender.send(message("closed")).await.is_err());
         let (durable, ready) = oneshot::channel();
-        assert!(!sender.try_send_after(message("refused"), ready));
+        assert!(!sender.try_send_edit(&edit("refused"), &EditSequence::default(), Some(ready)));
         assert!(durable.send(true).is_err());
+    }
+
+    #[tokio::test]
+    async fn completed_edits_advance_without_acknowledgement_from_the_interface() {
+        let (sender, mut receiver, queued) = channel(3);
+        let sequence = EditSequence::default();
+        for name in ["first", "second", "third"] {
+            assert!(sender.try_send_edit(&edit(name), &sequence, None));
+        }
+        for name in ["first", "second", "third"] {
+            assert_eq!(id(receiver.recv().await.unwrap()), name);
+            receiver.complete(&mut vec![ok(name)]);
+        }
+        assert!(!sequence.cancelled());
+        assert_eq!(queued(), 0);
+    }
+
+    #[tokio::test]
+    async fn failed_edit_stops_dependents_but_keeps_independent_edits_and_controls() {
+        let (sender, mut receiver, _) = channel(4);
+        let sequence = EditSequence::default();
+        assert!(sender.try_send_edit(&edit("failed"), &sequence, None));
+        assert!(sender.try_send_edit(&edit("dependent"), &sequence, None));
+        let independent = EditSequence::default();
+        assert!(sender.try_send_edit(&edit("independent"), &independent, None));
+        sender.try_send(message("control")).unwrap();
+        assert_eq!(id(receiver.recv().await.unwrap()), "failed");
+        receiver.complete(&mut vec![ServerMessage::Error {
+            id: "failed".into(),
+            message: "Synthetic write failure".into(),
+            code: None,
+        }]);
+        assert!(sequence.cancelled());
+        assert!(!sender.try_send_edit(&edit("later"), &sequence, None));
+        assert_eq!(id(receiver.recv().await.unwrap()), "independent");
+        receiver.complete(&mut vec![ok("independent")]);
+        assert_eq!(id(receiver.recv().await.unwrap()), "control");
+        assert!(!independent.cancelled());
+    }
+
+    #[tokio::test]
+    async fn missing_or_unrelated_completion_never_releases_dependent_edits() {
+        for unrelated_reply in [false, true] {
+            let (sender, mut receiver, _) = channel(3);
+            let sequence = EditSequence::default();
+            assert!(sender.try_send_edit(&edit("first"), &sequence, None));
+            assert!(sender.try_send_edit(&edit("dependent"), &sequence, None));
+            sender.try_send(message("control")).unwrap();
+            assert_eq!(id(receiver.recv().await.unwrap()), "first");
+            if unrelated_reply {
+                let mut replies = vec![ok("unrelated")];
+                receiver.complete(&mut replies);
+                assert!(
+                    matches!(replies.last(), Some(ServerMessage::Error { id, .. }) if id == "first")
+                );
+            }
+            assert_eq!(id(receiver.recv().await.unwrap()), "control");
+            assert!(sequence.cancelled());
+        }
+    }
+
+    #[tokio::test]
+    async fn session_failure_keeps_its_reason_and_identifies_the_unconfirmed_edit() {
+        let (sender, mut receiver, _) = channel(1);
+        let sequence = EditSequence::default();
+        assert!(sender.try_send_edit(&edit("waiting"), &sequence, None));
+        assert_eq!(id(receiver.recv().await.unwrap()), "waiting");
+        let mut replies = vec![ServerMessage::Error {
+            id: "-".into(),
+            message: "Please log in again".into(),
+            code: Some("session_expired".into()),
+        }];
+        receiver.complete(&mut replies);
+        assert!(sequence.cancelled());
+        assert_eq!(replies.len(), 2);
+        assert!(matches!(&replies[0], ServerMessage::Error { id, .. } if id == "-"));
+        assert!(
+            matches!(&replies[1], ServerMessage::Error { id, message, code }
+            if id == "waiting" && message == "Please log in again" && code.as_deref() == Some("session_expired"))
+        );
+    }
+
+    #[tokio::test]
+    async fn abandoned_recovery_blocks_the_whole_edit_sequence() {
+        let (sender, mut receiver, _) = channel(3);
+        let sequence = EditSequence::default();
+        let (durable, ready) = oneshot::channel();
+        assert!(sender.try_send_edit(&edit("first"), &sequence, Some(ready)));
+        assert!(sender.try_send_edit(&edit("dependent"), &sequence, None));
+        sender.try_send(message("control")).unwrap();
+        pending(&mut receiver);
+        drop(durable);
+        assert_eq!(id(receiver.recv().await.unwrap()), "control");
+        assert!(sequence.cancelled());
+    }
+
+    #[tokio::test]
+    async fn cancellation_during_recovery_never_executes_the_edit() {
+        let (sender, mut receiver, _) = channel(2);
+        let sequence = EditSequence::default();
+        let (durable, ready) = oneshot::channel();
+        assert!(sender.try_send_edit(&edit("first"), &sequence, Some(ready)));
+        sender.try_send(message("control")).unwrap();
+        let mut receive = std::pin::pin!(receiver.recv());
+        assert!(matches!(
+            receive
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Pending
+        ));
+        sequence.cancel();
+        durable.send(true).unwrap();
+        assert_eq!(id(receive.await.unwrap()), "control");
     }
 
     #[tokio::test]
@@ -351,7 +556,7 @@ mod tests {
         let sender = Sender::from(direct.clone());
         assert!(sender.same_channel(&direct.into()));
         let (durable, ready) = oneshot::channel();
-        assert!(!sender.try_send_after(message("not-durable"), ready));
+        assert!(!sender.try_send_edit(&edit("not-durable"), &EditSequence::default(), Some(ready)));
         assert!(durable.send(true).is_err());
         assert!(receiver.try_recv().is_err());
         sender.try_send(message("durable")).unwrap();

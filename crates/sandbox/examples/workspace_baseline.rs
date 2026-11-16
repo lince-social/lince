@@ -290,7 +290,7 @@ fn replay(world: &mut World) {
                     depth: Some(1.0),
                     ..default()
                 },
-                RecordProperties(json!({"quantity":-1})),
+                RecordProperties(json!({"quantity":-1}).into()),
             ));
             let falling = spawn_sand(
                 world,
@@ -307,7 +307,7 @@ fn replay(world: &mut World) {
             });
             world
                 .entity_mut(falling)
-                .insert(RecordProperties(json!({"quantity":7})));
+                .insert(RecordProperties(json!({"quantity":7}).into()));
             let mut state = world.resource_mut::<Baseline>();
             state.sand = Some(sand);
             state.falling = Some(falling);
@@ -334,7 +334,7 @@ fn replay(world: &mut World) {
             );
             world
                 .entity_mut(foreign)
-                .insert(RecordProperties(json!({"quantity":-1})));
+                .insert(RecordProperties(json!({"quantity":-1}).into()));
             assert!(lince_sandbox::workspace_config::set_physics(
                 world, root, workspace, false
             ));

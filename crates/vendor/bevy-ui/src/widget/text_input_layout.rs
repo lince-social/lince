@@ -1,15 +1,14 @@
 use core::hash::BuildHasher;
 use core::time::Duration;
 
-use super::text::has_display_box;
-use crate::{ComputedNode, ComputedUiRenderTargetInfo, ContentSize, Node, NodeMeasure};
+use super::text::TextDisplayBoxes;
+use crate::{ComputedNode, ComputedUiRenderTargetInfo, ContentSize, NodeMeasure};
 use bevy_asset::Assets;
 
 use bevy_ecs::{
     change_detection::{DetectChanges, DetectChangesMut},
     component::Component,
-    entity::{Entity, EntityHashSet},
-    hierarchy::ChildOf,
+    entity::{Entity, EntityHashMap},
     lifecycle::RemovedComponents,
     reflect::ReflectComponent,
     system::{Local, Query, Res, ResMut},
@@ -35,6 +34,14 @@ use taffy::MaybeMath;
 #[derive(Component, Clone, Copy, PartialEq, Debug, Default, Reflect)]
 #[reflect(Component, Default, Clone)]
 pub struct TextScroll(pub Vec2);
+
+/// The glyph data retained for an editor, including changes deferred while hidden.
+#[derive(Default)]
+pub struct EditableTextLayoutState {
+    generation: Option<parley::Generation>,
+    hinting_deferred: bool,
+    focused: bool,
+}
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct TextInputMeasure {
@@ -71,6 +78,7 @@ impl crate::Measure for TextInputMeasure {
 /// - node width as `advance('0') * visible_width`, where `advance('0')` is looked up from font metrics.
 pub fn update_editable_text_content_size(
     mut text_input_query: Query<(
+        Entity,
         Ref<EditableText>,
         Ref<TextFont>,
         Ref<LineHeight>,
@@ -80,16 +88,28 @@ pub fn update_editable_text_content_size(
     fonts: Res<Assets<Font>>,
     mut font_cx: ResMut<FontCx>,
     rem_size: Res<RemSize>,
+    mut removed: RemovedComponents<EditableText>,
+    mut dimensions: Local<EntityHashMap<(Option<f32>, Option<f32>)>>,
 ) {
-    for (editable_text, text_font, line_height, target, mut content_size) in &mut text_input_query {
-        if !(editable_text.is_changed()
+    for entity in removed.read() {
+        dimensions.remove(&entity);
+    }
+    for (entity, editable_text, text_font, line_height, target, mut content_size) in
+        &mut text_input_query
+    {
+        let visible = (editable_text.visible_width, editable_text.visible_lines);
+        if !(editable_text.is_added()
+            || dimensions.get(&entity) != Some(&visible)
             || text_font.is_changed()
             || line_height.is_changed()
             || target.is_changed()
-            || rem_size.is_changed())
+            || rem_size.is_changed()
+            || fonts.is_changed()
+            || content_size.is_added())
         {
             continue;
         }
+        dimensions.insert(entity, visible);
 
         let font_size = text_font.font_size.eval(target.logical_size(), rem_size.0);
 
@@ -152,10 +172,7 @@ pub fn update_editable_text_content_size(
         });
 
         if width.is_some() || height.is_some() {
-            content_size.set(NodeMeasure::TextInput(TextInputMeasure {
-                width,
-                height,
-            }));
+            content_size.set(NodeMeasure::TextInput(TextInputMeasure { width, height }));
         } else {
             content_size.clear();
         }
@@ -276,17 +293,19 @@ pub fn update_editable_text_layout(
         Ref<ComputedNode>,
         &mut EditableTextGeneration,
     )>,
-    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
+    mut display_boxes: TextDisplayBoxes,
     mut removed: RemovedComponents<EditableText>,
-    mut deferred_hinting: Local<EntityHashSet>,
+    mut layouts: Local<EntityHashMap<EditableTextLayoutState>>,
     rem_size: Res<RemSize>,
     input_focus: Option<Res<InputFocus>>,
     mut cursor_timer: Local<Duration>,
     time: Res<Time<Real>>,
 ) {
+    display_boxes.clear();
     *cursor_timer += time.delta();
+    let focused = input_focus.as_ref().and_then(|focus| focus.get());
     for entity in removed.read() {
-        deferred_hinting.remove(&entity);
+        layouts.remove(&entity);
     }
 
     for (
@@ -300,22 +319,25 @@ pub fn update_editable_text_layout(
         mut generation,
     ) in input_field_query.iter_mut()
     {
-        let hinting_deferred = deferred_hinting.contains(&entity);
+        let retained = layouts.entry(entity).or_default();
+        if editable_text.is_added() {
+            *retained = EditableTextLayoutState::default();
+        }
+        let hinting_deferred = retained.hinting_deferred;
         if (computed_node.is_changed()
             || editable_text.editor.try_layout().is_none()
             || editable_text.editor.generation() != **generation
+            || retained.generation != Some(editable_text.editor.layout_generation())
             || hinting.is_changed()
             || hinting_deferred)
-            && !has_display_box(entity, &nodes)
+            && !display_boxes.contains(entity)
         {
             if hinting.is_changed() {
-                deferred_hinting.insert(entity);
+                retained.hinting_deferred = true;
             }
             continue;
         }
-        if hinting_deferred {
-            deferred_hinting.remove(&entity);
-        }
+        retained.hinting_deferred = false;
         let cursor_width = editable_text.cursor_width;
         let cursor_blink_period = editable_text.cursor_blink_period;
 
@@ -331,15 +353,15 @@ pub fn update_editable_text_layout(
                 .refresh_layout(font_cx.as_mut(), layout_cx.as_mut());
         }
 
-        let compose_range = editable_text.editor.raw_compose().clone();
-
-        let layout_changed = editable_text.editor.generation() != **generation;
-        if layout_changed {
+        let editor_changed = editable_text.editor.generation() != **generation;
+        if editor_changed {
             **generation = editable_text.editor.generation();
         }
+        let layout_changed = retained.generation != Some(editable_text.editor.layout_generation());
 
         if layout_changed || hinting.is_changed() || hinting_deferred {
             let layout = editable_text.editor.try_layout().unwrap();
+            let compose_range = editable_text.editor.raw_compose();
 
             info.scale_factor = layout.scale();
             info.size = (layout.full_width(), layout.height()).into();
@@ -369,9 +391,8 @@ pub fn update_editable_text_layout(
                                 font_smoothing: brush.font_smoothing,
                             };
 
+                            let font_atlases = font_atlas_set.entry(font_atlas_key).or_default();
                             for glyph in glyph_run.positioned_glyphs() {
-                                let font_atlases =
-                                    font_atlas_set.entry(font_atlas_key).or_default();
                                 let Ok(atlas_info) = get_glyph_atlas_info(
                                     font_atlases,
                                     GlyphCacheKey {
@@ -419,7 +440,7 @@ pub fn update_editable_text_layout(
                             let underline_thickness = metrics.underline_size;
 
                             let run_text_range = run.text_range();
-                            if let Some(cr) = &compose_range
+                            if let Some(cr) = compose_range
                                 && run_text_range.start < cr.end
                                 && run_text_range.end > cr.start
                             {
@@ -473,12 +494,14 @@ pub fn update_editable_text_layout(
                 }
             }
 
-            info.selection_rects = editable_text
-                .editor
-                .selection_geometry()
-                .iter()
-                .map(|&b| bounding_box_to_rect(b.0))
-                .collect();
+            retained.generation = Some(editable_text.editor.layout_generation());
+        }
+
+        if editor_changed || layout_changed {
+            info.selection_rects.clear();
+            editable_text.editor.selection_geometry_with(|bounds, _| {
+                info.selection_rects.push(bounding_box_to_rect(bounds));
+            });
 
             for i in 0..info.selection_rects.len().saturating_sub(1) {
                 let [a, b] = &mut info.selection_rects[i..i + 2] else {
@@ -490,10 +513,12 @@ pub fn update_editable_text_layout(
             }
         }
 
-        let cursor = if let Some(input_focus) = input_focus.as_ref()
-            && Some(entity) == input_focus.get()
-        {
-            if input_focus.is_changed() || layout_changed || *cursor_timer >= cursor_blink_period {
+        let cursor = if focused == Some(entity) {
+            if input_focus.as_ref().is_some_and(|focus| focus.is_changed())
+                || editor_changed
+                || layout_changed
+                || *cursor_timer >= cursor_blink_period
+            {
                 *cursor_timer = Duration::ZERO;
             }
 
@@ -504,16 +529,19 @@ pub fn update_editable_text_layout(
                 )
                 .map(bounding_box_to_rect)
                 .map(|rect| (*cursor_timer < cursor_blink_period / 2, rect))
-        } else {
+        } else if editor_changed || layout_changed || retained.focused {
             editable_text
                 .editor
                 .cursor_geometry(0.)
                 .map(bounding_box_to_rect)
                 .map(|rect| (false, rect))
+        } else {
+            info.cursor
         };
         if info.cursor != cursor {
             info.cursor = cursor;
         }
+        retained.focused = focused == Some(entity);
     }
 }
 

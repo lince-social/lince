@@ -1,0 +1,16 @@
+Kamalie body attachments and controls (@kamalie-controls: 0, is #chapter, #part-of @ws-kamalie-games) {
+## Interaction
+
+The central white circular body moves with WASD or arrow keys. The mouse specifies a direction relative to that body. Z grabs a nearby object in that direction and attaches it to a part of the central body. X releases an attached object in that direction. More than one attachment can form a build. A thing declares whether it responds to player controls or remains passive.
+
+Holding left click activates responsive attachments with strength falling off as their direction moves away from the mouse direction. A stick follows continuous pointer motion: angular movement swings it sideways, radial movement thrusts it outward. Releasing click relaxes its expression. There is no discrete attack skill or automatic repeated animation. Passive things still move and fracture through contact.
+
+The executable binding table in crates/interface/src/native/castles/sand/kamalie/controls.rs is the keybind documentation. The native adapter maps focus and viewport coordinates; the game owns actions. F6 pauses and F7 restarts; these unmodified keys are absent from default Park bindings. Tab releases the focused viewport. No code comments or in-game control panel are needed.
+
+## Further composition
+
+- [ ] Support attachment sockets on acquired parts as well as on the central body.
+- [ ] Define how each new responsive material expresses graded activation.
+- [ ] Preserve passive attachments as meaningful physical parts of a build.
+- [ ] Test builds with several attachments under the same directional control field.
+}

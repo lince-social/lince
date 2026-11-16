@@ -228,14 +228,19 @@ fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: 
 }
 
 pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
-    let Some(form) = world.get::<Form>(entity).cloned() else {
+    let Some(form) = world.get::<Form>(entity) else {
         return false;
     };
-    let edited = values(world, &form)
-        .iter()
-        .zip(&form.fields)
-        .any(|(value, (_, initial))| value != initial);
-    if !edited && form.pending.is_none() && form.data[&form.property] != data[&form.property] {
+    if form.pending.is_some() || form.data[&form.property] == data[&form.property] {
+        return true;
+    }
+    let edited = form.fields.iter().any(|(entity, initial)| {
+        world
+            .get::<EditableText>(*entity)
+            .map_or(!initial.is_empty(), |text| text.value() != initial.as_str())
+    });
+    if !edited {
+        let form = form.clone();
         rebuild(world, entity, &form, data, form.index);
     }
     true
@@ -249,7 +254,7 @@ pub(super) fn save_indicators(
         for (entity, confirmed) in &form.fields {
             if let Ok((text, mut unsaved)) = fields.get_mut(*entity) {
                 unsaved.set_if_neq(crate::native::sand::Unsaved(
-                    text.value().to_string() != *confirmed,
+                    text.value() != confirmed.as_str(),
                 ));
             }
         }

@@ -127,6 +127,29 @@ pub async fn promises_for_record(
         .collect())
 }
 
+pub async fn promises_for_records(
+    pool: &SqlitePool,
+    records: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<PromiseRow>>, StoreError> {
+    let mut output = std::collections::HashMap::<String, Vec<PromiseRow>>::new();
+    if records.is_empty() {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(records).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows =
+        sqlx::query("SELECT * FROM promise WHERE record_uid IN (SELECT value FROM json_each(?))")
+            .bind(selected)
+            .fetch_all(pool)
+            .await?;
+    for promise in rows.into_iter().filter_map(map_promise) {
+        if let Some(record) = &promise.record_uid {
+            output.entry(record.clone()).or_default().push(promise);
+        }
+    }
+    Ok(output)
+}
+
 fn map_promise(r: sqlx::sqlite::SqliteRow) -> Option<PromiseRow> {
     let state: String = r.get("state");
     Some(PromiseRow {

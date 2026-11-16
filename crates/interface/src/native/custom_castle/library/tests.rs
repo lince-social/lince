@@ -129,7 +129,7 @@ async fn remote_library_routes_changes_to_organ_and_adds_only_local_canvas_objec
         root,
         &ServerMessage::Snapshot {
             id: stale,
-            rows: vec![json!({"uid":"stale","head":"Old Organ"})],
+            rows: vec![json!({"uid":"stale","head":"Old Organ"})].into(),
         },
     );
     assert!(app.world().get::<Library>(root).unwrap().entries.is_empty());

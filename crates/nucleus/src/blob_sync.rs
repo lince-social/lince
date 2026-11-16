@@ -63,9 +63,7 @@ impl Manifest {
                 parent = next;
             }
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())?
             > MAX_OFFER_BYTES - 128
         {
             return Err("The file list is too large for one offer".into());

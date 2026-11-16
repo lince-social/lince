@@ -503,9 +503,7 @@ impl crate::native::actions::Action for Control {
 }
 
 fn set_status(world: &mut World, entity: Entity, status: &str) {
-    if let Some(mut text) = world.get_mut::<Text>(entity) {
-        text.0 = status.into();
-    }
+    panel::status(world, entity, status);
 }
 
 fn stop(world: &mut World, owner: Entity) {
@@ -529,8 +527,11 @@ fn clear_image(world: &mut World, owner: Entity) {
     view.last = None;
     let image = view.image;
     let handle = std::mem::take(&mut view.handle);
-    if let Some(mut node) = world.get_mut::<ImageNode>(image) {
+    if let Some(mut node) = world.get_mut::<ImageNode>(image)
+        && node.image != Handle::default()
+    {
         node.image = Handle::default();
+        crate::host::performance::count(crate::host::performance::Count::VideoBindingWrites);
     }
     if handle != Handle::default() {
         world.resource_mut::<Assets<Image>>().remove(handle.id());
@@ -622,25 +623,28 @@ fn visible(world: &mut World, root: Entity, sand: Entity) -> bool {
 }
 
 fn update(world: &mut World) {
+    let _measurement = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeVideoPresentation,
+    );
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<View>>()
         .iter(world)
         .collect();
     for owner in owners {
         let view = world.get::<View>(owner).unwrap();
-        let settings = world
-            .get::<Settings>(view.sand)
-            .cloned()
-            .unwrap_or_default();
         let (root, sand) = (view.root, view.sand);
-        let active = visible(world, root, sand) && !settings.paused && !settings.source.is_empty();
+        let settings = world.get::<Settings>(sand);
+        let paused = settings.is_some_and(|settings| settings.paused);
+        let file = settings.is_some_and(|settings| settings.file);
+        let configured = settings.is_some_and(|settings| !settings.source.is_empty());
+        let active = visible(world, root, sand) && !paused && configured;
         let view = world.get::<View>(owner).unwrap();
-        let configuring = settings.paused
+        let configuring = paused
             && view
                 .session
                 .as_ref()
                 .is_some_and(|session| !session.task.is_finished());
-        if !active && !configuring && view.session.is_some() && !settings.paused {
+        if !active && !configuring && view.session.is_some() && !paused {
             stop(world, owner);
         }
         let view = world.get::<View>(owner).unwrap();
@@ -654,6 +658,7 @@ fn update(world: &mut World) {
             set_status(world, status, &frame.status);
             if let Some(position) = frame.position_ms
                 && let Some(mut settings) = world.get_mut::<Settings>(sand)
+                && settings.position_ms != position
             {
                 settings.position_ms = position;
             }
@@ -662,27 +667,28 @@ fn update(world: &mut World) {
                     world.despawn(poster.0);
                 }
                 let ratio = pixels.width as f32 / pixels.height as f32;
-                let replacement = upload(world, old.clone(), pixels);
-                if let Some(mut node) = world.get_mut::<ImageNode>(image) {
+                let replacement = upload(world, old, pixels);
+                if let Some(mut node) = world.get_mut::<ImageNode>(image)
+                    && node.image != replacement
+                {
                     node.image = replacement.clone();
+                    crate::host::performance::count(
+                        crate::host::performance::Count::VideoBindingWrites,
+                    );
                 }
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.handle = replacement;
                 view.ratio = ratio;
                 view.last = Some(std::time::Instant::now());
                 view.skipped = frame.skipped;
-            } else if !settings.file {
+            } else if !file {
                 clear_image(world, owner);
             }
         }
         let view = world.get::<View>(owner).unwrap();
         if !active {
             if view.session.is_none() {
-                set_status(
-                    world,
-                    view.status,
-                    if settings.paused { "Paused" } else { "Idle" },
-                );
+                set_status(world, view.status, if paused { "Paused" } else { "Idle" });
             }
             continue;
         }
@@ -696,6 +702,8 @@ fn update(world: &mut World) {
             let Ok(handle) = tokio::runtime::Handle::try_current() else {
                 continue;
             };
+            // The owned source/resource snapshot is needed only by a new session.
+            let settings = world.get::<Settings>(sand).cloned().unwrap_or_default();
             let reply: Reply = Default::default();
             let output = reply.clone();
             let wake = world
@@ -736,7 +744,7 @@ fn update(world: &mut World) {
         } else if view
             .last
             .is_some_and(|last| last.elapsed() > Duration::from_secs(2))
-            && !settings.file
+            && !file
         {
             let status = view.status;
             let age = view.last.unwrap().elapsed().as_secs();
@@ -855,18 +863,14 @@ async fn watch_signal(
 }
 
 fn fit(views: Query<&View>, viewports: Query<&ComputedNode>, mut images: Query<&mut Node>) {
+    let _measurement =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeMediaFit);
     for view in &views {
         let Ok(viewport) = viewports.get(view.viewport) else {
             continue;
         };
-        let size = viewport.size() * viewport.inverse_scale_factor();
-        if size.min_element() <= 0.0 {
-            continue;
-        }
-        let width = size.x.min(size.y * view.ratio);
-        if let Ok(mut node) = images.get_mut(view.image) {
-            node.width = px(width);
-            node.height = px(width / view.ratio);
+        if let Ok(node) = images.get_mut(view.image) {
+            crate::native::media_sand::fit_image(node, viewport, view.ratio);
         }
     }
 }
@@ -876,6 +880,14 @@ fn upload(
     handle: Handle<Image>,
     pixels: crate::native::media_sand::Pixels,
 ) -> Handle<Image> {
+    let _measurement = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeVideoImageUpdate,
+    );
+    crate::host::performance::count(crate::host::performance::Count::VideoFrameImagesUpdated);
+    crate::host::performance::add(
+        crate::host::performance::Count::VideoFrameImageBytes,
+        pixels.rgba.len() as u64,
+    );
     let image = Image::new(
         bevy::render::render_resource::Extent3d {
             width: pixels.width,

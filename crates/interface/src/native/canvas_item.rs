@@ -5,9 +5,9 @@ use crate::native::{
     sand_placement::{Pinned, PlacementAction},
     workspace::{WorkspaceMember, Workspaces},
 };
-use bevy::{math::DVec2, prelude::*};
+use bevy::{ecs::query::QueryState, math::DVec2, prelude::*};
 
-#[derive(Component, Clone, Copy, Reflect)]
+#[derive(Component, Clone, Copy, PartialEq, Reflect)]
 #[reflect(Component)]
 #[require(Node)]
 pub struct CanvasItem {
@@ -140,9 +140,27 @@ impl Plugin for CanvasItemPlugin {
     }
 }
 
-fn menu(world: &mut World) {
-    let mut roots = world.query::<(Entity, &crate::native::edit_mode::EditMode, &Inspection)>();
-    let candidate = roots.iter(world).find_map(|(root, mode, state)| {
+struct MenuQueries {
+    roots: QueryState<(
+        Entity,
+        &'static crate::native::edit_mode::EditMode,
+        &'static Inspection,
+    )>,
+    windows: QueryState<&'static Window>,
+}
+
+impl FromWorld for MenuQueries {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            roots: world.query(),
+            windows: world.query(),
+        }
+    }
+}
+
+fn menu(world: &mut World, mut queries: Local<MenuQueries>) {
+    let _menu = engine::performance::Span::new("native-canvas-selection-menu");
+    let candidate = queries.roots.iter(world).find_map(|(root, mode, state)| {
         mode.enabled
             .then_some((
                 root,
@@ -163,38 +181,24 @@ fn menu(world: &mut World) {
             candidate = parent;
         }
     });
-    let target = target.or_else(|| retained_menu_target(world));
+    let target = target.or_else(|| retained_menu_target(world, &mut queries.windows));
     let target = target.filter(|(root, entity)| eligible(world, *root, *entity));
-    let pinned = target.is_some_and(|(root, entity)| {
-        let members: Vec<_> = crate::native::canvas_selection::companions(world, root, entity)
-            .into_iter()
-            .filter(|member| {
-                world
-                    .get::<crate::native::area::InfluenceArea>(*member)
-                    .is_none()
-            })
-            .collect();
-        !members.is_empty()
-            && members
-                .iter()
-                .all(|member| world.get::<Pinned>(*member).is_some())
-    });
-    let grouping = target.map_or((false, false), |(root, target)| {
+    let options = target.map_or_else(Default::default, |(root, target)| {
         crate::native::canvas_selection::options(world, root, target)
     });
+    let pinned = options.pinned;
+    let grouping = options.grouping;
     let date_boundary = target.is_some_and(|(root, target)| {
-        crate::native::canvas_selection::group_members(world, root, target)
-            .iter()
-            .any(|entity| {
-                world
-                    .get::<crate::native::scoped_events::EventBoundary>(*entity)
-                    .is_some_and(|boundary| {
-                        boundary
-                            .0
-                            .iter()
-                            .any(|name| name == crate::native::calendar::DATE_SELECTED)
-                    })
-            })
+        crate::native::canvas_selection::group_members_iter(world, root, target).any(|entity| {
+            world
+                .get::<crate::native::scoped_events::EventBoundary>(entity)
+                .is_some_and(|boundary| {
+                    boundary
+                        .0
+                        .iter()
+                        .any(|name| name == crate::native::calendar::DATE_SELECTED)
+                })
+        })
     });
     let current = world.resource::<Menu>();
     let layout_linked =
@@ -486,8 +490,7 @@ fn set_menu_anchor(world: &mut World, target: Entity, point: Option<Vec2>) {
 }
 
 fn menu_bounds(world: &World, root: Entity, target: Entity) -> Option<Rect> {
-    crate::native::canvas_selection::group_members(world, root, target)
-        .into_iter()
+    crate::native::canvas_selection::group_members_iter(world, root, target)
         .filter_map(|member| {
             crate::native::inspection::bounds(world, member)
                 .or_else(|| crate::native::canvas_selection::screen_bounds(world, root, member))
@@ -495,7 +498,10 @@ fn menu_bounds(world: &World, root: Entity, target: Entity) -> Option<Rect> {
         .reduce(|a, b| Rect::from_corners(a.min.min(b.min), a.max.max(b.max)))
 }
 
-fn retained_menu_target(world: &mut World) -> Option<(Entity, Entity)> {
+fn retained_menu_target(
+    world: &World,
+    windows: &mut QueryState<&Window>,
+) -> Option<(Entity, Entity)> {
     let menu = world.resource::<Menu>();
     let target = menu.target?;
     let panel = menu.entity?;
@@ -509,8 +515,7 @@ fn retained_menu_target(world: &mut World) -> Option<(Entity, Entity)> {
     let sand = menu_bounds(world, root, target)?;
     let controls = crate::native::inspection::bounds(world, panel)?;
     let corridor = Rect::from_corners(sand.min.min(controls.min), sand.max.max(controls.max));
-    world
-        .query::<&Window>()
+    windows
         .iter(world)
         .filter(|window| window.focused)
         .filter_map(Window::cursor_position)
@@ -565,6 +570,7 @@ fn position_menu(world: &mut World, root: Entity, target: Entity, panel: Entity)
 
 pub(crate) mod tests {
     use super::*;
+    use bevy::ecs::system::RunSystemOnce;
 
     #[test]
     fn room_reload_releases_an_already_removed_canvas_menu() {
@@ -577,8 +583,8 @@ pub(crate) mod tests {
             ..default()
         });
         world.despawn(root);
-        menu(&mut world);
-        menu(&mut world);
+        world.run_system_once(menu).unwrap();
+        world.run_system_once(menu).unwrap();
         assert!(world.resource::<Menu>().entity.is_none());
         assert!(world.resource::<Menu>().target.is_none());
         assert!(world.get_entity(unrelated).is_ok());
@@ -886,7 +892,7 @@ pub(crate) mod tests {
             let target = if member { area } else { sand };
             let kept = if member { sand } else { area };
             select(app.world_mut(), root, target);
-            menu(app.world_mut());
+            app.world_mut().run_system_once(menu).unwrap();
             let panel = app.world().resource::<Menu>().entity.unwrap();
             let control = app
                 .world()

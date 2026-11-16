@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fs::{self, File},
-    io::{Read, Write},
+    io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
     sync::{Arc, Mutex, OnceLock},
 };
@@ -292,7 +292,11 @@ impl Library {
         entries.insert(entry.uri.clone(), entry.clone());
         let mut temporary = tempfile::NamedTempFile::new_in(self.root.join("files"))
             .map_err(|error| error.to_string())?;
-        serde_json::to_writer(&mut temporary, &entries).map_err(|error| error.to_string())?;
+        {
+            let mut buffered = BufWriter::new(&mut temporary);
+            serde_json::to_writer(&mut buffered, &entries).map_err(|error| error.to_string())?;
+            buffered.flush().map_err(|error| error.to_string())?;
+        }
         temporary
             .as_file()
             .sync_all()

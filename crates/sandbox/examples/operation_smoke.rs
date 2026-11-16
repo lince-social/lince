@@ -200,7 +200,7 @@ async fn main() {
                 rows: vec![
                     serde_json::json!({"uid":"apple", "slug":"apple", "head":"Apples"}),
                     serde_json::json!({"uid":"apricot", "slug":"apricot", "head":"Apricots"}),
-                ],
+                ].into(),
             }));
         })
         .add_systems(Update, exercise)

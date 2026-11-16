@@ -284,7 +284,7 @@ impl Engine {
                 break;
             }
             let saved = store::contact_disclosures::get_on(&mut tx, &record).await?;
-            bytes = bytes.saturating_add(serde_json::to_vec(&saved.document)?.len());
+            bytes = bytes.saturating_add(nucleus::json::encoded_len(&saved.document)?);
             if bytes > nucleus::trust_analysis::MAX_BYTES {
                 partial = true;
                 failed.insert(relation);

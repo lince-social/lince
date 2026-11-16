@@ -10,20 +10,12 @@ use serde_json::Value;
 mod merge;
 use merge::{Choice, Proposal};
 
-#[derive(Clone, PartialEq)]
-pub(crate) struct Snapshot {
-    base: Value,
-    local: Value,
-    active: Value,
-}
+mod snapshot;
+pub(crate) use snapshot::Snapshot;
+mod presentation;
+use presentation::refresh;
 
-impl Snapshot {
-    pub(crate) fn new<T: Serialize>(base: &T, local: &T, active: &T) -> Result<Self, String> {
-        Ok(Self { base: serde_json::to_value(base).map_err(|error| error.to_string())?, local: serde_json::to_value(local).map_err(|error| error.to_string())?, active: serde_json::to_value(active).map_err(|error| error.to_string())? })
-    }
-}
-
-type Read = fn(&World, Entity) -> Result<Snapshot, String>;
+type Read = fn(&World, Entity, Option<&Snapshot>) -> Result<Snapshot, String>;
 type Apply = fn(&mut World, Entity, Value, Value) -> Result<(), String>;
 
 #[derive(Clone, PartialEq)]
@@ -103,10 +95,10 @@ pub(crate) fn open(world: &mut World, owner: Entity, name: &str, read: Read, app
     if world.get_entity(owner).is_err() { return Err("The settings editor is unavailable.".into()); }
     let previous_owner = world.get_resource::<shortcuts::KeyboardModalOwner>().and_then(|owner| owner.0).filter(|entity| world.get_entity(*entity).is_ok());
     if previous_owner.is_some_and(|previous| !within(world, owner, previous)) { return Err("Finish the current dialog before reviewing another draft.".into()); }
-    let snapshot = read(world, owner)?;
+    let snapshot = read(world, owner, None)?;
     let version = version(world);
     if version.as_ref().is_some_and(|version| version.error.is_some()) { return Err("The external configuration is unavailable or invalid. Restore a valid file before rebasing; your draft is kept.".into()); }
-    let proposal = Proposal::new(&snapshot.base, &snapshot.local, &snapshot.active)?;
+    let proposal = Proposal::new(snapshot.base(), snapshot.local(), snapshot.active())?;
     let previous_focus = world.get_resource::<InputFocus>().and_then(InputFocus::get);
     let mut root = owner;
     for _ in 0..crate::native::layout::MAX_DEPTH {
@@ -187,10 +179,21 @@ fn rows(world: &mut World, overlay: Entity, session: &Session) {
     }
 }
 
+fn observe(world: &World, session: &Session, previous: &Snapshot) -> Result<Snapshot, String> {
+    let _source = engine::performance::Span::new("configuration-review-source");
+    let unchanged = match (world.get_resource::<Storage>(), session.version.as_ref()) {
+        (None, None) => true,
+        (Some(storage), Some(version)) => storage.path == version.path
+            && storage.revision == version.revision && storage.error == version.error,
+        _ => false,
+    };
+    if !unchanged { return Err("The configuration file changed again. Your draft is kept; Update comparison before continuing.".into()); }
+    (session.read)(world, session.owner, Some(previous))
+}
+
 fn current(world: &World, session: &Session) -> Result<(), String> {
     if !owner_eligible(world, session) { return Err("The original settings view is no longer active. Your draft is kept.".into()); }
-    if version(world) != session.version { return Err("The configuration file changed again. Your draft is kept; Update comparison before continuing.".into()); }
-    if (session.read)(world, session.owner)? != session.snapshot { return Err("The editor or active values changed. Your draft is kept; Update comparison before continuing.".into()); }
+    if observe(world, session, &session.snapshot)? != session.snapshot { return Err("The editor or active values changed. Your draft is kept; Update comparison before continuing.".into()); }
     Ok(())
 }
 
@@ -230,10 +233,10 @@ impl Action for Change {
                 else { session.proposal.choose(index, choice).map(|_| { session.message = format!("Field {} uses {}.", index + 1, if choice == Choice::Local { "your draft" } else { "the accepted file value" }); }) }
             }
             Self::Refresh => (|| {
-                let snapshot = (session.read)(world, session.owner)?;
+                let snapshot = (session.read)(world, session.owner, Some(&session.snapshot))?;
                 let version = version(world);
                 if version.as_ref().is_some_and(|version| version.error.is_some()) { return Err("Restore a valid configuration file before updating the comparison.".into()); }
-                let proposal = Proposal::new(&snapshot.base, &snapshot.local, &snapshot.active)?;
+                let proposal = Proposal::new(snapshot.base(), snapshot.local(), snapshot.active())?;
                 session.sequence = session.sequence.checked_add(1).ok_or("Review identifiers are exhausted; close and reopen this review.")?;
                 session.snapshot = snapshot; session.version = version; session.proposal = proposal;
                 session.message = "Comparison updated. Review the new conflicts before continuing.".into();
@@ -244,38 +247,13 @@ impl Action for Change {
             Self::Confirm => (|| {
                 current(world, &session)?;
                 if !session.proposal.resolved() { return Err("Choose my draft or file value for every conflicting field.".into()); }
-                (session.apply)(world, session.owner, session.snapshot.active.clone(), session.proposal.value.clone().ok_or("The reviewed draft is unavailable.")?)
+                (session.apply)(world, session.owner, session.snapshot.active().clone(), session.proposal.value.clone().ok_or("The reviewed draft is unavailable.")?)
             })(),
         };
         if result.is_ok() && matches!(self, Self::Confirm) { close(world, overlay, session); return; }
         if let Err(error) = result { session.message = error; }
         world.entity_mut(overlay).insert(session);
         refresh(world);
-    }
-}
-
-fn refresh(world: &mut World) {
-    let overlays: Vec<_> = world.query_filtered::<Entity, With<Session>>().iter(world).collect();
-    for overlay in overlays {
-        let owns = world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|owner| owner.0 == Some(overlay));
-        if !owns || !owner_eligible(world, world.get::<Session>(overlay).unwrap()) {
-            let session = world.entity_mut(overlay).take::<Session>().unwrap();
-            close(world, overlay, session);
-            continue;
-        }
-        let session = world.get::<Session>(overlay).unwrap();
-        let error = current(world, session).err();
-        let unresolved = session.proposal.conflicts.iter().filter(|conflict| conflict.choice.is_none()).count();
-        let message = error.clone().unwrap_or_else(|| format!("{}\n{unresolved} unresolved fields. Active settings are unchanged by this review.", session.message));
-        let (status, confirm, available) = (session.status, session.confirm, error.is_none() && session.proposal.resolved());
-        let sequence = session.sequence;
-        let choices: Vec<_> = session.proposal.conflicts.iter().map(|conflict| conflict.choice).collect();
-        text(world, status, message);
-        disable(world, confirm, !available);
-        let labels: Vec<_> = world.query::<(Entity, &FieldStatus)>().iter(world).filter(|(_, field)| field.overlay == overlay && field.sequence == sequence).map(|(entity, field)| (entity, field.index)).collect();
-        for (entity, index) in labels {
-            text(world, entity, match choices.get(index).copied().flatten() { None => "Choose a value", Some(Choice::Local) => "Selected: my draft value", Some(Choice::File) => "Selected: accepted file value" });
-        }
     }
 }
 

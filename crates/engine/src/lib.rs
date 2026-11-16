@@ -75,6 +75,8 @@ pub mod private_password;
 pub mod private_requests;
 pub mod private_work;
 pub mod projection;
+mod query_changes;
+pub use query_changes::{GeneralQueryChanges, QueryChanges};
 mod read_cursor;
 pub mod read_filter;
 pub mod rebuild;
@@ -139,18 +141,6 @@ use store::Store;
 use tokio::sync::{Mutex, broadcast, watch};
 
 pub use error::EngineError;
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct QueryChanges {
-    pub general: u64,
-    pub projection: u64,
-}
-
-impl QueryChanges {
-    pub fn revision(&self) -> u64 {
-        self.general.wrapping_add(self.projection)
-    }
-}
 
 pub struct Engine {
     pub(crate) meal_runtime: optimization::Runtime,
@@ -338,6 +328,12 @@ impl Engine {
 
     pub fn watch_query_changes(&self) -> watch::Receiver<QueryChanges> {
         self.query_changed.subscribe()
+    }
+
+    /// Watch non-forecast query changes without rerunning canonical-data work
+    /// for completion or expiry of a derived scheduling forecast.
+    pub fn watch_general_query_changes(&self) -> GeneralQueryChanges {
+        GeneralQueryChanges::new(self.watch_query_changes())
     }
 
     pub fn notify_query_changed(&self) {

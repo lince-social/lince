@@ -9,7 +9,7 @@ fn replies_keep_request_and_source_ownership_and_connection_errors_revoke_only_t
     let owner = world.spawn(View {
         picker: Some(Picker {
             key: InputKey::Search,
-            rows: vec![],
+            rows: Default::default(),
             request: Some("picker".into()),
         }),
         ..default()
@@ -19,35 +19,49 @@ fn replies_keep_request_and_source_ownership_and_connection_errors_revoke_only_t
         kind: PendingKind::Picker(owner),
         started: Instant::now(),
     });
-    for (key, source) in [("local", Source::Local), ("remote", remote.clone())] {
-        world.resource_mut::<Runtime>().feeds.insert(key.into(), Feed {
-            schemas: vec![], source, target: None, catalog: false,
-            data: Some(Inspection::default()), error: String::new(), version: 1,
+    let local_key = key(&Settings { mode: Mode::Column, ..default() });
+    let remote_key = key(&Settings { source: remote.clone(), mode: Mode::Column, ..default() });
+    for key in [&local_key, &remote_key] {
+        world.resource_mut::<Runtime>().feeds.insert(key.clone(), Feed {
+            schemas: vec![],
+            data: Some(Arc::new(Inspection::default())), error: String::new(), version: 1,
             next: Instant::now(), pending: None,
         });
     }
     let unrelated = ServerMessage::Snapshot {
         id: "another-view".into(),
-        rows: (0..300).map(|index| json!({"uid": index, "body": "x".repeat(4096)})).collect(),
+        rows: (0..300)
+            .map(|index| json!({"uid": index, "body": "x".repeat(4096)}))
+            .collect::<Vec<_>>()
+            .into(),
     };
     for _ in 0..64 {
         receive(&mut world, &Source::Local, &unrelated);
     }
     let answer = ServerMessage::Snapshot {
         id: "picker".into(),
-        rows: vec![json!({"uid": "choice", "name": "Correct result"})],
+        rows: vec![json!({"uid": "choice", "name": "Correct result"})].into(),
     };
     receive(&mut world, &remote, &answer);
     assert!(world.resource::<Runtime>().pending.contains_key("picker"));
-    assert!(world.get::<View>(owner).unwrap().picker.as_ref().unwrap().rows.is_empty());
+    assert!(
+        world
+            .get::<View>(owner)
+            .unwrap()
+            .picker
+            .as_ref()
+            .unwrap()
+            .rows
+            .is_empty()
+    );
     receive(&mut world, &Source::Local, &answer);
     assert!(!world.resource::<Runtime>().pending.contains_key("picker"));
     assert_eq!(world.get::<View>(owner).unwrap().picker.as_ref().unwrap().rows[0]["name"], "Correct result");
     receive(&mut world, &remote, &ServerMessage::Error {
         id: "connection".into(), message: "expired".into(), code: Some("session_expired".into()),
     });
-    assert!(world.resource::<Runtime>().feeds["remote"].data.is_none());
-    assert!(world.resource::<Runtime>().feeds["local"].data.is_some());
+    assert!(world.resource::<Runtime>().feeds[&remote_key].data.is_none());
+    assert!(world.resource::<Runtime>().feeds[&local_key].data.is_some());
 }
 
 async fn fixture() -> (App, Arc<engine::Engine>, String, Entity) {
@@ -500,7 +514,7 @@ fn custom_columns_compile_without_querying_unknown_properties_and_permissions_re
     );
     let settings = world.get::<Settings>(owner).unwrap().clone();
     let key = key(&settings);
-    world.get_mut::<View>(owner).unwrap().feed = key.clone();
+    world.get_mut::<View>(owner).unwrap().feed = Some(key.clone());
     let definition = Schema {
         name: "State".into(),
         fields: vec![Field {
@@ -520,10 +534,7 @@ fn custom_columns_compile_without_querying_unknown_properties_and_permissions_re
         key,
         Feed {
             schemas: vec![],
-            source: Source::Local,
-            target: Some(record),
-            catalog: false,
-            data: Some(Inspection {
+            data: Some(Arc::new(Inspection {
                 schemas: vec![nucleus::record_extension::Definition {
                     uid: schema.clone(),
                     revision: 1,
@@ -539,7 +550,7 @@ fn custom_columns_compile_without_querying_unknown_properties_and_permissions_re
                     },
                 )]),
                 ..default()
-            }),
+            })),
             error: String::new(),
             version: 1,
             next: Instant::now(),
@@ -608,7 +619,7 @@ fn many_choices_are_paged_and_searchable_and_multiselect_preserves_keyboard_focu
         },
     );
     let key = key(world.get::<Settings>(owner).unwrap());
-    world.get_mut::<View>(owner).unwrap().feed = key.clone();
+    world.get_mut::<View>(owner).unwrap().feed = Some(key.clone());
     let field = Field {
         id: "state".into(),
         name: "State".into(),
@@ -627,10 +638,7 @@ fn many_choices_are_paged_and_searchable_and_multiselect_preserves_keyboard_focu
         key,
         Feed {
             schemas: vec![schema.clone()],
-            source: Source::Local,
-            target: Some(record),
-            catalog: true,
-            data: Some(Inspection {
+            data: Some(Arc::new(Inspection {
                 schemas: vec![nucleus::record_extension::Definition {
                     uid: schema.clone(),
                     revision: 1,
@@ -642,7 +650,7 @@ fn many_choices_are_paged_and_searchable_and_multiselect_preserves_keyboard_focu
                 }],
                 writable: vec![schema],
                 ..default()
-            }),
+            })),
             error: String::new(),
             version: 1,
             next: Instant::now(),

@@ -1,6 +1,6 @@
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::canvas::{Component, Descriptor, Mutation, Request, Response};
-use sha2::{Digest, Sha256};
+use serde::Deserialize;
 use std::{
     collections::BTreeMap,
     sync::{
@@ -21,6 +21,41 @@ pub struct CanvasInfo {
 pub struct Context {
     pub actor: Option<String>,
     pub origin: Option<nucleus::component::composition::Origin>,
+}
+
+// Keep only the acknowledgement contract while the owned request is in flight.
+// In particular, a mutation's component tree is not needed to check its receipt.
+enum ExpectedResponse {
+    Registry,
+    Element { placement: String },
+    Export { name: String },
+    Snapshot,
+    Mutation { request_id: String, revision: u64 },
+    Receipt { request_id: String },
+}
+
+impl From<&Request> for ExpectedResponse {
+    fn from(request: &Request) -> Self {
+        match request {
+            Request::Registry => Self::Registry,
+            Request::InspectElement { placement, .. } => Self::Element {
+                placement: placement.clone(),
+            },
+            Request::Export { name, .. } => Self::Export { name: name.clone() },
+            Request::Inspect { .. } => Self::Snapshot,
+            Request::Mutate {
+                request_id,
+                expected_revision,
+                ..
+            } => Self::Mutation {
+                request_id: request_id.clone(),
+                revision: *expected_revision,
+            },
+            Request::Receipt { request_id } => Self::Receipt {
+                request_id: request_id.clone(),
+            },
+        }
+    }
 }
 
 pub struct Call {
@@ -92,7 +127,7 @@ impl Drop for Receiver {
 struct Host {
     wake: Arc<Mutex<Option<Arc<dyn Fn() + Send + Sync>>>>,
     info: CanvasInfo,
-    registry: Vec<Descriptor>,
+    registry: Arc<Vec<Descriptor>>,
     sender: mpsc::Sender<Call>,
     live: Arc<AtomicBool>,
 }
@@ -123,7 +158,7 @@ impl Broker {
         &self,
         id: String,
         name: String,
-        registry: Vec<Descriptor>,
+        registry: Arc<Vec<Descriptor>>,
     ) -> Result<Receiver, String> {
         if !nucleus::valid_uid(&id, "canvas") || name.trim().is_empty() || name.len() > 256 {
             return Err("Use a stable canvas UID and a name of at most 256 bytes.".into());
@@ -178,7 +213,15 @@ impl Broker {
     fn target(
         &self,
         id: Option<&str>,
-    ) -> Result<(String, Vec<Descriptor>, mpsc::Sender<Call>, Arc<AtomicBool>), String> {
+    ) -> Result<
+        (
+            String,
+            Arc<Vec<Descriptor>>,
+            mpsc::Sender<Call>,
+            Arc<AtomicBool>,
+        ),
+        String,
+    > {
         let hosts = self
             .hosts
             .lock()
@@ -245,8 +288,7 @@ impl Broker {
         };
         let mut result_watch = None;
         if let Some(key) = &key {
-            let hash: [u8; 32] =
-                Sha256::digest(serde_json::to_vec(&request).map_err(|e| e.to_string())?).into();
+            let hash = nucleus::json::sha256(&request).map_err(|e| e.to_string())?;
             let cached = {
                 let mut receipts = self
                     .receipts
@@ -349,9 +391,9 @@ impl Engine {
         &self,
         id: String,
         name: String,
-        registry: Vec<Descriptor>,
+        registry: impl Into<Arc<Vec<Descriptor>>>,
     ) -> Result<Receiver, String> {
-        self.canvas.register(id, name, registry)
+        self.canvas.register(id, name, registry.into())
     }
     pub fn connected_canvases(&self) -> Vec<CanvasInfo> {
         self.canvas.list()
@@ -376,12 +418,12 @@ impl Engine {
                         }
                     }
                     for behavior in edits.behaviors.values() {
-                        serde_json::from_value::<crate::actions::Action>(behavior.action.clone())
+                        crate::actions::Action::deserialize(&behavior.action)
                             .map_err(EngineError::Json)?;
                     }
                 }
                 Component::Builtin { state } => {
-                    *state = self.resolve_component(state.clone()).await?;
+                    self.resolve_component_in_place(state).await?;
                     self.authorize_component(state, actor).await?;
                 }
                 Component::Native { bindings, .. } => {
@@ -393,7 +435,7 @@ impl Engine {
                 Component::Composition { composition } => {
                     for part in &mut composition.parts {
                         for event in &part.events {
-                            serde_json::from_value::<crate::actions::Action>(event.action.clone())
+                            crate::actions::Action::deserialize(&event.action)
                                 .map_err(EngineError::Json)?;
                         }
                         self.resolve_canvas_component(&mut part.component, actor)
@@ -405,7 +447,7 @@ impl Engine {
         })
     }
 
-    pub(crate) fn canvas_registry(&self) -> Result<Vec<Descriptor>, EngineError> {
+    pub(crate) fn canvas_registry(&self) -> Result<Arc<Vec<Descriptor>>, EngineError> {
         self.canvas
             .target(None)
             .map(|(_, registry, _, _)| registry)
@@ -423,6 +465,7 @@ impl Engine {
                 "Canvas layout Actions currently require the local interface session.".into(),
             ));
         }
+        let preparation = crate::performance::Span::new("canvas-command-preparation-await");
         request.validate().map_err(EngineError::Consequence)?;
         let (id, registry, sender, live) = self
             .canvas
@@ -470,10 +513,8 @@ impl Engine {
                             nucleus::canvas::authoring::Change::SetBehavior {
                                 behavior, ..
                             } => {
-                                serde_json::from_value::<crate::actions::Action>(
-                                    behavior.action.clone(),
-                                )
-                                .map_err(EngineError::Json)?;
+                                crate::actions::Action::deserialize(&behavior.action)
+                                    .map_err(EngineError::Json)?;
                             }
                             _ => {}
                         }
@@ -494,21 +535,27 @@ impl Engine {
                             composition.origin = Some(origin.clone());
                         } else {
                             if !matches!(component, Component::Composition { .. }) {
-                                *component = Component::Composition {
+                                let wrapper = Component::Composition {
                                     composition: nucleus::canvas::Composition {
                                         name: "Fiote interaction".into(),
                                         origin: None,
-                                        parts: vec![nucleus::canvas::Part {
-                                            id: "content".into(),
-                                            geometry: nucleus::canvas::Geometry {
-                                                position: [0.0, 0.0],
-                                                size: [840.0, 680.0],
-                                            },
-                                            component: component.clone(),
-                                            events: vec![],
-                                        }],
+                                        parts: Vec::with_capacity(1),
                                     },
                                 };
+                                // Transfer the owned tree into its wrapper. The
+                                // request is not published until validation below.
+                                let content = std::mem::replace(component, wrapper);
+                                if let Component::Composition { composition } = component {
+                                    composition.parts.push(nucleus::canvas::Part {
+                                        id: "content".into(),
+                                        geometry: nucleus::canvas::Geometry {
+                                            position: [0.0, 0.0],
+                                            size: [840.0, 680.0],
+                                        },
+                                        component: content,
+                                        events: vec![],
+                                    });
+                                }
                             }
                             if let Component::Composition { composition } = component {
                                 composition.origin = Some(origin.clone());
@@ -522,11 +569,13 @@ impl Engine {
                 _ => {}
             }
         }
+        let expected = ExpectedResponse::from(&request);
+        drop(preparation);
         let response = self
             .canvas
             .dispatch(
                 &id,
-                request.clone(),
+                request,
                 Context {
                     actor: actor.map(str::to_string),
                     origin,
@@ -537,8 +586,8 @@ impl Engine {
             .await
             .map_err(EngineError::Consequence)?;
         nucleus::canvas::bounded(&response).map_err(EngineError::Consequence)?;
-        let response = match (request, response) {
-            (Request::InspectElement { placement, .. }, Response::Element { element })
+        let response = match (expected, response) {
+            (ExpectedResponse::Element { placement }, Response::Element { element })
                 if element.placement.id == placement =>
             {
                 element
@@ -557,7 +606,7 @@ impl Engine {
                 Response::Element { element }
             }
             (
-                Request::Export { name, .. },
+                ExpectedResponse::Export { name },
                 Response::Export {
                     document,
                     hash,
@@ -588,7 +637,7 @@ impl Engine {
                     revision,
                 }
             }
-            (Request::Inspect { .. }, Response::Snapshot { mut snapshot }) => {
+            (ExpectedResponse::Snapshot, Response::Snapshot { mut snapshot }) => {
                 snapshot.validate().map_err(EngineError::Consequence)?;
                 let mut readable = Vec::new();
                 for placement in snapshot.placements {
@@ -614,14 +663,13 @@ impl Engine {
                 Response::Snapshot { snapshot }
             }
             (
-                Request::Mutate {
+                ExpectedResponse::Mutation {
                     request_id,
-                    expected_revision,
-                    ..
+                    revision,
                 },
                 Response::Receipt { receipt },
             ) => {
-                if receipt.request_id != request_id || receipt.revision <= expected_revision {
+                if receipt.request_id != request_id || receipt.revision <= revision {
                     return Err(EngineError::Consequence(
                         "The canvas returned an invalid mutation acknowledgement.".into(),
                     ));
@@ -629,7 +677,7 @@ impl Engine {
                 validate_receipt(&receipt)?;
                 Response::Receipt { receipt }
             }
-            (Request::Receipt { request_id }, Response::Receipt { receipt })
+            (ExpectedResponse::Receipt { request_id }, Response::Receipt { receipt })
                 if receipt.request_id == request_id =>
             {
                 validate_receipt(&receipt)?;

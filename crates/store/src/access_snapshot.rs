@@ -747,7 +747,7 @@ pub async fn metadata_on(
             return Err(protocol("duplicate Assertion identity in snapshot"));
         }
         let has_mantissa = row
-            .try_get::<Option<String>, _>("quantity_mantissa")?
+            .try_get::<Option<&str>, _>("quantity_mantissa")?
             .is_some();
         let has_scale = row.try_get::<Option<i64>, _>("quantity_scale")?.is_some();
         if has_mantissa != has_scale {

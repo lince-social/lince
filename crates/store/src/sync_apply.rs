@@ -284,7 +284,7 @@ async fn extension_fds(
             .bind(namespace)
             .fetch_optional(&mut *conn)
             .await?
-            .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok())
+            .and_then(|r| serde_json::from_str(r.get::<&str, _>("fds")).ok())
             .unwrap_or_else(|| serde_json::json!({})),
     )
 }

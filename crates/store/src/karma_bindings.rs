@@ -153,7 +153,7 @@ pub async fn previous(
         .fetch_optional(&mut **tx)
         .await?;
     row.map(|row| {
-        serde_json::from_str(&row.get::<String, _>("bindings_json"))
+        serde_json::from_str(row.get::<&str, _>("bindings_json"))
             .map_err(|error| invalid(error.to_string()))
     })
     .transpose()

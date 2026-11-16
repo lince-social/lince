@@ -22,7 +22,7 @@ pub(super) fn validate(edits: &[RecordEdit]) -> Result<(), EngineError> {
                     && !namespace.starts_with("lince.")
                     && namespace != "work"
                     && value.as_object().is_some_and(|fields| fields.len() <= 128)
-                    && serde_json::to_vec(value)?.len() <= 65536
+                    && nucleus::json::encoded_len(value)? <= 65536
             }
             RecordEdit::Assert {
                 predicate,
@@ -71,15 +71,12 @@ pub(super) fn validate(edits: &[RecordEdit]) -> Result<(), EngineError> {
     Ok(())
 }
 
-pub(super) fn references(edits: &[RecordEdit]) -> BTreeSet<String> {
-    edits
-        .iter()
-        .filter_map(|edit| match edit {
-            RecordEdit::Assert { object, .. } => object.clone(),
-            RecordEdit::Refine { object, .. } => Some(object.clone()),
-            _ => None,
-        })
-        .collect()
+pub(super) fn references(edits: &[RecordEdit]) -> impl Iterator<Item = &str> {
+    edits.iter().filter_map(|edit| match edit {
+        RecordEdit::Assert { object, .. } => object.as_deref(),
+        RecordEdit::Refine { object, .. } => Some(object.as_str()),
+        _ => None,
+    })
 }
 
 async fn assertion_subject(

@@ -31,7 +31,7 @@ fn fixture() -> (World, Entity, Entity, Entity) {
             },
             ChildOf(root),
             WorkspaceMember(1),
-            RecordProperties(serde_json::json!({"uid":"r_test", "quantity":-1})),
+            RecordProperties(serde_json::json!({"uid":"r_test", "quantity":-1}).into()),
         ))
         .id();
     world
@@ -78,7 +78,8 @@ fn explanation_matches_forces_and_names_suppressed_rules() {
     crate::native::area_effects::update(&mut world);
     assert!(world.get::<Report>(sand).unwrap().total.x < 0.0);
     assert!(world.get::<InfluenceArea>(shield).unwrap().paused);
-    world.get_mut::<RecordProperties>(sand).unwrap().0["quantity"] = serde_json::json!(1);
+    std::sync::Arc::make_mut(&mut world.get_mut::<RecordProperties>(sand).unwrap().0)["quantity"] =
+        serde_json::json!(1);
     crate::native::area_effects::update(&mut world);
     assert_eq!(
         world

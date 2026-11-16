@@ -50,8 +50,8 @@ pub async fn freeze_need_on(
     .await?
     .ok_or_else(|| invalid("Choose a current assertion of this Need"))?;
     let quantity = assertion
-        .get::<Option<String>, _>("quantity_mantissa")
-        .map(|mantissa| crate::exact::parse_decimal(&mantissa, assertion.get("quantity_scale")))
+        .get::<Option<&str>, _>("quantity_mantissa")
+        .map(|mantissa| crate::exact::parse_decimal(mantissa, assertion.get("quantity_scale")))
         .transpose()?;
     let requested = quantity.unwrap_or(
         need_quantity

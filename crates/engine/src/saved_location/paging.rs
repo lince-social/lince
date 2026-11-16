@@ -29,7 +29,7 @@ impl Engine {
             ));
         }
         if query.as_ref().is_some_and(|query| {
-            serde_json::to_vec(query).map_or(true, |bytes| bytes.len() > 64 * 1024)
+            nucleus::json::encoded_len(query).map_or(true, |bytes| bytes > 64 * 1024)
         }) {
             return Err(invalid("The map filter exceeds its size limit"));
         }

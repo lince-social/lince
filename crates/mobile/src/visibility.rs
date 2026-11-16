@@ -70,11 +70,15 @@ fn send(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<u
 pub fn receive(world: &mut World, message: &cell::ServerMessage) -> bool {
     match message {
         cell::ServerMessage::ActionOk { id, data, .. } if id.starts_with("visibility-ui_") => {
-            ui::receive(world, id, Ok(data.clone().unwrap_or_default()));
+            ui::receive_ref(
+                world,
+                id,
+                Ok(data.as_ref().unwrap_or(&serde_json::Value::Null)),
+            );
             true
         }
         cell::ServerMessage::Error { id, message, .. } if id.starts_with("visibility-ui_") => {
-            ui::receive(world, id, Err(message.clone()));
+            ui::receive_ref(world, id, Err(message));
             true
         }
         _ => false,

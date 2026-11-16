@@ -148,7 +148,7 @@ impl Action for Control {
                     view.cancellation.store(true, Ordering::Relaxed);
                     view.generation += 1;
                     view.pending.clear();
-                    view.search_rows = None;
+                    view.search_results = false;
                 }
                 view.dirty = true;
             }
@@ -220,7 +220,7 @@ impl Action for Control {
                 view.pending.clear();
                 view.cache.retain(|p, _| !p.starts_with(path));
                 view.expanded.retain(|p| !p.starts_with(path));
-                view.search_rows = None;
+                view.search_results = false;
                 if view
                     .directory
                     .as_ref()
@@ -304,8 +304,9 @@ pub(super) fn reset(world: &mut World, owner: Entity) {
     view.cancellation.store(true, Ordering::Relaxed);
     view.generation += 1;
     view.cache.clear();
+    view.pending_sorts.clear();
     view.pending.clear();
-    view.search_rows = None;
+    view.search_results = false;
     view.dirty = true;
 }
 
@@ -359,7 +360,8 @@ fn search_paths(world: &mut World, owner: Entity, query: String) {
                         ),
                     );
                     let mut view = world.get_mut::<View>(owner).unwrap();
-                    view.search_rows = Some(rows);
+                    view.rows = rows;
+                    view.search_results = true;
                     view.dirty = true;
                 }
                 Err(e) => status(world, owner, e),
@@ -450,9 +452,7 @@ fn select(world: &mut World, owner: Entity, path: &PathBuf, target: Target) {
                 return;
             };
             match world.get_mut::<EditableText>(entity) {
-                Some(mut input)
-                    if !input.is_composing() && input.value().to_string() == original =>
-                {
+                Some(mut input) if !input.is_composing() && input.value() == original.as_str() => {
                     input.editor.set_text(value);
                     world.despawn(owner);
                 }

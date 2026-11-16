@@ -812,7 +812,7 @@ impl Desktop {
             for id in &completed.rejected {
                 self.server.reject_window(*id);
             }
-            for window in &completed.frame.windows {
+            for window in completed.frame.windows.iter() {
                 if self
                     .server
                     .configure_presented_state(

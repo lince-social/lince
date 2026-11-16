@@ -112,7 +112,7 @@ fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>
         .ok_or_else(|| protocol("rule has a condition but no carry"))?;
     Ok(Some(RuleCondition {
         source,
-        bindings: serde_json::from_str(&row.get::<String, _>("bindings_json"))
+        bindings: serde_json::from_str(row.get::<&str, _>("bindings_json"))
             .map_err(|error| protocol(&error.to_string()))?,
         gate: Gate::parse(&gate).map_err(|_| protocol("rule has an unreadable gate"))?,
         carry: Carry::parse(&carry).map_err(|_| protocol("rule has an unreadable carry"))?,

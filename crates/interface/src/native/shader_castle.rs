@@ -189,6 +189,7 @@ impl Action for AddBall {
 }
 
 fn update(world: &mut World) {
+    let _update = nucleus::performance::Span::new("shader-castle-presentation");
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<ShaderCastle>>()
         .iter(world)
@@ -198,27 +199,42 @@ fn update(world: &mut World) {
         let (area, status, viewport) = (frame.area, frame.status, frame.viewport);
         let config = world
             .get::<crate::native::area::InfluenceArea>(area)
-            .and_then(|area| area.protein.clone());
-        let live = crate::native::protein_area::calendar_status(world, area).to_string();
+            .and_then(|area| area.protein.as_ref());
+        let live = crate::native::protein_area::calendar_status(world, area);
+        let local = Source::Local;
+        let source = config.map_or(&local, |config| &config.source);
         let selected = crate::native::protein_area::calendar_feed(world, area)
             .and_then(|(rows, _)| rows.first())
-            .and_then(|row| row["uid"].as_str())
-            .map(|uid| RecordBinding {
-                area,
-                uid: uid.into(),
-                source: config
-                    .as_ref()
-                    .map_or(Source::Local, |config| config.source.clone()),
-            });
-        let previous = world.get::<ShaderCastle>(owner).unwrap().selection.clone();
-        let changed = match (&previous, &selected) {
-            (Some(a), Some(b)) => a.uid != b.uid || a.source != b.source,
+            .and_then(|row| row["uid"].as_str());
+        let previous = world.get::<ShaderCastle>(owner).unwrap().selection.as_ref();
+        let changed = match (previous, selected) {
+            (Some(previous), Some(uid)) => previous.uid != uid || &previous.source != source,
             (None, None) => false,
             _ => true,
         };
+        let message = if config.is_none_or(|config| !config.enabled) {
+            "Enter a Record slug and press Open"
+        } else if selected.is_none() && live == "Live" {
+            "No Record with that slug"
+        } else {
+            live
+        };
+        let message = world
+            .get::<Text>(status)
+            .filter(|text| text.0 != message)
+            .map(|_| message.to_owned());
+        let replacement = changed
+            .then(|| {
+                selected.map(|uid| RecordBinding {
+                    area,
+                    uid: uid.into(),
+                    source: source.clone(),
+                })
+            })
+            .flatten();
         if changed {
             detach(world, owner);
-            if let Some(binding) = selected.clone() {
+            if let Some(binding) = replacement {
                 let saved = world
                     .get::<ShaderCastle>(owner)
                     .unwrap()
@@ -235,7 +251,9 @@ fn update(world: &mut World) {
             }
         }
         for card in castle_feed::cards(world, area) {
-            world.entity_mut(card).insert(castle_feed::HiddenCard);
+            if world.get::<castle_feed::HiddenCard>(card).is_none() {
+                world.entity_mut(card).insert(castle_feed::HiddenCard);
+            }
         }
         let castle = world.get::<ShaderCastle>(owner).unwrap();
         let request = castle.create_requested;
@@ -249,14 +267,8 @@ fn update(world: &mut World) {
                 .unwrap()
                 .create_requested = false;
         }
-        let message = if config.as_ref().is_none_or(|config| !config.enabled) {
-            "Enter a Record slug and press Open".into()
-        } else if selected.is_none() && live == "Live" {
-            "No Record with that slug".into()
-        } else {
-            live
-        };
-        if let Some(mut text) = world.get_mut::<Text>(status)
+        if let Some(message) = message
+            && let Some(mut text) = world.get_mut::<Text>(status)
             && text.0 != message
         {
             text.0 = message;

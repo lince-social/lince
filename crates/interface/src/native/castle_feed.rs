@@ -241,6 +241,7 @@ fn project(
         Option<&HiddenCard>,
     )>,
 ) {
+    let _projection = nucleus::performance::Span::new("castle-card-projection");
     for (parent, item, mut node, mut transform, hidden) in &mut cards {
         let Ok((view, computed)) = views.get(parent.parent()) else {
             continue;
@@ -248,19 +249,37 @@ fn project(
         if hidden.is_some() {
             if node.display != Display::None {
                 node.display = Display::None;
+                nucleus::performance::add("castle-card-layout-updates", 1);
             }
             continue;
         }
         let viewport = computed.size() * computed.inverse_scale_factor();
         let zoom = view.zoom as f32;
         let center = (item.position - view.center).as_vec2() * zoom + viewport * 0.5;
-        node.display = Display::Flex;
-        node.position_type = PositionType::Absolute;
-        node.left = px(center.x - item.size.x * 0.5);
-        node.top = px(center.y - item.size.y * 0.5);
-        node.width = px(item.size.x);
-        node.height = px(item.size.y);
-        transform.scale = Vec2::splat(zoom);
+        let left = px(center.x - item.size.x * 0.5);
+        let top = px(center.y - item.size.y * 0.5);
+        let width = px(item.size.x);
+        let height = px(item.size.y);
+        if node.display != Display::Flex
+            || node.position_type != PositionType::Absolute
+            || node.left != left
+            || node.top != top
+            || node.width != width
+            || node.height != height
+        {
+            node.display = Display::Flex;
+            node.position_type = PositionType::Absolute;
+            node.left = left;
+            node.top = top;
+            node.width = width;
+            node.height = height;
+            nucleus::performance::add("castle-card-layout-updates", 1);
+        }
+        let scale = Vec2::splat(zoom);
+        if transform.scale != scale {
+            transform.scale = scale;
+            nucleus::performance::add("castle-card-scale-updates", 1);
+        }
     }
 }
 

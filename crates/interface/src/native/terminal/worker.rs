@@ -24,9 +24,10 @@ pub(super) enum Command {
 
 #[derive(Default)]
 pub(super) struct Output {
-    pub frame: Option<Frame>,
+    pub frame: Option<Arc<Frame>>,
     pub input: VecDeque<Vec<u8>>,
     pub error: Option<String>,
+    pub input_bytes: usize,
 }
 
 pub(super) struct Worker {
@@ -107,15 +108,34 @@ fn run(
 ) -> Result<(), String> {
     let mut vt = Ghostty::new(cols, rows)?;
     let mut next = Some(vt.frame()?);
+    let mut published: Option<Arc<Frame>> = None;
+    let mut input_ready = false;
     loop {
         if stopped.load(Ordering::Acquire) {
             return Ok(());
         }
         if let Some(frame) = next.take() {
-            output.lock().map_err(|e| e.to_string())?.frame = Some(frame);
-            if let Some(wake) = wake {
+            let changed = published.as_deref() != Some(&frame);
+            if changed {
+                let frame = Arc::new(frame);
+                output.lock().map_err(|e| e.to_string())?.frame = Some(frame.clone());
+                published = Some(frame);
+                crate::host::performance::count(
+                    crate::host::performance::Count::TerminalFramesPublished,
+                );
+            } else {
+                crate::host::performance::count(
+                    crate::host::performance::Count::TerminalFramesUnchanged,
+                );
+            }
+            // Input/replies are ordered semantic data, even if key encoding or a
+            // mode-only escape sequence leaves the visible screen unchanged.
+            if (changed || input_ready)
+                && let Some(wake) = wake
+            {
                 wake.ring();
             }
+            input_ready = false;
         }
         let Ok(first) = inbox.recv() else {
             return Ok(());
@@ -172,10 +192,16 @@ fn run(
             };
             if !input.is_empty() {
                 let mut output = output.lock().map_err(|e| e.to_string())?;
-                if output.input.iter().map(Vec::len).sum::<usize>() + input.len() > 1024 * 1024 {
+                let Some(bytes) = output
+                    .input_bytes
+                    .checked_add(input.len())
+                    .filter(|bytes| *bytes <= 1024 * 1024)
+                else {
                     return Err("Terminal input queue is full".into());
-                }
+                };
                 output.input.push_back(input);
+                output.input_bytes = bytes;
+                input_ready = true;
             }
             if began.elapsed().as_millis() >= 16 {
                 break;

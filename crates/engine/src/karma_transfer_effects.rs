@@ -165,10 +165,7 @@ impl Engine {
                     "Transfer consequence requires an accepted visible participant",
                 ));
             }
-            let current_anchor = if store::transfers::get(&self.store.pool, transfer)
-                .await?
-                .is_some()
-            {
+            let current_anchor = if store::transfers::exists(&self.store.pool, transfer).await? {
                 self.require_transfer_origin_authority(transfer).await?;
                 transfer.to_owned()
             } else {

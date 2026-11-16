@@ -11,6 +11,10 @@ use crate::{
 };
 use bevy::{prelude::*, text::EditableText, ui::InteractionDisabled};
 
+pub(crate) mod prepared;
+mod presentation;
+use presentation::refresh;
+
 #[derive(Resource, Default)]
 struct Requests(u64);
 
@@ -214,24 +218,34 @@ pub(crate) fn panel(world: &mut World, parent: Entity) {
     });
 }
 
-fn values(settings: &KeyboardSettings) -> [String; 5] {
-    [
-        settings.layout.clone(),
-        settings.variant.clone(),
-        settings.options.clone(),
-        settings.repeat_rate.to_string(),
-        settings.repeat_delay_ms.to_string(),
-    ]
+fn write_fields(world: &mut World, fields: [Entity; 5], settings: &KeyboardSettings) {
+    write_values(
+        world,
+        fields,
+        [
+            &settings.layout,
+            &settings.variant,
+            &settings.options,
+            &settings.repeat_rate.to_string(),
+            &settings.repeat_delay_ms.to_string(),
+        ],
+    );
 }
 
-fn write_fields(world: &mut World, fields: [Entity; 5], settings: &KeyboardSettings) {
-    for (entity, value) in fields.into_iter().zip(values(settings)) {
+fn write_values(world: &mut World, fields: [Entity; 5], values: [&str; 5]) {
+    for (entity, value) in fields.into_iter().zip(values) {
         let mut input = world.get_mut::<EditableText>(entity).unwrap();
-        if input.value() != value.as_str() {
-            input.editor.set_text(&value);
+        if input.value() != value {
+            input.editor.set_text(value);
             input.queue_edit(bevy::text::TextEdit::TextEnd(false));
         }
     }
+}
+
+fn candidate(world: &World, page: Entity, fields: [Entity; 5]) -> Result<KeyboardSettings, String> {
+    presentation::candidate(world, page, fields)
+        .cloned()
+        .unwrap_or_else(|| read_fields(world, fields))
 }
 
 fn read_fields(world: &World, fields: [Entity; 5]) -> Result<KeyboardSettings, String> {
@@ -242,23 +256,18 @@ fn read_fields(world: &World, fields: [Entity; 5]) -> Result<KeyboardSettings, S
     }) {
         return Err("Finish the current text edit before saving keyboard settings.".into());
     }
-    let values = fields.map(|entity| {
-        world
-            .get::<EditableText>(entity)
-            .unwrap()
-            .value()
-            .to_string()
-            .trim()
-            .to_owned()
-    });
+    let [layout, variant, options, repeat_rate, repeat_delay_ms] =
+        fields.map(|entity| world.get::<EditableText>(entity).unwrap().value().to_cow());
     let settings = KeyboardSettings {
-        layout: values[0].clone(),
-        variant: values[1].clone(),
-        options: values[2].clone(),
-        repeat_rate: values[3]
+        layout: layout.trim().to_owned(),
+        variant: variant.trim().to_owned(),
+        options: options.trim().to_owned(),
+        repeat_rate: repeat_rate
+            .trim()
             .parse()
             .map_err(|_| "Use a whole repeat rate between 0 and 100.")?,
-        repeat_delay_ms: values[4]
+        repeat_delay_ms: repeat_delay_ms
+            .trim()
             .parse()
             .map_err(|_| "Use a whole repeat delay between 0 and 5000 ms.")?,
     };
@@ -266,12 +275,17 @@ fn read_fields(world: &World, fields: [Entity; 5]) -> Result<KeyboardSettings, S
     Ok(settings)
 }
 
-pub(crate) fn text(world: &mut World, entity: Entity, message: impl Into<String>) {
+pub(crate) fn text<'a>(
+    world: &mut World,
+    entity: Entity,
+    message: impl Into<std::borrow::Cow<'a, str>>,
+) {
     let message = message.into();
     if let Some(mut text) = world.get_mut::<Text>(entity)
-        && text.0 != message
+        && text.0 != message.as_ref()
     {
-        text.0 = message;
+        text.0 = message.into_owned();
+        engine::performance::add("native-settings-text-writes", 1);
     }
 }
 
@@ -282,6 +296,24 @@ pub(crate) fn disable(world: &mut World, entity: Entity, disabled: bool) {
         } else {
             world.entity_mut(entity).remove::<InteractionDisabled>();
         }
+    }
+}
+
+pub(crate) fn caption(world: &mut World, control: (Entity, Entity), value: &str) {
+    text(world, control.1, value);
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(control.0)
+        && node.label() != Some(value)
+    {
+        node.set_label(value);
+        engine::performance::add("native-settings-label-writes", 1);
+    }
+}
+
+pub(crate) fn display(world: &mut World, entity: Entity, value: Display) {
+    let mut node = world.get_mut::<Node>(entity).unwrap();
+    if node.display != value {
+        node.display = value;
+        engine::performance::add("native-settings-display-writes", 1);
     }
 }
 
@@ -349,7 +381,7 @@ impl Action for Change {
             return;
         }
         let result = (|| {
-            let settings = read_fields(world, fields)?;
+            let settings = candidate(world, page, fields)?;
             let (revision, _) = origin.ok_or("The keyboard settings are still loading.")?;
             let id = next_request(world, snapshot.last_request)?;
             world
@@ -377,131 +409,6 @@ impl Action for Change {
             },
         );
         world.get_mut::<Page>(page).unwrap().refresh = true;
-    }
-}
-
-fn refresh(world: &mut World) {
-    let changed = world.is_resource_changed::<KeyboardSnapshot>();
-    let pages: Vec<_> = world
-        .query::<(Entity, &Page)>()
-        .iter(world)
-        .filter_map(|(entity, state)| {
-            (state.refresh
-                || changed
-                || state.fields.iter().any(|field| {
-                    world
-                        .get_entity(*field)
-                        .ok()
-                        .and_then(|entity| {
-                            entity
-                                .get_ref::<EditableText>()
-                                .map(|text| text.is_changed())
-                        })
-                        .unwrap_or(false)
-                }))
-            .then_some(entity)
-        })
-        .collect();
-    if pages.is_empty() {
-        return;
-    }
-    let snapshot = world.get_resource::<KeyboardSnapshot>().cloned();
-    for page in pages {
-        let state = world.get::<Page>(page).unwrap();
-        let (fields, summary, status, save, cancel, origin, pending) = (
-            state.fields,
-            state.summary,
-            state.status,
-            state.save,
-            state.cancel,
-            state.origin.clone(),
-            state.pending.clone(),
-        );
-        let draft = read_fields(world, fields).ok();
-        if let Some(snapshot) = &snapshot {
-            let response = pending.as_ref().and_then(|(request, _)| {
-                snapshot
-                    .response
-                    .as_ref()
-                    .filter(|response| response.request == *request)
-            });
-            if let Some(response) = response {
-                match &response.outcome {
-                    InputOutcome::Pending => {}
-                    InputOutcome::Saved { warning } => {
-                        let unchanged =
-                            draft.as_ref() == pending.as_ref().map(|(_, settings)| settings);
-                        if unchanged {
-                            write_fields(world, fields, &snapshot.settings);
-                        }
-                        let mut state = world.get_mut::<Page>(page).unwrap();
-                        state.pending = None;
-                        state.origin = Some((snapshot.revision, snapshot.settings.clone()));
-                        let mut message = warning
-                            .clone()
-                            .unwrap_or_else(|| "Keyboard settings saved.".into());
-                        if !unchanged {
-                            message.push_str(" Newer edits remain unsaved in this draft.");
-                        }
-                        text(world, status, message);
-                    }
-                    InputOutcome::Failed(reason) => {
-                        world.get_mut::<Page>(page).unwrap().pending = None;
-                        text(world, status, reason.clone());
-                    }
-                }
-            } else if pending.is_none() {
-                let clean = origin
-                    .as_ref()
-                    .is_none_or(|(_, settings)| draft.as_ref() == Some(settings));
-                if clean
-                    || origin
-                        .as_ref()
-                        .is_some_and(|(_, settings)| settings == &snapshot.settings)
-                {
-                    if clean {
-                        write_fields(world, fields, &snapshot.settings);
-                    }
-                    world.get_mut::<Page>(page).unwrap().origin =
-                        Some((snapshot.revision, snapshot.settings.clone()));
-                } else if origin
-                    .as_ref()
-                    .is_some_and(|(revision, _)| *revision != snapshot.revision)
-                {
-                    text(
-                        world,
-                        status,
-                        "The keyboard changed while editing. Your draft is preserved; Cancel loads the active settings.",
-                    );
-                }
-            }
-            let active = snapshot
-                .layouts
-                .get(snapshot.active_layout as usize)
-                .map_or("system default", String::as_str);
-            text(
-                world,
-                summary,
-                format!(
-                    "Active layout: {active}. Repeat: {} Hz after {} ms.",
-                    snapshot.settings.repeat_rate, snapshot.settings.repeat_delay_ms
-                ),
-            );
-        } else {
-            text(
-                world,
-                summary,
-                "Keyboard settings are available in a Park session. Sandbox uses its host compositor's keyboard.",
-            );
-        }
-        let busy = world.get::<Page>(page).unwrap().pending.is_some();
-        let available = snapshot.is_some() && world.contains_resource::<HostRequests>();
-        disable(world, save, !available || busy);
-        disable(world, cancel, !available || busy);
-        for field in fields {
-            disable(world, field, !available);
-        }
-        world.get_mut::<Page>(page).unwrap().refresh = false;
     }
 }
 

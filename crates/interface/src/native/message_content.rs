@@ -1,5 +1,8 @@
 mod attachments;
 mod drafts;
+mod parts;
+mod presentation;
+mod stored;
 #[cfg(test)]
 mod tests;
 
@@ -7,11 +10,13 @@ use crate::native::{actions::Action, protein_area::RecordBinding};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use bevy::{prelude::*, text::EditableText};
 use nucleus::message::{MessagePart, StoredPart};
+pub(crate) use parts::Parts;
 use std::{
     io::Read,
     path::PathBuf,
     sync::{Mutex, mpsc},
 };
+pub(crate) use stored::ContentRef;
 
 const CREDITS: &[crate::native::credits::Attribution] = &[
     crate::native::credits::Attribution {
@@ -45,7 +50,7 @@ const CREDITS: &[crate::native::credits::Attribution] = &[
 pub(crate) struct Draft {
     revision: u64,
     binding: RecordBinding,
-    pub parts: Vec<MessagePart>,
+    pub parts: Parts,
     list: Entity,
     status: Entity,
     reference: Option<Entity>,
@@ -58,9 +63,23 @@ struct Picking(Mutex<mpsc::Receiver<Result<Vec<MessagePart>, String>>>);
 
 #[derive(Component)]
 struct ContentView {
-    parent: Entity,
+    progress: Entity,
+    content: Entity,
     binding: RecordBinding,
-    value: serde_json::Value,
+}
+
+fn sections(world: &mut World, parent: Entity) -> [Entity; 2] {
+    std::array::from_fn(|_| {
+        world
+            .spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                },
+                ChildOf(parent),
+            ))
+            .id()
+    })
 }
 
 pub(crate) fn view(
@@ -79,26 +98,32 @@ pub(crate) fn view(
             ChildOf(parent),
         ))
         .id();
+    let [progress, content] = sections(world, parent);
     world.entity_mut(owner).insert(ContentView {
-        parent,
+        progress,
+        content,
         binding: binding.clone(),
-        value: serde_json::Value::Null,
     });
     refresh(world, owner, data);
 }
 
 pub(crate) fn refresh(world: &mut World, owner: Entity, data: &serde_json::Value) {
-    let Some(mut view) = world.get_mut::<ContentView>(owner) else {
-        return;
-    };
-    let value = serde_json::json!([data["content"], data["progress"]]);
-    if view.value == value {
+    if data["uid"].as_str().is_none() {
         return;
     }
-    view.value = value;
-    let (parent, binding) = (view.parent, view.binding.clone());
-    world.entity_mut(parent).despawn_children();
-    display(world, parent, &binding, data);
+    let Some(view) = world.get::<ContentView>(owner) else {
+        return;
+    };
+    let content_changed = !stored::matches(world, view.content, &view.binding, data);
+    let (content, progress, binding) = (
+        view.content,
+        view.progress,
+        content_changed.then(|| view.binding.clone()),
+    );
+    crate::native::message_progress::progress(world, progress, &data["progress"]);
+    if let Some(binding) = binding {
+        stored::refresh(world, content, &binding, data);
+    }
 }
 
 pub struct Plugin;
@@ -191,7 +216,7 @@ pub(crate) fn draft(
     world.entity_mut(owner).insert(Draft {
         revision: 0,
         binding: binding.clone(),
-        parts: Vec::new(),
+        parts: Parts::default(),
         list,
         status,
         reference,
@@ -210,7 +235,7 @@ pub(crate) fn contents(world: &World, owner: Entity) -> Result<Vec<MessagePart>,
     }
     Ok(world
         .get::<Draft>(owner)
-        .map(|draft| draft.parts.clone())
+        .map(|draft| draft.parts.to_vec())
         .unwrap_or_default())
 }
 
@@ -235,41 +260,7 @@ pub(super) fn render_draft(world: &mut World, owner: Entity) {
     let binding = draft.binding.clone();
     let list = draft.list;
     let parts = draft.parts.clone();
-    world.entity_mut(list).despawn_children();
-    for (index, part) in parts.iter().enumerate() {
-        let label = match part {
-            MessagePart::Question { question } => {
-                format!("Question for {}: {}", question.responder, question.prompt)
-            }
-            MessagePart::Steps { steps } => nucleus::operation::steps_text(steps),
-            MessagePart::Text { text } => text.clone(),
-            MessagePart::Attachment {
-                name,
-                mime_type,
-                data,
-            } => format!(
-                "{name} · {mime_type} · {} KiB · snapshot",
-                data.len() * 3 / 4 / 1024
-            ),
-            MessagePart::Reference { name, uri } => format!("{name} · reference: {uri}"),
-        };
-        if matches!(part, MessagePart::Attachment { .. }) {
-            attachments::draft_preview(world, list, &binding, part);
-        } else {
-            crate::native::edit_mode::label(world, list, &label, 13.0);
-        }
-        crate::native::description::button(world, list, owner, "Remove", Remove(index));
-        if matches!(part, MessagePart::Attachment { mime_type, .. } if mime_type.starts_with("text/") || mime_type == "application/json")
-        {
-            crate::native::description::button(
-                world,
-                list,
-                owner,
-                "Convert this attachment to text",
-                Convert(index),
-            );
-        }
-    }
+    presentation::render(world, list, owner, &binding, &parts);
 }
 
 fn mime(path: &std::path::Path) -> &'static str {
@@ -454,10 +445,13 @@ impl Action for Convert {
             let text = String::from_utf8(nucleus::message::decode(data)?)
                 .map_err(|_| "This attachment is not UTF-8 text.")?;
             let mut parts = draft.parts.clone();
-            parts[self.0] = MessagePart::Text {
-                text: format!("File snapshot: {name}\n{text}"),
-            };
-            nucleus::message::validate(&parts)?;
+            parts.replace(
+                self.0,
+                MessagePart::Text {
+                    text: format!("File snapshot: {name}\n{text}"),
+                },
+            );
+            parts.validate()?;
             Ok::<_, String>(parts)
         })();
         match result {
@@ -480,7 +474,7 @@ fn append(world: &mut World, owner: Entity, parts: Vec<MessagePart>) {
     let status = draft.status;
     let mut combined = draft.parts.clone();
     combined.extend(parts);
-    match nucleus::message::validate(&combined) {
+    match combined.validate() {
         Ok(()) => {
             draft.parts = combined;
             render_draft(world, owner);
@@ -646,59 +640,10 @@ pub(crate) fn display(
     binding: &RecordBinding,
     data: &serde_json::Value,
 ) {
-    let Some(uid) = data["uid"].as_str() else {
-        return;
-    };
-    crate::native::message_progress::progress(world, parent, &data["progress"]);
-    if data["content"].is_null() {
+    if data["uid"].as_str().is_none() {
         return;
     }
-    let Ok(parts) = serde_json::from_value::<Vec<StoredPart>>(data["content"]["parts"].clone())
-    else {
-        crate::native::edit_mode::label(
-            world,
-            parent,
-            "Message contents are unavailable or use an unsupported format.",
-            13.0,
-        );
-        return;
-    };
-    for (index, part) in parts
-        .into_iter()
-        .take(nucleus::message::MAX_PARTS)
-        .enumerate()
-    {
-        match part {
-            StoredPart::Question { question } => crate::native::message_questions::view(
-                world, parent, binding, data, index, &question,
-            ),
-            StoredPart::Steps { steps } => {
-                crate::native::message_progress::steps(world, parent, binding, data, index, &steps)
-            }
-            StoredPart::Text { text } => {
-                crate::native::edit_mode::label(world, parent, &text, 14.0);
-            }
-            StoredPart::Reference { name, uri } => {
-                crate::native::edit_mode::label(
-                    world,
-                    parent,
-                    &format!("{name}\nReference: {uri}"),
-                    13.0,
-                );
-                if let Some(record) = uri.strip_prefix("record:") {
-                    crate::native::description::button(
-                        world,
-                        parent,
-                        parent,
-                        "Open Record",
-                        crate::native::full_record::Open(RecordBinding {
-                            uid: record.into(),
-                            ..binding.clone()
-                        }),
-                    );
-                }
-            }
-            attachment => attachments::create(world, parent, binding, uid, index, attachment),
-        }
-    }
+    let [progress, content] = sections(world, parent);
+    crate::native::message_progress::progress(world, progress, &data["progress"]);
+    stored::refresh(world, content, binding, data);
 }

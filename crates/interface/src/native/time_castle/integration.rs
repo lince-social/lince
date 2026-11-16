@@ -112,6 +112,7 @@ fn clock(
         owner,
         Feed {
             source: Source::Local,
+            selection: None,
             query: query.clone(),
             key: serde_json::to_string(query).unwrap(),
             id: format!("recurrence-clock-{index}"),

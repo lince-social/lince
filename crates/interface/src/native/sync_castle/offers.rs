@@ -2,6 +2,9 @@ use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use engine::actions::Action as Backend;
 use serde_json::Value;
+use std::sync::Arc;
+
+mod presentation;
 
 #[derive(Component)]
 struct View {
@@ -10,13 +13,15 @@ struct View {
     status: Entity,
     preview: Entity,
     list: Entity,
+    rows: presentation::Rows,
+    shown: Option<Arc<Value>>,
     prepared: Option<(String, String, String)>,
 }
 #[derive(Component)]
 struct Job(tokio::sync::oneshot::Receiver<Result<(Backend, Option<Value>), String>>);
 #[derive(Component)]
 struct Watch {
-    receiver: tokio::sync::watch::Receiver<Option<Result<Value, String>>>,
+    receiver: tokio::sync::watch::Receiver<Option<Result<Arc<Value>, String>>>,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for Watch {
@@ -71,6 +76,8 @@ pub(super) fn populate(world: &mut World, parent: Entity) {
         status,
         preview,
         list,
+        rows: Default::default(),
+        shown: None,
         prepared: None,
     });
 }
@@ -191,16 +198,25 @@ fn start(world: &mut World, owner: Entity) {
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
     let (sender, receiver) = tokio::sync::watch::channel(None);
-    let task=handle.spawn(async move {
-        let mut changed=runtime.engine.watch_query_changes();
-        let mut timer=tokio::time::interval(std::time::Duration::from_secs(5));
-        loop {
-            tokio::select! {_=timer.tick()=>{},result=changed.changed()=>{if result.is_err(){break;}}}
-            let result=runtime.engine.act(Backend::PendingOffers,None).await.map(|o|o.data.unwrap_or(Value::Null)).map_err(|e|e.to_string());
-            if !super::snapshots::publish(&sender, result, wake.as_ref()) { break; }
+    let task = handle.spawn(async move {
+        let mut refresh =
+            super::snapshots::QueryRefresh::new(&runtime.engine, std::time::Duration::from_secs(5));
+        while refresh.next().await {
+            let result = runtime
+                .engine
+                .act(Backend::PendingOffers, None)
+                .await
+                .map(|o| Arc::new(o.data.unwrap_or(Value::Null)))
+                .map_err(|e| e.to_string());
+            if !super::snapshots::publish(&sender, result, wake.as_ref()) {
+                break;
+            }
         }
     });
     world.entity_mut(owner).insert(Watch { receiver, task });
+    crate::host::performance::count(
+        crate::host::performance::Count::SyncPresentationWatchesStarted,
+    );
 }
 
 pub(super) fn update(world: &mut World) {
@@ -209,7 +225,7 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if world.get::<Watch>(owner).is_none() {
+        if super::snapshots::needs_watch::<Watch>(world, owner) {
             start(world, owner);
         }
         let result = world
@@ -283,7 +299,7 @@ pub(super) fn update(world: &mut World) {
         });
         if let Some(result) = snapshot {
             match result {
-                Ok(snapshot) => render(world, owner, &snapshot),
+                Ok(snapshot) => render(world, owner, snapshot),
                 Err(error) => {
                     let status = world.get::<View>(owner).unwrap().status;
                     panel::status(world, status, error);
@@ -299,220 +315,16 @@ fn run(world: &mut World, parent: Entity, owner: Entity, caption: &str, action: 
 fn strval(value: &Value, key: &str) -> String {
     value[key].as_str().unwrap_or("").into()
 }
-fn render(world: &mut World, owner: Entity, snapshot: &Value) {
-    let parent = world.get::<View>(owner).unwrap().list;
-    panel::clear(world, parent);
-    label(
-        world,
-        parent,
-        "Pending offers · declined invitations remain private where required",
-    );
-    for offer in snapshot["pending"].as_array().into_iter().flatten() {
-        let uid = strval(offer, "subject_uid");
-        let peer = strval(offer, "other_party");
-        let kind = strval(offer, "kind");
-        label(
-            world,
-            parent,
-            &format!(
-                "{} · {} · {} · {}",
-                strval(offer, "title"),
-                kind,
-                strval(offer, "direction"),
-                peer
-            ),
-        );
-        match kind.as_str() {
-            "thread-invite" => {
-                run(
-                    world,
-                    parent,
-                    owner,
-                    "Accept invitation",
-                    Backend::AcceptThreadInvite {
-                        invite: uid.clone(),
-                    },
-                );
-                run(
-                    world,
-                    parent,
-                    owner,
-                    "Decline privately",
-                    Backend::DeclineThreadInvite { invite: uid },
-                );
-            }
-            "replica-grant" => run(
-                world,
-                parent,
-                owner,
-                "Cancel replica offer",
-                Backend::CancelReplicaOffer {
-                    root: uid,
-                    target: peer,
-                },
-            ),
-            "record-move" => {
-                if let Some(m) = snapshot["moves"]
-                    .as_array()
-                    .and_then(|ms| ms.iter().find(|m| m["uid"] == uid))
-                {
-                    show_move(world, parent, m);
-                    if m["state"] == "offered" && m["direction"] == "incoming" {
-                        run(
-                            world,
-                            parent,
-                            owner,
-                            "Accept move and complete set",
-                            Backend::AnswerRecordMove {
-                                offer: uid.clone(),
-                                accept: true,
-                            },
-                        );
-                        run(
-                            world,
-                            parent,
-                            owner,
-                            "Decline move privately",
-                            Backend::AnswerRecordMove {
-                                offer: uid,
-                                accept: false,
-                            },
-                        );
-                    } else if m["direction"] == "outgoing"
-                        && matches!(m["state"].as_str(), Some("offered" | "changed"))
-                    {
-                        run(
-                            world,
-                            parent,
-                            owner,
-                            "Cancel move",
-                            Backend::CancelRecordMove { record: uid },
-                        );
-                    }
-                }
-            }
-            "transfer" => {
-                if let Some(invite) = snapshot["transfers"]
-                    .as_array()
-                    .and_then(|ts| ts.iter().find(|t| t["uid"] == uid))
-                {
-                    run(
-                        world,
-                        parent,
-                        owner,
-                        "Accept Transfer invitation",
-                        Backend::AcceptTransferInvitation {
-                            invitation: uid.clone(),
-                            expected_revision: invite["revision"].as_u64().unwrap_or(0),
-                            request_id: nucleus::new_uid("request"),
-                            transfer: Some(strval(invite, "transfer")),
-                            person: Some(strval(invite, "person")),
-                        },
-                    );
-                    run(
-                        world,
-                        parent,
-                        owner,
-                        "Reject Transfer invitation",
-                        Backend::RejectTransferInvitation {
-                            invitation: uid,
-                            request_id: nucleus::new_uid("request"),
-                            transfer: Some(strval(invite, "transfer")),
-                            person: Some(strval(invite, "person")),
-                        },
-                    );
-                }
-            }
-            "blob-sync" => {
-                panel::button(
-                    world,
-                    parent,
-                    owner,
-                    "Accept file copy",
-                    Command::Blob(uid.clone(), true),
-                );
-                panel::button(
-                    world,
-                    parent,
-                    owner,
-                    "Cancel file copy",
-                    Command::Blob(uid, false),
-                );
-            }
-            _ => {}
-        }
-    }
-    label(world, parent, "Local outcomes");
-    for m in snapshot["moves"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|m| {
-            matches!(
-                m["state"].as_str(),
-                Some("received" | "complete" | "cancelled" | "declined")
-            )
-        })
-    {
-        show_move(world, parent, m);
-    }
-    for outcome in snapshot["outcomes"].as_array().into_iter().flatten() {
-        label(
-            world,
-            parent,
-            &format!(
-                "{} · {} · {}",
-                strval(outcome, "kind"),
-                strval(outcome, "subject_uid"),
-                strval(outcome, "outcome")
-            ),
-        );
-    }
-    for refusal in snapshot["refusals"].as_array().into_iter().flatten() {
-        label(
-            world,
-            parent,
-            &format!(
-                "Declined here · {} · {} · {}",
-                strval(refusal, "kind"),
-                strval(refusal, "subject_uid"),
-                strval(refusal, "at")
-            ),
-        );
-    }
-    for invite in snapshot["transfers"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|i| i["status"] != "pending")
-    {
-        label(
-            world,
-            parent,
-            &format!(
-                "Transfer invitation {} · {}",
-                strval(invite, "uid"),
-                strval(invite, "status")
-            ),
-        );
-    }
-    for grant in snapshot["replicas"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|g| g["state"] != "offered")
-    {
-        label(
-            world,
-            parent,
-            &format!(
-                "Replica {} · {}",
-                strval(grant, "root"),
-                strval(grant, "state")
-            ),
-        );
-    }
+fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Value>>) {
+    let snapshot = snapshot.into();
+    let mut view = world.get_mut::<View>(owner).unwrap();
+    let parent = view.list;
+    let previous = view.shown.replace(snapshot.clone());
+    let mut rows = std::mem::take(&mut view.rows);
+    rows.render(world, parent, owner, previous.as_deref(), &snapshot);
+    world.get_mut::<View>(owner).unwrap().rows = rows;
 }
+
 fn show_move(world: &mut World, parent: Entity, m: &Value) {
     let status = match m["state"].as_str() {
         Some("offered") => "Offer saved locally; waiting for acceptance",
@@ -605,7 +417,7 @@ mod tests {
             "outcomes":[{"kind":"thread-invite","subject_uid":"earlier","outcome":"declined"}],
             "refusals":[{"kind":"record-move","subject_uid":"private","at":"today"}]
         });
-        render(app.world_mut(), owner, &snapshot);
+        render(app.world_mut(), owner, snapshot.clone());
         let labels = text(app.world_mut());
         for label in [
             "Accept invitation",

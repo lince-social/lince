@@ -15,7 +15,7 @@ pub(super) fn is_view(world: &World, entity: Entity) -> bool {
     world.get::<Transclusion>(entity).is_some()
 }
 
-fn root(world: &World, mut entity: Entity) -> Entity {
+pub(super) fn root(world: &World, mut entity: Entity) -> Entity {
     while let Some(parent) = world.get::<ChildOf>(entity) {
         if world
             .get::<crate::native::canvas::CanvasItem>(entity)
@@ -28,7 +28,7 @@ fn root(world: &World, mut entity: Entity) -> Entity {
     entity
 }
 
-fn ancestors(world: &World, mut entity: Entity) -> Vec<String> {
+pub(super) fn ancestors(world: &World, mut entity: Entity) -> Vec<String> {
     let mut uids = Vec::new();
     loop {
         if let Some(view) = world.get::<Transclusion>(entity) {

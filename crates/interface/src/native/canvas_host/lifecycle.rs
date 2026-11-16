@@ -7,7 +7,7 @@ pub(crate) fn spawn(
     position: DVec2,
     component: &ContentKind,
 ) -> Result<Entity, String> {
-    component.validate(&registry(), false)?;
+    component.validate(&shared_registry(), false)?;
     if let ContentKind::Authored { base, edits } = component {
         let entity = spawn(world, root, workspace, position, base)?;
         world.entity_mut(entity).insert(Content(component.clone()));
@@ -88,7 +88,7 @@ pub(crate) fn spawn(
                     .into(),
                 query,
             };
-            draft.compile()?;
+            draft.compile_shared()?;
             crate::native::protein_castle::spawn(world, root, workspace, position, draft)
         }
         ContentKind::Native { kind, settings, .. } if kind == "instinct" => {
@@ -318,7 +318,10 @@ pub(crate) fn spawn(
                     )
                 }) {
                     let value =
-                        serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+                        <crate::native::sand_settings::Value as serde::Deserialize>::deserialize(
+                            value,
+                        )
+                        .map_err(|error| error.to_string())?;
                     if !crate::native::sand_settings::set(world, text, id, Some(value)) {
                         world.despawn(entity);
                         return Err("The native component rejected these settings.".into());

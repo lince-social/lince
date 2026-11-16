@@ -2,7 +2,10 @@ pub(crate) mod checks;
 mod editor;
 pub(crate) mod policy;
 mod publishing;
+mod replica;
 mod review;
+
+use replica::install;
 
 use crate::native::{actions::Action, protein_area::Source, sand_panel as panel};
 use bevy::{math::DVec2, prelude::*, text::EditableText};
@@ -13,7 +16,10 @@ use nucleus::{
     component::ComponentState,
 };
 use serde_json::{Value, json};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 #[derive(Component)]
 struct WorkspaceSync {
@@ -37,7 +43,7 @@ struct WorkspaceSync {
     editable: bool,
     reviewable: bool,
     permitted: bool,
-    layout: Layout,
+    layout: Arc<Layout>,
     replica_workspace: Option<u64>,
     replicas: HashMap<String, Entity>,
     pending: Option<(String, Kind)>,
@@ -141,10 +147,8 @@ impl Plugin for WorkspaceSyncPlugin {
 }
 
 fn status(world: &mut World, owner: Entity, text: &str) {
-    if let Some(entity) = world.get::<WorkspaceSync>(owner).map(|view| view.status)
-        && let Some(mut label) = world.get_mut::<Text>(entity)
-    {
-        label.0 = text.into();
+    if let Some(entity) = world.get::<WorkspaceSync>(owner).map(|view| view.status) {
+        panel::status(world, entity, text);
     }
 }
 
@@ -268,7 +272,13 @@ fn selected(world: &World, owner: Entity) -> Option<(String, i64)> {
         .and_then(|view| Some((view.selected.clone()?, view.revision)))
 }
 
-fn selected_element(world: &World, owner: Entity) -> Option<Element> {
+fn first_record(component: &LayoutComponent) -> Option<&str> {
+    component
+        .visit_records(&mut |record| std::ops::ControlFlow::Break(record))
+        .break_value()
+}
+
+fn selected_element(world: &World, owner: Entity) -> Option<&Element> {
     let view = world.get::<WorkspaceSync>(owner)?;
     let selected = &world
         .get::<crate::native::canvas_selection::SandSelection>(view.root)?
@@ -285,7 +295,6 @@ fn selected_element(world: &World, owner: Entity) -> Option<Element> {
         .elements
         .iter()
         .find(|element| &element.id == id)
-        .cloned()
 }
 
 fn unsubscribe(world: &mut World, owner: Entity) {
@@ -309,11 +318,7 @@ fn unsubscribe(world: &mut World, owner: Entity) {
 }
 
 fn restore_positions(world: &mut World, owner: Entity) {
-    let Some(view) = world.get::<WorkspaceSync>(owner) else {
-        return;
-    };
-    let snapshot = json!({"revision":view.revision,"layout":view.layout,"separate_view":view.permitted,"can_edit":view.editable,"can_review":view.reviewable});
-    install(world, owner, &snapshot);
+    replica::restore(world, owner, replica::Restore::Current);
 }
 
 impl Action for Control {
@@ -810,13 +815,8 @@ impl Action for Control {
             }
             Self::DeleteRecord => {
                 let record = selected_element(world, owner)
-                    .and_then(|element| {
-                        element
-                            .component
-                            .records()
-                            .first()
-                            .map(|record| (*record).to_owned())
-                    })
+                    .and_then(|element| first_record(&element.component))
+                    .map(str::to_owned)
                     .unwrap_or_else(|| panel::value(world, view.name).unwrap_or_default());
                 propose(
                     world,
@@ -889,16 +889,11 @@ impl Action for Control {
                         }
                     ) {
                     Change::Area {
-                        element: element.id,
+                        element: element.id.clone(),
                         changes,
                     }
                 } else if matches!(self, Self::ChangeRecord) {
-                    let Some(record) = element
-                        .component
-                        .records()
-                        .first()
-                        .map(|record| (*record).to_owned())
-                    else {
+                    let Some(record) = first_record(&element.component).map(str::to_owned) else {
                         status(world, owner, "Select a Record.");
                         return;
                     };
@@ -1582,9 +1577,7 @@ fn clear_replica(world: &mut World, owner: Entity) {
     };
     let entities: Vec<_> = view.replicas.values().copied().collect();
     let workspace_status = view.workspace_status;
-    if let Some(mut text) = world.get_mut::<Text>(workspace_status) {
-        text.0 = "No shared workspace connected.".into();
-    }
+    panel::status(world, workspace_status, "No shared workspace connected.");
     for entity in entities {
         if world.get_entity(entity).is_ok() {
             world.entity_mut(entity).despawn();
@@ -1597,293 +1590,53 @@ fn clear_replica(world: &mut World, owner: Entity) {
         .clear();
 }
 
-fn install(world: &mut World, owner: Entity, snapshot: &Value) {
-    let Ok(layout) = serde_json::from_value::<Layout>(snapshot["layout"].clone()) else {
-        status(world, owner, "Unsupported workspace snapshot");
+fn record_labels(world: &mut World, owner: Entity, rows: &[Value]) {
+    editor::records(world, owner, rows);
+    let _presentation = engine::performance::Span::new("native-workspace-replica-labels");
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
         return;
     };
-    let Some(revision) = snapshot["revision"].as_i64() else {
-        return;
-    };
-    let view = world.get::<WorkspaceSync>(owner).unwrap();
-    let root = view.root;
-    let sand = view.sand;
-    let mut replica_workspace = view.replica_workspace;
-    if replica_workspace.is_none() {
-        crate::native::workspace::create(world, root);
-        replica_workspace = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .map(|spaces| spaces.active);
-        if let Some(workspace) = replica_workspace {
-            world
-                .entity_mut(sand)
-                .insert(crate::native::workspace::WorkspaceMember(workspace));
-            if let Some(mut spaces) = world.get_mut::<crate::native::workspace::Workspaces>(root)
-                && let Some(space) = spaces
-                    .entries
-                    .iter_mut()
-                    .find(|space| space.id == workspace)
-            {
-                space.name = format!(
-                    "{}: {}",
-                    if snapshot["separate_view"] == true {
-                        "Permitted view"
-                    } else {
-                        "Shared"
-                    },
-                    snapshot["name"].as_str().unwrap_or("Workspace")
-                );
-            }
-        }
-    }
-    let Some(workspace) = replica_workspace else {
-        return;
-    };
-    let previous = world.get::<WorkspaceSync>(owner).unwrap().replicas.clone();
-    let previous_layout = world.get::<WorkspaceSync>(owner).unwrap().layout.clone();
-    for (id, entity) in &previous {
-        if !layout.elements.iter().any(|element| &element.id == id)
-            && world.get_entity(*entity).is_ok()
-        {
-            world.entity_mut(*entity).despawn();
-        }
-    }
-    let mut replicas = HashMap::new();
-    for element in &layout.elements {
-        let item = crate::native::canvas::CanvasItem {
-            position: DVec2::from_array(element.geometry.position),
-            size: Vec2::new(
-                element.geometry.size[0] as f32,
-                element.geometry.size[1] as f32,
-            ),
-        };
-        let entity = if let Some(entity) = previous
-            .get(&element.id)
-            .filter(|entity| world.get_entity(**entity).is_ok())
-        {
-            world.entity_mut(*entity).insert(item);
-            *entity
-        } else {
-            let entity = world
-                .spawn((
-                    crate::native::castle::Castle,
-                    HostedReplica,
-                    crate::native::sand::Square,
-                    crate::native::sand::InBox(root),
-                    ChildOf(root),
-                    crate::native::workspace::WorkspaceMember(workspace),
-                    item,
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        padding: UiRect::all(px(8)),
-                        overflow: Overflow::clip(),
-                        ..default()
-                    },
-                    crate::native::token_style::background(crate::native::tokens::Token::Surface),
-                ))
-                .id();
-            label(world, entity, &element.id);
-            label(world, entity, "");
-            entity
-        };
-        let unchanged = previous_layout.elements.iter().any(|old| {
-            old.id == element.id
-                && old.component == element.component
-                && previous_layout.disabled_controls.contains(&element.id)
-                    == layout.disabled_controls.contains(&element.id)
-        });
-        if !unchanged {
-            panel::clear(world, entity);
-            label(world, entity, &element.id);
-            label(world, entity, "");
-            if matches!(
-                element.component,
-                LayoutComponent::Composition { .. }
-                    | LayoutComponent::Builtin {
-                        state: ComponentState::Button { .. }
-                    }
-            ) {
-                editor::presentation(
-                    world,
-                    owner,
-                    entity,
-                    element,
-                    layout.disabled_controls.contains(&element.id),
-                );
-            }
-        }
-        let same_record = previous_layout.elements.iter().any(|old| {
-            old.id == element.id
-                && old.component == element.component
-                && matches!(
-                    old.component,
-                    LayoutComponent::Builtin {
-                        state: ComponentState::Record { .. }
-                    }
-                )
-        });
-        if !same_record {
-            let text = match &element.component {
-                LayoutComponent::Builtin {
-                    state: ComponentState::Text { text },
-                } => text.as_str(),
-                LayoutComponent::Builtin {
-                    state: ComponentState::Record { record, .. },
-                } => record.as_str(),
-                _ if layout.disabled_areas.contains(&element.id) => {
-                    "Area · behavior suspended until reviewed under the current policy"
-                }
-                LayoutComponent::Builtin {
-                    state: ComponentState::Area { .. },
-                } => "Area · approved effects run on the host",
-                _ => "Shared composition / declared control",
-            };
-            if let Some(children) = world.get::<Children>(entity)
-                && children.len() > 1
-            {
-                let field = children[1];
-                if let Some(mut value) = world.get_mut::<Text>(field) {
-                    value.0 = text.into();
-                }
-            }
-        }
-        replicas.insert(element.id.clone(), entity);
-    }
-    world.init_resource::<ReplicaFeeds>();
-    let source = world.get::<WorkspaceSync>(owner).unwrap().source.clone();
-    world
-        .resource_mut::<ReplicaFeeds>()
-        .0
-        .insert(owner, (source, replicas.values().copied().collect()));
-    let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
-    view.layout = layout;
-    view.replicas = replicas;
-    view.replica_workspace = Some(workspace);
-    view.revision = revision;
-    view.permitted = snapshot["separate_view"] == true;
-    view.editable = snapshot["can_edit"] == true;
-    view.reviewable = snapshot["can_review"] == true;
-    let subscribe = !view.permitted && !view.subscribed;
-    let selected = view.selected.clone();
-    if let Some(policy) = snapshot.get("policy").filter(|policy| !policy.is_null()) {
-        let field = view.policy;
-        let old = view.policy_snapshot.clone();
-        view.policy_snapshot = Some(policy.clone());
-        if old.as_ref() != Some(policy)
-            && (old.is_none()
-                || panel::value(world, field).ok().as_ref()
-                    == old
-                        .as_ref()
-                        .and_then(|value| serde_json::to_string_pretty(value).ok())
-                        .as_ref())
-        {
-            *world.get_mut::<EditableText>(field).unwrap() = crate::native::sand::editable(
-                &serde_json::to_string_pretty(policy).unwrap_or_default(),
-            );
-        }
-    }
-    if snapshot["policy_unavailable"] == true {
-        let field = world.get::<WorkspaceSync>(owner).unwrap().policy;
-        *world.get_mut::<EditableText>(field).unwrap() = draft_editor("");
-        world
-            .get_mut::<WorkspaceSync>(owner)
-            .unwrap()
-            .policy_snapshot = None;
-    }
-    if subscribe && let Some(workspace) = selected {
-        let message = ClientMessage::WorkspaceSubscribe {
-            id: subscription(owner),
-            workspace,
-            client: Client::default(),
-        };
-        if send(world, owner, message).is_ok() {
-            world.get_mut::<WorkspaceSync>(owner).unwrap().subscribed = true;
-        }
-    }
-    let targets: Vec<_> = world
-        .get::<WorkspaceSync>(owner)
-        .unwrap()
+    let mut indexed = None;
+    let changes: Vec<_> = view
         .layout
         .elements
         .iter()
-        .flat_map(|element| {
-            element
-                .component
-                .records()
-                .into_iter()
-                .map(|uid| protein::Predicate::UidEq(uid.into()))
+        .filter_map(|element| {
+            let entity = *view.replicas.get(&element.id)?;
+            let field = *world.get::<Children>(entity)?.get(1)?;
+            let previous = world.get::<Text>(field)?;
+            let uid = first_record(&element.component)?;
+            let by_uid = indexed.get_or_insert_with(|| {
+                let mut by_uid = HashMap::new();
+                for row in rows {
+                    if let Some(uid) = row["uid"].as_str() {
+                        by_uid.entry(uid).or_insert(row);
+                    }
+                }
+                by_uid
+            });
+            let row = by_uid.get(uid)?;
+            let parts = [
+                row["head"].as_str().unwrap_or(""),
+                "\n",
+                row["body"].as_str().unwrap_or(""),
+                "\nQuantity: ",
+                row["quantity"].as_str().unwrap_or("?"),
+            ];
+            let unchanged = parts
+                .iter()
+                .try_fold(previous.0.as_str(), |rest, part| rest.strip_prefix(*part))
+                .is_some_and(str::is_empty);
+            (!unchanged).then(|| (field, parts.concat()))
         })
         .collect();
-    if !targets.is_empty() {
-        let protein = protein::Protein {
-            source: protein::Source::Record,
-            filter: vec![protein::Predicate::Any(targets)],
-            fields: Some(vec![
-                "uid".into(),
-                "head".into(),
-                "body".into(),
-                "quantity".into(),
-            ]),
-            include: Default::default(),
-            aggregate: None,
-            order: vec![],
-            limit: Some(256),
-        };
-        let _ = send(
-            world,
-            owner,
-            ClientMessage::Subscribe {
-                id: records_subscription(owner),
-                protein,
-            },
-        );
-    }
-    let workspace_status = world.get::<WorkspaceSync>(owner).unwrap().workspace_status;
-    if let Some(mut text) = world.get_mut::<Text>(workspace_status) {
-        text.0 = format!(
-            "{} · revision {revision} · {} connected participants. Camera and selection stay on this computer.",
-            if snapshot["separate_view"] == true {
-                "Separate permitted view; no shared editing"
-            } else if snapshot["can_edit"] == true {
-                "Shared editor"
-            } else {
-                "Shared viewer"
-            },
-            snapshot["participants"].as_array().map_or(0, Vec::len)
-        );
-    }
-}
-
-fn record_labels(world: &mut World, owner: Entity, rows: &[Value]) {
-    editor::records(world, owner, rows);
-    let changes: Vec<_> = world
-        .get::<WorkspaceSync>(owner)
-        .into_iter()
-        .flat_map(|view| {
-            view.layout.elements.iter().filter_map(|element| {
-                let references = element.component.records();
-                let uid = references.first().copied()?;
-                let row = rows.iter().find(|row| row["uid"] == uid)?;
-                Some((
-                    *view.replicas.get(&element.id)?,
-                    format!(
-                        "{}\n{}\nQuantity: {}",
-                        row["head"].as_str().unwrap_or(""),
-                        row["body"].as_str().unwrap_or(""),
-                        row["quantity"].as_str().unwrap_or("?")
-                    ),
-                ))
-            })
-        })
-        .collect();
-    for (entity, text) in changes {
-        if let Some(children) = world.get::<Children>(entity)
-            && children.len() > 1
-        {
-            let label = children[1];
-            if let Some(mut value) = world.get_mut::<Text>(label) {
-                value.0 = text;
-            }
+    engine::performance::add(
+        "native-workspace-replica-labels-updated",
+        changes.len() as u64,
+    );
+    for (field, text) in changes {
+        if let Some(mut value) = world.get_mut::<Text>(field) {
+            value.0 = text;
         }
     }
 }
@@ -1968,7 +1721,11 @@ fn protect_passwords(views: Query<&WorkspaceSync>, mut fields: Query<&mut Editab
     }
 }
 
-fn maintain(world: &mut World) {
+fn maintain(
+    world: &mut World,
+    mut owners: Local<Option<bevy::ecs::query::QueryState<Entity, With<WorkspaceSync>>>>,
+) {
+    let _maintenance = engine::performance::Span::new("native-workspace-maintenance");
     world.init_resource::<ReplicaFeeds>();
     let stale: Vec<_> = world
         .resource::<ReplicaFeeds>()
@@ -1978,7 +1735,11 @@ fn maintain(world: &mut World) {
         .filter(|owner| world.get::<WorkspaceSync>(*owner).is_none())
         .collect();
     for owner in stale {
-        let (source, replicas) = world.resource::<ReplicaFeeds>().0[&owner].clone();
+        let (source, replicas) = world
+            .resource_mut::<ReplicaFeeds>()
+            .0
+            .remove(&owner)
+            .unwrap();
         let mut done = true;
         for id in [subscription(owner), records_subscription(owner)] {
             match &source {
@@ -2004,20 +1765,15 @@ fn maintain(world: &mut World) {
                 entity.despawn();
             }
         }
-        if done {
-            world.resource_mut::<ReplicaFeeds>().0.remove(&owner);
-        } else {
+        if !done {
             world
                 .resource_mut::<ReplicaFeeds>()
                 .0
-                .get_mut(&owner)
-                .unwrap()
-                .1
-                .clear();
+                .insert(owner, (source, Vec::new()));
         }
     }
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<WorkspaceSync>>()
+    let owners: Vec<_> = owners
+        .get_or_insert_with(|| world.query_filtered::<Entity, With<WorkspaceSync>>())
         .iter(world)
         .collect();
     for owner in owners {
@@ -2041,8 +1797,16 @@ fn maintain(world: &mut World) {
         }
         let view = world.get::<WorkspaceSync>(owner).unwrap();
         let source = view.source.clone();
-        let draft = panel::value(world, view.change).unwrap_or_default();
-        if draft != view.draft_text {
+        let draft = {
+            let value = world
+                .get::<EditableText>(view.change)
+                .filter(|text| !text.is_composing())
+                .map(EditableText::value)
+                .unwrap_or_default();
+            (value != view.draft_text).then(|| value.to_string())
+        };
+        if let Some(draft) = draft {
+            engine::performance::add("native-workspace-drafts-prepared", 1);
             let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
             view.draft_text = draft;
             if view.draft_base.is_none() && view.revision > 0 {
@@ -2063,12 +1827,13 @@ fn maintain(world: &mut World) {
                     element: element.id.clone(),
                 });
             };
-            if item.position.to_array() != element.geometry.position {
+            let expected = replica::canvas_item(&element.geometry);
+            if item.position != expected.position {
                 Some(Change::Move {
                     element: element.id.clone(),
                     position: item.position.to_array(),
                 })
-            } else if item.size.as_dvec2().to_array() != element.geometry.size {
+            } else if item.size != expected.size {
                 Some(Change::Resize {
                     element: element.id.clone(),
                     size: item.size.as_dvec2().to_array(),
@@ -2078,11 +1843,11 @@ fn maintain(world: &mut World) {
             }
         });
         if let Some(change) = change {
+            engine::performance::add("native-workspace-replica-differences", 1);
             if view.editable {
                 propose(world, owner, change);
             } else {
-                let snapshot = json!({"revision":view.revision,"layout":view.layout,"separate_view":false,"can_edit":false,"can_review":false});
-                install(world, owner, &snapshot);
+                replica::restore(world, owner, replica::Restore::Viewer);
             }
         }
     }
@@ -2095,7 +1860,7 @@ impl Action for UseSelector {
         let Some(castle) = world.get::<crate::native::protein_castle::ProteinCastle>(owner) else {
             return;
         };
-        let Ok(query) = castle.draft.compile() else {
+        let Ok(query) = castle.draft.compile_shared() else {
             return;
         };
         if query.source != protein::Source::Record {
@@ -2110,7 +1875,7 @@ impl Action for UseSelector {
         else {
             return;
         };
-        let selector = serde_json::to_value(protein::Predicate::All(query.filter)).unwrap();
+        let selector = serde_json::to_value(protein::Predicate::All(query.filter.clone())).unwrap();
         if let Some(index) = self.1 {
             let Some(grant) = policy["ceiling"]["grants"]
                 .as_array_mut()

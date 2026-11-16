@@ -77,11 +77,7 @@ pub fn validate_item(item: &Item) -> Result<(), StoreError> {
             ));
         }
     }
-    if serde_json::to_vec(item)
-        .map_err(|error| invalid(&error.to_string()))?
-        .len()
-        > ITEM_LIMIT
-    {
+    if nucleus::json::encoded_len(item).map_err(|error| invalid(&error.to_string()))? > ITEM_LIMIT {
         return Err(invalid("A knowledge item can contain at most 4 MiB"));
     }
     Ok(())
@@ -165,7 +161,7 @@ pub async fn archives(
     let mut sources = Vec::new();
     for row in rows {
         let mut source: nucleus::knowledge::Source =
-            serde_json::from_str(&row.get::<String, _>("source"))
+            serde_json::from_str(row.get::<&str, _>("source"))
                 .map_err(|error| invalid(&error.to_string()))?;
         source.id = row.get("uid");
         sources.push(source);
@@ -253,7 +249,7 @@ pub async fn cached_on(
         .bind(row.get::<i64, _>("sequence"))
         .execute(&mut *connection)
         .await?;
-    let item: Item = serde_json::from_str(&row.get::<String, _>("content"))
+    let item: Item = serde_json::from_str(row.get::<&str, _>("content"))
         .map_err(|error| invalid(&error.to_string()))?;
     validate_item(&item)?;
     Ok(Some(item))

@@ -32,14 +32,14 @@ impl State {
             && self.tokens.validate()
             && self.part_tokens.len() <= 32
             && self.part_tokens.iter().all(|(field, tokens)| {
-                protein::record_schema::fields()
+                protein::record_schema::FIELDS
                     .iter()
                     .any(|definition| definition.key == field)
                     && tokens.validate()
             })
             && self.fields.len() <= 32
             && self.fields.iter().all(|(field, values)| {
-                protein::record_schema::fields()
+                protein::record_schema::FIELDS
                     .iter()
                     .any(|definition| definition.key == field)
                     && values.valid(&fields::definitions(field))
@@ -89,17 +89,17 @@ struct History(Vec<(Previous, Presentation)>);
 pub(super) struct EditorSettings(pub(super) Values);
 
 pub(crate) fn current(world: &World, row: Entity) -> Option<Presentation> {
-    let mut view = raw(world, row)?;
+    let mut view = raw(world, row)?.clone();
     if let Some(state) = world.get::<State>(row) {
         view.settings.0.extend(state.settings.0.clone());
     }
     Some(view)
 }
 
-fn raw(world: &World, row: Entity) -> Option<Presentation> {
+pub(super) fn raw(world: &World, row: Entity) -> Option<&Presentation> {
     world
         .get::<State>(row)
-        .and_then(|state| state.view.clone())
+        .and_then(|state| state.view.as_ref())
         .or_else(|| {
             let binding = world.get::<RecordBinding>(row)?;
             world
@@ -107,7 +107,7 @@ fn raw(world: &World, row: Entity) -> Option<Presentation> {
                 .protein
                 .as_ref()?
                 .presentation
-                .clone()
+                .as_ref()
         })
 }
 
@@ -116,20 +116,20 @@ fn base(world: &World, owner: Entity) -> Option<Config> {
         return base(world, editor.0);
     }
     if let Some(castle) = world.get::<ProteinCastle>(owner) {
-        let query = castle.draft.compile().ok()?;
+        let query = castle.draft.compile_shared().ok()?;
         if query.source != protein::Source::Record || query.aggregate.is_some() {
             return None;
         }
         let fields = world
             .get::<crate::native::protein_castle::ProteinResults>(owner)
             .filter(|results| results.current && !results.columns.is_empty())
-            .map(|results| results.columns.clone())
-            .or(query.fields)
+            .map(|results| results.columns.as_ref().clone())
+            .or_else(|| query.fields.clone())
             .unwrap_or_else(|| vec!["head".into(), "body".into()]);
         let bindings: Vec<_> = fields
             .into_iter()
             .filter(|field| {
-                protein::record_schema::fields()
+                protein::record_schema::FIELDS
                     .iter()
                     .any(|definition| definition.key == field)
             })
@@ -658,6 +658,10 @@ pub(super) fn rebuilding(world: &mut World, row: Entity) {
 
 pub(super) fn refresh_fields(world: &mut World, row: Entity) {
     fields::refresh(world, row);
+}
+
+pub(super) fn field_content_created(world: &mut World, entity: Entity) {
+    fields::content_created(world, entity);
 }
 
 pub(crate) fn panel(world: &mut World, root: Entity, panel: Entity) -> bool {

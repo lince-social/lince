@@ -27,7 +27,7 @@ fn remote(app: &mut App, owner: Entity) -> tokio::sync::mpsc::Receiver<ClientMes
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config.clone()),
+            applied: Some(config.clone().into()),
             subscription: Some("remote-query".into()),
             remote: Some("remote-organ".into()),
             status: "Connecting".into(),
@@ -146,7 +146,7 @@ async fn locked_area_logs_in_without_edit_mode_and_clears_results_on_disconnect(
         owner,
         ServerMessage::Snapshot {
             id: "remote-query".into(),
-            rows: vec![json!({"uid":"remote-record", "head":"Remote task", "body":""})],
+            rows: vec![json!({"uid":"remote-record", "head":"Remote task", "body":""})].into(),
         },
     );
     app.update();
@@ -200,7 +200,7 @@ async fn locked_area_logs_in_without_edit_mode_and_clears_results_on_disconnect(
         owner,
         ServerMessage::Snapshot {
             id: "remote-query".into(),
-            rows: vec![json!({"uid":"late-record"})],
+            rows: vec![json!({"uid":"late-record"})].into(),
         },
     );
     assert!(
@@ -346,7 +346,7 @@ async fn granted_organ_unlocks_without_a_password_and_reconnect_preserves_the_qu
         owner,
         ServerMessage::Snapshot {
             id: "remote-query".into(),
-            rows: Vec::new(),
+            rows: Vec::new().into(),
         },
     );
     app.update();
@@ -359,11 +359,11 @@ async fn granted_organ_unlocks_without_a_password_and_reconnect_preserves_the_qu
     for message in [
         ServerMessage::Snapshot {
             id: "remote-query".into(),
-            rows: Vec::new(),
+            rows: Vec::new().into(),
         },
         ServerMessage::Update {
             id: "remote-query".into(),
-            rows: Vec::new(),
+            rows: Vec::new().into(),
         },
     ] {
         receive(app.world_mut(), owner, message);
@@ -399,8 +399,10 @@ async fn granted_organ_unlocks_without_a_password_and_reconnect_preserves_the_qu
         config
     );
     assert_eq!(
-        app.world().resource::<Runtime>().areas[&owner].applied,
-        config
+        app.world().resource::<Runtime>().areas[&owner]
+            .applied
+            .as_deref(),
+        config.as_ref()
     );
     assert!(!app.world().resource::<Runtime>().areas[&owner].ready);
     assert!(!app.world().resource::<Runtime>().areas[&owner].login_pending);

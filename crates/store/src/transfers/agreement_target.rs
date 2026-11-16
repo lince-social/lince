@@ -54,7 +54,7 @@ async fn receipt(
         return Err(invalid("transfer_agreement_target_request_conflict"));
     }
     let mut outcome: AgreementTargetOutcome =
-        serde_json::from_str(&row.get::<String, _>("result")).map_err(invalid)?;
+        serde_json::from_str(row.get::<&str, _>("result")).map_err(invalid)?;
     outcome.replayed = true;
     Ok(Some(outcome))
 }

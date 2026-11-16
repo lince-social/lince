@@ -52,7 +52,7 @@ fn fresh_device_can_create_an_organ_before_roster_subscription_replies() {
         app.world_mut(),
         &ServerMessage::Snapshot {
             id: subscription(owner, "roster"),
-            rows: vec![],
+            rows: vec![].into(),
         },
     );
     find(app.world_mut(), "roster-create-organ");
@@ -62,7 +62,7 @@ fn fresh_device_can_create_an_organ_before_roster_subscription_replies() {
             id: subscription(owner, "roster"),
             rows: vec![
                 json!({"uid":"local","slug":"local-organ","extension":{"version":1,"cells":[{"cell_uid":"desktop","label":"Desktop","capabilities":["karma"]}]}}),
-            ],
+            ].into(),
         },
     );
     assert!(
@@ -116,7 +116,7 @@ fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
         app.world_mut(),
         &ServerMessage::Snapshot {
             id: subscription(owner, "organs"),
-            rows: vec![row.clone()],
+            rows: vec![row.clone()].into(),
         },
     );
     let actions = [
@@ -171,7 +171,7 @@ fn all_contact_controls_use_typed_actions_and_do_not_persist_secrets() {
         app.world_mut(),
         &ServerMessage::Update {
             id: subscription(owner, "organs"),
-            rows: vec![row],
+            rows: vec![row].into(),
         },
     );
     assert_eq!(
@@ -360,7 +360,8 @@ fn roster_and_pairing_updates_keep_contact_drafts_and_guard_device_removal() {
             rows: vec![
                 json!({"uid":"local","slug":"local-organ","head":"Me"}),
                 json!({"uid":"peer","head":"Friend","contact":{"trust":"known","proximity":1}}),
-            ],
+            ]
+            .into(),
         },
     );
     Command::Select("peer".into()).apply(app.world_mut(), owner);
@@ -370,7 +371,7 @@ fn roster_and_pairing_updates_keep_contact_drafts_and_guard_device_removal() {
         app.world_mut(),
         &ServerMessage::Update {
             id: subscription(owner, "pairing"),
-            rows: vec![json!({"uid":"peer","extension":{"invite":"lince1|node|||"}})],
+            rows: vec![json!({"uid":"peer","extension":{"invite":"lince1|node|||"}})].into(),
         },
     );
     assert_eq!(
@@ -390,7 +391,7 @@ fn roster_and_pairing_updates_keep_contact_drafts_and_guard_device_removal() {
             id: subscription(owner, "roster"),
             rows: vec![
                 json!({"uid":"local","slug":"local-organ","extension":{"version":1,"cells":[{"cell_uid":"a","label":"Laptop"},{"cell_uid":"b","label":"Phone"}]}}),
-            ],
+            ].into(),
         },
     );
     let revoke = find(app.world_mut(), "roster-revoke-cell");
@@ -411,7 +412,7 @@ fn karma_controls_distinguish_exclusive_selection_explicit_addition_and_local_st
         app.world_mut(),
         &ServerMessage::Snapshot {
             id: subscription(owner, "organs"),
-            rows: vec![json!({"uid":"local","slug":"local-organ","head":"Me"})],
+            rows: vec![json!({"uid":"local","slug":"local-organ","head":"Me"})].into(),
         },
     );
     receive(
@@ -420,7 +421,7 @@ fn karma_controls_distinguish_exclusive_selection_explicit_addition_and_local_st
             id: subscription(owner, "roster"),
             rows: vec![
                 json!({"uid":"local","slug":"local-organ","extension":{"version":7,"cells":[{"cell_uid":"a","label":"Laptop","capabilities":["karma"]},{"cell_uid":"b","label":"Phone","capabilities":[]}]}}),
-            ],
+            ].into(),
         },
     );
     let forms: Vec<_> = app
@@ -782,7 +783,7 @@ fn unchanged_roster_refresh_keeps_an_open_device_confirmation() {
         app.world_mut(),
         &ServerMessage::Snapshot {
             id: id.clone(),
-            rows: vec![json!({"slug":"local-organ","extension":null})],
+            rows: vec![json!({"slug":"local-organ","extension":null})].into(),
         },
     );
     let create = find(app.world_mut(), "roster-create-organ");
@@ -793,7 +794,7 @@ fn unchanged_roster_refresh_keeps_an_open_device_confirmation() {
         app.world_mut(),
         &ServerMessage::Update {
             id: id.clone(),
-            rows: vec![json!({"slug":"local-organ","extension":null})],
+            rows: vec![json!({"slug":"local-organ","extension":null})].into(),
         },
     );
     receive(
@@ -803,7 +804,8 @@ fn unchanged_roster_refresh_keeps_an_open_device_confirmation() {
             rows: vec![
                 json!({"slug":"local-organ","extension":null}),
                 json!({"slug":"contact","extension":null}),
-            ],
+            ]
+            .into(),
         },
     );
     assert!(app.world().get::<forms::Form>(create).is_some());

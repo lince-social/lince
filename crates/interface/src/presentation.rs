@@ -49,7 +49,7 @@ impl Presentation {
             && self.fields.len() <= 32
             && self.fields.iter().collect::<BTreeSet<_>>().len() == self.fields.len()
             && self.fields.iter().all(|field| {
-                protein::record_schema::fields()
+                protein::record_schema::FIELDS
                     .iter()
                     .any(|definition| definition.key == field)
             })

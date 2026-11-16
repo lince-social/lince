@@ -1,6 +1,6 @@
 # Park validation handoff
 
-The validation runner is development tooling. Its source is written, but it has not been compiled or executed in the current implementation round. No prepared physical-session command exists until preparation succeeds. Keep daily Lince data separate from this disposable profile.
+The validation runner is development tooling. This document describes reusable procedures, not a list of unfinished work. Candidate-specific results and remaining acceptance are in [Overhaul.md](../../trails/lince/park/Overhaul.md). No prepared physical-session command exists until preparation succeeds for that run. Keep daily Lince data separate from this disposable profile. The current source-only phase does not run these procedures.
 
 ## Preparation in the existing desktop
 
@@ -47,12 +47,12 @@ cargo xtask park validate report /absolute/path/to/run
 
 The run preserves preparation logs, `physical-session.log`, `session.log`, per-round probe/client logs, resource samples, `progress.json`, and, when the runner can finish, `results.json` and `summary.txt`. The outer wrapper records `watchdog-exit.txt` when control returns to it; status 124 indicates its timeout. A watchdog or machine failure may leave only progress and logs; missing final results mean the run is incomplete. Private browser data and clipboard content are not copied into the result manifest. Review logs before sharing them, since an external program controls its own diagnostics.
 
-## Remaining human checks
+## Physical observations
 
 Real key and pointer delivery, visible scanout, VT return, monitor reconnects, suspend/wake, and protected lock presentation need direct observations. Passwords and consent belong to the user's selected tools. Later lock/suspend runs require an explicit recovery arrangement; the short disposable smoke does not establish lock safety.
 
-After the source changes have passed checks and physical acceptance, enable the existing opt-in NixOS module through a reviewed personal configuration change. Test a clean Lince login with the existing display manager and chosen external services. Keep Niri selectable. The private-bus TTY smoke is not a substitute for the real session's service lifecycle.
+The opt-in NixOS module and existing personal integration are described in [park.md](park.md) and [park-personal-rollout.md](park-personal-rollout.md). Initial personal installation is no longer a pending task. The private-bus TTY smoke is not a substitute for the real session's service lifecycle.
 
 ## CI and distribution
 
-`cargo xtask park ci` groups the compiler checks and deterministic protocol tests. The Park GitHub workflow produces a separate Linux action artifact containing the executable, license, session entry, usage document, revision, and runtime-library inventory. It does not publish a release or change the ordinary Sandbox update channel. The archive requires compatible system libraries; use the existing Nix package for a dependency-managed installation. Packaging validation and real hardware acceptance remain open until executed.
+`cargo xtask park ci` groups the compiler checks and deterministic protocol tests. The Park GitHub workflow produces a separate Linux action artifact containing the executable, license, session entry, usage document, revision, and runtime-library inventory. It does not publish a release or change the ordinary Sandbox update channel. The archive requires compatible system libraries; use the existing Nix package for a dependency-managed installation. Refer to the current report for packaging and hardware evidence rather than treating this procedure as an outstanding task.

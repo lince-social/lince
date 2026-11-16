@@ -2370,9 +2370,8 @@ impl Engine {
 
     pub(crate) async fn resolve(&self, token: &str) -> Result<String, EngineError> {
         let token = token.trim_start_matches('@');
-        store::records::resolve(&self.store.pool, token)
+        store::records::resolve_uid(&self.store.pool, token)
             .await?
-            .map(|r| r.uid)
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 
@@ -2797,10 +2796,7 @@ impl Engine {
         }
         if let Action::CreateThread { target, .. } = action {
             let target = self.resolve(target).await?;
-            if store::transfers::get(&self.store.pool, &target)
-                .await?
-                .is_some()
-            {
+            if store::transfers::exists(&self.store.pool, &target).await? {
                 targets.push(target);
             }
         }
@@ -2900,14 +2896,10 @@ impl Engine {
         };
         let mut transfers = Vec::new();
         for target in
-            store::assertions::objects_from_subject(&self.store.pool, thread_uid, &thread_of)
-                .await?
+            store::assertions::active_object_uids(&self.store.pool, thread_uid, &thread_of).await?
         {
-            if store::transfers::get(&self.store.pool, &target.uid)
-                .await?
-                .is_some()
-            {
-                transfers.push(target.uid);
+            if store::transfers::exists(&self.store.pool, &target).await? {
+                transfers.push(target);
             }
         }
         match transfers.as_slice() {
@@ -2927,11 +2919,12 @@ impl Engine {
                 code: "message_thread_missing",
                 message: "the message-in relationship is not defined".into(),
             })?;
+        // Only zero, one, or multiple active targets affect this decision.
         let threads =
-            store::assertions::objects_from_subject(&self.store.pool, message_uid, &message_in)
+            store::assertions::active_object_kinds(&self.store.pool, message_uid, &message_in, 2)
                 .await?;
         match threads.as_slice() {
-            [thread] if thread.kind == RecordKind::Thread.as_str() => Ok(thread.uid.clone()),
+            [(uid, kind)] if kind == RecordKind::Thread.as_str() => Ok(uid.clone()),
             [] => Err(EngineError::Conflict {
                 code: "message_thread_missing",
                 message: "the message does not belong to a thread".into(),
@@ -2959,7 +2952,7 @@ impl Engine {
             return Ok((operator.clone(), operator));
         };
         let author_uid = self.resolve(author).await?;
-        let author_record = store::records::get(&self.store.pool, &author_uid)
+        let author_record = store::records::routing(&self.store.pool, &author_uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(author_uid.clone()))?;
         if author_record.kind != RecordKind::Person.as_str() {
@@ -2972,14 +2965,15 @@ impl Engine {
         {
             let operated_by = store::vocabulary::feature_read(&self.store.pool, "operator").await?;
             let delegated = match operated_by {
-                Some(predicate) => store::assertions::objects_from_subject(
-                    &self.store.pool,
-                    &author_uid,
-                    &predicate,
-                )
-                .await?
-                .iter()
-                .any(|record| record.uid == actor),
+                Some(predicate) => {
+                    store::assertions::object_exists(
+                        &self.store.pool,
+                        &author_uid,
+                        &predicate,
+                        Some(actor),
+                    )
+                    .await?
+                }
                 None => false,
             };
             if !delegated {
@@ -2997,7 +2991,7 @@ impl Engine {
         thread: &str,
     ) -> Result<(String, String), EngineError> {
         let conversation_uid = self.resolve(conversation).await?;
-        let conversation_row = store::records::get(&self.store.pool, &conversation_uid)
+        let conversation_row = store::records::routing(&self.store.pool, &conversation_uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(conversation.to_string()))?;
         if conversation_row.kind != RecordKind::Conversation.as_str() {
@@ -3006,7 +3000,7 @@ impl Engine {
             ));
         }
         let thread_uid = self.resolve(thread).await?;
-        let thread_row = store::records::get(&self.store.pool, &thread_uid)
+        let thread_row = store::records::routing(&self.store.pool, &thread_uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(thread.to_string()))?;
         if thread_row.kind != RecordKind::Thread.as_str() {
@@ -3020,10 +3014,14 @@ impl Engine {
                 code: "message_draft_thread_missing",
                 message: "the thread-of relationship is not defined".into(),
             })?;
-        let targets =
-            store::assertions::objects_from_subject(&self.store.pool, &thread_uid, &thread_of)
-                .await?;
-        if !targets.iter().any(|target| target.uid == conversation_uid) {
+        if !store::assertions::object_exists(
+            &self.store.pool,
+            &thread_uid,
+            &thread_of,
+            Some(&conversation_uid),
+        )
+        .await?
+        {
             return Err(EngineError::Conflict {
                 code: "message_draft_thread_mismatch",
                 message: "the draft thread belongs to another Record".into(),
@@ -4251,10 +4249,7 @@ impl Engine {
         &self,
         record_uid: &str,
     ) -> Result<(), EngineError> {
-        if store::transfers::get(&self.store.pool, record_uid)
-            .await?
-            .is_some()
-        {
+        if store::transfers::exists(&self.store.pool, record_uid).await? {
             return Err(EngineError::Conflict {
                 code: "transfer_revision_required",
                 message: "Transfer records may only change through revision-safe Transfer Actions"

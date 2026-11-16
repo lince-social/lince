@@ -218,7 +218,9 @@ pub(super) fn attach_text(world: &mut World, entity: Entity) {
 }
 
 pub(super) fn synced_text(world: &mut World, entity: Entity, value: &str) {
-    if let Some(mut history) = world.get_mut::<TextHistory>(entity) {
+    if let Some(mut history) = world.get_mut::<TextHistory>(entity)
+        && history.current != value
+    {
         history.current = value.into();
     }
 }
@@ -231,9 +233,9 @@ pub(super) fn update(world: &mut World) {
         if text.is_composing() || text.pending_paste.is_some() {
             continue;
         }
-        let value = text.value().to_string();
-        if value != history.current {
-            let previous = std::mem::replace(&mut history.current, value);
+        let value = text.value();
+        if value != history.current.as_str() {
+            let previous = std::mem::replace(&mut history.current, value.to_string());
             history.past.push(previous);
             if history.past.len() > 256 {
                 history.past.remove(0);

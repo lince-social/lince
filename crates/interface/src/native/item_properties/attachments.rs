@@ -117,7 +117,7 @@ fn apply(world: &mut World, item: Entity, stream: &mut Stream, row: Option<serde
         row["app_id"] = app_id;
     }
     world.entity_mut(item).insert((
-        crate::native::area::RecordProperties(row),
+        crate::native::area::RecordProperties(row.into()),
         RecordBinding {
             area: item,
             uid: stream.uid.clone(),

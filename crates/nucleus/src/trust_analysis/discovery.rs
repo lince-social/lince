@@ -83,7 +83,7 @@ impl Question {
                 }
             }
         }
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > MAX_QUESTION_BYTES {
+        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > MAX_QUESTION_BYTES {
             return Err("Discovery question exceeds 12 KiB".into());
         }
         Ok(())

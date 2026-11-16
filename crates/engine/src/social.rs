@@ -301,7 +301,7 @@ pub fn validate_snippet(doc: &Snippet, now: i64) -> Result<(), EngineError> {
             }
         }
     }
-    if serde_json::to_vec(doc)?.len() > MAX_SNIPPET_BYTES {
+    if nucleus::json::encoded_len(doc)? > MAX_SNIPPET_BYTES {
         return Err(invalid("The signed snippet exceeds 6 KiB"));
     }
     if !crate::roster::verify_with(
@@ -935,7 +935,7 @@ impl Engine {
                         }
                         if self.social_own_record(&uid, actor).await.is_ok() {
                             if posts.len() >= 8
-                                || serde_json::to_vec(&posts)?.len()
+                                || nucleus::json::encoded_len(&posts)?
                                     > 1024 * 1024 - state.to_string().len().min(512 * 1024)
                             {
                                 next_posts_after = posts

@@ -4,6 +4,7 @@ mod actions;
 mod text;
 pub use actions::MAX_ACTION_BYTES;
 pub use actions::{Context, context, owner_context, owns_keyboard, perform, supported_actions};
+pub use actions::{PointerContext, pointer_context};
 pub use actions::{reveal_target, revealed};
 pub use text::text_nodes;
 

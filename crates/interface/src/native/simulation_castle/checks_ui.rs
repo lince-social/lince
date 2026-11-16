@@ -116,8 +116,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         }
     }
     let model = world.get::<SimulationCastle>(owner).unwrap().clone();
-    let Ok(scenario) = serde_json::from_str::<simulation::scenario::Scenario>(&model.scenario)
-    else {
+    let Ok(scenario) = model.scenario.parsed() else {
         crate::native::edit_mode::label(
             world,
             panel,
@@ -271,7 +270,22 @@ pub(super) fn capture(world: &mut World) {
     let values: Vec<_> = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .map(|(input, text)| (input.owner, input.field, text.value().to_string()))
+        .filter_map(|(input, text)| {
+            let model = world.get::<SimulationCastle>(input.owner)?;
+            let form = &model.check_form;
+            let current = match input.field {
+                Field::Name => &form.name,
+                Field::Cell => &form.cell,
+                Field::Record => &form.record,
+                Field::Amount => &form.amount,
+                Field::Unit => &form.unit,
+                Field::Interval => &form.interval,
+                Field::From => &form.from,
+                Field::Until => &form.until,
+                Field::SetName => &form.set_name,
+            };
+            super::changed_text(text, current).map(|value| (input.owner, input.field, value))
+        })
         .collect();
     for (owner, field, value) in values {
         if let Some(mut model) = world.get_mut::<SimulationCastle>(owner) {
@@ -376,7 +390,7 @@ pub(super) fn apply(
         return Ok(false);
     }
     let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
-    let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
+    let mut scenario = model.scenario.draft()?;
     let form = &mut model.check_form;
     match command {
         Command::QuantityBasis => {
@@ -541,7 +555,7 @@ pub(super) fn apply(
         }
         _ => unreachable!(),
     }
-    model.scenario = serde_json::to_string_pretty(&scenario)?;
+    model.scenario.set(serde_json::to_string_pretty(&scenario)?);
     let editor = world.get::<View>(owner).unwrap().editor;
     world
         .get_mut::<EditableText>(editor)

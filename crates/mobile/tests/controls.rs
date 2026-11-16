@@ -40,7 +40,8 @@ async fn saved_views_page_beyond_five_thousand_with_bounded_results() {
                     "mobile-tasks".into(),
                     query,
                 )
-                .query,
+                .query
+                .into(),
             },
             None,
         )

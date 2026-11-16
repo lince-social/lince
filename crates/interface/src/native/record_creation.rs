@@ -247,8 +247,8 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     let assertions = column(world, content);
     let body = column(world, content);
     let properties = column(world, content);
-    for field in protein::record_schema::fields()
-        .into_iter()
+    for field in protein::record_schema::FIELDS
+        .iter()
         .filter(|field| {
             matches!(
                 field.key,

@@ -246,7 +246,7 @@ impl Engine {
             None
         };
         if rows.len() > nucleus::plugins::MAX_SNAPSHOT_ITEMS
-            || serde_json::to_vec(&rows)?.len() > nucleus::plugins::MAX_BYTES / 2
+            || nucleus::json::encoded_len(&rows)? > nucleus::plugins::MAX_BYTES / 2
         {
             return Err(invalid(
                 "Export exceeds its entry or content budget; narrow the Protein",

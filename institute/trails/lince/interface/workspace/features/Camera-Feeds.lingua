@@ -1,0 +1,33 @@
+Camera sources and spatial feed metadata (@ws-camera-feeds: 0, is #chapter, #part-of @workspace-development, #requires @ws-assets, #requires @ws-shared-presence) { r_1M9PG0GKEJ9A8VGQNWCCCSQ82Y
+Status: Pending. Owner refinement, 2026-11-15: connect a camera feed and its metadata to a place or component; raw video archival is outside this capability.
+
+[Development graph](../Workspace-Development.lingua) · [Camera and vision contracts](../contracts/Camera-vision-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Assets](Assets.lingua) and [Shared presence](Shared-Presence.lingua). Reuse their source identity, media/resource demand, local frames, scoped selection, accepted metadata edits and access boundaries. Deliver a generic source/plugin interface, an actual bounded feed and native attachment/metadata inspection on a supplied local place. Neither globe integration, mesh authoring, Fiote, reconstruction nor the broad Federation join is a prerequisite.
+
+## Ownership and ordered work
+
+Own camera-source adapters and native source configuration. Extend the existing plugin/provider and media families, with one owner for shared schema/stream/renderer changes in the current checkout. No camera-specific document, authentication store or frame-as-Record system.
+
+### Task CFE.T01
+
+- [ ] Define the versioned CV.R01–CV.R03 source/view/frame descriptors through existing source/asset and plugin contracts. A camera has stable source identity, a place/component binding, a pose relative to a declared frame, optical axes/units, resolution and actual delivered-image metadata. Include lens/calibration, cadence and time quality with explicit unknown states. Keep transport endpoint and credential references separate from public descriptors; rotating a URL must not change camera identity. Source registration/import does not automatically start capture or inference.
+
+### Task CFE.T02
+
+- [ ] Implement one actual network-camera ingress and one independently supplied plugin producer through the same descriptor and frame-consumption interface. Recover the existing ESP demo's actual protocol/evidence when available and reuse it rather than guessing support; core acceptance must also run on a deterministic local producer without extra hardware. Negotiate the supported encoded/decoded formats, still-image versus video behavior and bounded request/subscription operations. Other protocols remain declared adapters, not implied by a generic URL field. Handle duplicate/out-of-order frames, reconnect, resolution/crop/pose changes and finite decoder/queue limits.
+
+### Task CFE.T03
+
+- [ ] From a selected place or component, add a source, position/orient it through numeric and spatial controls, inspect its image/frustum and edit known calibration. Save the descriptor and attachment through normal undo/revision paths. Distinguish camera location from observed coverage and estimated pose from measured calibration. Permit image-space viewing when depth/pose is unknown while explaining unavailable spatial projection. Keep the ordinary inspector, readable status, keyboard access and edit-panel geometry. Share one admitted acquisition across permitted viewers/jobs rather than opening another connection per consumer.
+
+### Task CFE.T04
+
+- [ ] Prove CV.W01/CV.W04 on CV.F01, including two providers, a restricted observer, missing calibration, transformed parent frame, format/pose generation change, stalled source, malformed/oversized input and last-consumer release. Keep only bounded volatile buffers for decode/inference/synchronization; do not persist live frames, encoded video, debug dumps or media in autosave/logs. Save metadata and permitted derived outputs only. Measure acquisition age, dropped frames, bytes/queues, decode cost and release; a transport connection alone is not proof of fresh content. Publish the real consumer interface before vision work starts.
+
+## Completion and handoff
+
+Read CV.R01–CV.R04/CV.R07–CV.R10. Publish descriptor/stream ownership, native proof, tested adapters, limits, time/calibration semantics and no-archive evidence. Consumers: [Vision tasks](Vision-Tasks.lingua) and [Federation](Federation.lingua). Current outcome: unbuilt and unverified.
+} r_1M9PG0GKEJ9A8VGQNWCCCSQ82Y

@@ -90,19 +90,73 @@ impl TimeRange {
     }
 }
 
+/// A validated pair of already parsed scheduling endpoints. Borrowing these
+/// values lets metadata and projection consumers share the same interpretation.
+pub struct Endpoints<'a> {
+    start: Option<&'a TimeValue>,
+    due: Option<&'a TimeValue>,
+}
+
+impl<'a> Endpoints<'a> {
+    pub fn new(start: Option<&'a TimeValue>, due: Option<&'a TimeValue>) -> Result<Self, String> {
+        if let (Some(start), Some(due)) = (start, due) {
+            let reversed = match (start.instant_ms(), due.instant_ms()) {
+                (Some(start), Some(due)) => start > due,
+                _ => start.stored_date() > due.stored_date(),
+            };
+            if reversed {
+                return Err("Due time must not be before start time".into());
+            }
+        }
+        Ok(Self { start, due })
+    }
+
+    pub fn range(
+        &self,
+        estimate_minutes: Option<f64>,
+        occurrence_ms: Option<i64>,
+    ) -> Result<Option<TimeRange>, String> {
+        let start = self.start.and_then(TimeValue::instant_ms);
+        let due = self.due.and_then(TimeValue::instant_ms);
+        let estimate = estimate_minutes.unwrap_or(0.0);
+        if !estimate.is_finite() || !(0.0..=1_000_000_000.0).contains(&estimate) {
+            return Err("Estimate must be a finite, nonnegative number of minutes".into());
+        }
+        let estimated_ms = (estimate * 60_000.0).round() as i64;
+        let duration = match (start, due) {
+            (Some(start), Some(due)) => due - start,
+            _ => estimated_ms,
+        };
+        let (from_ms, until_ms) = if let Some(occurrence) = occurrence_ms {
+            (occurrence, occurrence.checked_add(duration))
+        } else if let Some(start) = start {
+            (
+                start,
+                Some(due.unwrap_or(start.checked_add(duration).ok_or("Time range overflow")?)),
+            )
+        } else if let Some(due) = due {
+            (
+                due.checked_sub(duration).ok_or("Time range overflow")?,
+                Some(due),
+            )
+        } else {
+            return Ok(None);
+        };
+        let until_ms = until_ms.ok_or("Time range overflow")?;
+        if from_ms < 0 || until_ms > MAX_INSTANT_MS {
+            return Err("Time range is outside the supported range".into());
+        }
+        Ok(Some(TimeRange {
+            from_ms,
+            until_ms: (until_ms > from_ms).then_some(until_ms),
+        }))
+    }
+}
+
 pub fn validate_endpoints(start: Option<&str>, due: Option<&str>) -> Result<(), String> {
     let start = start.map(TimeValue::parse).transpose()?;
     let due = due.map(TimeValue::parse).transpose()?;
-    if let (Some(start), Some(due)) = (start, due) {
-        let reversed = match (start.instant_ms(), due.instant_ms()) {
-            (Some(start), Some(due)) => start > due,
-            _ => start.stored_date() > due.stored_date(),
-        };
-        if reversed {
-            return Err("Due time must not be before start time".into());
-        }
-    }
-    Ok(())
+    Endpoints::new(start.as_ref(), due.as_ref()).map(|_| ())
 }
 
 pub fn range(
@@ -111,47 +165,9 @@ pub fn range(
     estimate_minutes: Option<f64>,
     occurrence_ms: Option<i64>,
 ) -> Result<Option<TimeRange>, String> {
-    validate_endpoints(start, due)?;
-    let start = start
-        .map(TimeValue::parse)
-        .transpose()?
-        .and_then(|time| time.instant_ms());
-    let due = due
-        .map(TimeValue::parse)
-        .transpose()?
-        .and_then(|time| time.instant_ms());
-    let estimate = estimate_minutes.unwrap_or(0.0);
-    if !estimate.is_finite() || !(0.0..=1_000_000_000.0).contains(&estimate) {
-        return Err("Estimate must be a finite, nonnegative number of minutes".into());
-    }
-    let estimated_ms = (estimate * 60_000.0).round() as i64;
-    let duration = match (start, due) {
-        (Some(start), Some(due)) => due - start,
-        _ => estimated_ms,
-    };
-    let (from_ms, until_ms) = if let Some(occurrence) = occurrence_ms {
-        (occurrence, occurrence.checked_add(duration))
-    } else if let Some(start) = start {
-        (
-            start,
-            Some(due.unwrap_or(start.checked_add(duration).ok_or("Time range overflow")?)),
-        )
-    } else if let Some(due) = due {
-        (
-            due.checked_sub(duration).ok_or("Time range overflow")?,
-            Some(due),
-        )
-    } else {
-        return Ok(None);
-    };
-    let until_ms = until_ms.ok_or("Time range overflow")?;
-    if from_ms < 0 || until_ms > MAX_INSTANT_MS {
-        return Err("Time range is outside the supported range".into());
-    }
-    Ok(Some(TimeRange {
-        from_ms,
-        until_ms: (until_ms > from_ms).then_some(until_ms),
-    }))
+    let start = start.map(TimeValue::parse).transpose()?;
+    let due = due.map(TimeValue::parse).transpose()?;
+    Endpoints::new(start.as_ref(), due.as_ref())?.range(estimate_minutes, occurrence_ms)
 }
 
 pub fn civil_instants(date: &str, time: &str, timezone: &str) -> Result<Vec<String>, String> {

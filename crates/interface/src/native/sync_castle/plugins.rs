@@ -4,6 +4,9 @@ use nucleus::plugins::{
     Binding, Catalog, Command as Backend, Contribution, Direction, Field, FieldType,
 };
 use serde_json::{Value, json};
+use std::sync::Arc;
+
+mod presentation;
 
 #[cfg(test)]
 mod tests;
@@ -13,7 +16,8 @@ struct View {
     status: Entity,
     list: Entity,
     editor: Entity,
-    catalog: Option<Catalog>,
+    catalog: Option<Arc<Catalog>>,
+    rows: presentation::Rows,
     form: Option<Form>,
     installation: Entity,
 }
@@ -35,7 +39,7 @@ struct Job(tokio::sync::oneshot::Receiver<Result<(Backend, Value), String>>);
 
 #[derive(Component)]
 struct Watch {
-    receiver: tokio::sync::watch::Receiver<Option<Result<Catalog, String>>>,
+    receiver: tokio::sync::watch::Receiver<Option<Result<Arc<Catalog>, String>>>,
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -100,6 +104,7 @@ pub(super) fn populate(world: &mut World, parent: Entity) {
         list,
         editor,
         catalog: None,
+        rows: Default::default(),
         form: None,
         installation,
     });
@@ -347,27 +352,22 @@ impl Action for Command {
 
 fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>) {
     let view = world.get::<View>(owner).unwrap();
-    let descriptor = view
-        .catalog
-        .as_ref()
-        .and_then(|catalog| {
-            catalog
-                .packages
-                .iter()
-                .filter(|package| package.enabled)
-                .find_map(|package| {
-                    package
-                        .manifest
-                        .contributions
-                        .iter()
-                        .find(|item| format!("{}/{}", package.manifest.id, item.id()) == target)
-                })
-        })
-        .cloned();
+    let Some(catalog) = view.catalog.clone() else {
+        return;
+    };
+    let descriptor = catalog
+        .packages
+        .iter()
+        .filter(|package| package.enabled)
+        .find_map(|package| {
+            let id = target
+                .strip_prefix(package.manifest.id.as_str())?
+                .strip_prefix('/')?;
+            package.manifest.contributions.iter().find(|item| item.id() == id)
+        });
     let Some(descriptor) = descriptor else {
         return;
     };
-    let catalog = view.catalog.clone().unwrap();
     let editor = view.editor;
     panel::clear(world, editor);
     label(world, editor, descriptor.name());
@@ -415,7 +415,7 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
         .collect();
     let mut form = Form {
         target: target.into(),
-        binding: binding.clone(),
+        binding,
         fields,
         name: None,
         interval: None,
@@ -424,7 +424,7 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
         preview_area: editor,
         preview: None,
     };
-    if let Some(binding) = binding {
+    if let Some(binding) = &form.binding {
         form.name = Some(panel::field(world, editor, "Sync name", &binding.name));
         form.interval = Some(panel::field(
             world,
@@ -470,7 +470,7 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
             (Direction::Outgoing, "Publish"),
             (Direction::Both, "Both"),
         ] {
-            let supported = match &descriptor {
+            let supported = match descriptor {
                 Contribution::Sync {
                     incoming, outgoing, ..
                 } => (!direction.incoming() || *incoming) && (!direction.outgoing() || *outgoing),
@@ -486,7 +486,7 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
                 );
             }
         }
-        let document = match &descriptor {
+        let document = match descriptor {
             Contribution::Sync { document, .. } => document.as_ref(),
             _ => None,
         };
@@ -502,13 +502,13 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
             }
         };
         label(world, editor, description);
-        for (uid, name) in catalog.proteins {
+        for (uid, name) in &catalog.proteins {
             panel::button(
                 world,
                 editor,
                 owner,
                 &format!("Use Protein: {name}"),
-                Command::Protein(uid),
+                Command::Protein(uid.clone()),
             );
         }
         panel::button(world, editor, owner, "Preview selection", Command::Preview);
@@ -529,210 +529,14 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
     world.get_mut::<View>(owner).unwrap().form = Some(form);
 }
 
-fn render(world: &mut World, owner: Entity, catalog: Catalog) {
-    let list = world.get::<View>(owner).unwrap().list;
-    panel::clear(world, list);
-    for diagnostic in &catalog.diagnostics {
-        label(world, list, diagnostic);
-    }
-    if catalog.packages.is_empty() {
-        label(
-            world,
-            list,
-            "Install with cargo xtask plugin-example, plugin-activitypub or plugin-irc <data-directory>, then reload packages here.",
-        );
-    }
-    for package in &catalog.packages {
-        let row = panel::column(world, list);
-        let compatibility = &package.manifest.compatibility;
-        label(
-            world,
-            row,
-            &format!(
-                "Declared publisher: {} · Origin: {}",
-                compatibility.publisher, compatibility.origin
-            ),
-        );
-        if !compatibility.dependencies.is_empty() {
-            label(
-                world,
-                row,
-                &format!("Required packages: {:?}", compatibility.dependencies),
-            );
-        }
-        panel::button(
-            world,
-            row,
-            owner,
-            "Remove package; keep saved data",
-            Command::Run(Backend::Remove {
-                plugin: package.manifest.id.clone(),
-                digest: package.digest.clone(),
-            }),
-        );
-        label(
-            world,
-            row,
-            &format!(
-                "{} · version {} · {}",
-                package.manifest.name,
-                package.manifest.version,
-                if package.enabled {
-                    "Enabled"
-                } else {
-                    "Disabled"
-                }
-            ),
-        );
-        panel::button(
-            world,
-            row,
-            owner,
-            if package.enabled {
-                "Disable package"
-            } else {
-                "Enable trusted native package"
-            },
-            Command::Run(Backend::Enable {
-                plugin: package.manifest.id.clone(),
-                digest: package.digest.clone(),
-                enabled: !package.enabled,
-            }),
-        );
-        panel::button(
-            world,
-            row,
-            owner,
-            "Licenses and credits",
-            Command::Licenses(package.manifest.id.clone()),
-        );
-        for contribution in &package.manifest.contributions {
-            let target = format!("{}/{}", package.manifest.id, contribution.id());
-            match contribution {
-                Contribution::Schema { namespace, .. } => {
-                    label(
-                        world,
-                        row,
-                        &format!("Record schema: {} · {namespace}", contribution.name()),
-                    );
-                }
-                _ if package.enabled => {
-                    panel::button(
-                        world,
-                        row,
-                        owner,
-                        contribution.name(),
-                        Command::Open(target, None),
-                    );
-                }
-                _ => {
-                    label(world, row, contribution.name());
-                }
-            }
-        }
-    }
-    for item in &catalog.bindings {
-        let row = panel::column(world, list);
-        label(
-            world,
-            row,
-            &format!(
-                "{} · {} · {} pending · {} need attention",
-                item.binding.name, item.status, item.pending, item.failed
-            ),
-        );
-        panel::button(
-            world,
-            row,
-            owner,
-            "Edit / start",
-            Command::Open(item.binding.provider.clone(), Some(item.binding.clone())),
-        );
-        if item.binding.enabled {
-            panel::button(
-                world,
-                row,
-                owner,
-                "Refresh now",
-                Command::Run(Backend::Run {
-                    binding: item.binding.uid.clone(),
-                }),
-            );
-            panel::button(
-                world,
-                row,
-                owner,
-                "Stop Sync",
-                Command::Run(Backend::Stop {
-                    binding: item.binding.uid.clone(),
-                }),
-            );
-        }
-    }
-    for delivery in &catalog.deliveries {
-        label(
-            world,
-            list,
-            &format!(
-                "Delivery {} · {} · {}",
-                delivery.record, delivery.state, delivery.result
-            ),
-        );
-        if matches!(delivery.state.as_str(), "failed" | "uncertain") {
-            let replay_safe = catalog
-                .bindings
-                .iter()
-                .find(|item| item.binding.uid == delivery.binding)
-                .and_then(|item| {
-                    catalog
-                        .packages
-                        .iter()
-                        .flat_map(|package| {
-                            package
-                                .manifest
-                                .contributions
-                                .iter()
-                                .map(move |contribution| (package, contribution))
-                        })
-                        .find(|(package, contribution)| {
-                            format!("{}/{}", package.manifest.id, contribution.id())
-                                == item.binding.provider
-                        })
-                })
-                .is_some_and(|(_, contribution)| {
-                    matches!(
-                        contribution,
-                        Contribution::Sync {
-                            replay_safe: true,
-                            ..
-                        }
-                    )
-                });
-            if replay_safe {
-                panel::button(
-                    world,
-                    list,
-                    owner,
-                    "Retry same prepared publication",
-                    Command::Run(Backend::Retry {
-                        delivery: delivery.uid.clone(),
-                    }),
-                );
-            }
-        }
-        if matches!(delivery.state.as_str(), "queued" | "failed" | "uncertain") {
-            panel::button(
-                world,
-                list,
-                owner,
-                "Resolve locally without resending",
-                Command::Run(Backend::ResolveDelivery {
-                    delivery: delivery.uid.clone(),
-                }),
-            );
-        }
-    }
-    world.get_mut::<View>(owner).unwrap().catalog = Some(catalog);
+fn render(world: &mut World, owner: Entity, catalog: impl Into<Arc<Catalog>>) {
+    let catalog = catalog.into();
+    let mut view = world.get_mut::<View>(owner).unwrap();
+    let list = view.list;
+    let previous = view.catalog.replace(catalog.clone());
+    let mut rows = std::mem::take(&mut view.rows);
+    rows.render(world, list, owner, previous.as_deref(), &catalog);
+    world.get_mut::<View>(owner).unwrap().rows = rows;
 }
 
 pub(super) fn update(world: &mut World) {
@@ -741,7 +545,8 @@ pub(super) fn update(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if world.get::<Watch>(owner).is_none() && !crate::native::laboratory::blocked(world, owner)
+        if super::snapshots::needs_watch::<Watch>(world, owner)
+            && !crate::native::laboratory::blocked(world, owner)
         {
             if let (Some(runtime), Ok(handle)) = (
                 crate::native::practice_cells::runtime(world, owner),
@@ -752,15 +557,26 @@ pub(super) fn update(world: &mut World) {
                     .cloned();
                 let (sender, receiver) = tokio::sync::watch::channel(None);
                 let task = handle.spawn(async move {
-                    let mut changed = runtime.engine.watch_query_changes();
-                    let mut timer = tokio::time::interval(std::time::Duration::from_secs(5));
-                    loop {
-                        tokio::select! { _=timer.tick()=>{},result=changed.changed()=>{if result.is_err(){break;}} }
-                        let result = runtime.engine.plugin_catalog().await.map_err(|error| error.to_string());
-                        if !super::snapshots::publish(&sender, result, wake.as_ref()) { break; }
+                    let mut refresh = super::snapshots::QueryRefresh::new(
+                        &runtime.engine,
+                        std::time::Duration::from_secs(5),
+                    );
+                    while refresh.next().await {
+                        let result = runtime
+                            .engine
+                            .plugin_catalog()
+                            .await
+                            .map(Arc::new)
+                            .map_err(|error| error.to_string());
+                        if !super::snapshots::publish(&sender, result, wake.as_ref()) {
+                            break;
+                        }
                     }
                 });
                 world.entity_mut(owner).insert(Watch { receiver, task });
+                crate::host::performance::count(
+                    crate::host::performance::Count::SyncPresentationWatchesStarted,
+                );
             }
         }
         let result = world
@@ -835,13 +651,13 @@ pub(super) fn update(world: &mut World) {
                     let editor = world.get::<View>(owner).unwrap().editor;
                     panel::clear(world, editor);
                     world.get_mut::<View>(owner).unwrap().form = None;
-                    if let Ok(catalog) = serde_json::from_value(result) {
+                    if let Ok(catalog) = serde_json::from_value::<Catalog>(result) {
                         render(world, owner, catalog);
                     }
                     panel::status(world, status, "Sync saved and enabled");
                 }
                 Ok((_, result)) => {
-                    if let Ok(catalog) = serde_json::from_value(result) {
+                    if let Ok(catalog) = serde_json::from_value::<Catalog>(result) {
                         render(world, owner, catalog);
                     }
                     panel::status(world, status, "Settings saved");

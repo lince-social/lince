@@ -277,7 +277,7 @@ impl Engine {
             bytes: bytes.len(),
             dependencies: offers::manifest(&bundle),
         };
-        if preview.dependencies.len() > 2048 || serde_json::to_vec(&preview)?.len() > 512 * 1024 {
+        if preview.dependencies.len() > 2048 || nucleus::json::encoded_len(&preview)? > 512 * 1024 {
             return Err(failure(
                 "The complete preview exceeds 2,048 dependencies or 512 KiB; choose a smaller move set",
             ));
@@ -401,7 +401,7 @@ impl Engine {
             || preview.records.is_empty()
             || preview.records.len() > offers::MAX_RECORDS
             || preview.dependencies.len() > 2048
-            || serde_json::to_vec(&preview)?.len() > 512 * 1024
+            || nucleus::json::encoded_len(&preview)? > 512 * 1024
             || preview.bytes > offers::MAX_BYTES
             || preview.hash.len() != 64
             || !preview.records.iter().any(|r| r.uid == preview.root)

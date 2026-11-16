@@ -143,7 +143,7 @@ pub fn validate_record(record: &Record) -> Result<()> {
     if !nucleus::valid_uid(&record.uid, "r") || record.revision <= 0 {
         return Err("Invalid captured Record identity or revision".into());
     }
-    engine::private_work::WorkMetadata::parse(&record.work)?;
+    engine::private_work::WorkMetadata::validate(&record.work)?;
     let mut assertions = BTreeSet::new();
     for assertion in &record.assertions {
         if !nucleus::valid_uid(&assertion.uid, "a")

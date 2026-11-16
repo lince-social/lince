@@ -22,7 +22,7 @@ pub fn validate_content(content: &PrivateContent) -> Result<(), EngineError> {
     } else {
         MAX_CONTENT_BYTES
     };
-    if serde_json::to_vec(content)?.len() > limit
+    if nucleus::json::encoded_len(content)? > limit
         || content.protocol != "lince.private-content.1"
         || !nucleus::valid_uid(&content.conversation, "talk")
         || !nucleus::valid_uid(&content.message, "msg")
@@ -627,7 +627,7 @@ impl Engine {
                 &organ,
                 &root,
                 &message,
-                serde_json::to_vec(&content)?.len() + text.len() + 4096,
+                nucleus::json::encoded_len(&content)? + text.len() + 4096,
                 now.timestamp(),
             )
             .await?;

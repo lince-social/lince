@@ -2,7 +2,7 @@ use super::*;
 use serde_json::Value;
 
 #[derive(Component, Default)]
-struct Choices(Option<Value>);
+struct Choices(Option<Arc<Value>>);
 
 pub(super) fn invalidate(world: &mut World, owner: Entity) {
     if let Some(content) = world
@@ -53,9 +53,9 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
     if saved.agent.is_none() {
         if world
             .get::<Choices>(content)
-            .is_some_and(|choices| choices.0 != Some(Value::from("direct")))
+            .is_some_and(|choices| choices.0.as_deref().and_then(Value::as_str) != Some("direct"))
         {
-            world.get_mut::<Choices>(content).unwrap().0 = Some(Value::from("direct"));
+            world.get_mut::<Choices>(content).unwrap().0 = Some(Arc::new(Value::from("direct")));
             world.entity_mut(content).despawn_children();
             crate::native::edit_mode::label(
                 world,
@@ -72,26 +72,30 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
         .as_ref()
         .filter(|session| session.connected && session.thread == thread)
         .map(|session| {
-            session
+            let mut commands = session
                 .state
                 .commands
                 .iter()
                 .filter(|command| valid_name(&command.name))
+                .peekable();
+            if commands.peek().is_none() {
+                return Vec::new();
+            }
+            let title = saved
+                .fiotes
+                .iter()
+                .find(|choice| choice.record == saved.record)
+                .map(|choice| choice.title.as_str())
+                .unwrap_or(&saved.record);
+            let target = format!("Agent · {title}");
+            commands
                 .map(|command| {
                     let input = serde_json::to_value(&command.input).unwrap_or_default();
                     crate::native::message_commands::Command {
                         name: command.name.clone(),
                         description: command.description.clone(),
                         hint: input["hint"].as_str().unwrap_or_default().into(),
-                        target: format!(
-                            "Agent · {}",
-                            saved
-                                .fiotes
-                                .iter()
-                                .find(|choice| choice.record == saved.record)
-                                .map(|choice| choice.title.as_str())
-                                .unwrap_or(&saved.record)
-                        ),
+                        target: target.clone(),
                         insert: format!("/agent:{}", command.name),
                     }
                 })
@@ -112,11 +116,12 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
     let value = serde_json::json!({"state":{"options": session.state.options}, "pending":session.pending, "connected":session.connected, "directories":session.directories, "supports_directories":session.supports_directories, "capabilities":session.prompt_capabilities});
     if world
         .get::<Choices>(content)
-        .is_some_and(|choices| choices.0.as_ref() == Some(&value))
+        .is_some_and(|choices| choices.0.as_deref() == Some(&value))
     {
         return;
     }
-    world.get_mut::<Choices>(content).unwrap().0 = Some(value.clone());
+    let value = Arc::new(value);
+    world.get_mut::<Choices>(content).unwrap().0 = Some(Arc::clone(&value));
     world.entity_mut(content).despawn_children();
     crate::native::edit_mode::label(world, content, "This conversation", 16.0);
     crate::native::description::button(

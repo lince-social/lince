@@ -219,7 +219,9 @@ impl Presentation {
                     content_size: [1, 1],
                 },
                 native::layout::desktop::ApplicationOpeningPending,
-                native::area::RecordProperties(serde_json::json!({"head":title,"app_id":app_id})),
+                native::area::RecordProperties(
+                    serde_json::json!({"head":title,"app_id":app_id}).into(),
+                ),
                 MaterialNode(material.clone()),
                 ChildOf(root),
             ))
@@ -298,8 +300,9 @@ impl Presentation {
             .world_mut()
             .get_mut::<native::area::RecordProperties>(window.entity)
             .ok_or_else(|| input_failure("the application Castle is unavailable"))?;
-        properties.0[title_field] = title.into();
-        properties.0["app_id"] = app_id.into();
+        let metadata = std::sync::Arc::make_mut(&mut properties.0);
+        metadata[title_field] = title.into();
+        metadata["app_id"] = app_id.into();
         Ok(())
     }
 

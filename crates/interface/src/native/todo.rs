@@ -5,6 +5,7 @@ use cell::{ClientMessage, ServerMessage};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 const PAGE: usize = 40;
 
@@ -33,7 +34,7 @@ pub struct TodoSand {
     status: Entity,
     ids_button: Entity,
     show_ids: bool,
-    rows: Vec<Value>,
+    rows: Arc<Vec<Value>>,
     active: usize,
     subscription: String,
     requested: bool,
@@ -122,7 +123,7 @@ pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity
         status,
         ids_button,
         show_ids: false,
-        rows: Vec::new(),
+        rows: Arc::default(),
         active: 0,
         subscription: nucleus::new_uid("todo"),
         requested: false,
@@ -311,7 +312,7 @@ impl Action for Command {
                     view.subscription = nucleus::new_uid("todo");
                     view.requested = false;
                     view.ready = false;
-                    view.rows.clear();
+                    view.rows = Arc::default();
                     view.active = 0;
                     view.dirty = true;
                     panel::status(world, status, "Loading tasks…");
@@ -439,13 +440,14 @@ fn ids_label(world: &mut World, owner: Entity) {
 }
 
 fn render(world: &mut World, owner: Entity) {
+    let _render = nucleus::performance::Span::new("todo-list-presentation");
     let view = world.get::<TodoSand>(owner).unwrap();
     let (list, show_ids, active, ready) = (view.list, view.show_ids, view.active, view.ready);
     let start = active / PAGE * PAGE;
-    let rows: Vec<_> = view.rows.iter().skip(start).take(PAGE).cloned().collect();
+    let rows = view.rows.clone();
     let total = view.rows.len();
     panel::clear(world, list);
-    if rows.is_empty() {
+    if start >= rows.len() {
         crate::native::edit_mode::label(
             world,
             list,
@@ -457,7 +459,7 @@ fn render(world: &mut World, owner: Entity) {
             16.0,
         );
     }
-    for (index, row) in rows.into_iter().enumerate() {
+    for (index, row) in rows.iter().skip(start).take(PAGE).enumerate() {
         let Some(uid) = row["uid"].as_str() else {
             continue;
         };
@@ -492,7 +494,7 @@ fn render(world: &mut World, owner: Entity) {
         } else {
             format!(
                 "quantity {}",
-                quantity(&row).unwrap_or_else(|_| "unavailable".into())
+                quantity(row).unwrap_or_else(|_| "unavailable".into())
             )
         };
         crate::native::edit_mode::label(world, entry, &meta, 12.0);
@@ -518,33 +520,38 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
             if id == &view.subscription =>
         {
+            let _prepare = nucleus::performance::Span::new("todo-result-preparation");
             let selected = view
                 .rows
                 .get(view.active)
-                .and_then(|row| row["uid"].as_str())
-                .map(str::to_owned);
-            let rows: Vec<_> = rows
-                .iter()
-                .filter(|row| {
-                    row["uid"]
-                        .as_str()
-                        .is_some_and(|uid| nucleus::valid_uid(uid, "r"))
-                })
-                .cloned()
-                .collect();
-            let invalid = rows.is_empty()
-                && !matches!(message, ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } if rows.is_empty());
-            let mut view = world.get_mut::<TodoSand>(owner).unwrap();
-            view.active = selected
+                .and_then(|row| row["uid"].as_str());
+            let valid = |row: &Value| {
+                row["uid"]
+                    .as_str()
+                    .is_some_and(|uid| nucleus::valid_uid(uid, "r"))
+            };
+            let nonempty = !rows.is_empty();
+            let rows = if rows.iter().all(valid) {
+                rows.clone()
+            } else {
+                let filtered: Vec<_> = rows.iter().filter(|row| valid(row)).cloned().collect();
+                nucleus::performance::add("todo-result-rows-copied", filtered.len() as u64);
+                Arc::new(filtered)
+            };
+            let invalid = rows.is_empty() && nonempty;
+            let active = selected
                 .and_then(|selected| {
                     rows.iter()
-                        .position(|row| row["uid"].as_str() == Some(&selected))
+                        .position(|row| row["uid"].as_str() == Some(selected))
                 })
                 .unwrap_or(view.active)
                 .min(rows.len().saturating_sub(1));
+            let changed = !view.ready || active != view.active || !Arc::ptr_eq(&view.rows, &rows);
+            let mut view = world.get_mut::<TodoSand>(owner).unwrap();
+            view.active = active;
             view.rows = rows;
             view.ready = true;
-            view.dirty = true;
+            view.dirty |= changed;
             panel::status(
                 world,
                 status,
@@ -567,7 +574,7 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
                 Mutation::Add(draft) => {
                     let input = view.input;
                     if let Some(mut text) = world.get_mut::<EditableText>(input)
-                        && text.value().to_string() == draft
+                        && text.value() == draft.as_str()
                     {
                         text.editor.set_text("");
                     }
@@ -616,21 +623,24 @@ fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
 ) {
+    let _update = nucleus::performance::Span::new("todo-update");
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<TodoSand>>()
         .iter(world)
         .collect();
-    let active: HashSet<_> = owners
-        .iter()
-        .map(|owner| world.get::<TodoSand>(*owner).unwrap().subscription.clone())
-        .collect();
-    let stale: Vec<_> = world
-        .resource::<Subscriptions>()
-        .0
-        .keys()
-        .filter(|id| !active.contains(*id))
-        .cloned()
-        .collect();
+    let stale: Vec<_> = {
+        let active: HashSet<_> = owners
+            .iter()
+            .map(|owner| world.get::<TodoSand>(*owner).unwrap().subscription.as_str())
+            .collect();
+        world
+            .resource::<Subscriptions>()
+            .0
+            .keys()
+            .filter(|id| !active.contains(id.as_str()))
+            .cloned()
+            .collect()
+    };
     for id in stale {
         let sender = world.resource::<Subscriptions>().0[&id].clone();
         if sender

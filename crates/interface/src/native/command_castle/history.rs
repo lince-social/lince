@@ -6,15 +6,43 @@ pub(super) struct Entry {
     stop: Entity,
     content: Entity,
     open: bool,
+    caption: Caption,
 }
 
-fn caption(run: &Run) -> String {
-    let time = chrono::DateTime::from_timestamp_millis(run.started_ms as i64)
-        .map(|time| {
-            time.with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        })
+// Only fields that affect the visible header participate in its invalidation.
+// The current UTC offset preserves the existing local-time presentation when
+// the system timezone changes between history publications.
+struct Caption {
+    started_ms: u64,
+    offset: Option<i32>,
+    finished_ms: Option<u64>,
+    exit_code: Option<u32>,
+    error: Option<String>,
+}
+
+impl Caption {
+    fn new(run: &Run, offset: Option<i32>) -> Self {
+        Self {
+            started_ms: run.started_ms,
+            offset,
+            finished_ms: run.finished_ms,
+            exit_code: run.exit_code,
+            error: run.error.clone(),
+        }
+    }
+
+    fn matches(&self, run: &Run, offset: Option<i32>) -> bool {
+        self.started_ms == run.started_ms
+            && self.offset == offset
+            && self.finished_ms == run.finished_ms
+            && self.exit_code == run.exit_code
+            && self.error == run.error
+    }
+}
+
+fn caption(run: &Run, time: Option<chrono::DateTime<chrono::Local>>) -> String {
+    let time = time
+        .map(|time| time.format("%Y-%m-%d %H:%M:%S").to_string())
         .unwrap_or_default();
     let status = if run.finished_ms.is_none() {
         "Running".into()
@@ -45,40 +73,47 @@ fn caption(run: &Run) -> String {
 }
 
 pub(super) fn reconcile(world: &mut World, owner: Entity) {
-    let castle = world.get::<CommandCastle>(owner).unwrap();
-    let history = castle.history;
-    let runs = castle.runs.clone();
-    let removed: Vec<_> = castle
-        .entries
-        .keys()
-        .filter(|id| !runs.iter().any(|run| &run.id == *id))
-        .cloned()
-        .collect();
-    for id in removed {
-        let entry = world
-            .get_mut::<CommandCastle>(owner)
-            .unwrap()
-            .entries
-            .remove(&id)
-            .unwrap();
-        world.despawn(entry.root);
-    }
-    let mut order = Vec::new();
+    let _measurement =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeCommandHistory);
+    // Transfer the owned view model for this synchronous reconciliation instead
+    // of cloning scripts, directories and error strings for every history update.
+    let (history, runs, mut entries) = {
+        let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+        (
+            castle.history,
+            std::mem::take(&mut castle.runs),
+            std::mem::take(&mut castle.entries),
+        )
+    };
+    let ids: std::collections::HashSet<_> = runs.iter().map(|run| run.id.as_str()).collect();
+    entries.retain(|id, entry| {
+        if ids.contains(id.as_str()) {
+            true
+        } else {
+            world.despawn(entry.root);
+            false
+        }
+    });
+    let mut order = Vec::with_capacity(runs.len());
     for run in &runs {
-        if let Some(entry) = world
-            .get::<CommandCastle>(owner)
-            .unwrap()
-            .entries
-            .get(&run.id)
-        {
-            let (root, label, stop) = (entry.root, entry.label, entry.stop);
-            panel::status(world, label, caption(run));
-            world.get_mut::<Node>(stop).unwrap().display = if run.finished_ms.is_none() {
-                Display::Flex
-            } else {
-                Display::None
-            };
-            order.push(root);
+        let time = chrono::DateTime::from_timestamp_millis(run.started_ms as i64)
+            .map(|time| time.with_timezone(&chrono::Local));
+        let offset = time.as_ref().map(|time| time.offset().local_minus_utc());
+        if let Some(entry) = entries.get_mut(&run.id) {
+            if !entry.caption.matches(run, offset) {
+                panel::status(world, entry.label, caption(run, time));
+                let display = if run.finished_ms.is_none() {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+                let mut node = world.get_mut::<Node>(entry.stop).unwrap();
+                if node.display != display {
+                    node.display = display;
+                }
+                entry.caption = Caption::new(run, offset);
+            }
+            order.push(entry.root);
             continue;
         }
         let root = panel::column(world, history);
@@ -87,7 +122,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             world,
             controls,
             owner,
-            &caption(run),
+            &caption(run, time),
             Control::Toggle(run.id.clone()),
         );
         let label = world.get::<Children>(button).unwrap()[0];
@@ -105,23 +140,23 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         };
         let content = panel::column(world, root);
         world.get_mut::<Node>(content).unwrap().display = Display::None;
-        world
-            .get_mut::<CommandCastle>(owner)
-            .unwrap()
-            .entries
-            .insert(
-                run.id.clone(),
-                Entry {
-                    root,
-                    label,
-                    stop,
-                    content,
-                    open: false,
-                },
-            );
+        entries.insert(
+            run.id.clone(),
+            Entry {
+                root,
+                label,
+                stop,
+                content,
+                open: false,
+                caption: Caption::new(run, offset),
+            },
+        );
         order.push(root);
     }
-    world.entity_mut(history).replace_children(&order);
+    crate::native::retained::order(world, history, order);
+    let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
+    castle.runs = runs;
+    castle.entries = entries;
 }
 
 pub(super) fn toggle(world: &mut World, owner: Entity, id: &str) -> Result<(), String> {

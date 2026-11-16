@@ -5,12 +5,13 @@ use crate::native::{
     sand_store::{PreviewKind, PreviewSource},
 };
 use bevy::ecs::{
+    entity::{EntityHashMap, EntityHashSet},
     entity_disabling::Disabled,
     query::{Allow, QueryData},
     system::SystemParam,
 };
+use bevy::platform::collections::HashMap;
 use std::{
-    collections::{HashMap, HashSet},
     sync::atomic::{AtomicU64, Ordering},
     time::Instant,
 };
@@ -77,6 +78,7 @@ pub(crate) struct Tokens<'w, 's> {
     children: Query<'w, 's, &'static Children, Allow<Disabled>>,
     previews: Query<'w, 's, (Entity, &'static PreviewSource), Allow<Disabled>>,
     theme: Res<'w, ThemeSettings>,
+    changed_text: Query<'w, 's, (Entity, &'static SandText), (Changed<SandText>, Allow<Disabled>)>,
     changed: Query<
         'w,
         's,
@@ -86,7 +88,6 @@ pub(crate) struct Tokens<'w, 's> {
             Or<(
                 Changed<ChildOf>,
                 Changed<TokenOverrides>,
-                Changed<SandText>,
                 Changed<PreviewKind>,
                 Changed<PreviewSource>,
                 Changed<StoredSand>,
@@ -109,8 +110,9 @@ pub(crate) struct Tokens<'w, 's> {
 #[derive(Default)]
 struct Cache {
     values: HashMap<(Entity, usize), (TokenValue, &'static str)>,
-    kinds: HashMap<Entity, Option<SandStyleKind>>,
-    invalidated: HashSet<Entity>,
+    kinds: EntityHashMap<Option<SandStyleKind>>,
+    text_styles: EntityHashMap<(bool, TokenOverrides)>,
+    invalidated: EntityHashSet,
     initialized: bool,
     all_invalidated: bool,
     observed: bool,
@@ -127,8 +129,15 @@ macro_rules! removals {
             $($field: RemovedComponents<'w, 's, $component>,)*
         }
         impl Removed<'_, '_> {
-            fn collect(&mut self, entities: &mut Vec<Entity>) {
-                $(entities.extend(self.$field.read());)*
+            fn collect(&mut self, entities: &mut Vec<Entity>) -> bool {
+                let mut missed = false;
+                $(
+                    missed |= self.$field.messages().is_some_and(|messages| {
+                        self.$field.reader().missed_messages(messages) != 0
+                    });
+                    entities.extend(self.$field.read());
+                )*
+                missed
             }
         }
     };
@@ -150,9 +159,37 @@ impl Tokens<'_, '_> {
         self.cache.observed = crate::host::performance::enabled();
         self.cache.preparation = crate::host::performance::start();
         let mut pending: Vec<_> = self.changed.iter().collect();
-        self.removed.collect(&mut pending);
+        let missed_removals = self.removed.collect(&mut pending);
+        if missed_removals {
+            self.cache.text_styles.clear();
+        }
+        for &entity in &pending {
+            if !self
+                .inputs
+                .get(entity)
+                .is_ok_and(|input| input.text.is_some())
+            {
+                self.cache.text_styles.remove(&entity);
+            }
+        }
+        for (entity, text) in &self.changed_text {
+            if self
+                .cache
+                .text_styles
+                .get(&entity)
+                .is_none_or(|(editable, overrides)| {
+                    *editable != text.editable || overrides != &text.tokens
+                })
+            {
+                self.cache
+                    .text_styles
+                    .insert(entity, (text.editable, text.tokens.clone()));
+                pending.push(entity);
+            }
+        }
         self.cache.invalidated.clear();
-        self.cache.all_invalidated = !self.cache.initialized || self.theme.is_changed();
+        self.cache.all_invalidated =
+            !self.cache.initialized || self.theme.is_changed() || missed_removals;
         self.cache.initialized = true;
         if self.cache.all_invalidated {
             crate::host::performance::count(crate::host::performance::Count::StyleInvalidated);
@@ -197,6 +234,18 @@ impl Tokens<'_, '_> {
         self.cache.all_invalidated || self.cache.invalidated.contains(&entity)
     }
 
+    pub(crate) fn extend_invalidated(
+        &self,
+        entities: &mut EntityHashSet,
+        all: impl IntoIterator<Item = Entity>,
+    ) {
+        if self.cache.all_invalidated {
+            entities.extend(all);
+        } else {
+            entities.extend(self.cache.invalidated.iter().copied());
+        }
+    }
+
     pub(crate) fn prepare(&mut self, entity: Entity, tokens: impl IntoIterator<Item = Token>) {
         for token in tokens {
             let key = (entity, token as usize);
@@ -228,6 +277,9 @@ impl Tokens<'_, '_> {
         }
         if self.cache.kinds.capacity() > (self.cache.kinds.len() * 4).max(64) {
             self.cache.kinds.shrink_to_fit();
+        }
+        if self.cache.text_styles.capacity() > (self.cache.text_styles.len() * 4).max(64) {
+            self.cache.text_styles.shrink_to_fit();
         }
         crate::host::performance::record_since(
             crate::host::performance::Stage::NativeTokenPreparation,

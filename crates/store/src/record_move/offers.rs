@@ -329,7 +329,7 @@ fn map(row: sqlx::sqlite::SqliteRow) -> Result<Offer, StoreError> {
         peer: row.get("peer"),
         direction: row.get("direction"),
         state: row.get("state"),
-        preview: serde_json::from_str(&row.get::<String, _>("preview"))
+        preview: serde_json::from_str(row.get::<&str, _>("preview"))
             .map_err(|e| protocol(e.to_string()))?,
         created_at: row.get("created_at"),
         error: row.get("error"),

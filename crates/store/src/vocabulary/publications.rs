@@ -152,9 +152,7 @@ pub async fn publish_on(
     for concept in concepts {
         let dictionary = dictionary_on(connection, &concept).await?;
         bytes = bytes.saturating_add(
-            serde_json::to_vec(&dictionary)
-                .map_err(|error| invalid(&error.to_string()))?
-                .len(),
+            nucleus::json::encoded_len(&dictionary).map_err(|error| invalid(&error.to_string()))?,
         );
         if bytes > PACKAGE_LIMIT {
             return Err(invalid(

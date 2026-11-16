@@ -77,7 +77,7 @@ impl Engine {
         };
         let envelope: String = row.get("envelope");
         let result = async {
-        let reference: Value = serde_json::from_str(&row.get::<String,_>("reference"))?;
+        let reference: Value = serde_json::from_str(row.get::<&str,_>("reference"))?;
         let access = self.social_private_access(context, vec![envelope.clone()]).await?;
         if reference["mailbox"] != access.mailbox {
             return Err(invalid("Discard waits for the original device's mailbox authority; a fresh account cannot sign for its old mailbox"));

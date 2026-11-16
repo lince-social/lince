@@ -344,9 +344,8 @@ async fn search_scoped(
                     )
                     .ok();
                 if filter.matches(announcement.as_ref()) {
-                    bytes += serde_json::to_vec(&row)
-                        .map_err(|error| StoreError::Protocol(error.to_string()))?
-                        .len();
+                    bytes += nucleus::json::encoded_len(&row)
+                        .map_err(|error| StoreError::Protocol(error.to_string()))?;
                     if bytes > nucleus::social::MAX_FRAME_BYTES - 1024 {
                         return Ok(result);
                     }

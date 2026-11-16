@@ -8,9 +8,81 @@ struct AuthoredEvents {
 }
 
 #[derive(Component, Clone)]
-struct Routes {
-    edits: Edits,
+struct Routes(Arc<Routing>);
+
+#[derive(Default)]
+struct EventRoute {
+    behaviors: Vec<String>,
+    links: Vec<String>,
+}
+
+struct Routing {
+    behaviors: BTreeMap<String, api::authoring::Behavior>,
+    links: BTreeMap<String, api::authoring::Link>,
+    removed: BTreeSet<String>,
     entities: BTreeMap<String, Entity>,
+    events: BTreeMap<String, BTreeMap<String, EventRoute>>,
+}
+
+impl Routing {
+    fn matches(&self, lookup: &BTreeMap<String, Entity>, edits: &Edits) -> bool {
+        self.entities == *lookup
+            && self.behaviors == edits.behaviors
+            && self.links == edits.links
+            && self.removed.iter().map(String::as_str).eq(edits
+                .parts
+                .iter()
+                .filter_map(|(id, edit)| edit.removed.then_some(id.as_str())))
+    }
+
+    fn prepare(lookup: &BTreeMap<String, Entity>, edits: &Edits) -> Self {
+        let _preparation =
+            engine::performance::Span::new("native-canvas-authoring-route-preparation");
+        crate::host::performance::count(
+            crate::host::performance::Count::CanvasAuthoringRouteRebuilds,
+        );
+        let mut events = BTreeMap::<String, BTreeMap<String, EventRoute>>::new();
+        for (id, behavior) in &edits.behaviors {
+            if behavior.enabled {
+                events
+                    .entry(behavior.part.clone())
+                    .or_default()
+                    .entry(behavior.event.clone())
+                    .or_default()
+                    .behaviors
+                    .push(id.clone());
+            }
+        }
+        for (id, link) in &edits.links {
+            if link.enabled {
+                events
+                    .entry(link.from.clone())
+                    .or_default()
+                    .entry(link.event.clone())
+                    .or_default()
+                    .links
+                    .push(id.clone());
+            }
+        }
+        Self {
+            behaviors: edits.behaviors.clone(),
+            links: edits.links.clone(),
+            removed: edits
+                .parts
+                .iter()
+                .filter_map(|(id, edit)| edit.removed.then(|| id.clone()))
+                .collect(),
+            entities: lookup.clone(),
+            events,
+        }
+    }
+
+    fn names(&self, part: &str) -> impl Iterator<Item = &String> {
+        self.events
+            .get(part)
+            .into_iter()
+            .flat_map(|events| events.keys())
+    }
 }
 
 pub(super) fn install(
@@ -21,14 +93,12 @@ pub(super) fn install(
 ) {
     let changed = world
         .get::<Routes>(host)
-        .is_none_or(|routes| routes.edits != *edits || routes.entities != *lookup);
+        .is_none_or(|routes| !routes.0.matches(lookup, edits));
     if !changed {
         return;
     }
-    world.entity_mut(host).insert(Routes {
-        edits: edits.clone(),
-        entities: lookup.clone(),
-    });
+    let routes = Arc::new(Routing::prepare(lookup, edits));
+    world.entity_mut(host).insert(Routes(routes.clone()));
     for (id, entity) in lookup {
         let original = world
             .get::<AuthoredEvents>(*entity)
@@ -46,46 +116,24 @@ pub(super) fn install(
                     continue;
                 }
                 if let Some(routes) = world.get::<Routes>(*scope) {
-                    names.extend(
-                        routes
-                            .edits
-                            .behaviors
-                            .values()
-                            .filter(|behavior| behavior.enabled && &behavior.part == target)
-                            .map(|behavior| behavior.event.clone()),
-                    );
-                    names.extend(
-                        routes
-                            .edits
-                            .links
-                            .values()
-                            .filter(|link| link.enabled && &link.from == target)
-                            .map(|link| link.event.clone()),
-                    );
+                    names.extend(routes.0.names(target).cloned());
                 }
             }
         }
-        names.extend(
-            edits
-                .behaviors
-                .values()
-                .filter(|behavior| behavior.enabled && &behavior.part == id)
-                .map(|behavior| behavior.event.clone()),
-        );
-        names.extend(
-            edits
-                .links
-                .values()
-                .filter(|link| link.enabled && &link.from == id)
-                .map(|link| link.event.clone()),
-        );
-        world
-            .entity_mut(*entity)
-            .insert(crate::native::scoped_events::EventListener(
-                names.into_iter().collect(),
-            ));
+        names.extend(routes.names(id).cloned());
+        let names: Vec<_> = names.into_iter().collect();
+        if world
+            .get::<crate::native::scoped_events::EventListener>(*entity)
+            .is_none_or(|listener| listener.0 != names)
+        {
+            world
+                .entity_mut(*entity)
+                .insert(crate::native::scoped_events::EventListener(names));
+        }
         if let Some(mut events) = world.get_mut::<AuthoredEvents>(*entity) {
-            events.scopes.insert(host, id.clone());
+            if events.scopes.get(&host) != Some(id) {
+                events.scopes.insert(host, id.clone());
+            }
         } else {
             world
                 .entity_mut(*entity)
@@ -133,46 +181,49 @@ fn activate(
 }
 
 pub(super) fn fire(world: &mut World, host: Entity, part: &str, event: &str) {
+    let _event = engine::performance::Span::new("native-canvas-authoring-event");
     if crate::native::laboratory::suspended(world, host) {
         return;
     }
-    let Some(routes) = world.get::<Routes>(host).cloned() else {
+    let Some(routes) = world.get::<Routes>(host).map(|routes| routes.0.clone()) else {
         return;
     };
-    let mut pending = std::collections::VecDeque::from([(part.to_string(), event.to_string())]);
+    if routes.removed.contains(part)
+        || routes
+            .events
+            .get(part)
+            .is_none_or(|events| !events.contains_key(event))
+    {
+        return;
+    }
+    let mut pending = std::collections::VecDeque::from([(part, event)]);
     let mut visited = BTreeSet::new();
     while let Some((part, event)) = pending.pop_front() {
-        if !visited.insert((part.clone(), event.clone())) || visited.len() > 256 {
+        if !visited.insert((part, event)) || visited.len() > 256 {
             continue;
         }
-        let Some(entity) = routes.entities.get(&part).copied() else {
+        let Some(entity) = routes.entities.get(part).copied() else {
             continue;
         };
-        if world.get_entity(entity).is_err()
-            || routes
-                .edits
-                .parts
-                .get(&part)
-                .is_some_and(|edit| edit.removed)
-        {
+        if world.get_entity(entity).is_err() || routes.removed.contains(part) {
             continue;
         }
-        for behavior in
-            routes.edits.behaviors.values().filter(|behavior| {
-                behavior.enabled && behavior.part == part && behavior.event == event
-            })
-        {
-            if let Ok(action) = serde_json::from_value(behavior.action.clone()) {
+        let Some(selected) = routes.events.get(part).and_then(|events| events.get(event)) else {
+            continue;
+        };
+        for id in &selected.behaviors {
+            let behavior = &routes.behaviors[id];
+            // Deserialize at invocation as before: action defaults and current
+            // execution/authority context must not be frozen at installation.
+            if let Ok(action) =
+                <engine::actions::Action as serde::Deserialize>::deserialize(&behavior.action)
+            {
                 crate::native::component_push::composition::Invoke(action).apply(world, entity);
             }
         }
-        for link in routes
-            .edits
-            .links
-            .values()
-            .filter(|link| link.enabled && link.from == part && link.event == event)
-        {
-            pending.push_back((link.to.clone(), link.receive.clone()));
+        for id in &selected.links {
+            let link = &routes.links[id];
+            pending.push_back((link.to.as_str(), link.receive.as_str()));
         }
     }
 }

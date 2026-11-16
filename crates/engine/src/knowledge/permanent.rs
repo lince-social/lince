@@ -202,7 +202,7 @@ impl Engine {
             let baseline=record.map(|row|json!({"head":row.get::<String,_>("head"),"body":row.get::<String,_>("body")}));
             let saved = store::knowledge::payload_on(&mut tx, &record_uid).await?;
             let entry = json!({"record_uid":record_uid,"item":item,"mappings":relevant,"definitions":definitions.into_values().collect::<Vec<_>>(),"baseline":baseline,"previous_payload":saved.as_ref().map(|saved|store::knowledge::fingerprint(saved.to_string().as_bytes()))});
-            total_bytes += serde_json::to_vec(&entry)?.len();
+            total_bytes += nucleus::json::encoded_len(&entry)?;
             entries.push(entry);
         }
         let review = nucleus::new_uid("kp");
@@ -222,7 +222,7 @@ impl Engine {
         let owner = store::vocabulary::terminology_owner(actor);
         let mut tx = store::write_tx(&self.store.pool).await?;
         let row=store::sqlx::query("SELECT content,applied FROM knowledge_review WHERE uid=? AND owner_key=? AND kind='save'").bind(review).bind(owner).fetch_optional(&mut *tx).await?.ok_or_else(||invalid("Knowledge save preview unavailable"))?;
-        let preview: Value = serde_json::from_str(&row.get::<String, _>("content"))?;
+        let preview: Value = serde_json::from_str(row.get::<&str, _>("content"))?;
         let organ = preview["organ_uid"]
             .as_str()
             .ok_or_else(|| invalid("Knowledge preview has no destination"))?;

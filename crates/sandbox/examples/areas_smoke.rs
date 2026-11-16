@@ -158,7 +158,7 @@ fn exercise(world: &mut World) {
             world
                 .entity_mut(sand)
                 .insert(lince_sandbox::area::RecordProperties(
-                    serde_json::json!({"quantity":0}),
+                    serde_json::json!({"quantity":0}).into(),
                 ));
         }
         86 => {

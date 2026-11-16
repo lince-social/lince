@@ -144,7 +144,7 @@ pub fn validate_route(document: &CertifiedRoute, now: i64) -> Result<(), EngineE
             &signing_bytes("reply-route", document)?,
             &document.signature,
         )
-        || serde_json::to_vec(document)?.len() > 8192
+        || nucleus::json::encoded_len(document)? > 8192
     {
         return Err(invalid("Invalid, oversized or expired private reply route"));
     }
@@ -192,7 +192,7 @@ pub fn validate_delivery(document: &PrivateDelivery, now: i64) -> Result<String,
     } else {
         MAX_ENVELOPE_BYTES
     };
-    if serde_json::to_vec(document)?.len() > limit {
+    if nucleus::json::encoded_len(document)? > limit {
         return Err(invalid(
             "The private delivery exceeds its envelope size limit",
         ));

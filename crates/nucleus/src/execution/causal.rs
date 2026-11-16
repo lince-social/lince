@@ -96,7 +96,7 @@ impl Trace {
             return Ok(());
         }
         let step = &mut self.links[index].step;
-        let size = serde_json::to_vec(&change).map_err(|_| ())?.len() as u64;
+        let size = crate::json::encoded_len(&change).map_err(|_| ())? as u64;
         if self.bytes.saturating_add(size) > limit {
             return Err(());
         }
@@ -198,7 +198,7 @@ impl Trace {
         }
         self.bytes = self
             .bytes
-            .saturating_add(serde_json::to_vec(&step).map_err(|_| ())?.len() as u64);
+            .saturating_add(crate::json::encoded_len(&step).map_err(|_| ())? as u64);
         if self.bytes > byte_limit {
             return Err(());
         }

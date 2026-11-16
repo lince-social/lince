@@ -25,7 +25,7 @@ impl Default for Draft {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Source,
     Term,
@@ -72,7 +72,7 @@ impl Action for Open {
                     view.serving.kind = self.kind;
                     view.serving.scope = self.scope;
                     view.generation = view.generation.wrapping_add(1);
-                    view.result = Value::Null;
+                    view.result = Snapshot::default();
                     view.serving.focused = true;
                     super::render(world, owner);
                 }
@@ -133,7 +133,7 @@ pub(super) fn request(view: &View, command: &UiCommand) -> Result<Request, Strin
                 return Err("Preview the exact document and serving conditions first".into());
             }
             let review: model::Review =
-                serde_json::from_value(view.result["review"].clone()).map_err(|e| e.to_string())?;
+                decode(&view.result["review"]).map_err(|e| e.to_string())?;
             let expected_review = review.hash()?;
             if review.person != view.person
                 || review.request != selection(view)?
@@ -173,7 +173,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                 };
                 view.serving.scope = Scope::Fixed;
                 view.generation = view.generation.wrapping_add(1);
-                view.result = Value::Null;
+                view.result = Snapshot::default();
                 view.serving.page = 0;
             }
             UiCommand::Scope => {
@@ -182,7 +182,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                     Scope::Recipe => Scope::Fixed,
                 };
                 view.generation = view.generation.wrapping_add(1);
-                view.result = Value::Null;
+                view.result = Snapshot::default();
                 view.serving.page = 0;
             }
             UiCommand::Page(page) => view.serving.page = *page,
@@ -192,8 +192,8 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
         return;
     }
     if matches!(command, UiCommand::Copy) {
-        let document = world.get::<View>(owner).unwrap().result["review"]["artifact"].clone();
-        let result = serde_json::from_value::<Artifact>(document)
+        let document = &world.get::<View>(owner).unwrap().result["review"]["artifact"];
+        let result = decode::<Artifact>(document)
             .map_err(|e| e.to_string())
             .and_then(|artifact| artifact.bytes())
             .and_then(|bytes| String::from_utf8(bytes).map_err(|e| e.to_string()))
@@ -343,24 +343,20 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 result["artifact_hash"], result["review"]["expires_at"]
             ),
         );
-        let document =
-            serde_json::to_string_pretty(&result["review"]["artifact"]).unwrap_or_default();
-        let total = document.chars().count().div_ceil(4096).max(1);
+        let document = result
+            .text(JsonPart::ReviewedArtifact)
+            .expect("serving result is an object");
+        let total = document
+            .characters()
+            .div_ceil(snapshot::PAGE_CHARACTERS)
+            .max(1);
         let page = draft.page.min(total - 1);
         label(
             world,
             owner,
             &format!("Exact document · page {} of {}", page + 1, total),
         );
-        label(
-            world,
-            owner,
-            &document
-                .chars()
-                .skip(page * 4096)
-                .take(4096)
-                .collect::<String>(),
-        );
+        label(world, owner, document.page(page));
         if page > 0 {
             button(
                 world,

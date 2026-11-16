@@ -3,15 +3,68 @@ mod sync;
 
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::plugins::{
-    Binding, BindingStatus, Catalog, Command, Contribution, Delivery, Direction,
+    Binding, BindingStatus, Catalog, Command, Contribution, Delivery, Direction, Package,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use store::sqlx::Row;
 
 fn invalid(message: impl Into<String>) -> EngineError {
     EngineError::Consequence(message.into())
+}
+
+// A catalog is a descriptive snapshot, never authorization to execute a plugin.
+// Resolve its dependency closure once from that snapshot rather than invoking
+// the live approval reader (and cloning the whole host catalog) for each row.
+fn catalog_availability(packages: &[Package], approvals: &[(String, String)]) -> Vec<bool> {
+    let _timing = crate::performance::Span::new("sync-plugin-catalog-dependencies");
+    let approvals: HashMap<_, _> = approvals
+        .iter()
+        .map(|(id, digest)| (id.as_str(), digest.as_str()))
+        .collect();
+    let indices: HashMap<_, _> = packages
+        .iter()
+        .enumerate()
+        .map(|(index, package)| (package.manifest.id.as_str(), index))
+        .collect();
+    let mut enabled: Vec<_> = packages
+        .iter()
+        .map(|package| {
+            approvals.get(package.manifest.id.as_str()).copied() == Some(package.digest.as_str())
+        })
+        .collect();
+    let mut dependents = vec![Vec::new(); packages.len()];
+    let mut edges = 0;
+    for (index, package) in packages.iter().enumerate() {
+        for dependency in package.manifest.compatibility.dependencies.keys() {
+            edges += 1;
+            if let Some(dependency) = indices.get(dependency.as_str()) {
+                dependents[*dependency].push(index);
+            } else {
+                enabled[index] = false;
+            }
+        }
+    }
+    let mut disabled: Vec<_> = enabled
+        .iter()
+        .enumerate()
+        .filter_map(|(index, enabled)| (!*enabled).then_some(index))
+        .collect();
+    while let Some(index) = disabled.pop() {
+        for &dependent in &dependents[index] {
+            if std::mem::replace(&mut enabled[dependent], false) {
+                disabled.push(dependent);
+            }
+        }
+    }
+    // As in the live reader, a cycle is acceptable when every reachable
+    // package exists and has its exact current digest approved.
+    crate::performance::add("sync-plugin-catalog-dependencies", edges);
+    enabled
 }
 
 fn digest(value: &Value) -> Result<String, EngineError> {
@@ -26,9 +79,9 @@ fn binding_row(row: &store::sqlx::sqlite::SqliteRow) -> Result<Binding, EngineEr
         uid: row.get("uid"),
         provider: row.get("provider"),
         name: row.get("name"),
-        settings: serde_json::from_str(&row.get::<String, _>("settings"))?,
+        settings: serde_json::from_str(row.get::<&str, _>("settings"))?,
         protein_uid: row.get("protein_uid"),
-        incoming_filter: serde_json::from_str(&row.get::<String, _>("incoming_filter"))?,
+        incoming_filter: serde_json::from_str(row.get::<&str, _>("incoming_filter"))?,
         direction: match row.get::<String, _>("direction").as_str() {
             "incoming" => Direction::Incoming,
             "outgoing" => Direction::Outgoing,
@@ -130,31 +183,34 @@ impl Engine {
     }
 
     pub async fn plugin_catalog(&self) -> Result<Catalog, EngineError> {
+        let _timing = crate::performance::Span::new("sync-plugin-catalog-await");
+        crate::performance::add("sync-plugin-catalog-reads", 1);
         let mut packages = self
             .plugins
             .get()
             .map(|host| host.packages())
             .unwrap_or_default();
-        for package in &mut packages {
-            package.enabled = self
-                .approved_plugin(&package.manifest.id)
-                .await
-                .is_ok_and(|digest| digest == package.digest);
+        crate::performance::add("sync-plugin-catalog-packages", packages.len() as u64);
+        let approved: Vec<(String, String)> =
+            store::sqlx::query_as("SELECT id,digest FROM plugin_package WHERE enabled=1")
+                .fetch_all(&self.store.pool)
+                .await?;
+        let availability = catalog_availability(&packages, &approved);
+        for (package, enabled) in packages.iter_mut().zip(availability) {
+            package.enabled = enabled;
         }
+        let enabled: HashSet<_> = packages
+            .iter()
+            .filter(|package| package.enabled)
+            .map(|package| package.manifest.id.as_str())
+            .collect();
         let mut diagnostics = self
             .plugins
             .get()
             .map(|host| host.diagnostics())
             .unwrap_or_else(|| vec!["Plugin host is unavailable on this Cell".into()]);
-        let approved: Vec<String> =
-            store::sqlx::query_scalar("SELECT id FROM plugin_package WHERE enabled=1")
-                .fetch_all(&self.store.pool)
-                .await?;
-        for id in approved {
-            if !packages
-                .iter()
-                .any(|package| package.manifest.id == id && package.enabled)
-            {
+        for (id, _) in approved {
+            if !enabled.contains(id.as_str()) {
                 diagnostics.push(format!(
                     "{id}: installed package is missing or changed; review its version"
                 ));
@@ -165,11 +221,10 @@ impl Engine {
         for row in rows {
             let binding = binding_row(&row)?;
             let mut status: String = row.get("status");
-            let available = binding.provider.split_once('/').is_some_and(|(plugin, _)| {
-                packages
-                    .iter()
-                    .any(|package| package.manifest.id == plugin && package.enabled)
-            });
+            let available = binding
+                .provider
+                .split_once('/')
+                .is_some_and(|(plugin, _)| enabled.contains(plugin));
             if !available {
                 status = "Plugin unavailable or disabled".into();
             }

@@ -72,9 +72,7 @@ pub fn text_ready_to_close(world: &mut World) -> bool {
             &bevy::text::EditableText,
         )>()
         .iter(world)
-        .any(|(record, text)| {
-            record.pending.is_some() || text.value().to_string() != record.confirmed
-        })
+        .any(|(record, text)| record.pending.is_some() || text.value() != record.confirmed.as_str())
 }
 
 pub fn cancel_close(world: &mut World) {
@@ -135,6 +133,7 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         .add_plugins(crate::native::workspace_sync::WorkspaceSyncPlugin)
         .add_plugins(crate::native::location::LocationPlugin)
         .add_plugins(crate::native::map_castle::MapPlugin)
+        .add_plugins(crate::native::kamalie::KamaliePlugin)
         .add_plugins(crate::native::visibility_castle::VisibilityCastlePlugin)
         .add_plugins(crate::native::trust_castle::TrustCastlePlugin)
         .add_plugins(crate::native::hand_camera::HandCameraPlugin)
@@ -286,7 +285,8 @@ mod tests {
                     id: crate::native::cell_bridge::RECORDS.into(),
                     rows: vec![
                         serde_json::json!({"uid":"record-a", "head":"Apple", "slug":"apple"}),
-                    ],
+                    ]
+                    .into(),
                 },
             ));
         app.update();

@@ -77,7 +77,7 @@ fn permission_refresh_keeps_identity_and_draft_and_ignores_the_old_subscription(
         owner,
         ServerMessage::Snapshot {
             id: "old-record".into(),
-            rows: vec![data.clone()],
+            rows: vec![data.clone()].into(),
         },
     );
     assert!(
@@ -91,7 +91,7 @@ fn permission_refresh_keeps_identity_and_draft_and_ignores_the_old_subscription(
         owner,
         ServerMessage::Snapshot {
             id: subscription,
-            rows: vec![data],
+            rows: vec![data].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -153,7 +153,7 @@ fn a_canonical_inspector_rejects_another_record_in_the_matching_subscription() {
         owner,
         ServerMessage::Snapshot {
             id: "own-record".into(),
-            rows: vec![serde_json::json!({"uid":other,"body":"Wrong description"})],
+            rows: vec![serde_json::json!({"uid":other,"body":"Wrong description"})].into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -195,7 +195,7 @@ fn ordinary_multi_record_views_still_remove_results_that_stop_matching() {
         .areas
         .get_mut(&owner)
         .unwrap();
-    state.data.clear();
+    state.data = Default::default();
     state.dirty = true;
     rows::reconcile(app.world_mut(), owner);
     assert!(app.world().get_entity(row).is_err());

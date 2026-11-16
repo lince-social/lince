@@ -58,7 +58,7 @@ async fn ordinary_rule_save_uses_the_real_cell_acknowledgement_and_reloads_befor
     editor::open(app.world_mut(), root, None, None, Some("org.example.Editor".into()));
     app.update();
     let owner = app.world_mut().query_filtered::<Entity, With<Editor>>().single(app.world()).unwrap();
-    let name = app.world().get::<Editor>(owner).unwrap().name.unwrap();
+    let name = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().name.unwrap();
     set(app.world_mut(), name, "Editor windows");
     EditChange::Flag(0).apply(app.world_mut(), owner);
     EditChange::Flag(0).apply(app.world_mut(), owner);
@@ -66,11 +66,11 @@ async fn ordinary_rule_save_uses_the_real_cell_acknowledgement_and_reloads_befor
     set(app.world_mut(), width, "1/2");
     app.update();
     editor::refresh(app.world_mut());
-    let save = app.world().get::<Editor>(owner).unwrap().save;
+    let save = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().save;
     assert!(app.world().get::<bevy::ui::InteractionDisabled>(save).is_none());
     app.world_mut().trigger(bevy::ui_widgets::Activate { entity: save });
-    until(&mut app, |world| world.get::<Editor>(owner).is_some_and(|state| !state.pending && state.revision == 1)).await;
-    let uid = app.world().get::<Editor>(owner).unwrap().uid.clone().unwrap();
+    until(&mut app, |world| world.get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).is_some_and(|state| !state.pending && state.revision == 1)).await;
+    let uid = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().uid.clone().unwrap();
     let stored = store::records::get_extension(&engine.store.pool, &uid, RULE_NAMESPACE).await.unwrap().unwrap();
     let rule: Rule = serde_json::from_value(stored).unwrap();
     assert_eq!(rule.properties.floating, Some(false));
@@ -78,7 +78,7 @@ async fn ordinary_rule_save_uses_the_real_cell_acknowledgement_and_reloads_befor
     until(&mut app, |world| world.get_resource::<Catalog>().is_some_and(|catalog| catalog.rules.ready
         && catalog.rules.entries.get(&uid).is_some_and(|entry| entry.payload.as_ref().is_ok_and(|payload| payload.revision() == 1)))).await;
     editor::refresh(app.world_mut());
-    let state = app.world().get::<Editor>(owner).unwrap();
+    let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
     assert_eq!(state.raw.as_ref(), app.world().resource::<Catalog>().rules.entries.get(&uid).map(|entry| &entry.value));
     assert!(app.world().get::<Text>(state.status).unwrap().0.starts_with("Opening preferences saved."));
     assert_eq!(active_order(app.world()), vec![uid.clone()]);
@@ -103,20 +103,20 @@ async fn external_record_change_preserves_the_dirty_editor_until_explicit_reload
     until(&mut app, |world| world.get_resource::<Catalog>().is_some_and(|catalog| catalog.sender.is_some())).await;
     editor::open(app.world_mut(), root, Some(uid.clone()), None, None);
     let owner = app.world_mut().query_filtered::<Entity, With<Editor>>().single(app.world()).unwrap();
-    until(&mut app, |world| world.get::<Editor>(owner).is_some_and(|editor| editor.loaded && !editor.reload)).await;
+    until(&mut app, |world| world.get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).is_some_and(|editor| editor.loaded && !editor.reload)).await;
     EditChange::Flag(2).apply(app.world_mut(), owner);
     rule.revision = 2;
     rule.properties.floating = Some(true);
     engine.act(engine::actions::Action::SetExtension { target: uid.clone(), namespace: RULE_NAMESPACE.into(), fds: serde_json::to_value(&rule).unwrap() }, None).await.unwrap();
     until(&mut app, |world| world.get_resource::<Catalog>().and_then(|catalog| catalog.rules.entries.get(&uid)).is_some_and(|entry| entry.payload.as_ref().is_ok_and(|payload| payload.revision() == 2))).await;
-    let state = app.world().get::<Editor>(owner).unwrap();
+    let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
     assert_eq!(state.form.flags[2], Some(true));
     assert!(app.world().get::<bevy::ui::InteractionDisabled>(state.save).is_some());
     let status = app.world().get::<Text>(state.status).unwrap().0.clone();
     assert!(status.contains("changed"));
     EditChange::Reload.apply(app.world_mut(), owner);
-    until(&mut app, |world| world.get::<Editor>(owner).is_some_and(|editor| !editor.reloading && editor.revision == 2)).await;
-    let state = app.world().get::<Editor>(owner).unwrap();
+    until(&mut app, |world| world.get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).is_some_and(|editor| !editor.reloading && editor.revision == 2)).await;
+    let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
     assert_eq!(state.form.flags, [Some(true), None, None]);
     assert!(!state.reload);
 }

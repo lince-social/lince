@@ -1,6 +1,8 @@
 # Using Park
 
-Park runs Lince's canvas as a native Wayland compositor. Sandbox remains the ordinary windowed Lince application. Park targets one graphics device, with preferred modes, horizontal placement, and scale 1 as defaults. Local mode/position/fractional-scale preferences now have source implementations awaiting checks. X11 programs need a native Wayland mode; XWayland is not included.
+Park runs Lince's canvas as a native Wayland compositor. Sandbox remains the ordinary windowed Lince application. Park targets one graphics device, with preferred modes, horizontal placement, and scale 1 as defaults. Local preferences configure mode, position and fractional scale. X11 programs need a native Wayland mode; XWayland is not included.
+
+This is a usage reference. Current performance work, source changes and unresolved acceptance are tracked in [Overhaul.md](../../trails/lince/park/Overhaul.md), not in this guide.
 
 ## Start a session
 
@@ -82,7 +84,7 @@ The `input-method` capability permits the standard input-method-v2 and virtual-k
 
 The `capture` capability permits the standard ext output/toplevel capture-source and image-copy capture managers. A provider needing window discovery should also request `window-list`. Park reuses the isolated upstream helper backport under `crates/vendor/smithay-capture`, with local lifecycle corrections and connection authorization. The source now includes asynchronous GPU export to SHM, selected-window capture, paired presented output snapshots, cursor images/metadata and optional cursor painting. It protects capture on lock and source removal, and pauses during seat inactivity. Compilation, GPU pixel probes, output/cursor integration and provider acceptance remain outstanding; screenshot/screen-sharing compatibility is unverified. The external portal backend owns consent, selection and PipeWire. Helper license/provenance are included in the unexecuted Nix package and release-artifact definitions.
 
-`output-control` permits the wlr output-management protocol. Its source implementation connects complete test/apply transactions to the nested virtual outputs and the physical connector/mode backend, retaining disabled heads for later re-enabling. It supports advertised modes, nonnegative positions and fractional scales, rejects unsupported transforms/custom modes, and keeps at least one output enabled. Physical requests use a validated plan, wait for outstanding presentation, and attempt DRM restoration if applying the plan fails. Test requests validate topology/layout without modesetting; a successful test cannot guarantee that the kernel will accept a later apply. Runtime changes remain in this session's memory; profile storage and the display settings UI remain external. This adapter, its rollback behavior, and its regression sources have not been compiled or executed.
+`output-control` permits the wlr output-management protocol. Its implementation connects complete test/apply transactions to the nested virtual outputs and the physical connector/mode backend, retaining disabled heads for later re-enabling. It supports advertised modes, nonnegative positions and fractional scales, rejects unsupported transforms/custom modes, and keeps at least one output enabled. Physical requests use a validated plan, wait for outstanding presentation, and attempt DRM restoration if applying the plan fails. Test requests validate topology/layout without modesetting; a successful test cannot guarantee that the kernel will accept a later apply.
 
 Local `outputs` preferences are keyed by connector name, for example:
 
@@ -95,9 +97,9 @@ Local `outputs` preferences are keyed by connector name, for example:
 }
 ```
 
-Scale is between 0.5 and 4 in increments of 1/120. Positions are currently nonnegative logical coordinates; an omitted position continues horizontal placement. `refresh_mhz` means millihertz, so 60000 requests approximately 60 Hz. Explicit modes must be offered by the connector. These preferences are loaded at physical-session startup; they are not a live output-control protocol or a display-profile service. The mixed-scale rendering/input path still needs acceptance evidence and any resulting corrections.
+Scale is between 0.5 and 4 in increments of 1/120. Positions are currently nonnegative logical coordinates; an omitted position continues horizontal placement. `refresh_mhz` means millihertz, so 60000 requests approximately 60 Hz. Explicit modes must be offered by the connector. These preferences are loaded at physical-session startup; they are not a live output-control protocol or a display-profile service.
 
-Layer-shell bars specify their own exclusive zones. Park uses Smithay's arrangement to shrink the canvas's usable rectangle; bar heights and positions are not hardcoded. Session-lock clients own their password UI. Park owns input/render protection and remains locked if the locker disconnects. Do not rely on the physical lock path until it has passed the isolated hardware checks listed in the [remaining plan](../../anicca/Park.md).
+Layer-shell bars specify their own exclusive zones. Park uses Smithay's arrangement to shrink the canvas's usable rectangle; bar heights and positions are not hardcoded. Session-lock clients own their password UI. Park owns input/render protection and remains locked if the locker disconnects. Candidate-specific acceptance and outstanding checks belong to the [current report](../../trails/lince/park/Overhaul.md).
 
 Restart-dependent updates and encrypted owner backups require leaving Park. They cannot silently restart the active desktop; the backup panel explains how to use Sandbox after logout.
 
@@ -114,7 +116,7 @@ The flake provides `packages.<system>.lince-park` and an opt-in module:
 
 This adds the executable and a **Lince** Wayland session entry to an existing display manager. It does not select the default session, enable a display manager, or select shell services. Device access goes through libseat and the system's existing seat/session setup. `LINCE_PARK_DRM_DEVICE` can select a particular DRM device path.
 
-An unapplied [personal rollout proposal](park-personal-rollout.md) records the inspected configurations and the minimal module import. It does not change either personal repository or activate the system.
+The [personal integration reference](park-personal-rollout.md) records the module import and session-provider details. It is not a pending first-install task.
 
 ## Checks and current limits
 
@@ -128,4 +130,4 @@ cargo xtask park nested --outputs 2 --smoke
 
 The development checks cover two-output canvas rendering, native Wayland window lifecycles, bar reservations, fullscreen changes, input handoff, and logout cancellation after a failed save. Firefox has also rendered as a real client through the nested display using a separate temporary profile.
 
-Physical output changes, VT switching, suspend/resume, and lock presentation need validation on an isolated seat. Fractional output configuration, pointer constraints, shortcut/idle inhibition, helper authorization, window/workspace management, IME/native-editor composition, native file-drop transport and capture export have source implementations awaiting compilation and testing. Remaining source audits, integration probes and provider checks are tracked in the [remaining plan](../../anicca/Park.md). See the [validation handoff](park-validation.md) for later automated preparation. No new checks or sessions were run in the source-only round.
+Use the [current report](../../trails/lince/park/Overhaul.md) for completed evidence and remaining source, integration and physical acceptance work. The [validation reference](park-validation.md) describes reusable procedures; it does not authorize running them during the current source-only phase or establish acceptance for a new candidate.

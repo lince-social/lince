@@ -68,14 +68,14 @@ impl Transport {
 fn draft(app: &mut App, root: Entity, title: &str) -> Entity {
     editor::open(app.world_mut(), root, None, None, Some("org.example.Editor".into()));
     let owner = shortcuts::keyboard_owner(app.world()).unwrap();
-    let state = app.world().get::<Editor>(owner).unwrap();
+    let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
     let name = state.name.unwrap();
     let width = width(app, owner);
     set(app.world_mut(), name, title);
     set(app.world_mut(), width, "1/2");
     app.update();
     EditChange::Save.apply(app.world_mut(), owner);
-    assert!(app.world().get::<Editor>(owner).unwrap().pending);
+    assert!(app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().pending);
     owner
 }
 
@@ -93,7 +93,7 @@ fn width(app: &mut App, owner: Entity) -> Entity {
     }).unwrap().0
 }
 
-fn proposed(app: &App, owner: Entity) -> String { app.world().get::<Editor>(owner).unwrap().uid.clone().unwrap() }
+fn proposed(app: &App, owner: Entity) -> String { app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().uid.clone().unwrap() }
 
 async fn created(transport: &mut Transport, app: &mut App, owner: Entity) -> Vec<ServerMessage> {
     let request = transport.action(app).await;
@@ -152,19 +152,19 @@ async fn an_acknowledged_creation_retries_the_same_record_after_queue_denial_rev
                 }
                 _ => {
                     let deadline = Instant::now() + Duration::from_secs(15);
-                    while app.world().get::<Editor>(owner).unwrap().pending {
+                    while app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().pending {
                         app.update();
                         assert!(Instant::now() < deadline, "The real ten-second save deadline did not retire the pending mutation");
                         tokio::time::sleep(Duration::from_millis(5)).await;
                     }
-                    assert!(app.world().get::<Editor>(owner).unwrap().message.contains("timed out"));
+                    assert!(app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap().message.contains("timed out"));
                     let messages = transport.handle(request).await;
                     assert!(messages.iter().any(|message| matches!(message, ServerMessage::ActionOk { .. })));
                     Transport::deliver(&mut app, messages);
                 }
             }
         }
-        let state = app.world().get::<Editor>(owner).unwrap();
+        let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
         assert_eq!(state.uid.as_deref(), Some(uid.as_str()));
         assert!(!state.creating && !state.pending && state.reload);
         assert_eq!(state.form.properties(app.world()).unwrap().width, Some(nucleus::window_opening::Dimension::Fraction([1, 2])));
@@ -172,12 +172,12 @@ async fn an_acknowledged_creation_retries_the_same_record_after_queue_denial_rev
         assert!(app.world().get::<bevy::ui::InteractionDisabled>(state.save).is_some());
         assert!(active_order(app.world()).is_empty());
         EditChange::Reload.apply(app.world_mut(), owner);
-        transport.until(&mut app, |world| world.get::<Editor>(owner).is_some_and(|state| !state.reloading && !state.reload && state.loaded)).await;
+        transport.until(&mut app, |world| world.get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).is_some_and(|state| !state.reloading && !state.reload && state.loaded)).await;
         let width = width(&mut app, owner);
         set(app.world_mut(), width, "1/2");
         app.update();
         EditChange::Save.apply(app.world_mut(), owner);
-        transport.until(&mut app, |world| active_order(world) == vec![uid.clone()] && world.get::<Editor>(owner).is_some_and(|state| !state.pending && !state.needs_link)).await;
+        transport.until(&mut app, |world| active_order(world) == vec![uid.clone()] && world.get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).is_some_and(|state| !state.pending && !state.needs_link)).await;
         let saved: Rule = serde_json::from_value(store::records::get_extension(&engine.store.pool, &uid, RULE_NAMESPACE).await.unwrap().unwrap()).unwrap();
         assert_eq!(saved.properties.width, Some(nucleus::window_opening::Dimension::Fraction([1, 2])));
         assert_eq!(transport.creates, 1);
@@ -220,7 +220,7 @@ async fn a_real_late_save_cannot_link_rules_or_steal_focus_after_editor_view_cel
                 EditChange::Cancel.apply(app.world_mut(), owner);
                 editor::open(app.world_mut(), root, None, None, Some("another.application".into()));
                 let next = shortcuts::keyboard_owner(app.world()).unwrap();
-                let field = app.world().get::<Editor>(next).unwrap().name.unwrap();
+                let field = app.world().get::<Editor>(next).and_then(|editor| editor.0.as_ref()).unwrap().name.unwrap();
                 set(app.world_mut(), field, "Replacement draft");
                 replacement = Some((next, field));
             }
@@ -262,12 +262,12 @@ async fn a_real_late_save_cannot_link_rules_or_steal_focus_after_editor_view_cel
             assert_eq!(shortcuts::keyboard_owner(app.world()), Some(next));
             assert_eq!(app.world().resource::<InputFocus>().get(), Some(field));
             if change == 0 {
-                let state = app.world().get::<Editor>(next).unwrap();
+                let state = app.world().get::<Editor>(next).and_then(|editor| editor.0.as_ref()).unwrap();
                 assert!(state.uid.is_none() && !state.pending);
                 assert_eq!(app.world().get::<EditableText>(field).unwrap().value(), "Replacement draft");
             }
         } else {
-            let state = app.world().get::<Editor>(owner).unwrap();
+            let state = app.world().get::<Editor>(owner).and_then(|editor| editor.0.as_ref()).unwrap();
             assert_eq!(state.uid.as_deref(), Some(uid.as_str()));
             assert!(!state.pending && state.needs_link);
         }

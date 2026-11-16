@@ -774,9 +774,12 @@ fn apply(world: &mut World, plan: SurfacePlan) {
             || !super::view::spatial(world, root);
         let boundary = world.get::<super::rooms::Room>(entity).is_some()
             && world.get::<super::appearance::Material>(entity).is_none()
-            && crate::native::token_style::overrides(world, entity)
-                .0
-                .get(&crate::native::tokens::Token::SandBackground)
+            && crate::native::token_style::overrides_ref(world, entity)
+                .and_then(|overrides| {
+                    overrides
+                        .0
+                        .get(&crate::native::tokens::Token::SandBackground)
+                })
                 .is_some_and(|value| {
                     matches!(
                         value,

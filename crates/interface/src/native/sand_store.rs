@@ -24,6 +24,7 @@ pub enum SandKind {
     HandCamera,
     Video,
     Sync,
+    Kamalie,
     #[cfg(feature = "stuff")]
     Freedoom,
     Terminal,
@@ -34,7 +35,7 @@ pub enum SandKind {
 }
 
 impl SandKind {
-    pub const ALL: [Self; 17 + cfg!(feature = "stuff") as usize] = [
+    pub const ALL: [Self; 18 + cfg!(feature = "stuff") as usize] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
@@ -47,6 +48,7 @@ impl SandKind {
         Self::HandCamera,
         Self::Video,
         Self::Sync,
+        Self::Kamalie,
         #[cfg(feature = "stuff")]
         Self::Freedoom,
         Self::Terminal,
@@ -69,6 +71,7 @@ impl SandKind {
             Self::HandCamera => Tr::HandCamera.text(),
             Self::Video => Tr::Video.text(),
             Self::Sync => Tr::Sync.text(),
+            Self::Kamalie => "Kamalie",
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Freedoom",
             Self::Terminal => Tr::Terminal.text(),
@@ -92,6 +95,7 @@ impl SandKind {
             Self::HandCamera => Tr::HandCameraHelp.text(),
             Self::Video => Tr::VideoHelp.text(),
             Self::Sync => Tr::SyncHelp.text(),
+            Self::Kamalie => "A native dungeon of sticks, bushes and one-way passages.",
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
             Self::Terminal => Tr::TerminalHelp.text(),
@@ -112,6 +116,7 @@ impl SandKind {
             | Self::HandCamera
             | Self::Video
             | Self::Sync
+            | Self::Kamalie
             | Self::Terminal
             | Self::Organ
             | Self::Configuration
@@ -221,6 +226,7 @@ pub(crate) fn entry(
         | SandKind::HandCamera
         | SandKind::Video
         | SandKind::Sync
+        | SandKind::Kamalie
         | SandKind::Terminal
         | SandKind::Organ
         | SandKind::Configuration
@@ -253,6 +259,8 @@ pub(crate) fn entry(
             crate::native::operation::SIZE
         } else if kind == SandKind::Terminal {
             Vec2::new(820.0, 540.0)
+        } else if kind == SandKind::Kamalie {
+            crate::native::kamalie::SIZE
         } else if kind.is_panel() {
             Vec2::new(520.0, 540.0)
         } else {
@@ -589,6 +597,8 @@ fn spawn_with_source(
                     crate::native::operation::SIZE
                 } else if kind == SandKind::Terminal {
                     Vec2::new(820.0, 540.0)
+                } else if kind == SandKind::Kamalie {
+                    crate::native::kamalie::SIZE
                 } else if kind.is_panel() {
                     Vec2::new(520.0, 540.0)
                 } else if kind == SandKind::WorkTimer {
@@ -629,6 +639,7 @@ fn spawn_with_source(
         SandKind::HandCamera => Some(crate::native::hand_camera::populate(world, root, sand)),
         SandKind::Video => Some(crate::native::video_castle::populate(world, root, sand)),
         SandKind::Sync => Some(crate::native::sync_castle::populate(world, root, sand)),
+        SandKind::Kamalie => Some(crate::native::kamalie::populate(world, root, sand)),
         #[cfg(feature = "stuff")]
         SandKind::Freedoom => Some(crate::native::freedoom::populate(world, root, sand)),
         SandKind::Terminal => Some(crate::native::terminal::populate(world, root, sand)),

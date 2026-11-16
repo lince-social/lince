@@ -33,7 +33,7 @@ fn fixture() -> DemeterCastle {
     });
     state.selected_food = Some(id.clone());
     state.tab = Tab::Foods;
-    state.catalog = json!({"foods":[{"uid":id,"label":"Measured cooked food"}],"offers":[],"templates":[],"references":[],"plans":[],"vocabulary":{}});
+    state.catalog = json!({"foods":[{"uid":id,"label":"Measured cooked food"}],"offers":[],"templates":[],"references":[],"plans":[],"vocabulary":{}}).into();
     state
 }
 
@@ -129,7 +129,7 @@ fn drafts_are_specific_to_each_food_and_workspace_recovery_keeps_unfinished_valu
     state
         .drafts
         .insert(format!("{second}|offer:id"), other_offer.clone());
-    state.catalog["foods"]
+    state.catalog.edit()["foods"]
         .as_array_mut()
         .unwrap()
         .push(json!({"uid":second,"label":"Second food"}));
@@ -373,7 +373,7 @@ async fn native_workflow_saves_prices_solves_previews_and_accepts_through_the_ce
     let mut state = fixture();
     state.selected_food = Some(food.clone());
     state.config.foods[0].food = food;
-    state.catalog = Value::Null;
+    state.catalog = Value::Null.into();
     let owner = spawn(app.world_mut(), root, 1, DVec2::ZERO, state);
     crate::native::sand_panel::tests::settle(&mut app, |world| {
         world.get::<DemeterCastle>(owner).unwrap().catalog["foods"]

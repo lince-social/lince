@@ -2,22 +2,36 @@ use super::*;
 use bevy::{
     asset::RenderAssetUsages,
     math::DVec2,
-    mesh::{PrimitiveTopology, VertexAttributeValues},
+    mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
 };
-use std::hash::{Hash, Hasher};
+use std::borrow::Cow;
 
 pub(super) struct Geometry {
     original: Handle<Mesh>,
-    owned: Option<(Handle<Mesh>, Handle<Mesh>, u64)>,
+    owned: Option<(Handle<Mesh>, Handle<Mesh>, Inputs<'static>)>,
 }
 
-struct Inputs {
-    positions: Vec<Vec3>,
-    uvs: Vec<Vec2>,
-    indices: Vec<usize>,
-    outline: Vec<DVec2>,
+#[derive(PartialEq)]
+struct Inputs<'a> {
+    positions: Cow<'a, [[f32; 3]]>,
+    uvs: Cow<'a, [[f32; 2]]>,
+    indices: Option<Cow<'a, Indices>>,
+    size: Vec2,
+    radii: [f32; 4],
     clip: Rect,
-    signature: u64,
+}
+
+impl Inputs<'_> {
+    fn into_owned(self) -> Inputs<'static> {
+        Inputs {
+            positions: Cow::Owned(self.positions.into_owned()),
+            uvs: Cow::Owned(self.uvs.into_owned()),
+            indices: self.indices.map(|indices| Cow::Owned(indices.into_owned())),
+            size: self.size,
+            radii: self.radii,
+            clip: self.clip,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -70,7 +84,7 @@ fn outline(size: Vec2, radii: [f32; 4]) -> Vec<DVec2> {
     polygon
 }
 
-fn inputs(world: &World, owner: Entity, face: Entity) -> Option<Inputs> {
+fn inputs(world: &World, owner: Entity, face: Entity) -> Option<Inputs<'_>> {
     let node = world.get::<ComputedNode>(owner)?;
     let size = node.size();
     if size.min_element() <= 0.0 || !size.is_finite() {
@@ -102,63 +116,47 @@ fn inputs(world: &World, owner: Entity, face: Entity) -> Option<Inputs> {
     if positions.len() != uvs.len() {
         return None;
     }
-    let positions: Vec<_> = positions.iter().copied().map(Vec3::from_array).collect();
-    let uvs: Vec<_> = uvs.iter().copied().map(Vec2::from_array).collect();
-    let indices: Vec<_> = mesh
-        .indices()
-        .map(|indices| indices.iter().collect())
-        .unwrap_or_else(|| (0..positions.len()).collect());
-    let outline = outline(size, radii);
     let clip = world.get::<super::super::presentation::Surface>(owner)?.uv;
     if clip.size().min_element() <= 0.0 {
         return None;
     }
-    let mut hash = std::collections::hash_map::DefaultHasher::new();
-    for point in &positions {
-        point.to_array().map(f32::to_bits).hash(&mut hash);
-    }
-    for point in &uvs {
-        point.to_array().map(f32::to_bits).hash(&mut hash);
-    }
-    for point in &outline {
-        point.to_array().map(f64::to_bits).hash(&mut hash);
-    }
-    indices.hash(&mut hash);
-    clip.min.to_array().map(f32::to_bits).hash(&mut hash);
-    clip.max.to_array().map(f32::to_bits).hash(&mut hash);
     Some(Inputs {
-        positions,
-        uvs,
-        indices,
-        outline,
+        positions: Cow::Borrowed(positions),
+        uvs: Cow::Borrowed(uvs),
+        indices: mesh.indices().map(Cow::Borrowed),
+        size,
+        radii,
         clip,
-        signature: hash.finish(),
     })
 }
 
-fn plate(input: &Inputs) -> Mesh {
+fn plate(input: &Inputs<'_>, outline: &[DVec2]) -> Mesh {
     let mut vertices = Vertices::default();
-    for triangle in input.indices.chunks_exact(3) {
+    let indices: Vec<_> = input
+        .indices
+        .as_ref()
+        .map(|indices| indices.iter().collect())
+        .unwrap_or_else(|| (0..input.positions.len()).collect());
+    for triangle in indices.chunks_exact(3) {
         let [a, b, c] = [triangle[0], triangle[1], triangle[2]];
         if [a, b, c].iter().any(|index| *index >= input.uvs.len()) {
             continue;
         }
         let [ua, ub, uc] = [
-            input.uvs[a].as_dvec2(),
-            input.uvs[b].as_dvec2(),
-            input.uvs[c].as_dvec2(),
+            Vec2::from_array(input.uvs[a]).as_dvec2(),
+            Vec2::from_array(input.uvs[b]).as_dvec2(),
+            Vec2::from_array(input.uvs[c]).as_dvec2(),
         ];
         let determinant = (ub - ua).perp_dot(uc - ua);
         if determinant.abs() < 1e-15 {
             continue;
         }
-        let polygon = super::super::holes::intersect(&[ua, ub, uc], &input.outline);
+        let polygon = super::super::holes::intersect(&[ua, ub, uc], outline);
+        let [pa, pb, pc] = [a, b, c].map(|index| Vec3::from_array(input.positions[index]));
         let position = |point: DVec2| {
             let b_weight = (point - ua).perp_dot(uc - ua) / determinant;
             let c_weight = (ub - ua).perp_dot(point - ua) / determinant;
-            input.positions[a]
-                + (input.positions[b] - input.positions[a]) * b_weight as f32
-                + (input.positions[c] - input.positions[a]) * c_weight as f32
+            pa + (pb - pa) * b_weight as f32 + (pc - pa) * c_weight as f32
         };
         for index in 1..polygon.len().saturating_sub(1) {
             let uv = [polygon[0], polygon[index], polygon[index + 1]];
@@ -168,7 +166,7 @@ fn plate(input: &Inputs) -> Mesh {
     vertices.mesh()
 }
 
-fn body(input: &Inputs) -> Mesh {
+fn body(input: &Inputs<'_>, outline: &[DVec2]) -> Mesh {
     let clip = input.clip;
     let bounds = [
         clip.min.as_dvec2(),
@@ -176,7 +174,7 @@ fn body(input: &Inputs) -> Mesh {
         clip.max.as_dvec2(),
         DVec2::new(clip.min.x as f64, clip.max.y as f64),
     ];
-    let polygon = super::super::holes::intersect(&input.outline, &bounds);
+    let polygon = super::super::holes::intersect(outline, &bounds);
     let point = |uv: DVec2, y: f32| {
         let local = (uv.as_vec2() - clip.min) / clip.size() - Vec2::splat(0.5);
         Vec3::new(local.x, y, local.y)
@@ -265,19 +263,19 @@ impl Geometry {
         if self
             .owned
             .as_ref()
-            .is_none_or(|(_, _, signature)| *signature != input.signature)
+            .is_none_or(|(_, _, previous)| previous != &input)
         {
+            let outline = outline(input.size, input.radii);
+            let plate_mesh = plate(&input, &outline);
+            let body_mesh = body(&input, &outline);
+            let input = input.into_owned();
             let mut meshes = world.resource_mut::<Assets<Mesh>>();
-            if let Some((plate_handle, body_handle, signature)) = &mut self.owned {
-                meshes.insert(plate_handle.id(), plate(&input)).unwrap();
-                meshes.insert(body_handle.id(), body(&input)).unwrap();
-                *signature = input.signature;
+            if let Some((plate_handle, body_handle, previous)) = &mut self.owned {
+                meshes.insert(plate_handle.id(), plate_mesh).unwrap();
+                meshes.insert(body_handle.id(), body_mesh).unwrap();
+                *previous = input;
             } else {
-                self.owned = Some((
-                    meshes.add(plate(&input)),
-                    meshes.add(body(&input)),
-                    input.signature,
-                ));
+                self.owned = Some((meshes.add(plate_mesh), meshes.add(body_mesh), input));
             }
         }
         let (plate, body, _) = self.owned.as_ref().unwrap();

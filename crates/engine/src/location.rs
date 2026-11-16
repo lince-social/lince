@@ -908,7 +908,7 @@ impl Engine {
         peer: &str,
         request: PeerRequest,
     ) -> Result<Value, EngineError> {
-        if serde_json::to_vec(&request)?.len() > 16 * 1024 {
+        if nucleus::json::encoded_len(&request)? > 16 * 1024 {
             return Err(invalid("Location request exceeds its limit"));
         }
         self.location_expire().await?;

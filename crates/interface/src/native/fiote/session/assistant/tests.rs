@@ -185,7 +185,7 @@ pub(super) async fn fixture_named_in(
     {
         let mut panel = app.world_mut().get_mut::<Panel>(panel).unwrap();
         panel.binding.uid = record.clone();
-        panel.saved = Some(status);
+        panel.saved = Some(status.into());
     }
     Open.apply(app.world_mut(), panel);
     app.world_mut().get_mut::<Node>(panel).unwrap().display = Display::Flex;
@@ -464,7 +464,7 @@ async fn delegated_stop_control_interrupts_child_and_keeps_parent_selected() {
         })
         .await
         .unwrap();
-    app.world_mut().get_mut::<Panel>(panel).unwrap().saved = Some(saved);
+    app.world_mut().get_mut::<Panel>(panel).unwrap().saved = Some(saved.into());
     super::super::show(app.world_mut(), panel, Step::Manage);
     click(app.world_mut(), "Show delegated work");
     click(app.world_mut(), "Stop delegated Fiote");

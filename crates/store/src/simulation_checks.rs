@@ -15,7 +15,7 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<CheckSet>, StoreError> {
             uid: row.try_get("uid")?,
             name: row.try_get("name")?,
             revision: row.try_get::<i64, _>("revision")? as u64,
-            checks: serde_json::from_str(&row.try_get::<String, _>("checks_json")?)
+            checks: serde_json::from_str(row.try_get::<&str, _>("checks_json")?)
                 .map_err(|error| StoreError::Decode(Box::new(error)))?,
         })
     })

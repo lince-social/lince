@@ -2,13 +2,21 @@ use engine::Engine;
 use nucleus::Fact;
 use tokio::sync::{broadcast, watch};
 
+// These events invalidate current-state views. Durable Fact delivery and rule
+// execution belong to the Engine, not this subscription refresh stream.
 pub enum SyncEvent {
     Fact(Fact),
+    Facts(Vec<Fact>),
     Refresh,
     Projection,
     Ephemeral,
     Presence,
 }
+
+// Subscription refreshes read current state, not a historical snapshot for each
+// notification. Bound the already-ready invalidations represented by one read
+// wave; never wait for more work to form a batch.
+const MAX_FACT_BATCH: usize = 64;
 
 pub struct SyncEvents {
     facts: broadcast::Receiver<Fact>,
@@ -52,7 +60,7 @@ impl SyncEvents {
         tokio::select! {
             _ = async { self.presence.as_mut().expect("presence receiver").changed().await }, if self.presence.is_some() => Some(SyncEvent::Presence),
             fact = self.facts.recv() => match fact {
-                Ok(fact) => Some(SyncEvent::Fact(fact)),
+                Ok(fact) => Some(self.fact_batch(fact)),
                 Err(broadcast::error::RecvError::Lagged(_)) => {
                     self.facts = self.facts.resubscribe();
                     Some(SyncEvent::Refresh)
@@ -71,6 +79,35 @@ impl SyncEvents {
             }),
             _ = self.ephemeral.tick(), if ephemeral => Some(SyncEvent::Ephemeral),
         }
+    }
+
+    fn fact_batch(&mut self, first: Fact) -> SyncEvent {
+        let second = match self.facts.try_recv() {
+            Ok(fact) => fact,
+            Err(broadcast::error::TryRecvError::Empty | broadcast::error::TryRecvError::Closed) => {
+                return SyncEvent::Fact(first);
+            }
+            Err(broadcast::error::TryRecvError::Lagged(_)) => {
+                self.facts = self.facts.resubscribe();
+                return SyncEvent::Refresh;
+            }
+        };
+        let mut facts = vec![first, second];
+        while facts.len() < MAX_FACT_BATCH {
+            match self.facts.try_recv() {
+                Ok(fact) => facts.push(fact),
+                Err(
+                    broadcast::error::TryRecvError::Empty | broadcast::error::TryRecvError::Closed,
+                ) => {
+                    break;
+                }
+                Err(broadcast::error::TryRecvError::Lagged(_)) => {
+                    self.facts = self.facts.resubscribe();
+                    return SyncEvent::Refresh;
+                }
+            }
+        }
+        SyncEvent::Facts(facts)
     }
 }
 

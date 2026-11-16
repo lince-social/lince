@@ -66,7 +66,7 @@ impl Engine {
         self.require_permission_on(&mut tx, actor, "record:update")
             .await?;
         let row=store::sqlx::query("SELECT content,applied FROM knowledge_review WHERE uid=? AND owner_key=? AND kind='update'").bind(review).bind(owner).fetch_optional(&mut *tx).await?.ok_or_else(||invalid("Source update review unavailable"))?;
-        let content: Value = serde_json::from_str(&row.get::<String, _>("content"))?;
+        let content: Value = serde_json::from_str(row.get::<&str, _>("content"))?;
         let record = content["record_uid"]
             .as_str()
             .ok_or_else(|| invalid("Source review has no saved Record"))?;

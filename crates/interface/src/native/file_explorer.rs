@@ -3,6 +3,7 @@ mod actions;
 mod navigation;
 mod operations;
 mod persistence;
+mod presentation;
 mod runtime;
 #[cfg(test)]
 mod tests;
@@ -51,7 +52,7 @@ enum Target {
     },
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct Row {
     entry: Entry,
     root: PathBuf,
@@ -81,8 +82,11 @@ struct View {
     cache: BTreeMap<PathBuf, Listing>,
     pending: BTreeSet<PathBuf>,
     listings: BTreeMap<PathBuf, Arc<AtomicBool>>,
+    pending_sorts: BTreeSet<PathBuf>,
     rows: Vec<Row>,
-    search_rows: Option<Vec<Row>>,
+    // Search owns `rows` directly; listing updates only rebuild the directory model.
+    search_results: bool,
+    rendered: presentation::Rows,
     cancellation: Arc<AtomicBool>,
     generation: u64,
     shown: Option<(usize, usize, usize, bool)>,
@@ -385,8 +389,10 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
             cache: BTreeMap::new(),
             pending: BTreeSet::new(),
             listings: BTreeMap::new(),
+            pending_sorts: BTreeSet::new(),
             rows: Vec::new(),
-            search_rows: None,
+            search_results: false,
+            rendered: presentation::Rows::default(),
             cancellation: Arc::new(AtomicBool::new(false)),
             generation: 0,
             shown: None,

@@ -12,7 +12,7 @@ pub(crate) fn bound_sync_page(batch: &mut OpBatch, budget: usize) -> Result<bool
     let mut bytes = 1024usize;
     let mut count = 0;
     for op in &batch.ops {
-        let encoded = serde_json::to_vec(op)?.len().saturating_add(1);
+        let encoded = nucleus::json::encoded_len(op)?.saturating_add(1);
         if bytes.saturating_add(encoded) > budget {
             if count == 0 {
                 return Err(super::invalid(
@@ -162,7 +162,7 @@ impl Engine {
                 organ_uid: organ.into(),
                 fact: None,
             };
-            let encoded = serde_json::to_vec(&wrapper)?.len();
+            let encoded = nucleus::json::encoded_len(&wrapper)?;
             bytes += encoded;
             if bytes > 8 * 1024 * 1024 || output.len() >= 8 {
                 break;

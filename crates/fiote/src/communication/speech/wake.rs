@@ -127,9 +127,7 @@ impl Profile {
                 );
             }
         }
-        if serde_json::to_vec(self)
-            .map_err(|_| "Cannot serialize wake references.")?
-            .len()
+        if nucleus::json::encoded_len(self).map_err(|_| "Cannot serialize wake references.")?
             > 524_288
         {
             return Err("Wake references exceed 512 KiB. Use fewer or shorter examples.".into());

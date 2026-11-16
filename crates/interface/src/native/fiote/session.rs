@@ -12,6 +12,8 @@ use cell::{
     FioteStatus,
 };
 
+use std::sync::Arc;
+
 #[derive(Clone, Copy, PartialEq)]
 enum Step {
     Manage,
@@ -40,7 +42,7 @@ struct Panel {
     choices: Vec<Entity>,
     fields: Vec<Entity>,
     pending: Option<String>,
-    saved: Option<FioteStatus>,
+    saved: Option<Arc<FioteStatus>>,
     poll: std::time::Instant,
     automatic: bool,
 }
@@ -327,6 +329,7 @@ pub(crate) fn laboratory_browser(world: &mut World, area: Entity, url: &str) {
     if let Some(mut panel) = world.get_mut::<Panel>(owner)
         && let Some(saved) = &mut panel.saved
     {
+        let saved = Arc::make_mut(saved);
         saved.login_url = Some(url.into());
         saved.login_pending = true;
     }
@@ -445,11 +448,11 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 choices.push(world.get::<Children>(button).unwrap()[0]);
             }
         }
-        Step::Manage => management::show(world, owner, content, saved.as_ref()),
-        Step::Assistant => assistant::show(world, owner, content, saved.as_ref()),
-        Step::Connections => connections::show(world, owner, content, saved.as_ref()),
+        Step::Manage => management::show(world, owner, content, saved.as_deref()),
+        Step::Assistant => assistant::show(world, owner, content, saved.as_deref()),
+        Step::Connections => connections::show(world, owner, content, saved.as_deref()),
         Step::Agent => {
-            agent::show(world, owner, content, &mut fields, saved.as_ref());
+            agent::show(world, owner, content, &mut fields, saved.as_deref());
         }
         Step::Credentials => {
             let Some(provider) = provider.as_ref() else {
@@ -561,7 +564,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
                 "Open browser again",
                 OpenBrowser,
             );
-            if let Some(url) = saved.as_ref().and_then(login_url) {
+            if let Some(url) = saved.as_deref().and_then(login_url) {
                 crate::native::description::button(
                     world,
                     content,
@@ -791,7 +794,7 @@ impl Action for CopyLoginLink {
         let Some(panel) = world.get::<Panel>(owner) else {
             return;
         };
-        let Some(url) = panel.saved.as_ref().and_then(login_url) else {
+        let Some(url) = panel.saved.as_deref().and_then(login_url) else {
             return;
         };
         let status = panel.status;
@@ -812,7 +815,7 @@ impl Action for OpenBrowser {
         let Some(panel) = world.get::<Panel>(owner) else {
             return;
         };
-        let Some(url) = panel.saved.as_ref().and_then(login_url) else {
+        let Some(url) = panel.saved.as_deref().and_then(login_url) else {
             return;
         };
         let result = cell::fiote::laboratory::open_browser(&url);
@@ -1086,7 +1089,7 @@ impl Action for CopyTools {
     }
 }
 
-fn update_connections(world: &mut World, status: &FioteStatus) {
+fn update_connections(world: &mut World, status: &Arc<FioteStatus>) {
     let panels: Vec<_> = world
         .query::<(Entity, &Panel)>()
         .iter(world)
@@ -1117,20 +1120,27 @@ fn update_connections(world: &mut World, status: &FioteStatus) {
         let opened = control.connection.is_some();
         let (toggle, copy, stop) = (control.toggle, control.copy, control.stop);
         let running = status.running.contains(&control.thread);
-        world.get_mut::<Node>(stop).unwrap().display = if running {
+        let display = if running {
             Display::Flex
         } else {
             Display::None
         };
+        if world.get::<Node>(stop).unwrap().display != display {
+            world.get_mut::<Node>(stop).unwrap().display = display;
+        }
         let label = world.get::<Children>(toggle).unwrap()[0];
-        world.get_mut::<Text>(label).unwrap().0 = if opened {
+        let text = if opened {
             "Close agent tools"
         } else {
             "Open agent tools"
+        };
+        if world.get::<Text>(label).unwrap().0 != text {
+            world.get_mut::<Text>(label).unwrap().0 = text.into();
         }
-        .into();
-        world.get_mut::<Node>(copy).unwrap().display =
-            if opened { Display::Flex } else { Display::None };
+        let display = if opened { Display::Flex } else { Display::None };
+        if world.get::<Node>(copy).unwrap().display != display {
+            world.get_mut::<Node>(copy).unwrap().display = display;
+        }
     }
 }
 #[derive(Clone)]
@@ -1156,7 +1166,8 @@ impl Action for Stop {
     }
 }
 
-fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
+fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStatus>>) {
+    let saved = saved.into();
     let refreshed = agent::refresh(world, owner, &saved);
     if world
         .entity_mut(owner)
@@ -1186,17 +1197,28 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     let step = panel.step;
     let record_changed = panel.binding.uid != saved.record;
     let first = panel.saved.is_none() && panel.automatic;
-    let changed = panel.saved.as_ref().is_none_or(|previous| {
-        serde_json::to_value(previous).ok() != serde_json::to_value(&saved).ok()
-    });
-    let login_changed = panel
-        .saved
-        .as_ref()
-        .is_none_or(|previous| login_url(previous) != login_url(&saved));
-    let agent_changed = panel
-        .saved
-        .as_ref()
-        .is_none_or(|previous| previous.agent_info != saved.agent_info);
+    // Only these panels consume the full comparison. Ordinary closed/streaming
+    // views should not serialize an entire reply just to discard the result.
+    let changed = matches!(step, Step::Manage | Step::Connections)
+        && panel.saved.as_ref().is_none_or(|previous| {
+            if Arc::ptr_eq(previous, &saved) {
+                return false;
+            }
+            let _comparison = nucleus::performance::Span::new("fiote-status-comparison");
+            nucleus::performance::add("fiote-status-comparisons", 1);
+            serde_json::to_value(previous.as_ref()).ok()
+                != serde_json::to_value(saved.as_ref()).ok()
+        });
+    let login_changed = step == Step::Browser
+        && panel
+            .saved
+            .as_ref()
+            .is_none_or(|previous| login_url(previous) != login_url(&saved));
+    let agent_changed = step == Step::Agent
+        && panel
+            .saved
+            .as_ref()
+            .is_none_or(|previous| previous.agent_info != saved.agent_info);
     let label = panel.status;
     let next = if matches!(
         step,
@@ -1265,7 +1287,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         uid: panel.view_uid.clone(),
         ..panel.binding.clone()
     };
-    panel.saved = Some(saved);
+    panel.saved = Some(Arc::clone(&saved));
     if next != step
         || (first && !connections::editing(world, owner))
         || (step == Step::Agent && (agent_changed || refreshed))
@@ -1304,18 +1326,28 @@ fn receive(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
 ) {
+    let _presentation = nucleus::performance::Span::new("fiote-status-presentation");
     let events: Vec<_> = world
         .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
         .map(|messages| {
             cursor
                 .read(messages)
+                .filter(|message| {
+                    matches!(
+                        message.0.as_ref(),
+                        cell::ServerMessage::Fiote { .. } | cell::ServerMessage::Error { .. }
+                    )
+                })
                 .map(|message| message.0.clone())
                 .collect()
         })
         .unwrap_or_default();
     for event in events.iter().map(|message| message.as_ref()) {
         let (id, result) = match event {
-            cell::ServerMessage::Fiote { id, status } => (id, Ok(status.clone())),
+            cell::ServerMessage::Fiote { id, status } => {
+                nucleus::performance::add("fiote-status-snapshots-prepared", 1);
+                (id, Ok(Arc::new(status.clone())))
+            }
             cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
@@ -1519,11 +1551,11 @@ fn poll(world: &mut World) {
     }
 }
 fn masks(fields: Query<&EditableText>, mut masks: Query<(&Mask, &mut Text)>) {
-    for (mask, mut text) in &mut masks {
+    for (mask, text) in &mut masks {
         let count = fields
             .get(mask.0)
-            .map_or(0, |field| field.value().chars().count());
-        text.set_if_neq(Text::new("•".repeat(count.min(32))));
+            .map_or(0, |field| field.value().chars().take(32).count());
+        crate::controls::password_mask(text, count);
     }
 }
 fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {

@@ -176,7 +176,7 @@ pub fn spawn(world: &mut World, parent: Entity, source: &str, context: Context) 
         let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionMarkup);
         crate::host::performance::count(crate::host::performance::Count::DescriptionRenders);
         crate::host::performance::add(crate::host::performance::Count::DescriptionSourceBytes, source.len() as u64);
-        markup::render(world, entity, source, &context, Vec::new());
+        markup::render(world, entity, source, &context);
     }
     entity
 }
@@ -189,23 +189,11 @@ pub fn set(world: &mut World, entity: Entity, source: &str) {
         return;
     }
     let context = description.context.clone();
-    let mut shaders = Vec::new();
-    if let Some(children) = world.get::<Children>(entity) {
-        let children: Vec<_> = children.iter().collect();
-        for child in children {
-            if world.get::<shader::Preview>(child).is_some() {
-                world.entity_mut(child).remove::<ChildOf>();
-                shaders.push(child);
-            } else {
-                world.despawn(child);
-            }
-        }
-    }
     world.get_mut::<Description>(entity).unwrap().source = source.into();
     let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionMarkup);
     crate::host::performance::count(crate::host::performance::Count::DescriptionRenders);
     crate::host::performance::add(crate::host::performance::Count::DescriptionSourceBytes, source.len() as u64);
-    markup::render(world, entity, source, &context, shaders);
+    markup::render(world, entity, source, &context);
 }
 
 pub(crate) fn protects(world: &World, mut entity: Entity) -> bool {
@@ -408,6 +396,18 @@ pub(crate) fn set_mode(world: &mut World, parent: Entity, mode: Mode) {
     let Some(editor) = world.get::<Editor>(parent).copied() else {
         return;
     };
+    if editor.editable && !matches!(mode, Mode::Raw) {
+        let changed = world
+            .get::<EditableText>(editor.input)
+            .zip(world.get::<Description>(editor.preview))
+            .and_then(|(input, preview)| {
+                let source = input.value();
+                (source != preview.source.as_str()).then(|| source.to_string())
+            });
+        if let Some(source) = changed {
+            set(world, editor.preview, &source);
+        }
+    }
     for (entity, visible) in [
         (editor.input, !matches!(mode, Mode::Pretty)),
         (editor.preview, !matches!(mode, Mode::Raw)),
@@ -442,13 +442,16 @@ impl Action for Mode {
     }
 }
 
-pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &str) {
+pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &str) -> bool {
     if let Some(editor) = world.get::<Editor>(container).copied() {
         if !editor.editable {
-            world.get_mut::<Text>(editor.input).unwrap().0 = source.into();
+            let mut text = world.get_mut::<Text>(editor.input).unwrap();
+            if text.0 != source {
+                text.0 = source.into();
+            }
             set(world, editor.preview, source);
         }
-        return;
+        return !editor.editable;
     }
     let preview = world
         .get::<Children>(container)
@@ -459,24 +462,50 @@ pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &st
     if let Some(preview) = preview {
         set(world, preview, source);
     }
+    preview.is_some()
 }
 
 fn sync_editors(world: &mut World) {
-    let _measurement = crate::host::performance::Span::new(crate::host::performance::Stage::NativeDescriptionEditors);
-    let changes: Vec<_> = world
-        .query::<&Editor>()
+    world
+        .run_system_cached(sync_changed_editors)
+        .expect("synchronize changed description editors");
+}
+
+fn sync_changed_editors(
+    world: &mut World,
+    editors: &mut QueryState<Ref<'static, Editor>>,
+    inputs: &mut QueryState<Ref<'static, EditableText>>,
+    previews: &mut QueryState<Ref<'static, Description>>,
+) {
+    let _measurement = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeDescriptionEditors,
+    );
+    let changes: Vec<_> = editors
         .iter(world)
         .filter_map(|editor| {
-            crate::host::performance::count(crate::host::performance::Count::DescriptionEditorsVisited);
-            if !editor.editable {
+            crate::host::performance::count(
+                crate::host::performance::Count::DescriptionEditorsVisited,
+            );
+            if !editor.editable
+                || world
+                    .get::<Node>(editor.preview)
+                    .is_some_and(|node| node.display == Display::None)
+            {
                 return None;
             }
-            let source = world.get::<EditableText>(editor.input)?.value().to_string();
-            (world.get::<Description>(editor.preview)?.source != source)
-                .then_some((editor.preview, source))
+            let input = inputs.get(world, editor.input).ok()?;
+            let preview = previews.get(world, editor.preview).ok()?;
+            if !editor.is_changed() && !input.is_changed() && !preview.is_changed() {
+                return None;
+            }
+            let source = input.value();
+            (source != preview.source.as_str()).then(|| (editor.preview, source.to_string()))
         })
         .collect();
-    crate::host::performance::add(crate::host::performance::Count::DescriptionRefreshes, changes.len() as u64);
+    crate::host::performance::add(
+        crate::host::performance::Count::DescriptionRefreshes,
+        changes.len() as u64,
+    );
     for (preview, source) in changes {
         set(world, preview, &source);
     }

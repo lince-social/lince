@@ -17,18 +17,17 @@ These changes reuse shared controls, row identities, assets, source deadlines an
 **Continue through these Records:**
 
 - [P124 — Complete the source-to-workflow inventory for active interface features.](record:r_3XG5M214AQAQKBTADAR44A0MQ0)
-- [P77 — Gate presentation work for one feature family with no live views.](record:r_349MAGE5FADNJ50X348MCC7604)
+- [P77 — Verify demand-driven Sync presentation reads.](record:r_349MAGE5FADNJ50X348MCC7604)
 - [P49 — Virtualize one measured large Record-result list.](record:r_2RAG5FY8WZ7AQ0058R9R7H93M5)
-- [P125 — Retain one costly settings or property panel across ordinary edits.](record:r_7EQJ8P110K14GX1B7W67YC1DYD)
-- [P128 — Keep terminal or Command output from monopolizing interface work.](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ)
-- [P127 — Remove one blocking preparation step from opening a native view.](record:r_67MRGZ514V671TTWEDTTGXXD86)
+- [P128 — Verify retained terminal and Command output.](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ)
+- [P127 — Verify first-reveal construction of collapsed Record fields.](record:r_67MRGZ514V671TTWEDTTGXXD86)
 - [P129 — Tie one media producer to real consumer presentation demand.](record:r_080KC3GG64DRMJ9JMAN38AHGTJ)
-- [P130 — Make one Area or physics recomputation depend on changed participants.](record:r_36APBSWDH21W59H8997BQSW0DP)
+- [P130 — Verify participant-driven Area and physics work.](record:r_36APBSWDH21W59H8997BQSW0DP)
 - [P50 — Compare an incremental spatial index with one expensive canvas scan.](record:r_25CXY3R3S912EREHNQM34JHHX9)
-- [P85 — Reuse one unchanged pointer-geometry derivation safely.](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA)
-- [P84 — Apply the shared list approach to one other costly native list.](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ)
-- [P131 — Publish accessibility changes incrementally for a stable interface.](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1)
-- [P132 — Retain one unchanged capture-contributor derivation.](record:r_01Z5DC695MDHGNT51DPHKY2J3T)
+- [P85 — Verify shared pointer derivation and immutable frame geometry.](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA)
+- [P84 — Verify retained File Explorer rows and listing preparation.](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ)
+- [P131 — Verify incremental accessibility publication and prepared text projection.](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1)
+- [P132 — Verify capture contributor reuse within each audit.](record:r_01Z5DC695MDHGNT51DPHKY2J3T)
 - [P133 — Share one repeatedly created immutable asset family.](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8)
 } r_3Y7AZV9CX956FV2KEPFRRT7TPK
 
@@ -46,6 +45,11 @@ P124 — Complete the source-to-workflow inventory for active interface features
 
 
 **Why:** a rendering optimization cannot be called holistic while unexamined feature families keep doing work or lose behavior. **Scope:** reconcile the explicit family table in 09 against native/app.rs, the Laboratory catalogue, actions/openers and current shipping feature flags. For each reachable feature record its input/control family, data source, presentation update, worker/timer/subscription, persistence, hidden semantics and existing correctness/performance selector. Include feature-gated active Sands; mark absent coverage and optional external services separately. **Close with:** a source-stamped inventory with every active registration assigned and one useful representative per distinct cost path, plus a ranked shortlist of actual unexplained work. This is an executable ownership/coverage inventory, not a requirement to benchmark every label or every permutation. P86 separately ranks removable bloat.
+
+**Completed source coverage:** the shared-workspace, JSON/command, Record/relation, native registry/canvas, workspace storage, work projection/validation, sync insertion, Timer, Clock, Frequency/Karma, feed/Calendar/Todo/Kanban, Map/picker and Shader/Castle preparation reductions are implemented. Their detailed source receipts and named verification obligations are in [Overhaul.md](Overhaul.md); the attribution manifest identifies their actual paths and metric boundaries. They are not pending coding work under this inventory.
+
+**Latest inspected families, 2026-11-16:** identity-first focus lookup with shared immutable observations, selective saved-focus restoration, and shared transient-placement visibility/offset/requested-solution preparation are implemented. FOCUS-TARGET-VERIFY, FOCUS-RESTORATION-VERIFY and TRANSIENT-PLACEMENT-VERIFY retain source-phase, owner/lifetime, duplicate/first-match, cold/all-changing, preview and memory checks. Earlier root-scope/preferences/inheritance/validation, geometry/resolver/solver, command/device settings, opening/reference, shared controls, input, canvas, catalogue, workspace, feature and backend families keep verification obligations. No target decision is cached across world mutations or calls; deferred restoration and model authoring remain active. Further P124 work needs an inspected repeated-work path. No runtime acceptance or performance gain is established by these source changes.
+
 } r_3XG5M214AQAQKBTADAR44A0MQ0
 
 Extension @park-p124 "lince.controls" {
@@ -58,7 +62,7 @@ Extension @park-p124 "lince.controls" {
     }]
 }
 
-P77 — Gate presentation work for one feature family with no live views. (
+P77 — Verify demand-driven Sync presentation reads. (
     @park-p77: 0,
     is #task,
     #park-performance-task,
@@ -68,10 +72,14 @@ P77 — Gate presentation work for one feature family with no live views. (
 ) { r_349MAGE5FADNJ50X348MCC7604
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Implementation is complete for the selected Sync presentation family; verification only.** Hidden plugin-catalog and pending-offer panels retire their read-only watcher through the shared snapshot-demand helper. Existing output, preview, portal, ancestor-display and suppression rules determine demand; reveal creates a fresh immediate snapshot worker. Action jobs, transfers, directory sync and automation retain their lifetime. Blob-transfer snapshots also serve non-UI consumers and are deliberately outside this display-only gate. Their newly shared latest/presented snapshots and retained transfer controls are implemented separately, with BLOB-PRESENTATION-VERIFY in Overhaul.md owning that verification. Sync history now uses the existing shared deadline owner rather than a permanent polling timer; its wake, reply and retry checks remain under SYNC-DEMAND-VERIFY. Directory Sync now owns direct subscription/save reply routes, reserves request capacity before query construction, retains unchanged Protein choice buttons and skips identical enabled/status writes. SYNC-DEMAND-VERIFY also owns multi-owner/late-reply/cleanup, draft, accessible-switch and retained-choice checks; this is implemented source, not another coding task.
 
+Catalog and pending-offer UI now share immutable snapshot handles with their workers and use the retained-children family for their lists. Status-only catalog changes retain controls; cross-row move/invitation and retry-provider inputs participate in invalidation. Their shared refresh owner skips forecast-only notices and missed polling bursts while preserving initial/periodic/general reads. Settings opening borrows catalog metadata instead of copying the whole catalog/contribution. These source reductions are also implemented and await SYNC-DEMAND-VERIFY; no runtime result is claimed.
 
-**Why:** registering many UI plugins can leave work running when that presentation has no consumers. **Scope:** measure one absent-view family in native/app.rs and its systems, then gate only its visual derivation or UI subscriptions through explicit demand. Registration alone is not proof of waste. **Verify:** zero unnecessary idle work, first open, close/reopen, multiple views and backend events while hidden. Preserve notifications, commands, recording and other semantic activity; avoid a second scheduler/cache per Castle.
+The backend plugin catalog now reads enabled approvals once, derives dependency availability from one installed-package snapshot with indexed linear propagation, and reuses its enabled-ID set for diagnostics and bindings. Real plugin execution still uses the original fresh authorization reader; catalog data grants no execution authority.
+
+**Why:** hidden panels should not poll/read/rebuild display-only state, and one catalog request should not clone the entire package list and query the same dependency graph per package. **Verify:** SYNC-DEMAND-VERIFY in [Overhaul.md](Overhaul.md) owns hidden/revealed/multiple panels, output/preview/portal demand, close/reopen, drafts and in-flight actions, errors/retry, absent/changed/disabled dependency chains and cycles, and fresh execution authorization after catalog publication. Compare watcher/read/graph counts, complete query waits, allocation/memory and input/CPU costs. No tests, build or measurements have run for these reductions.
+
 } r_349MAGE5FADNJ50X348MCC7604
 
 Extension @park-p77 "lince.controls" {
@@ -110,33 +118,18 @@ Extension @park-p49 "lince.controls" {
     }]
 }
 
-P125 — Retain one costly settings or property panel across ordinary edits. (
-    @park-p125: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a1,
+P125 — Retained panel implementation is complete. (
+    @park-p125: 1,
+    is #chapter,
     #part-of @park-dev-05-feature-costs-and-scaling: 21,
     #park-workflow @park-development-cycle
 ) { r_7EQJ8P110K14GX1B7W67YC1DYD
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** The shared keyed controls and retained Sync/property preparation are implemented. The retained-panel and later optimized Sync receipts preserve controls, focus, exact input and pixels. The current source batch has additional row/snapshot reductions awaiting its own verification; it does not reopen the completed panel reconstruction task.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
-
-
-**Why:** rebuilding a panel can churn entities, text/layout, focus and style for each slider tick or response. **Scope:** identify one P66/P124-proven panel rebuild and update its existing controls by stable model identity, rebuilding only changed structure. Reuse native controls, dropdowns, accordion sections and item/property families; keep pending drafts distinct from refreshed model values. **Verify:** typing/selection/IME, slider drag, expand/collapse, search, validation errors, source replacement, accessibility and close/reopen. Count despawns/spawns, layout/style work and input latency, including small panels. Do not retain invalid control actions or hide backend errors for the sake of stable entities. **One demonstrated panel first;** generalize only its genuinely shared mechanism.
+**Evidence:** [Overhaul.md](Overhaul.md#retained-panel-verification-and-recorder-correction). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_7EQJ8P110K14GX1B7W67YC1DYD
 
-Extension @park-p125 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
-
-P128 — Keep terminal or Command output from monopolizing interface work. (
+P128 — Verify retained terminal and Command output. (
     @park-p128: 0,
     is #task,
     #park-performance-task,
@@ -144,12 +137,15 @@ P128 — Keep terminal or Command output from monopolizing interface work. (
     #part-of @park-dev-05-feature-costs-and-scaling: 25,
     #park-workflow @park-development-cycle
 ) { r_5ZXJ3Y0TZEG0T3PDAH61X596QJ
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Terminal rows/runs now use shared retained presentation. The worker binds typed Wasm exports once, shares immutable frames, skips unchanged screen publications while preserving input/reply wakes, and maintains its queued byte count. Command history avoids its extra full-run reconciliation clone, repeated membership scans and unchanged header/order writes; relevant message filtering and borrowed unchanged cwd reads avoid extra consumer work. Original notifications, output bytes/history, limits, authorization and cancellation remain.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Evidence:** [Overhaul.md — source-only terminal and Command output](Overhaul.md#source-only-terminal-and-command-output--2026-11-15). No build, test or measurement was run. Full Wasm frame extraction and the existing per-command processing boundary are unchanged; their remaining cost is not assumed to be unnecessary.
 
+**Why:** A fast local output stream must not make unrelated input late through repeated entity construction, export lookup, history copying or redundant publications.
 
-**Why:** a fast local output stream can make unrelated text input late through repeated decoding, row updates, history scans or wakes. **Scope:** select the measured terminal/Command publication bottleneck; process output in bounded ordered batches with incremental retained presentation and producer-driven readiness. Keep command state/history semantics and full data retention according to current limits; permit presentation to skip obsolete intermediate paints, not output bytes. **Verify:** Unicode, long lines, scrolling, interactive stdin, exit/status, cancellation, multiple instances and another editor under the same stream. Measure input age, queue memory and CPU plus final output equality. Command history notifications already exist; do not replace them with polling or a second terminal implementation.
+**Remaining verification:** TERMINAL-VERIFY in Overhaul.md owns exact output/Unicode/style/cursor/background checks, typed ABI compatibility, ordered playback and live stdin, identical-frame reply wakeups, exit/error/cancellation/removal, multiple instances and another editor under the same sustained stream. Compare complete response and CPU/memory as well as the new snapshot/presentation/history scopes and reuse/publication counters. Any remaining queue/service-bound change needs evidence of its owner; do not add a second terminal implementation, polling or lost output to close the task.
+
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). The current phase remains source-only.
 } r_5ZXJ3Y0TZEG0T3PDAH61X596QJ
 
 Extension @park-p128 "lince.controls" {
@@ -162,7 +158,7 @@ Extension @park-p128 "lince.controls" {
     }]
 }
 
-P127 — Remove one blocking preparation step from opening a native view. (
+P127 — Verify first-reveal construction of collapsed Record fields. (
     @park-p127: 0,
     is #task,
     #park-performance-task,
@@ -170,12 +166,13 @@ P127 — Remove one blocking preparation step from opening a native view. (
     #part-of @park-dev-05-feature-costs-and-scaling: 29,
     #park-workflow @park-development-cycle
 ) { r_67MRGZ514V671TTWEDTTGXXD86
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Record rows allocate their specialized field children when first revealed from current row data/configuration. Unmaterialized fields skip refresh; existing editors survive collapse. Generic JSON display is not constructed for specialized fields.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Follow FOREGROUND-1: first/open/close/reopen, hidden data and style updates, field availability, focus/drafts, source replacement and large result arrival. Count construction and complete reveal work; viewport virtualization and asynchronous cold-text layout remain unimplemented alternatives.
 
+**Why:** Collapsed rows should not eagerly construct controls and text the person cannot see.
 
-**Why:** opening a document, file, image, source view or full Record should not freeze typing elsewhere while it reads, parses or decodes. **Scope:** choose one measured cold/warm opener from the inventory, reuse its existing worker where present, and move the remaining expensive pure preparation to bounded revision-stamped work. Publish a stable truthful loading/error shell and cancel or ignore obsolete results after close/source replacement. Include initialization, font/asset setup and copying in the comparison. **Verify:** first usable feedback, final content, close/reopen, simultaneous opens, failures, data ownership and normal input on both outputs. Do not add another worker thread per view or treat a quick empty shell as complete open latency. **Existing document/file workers are the baseline, not missing features.**
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_67MRGZ514V671TTWEDTTGXXD86
 
 Extension @park-p127 "lince.controls" {
@@ -196,6 +193,8 @@ P129 — Tie one media producer to real consumer presentation demand. (
     #part-of @park-dev-05-feature-costs-and-scaling: 33,
     #park-workflow @park-development-cycle
 ) { r_080KC3GG64DRMJ9JMAN38AHGTJ
+**Implemented source reductions, verification pending:** video now shares change-aware image sizing, retains unchanged status/image bindings and borrows settings until session start. GIF publication moves decoded pixel buffers rather than cloning them. MEDIA-VERIFY in Overhaul.md owns those checks. Do not repeat these implementations or mark the broader producer-demand task complete: visibility, capture, playback and recording policies remain unchanged.
+
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
 **Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
@@ -214,7 +213,7 @@ Extension @park-p129 "lince.controls" {
     }]
 }
 
-P130 — Make one Area or physics recomputation depend on changed participants. (
+P130 — Verify participant-driven Area and physics work. (
     @park-p130: 0,
     is #task,
     #park-performance-task,
@@ -222,12 +221,13 @@ P130 — Make one Area or physics recomputation depend on changed participants. 
     #part-of @park-dev-05-feature-costs-and-scaling: 37,
     #park-workflow @park-development-cycle
 ) { r_36APBSWDH21W59H8997BQSW0DP
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** The source batch indexes membership/grouping, retains unchanged configurations, applies cooling using elapsed time, skips disabled repulsion, reuses force inputs and writes changed body/joint values. Semantic effects are preserved.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Check enter/leave, overlapping Areas, immunity, pinned/grouped items, source changes and 2D/3D navigation. Use SETTLE-1 to distinguish intentional motion from a quiet scene that never settles.
 
+**Why:** Quiet and locally changing scenes should not repeatedly recompute unrelated participants.
 
-**Why:** moving one item or evaluating a rule may scan all Areas/relations and repeat derived styles/layout every tick. **Scope:** use the measured Area/physics path to retain only valid unchanged membership/force/effect derivation, keyed by source, workspace, shape/reach, transform and participant revisions. Reuse the P50 index only if its maintenance earns the cost; integrate actual physics deadlines. **Verify:** enter/leave, overlapping Areas, immunity/enabled state, source changes, pinned/grouped items, 2D/3D navigation and deterministic effects. Keep semantic rules/automation active where required and do not cap participant counts to improve the benchmark. Compare moving and quiet scenes, index/dirty maintenance, CPU and local input tails. **One concrete expensive derivation, not a physics-engine rewrite by assumption.**
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_36APBSWDH21W59H8997BQSW0DP
 
 Extension @park-p130 "lince.controls" {
@@ -266,7 +266,7 @@ Extension @park-p50 "lince.controls" {
     }]
 }
 
-P85 — Reuse one unchanged pointer-geometry derivation safely. (
+P85 — Verify shared pointer derivation and immutable frame geometry. (
     @park-p85: 0,
     is #task,
     #park-performance-task,
@@ -274,12 +274,13 @@ P85 — Reuse one unchanged pointer-geometry derivation safely. (
     #part-of @park-dev-05-feature-costs-and-scaling: 45,
     #park-workflow @park-development-cycle
 ) { r_2HNW14DMJ8ES1TVSXSHYQNFSDA
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Pointer ownership and lineage use one traversal. Frame geometry and window/preview lists share immutable snapshots, geometry visits root children, and empty touch/tablet reconciliation returns early. No cross-frame authority cache was added.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Follow INPUT-2: preserve clipping, stacking, modal/output ownership, current actions, focus, removals and held-pointer revalidation. Reconcile the changed Ownership/Lineage observation boundary before comparing.
 
+**Why:** Input preparation was a measured foreground cost; reuse must not stale target or access decisions.
 
-**Why:** rebuilding large input snapshots may delay every native frame. **Scope:** retain only measured pure geometry, keyed by real node/clip/transform/output changes; read action versions, activity, modal and current owner eligibility at the required boundary. **Verify:** stacked/nonblocking recipients, rounded clips, moves, replaced actions, reparenting, focus/IME/lock and queued presses. Include small controls and dense scenes. Previous camera/query and full projection-map experiments were rejected; a distinct measured invalidation strategy is required before revisiting this area.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_2HNW14DMJ8ES1TVSXSHYQNFSDA
 
 Extension @park-p85 "lince.controls" {
@@ -292,7 +293,7 @@ Extension @park-p85 "lince.controls" {
     }]
 }
 
-P84 — Apply the shared list approach to one other costly native list. (
+P84 — Verify retained File Explorer rows and listing preparation. (
     @park-p84: 0,
     is #task,
     #park-performance-task,
@@ -300,12 +301,16 @@ P84 — Apply the shared list approach to one other costly native list. (
     #part-of @park-dev-05-feature-costs-and-scaling: 49,
     #park-workflow @park-development-cycle
 ) { r_7G4HJRCVP9TZW0S1XS934HDWPQ
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** File Explorer keeps its existing visible-range limit and now reconciles buttons through the shared retained-children family. Overlapping rows retain identity; changed selection, placement and caption inputs update only their owned fields. Source generation and full row/action identity prevent slot reuse for a different file. Root controls and their sibling order remain explicit.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+Directory completions defer accumulated sorting to one pass per changed directory before model preparation, reusing the worker's existing sorted batches. Search results own the row model directly, removing the second full-result copy; unused directory prefetch/sorting waits until the directory view is needed again. Existing workers, cancellation, watchers and source/scope checks remain. Complete directory flattening still occurs; this is not a second virtualization framework or full tree-model incrementality.
 
+**Still to verify:** Follow EXPLORER-VERIFY in Overhaul.md for tree/grid/search, overlapping roots, keyboard/scroll reveal, selection, metadata updates, replacement/held input, cancellation and exact sorted contents. Compare creation/retention, sort/model costs and memory together, including all-changing views.
 
-**Why:** the same excessive materialization may affect the store, overview or settings lists. **Scope:** choose exactly one list demonstrated costly after P49 or an equivalent existing abstraction is assessed. Preserve keyboard navigation, search, selection and the ability to reveal off-screen controls. **Verify:** node/layout cost versus visible rows, variable content and narrow/wide viewports. Do not virtualize a small list for uniformity or create another competing list framework; name the selected list before implementation.
+**Why:** Scrolling one row or changing selection should not reconstruct every visible control, and one presentation wave should not repeatedly prepare the same listing.
+
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
+
 } r_7G4HJRCVP9TZW0S1XS934HDWPQ
 
 Extension @park-p84 "lince.controls" {
@@ -318,7 +323,7 @@ Extension @park-p84 "lince.controls" {
     }]
 }
 
-P131 — Publish accessibility changes incrementally for a stable interface. (
+P131 — Verify incremental accessibility publication and prepared text projection. (
     @park-p131: 0,
     is #task,
     #park-performance-task,
@@ -326,16 +331,17 @@ P131 — Publish accessibility changes incrementally for a stable interface. (
     #part-of @park-dev-05-feature-costs-and-scaling: 53,
     #park-workflow @park-development-cycle
 ) { r_1N8KS1ZEKV1WQX606K6MH5NKR1
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented reductions, verification pending (2026-11-15).** The established changed-input/borrowed-value and password-mask reductions remain. New source prepares camera/surface ownership, geometry, output mapping and perspective coefficients once per immutable-world text export; it reuses source-group ranges for neighbour links. The adapter receives changed/new nodes and focus/tree metadata instead of cloning the complete tree for every change. Initial attachment and explicit refresh/reset still send full snapshots.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Evidence:** [Overhaul.md — source-only accessibility projection and publication](Overhaul.md#source-only-accessibility-projection-and-publication--2026-11-15). New code is unbuilt, untested and unmeasured. Existing consumer-inactive gating, full candidate reconstruction, per-output presentation receipts, catalog/action validation and protection remain.
 
+**Why:** Text-cluster export should not repeat field-wide ownership/projection preparation, and one changed node should not require resending unchanged nodes.
 
-**Current small performance step:** eliminate repeated unchanged accessibility value allocation with component change state and borrowed editor-text comparison; retain secret masking and externally replaced values. The candidate adds actual materialized-byte/work counts and a stage timer. Verify Unicode, secret policy and unchanged values, then measure representative mixed-scene and large-editor cost. This does not complete the broader incremental-tree investigation or claim a whole-desktop speedup.
+**Remaining verification:** ACCESS-VERIFY in Overhaul.md covers tree equivalence, lifecycle/attachment, removals/reparenting/focus, Unicode/selection/neighbours, perspective/clipping/magnification and multiple presented outputs. Include no-consumer demand, password protection and stale-action rejection. Attribute complete build/text/composition/diff cost, emitted nodes, CPU/memory and input tails; diff bookkeeping must be counted, including fully changing scenes.
 
-**Why:** full accessibility-tree/text/geometry reconstruction may amplify ordinary input if it is currently on the hot path. **Scope:** first attribute the cost, then retain stable node identity and publish the affected text/focus/state/geometry subtree through the existing accessibility family. An absent accessibility consumer may avoid presentation-only export if the API permits it, without disabling keyboard/focus semantics or future attachment. **Verify:** attach/detach, typing/selection, scroll/reparent, focus changes, hidden/modal views, password protection and stale references. Measure dirty bookkeeping and full versus incremental publication. **Conditional:** close with a measured rejection if the current path already costs negligibly or demand gating is already correct; no blanket disabling of accessibility.
+**Conditional follow-up:** full candidate-tree/text reconstruction still occurs while a consumer is active. A wider retained construction design requires a complete invalidation/ownership boundary and evidence that it earns its cost; no blanket disabling, stale grants or cross-frame projection cache is justified. Do not repeat the implemented value/mask work or partial-update delivery mechanism.
 
-**Nearby producer found during P113:** native/accessibility.rs::inputs constructs a fresh plain value or password mask during full native updates before comparing it with the current node value. Inspect this existing producer and its borrowing/change semantics before another tree cache or export layer. Preserve new input registration, live value/policy changes and protection; no performance cost or win is measured by the P113 label repair. Treat a cheap proven work elimination separately from the larger publication/demand question.
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). This phase remains source-only.
 } r_1N8KS1ZEKV1WQX606K6MH5NKR1
 
 Extension @park-p131 "lince.controls" {
@@ -348,7 +354,7 @@ Extension @park-p131 "lince.controls" {
     }]
 }
 
-P132 — Retain one unchanged capture-contributor derivation. (
+P132 — Verify capture contributor reuse within each audit. (
     @park-p132: 0,
     is #task,
     #park-performance-task,
@@ -356,12 +362,13 @@ P132 — Retain one unchanged capture-contributor derivation. (
     #part-of @park-dev-05-feature-costs-and-scaling: 61,
     #park-workflow @park-development-cycle
 ) { r_01Z5DC695MDHGNT51DPHKY2J3T
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Capture classification is memoized only during one immutable-world audit, with borrowed writer/history data and shared contributor checks. Existing shared capture extraction remains the baseline; authorization is revalidated at its original boundaries.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** Check sibling aliases, invalid owner data, private/public transitions, replaced/removed sources, lock/output changes and simultaneous consumers. Compare audit work and memory with capture privacy intact.
 
+**Why:** One audit should not classify the same scene member repeatedly, while access decisions remain current.
 
-**Why:** capture ownership/source normalization may repeat large scene walks even while content and capture demand are unchanged. **Scope:** select P66/P124's measured derivation in native capture/topology, reuse explicit owner/UID/placement and source revisions, and separate stable contributor structure from changing media pixels. Existing shared capture extraction is the baseline. **Verify:** sibling metadata/image aliases, private/public changes, window/source replacement, removal, lock/output changes and simultaneous consumers; invalid owner data remains conservative. Include cache validation/retirement, memory and actual foreground cost. Never cache an access decision beyond its valid epoch or expose a previously valid private frame while revalidating. **Conditional on:** a remaining expensive walk, separate from GPU pass removal P55.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_01Z5DC695MDHGNT51DPHKY2J3T
 
 Extension @park-p132 "lince.controls" {

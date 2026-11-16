@@ -230,10 +230,10 @@ fn header_is_compact_and_live_dates_do_not_overwrite_user_edits() {
     );
     let mut row = frequency(&draft());
     row.next_at_ms = Some(1_790_251_200_000);
-    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row.clone()];
+    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row.clone()].into();
     ui::Command::Edit(row.uid.clone()).apply(app.world_mut(), owner);
     row.next_at_ms = Some(row.next_at_ms.unwrap() + 86_400_000);
-    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row.clone()];
+    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row.clone()].into();
     ui::refresh_next_date(app.world_mut(), owner);
     let changed = app
         .world()
@@ -253,7 +253,7 @@ fn header_is_compact_and_live_dates_do_not_overwrite_user_edits() {
         .fields[3] = "2026-09-21T09:55:00-03:00".into();
     ui::render_form(app.world_mut(), owner);
     row.next_at_ms = Some(row.next_at_ms.unwrap() + 86_400_000);
-    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row];
+    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![row].into();
     ui::refresh_next_date(app.world_mut(), owner);
     assert_eq!(
         app.world()
@@ -304,7 +304,7 @@ fn rows_keep_indicator_name_slug_and_icons_on_one_line() {
         if quantity == 1 {
             assert!(!previous.same_layout(&row));
         }
-        world.get_mut::<View>(owner).unwrap().rows = vec![row.clone()];
+        world.get_mut::<View>(owner).unwrap().rows = vec![row.clone()].into();
         ui::render_list(world, owner);
         let list = world.get::<View>(owner).unwrap().list;
         let block = world.get::<Children>(list).unwrap()[0];
@@ -374,7 +374,8 @@ fn large_lists_only_render_one_page_and_filter_without_rebuilding_the_draft() {
             row.slug = format!("frequency-{index}");
             row
         })
-        .collect();
+        .collect::<Vec<_>>()
+        .into();
     ui::render_list(app.world_mut(), owner);
     let list = app.world().get::<View>(owner).unwrap().list;
     assert_eq!(app.world().get::<Children>(list).unwrap().len(), 21);
@@ -416,11 +417,7 @@ fn drafts_stay_first_survive_live_updates_and_persist() {
     );
     let form = app.world().get::<View>(owner).unwrap().form;
     let editor = app.world().get::<Children>(form).unwrap()[2];
-    app.world_mut()
-        .get_mut::<View>(owner)
-        .unwrap()
-        .rows
-        .push(frequency(&draft()));
+    app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![frequency(&draft())].into();
     ui::render_list(app.world_mut(), owner);
     assert!(app.world().get_entity(editor).is_ok());
     let saved = snapshot(app.world_mut(), root);

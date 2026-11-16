@@ -190,9 +190,9 @@ fn fixture() -> DemeterCastle {
     DemeterCastle {
         config,
         selected_food: Some(food.clone()),
-        catalog: json!({"foods":[{"uid":food,"label":"Example cooked beans — measured preparation without added salt"}],"offers":[{"uid":offer,"valid":true,"market":{"offer":market,"vendor":"Local market example","observed_on":"2026-10-25"}}],"templates":[{"uid":process,"template":template,"foods":[food]}],"plans":[],"references":[],"vocabulary":{}}),
-        result: Some(result),
-        projection: Some(projection),
+        catalog: json!({"foods":[{"uid":food,"label":"Example cooked beans — measured preparation without added salt"}],"offers":[{"uid":offer,"valid":true,"market":{"offer":market,"vendor":"Local market example","observed_on":"2026-10-25"}}],"templates":[{"uid":process,"template":template,"foods":[food]}],"plans":[],"references":[],"vocabulary":{}}).into(),
+        result: Some(result.into()),
+        projection: Some(projection.into()),
         changed: false,
         stale: false,
         ..Default::default()

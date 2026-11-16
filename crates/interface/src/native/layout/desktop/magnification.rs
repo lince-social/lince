@@ -75,10 +75,21 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
 }
 
 fn read(world: &World, field: Entity) -> Result<f64, String> {
-    let input = world.get::<EditableText>(field).ok_or("The magnification field is unavailable.")?;
-    if input.is_composing() || !input.pending_edits.is_empty() || input.pending_paste.is_some() { return Err("Finish typing before changing or saving magnification.".into()); }
-    let factor = input.value().to_string().trim().parse::<f64>().map_err(|_| "Enter a magnification factor between 1 and 4.")?;
-    if !valid(factor) { return Err("Enter a finite magnification factor between 1 and 4.".into()); }
+    let input = world
+        .get::<EditableText>(field)
+        .ok_or("The magnification field is unavailable.")?;
+    if input.is_composing() || !input.pending_edits.is_empty() || input.pending_paste.is_some() {
+        return Err("Finish typing before changing or saving magnification.".into());
+    }
+    let factor = input
+        .value()
+        .to_cow()
+        .trim()
+        .parse::<f64>()
+        .map_err(|_| "Enter a magnification factor between 1 and 4.")?;
+    if !valid(factor) {
+        return Err("Enter a finite magnification factor between 1 and 4.".into());
+    }
     Ok(factor)
 }
 

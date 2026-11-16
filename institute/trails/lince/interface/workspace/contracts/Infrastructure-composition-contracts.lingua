@@ -157,13 +157,13 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 - [ ] **R1016.** Live evidence/source-age/access/reconciliation is core stages [13](Operational-workflow-contracts.lingua)–[14](Infrastructure-composition-contracts.lingua). New thermal/structural/fluid/traffic/equipment/scientific predictions and their coupling are retained deferred stages [16](Material-property-contracts.lingua)–[21](Specialist-science-contracts.lingua) work. A feed, a geometry model or the existing operational simulator does not implement those solvers; their absence cannot block core observation/workspace stabilization.
 
-- [ ] **R1017.** Reuse Signal semantics for sampled properties where appropriate. High-rate media uses a separate bounded stream with identity, capture timestamps, calibration, quality and retention. Do not store every video frame as a Record or numeric Signal.
+- [ ] **R1017.** Reuse Signal semantics for sampled properties where appropriate. High-rate camera media uses the [Camera feeds](../features/Camera-Feeds.lingua) bounded stream contract with identity, capture-time quality, pose/calibration and delivered-image metadata. Live media is transient processing input, not an archive: persist source/task metadata and permitted derived observations/model revisions, not every frame as a Record, Signal, log or autosaved asset. CV.R04 defines bounded buffering and expired-evidence limits.
 
-- [ ] **R1018.** A live camera can be a screen at a place or a calibrated viewpoint. Projecting its image into geometry requires calibration, time alignment and visibility/occlusion handling; a URL alone does not supply these.
+- [ ] **R1018.** A live camera can be a screen at a place or a calibrated viewpoint. Its source/plugin descriptor binds a stable camera/view to a place/component, declared position/orientation/frame, resolution and optical/time metadata. Camera location and observed footprint are distinct. Projecting image results into geometry requires the actual calibration, delivered-image transform, time alignment and visibility/occlusion assumptions; a URL alone supplies none of these. CV.R01–CV.R03 govern this interface.
 
 - [ ] **R1019.** Keep observation, object tracking, reconstructed geometry and accepted operational changes separate. A disappearing detection can mean occlusion or tracking failure, not consumption, destruction or sale.
 
-- [ ] **R1020.** Coordinate reconstruction with `Computer-Vision-Lab.md` (previous path; locate the current merged specification before relying on it). Require replay fixtures, calibration and explicit source demand before any live reconstruction integration. Shared stream contracts can be built without promising online reconstruction of whole cities.
+- [ ] **R1020.** The [Camera and vision contract](Camera-vision-contracts.lingua) is the concrete owner of the feed-plus-metadata handoff to Fiote, supported vision-model selection, inspect/watch operations and one-shot/periodic modeled outputs. It replaces the previously unavailable Computer-Vision-Lab.md reference for this bounded scope. Use replayable generated/permitted fixtures, actual vision workers and explicit source demand; no live-video archive is required. Basic 2D/calibrated-proxy modeling does not promise online reconstruction of whole cities; additional mesh/splat methods need their implemented adapter and independent proof.
 
 - [ ] **R1021.** Allow specialist solvers to consume explicitly mapped, versioned inputs and return typed results with units, model identity, assumptions, coverage and execution status. They must not write live accepted state directly from a scenario.
 
@@ -203,7 +203,7 @@ Finish with a useful local infrastructure workspace composed from independently 
 
 - [ ] **R1050.** **Do not make every scene element a Record automatically.** Keep static details in asset metadata. Create or link Records for objects people coordinate, query, own, maintain or attach evidence to; expand semantic coverage when needed.
 
-- [ ] **R1051.** **Camera detail can increase exposure without increasing operational certainty.** Begin with recorded evidence and calibrated viewpoints. Add live feeds for a named purpose with retention and access policies.
+- [ ] **R1051.** **Camera detail and operational certainty are separate.** Use feeds for an explicit observation/modeling task with known or explicitly uncertain calibration, source age and access scope. Keep live media in bounded transient processing windows and retain only permitted derived results/metadata. Test with generated or separately permitted fixture inputs; recording a user feed is not a prerequisite. Derived confidence or visual detail cannot substitute for source coverage or accepted operational evidence.
 
 - [ ] **R1052.** **A city should not require a single giant trusted workspace.** Permit independently governed layers and partial federation. One Organ can certify its decisions without owning everyone else's observations.
 

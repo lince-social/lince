@@ -550,7 +550,7 @@ mod tests {
             id: "numbers".into(),
             rows: vec![serde_json::json!({
             "uid":uid, "secret":"unrequested metadata", "numeric_values":{(key(&field)):"20", "other":"123"}
-            })],
+            })].into(),
         };
         receive(&mut world, &Source::Organ(nucleus::new_uid("r")), &message);
         assert!(
@@ -583,7 +583,7 @@ mod tests {
             &Source::Local,
             &ServerMessage::Update {
                 id: "numbers".into(),
-                rows: vec![],
+                rows: vec![].into(),
             },
         );
         assert!(
@@ -832,7 +832,7 @@ mod tests {
                 id,
                 rows: vec![
                     serde_json::json!({"uid":uid,"numeric_values":{(key(&model::bindings::NumericField::Quantity)):"20"}}),
-                ],
+                ].into(),
             },
         );
         update(app.world_mut());

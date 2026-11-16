@@ -27,21 +27,24 @@ fn sound_membership_blocks_cross_boundary_interactions_in_both_directions() {
     update(&mut world);
     assert!(
         !world.resource::<Runtime>().0.areas[&source]
-            .1
+            .members
             .contains_key(&target)
     );
     world.get_mut::<CanvasItem>(target).unwrap().position = DVec2::ZERO;
     update(&mut world);
     assert_eq!(
-        world.resource::<Runtime>().0.areas[&source].1.get(&target),
-        Some(&true)
+        world.resource::<Runtime>().0.areas[&source]
+            .members
+            .get(&target)
+            .map(|member| member.inside),
+        Some(true)
     );
     world.get_mut::<InfluenceArea>(source).unwrap().center = [100.0, 0.0];
     world.get_mut::<CanvasItem>(source).unwrap().position = DVec2::X * 100.0;
     update(&mut world);
     assert!(
         !world.resource::<Runtime>().0.areas[&source]
-            .1
+            .members
             .contains_key(&target)
     );
 }
@@ -136,14 +139,17 @@ fn sound_area_membership_respects_workspace_and_shape() {
         ))
         .id();
     update(&mut world);
-    let members = &world.resource::<Runtime>().0.areas[&area].1;
-    assert_eq!(members.get(&sand), Some(&true));
+    let members = &world.resource::<Runtime>().0.areas[&area].members;
+    assert_eq!(members.get(&sand).map(|member| member.inside), Some(true));
     assert!(!members.contains_key(&foreign));
     world.get_mut::<CanvasItem>(sand).unwrap().position = DVec2::splat(49.0);
     update(&mut world);
     assert_eq!(
-        world.resource::<Runtime>().0.areas[&area].1.get(&sand),
-        Some(&false)
+        world.resource::<Runtime>().0.areas[&area]
+            .members
+            .get(&sand)
+            .map(|member| member.inside),
+        Some(false)
     );
     world.get_mut::<Workspaces>(root).unwrap().active = 2;
     update(&mut world);
@@ -160,10 +166,10 @@ fn sound_area_many_sands_share_bounded_playback_requests() {
         ..Default::default()
     };
     let mut crossings = Crossings::default();
-    crossings.sample(area, &sound, sands.iter().map(|e| (*e, false)).collect());
+    crossings.sample(area, &sound, sands.iter().map(|e| (*e, false)));
     assert_eq!(
         crossings
-            .sample(area, &sound, sands.iter().map(|e| (*e, true)).collect())
+            .sample(area, &sound, sands.iter().map(|e| (*e, true)))
             .len(),
         1
     );
@@ -199,8 +205,11 @@ fn sound_area_spatial_membership_respects_depth() {
         .id();
     update(&mut world);
     assert_eq!(
-        world.resource::<Runtime>().0.areas[&owner].1.get(&sand),
-        Some(&true)
+        world.resource::<Runtime>().0.areas[&owner]
+            .members
+            .get(&sand)
+            .map(|member| member.inside),
+        Some(true)
     );
     world
         .get_mut::<crate::native::topology::Spatial>(sand)
@@ -208,7 +217,10 @@ fn sound_area_spatial_membership_respects_depth() {
         .elevation = -50.0;
     update(&mut world);
     assert_eq!(
-        world.resource::<Runtime>().0.areas[&owner].1.get(&sand),
-        Some(&false)
+        world.resource::<Runtime>().0.areas[&owner]
+            .members
+            .get(&sand)
+            .map(|member| member.inside),
+        Some(false)
     );
 }

@@ -254,6 +254,34 @@ pub struct ContentMapping {
     pub corners: Option<[[f64; 2]; 4]>,
 }
 
+/// A surface-to-canvas projection prepared for multiple points in one mapping.
+/// Perspective coefficients depend on the mapping, not on each queried point.
+#[derive(Clone, Copy, Debug)]
+pub struct CanvasProjection {
+    canvas: Rectangle,
+    surface: Rectangle,
+    matrix: Option<[[f64; 3]; 3]>,
+}
+
+impl CanvasProjection {
+    pub fn surface(&self) -> Rectangle {
+        self.surface
+    }
+
+    pub fn point(&self, point: [f64; 2]) -> Option<[f64; 2]> {
+        let uv = std::array::from_fn(|axis| {
+            (point[axis] - self.surface.origin[axis]) / self.surface.size[axis]
+        });
+        if let Some(matrix) = self.matrix {
+            project(matrix, uv)
+        } else {
+            Some(std::array::from_fn(|axis| {
+                self.canvas.origin[axis] + uv[axis] * self.canvas.size[axis]
+            }))
+        }
+    }
+}
+
 impl ContentMapping {
     pub fn surface_point(self, canvas_point: [f64; 2]) -> Option<[f64; 2]> {
         if !self.canvas.contains(canvas_point) {
@@ -277,16 +305,19 @@ impl ContentMapping {
     }
 
     pub fn canvas_point(self, point: [f64; 2]) -> Option<[f64; 2]> {
-        let uv = std::array::from_fn(|axis| {
-            (point[axis] - self.surface.origin[axis]) / self.surface.size[axis]
-        });
-        if let Some(corners) = self.corners {
-            project(homography(corners)?, uv)
-        } else {
-            Some(std::array::from_fn(|axis| {
-                self.canvas.origin[axis] + uv[axis] * self.canvas.size[axis]
-            }))
-        }
+        self.canvas_projection()?.point(point)
+    }
+
+    pub fn canvas_projection(self) -> Option<CanvasProjection> {
+        let matrix = match self.corners {
+            Some(corners) => Some(homography(corners)?),
+            None => None,
+        };
+        Some(CanvasProjection {
+            canvas: self.canvas,
+            surface: self.surface,
+            matrix,
+        })
     }
 
     pub fn translated(self, delta: [f64; 2]) -> Option<Self> {

@@ -5,11 +5,24 @@ use crate::native::{
 };
 use bevy::text::EditableText;
 use chrono::Datelike;
+use std::sync::Arc;
 
 #[derive(Component)]
 pub(super) struct DateField {
     row: Entity,
     property: String,
+}
+
+#[derive(Component)]
+struct ParsedFields {
+    row: Entity,
+    editor: Entity,
+    timezone: String,
+    fields: Vec<(Entity, String, String)>,
+    start: Option<String>,
+    end: Option<String>,
+    selecting_end: bool,
+    key: Arc<str>,
 }
 
 #[derive(Clone)]
@@ -153,13 +166,25 @@ pub(super) fn position(world: &mut World, owner: Entity) {
                 .get::<WorkspaceMember>(owner)
                 .is_none_or(|member| member.0 == spaces.active)
         });
-    let mut node = world.get::<Node>(owner).unwrap().clone();
-    node.left = px(left);
-    node.top = px(top.clamp(8.0, (viewport.y - height - 8.0).max(8.0)));
-    node.width = px(width);
-    node.height = px(height);
-    node.display = if active { Display::Flex } else { Display::None };
-    world.get_mut::<Node>(owner).unwrap().set_if_neq(node);
+    let left = px(left);
+    let top = px(top.clamp(8.0, (viewport.y - height - 8.0).max(8.0)));
+    let width = px(width);
+    let height = px(height);
+    let display = if active { Display::Flex } else { Display::None };
+    let node = world.get::<Node>(owner).unwrap();
+    if node.left != left
+        || node.top != top
+        || node.width != width
+        || node.height != height
+        || node.display != display
+    {
+        let mut node = world.get_mut::<Node>(owner).unwrap();
+        node.left = left;
+        node.top = top;
+        node.width = width;
+        node.height = height;
+        node.display = display;
+    }
 }
 
 #[derive(Clone)]
@@ -178,48 +203,96 @@ impl Action for Endpoint {
     }
 }
 
-pub(super) fn sync(world: &mut World, owner: Entity) -> String {
-    let Some(picker) = world.get::<Picker>(owner) else {
-        return String::new();
-    };
+pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
+    let _sync = nucleus::performance::Span::new("calendar-picker-sync");
+    let picker = world.get::<Picker>(owner)?;
     let row = picker.row;
     let editor = picker.editor;
-    let mut start = None;
-    let mut end = None;
-    let mut selecting_end = false;
-    let mut key = String::new();
-    for (entity, field, text) in world
-        .query::<(Entity, &DateField, &EditableText)>()
+    let mut query = world.query::<(Entity, &DateField, &EditableText)>();
+    let inputs: Vec<_> = query
         .iter(world)
-    {
-        if field.row != row {
-            continue;
-        }
-        let value = text.value().to_string();
-        key.push_str(&value);
-        key.push('|');
-        let date = nucleus::schedule::timezone_date(
-            &value,
-            &world.get::<CalendarSand>(owner).unwrap().0.timezone,
-        )
-        .map(|date| date.to_string());
-        if field.property == "start_date" {
-            start = date;
-        } else {
-            end = date;
-        }
-        if entity == editor {
-            selecting_end = field.property == "due_date";
-        }
+        .filter(|(_, field, _)| field.row == row)
+        .collect();
+    let timezone = &world.get::<CalendarSand>(owner).unwrap().0.timezone;
+    let previous = world.get::<ParsedFields>(owner);
+    let unchanged = previous.is_some_and(|previous| {
+        previous.row == row
+            && previous.editor == editor
+            && &previous.timezone == timezone
+            && previous.fields.len() == inputs.len()
+            && previous.fields.iter().zip(&inputs).all(
+                |((entity, property, value), (current, field, text))| {
+                    entity == current
+                        && property == &field.property
+                        && text.value() == value.as_str()
+                },
+            )
+    });
+    if !unchanged {
+        let _prepare = nucleus::performance::Span::new("calendar-picker-preparation");
+        let mut start = None;
+        let mut end = None;
+        let mut selecting_end = false;
+        let mut key = String::new();
+        let fields = inputs
+            .into_iter()
+            .map(|(entity, field, text)| {
+                let value = text.value().to_string();
+                key.push_str(&value);
+                key.push('|');
+                let date =
+                    nucleus::schedule::timezone_date(&value, timezone).map(|date| date.to_string());
+                if field.property == "start_date" {
+                    start = date;
+                } else {
+                    end = date;
+                }
+                if entity == editor {
+                    selecting_end = field.property == "due_date";
+                }
+                (entity, field.property.clone(), value)
+            })
+            .collect::<Vec<_>>();
+        let key = match previous.filter(|previous| previous.key.as_ref() == key.as_str()) {
+            Some(previous) => previous.key.clone(),
+            None => Arc::<str>::from(key),
+        };
+        let prepared = ParsedFields {
+            row,
+            editor,
+            timezone: timezone.clone(),
+            fields,
+            start,
+            end,
+            selecting_end,
+            key,
+        };
+        nucleus::performance::add(
+            "calendar-picker-fields-prepared",
+            prepared.fields.len() as u64,
+        );
+        world.entity_mut(owner).insert(prepared);
+    } else {
+        drop(inputs);
     }
+    let prepared = world.get::<ParsedFields>(owner).unwrap();
+    let key = prepared.key.clone();
     let current = &world.get::<CalendarSand>(owner).unwrap().0;
-    if current.start != start || current.end != end || current.selecting_end != selecting_end {
+    if current.start != prepared.start
+        || current.end != prepared.end
+        || current.selecting_end != prepared.selecting_end
+    {
+        let values = (
+            prepared.start.clone(),
+            prepared.end.clone(),
+            prepared.selecting_end,
+        );
         let mut sand = world.get_mut::<CalendarSand>(owner).unwrap();
-        sand.0.start = start;
-        sand.0.end = end;
-        sand.0.selecting_end = selecting_end;
+        sand.0.start = values.0;
+        sand.0.end = values.1;
+        sand.0.selecting_end = values.2;
     }
-    key
+    Some(key)
 }
 
 fn selected(event: On<SandEvent>, mut commands: Commands) {

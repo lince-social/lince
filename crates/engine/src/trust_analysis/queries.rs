@@ -171,7 +171,7 @@ impl Engine {
                     .evaluate_trust_query(person, actor, query, *as_organ, now)
                     .await?;
                 let data = json!({"trust":{"kind":"query_analysis","query":query,"analysis":evaluated.analysis,"proof_records":evaluated.proof_records,"checked_at":now.timestamp(),"meaning":"Permitted local evidence, grouped by exact meaning, unit, object and evidence class. Weighted indices are local judgments, never delivered quantities or fraud probabilities. Missing or withheld evidence is not zero contribution."}});
-                if serde_json::to_vec(&data)?.len() > nucleus::trust_analysis::MAX_BYTES {
+                if nucleus::json::encoded_len(&data)? > nucleus::trust_analysis::MAX_BYTES {
                     return Err(invalid(
                         "The result byte budget was reached; narrow this query",
                     ));

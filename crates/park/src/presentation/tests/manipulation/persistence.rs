@@ -116,7 +116,7 @@ fn assertion_rows(
     uid: &str,
 ) -> Vec<serde_json::Value> {
     let mut draft = native::protein_castle::ProteinDraft::default();
-    draft.query = serde_json::json!({"source":"assertion","where":[{"concept_in":"park-preview-property"}],"limit":512});
+    draft.query = serde_json::json!({"source":"assertion","where":[{"concept_in":"park-preview-property"}],"limit":512}).into();
     let replies = runtime.block_on(
         cell.0
             .local_session()
@@ -128,7 +128,9 @@ fn assertion_rows(
     let rows = replies
         .into_iter()
         .find_map(|reply| match reply {
-            cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+            cell::ServerMessage::Snapshot { rows, .. } => {
+                Some(std::sync::Arc::unwrap_or_clone(rows))
+            }
             cell::ServerMessage::Error { message, .. } => panic!("{message}"),
             _ => None,
         })
@@ -151,7 +153,9 @@ fn record_rows(runtime: &tokio::runtime::Runtime, cell: &CellHandle) -> Vec<serd
     replies
         .into_iter()
         .find_map(|reply| match reply {
-            cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+            cell::ServerMessage::Snapshot { rows, .. } => {
+                Some(std::sync::Arc::unwrap_or_clone(rows))
+            }
             cell::ServerMessage::Error { message, .. } => panic!("{message}"),
             _ => None,
         })

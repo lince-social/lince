@@ -4,6 +4,7 @@ mod limits_ui;
 mod records_ui;
 mod runner;
 mod sharing_ui;
+mod source;
 pub(crate) mod transfer_entry;
 mod transfers_ui;
 
@@ -11,11 +12,12 @@ use crate::native::{actions::Action, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*, text::EditableText};
 use runner::{Control, Job, Outcome, Progress};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SimulationCastle {
-    pub scenario: String,
+    pub scenario: source::Source,
     pub current_database: bool,
     pub last_run: Option<String>,
     pub source_directory: String,
@@ -34,7 +36,9 @@ pub struct SimulationCastle {
 impl Default for SimulationCastle {
     fn default() -> Self {
         Self {
-            scenario: serde_json::to_string_pretty(&simulation::fixtures::daily()).unwrap(),
+            scenario: serde_json::to_string_pretty(&simulation::fixtures::daily())
+                .unwrap()
+                .into(),
             current_database: false,
             last_run: None,
             source_directory: ".".into(),
@@ -117,7 +121,7 @@ struct View {
     completion: Option<tokio::sync::oneshot::Receiver<Result<Outcome, String>>>,
     controls: Option<tokio::sync::mpsc::UnboundedSender<Control>>,
     progress: Option<tokio::sync::watch::Receiver<Progress>>,
-    bundle: Option<simulation::artifacts::Bundle>,
+    bundle: Option<Arc<simulation::artifacts::Bundle>>,
     showing: Evidence,
     page: usize,
 }
@@ -426,7 +430,7 @@ pub(crate) fn open_current(world: &mut World, root: Entity, record: Option<&str>
     let now = nucleus::execution::now().timestamp_millis();
     let scenario = simulation::fixtures::current_database(now);
     let model = SimulationCastle {
-        scenario: serde_json::to_string_pretty(&scenario).unwrap(),
+        scenario: serde_json::to_string_pretty(&scenario).unwrap().into(),
         current_database: true,
         selected_cell: "current".into(),
         check_form: checks_ui::Form::target("current", record.unwrap_or_default()),
@@ -455,7 +459,17 @@ pub(crate) fn open_appointment(world: &mut World, root: Entity, record: &str) {
     records_ui::render(world, owner);
 }
 
+fn changed_text(input: &EditableText, current: &str) -> Option<String> {
+    let value = input.value();
+    if value == current {
+        return None;
+    }
+    nucleus::performance::add("simulation-field-values-prepared", 1);
+    Some(value.to_string())
+}
+
 fn capture(world: &mut World) {
+    let _capture = nucleus::performance::Span::new("simulation-input-capture");
     records_ui::capture(world);
     transfers_ui::capture(world);
     checks_ui::capture(world);
@@ -463,21 +477,31 @@ fn capture(world: &mut World) {
         .query::<(Entity, &View)>()
         .iter(world)
         .filter_map(|(owner, view)| {
-            Some((
-                owner,
-                world.get::<EditableText>(view.editor)?.value().to_string(),
-            ))
+            let model = world.get::<SimulationCastle>(owner)?;
+            let input = world.get::<EditableText>(view.editor)?;
+            changed_text(input, &model.scenario).map(|value| (owner, value))
         })
         .collect();
     for (owner, value) in values {
         if let Some(mut model) = world.get_mut::<SimulationCastle>(owner) {
-            model.scenario = value;
+            model.scenario.set(value);
         }
     }
     let values: Vec<_> = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .map(|(input, text)| (input.owner, input.field, text.value().to_string()))
+        .filter_map(|(input, text)| {
+            let model = world.get::<SimulationCastle>(input.owner)?;
+            let current = match input.field {
+                Field::Sources => &model.source_directory,
+                Field::Output => &model.output_directory,
+                Field::Run => &model.run_directory,
+                Field::Cell => &model.selected_cell,
+                Field::Count => &model.search_count,
+                Field::Through => &model.through,
+            };
+            changed_text(text, current).map(|value| (input.owner, input.field, value))
+        })
         .collect();
     for (owner, field, value) in values {
         if let Some(mut model) = world.get_mut::<SimulationCastle>(owner) {
@@ -541,7 +565,7 @@ fn receive(world: &mut World) {
             view.progress.take();
             match completion {
                 Ok(outcome) => {
-                    view.bundle = outcome.bundle;
+                    view.bundle = outcome.bundle.map(Arc::new);
                     view.page = 0;
                     view.showing = Evidence::Result;
                     world.get_mut::<Text>(status).unwrap().0 = outcome.status;
@@ -549,7 +573,9 @@ fn receive(world: &mut World) {
                     if let Some(prepared) = outcome.prepared {
                         let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
                         records_ui::loaded(&mut model, &prepared.scenario);
-                        model.scenario = serde_json::to_string_pretty(&prepared.scenario).unwrap();
+                        model
+                            .scenario
+                            .set(serde_json::to_string_pretty(&prepared.scenario).unwrap());
                         model.source_directory = prepared.sources;
                         model.current_database = false;
                         model.selected_cell = "current".into();
@@ -573,11 +599,11 @@ fn receive(world: &mut World) {
                     }
                     if let Some(set) = outcome.check_set {
                         let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
-                        if let Ok(mut scenario) =
-                            serde_json::from_str::<simulation::scenario::Scenario>(&model.scenario)
-                        {
+                        if let Ok(mut scenario) = model.scenario.draft() {
                             scenario.checks = set.checks.clone();
-                            model.scenario = serde_json::to_string_pretty(&scenario).unwrap();
+                            model
+                                .scenario
+                                .set(serde_json::to_string_pretty(&scenario).unwrap());
                             model.check_form.set_name = set.name.clone();
                             model.check_form.saved = Some(set);
                             let editor = world.get::<View>(owner).unwrap().editor;
@@ -823,7 +849,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
             .editor
             .set_text(&value);
         let mut model = world.get_mut::<SimulationCastle>(owner).unwrap();
-        model.scenario = value;
+        model.scenario.set(value);
         model.current_database = matches!(command, Command::Current);
         model.selected_cell = selected.clone();
         model.check_form = checks_ui::Form::target(&selected, "");
@@ -844,7 +870,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
         return Ok(());
     }
     if matches!(command, Command::Lingua | Command::Validate | Command::Save) {
-        let mut scenario: simulation::scenario::Scenario = serde_json::from_str(&model.scenario)?;
+        let mut scenario = model.scenario.draft()?;
         if matches!(command, Command::Lingua) {
             let files = simulation::lingua::package(std::path::Path::new(&model.source_directory))?;
             let cell = scenario
@@ -863,7 +889,7 @@ fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Res
                 .editor
                 .set_text(&value);
             let mut model = world.get_mut::<SimulationCastle>(owner).unwrap();
-            model.scenario = value;
+            model.scenario.set(value);
             model.current_database = false;
             world.get_mut::<Text>(status).unwrap().0 =
                 "Lingua seed prepared. Review the events and checks, then Run.".into();

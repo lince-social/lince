@@ -58,15 +58,24 @@ impl<K: Eq + Hash + Clone> Children<K> {
             }
             false
         });
-        let owned: HashSet<_> = ordered.iter().copied().collect();
-        if let Some(children) = world.get::<bevy::prelude::Children>(parent) {
-            ordered.extend(children.iter().filter(|child| !owned.contains(child)));
-            if children.iter().eq(ordered.iter().copied()) {
-                return;
-            }
-        }
-        world.entity_mut(parent).replace_children(&ordered);
+        order(world, parent, ordered);
     }
+}
+
+pub(crate) fn order(world: &mut World, parent: Entity, mut ordered: Vec<Entity>) {
+    if let Some(children) = world.get::<bevy::prelude::Children>(parent) {
+        if children.iter().eq(ordered.iter().copied()) {
+            return;
+        }
+        let owned: HashSet<_> = ordered.iter().copied().collect();
+        ordered.extend(children.iter().filter(|child| !owned.contains(child)));
+        if children.iter().eq(ordered.iter().copied()) {
+            return;
+        }
+    } else if ordered.is_empty() {
+        return;
+    }
+    world.entity_mut(parent).replace_children(&ordered);
 }
 
 pub(crate) mod tests {

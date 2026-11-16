@@ -869,7 +869,7 @@ mod tests {
             owner,
             &ServerMessage::Update {
                 id: "task".into(),
-                rows: vec![serde_json::json!({"quantity":"0"})],
+                rows: vec![serde_json::json!({"quantity":"0"})].into(),
             },
         );
         show(world, owner);
@@ -890,7 +890,7 @@ mod tests {
             owner,
             &ServerMessage::Update {
                 id: "task".into(),
-                rows: Vec::new(),
+                rows: Vec::new().into(),
             },
         );
         show(world, owner);

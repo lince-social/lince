@@ -29,7 +29,7 @@ impl Default for Draft {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Storage,
     Items,
@@ -134,12 +134,10 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
     if matches!(command, UiCommand::Copy) {
         let view = world.get::<View>(owner).unwrap();
         let copied = if view.result["kind"] == "custody_original" {
-            serde_json::from_value::<nucleus::trust_analysis::serving::Artifact>(
-                view.result["artifact"].clone(),
-            )
-            .map_err(|error| error.to_string())
-            .and_then(|artifact| artifact.bytes())
-            .and_then(|bytes| String::from_utf8(bytes).map_err(|error| error.to_string()))
+            decode::<nucleus::trust_analysis::serving::Artifact>(&view.result["artifact"])
+                .map_err(|error| error.to_string())
+                .and_then(|artifact| artifact.bytes())
+                .and_then(|bytes| String::from_utf8(bytes).map_err(|error| error.to_string()))
         } else {
             Err("Inspect a currently permitted original first".into())
         };
@@ -168,7 +166,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                 view.custody.enabled = !view.custody.enabled;
             }
             view.generation = view.generation.wrapping_add(1);
-            view.result = Value::Null;
+            view.result = Snapshot::default();
         }
         return;
     }
@@ -183,7 +181,7 @@ pub(super) fn receive(view: &mut View, result: &Value) {
     if result["kind"] != "custody_policy" {
         return;
     }
-    let Ok(policy) = serde_json::from_value::<Policy>(result["state"]["policy"].clone()) else {
+    let Ok(policy) = decode::<Policy>(&result["state"]["policy"]) else {
         return;
     };
     view.custody = Draft {
@@ -399,9 +397,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             ) {
                 if let (Some(record), Ok(offer)) = (
                     row["record"].as_str(),
-                    serde_json::from_value::<nucleus::trust_analysis::custody::Offer>(
-                        row["offer"].clone(),
-                    ),
+                    decode::<nucleus::trust_analysis::custody::Offer>(&row["offer"]),
                 ) {
                     if let Ok(hash) = offer.hash() {
                         button(
@@ -462,18 +458,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 result["hash"], result["signature"]
             ),
         );
-        let text = serde_json::to_string_pretty(&result["artifact"]).unwrap_or_default();
-        let pages = text.chars().count().div_ceil(4096).max(1);
+        let text = result
+            .text(JsonPart::Artifact)
+            .expect("custody result is an object");
+        let pages = text.characters().div_ceil(snapshot::PAGE_CHARACTERS).max(1);
         let page = draft.page.min(pages - 1);
-        label(
-            world,
-            owner,
-            &text
-                .chars()
-                .skip(page * 4096)
-                .take(4096)
-                .collect::<String>(),
-        );
+        label(world, owner, text.page(page));
         if page > 0 {
             button(
                 world,

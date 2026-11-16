@@ -382,9 +382,9 @@ fn keyboard(keys: Res<ButtonInput<KeyCode>>, mut queue: ResMut<Intents>) {
 }
 
 fn password_masks(inputs: Query<&EditableText>, mut masks: Query<(&PasswordMask, &mut Text)>) {
-    for (mask, mut text) in &mut masks {
+    for (mask, text) in &mut masks {
         if let Ok(input) = inputs.get(mask.0) {
-            text.set_if_neq(Text::new("•".repeat(input.value().chars().count().min(32))));
+            lince_interface::controls::password_mask(text, input.value().chars().take(32).count());
         }
     }
 }
@@ -1064,13 +1064,17 @@ fn receive_message(world: &mut World, message: ServerMessage) {
         ServerMessage::ActionOk { id, data, .. }
             if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") =>
         {
-            lince_interface::location::receive(world, id, Ok(data.clone().unwrap_or(Value::Null)));
+            lince_interface::location::receive_ref(
+                world,
+                id,
+                Ok(data.as_ref().unwrap_or(&Value::Null)),
+            );
             return;
         }
         ServerMessage::Error { id, message, .. }
             if id.starts_with("location-ui_") || id.starts_with("saved-location-ui_") =>
         {
-            lince_interface::location::receive(world, id, Err(message.clone()));
+            lince_interface::location::receive_ref(world, id, Err(message));
             return;
         }
         _ => {}
@@ -1093,8 +1097,10 @@ fn receive_message(world: &mut World, message: ServerMessage) {
             };
             let editing = editing(world);
             let mut state = world.resource_mut::<Mobile>();
-            let changed = state.rows.get(topic) != Some(&rows);
-            state.rows.insert(topic.into(), rows);
+            let changed = state.rows.get(topic) != Some(rows.as_ref());
+            state
+                .rows
+                .insert(topic.into(), std::sync::Arc::unwrap_or_clone(rows));
             if changed && !editing {
                 state.dirty = true;
             }

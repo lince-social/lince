@@ -1,0 +1,14 @@
+Kamalie procedural dungeons (@kamalie-dungeons: 0, is #chapter, #part-of @ws-kamalie-games) {
+## Generation
+
+Generate one connected floor network with varied corridor lengths, narrow and broad passages, bifurcations, loops that provide shortcuts, and places where paths converge. Keep the outer boundary closed. Place the player and a reachable dark exit on different tiles. Use a run-owned random stream; a seed reproduces generation for debugging without exposing the next destination during play.
+
+The dark square is a one-way level transition. Entering it generates the next stage and disposes of the previous one. It is not possible to go back. The player knows which square is dark but does not know the destination until entering. The current carried build survives travel; restarting a run removes it.
+
+## Later generation work
+
+- [ ] Define level-dependent distributions for corridor width and loop density.
+- [ ] Generate encounter regions after navigable geometry is validated.
+- [ ] Reject enemy or item placements that overlap walls or block the spawn.
+- [ ] Record generation revision alongside a seed for reproduction.
+}

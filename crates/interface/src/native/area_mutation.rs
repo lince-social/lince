@@ -309,6 +309,7 @@ struct Record {
 }
 
 fn records(world: &mut World) -> Vec<Record> {
+    let _preparation = nucleus::performance::Span::new("area-mutation-snapshot");
     let mut records = BTreeMap::<(Entity, u64, String, String), Record>::new();
     for (entity, item, properties, parent, member) in world
         .query_filtered::<(
@@ -341,8 +342,8 @@ fn records(world: &mut World) -> Vec<Record> {
         }
         let source = world
             .get::<crate::native::protein_area::RecordBinding>(entity)
-            .map_or(crate::native::protein_area::Source::Local, |binding| {
-                binding.source.clone()
+            .map_or(&crate::native::protein_area::Source::Local, |binding| {
+                &binding.source
             });
         let key = (
             parent.parent(),
@@ -360,13 +361,8 @@ fn records(world: &mut World) -> Vec<Record> {
             filters: HashSet::new(),
             sources: Vec::new(),
         });
-        let source = world
-            .get::<crate::native::protein_area::RecordBinding>(entity)
-            .map_or(crate::native::protein_area::Source::Local, |binding| {
-                binding.source.clone()
-            });
-        if !record.sources.contains(&source) {
-            record.sources.push(source);
+        if !record.sources.contains(source) {
+            record.sources.push(source.clone());
         }
         record.points.push(
             world
@@ -410,21 +406,30 @@ fn records(world: &mut World) -> Vec<Record> {
     } else {
         Vec::new()
     };
-    for record in records.values_mut() {
-        for source in &sources {
-            if record.points.iter().all(|point| {
-                crate::native::topology::influence::blocked(
-                    world,
-                    record.root,
-                    record.workspace,
-                    *source,
-                    *point,
-                    Some(&record.properties),
-                    None,
-                    false,
-                )
-            }) {
-                record.immune.insert(*source);
+    if !sources.is_empty() && !records.is_empty() {
+        let mut query = crate::native::topology::influence::BlockerQuery::new(world);
+        let mut blockers = HashMap::new();
+        for record in records.values_mut() {
+            for source in &sources {
+                let barriers = blockers
+                    .entry((record.root, record.workspace, *source))
+                    .or_insert_with(|| {
+                        crate::native::topology::influence::Blockers::prepare(
+                            world,
+                            &mut query,
+                            record.root,
+                            record.workspace,
+                            *source,
+                            false,
+                        )
+                    });
+                if record
+                    .points
+                    .iter()
+                    .all(|point| barriers.blocks(*point, Some(&record.properties), None))
+                {
+                    record.immune.insert(*source);
+                }
             }
         }
     }
@@ -599,7 +604,9 @@ fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, reco
             }
             continue;
         }
-        let preview = data.as_ref().and_then(|data| serde_json::from_value::<TransitionPreview>(data.clone()).ok());
+        let preview = data
+            .as_ref()
+            .and_then(|data| serde_json::from_value::<TransitionPreview>(data.clone()).ok());
         let Some(preview) = preview.filter(|preview| preview.target == pending.target) else {
             stop_pending(
                 world,

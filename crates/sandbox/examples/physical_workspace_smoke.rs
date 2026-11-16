@@ -88,7 +88,7 @@ fn exercise(world: &mut World) {
             "Public task",
             bevy::math::DVec2::new(100.0, 100.0),
         );
-        world.entity_mut(owner).insert((Name::new("Assigned task"), lince_sandbox::area::RecordProperties(serde_json::json!({"uid":nucleus::new_uid("r"),"head":"Projected task","quantity":-3})), lince_sandbox::shader_effects::Surface { effect: nucleus::shader_effect::Effect::default(), quantity: "-3".into(), motion: false, glow: 0.0, ..default() }));
+        world.entity_mut(owner).insert((Name::new("Assigned task"), lince_sandbox::area::RecordProperties(serde_json::json!({"uid":nucleus::new_uid("r"),"head":"Projected task","quantity":-3}).into()), lince_sandbox::shader_effects::Surface { effect: nucleus::shader_effect::Effect::default(), quantity: "-3".into(), motion: false, glow: 0.0, ..default() }));
         lince_sandbox::sand_store::spawn_sand(
             world,
             root,
@@ -221,10 +221,12 @@ fn exercise(world: &mut World) {
                                 .get_mut::<lince_sandbox::shader_effects::Surface>(owner)
                                 .unwrap()
                                 .quantity = "0".into();
-                            world
-                                .get_mut::<lince_sandbox::area::RecordProperties>(owner)
-                                .unwrap()
-                                .0["quantity"] = 0.into();
+                            std::sync::Arc::make_mut(
+                                &mut world
+                                    .get_mut::<lince_sandbox::area::RecordProperties>(owner)
+                                    .unwrap()
+                                    .0,
+                            )["quantity"] = 0.into();
                         }
                         1 => {
                             let begin = input(world, root, 1, model::Phase::Begin, [0.4, 0.4]);

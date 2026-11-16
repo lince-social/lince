@@ -3,6 +3,9 @@ use crate::{host::{HostRequest, display::DisplaySnapshot, input::{AbsoluteDevice
 use bevy::{input_focus::{FocusCause, InputFocus}, prelude::*, text::{EditableText, TextEdit}};
 use std::collections::BTreeMap;
 
+mod presentation;
+use presentation::refresh;
+
 #[derive(Component)]
 struct Page {
     body: Entity,
@@ -92,7 +95,7 @@ fn invalidate_actions(world: &mut World, page: Entity) {
 }
 
 fn mappings(world: &World, editor: Entity) -> Result<BTreeMap<u32, u32>, String> {
-    let value = world.get::<EditableText>(editor).ok_or("Button editor is unavailable.")?.value().to_string();
+    let value = world.get::<EditableText>(editor).ok_or("Button editor is unavailable.")?.value().to_cow();
     let mut mappings = BTreeMap::new();
     for mapping in value.split_whitespace() {
         let (source, target) = mapping.split_once('=').ok_or("Use source=target for each button mapping.")?;
@@ -107,17 +110,22 @@ fn mapping_name(source: u32, target: u32) -> String {
     if source == target { "Device default".into() } else { match target { 272 => "Left button".into(), 273 => "Right button".into(), 274 => "Middle button".into(), _ => format!("Button {target}") } }
 }
 
-fn current(world: &World, page: Entity, snapshot: &AbsoluteSnapshot) -> Result<AbsolutePreferences, String> {
-    let state = world.get::<Page>(page).ok_or("The device editor closed.")?;
-    let device = device(state, snapshot).ok_or("The selected device was removed or replaced; Cancel reloads the devices.")?;
-    let key = device.key.as_ref().ok_or("This device has no unambiguous persistent identity.")?;
-    let calibration = world.get::<EditableText>(state.calibration).ok_or("Calibration editor is unavailable.")?.value().to_string();
+fn preference(world: &World, calibration: Entity, buttons: Entity, output: &Option<String>) -> Result<AbsolutePreference, String> {
+    let calibration = world.get::<EditableText>(calibration).ok_or("Calibration editor is unavailable.")?.value().to_cow();
     let calibration = if calibration.trim().is_empty() { None } else {
         let values = calibration.split_whitespace().map(|value| value.parse::<f32>().map_err(|_| "Calibration needs six numbers.")).collect::<Result<Vec<_>, _>>()?;
         Some(values.try_into().map_err(|_| "Calibration needs exactly six numbers.")?)
     };
-    let preference = AbsolutePreference { output: state.output.clone(), calibration, buttons: mappings(world, state.buttons)? };
+    let preference = AbsolutePreference { output: output.clone(), calibration, buttons: mappings(world, buttons)? };
     preference.validate()?;
+    Ok(preference)
+}
+
+fn current(world: &World, page: Entity, snapshot: &AbsoluteSnapshot) -> Result<AbsolutePreferences, String> {
+    let state = world.get::<Page>(page).ok_or("The device editor closed.")?;
+    let device = device(state, snapshot).ok_or("The selected device was removed or replaced; Cancel reloads the devices.")?;
+    let key = device.key.as_ref().ok_or("This device has no unambiguous persistent identity.")?;
+    let preference = preference(world, state.calibration, state.buttons, &state.output)?;
     let mut settings = state.origin.as_ref().ok_or("Device settings are still loading.")?.1.clone();
     if preference == AbsolutePreference::default() { settings.remove(key); }
     else { settings.insert(key.clone(), preference); }
@@ -221,101 +229,6 @@ impl Action for Change {
     }
 }
 
-fn refresh(world: &mut World) {
-    let snapshot = world.get_resource::<AbsoluteSnapshot>().cloned().unwrap_or_default();
-    let pages = world.query_filtered::<Entity, With<Page>>().iter(world).collect::<Vec<_>>();
-    for page in pages {
-        let state = world.get::<Page>(page).unwrap();
-        let listed = snapshot.devices.iter().map(|device| (device.id.clone(), device.generation, device.name.clone())).collect::<Vec<_>>();
-        if state.listed != listed {
-            let (list, rows) = (state.list, state.rows.clone());
-            for row in rows { if let Ok(entity) = world.get_entity_mut(row) { entity.despawn(); } }
-            let rows = listed.iter().map(|(id, generation, name)| button(world, list, page, name, Change::Select(id.clone(), *generation)).0).collect();
-            let mut state = world.get_mut::<Page>(page).unwrap();
-            state.rows = rows;
-            state.listed = listed;
-        }
-        if world.get::<Page>(page).unwrap().origin.is_none() {
-            world.get_mut::<Page>(page).unwrap().selected = snapshot.devices.first().map(|device| (device.id.clone(), device.generation));
-            load(world, page, &snapshot);
-        }
-        let state = world.get::<Page>(page).unwrap();
-        let codes = device(state, &snapshot).map(|device| device.buttons.clone()).unwrap_or_default();
-        let container = state.button_list;
-        let obsolete = state.button_rows.iter().filter_map(|(code, row)| (!codes.contains(code)).then_some((*code, row.0))).collect::<Vec<_>>();
-        for (code, entity) in obsolete {
-            if let Ok(entity) = world.get_entity_mut(entity) { entity.despawn(); }
-            world.get_mut::<Page>(page).unwrap().button_rows.remove(&code);
-        }
-        for code in codes {
-            if !world.get::<Page>(page).unwrap().button_rows.contains_key(&code) {
-                let row = button(world, container, page, "Tool button", Change::MapButton(code));
-                world.get_mut::<Page>(page).unwrap().button_rows.insert(code, row);
-            }
-        }
-        let state = world.get::<Page>(page).unwrap();
-        let draft = current(world, page, &snapshot).ok();
-        let pending = state.pending.clone();
-        if let Some((id, settings)) = pending && let Some(response) = snapshot.response.as_ref().filter(|response| response.request == id) {
-            let status = state.status;
-            match &response.outcome {
-                InputOutcome::Pending => {}
-                InputOutcome::Saved { warning } => {
-                    let reloaded = state.pending_reload;
-                    let unchanged = draft.as_ref() == Some(&settings) || reloaded && device(state, &snapshot).is_none();
-                    if unchanged { load(world, page, &snapshot); }
-                    let mut state = world.get_mut::<Page>(page).unwrap();
-                    state.pending = None;
-                    state.pending_reload = false;
-                    state.origin = Some((snapshot.revision, snapshot.settings.clone()));
-                    text(world, status, warning.clone().unwrap_or_else(|| match (reloaded, unchanged) {
-                        (true, true) => "Device settings reloaded from the saved file.".into(),
-                        (true, false) => "Device settings reloaded; newer edits remain unsaved.".into(),
-                        (false, true) => "Device settings saved.".into(),
-                        (false, false) => "Device settings saved; newer edits remain unsaved.".into(),
-                    }));
-                    if !unchanged { invalidate_actions(world, page); }
-                }
-                InputOutcome::Failed(reason) => { let mut state = world.get_mut::<Page>(page).unwrap(); state.pending = None; state.pending_reload = false; text(world, status, reason); }
-            }
-        } else if state.pending.is_none() && state.origin.as_ref().is_some_and(|(revision, settings)| *revision != snapshot.revision && draft.as_ref() == Some(settings)) {
-            load(world, page, &snapshot);
-        }
-        let state = world.get::<Page>(page).unwrap();
-        let selected = device(state, &snapshot);
-        let available = snapshot.available && world.contains_resource::<HostRequests>() && selected.is_some_and(|device| device.key.is_some());
-        let (summary, output, calibration, buttons, reset, save, cancel, busy) = (state.summary, state.output_button, state.calibration, state.buttons, state.reset, state.save, state.cancel, state.pending.is_some());
-        let disconnected = state.output.as_ref().is_some_and(|name| world.get_resource::<DisplaySnapshot>().is_none_or(|display| !display.heads.iter().any(|head| &head.name == name && head.current.is_some())));
-        let caption = format!("Output: {}{}", state.output.as_deref().unwrap_or("Automatic"), if disconnected { " (disconnected)" } else { "" });
-        let details = if !snapshot.available { "Physical touch/tablet configuration belongs to the active host compositor in Sandbox and nested Park.".into() }
-            else if let Some(device) = selected { format!("{} · {}{}\n{}\nCalibration: {}\nEffective: {}\nTool buttons: {}", device.name, if device.touch { "Touch " } else { "" }, if device.tablet { "Tablet" } else { "" }, device.error.as_deref().unwrap_or("Saved output preference applies to new sequences; held input retains its owner."), if device.calibration { "supported" } else { "unavailable on this device" }, device.effective_calibration.map(|matrix| matrix.into_iter().map(|value| value.to_string()).collect::<Vec<_>>().join(" ")).unwrap_or_else(|| "device default / unavailable".into()), if device.buttons.is_empty() { "no supported tool buttons reported".into() } else { device.buttons.iter().map(|button| button.to_string()).collect::<Vec<_>>().join(", ") }) }
-            else { "No selected touch/tablet device is connected. Saved preferences are retained; Cancel reloads connected devices.".into() };
-        let calibration_available = selected.is_some_and(|device| device.calibration);
-        let buttons_available = selected.is_some_and(|device| !device.buttons.is_empty());
-        let button_rows = state.button_rows.clone();
-        let values = mappings(world, buttons);
-        for (index, (code, row)) in button_rows.into_iter().enumerate() {
-            let value = values.as_ref().map(|values| mapping_name(code, values.get(&code).copied().unwrap_or(code))).unwrap_or_else(|_| "Invalid advanced draft".into());
-            let caption = format!("Tool button {}: {} · click to cycle", index + 1, value);
-            text(world, row.1, &caption);
-            world.get_mut::<bevy::a11y::AccessibilityNode>(row.0).unwrap().set_label(caption);
-            disable(world, row.0, !available || busy);
-        }
-        text(world, summary, details);
-        text(world, output.1, &caption);
-        world.get_mut::<bevy::a11y::AccessibilityNode>(output.0).unwrap().set_label(caption);
-        disable(world, output.0, !available || busy);
-        let reloading = world.get::<Page>(page).unwrap().pending_reload && busy;
-        disable(world, calibration, !available || !calibration_available || reloading);
-        disable(world, reset, !available || !calibration_available || busy);
-        disable(world, buttons, !available || !buttons_available || reloading);
-        disable(world, save, !available || busy);
-        disable(world, cancel, busy);
-        let reload = world.get::<Page>(page).unwrap().reload;
-        let can_reload = snapshot.available && world.contains_resource::<HostRequests>() && !busy;
-        disable(world, reload, !can_reload);
-    }
-}
 
 #[cfg(test)]
 #[path = "absolute_settings/tests.rs"]

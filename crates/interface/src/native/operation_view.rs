@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+const REPORT_LIMIT: usize = 16;
+
 #[derive(Component, Default)]
 struct Reports(Vec<nucleus::operation::Usage>);
 
@@ -18,12 +20,17 @@ pub(crate) fn create(world: &mut World, parent: Entity) -> Entity {
 }
 
 pub(crate) fn usage(world: &mut World, entity: Entity, reports: &[nucleus::operation::Usage]) {
+    let _presentation = nucleus::performance::Span::new("operation-usage-presentation");
+    // The view only renders the latest sixteen reports. Older reports do not
+    // participate in its retained state or invalidate those visible rows.
+    let reports = &reports[reports.len().saturating_sub(REPORT_LIMIT)..];
     if world
         .get::<Reports>(entity)
         .is_some_and(|previous| previous.0 == reports)
     {
         return;
     }
+    nucleus::performance::add("operation-usage-reports-prepared", reports.len() as u64);
     world
         .entity_mut(entity)
         .insert(Reports(reports.to_vec()))
@@ -37,7 +44,7 @@ pub(crate) fn usage(world: &mut World, entity: Entity, reports: &[nucleus::opera
     if reports.is_empty() {
         crate::native::edit_mode::label(world, entity, "Usage and cost unavailable", 13.0);
     }
-    for report in reports.iter().rev().take(16) {
+    for report in reports.iter().rev() {
         let number = |value: Option<u64>| {
             value
                 .map(|value| value.to_string())

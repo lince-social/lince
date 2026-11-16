@@ -41,7 +41,7 @@ fn resources_attribute_nested_sands_and_deduplicate_shared_images() {
     world.spawn((ImageNode::new(image.clone()), ChildOf(root)));
     world.spawn((
         crate::native::effect::HoverEvents,
-        crate::native::area::RecordProperties(serde_json::json!({"title": "private"})),
+        crate::native::area::RecordProperties(serde_json::json!({"title": "private"}).into()),
         ChildOf(root),
     ));
     world

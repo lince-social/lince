@@ -75,7 +75,7 @@ pub async fn replace_inline(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Resu
         return Ok(());
     };
     let consequences: Vec<nucleus::karma::Consequence> =
-        serde_json::from_str(&row.get::<String, _>("consequences_json"))
+        serde_json::from_str(row.get::<&str, _>("consequences_json"))
             .map_err(|_| invalid("Unreadable consequences"))?;
     let consequence = RuleConsequence {
         target: consequences

@@ -177,7 +177,7 @@ pub(super) fn refresh(world: &mut World, root: Entity) {
         }
         panel::clear(world, organs);
         panel::button(world, organs, root, "Local Organ", Command::Organ(None));
-        for row in &contacts {
+        for row in contacts.iter() {
             if row["slug"] == "local-organ" {
                 continue;
             }
@@ -191,7 +191,7 @@ pub(super) fn refresh(world: &mut World, root: Entity) {
         if entries.is_empty() {
             crate::native::edit_mode::label(world, list, "No components in this Organ.", 14.0);
         }
-        for row in &entries {
+        for row in entries.iter() {
             let Some(uid) = row["uid"].as_str() else {
                 continue;
             };

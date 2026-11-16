@@ -1,5 +1,6 @@
 mod input;
 pub(crate) mod login_view;
+mod presentation;
 mod run_view;
 #[cfg(test)]
 mod tests;
@@ -7,6 +8,7 @@ mod vt;
 mod worker;
 
 pub(crate) use run_view::attach;
+use presentation::render;
 
 use crate::native::{actions::Action, sand_panel as panel};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
@@ -78,7 +80,7 @@ pub struct TerminalSand {
     exited: bool,
     worker: Option<worker::Worker>,
     geometry: (u16, u16),
-    frame: Option<vt::Frame>,
+    frame: Option<std::sync::Arc<vt::Frame>>,
     lines: Vec<Entity>,
     cursor: Entity,
     input: VecDeque<Vec<u8>>,
@@ -336,6 +338,17 @@ fn update(
 ) {
     let messages: Vec<_> = cursor
         .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
+        .filter(|message| {
+            matches!(
+                message.0.as_ref(),
+                ServerMessage::TerminalOpened { .. }
+                    | ServerMessage::TerminalData { .. }
+                    | ServerMessage::TerminalExit { .. }
+                    | ServerMessage::FioteTerminal { .. }
+                    | ServerMessage::Command { .. }
+                    | ServerMessage::Error { .. }
+            )
+        })
         .map(|message| message.0.clone())
         .collect();
     for message in messages.iter().map(|message| message.as_ref()) {
@@ -424,24 +437,28 @@ fn update(
                 panel::status(world, status, error);
                 continue;
             }
-            let queued: usize = world
-                .get::<TerminalSand>(owner)
-                .unwrap()
-                .input
-                .iter()
-                .map(Vec::len)
-                .sum();
-            if queued + output.input.iter().map(Vec::len).sum::<usize>() > 1024 * 1024 {
-                close(world, owner);
-                panel::status(world, status, "Terminal input queue is full; shell closed");
-                continue;
-            }
-            if !world.get::<TerminalSand>(owner).unwrap().exited {
-                world
-                    .get_mut::<TerminalSand>(owner)
+            if output.input_bytes != 0 {
+                // This is the only production append path; consuming/clearing input cannot
+                // exceed the limit, so empty worker deliveries need no rescan.
+                let queued: usize = world
+                    .get::<TerminalSand>(owner)
                     .unwrap()
                     .input
-                    .extend(output.input);
+                    .iter()
+                    .map(Vec::len)
+                    .sum();
+                if queued + output.input_bytes > 1024 * 1024 {
+                    close(world, owner);
+                    panel::status(world, status, "Terminal input queue is full; shell closed");
+                    continue;
+                }
+                if !world.get::<TerminalSand>(owner).unwrap().exited {
+                    world
+                        .get_mut::<TerminalSand>(owner)
+                        .unwrap()
+                        .input
+                        .extend(output.input);
+                }
             }
             if let Some(frame) = output.frame {
                 render(world, owner, frame);
@@ -543,135 +560,6 @@ fn receive(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) 
             _ => {}
         }
     }
-}
-
-fn render(world: &mut World, owner: Entity, frame: vt::Frame) {
-    let terminal = world.get::<TerminalSand>(owner).unwrap();
-    if terminal.frame.as_ref() == Some(&frame) {
-        return;
-    }
-    let (screen, cursor) = (terminal.screen, terminal.cursor);
-    let mut lines = terminal.lines.clone();
-    for line in lines.drain(frame.lines.len().min(lines.len())..) {
-        world.despawn(line);
-    }
-    while lines.len() < frame.lines.len() {
-        let y = lines.len();
-        lines.push(
-            world
-                .spawn((
-                    ChildOf(screen),
-                    Pickable::IGNORE,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: px(0),
-                        top: px(y as f32 * CELL_HEIGHT),
-                        width: percent(100),
-                        height: px(CELL_HEIGHT),
-                        ..default()
-                    },
-                ))
-                .id(),
-        );
-    }
-    world.init_resource::<Mono>();
-    let fonts = (
-        world.resource::<Mono>().0.clone(),
-        world.resource::<Mono>().1.clone(),
-    );
-    for (y, cells) in frame.lines.iter().enumerate() {
-        if world
-            .get::<TerminalSand>(owner)
-            .unwrap()
-            .frame
-            .as_ref()
-            .and_then(|frame| frame.lines.get(y))
-            == Some(cells)
-        {
-            continue;
-        }
-        panel::clear(world, lines[y]);
-        for run in runs(cells) {
-            let cell = &cells[run.start];
-            if run.text.trim().is_empty() && cell.background == frame.background && !cell.underline
-            {
-                continue;
-            }
-            let node = world
-                .spawn((
-                    ChildOf(lines[y]),
-                    Pickable::IGNORE,
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: px(run.start as f32 * CELL_WIDTH),
-                        width: px(run.width as f32 * CELL_WIDTH),
-                        height: px(CELL_HEIGHT),
-                        border: UiRect {
-                            bottom: px(if cell.underline { 1 } else { 0 }),
-                            ..default()
-                        },
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb_u8(
-                        cell.background[0],
-                        cell.background[1],
-                        cell.background[2],
-                    )),
-                    BorderColor::all(Color::srgb_u8(
-                        cell.foreground[0],
-                        cell.foreground[1],
-                        cell.foreground[2],
-                    )),
-                ))
-                .id();
-            world.spawn((
-                ChildOf(node),
-                Pickable::IGNORE,
-                Text::new(run.text),
-                TextFont {
-                    font: if cell.bold {
-                        fonts.1.clone()
-                    } else {
-                        fonts.0.clone()
-                    }
-                    .into(),
-                    font_size: FontSize::Px(15.0),
-                    ..default()
-                },
-                TextColor(Color::srgb_u8(
-                    cell.foreground[0],
-                    cell.foreground[1],
-                    cell.foreground[2],
-                )),
-                TextLayout::no_wrap(),
-                Node {
-                    position_type: PositionType::Absolute,
-                    ..default()
-                },
-            ));
-        }
-    }
-    world
-        .entity_mut(screen)
-        .insert(BackgroundColor(Color::srgb_u8(
-            frame.background[0],
-            frame.background[1],
-            frame.background[2],
-        )));
-    if let Some(mut node) = world.get_mut::<Node>(cursor) {
-        node.display = if frame.cursor.is_some() {
-            Display::Flex
-        } else {
-            Display::None
-        };
-        if let Some((x, y)) = frame.cursor {
-            node.left = px(f32::from(x) * CELL_WIDTH);
-            node.top = px(f32::from(y) * CELL_HEIGHT);
-        }
-    }
-    let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
-    terminal.lines = lines;
-    terminal.frame = Some(frame);
 }
 
 struct Run {

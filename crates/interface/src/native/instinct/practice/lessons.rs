@@ -177,17 +177,18 @@ pub(super) fn complete(world: &mut World, root: Entity, operation: Operation) ->
             }) && find(world, root, Role::Note).is_some()
         }
         Operation::SetAppearance => find(world, root, Role::Square).is_some_and(|entity| {
-            crate::native::token_style::overrides(world, entity)
-                .0
-                .get(&crate::native::tokens::Token::Surface)
+            crate::native::token_style::overrides_ref(world, entity)
+                .and_then(|overrides| overrides.0.get(&crate::native::tokens::Token::Surface))
                 == Some(&crate::native::tokens::TokenValue::Color([
                     44, 106, 90, 255,
                 ]))
         }),
         Operation::ResetAppearance => find(world, root, Role::Square).is_some_and(|entity| {
-            !crate::native::token_style::overrides(world, entity)
-                .0
-                .contains_key(&crate::native::tokens::Token::Surface)
+            crate::native::token_style::overrides_ref(world, entity).is_none_or(|overrides| {
+                !overrides
+                    .0
+                    .contains_key(&crate::native::tokens::Token::Surface)
+            })
         }),
         Operation::InspectShortcuts => world
             .get::<crate::native::edit_mode::EditMode>(root)

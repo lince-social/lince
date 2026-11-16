@@ -16,11 +16,13 @@ pub(crate) fn status(world: &mut World, parent: Entity) -> Entity {
 
 pub(super) fn statuses(mut labels: Query<(&Text, &mut Node), With<Status>>) {
     for (text, mut node) in &mut labels {
-        node.display = if text.0.is_empty() || text.0 == "Saved" {
+        let display = if text.0.is_empty() || text.0 == "Saved" {
             Display::None
         } else {
             Display::Flex
         };
+        node.map_unchanged(|node| &mut node.display)
+            .set_if_neq(display);
     }
 }
 
@@ -32,15 +34,10 @@ pub(super) fn sync_edits(world: &mut World) {
             if !crate::native::record_binding::active(world, message.input) {
                 return None;
             }
-            let text = world
-                .get::<EditableText>(message.input)?
-                .value()
-                .to_string();
-            (world
-                .get::<crate::native::description::Description>(message.preview)?
-                .source
-                != text)
-                .then_some((message.preview, text))
+            let text = world.get::<EditableText>(message.input)?.value();
+            let description =
+                world.get::<crate::native::description::Description>(message.preview)?;
+            (text != description.source.as_str()).then(|| (message.preview, text.to_string()))
         })
         .collect();
     for (preview, text) in updates {
@@ -209,8 +206,10 @@ pub(super) fn spawn(
 
 pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous: Option<&str>) {
     crate::native::message_content::refresh(world, entity, data);
-    world.get_mut::<Message>(entity).unwrap().observed_body =
-        data["body"].as_str().unwrap_or_default().into();
+    let body = data["body"].as_str().unwrap_or_default();
+    if world.get::<Message>(entity).unwrap().observed_body != body {
+        world.get_mut::<Message>(entity).unwrap().observed_body = body.into();
+    }
     let message = world.get::<Message>(entity).unwrap();
     let (identity, author_name, input, preview) = (
         message.identity,
@@ -222,24 +221,42 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
     let completed = world
         .get::<ReplyState>(entity)
         .is_some_and(|old| old.0 == "writing" && state != "writing");
-    let mut accessible = accesskit::Node::new(accesskit::Role::Paragraph);
-    accessible.set_label(data["body"].as_str().unwrap_or_default());
-    accessible.set_live(if completed {
+    let live = if completed {
         accesskit::Live::Polite
     } else {
         accesskit::Live::Off
-    });
-    accessible.set_live_atomic();
-    world
-        .entity_mut(preview)
-        .insert(bevy::a11y::AccessibilityNode(accessible));
-    world.entity_mut(entity).insert(ReplyState(state.into()));
+    };
+    if world.get::<AccessibilityNode>(preview).is_none_or(|node| {
+        node.role() != accesskit::Role::Paragraph
+            || node.label() != Some(body)
+            || node.live() != live
+            || !node.is_live_atomic()
+    }) {
+        let mut accessible = accesskit::Node::new(accesskit::Role::Paragraph);
+        accessible.set_label(body);
+        accessible.set_live(live);
+        accessible.set_live_atomic();
+        world
+            .entity_mut(preview)
+            .insert(AccessibilityNode(accessible));
+    }
+    if world
+        .get::<ReplyState>(entity)
+        .is_none_or(|old| old.0 != state)
+    {
+        world.entity_mut(entity).insert(ReplyState(state.into()));
+    }
     let author = data["author"].as_str();
-    world.get_mut::<Node>(identity).unwrap().display = if author.is_some() && author == previous {
+    let display = if author.is_some() && author == previous {
         Display::None
     } else {
         Display::Flex
     };
+    world
+        .get_mut::<Node>(identity)
+        .unwrap()
+        .map_unchanged(|node| &mut node.display)
+        .set_if_neq(display);
     let name = data["author_name"]
         .as_str()
         .filter(|name| !name.is_empty())
@@ -250,34 +267,33 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
         })
         .or(author)
         .unwrap_or("Unknown author");
-    world.get_mut::<Text>(author_name).unwrap().0 = name.into();
+    if world.get::<Text>(author_name).unwrap().0 != name {
+        world.get_mut::<Text>(author_name).unwrap().0 = name.into();
+    }
     if let Some(stage) = data["social_delivery"]["stage"].as_str() {
         let status = world.get::<Message>(entity).unwrap().status;
         let detail = data["social_delivery"]["error"]
             .as_str()
             .unwrap_or_default();
-        world.get_mut::<Text>(status).unwrap().0 = format!(
+        let caption = format!(
             "{} {detail}",
             crate::native::organ_castle::social_delivery_label(stage)
         );
+        if world.get::<Text>(status).unwrap().0 != caption {
+            world.get_mut::<Text>(status).unwrap().0 = caption;
+        }
     }
     if world.get::<Node>(input).unwrap().display == Display::None
         && !world
             .get::<crate::native::record_binding::TextBinding>(input)
             .is_some_and(|binding| {
-                binding.unsaved(
-                    &world
-                        .get::<EditableText>(input)
-                        .unwrap()
-                        .value()
-                        .to_string(),
-                )
+                binding.editor_unsaved(world.get::<EditableText>(input).unwrap())
             })
     {
-        let body = data["body"].as_str().unwrap_or_default();
         if world
             .get::<crate::native::record_binding::TextBinding>(input)
             .is_none()
+            && world.get::<EditableText>(input).unwrap().value() != body
         {
             world
                 .get_mut::<EditableText>(input)

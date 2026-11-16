@@ -64,7 +64,7 @@ impl Engine {
                 }
             }
             for row in rows {
-                let document: Snippet = serde_json::from_str(&row.get::<String, _>("body"))?;
+                let document: Snippet = serde_json::from_str(row.get::<&str, _>("body"))?;
                 let mut payloads = Vec::new();
                 let removed: bool = store::sqlx::query_scalar(
                     "SELECT EXISTS(SELECT 1 FROM social_listing_removal WHERE post=?)",
@@ -150,7 +150,7 @@ impl Engine {
             let hash: String = row.get("hash");
             let peer: String = row.get("peer");
             let contact: String = row.get("contact");
-            let payload: Payload = serde_json::from_str(&row.get::<String, _>("body"))?;
+            let payload: Payload = serde_json::from_str(row.get::<&str, _>("body"))?;
             let current = self.social_gossip_peer(&peer, true).await;
             if !current.as_ref().is_ok_and(|(_, uid)| uid == &contact) {
                 store::sqlx::query("UPDATE social_gossip_forward SET next_attempt=?,error=? WHERE hash=? AND peer=? AND state='pending'")
@@ -286,12 +286,12 @@ impl Engine {
             &self.store.pool,
             peer,
             "in",
-            serde_json::to_vec(&response)?.len(),
+            nucleus::json::encoded_len(&response)?,
             settings.incoming_bytes_per_minute,
             now,
         )
         .await?;
-        if serde_json::to_vec(&response)?.len() > 1024
+        if nucleus::json::encoded_len(&response)? > 1024
             || response["service"] != peer
             || response["hash"] != hash
             || !response["missing"].is_boolean()
@@ -322,12 +322,12 @@ impl Engine {
             &self.store.pool,
             peer,
             "in",
-            serde_json::to_vec(&receipt)?.len(),
+            nucleus::json::encoded_len(&receipt)?,
             settings.incoming_bytes_per_minute,
             now,
         )
         .await?;
-        if serde_json::to_vec(&receipt)?.len() > 1024
+        if nucleus::json::encoded_len(&receipt)? > 1024
             || receipt["service"] != peer
             || receipt["hash"] != hash
             || receipt["accepted"] != true
@@ -354,7 +354,7 @@ impl Engine {
             &mut tx,
             peer,
             "out",
-            serde_json::to_vec(request)?.len(),
+            nucleus::json::encoded_len(request)?,
             settings.outgoing_bytes_per_minute,
             now,
         )

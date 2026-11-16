@@ -1,15 +1,9 @@
-# Park session proposal
+# Park session integration reference
 
-This is an unapplied configuration proposal. No Nix evaluation, build, rebuild, login change or service activation has run during this source-only round.
+The original proposal-to-install task is complete: later Park Records document installed optimized sessions, successful login/logout and physical checks. The former SDDM/Niri-default inventory described the machine before that integration and is no longer a current rollout plan.
 
-The inspected configurations at `/home/user/git/xaviduds/nixos/configuration.nix` and `/home/user/git/xaviduds/lince/dotfiles/configuration.nix` enable SDDM, select Niri by default, and retain other desktop choices. Both flakes expose the `lince` input through `specialArgs`. The former tracks GitHub main; the latter uses the local Git repository. Neither input by itself proves the current working tree is the package that will be evaluated.
+[park-session-proposal.nix](park-session-proposal.nix) remains a reference for importing the existing Park module and enabling its session package. Keep the user's existing desktop/session choices and background-service ownership when using it on another configuration. This reference does not request another installation, flake-lock change, service activation or personal configuration edit.
 
-After automated and physical acceptance, import [park-session-proposal.nix](park-session-proposal.nix) into the actual system configuration being deployed. Its only choices are importing the existing Park module and enabling its session package. Keep the existing SDDM configuration, Niri and the default session. The proposal is portable to either inspected configuration; it has not been copied into either repository.
+The current performance work and unresolved acceptance are in [Overhaul.md](../../trails/lince/park/Overhaul.md) and its [checkpoint](../../trails/lince/park/Development-cycle.lingua). Existing module/provider procedures remain in [park.md](park.md) and [park-validation.md](park-validation.md); they are reusable procedures, not a duplicate list of pending personal tasks.
 
-Before activation, identify the configuration actually used by the machine, evaluate its `computer` configuration against the intended Lince source and review the resulting system change. If testing the current uncommitted tree, explicitly use a path input so newly authored files are included. A Git input can omit untracked files. Record the evaluated source and executable identity with the test results. Do not update either personal flake lock or activate a system merely to prepare this proposal.
-
-Use the packaged Lince entry for the final clean-login acceptance. Choose the external session supervisor, bar, launcher, locker, IME, clipboard-history helper and portal separately through local session configuration. Do not copy Niri-specific startup or portal IPC into Park. First confirm each selected provider supports the protocols Park implements. In particular, the installed Noctalia modules and portal version need live compatibility checks.
-
-The ordinary Lince background-service settings found in the personal configurations are separate from this session entry. Review their directory and process ownership before the clean-login test so the same directory is not opened by competing Cells. Do not disable or rewrite that service as part of installing this proposal.
-
-The user must authorize execution and any later system activation. The initial direct-TTY test can retain Niri and does not need this module to be installed.
+No system configuration, installed binary or session was inspected or changed during the 2026-11-15 source-only reconciliation.

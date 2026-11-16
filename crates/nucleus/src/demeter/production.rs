@@ -56,7 +56,7 @@ pub struct Template {
     pub stages: Vec<Stage>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Choice {
     pub food: String,

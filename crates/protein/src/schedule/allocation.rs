@@ -96,7 +96,12 @@ pub(super) async fn apply(
             duration_ms: duration,
             priority: fields
                 .iter()
-                .map(|field| values.get(&(record.to_owned(), field.clone())).copied())
+                .map(|field| {
+                    values
+                        .get(field)
+                        .and_then(|values| values.get(record))
+                        .copied()
+                })
                 .collect(),
         });
     }

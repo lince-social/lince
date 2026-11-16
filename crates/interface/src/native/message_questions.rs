@@ -1,4 +1,4 @@
-use crate::native::{actions::Action, protein_area::RecordBinding};
+use crate::native::{actions::Action, message_content::ContentRef};
 use bevy::{prelude::*, text::EditableText};
 use nucleus::question::{Question, State};
 use serde_json::{Value, json};
@@ -254,7 +254,7 @@ impl Action for Add {
         };
         let mut parts = draft.parts.clone();
         parts.push(nucleus::message::MessagePart::Question { question });
-        if let Err(error) = nucleus::message::validate(&parts) {
+        if let Err(error) = parts.validate() {
             world.get_mut::<Text>(status).unwrap().0 = error;
             return;
         }
@@ -269,10 +269,7 @@ impl Action for Add {
 
 #[derive(Component)]
 struct Response {
-    binding: RecordBinding,
-    uid: String,
-    content: Value,
-    part: usize,
+    content: ContentRef,
     form: Entity,
     status: Entity,
     pending: bool,
@@ -281,10 +278,9 @@ struct Response {
 pub(crate) fn view(
     world: &mut World,
     parent: Entity,
-    binding: &RecordBinding,
-    data: &Value,
-    part: usize,
+    content: ContentRef,
     question: &Question,
+    expired: bool,
 ) {
     let owner = world
         .spawn((
@@ -303,9 +299,6 @@ pub(crate) fn view(
         &format!("For {} · {:?}", question.responder, question.state),
         12.0,
     );
-    let expired = question
-        .expires_ms
-        .is_some_and(|expires| nucleus::operation::now_ms() >= expires);
     if question.state != State::Pending || expired {
         if expired && question.state == State::Pending {
             crate::native::edit_mode::label(
@@ -341,10 +334,7 @@ pub(crate) fn view(
         crate::native::description::button(world, owner, owner, label, Submit(state));
     }
     world.entity_mut(owner).insert(Response {
-        binding: binding.clone(),
-        uid: data["uid"].as_str().unwrap_or_default().into(),
-        content: data["content"].clone(),
-        part,
+        content,
         form,
         status,
         pending: false,
@@ -361,13 +351,8 @@ impl Action for Submit {
         if response.pending {
             return;
         }
-        let (binding, uid, status, part) = (
-            response.binding.clone(),
-            response.uid.clone(),
-            response.status,
-            response.part,
-        );
-        let mut content = response.content.clone();
+        let content = response.content;
+        let status = response.status;
         let answers = if self.0 == State::Answered {
             match crate::native::question_form::answers(world, response.form) {
                 Ok(answers) => answers,
@@ -379,18 +364,15 @@ impl Action for Submit {
         } else {
             Value::Null
         };
-        content["parts"][part]["question"]["state"] = json!(self.0);
-        content["parts"][part]["question"]["answers"] = answers;
-        match crate::native::protein_area::execute(
-            world,
-            &binding,
-            owner,
-            engine::actions::Action::SetExtension {
-                target: uid,
-                namespace: "lince.message-content".into(),
-                fds: content,
-            },
-        ) {
+        match content.update(world, owner, |part| {
+            let question = part
+                .get_mut("question")
+                .filter(|question| question.is_object())
+                .ok_or("This question is no longer available.")?;
+            question["state"] = json!(self.0);
+            question["answers"] = answers;
+            Ok(())
+        }) {
             Ok(()) => {
                 world.get_mut::<Response>(owner).unwrap().pending = true;
                 world.get_mut::<Text>(status).unwrap().0 = "Saving response…".into();

@@ -427,6 +427,7 @@ pub(super) fn hand_delay(aperture_ms: i64, pixels: f64) -> std::time::Duration {
 }
 
 pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDeadline>) {
+    let _update = nucleus::performance::Span::new("time-presentation-update");
     if !crate::native::laboratory::normal(world) {
         deadline.cancel();
         return;
@@ -451,8 +452,8 @@ pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDea
             continue;
         }
         active = true;
-        let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-        if !settings.valid() {
+        let (settings, valid) = preparation::settings(world, owner).unwrap();
+        if !valid {
             continue;
         }
         let palette = palette::Palette::resolve(world, owner);

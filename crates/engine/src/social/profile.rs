@@ -105,7 +105,7 @@ pub fn validate_profile(doc: &Profile, now: i64) -> Result<(), EngineError> {
             return Err(invalid("A profile claim must describe this Organ and exist at the profile's issue time"));
         }
     }
-    if serde_json::to_vec(doc)?.len() > MAX_PROFILE_BYTES
+    if nucleus::json::encoded_len(doc)? > MAX_PROFILE_BYTES
         || !crate::roster::verify_with(
             &doc.authority.editor_key,
             &signing_bytes("profile", doc)?,
@@ -133,8 +133,10 @@ fn validate_fields(fields: &ProfileFields) -> Result<(), EngineError> {
 
 fn validate_claims(claims: &[nucleus::trust_analysis::claims::Document]) -> Result<(), EngineError> {
     use nucleus::trust_analysis::{claims::Authorship, contacts::Audience};
-    if claims.len() > 4 || serde_json::to_vec(claims)?.len() > 10240 {
-        return Err(invalid("Select at most four public claim snapshots within 10 KiB; the full profile also has a 16-KiB limit"));
+    if claims.len() > 4 || nucleus::json::encoded_len(claims)? > 10240 {
+        return Err(invalid(
+            "Select at most four public claim snapshots within 10 KiB; the full profile also has a 16-KiB limit",
+        ));
     }
     let mut series = std::collections::BTreeSet::new();
     for claim in claims {
@@ -295,7 +297,7 @@ fn trim_profile_state(state: &mut Value) -> Result<(), EngineError> {
             }
         }
     }
-    if serde_json::to_vec(state)?.len() > store::records::MAX_EXTENSION_BYTES {
+    if nucleus::json::encoded_len(state)? > store::records::MAX_EXTENSION_BYTES {
         return Err(invalid(
             "Resolve the retained profile branches in groups before adding more edits",
         ));

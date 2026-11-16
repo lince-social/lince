@@ -6,7 +6,7 @@ use crate::native::{
 };
 use avian3d::{physics_transform::PhysicsTransformConfig, prelude::*};
 use bevy::{
-    ecs::{schedule::ScheduleLabel, system::SystemParam},
+    ecs::{entity::EntityHashSet, schedule::ScheduleLabel, system::SystemParam},
     input_focus::InputFocus,
     math::{DVec2, DVec3},
     prelude::*,
@@ -184,46 +184,59 @@ impl Plugin for WorkspacePhysicsPlugin {
     }
 }
 
-pub(crate) fn held(world: &World, sand: Entity) -> bool {
-    if world
-        .get::<crate::native::protein_area::placement::Pending>(sand)
-        .is_some()
-        || crate::native::canvas_pan::dragged(world) == Some(sand)
-        || crate::native::layout::desktop::manipulation::held(world, sand)
-    {
-        return true;
-    }
-    let mut focus = world
-        .get_resource::<InputFocus>()
-        .and_then(|focus| focus.get());
-    if focus == Some(sand)
-        && world
-            .get::<crate::native::layout::desktop::Managed>(sand)
-            .is_some()
-        && world.get::<bevy::text::EditableText>(sand).is_none()
-    {
-        return false;
-    }
-    let mut cursor = focus;
-    while let Some(entity) = cursor {
-        if world
-            .get::<crate::native::protein_area::RecordBinding>(entity)
-            .is_some()
-            || world
-                .get::<crate::native::record_binding::TextBinding>(entity)
+/// Captures the focused hierarchy once for a synchronous physics preparation pass.
+pub(crate) struct HeldItems {
+    focus: Option<Entity>,
+    ancestors: EntityHashSet,
+}
+
+impl HeldItems {
+    pub(crate) fn capture(world: &World) -> Self {
+        let focus = world
+            .get_resource::<InputFocus>()
+            .and_then(|focus| focus.get());
+        let mut ancestors = EntityHashSet::default();
+        let mut cursor = focus;
+        while let Some(entity) = cursor {
+            if world
+                .get::<crate::native::protein_area::RecordBinding>(entity)
                 .is_some()
+                || world
+                    .get::<crate::native::record_binding::TextBinding>(entity)
+                    .is_some()
+            {
+                ancestors.clear();
+                break;
+            }
+            ancestors.insert(entity);
+            cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        }
+        Self { focus, ancestors }
+    }
+
+    pub(crate) fn contains(&self, world: &World, sand: Entity) -> bool {
+        if world
+            .get::<crate::native::protein_area::placement::Pending>(sand)
+            .is_some()
+            || crate::native::canvas_pan::dragged(world) == Some(sand)
+            || crate::native::layout::desktop::manipulation::held(world, sand)
+        {
+            return true;
+        }
+        if self.focus == Some(sand)
+            && world
+                .get::<crate::native::layout::desktop::Managed>(sand)
+                .is_some()
+            && world.get::<bevy::text::EditableText>(sand).is_none()
         {
             return false;
         }
-        cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        self.ancestors.contains(&sand)
     }
-    while let Some(entity) = focus {
-        if entity == sand {
-            return true;
-        }
-        focus = world.get::<ChildOf>(entity).map(ChildOf::parent);
-    }
-    false
+}
+
+pub(crate) fn held(world: &World, sand: Entity) -> bool {
+    HeldItems::capture(world).contains(world, sand)
 }
 
 pub(crate) fn room_transform(
@@ -257,6 +270,7 @@ pub(crate) fn room_transform(
 
 fn synchronize(world: &mut World) -> bool {
     crate::native::topology::holes::refresh(world);
+    let held_items = HeldItems::capture(world);
     let mut changed = false;
     let mut edited = HashSet::new();
     let existing: HashMap<_, _> = world
@@ -336,7 +350,7 @@ fn synchronize(world: &mut World) -> bool {
         .filter(|(entity, _, _, _)| {
             world.get::<Pinned>(*entity).is_some()
                 || dragged.contains(entity)
-                || held(world, *entity)
+                || held_items.contains(world, *entity)
         })
         .map(|(_, group, parent, member)| (parent.parent(), member.0, *group))
         .collect();
@@ -354,7 +368,7 @@ fn synchronize(world: &mut World) -> bool {
             .get::<crate::native::canvas_selection::SandGroup>(sand)
             .copied();
         let held = dragged.contains(&sand)
-            || held(world, sand)
+            || held_items.contains(world, sand)
             || group.is_some_and(|group| held_groups.contains(&(root, workspace, group)));
         let body = if let Some(entity) = existing.get(&sand).copied() {
             let link = world.get::<BodyLink>(entity).unwrap();
@@ -487,17 +501,18 @@ fn synchronize_groups(world: &mut World, edited: &HashSet<Entity>) -> bool {
         members.sort_by_key(|(entity, _)| *entity);
         let (first, position) = members[0];
         for (second, next) in members.iter().copied().skip(1) {
+            let entity = existing.remove(&(first, second));
+            if entity.is_some() && !edited.contains(&first) && !edited.contains(&second) {
+                continue;
+            }
             let joint =
                 FixedJoint::new(first, second).with_local_anchor1((next - position).extend(0.0));
-            if let Some(entity) = existing.remove(&(first, second)) {
-                if edited.contains(&first) || edited.contains(&second) {
-                    world.entity_mut(entity).insert(joint);
-                    changed = true;
-                }
+            if let Some(entity) = entity {
+                world.entity_mut(entity).insert(joint);
             } else {
                 world.spawn((GroupJoint, joint));
-                changed = true;
             }
+            changed = true;
         }
     }
     for entity in existing.into_values() {
@@ -720,7 +735,7 @@ pub(crate) mod tests {
                     position: offset + DVec2::new(200.0, 0.0),
                     size: Vec2::splat(40.0),
                 },
-                RecordProperties(serde_json::json!({"quantity":-3})),
+                RecordProperties(serde_json::json!({"quantity":-3}).into()),
                 WorkspaceMember(1),
                 ChildOf(root),
             ))
@@ -1124,7 +1139,7 @@ pub(crate) mod tests {
                 crate::native::workspace_config::set_physics(app.world_mut(), root, 1, true);
                 for (quantity, x) in [(-1, 0.0), (-2, 200.0), (-1, 0.0), (-2, 200.0)] {
                     app.world_mut().get_mut::<RecordProperties>(sand).unwrap().0 =
-                        serde_json::json!({"uid":"r_moving", "quantity":quantity});
+                        serde_json::json!({"uid":"r_moving", "quantity":quantity}).into();
                     for _ in 0..1200 {
                         app.update();
                         if !app.world().resource::<Simulation>().active {
@@ -1341,7 +1356,7 @@ pub(crate) mod tests {
         );
         crate::native::workspace_config::set_physics(app.world_mut(), root, 1, true);
         app.world_mut().get_mut::<RecordProperties>(sand).unwrap().0 =
-            serde_json::json!({"quantity":0});
+            serde_json::json!({"quantity":0}).into();
         advance(&mut app, 30);
         assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, moved);
     }
@@ -1365,7 +1380,7 @@ pub(crate) mod tests {
                     anchor: [0.5; 2],
                     scale: 1.0,
                 },
-                RecordProperties(serde_json::json!({"quantity":-3})),
+                RecordProperties(serde_json::json!({"quantity":-3}).into()),
                 WorkspaceMember(1),
                 ChildOf(root),
             ))
@@ -1377,7 +1392,7 @@ pub(crate) mod tests {
                     position: DVec2::new(100.0, 0.0),
                     size: Vec2::splat(40.0),
                 },
-                RecordProperties(serde_json::json!({"quantity":-3})),
+                RecordProperties(serde_json::json!({"quantity":-3}).into()),
                 WorkspaceMember(2),
                 ChildOf(root),
             ))
@@ -1564,7 +1579,7 @@ pub(crate) mod tests {
             influence.rules.clear();
         }
         app.world_mut().entity_mut(sand).insert((
-            RecordProperties(serde_json::json!({"uid":"task"})),
+            RecordProperties(serde_json::json!({"uid":"task"}).into()),
             RecordBinding {
                 area,
                 uid: "task".into(),

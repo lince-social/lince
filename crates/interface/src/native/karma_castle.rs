@@ -1,4 +1,5 @@
 use lince_interface::karma as model;
+use std::sync::Arc;
 mod ailuros_ui;
 pub(crate) mod commands_ui;
 mod history_ui;
@@ -93,8 +94,8 @@ struct View {
     list: Entity,
     status: Entity,
     rules: Vec<Rule>,
-    records: Vec<Value>,
-    frequencies: Vec<Value>,
+    records: Arc<Vec<Value>>,
+    frequencies: Arc<Vec<Value>>,
     transfers: Vec<Value>,
     acting_person: Option<String>,
     record_lookup: HashMap<String, usize>,
@@ -280,8 +281,8 @@ pub fn spawn(
         list,
         status,
         rules: Vec::new(),
-        records: Vec::new(),
-        frequencies: Vec::new(),
+        records: Arc::default(),
+        frequencies: Arc::default(),
         transfers: Vec::new(),
         acting_person: None,
         record_lookup: HashMap::new(),
@@ -626,8 +627,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 match index {
                     0 => {
                         match rows
-                            .into_iter()
-                            .map(|row| serde_json::from_value(row.clone()))
+                            .iter()
+                            .map(Rule::deserialize)
                             .collect::<Result<Vec<Rule>, _>>()
                         {
                             Ok(rules) => {

@@ -1,0 +1,35 @@
+One-shot and periodic observed world models (@ws-observed-models: 0, is #chapter, #part-of @workspace-development, #requires @ws-vision-tasks, #requires @ws-agent-authoring) { r_4PX7333QZ48V79HN5X7G5NFQ6C
+Status: Pending. Owner refinement, 2026-11-15: use camera observations to model a selected place once or update its observed representation periodically, without a raw-video archive.
+
+[Development graph](../Workspace-Development.lingua) · [Camera and vision contracts](../contracts/Camera-vision-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Vision tasks](Vision-Tasks.lingua) and [Agent authoring](Agent-Authoring.lingua). Consume actual image/metadata results and ordinary native/Fiote model operations. Deliver a bounded 2D observed layer and a supported calibrated 3D proxy/region update on a supplied local place, with one-shot and periodic execution. The 3D proof uses declared known geometry/plane assumptions and measured references; it does not claim complete free-view reconstruction from a fixed camera.
+
+## Ownership and ordered work
+
+Own observation-to-model mapping and derived-layer publication through the existing model/accepted-change families. Reuse the vision task scheduler rather than another Fiote scene mirror or timed loop. Rendering/source migrations and job/adoption authority keep one owner. No full globe, exact CAD, character or new physical simulation dependency.
+
+### Task OMD.T01
+
+- [ ] Define supported vision-model outputs for a selected modeled component: image-space regions/objects/state, calibrated positions and uncertainty/coverage, supported geometry/appearance products and their input provenance. A modeling task names target occurrence/layer, captured source revision, local/world frame, model/operator, sources and required output semantics. Preserve camera/frame/calibration/time identity. Require real support for each output; a learned depth estimate or approximate proxy cannot become measured exact geometry because it is displayed in 3D.
+
+### Task OMD.T02
+
+- [ ] Implement Model once: Fiote or native controls capture a bounded observation window, run a selected implemented model and produce an inspectable candidate layer/revision. Show covered versus unknown regions, model/source age, assumptions and proposed changes. Publish through ordinary generation-checked operations, preserving user-authored source and permitting native continuation. Prove both the 2D layer and bounded calibrated 3D proxy against CV.F01 references; missing calibration can leave a useful image-space result while spatial output remains unsupported.
+
+### Task OMD.T03
+
+- [ ] Implement Update periodically using the same operator and task lifecycle with declared cadence, input window, expiry and target policy. Within an already authorized task, publish valid updates automatically to its identified derived layer; do not request approval per frame/run or silently replace hand-authored geometry. Bound/coalesce overdue work, define skipped intervals and reject results for obsolete target/model/calibration generations. Retain last valid output with age/status on missing input or failure. Occlusion/lost detection is uncertainty, not automatic object destruction. Changes of source, target or method use normal explicit configuration/authority rules.
+
+### Task OMD.T04
+
+- [ ] Prove CV.W03–CV.W05: one-shot modeling, at least two periodic updates from actual changed input, two-camera aligned input, deliberate misalignment/missing view, source movement, conflicting native edit, stale completion and cancellation. Independently check image-space/metric errors, coverage, update age, resource admission and last-demand release. Keep no raw-video archive; retain bounded derived results and metadata according to existing source/history policy, marking unavailable input replay honestly. Show the same model in native 2D/3D inspection and through Fiote queries without repeated inference merely because the view changes.
+
+## Further model adapters and completion
+
+The task contract also admits supported mesh/depth/splat reconstruction workers. Such an adapter must declare actual view overlap, calibration, time and compute requirements, source correspondence and output validity, and consume the relevant [Imports](Imports.lingua) representation/registration export before claiming imported mesh/splat integration. Multi-view geometry or learned completion is never supplied by the feed schema itself. Preserve this extension path without making the basic 2D/calibrated-proxy proof wait for a research model or whole-world capture. Additional domain adapters require their own evidence and implementation authorization.
+
+Read CV.R03–CV.R10. Publish real operator/output/adoption semantics, source/build and native evidence, measured errors/cost and unsupported reconstruction modes. Consumer: [Camera and vision acceptance](../contracts/Camera-vision-contracts.lingua), then full core acceptance. Current outcome: unbuilt and unverified.
+} r_4PX7333QZ48V79HN5X7G5NFQ6C

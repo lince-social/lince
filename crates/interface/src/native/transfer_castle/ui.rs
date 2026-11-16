@@ -557,41 +557,72 @@ pub(super) fn input(
     }
 }
 
-pub(super) fn capture(world: &mut World, owner: Entity) {
-    audience::capture(world, owner);
-    let values: Vec<_> = world
+fn capture_fields(world: &mut World, owner: Option<Entity>) -> HashSet<Entity> {
+    let _capture = nucleus::performance::Span::new("transfer-input-capture");
+    let mut values: HashMap<(Entity, Option<usize>), String> = HashMap::new();
+    for (input, text) in world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
-        .collect();
-    let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
-        return;
-    };
-    for (index, value) in values {
+        .filter(|(input, _)| owner.is_none_or(|owner| input.owner == owner))
+    {
+        let Some(castle) = world.get::<TransferCastle>(input.owner) else {
+            continue;
+        };
+        let current = if let Some(index) = input.index {
+            let Some(field) = castle.form.as_ref().and_then(|form| form.fields.get(index)) else {
+                continue;
+            };
+            &field.value
+        } else {
+            &castle.search
+        };
+        // A second control for the same field must still win in query order,
+        // including when it restores the original value.
+        let key = (input.owner, input.index);
+        let value = text.value();
+        if value == values.get(&key).map_or(current.as_str(), String::as_str) {
+            continue;
+        }
+        nucleus::performance::add("transfer-field-values-prepared", 1);
+        values.insert(key, value.to_string());
+    }
+    let mut searches = HashSet::new();
+    for ((owner, index), value) in values {
+        let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+            continue;
+        };
         if let Some(index) = index {
-            if let Some(form) = &mut castle.form
+            if let Some(form) = &mut castle.bypass_change_detection().form
                 && let Some(field) = form.fields.get_mut(index)
+                && field.value != value
             {
                 field.value = value;
+                castle.set_changed();
             }
-        } else {
+        } else if castle.search != value {
             castle.search = value;
+            searches.insert(owner);
         }
     }
+    searches
+}
+
+pub(super) fn capture(world: &mut World, owner: Entity) {
+    audience::capture(world, owner);
+    capture_fields(world, Some(owner));
 }
 pub(super) fn inputs(world: &mut World) {
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<TransferCastle>>()
         .iter(world)
         .collect();
-    for owner in owners {
-        let previous = world.get::<TransferCastle>(owner).unwrap().search.clone();
-        capture(world, owner);
-        if previous != world.get::<TransferCastle>(owner).unwrap().search {
-            world.get_mut::<View>(owner).unwrap().page = 0;
-            render(world, owner);
-        }
+    for &owner in &owners {
+        audience::capture(world, owner);
+    }
+    let searches = capture_fields(world, None);
+    for owner in owners.into_iter().filter(|owner| searches.contains(owner)) {
+        world.get_mut::<View>(owner).unwrap().page = 0;
+        render(world, owner);
     }
 }
 

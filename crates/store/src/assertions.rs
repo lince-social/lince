@@ -66,7 +66,7 @@ pub struct AssertionRow {
 
 fn map(row: sqlx::sqlite::SqliteRow) -> Result<AssertionRow, StoreError> {
     let quantity = if row
-        .try_get::<Option<String>, _>("quantity_mantissa")?
+        .try_get::<Option<&str>, _>("quantity_mantissa")?
         .is_some()
     {
         Some(crate::exact::read_decimal(&row, "quantity")?)
@@ -80,7 +80,7 @@ fn map(row: sqlx::sqlite::SqliteRow) -> Result<AssertionRow, StoreError> {
         predicate_revision: row.try_get("predicate_revision")?,
         object_uid: row.try_get("object_uid")?,
         object_uri: row.try_get("object_uri")?,
-        resolved_object_uid: if row.try_get::<Option<String>, _>("object_uri")?.is_some() {
+        resolved_object_uid: if row.try_get::<Option<&str>, _>("object_uri")?.is_some() {
             row.try_get("target_uid").or_else(|error| {
                 if matches!(error, sqlx::Error::ColumnNotFound(_)) {
                     Ok(None)
@@ -905,7 +905,7 @@ pub struct BinaryAssertionRow {
 }
 
 fn map_binary(row: sqlx::sqlite::SqliteRow) -> Result<BinaryAssertionRow, StoreError> {
-    let quantity = if row.get::<Option<String>, _>("quantity_mantissa").is_some() {
+    let quantity = if row.get::<Option<&str>, _>("quantity_mantissa").is_some() {
         Some(crate::exact::read_decimal(&row, "quantity")?)
     } else {
         None
@@ -950,6 +950,27 @@ pub async fn binary_of_predicates(
     pool: &SqlitePool,
     predicate_uids: &[String],
 ) -> Result<Vec<BinaryAssertionRow>, StoreError> {
+    binary_selection(pool, predicate_uids, None).await
+}
+
+pub async fn binary_for_subjects(
+    pool: &SqlitePool,
+    predicate_uids: &[String],
+    subjects: &[&str],
+) -> Result<Vec<BinaryAssertionRow>, StoreError> {
+    if subjects.is_empty() {
+        return Ok(Vec::new());
+    }
+    let subjects =
+        serde_json::to_string(subjects).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    binary_selection(pool, predicate_uids, Some(&subjects)).await
+}
+
+async fn binary_selection(
+    pool: &SqlitePool,
+    predicate_uids: &[String],
+    subjects: Option<&str>,
+) -> Result<Vec<BinaryAssertionRow>, StoreError> {
     let unique: std::collections::BTreeSet<_> = predicate_uids.iter().collect();
     let unique: Vec<_> = unique.into_iter().collect();
     let mut out = Vec::new();
@@ -961,6 +982,12 @@ pub async fn binary_of_predicates(
             values.push_bind(*uid);
         }
         query.push(")");
+        if let Some(subjects) = subjects {
+            query
+                .push(" AND a.subject_uid IN (SELECT value FROM json_each(")
+                .push_bind(subjects)
+                .push("))");
+        }
         for row in query.build().fetch_all(pool).await? {
             out.push(map_binary(row)?);
         }
@@ -1223,21 +1250,7 @@ pub async fn retract_predicate_within_set(
 }
 
 fn map_record(row: sqlx::sqlite::SqliteRow) -> Result<crate::records::RecordRow, StoreError> {
-    Ok(crate::records::RecordRow {
-        uid: row.get("uid"),
-        slug: row.get("slug"),
-        kind: row.get("kind"),
-        head: row.get("head"),
-        body: row.get("body"),
-        quantity: crate::exact::read_decimal(&row, "quantity")?,
-        identity_predicate_uid: row.get("identity_predicate_uid"),
-        unit_uid: row.get("unit_uid"),
-        place_uid: row.get("place_uid"),
-        organ_uid: row.get("organ_uid"),
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-        created_hlc: row.try_get("created_hlc").ok().flatten(),
-    })
+    crate::records::map_row(row)
 }
 
 pub async fn subjects_pointing_to(
@@ -1347,29 +1360,201 @@ pub async fn messages_before(
     .collect()
 }
 
+#[derive(Clone, Copy)]
+enum RelatedSide {
+    Subject,
+    Object,
+}
+
+// All narrow projections keep the same linked-record relation as the full-row
+// readers. Only the selected side must be active: joining both endpoints here
+// would change subject membership after its object is deleted.
+fn related_record_query<'a>(
+    select: &'static str,
+    side: RelatedSide,
+    predicate_uid: &'a str,
+    endpoint_uid: &'a str,
+    selected_uid: Option<&'a str>,
+) -> sqlx::QueryBuilder<'a, Sqlite> {
+    let (selected, endpoint) = match side {
+        RelatedSide::Subject => ("a.subject_uid", "a.target_uid"),
+        RelatedSide::Object => ("a.target_uid", "a.subject_uid"),
+    };
+    let mut query = sqlx::QueryBuilder::<Sqlite>::new(select);
+    query
+        .push(" FROM record_assertion_link a JOIN record r ON r.uid = ")
+        .push(selected)
+        .push(" WHERE ")
+        .push(endpoint)
+        .push(" = ")
+        .push_bind(endpoint_uid);
+    if let Some(selected_uid) = selected_uid {
+        query.push(" AND r.uid = ").push_bind(selected_uid);
+    }
+    query
+        .push(" AND (a.predicate_uid = ")
+        .push_bind(predicate_uid);
+    query.push(" OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid = f.role_uid WHERE f.feature = ")
+        .push_bind(predicate_uid.strip_prefix("feature:"));
+    query.push(")) AND a.retracted_at IS NULL AND r.deleted_at IS NULL");
+    query
+}
+
+/// Membership in the same active-object relation as `objects_from_subject`.
+/// With no target, reports whether any active object matches the predicate.
+/// Feature aliases and retractions keep their ordinary assertion semantics.
+pub async fn object_exists(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    predicate_uid: &str,
+    target_uid: Option<&str>,
+) -> Result<bool, StoreError> {
+    let _read = nucleus::performance::Span::new("assertion-object-exists-await");
+    let mut query = related_record_query(
+        "SELECT EXISTS(SELECT 1",
+        RelatedSide::Object,
+        predicate_uid,
+        subject_uid,
+        target_uid,
+    );
+    query.push(")");
+    query.build_query_scalar::<bool>().fetch_one(pool).await
+}
+
+/// Membership in `subjects_pointing_to`, including its active-subject filter.
+pub async fn subject_exists(
+    pool: &SqlitePool,
+    predicate_uid: &str,
+    object_uid: &str,
+    subject_uid: &str,
+) -> Result<bool, StoreError> {
+    let _read = nucleus::performance::Span::new("assertion-subject-exists-await");
+    let mut query = related_record_query(
+        "SELECT EXISTS(SELECT 1",
+        RelatedSide::Subject,
+        predicate_uid,
+        object_uid,
+        Some(subject_uid),
+    );
+    query.push(")");
+    query.build_query_scalar::<bool>().fetch_one(pool).await
+}
+
+/// Active object IDs in the full-row reader's distinct assertion order.
+/// Unlike `object_uids_from_subject`, missing/deleted Records are excluded.
+pub async fn active_object_uids(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    predicate_uid: &str,
+) -> Result<Vec<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("assertion-related-identifiers-await");
+    let mut query = related_record_query(
+        "SELECT DISTINCT r.uid",
+        RelatedSide::Object,
+        predicate_uid,
+        subject_uid,
+        None,
+    );
+    query.push(" ORDER BY a.created_at, a.uid");
+    query.build_query_scalar::<String>().fetch_all(pool).await
+}
+
+/// A bounded prefix of distinct active object `(uid, kind)` pairs in assertion
+/// order. A limit of two is sufficient to distinguish absent, unique and ambiguous.
+pub async fn active_object_kinds(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    predicate_uid: &str,
+    limit: usize,
+) -> Result<Vec<(String, String)>, StoreError> {
+    let _read = nucleus::performance::Span::new("assertion-related-kinds-await");
+    let mut query = related_record_query(
+        "SELECT DISTINCT r.uid, r.kind",
+        RelatedSide::Object,
+        predicate_uid,
+        subject_uid,
+        None,
+    );
+    query
+        .push(" ORDER BY a.created_at, a.uid LIMIT ")
+        .push_bind(i64::try_from(limit).unwrap_or(i64::MAX));
+    query
+        .build_query_as::<(String, String)>()
+        .fetch_all(pool)
+        .await
+}
+
+/// Distinct titles of active subjects, for name selection without Record bodies
+/// or assertion-order sorting. Callers use these as a set.
+pub async fn subject_heads(
+    pool: &SqlitePool,
+    predicate_uid: &str,
+    object_uid: &str,
+) -> Result<Vec<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("assertion-related-heads-await");
+    let mut query = related_record_query(
+        "SELECT DISTINCT r.head",
+        RelatedSide::Subject,
+        predicate_uid,
+        object_uid,
+        None,
+    );
+    query.build_query_scalar::<String>().fetch_all(pool).await
+}
+
 pub async fn objects_from_subject(
     pool: &SqlitePool,
     subject_uid: &str,
     predicate_uid: &str,
 ) -> Result<Vec<crate::records::RecordRow>, StoreError> {
-    sqlx::query(
-        "SELECT DISTINCT r.*,
+    Ok(
+        objects_from_subjects(pool, &[subject_uid], predicate_uid, true)
+            .await?
+            .remove(subject_uid)
+            .unwrap_or_default(),
+    )
+}
+
+pub async fn objects_from_subjects<Body: crate::records::RecordBody>(
+    pool: &SqlitePool,
+    subject_uids: &[&str],
+    predicate_uid: &str,
+    with_body: bool,
+) -> Result<std::collections::HashMap<String, Vec<crate::records::RecordRow<Body>>>, StoreError> {
+    let mut objects = std::collections::HashMap::<String, Vec<_>>::new();
+    if subject_uids.is_empty() {
+        return Ok(objects);
+    }
+    let ids = serde_json::to_string(subject_uids)
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let columns = if with_body {
+        "r.*"
+    } else {
+        crate::records::METADATA_COLUMNS
+    };
+    let sql = format!(
+        "SELECT DISTINCT a.subject_uid AS source_uid, {columns},
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
                     AND identity.retracted_at IS NULL) AS identity_predicate_uid
            FROM record_assertion_link a JOIN record r ON r.uid = a.target_uid
-          WHERE a.subject_uid = ? AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
+          WHERE a.subject_uid IN (SELECT value FROM json_each(?)) AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
             AND a.retracted_at IS NULL AND r.deleted_at IS NULL
           ORDER BY a.created_at, a.uid",
-    )
-    .bind(subject_uid)
-    .bind(predicate_uid)
-    .bind(predicate_uid.strip_prefix("feature:"))
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(map_record)
-    .collect()
+    );
+    let rows = sqlx::query(&sql)
+        .bind(ids)
+        .bind(predicate_uid)
+        .bind(predicate_uid.strip_prefix("feature:"))
+        .fetch_all(pool)
+        .await?;
+    for row in rows {
+        objects
+            .entry(row.get("source_uid"))
+            .or_default()
+            .push(crate::records::map_row(row)?);
+    }
+    Ok(objects)
 }
 
 pub async fn edges_of_predicate(
@@ -1403,17 +1588,43 @@ pub async fn object_uids_from_subject(
     subject_uid: &str,
     predicate_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query_scalar(
-        "SELECT DISTINCT target_uid AS object_uid FROM record_assertion_link
-          WHERE subject_uid = ? AND (predicate_uid = ? OR predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
+    Ok(
+        object_uids_from_subjects(pool, &[subject_uid], predicate_uid)
+            .await?
+            .remove(subject_uid)
+            .unwrap_or_default(),
+    )
+}
+
+pub async fn object_uids_from_subjects(
+    pool: &SqlitePool,
+    subject_uids: &[&str],
+    predicate_uid: &str,
+) -> Result<std::collections::HashMap<String, Vec<String>>, StoreError> {
+    let mut objects = std::collections::HashMap::<String, Vec<String>>::new();
+    if subject_uids.is_empty() {
+        return Ok(objects);
+    }
+    let ids = serde_json::to_string(subject_uids)
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT DISTINCT subject_uid, target_uid AS object_uid FROM record_assertion_link a
+          WHERE subject_uid IN (SELECT value FROM json_each(?)) AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
             AND target_uid IS NOT NULL AND retracted_at IS NULL
           ORDER BY created_at, uid",
     )
-    .bind(subject_uid)
+    .bind(ids)
     .bind(predicate_uid)
     .bind(predicate_uid.strip_prefix("feature:"))
     .fetch_all(pool)
-    .await?)
+    .await?;
+    for row in rows {
+        objects
+            .entry(row.get("subject_uid"))
+            .or_default()
+            .push(row.get("object_uid"));
+    }
+    Ok(objects)
 }
 
 pub async fn for_subjects(
@@ -1443,7 +1654,7 @@ pub async fn for_subjects(
         .await?
         .into_iter()
         .map(|row| {
-            let quantity = if row.get::<Option<String>, _>("quantity_mantissa").is_some() {
+            let quantity = if row.get::<Option<&str>, _>("quantity_mantissa").is_some() {
                 Some(crate::exact::read_decimal(&row, "quantity")?)
             } else {
                 None
@@ -1456,7 +1667,7 @@ pub async fn for_subjects(
                 predicate: row.get("predicate"),
                 object_uid: row.get("object_uid"),
                 object_uri: row.get("object_uri"),
-                resolved_object_uid: if row.get::<Option<String>, _>("object_uri").is_some() {
+                resolved_object_uid: if row.get::<Option<&str>, _>("object_uri").is_some() {
                     row.get("target_uid")
                 } else {
                     None

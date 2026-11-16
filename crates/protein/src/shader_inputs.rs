@@ -56,7 +56,7 @@ pub(crate) async fn attach<Body>(
             NumericField::Quantity => None,
         })
         .collect();
-    let mut documents = HashMap::new();
+    let mut raw_documents = Vec::new();
     if !pairs.is_empty() {
         let mut query = store::sqlx::QueryBuilder::new(
             "SELECT record_uid, namespace, fds FROM record_extension WHERE length(CAST(fds AS BLOB)) <= 65536 AND (",
@@ -73,13 +73,18 @@ pub(crate) async fn attach<Body>(
                 .push(")");
         }
         query.push(")");
-        for (uid, namespace, raw) in query
+        raw_documents = query
             .build_query_as::<(String, String, String)>()
             .fetch_all(&store.pool)
-            .await?
-        {
-            documents.insert((uid, namespace), raw);
-        }
+            .await?;
+    }
+    let mut documents: HashMap<&str, HashMap<&str, store::records::ExtensionNumbers<'_>>> =
+        HashMap::new();
+    for (uid, namespace, raw) in &raw_documents {
+        documents
+            .entry(uid)
+            .or_default()
+            .insert(namespace, store::records::ExtensionNumbers::new(raw));
     }
     let mut out = HashMap::new();
     for request in requests {
@@ -89,8 +94,9 @@ pub(crate) async fn attach<Body>(
         let value = match &request.field {
             NumericField::Quantity => Some(record.quantity.to_string()),
             NumericField::Extension { namespace, path } => documents
-                .get(&(request.record.clone(), namespace.clone()))
-                .and_then(|raw| store::records::extension_numeric_at(raw, path).ok())
+                .get_mut(request.record.as_str())
+                .and_then(|namespaces| namespaces.get_mut(namespace.as_str()))
+                .and_then(|numbers| numbers.get(path).ok())
                 .map(|number| number.to_string()),
         };
         let fields = out

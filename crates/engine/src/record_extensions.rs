@@ -1,3 +1,5 @@
+mod preparation;
+
 use crate::{
     Engine, EngineError,
     actions::{Action, ActionOutcome},
@@ -191,6 +193,7 @@ impl Engine {
         requested: &[String],
         actor: Option<&str>,
     ) -> Result<Inspection, EngineError> {
+        let _inspection = nucleus::performance::Span::new("extension-inspection");
         self.require_permission(actor, "record:read").await?;
         let mut out = Inspection::default();
         if requested.len() > 32 || requested.iter().any(|uid| !nucleus::valid_uid(uid, "r")) {
@@ -203,9 +206,9 @@ impl Engine {
                 return Err(EngineError::Forbidden("This Record is unavailable".into()));
             }
             out.record = Some(uid.clone());
-            if let Some(record) = store::records::get(&self.store.pool, &uid).await? {
+            if let Some(head) = store::records::head(&self.store.pool, &uid).await? {
                 out.labels
-                    .insert(uid.clone(), record.head.chars().take(160).collect());
+                    .insert(uid.clone(), head.chars().take(160).collect());
             }
             if store::records::get_extension(&self.store.pool, &uid, SCHEMA_NAMESPACE)
                 .await?
@@ -216,12 +219,12 @@ impl Engine {
             let all = store::records::get_extension(&self.store.pool, &uid, VALUES_NAMESPACE)
                 .await?
                 .unwrap_or(json!({}));
-            for (schema, value) in all
-                .as_object()
-                .ok_or_else(|| invalid("Invalid stored extension fields"))?
-            {
+            let Value::Object(all) = all else {
+                return Err(invalid("Invalid stored extension fields"));
+            };
+            for (schema, value) in all {
                 let stored: StoredValues =
-                    serde_json::from_value(value.clone()).map_err(EngineError::Json)?;
+                    serde_json::from_value(value).map_err(EngineError::Json)?;
                 out.values.insert(
                     schema.clone(),
                     Values {
@@ -231,13 +234,13 @@ impl Engine {
                     },
                 );
                 if self
-                    .require_extension_write(&uid, VALUES_NAMESPACE, schema, actor)
+                    .require_extension_write(&uid, VALUES_NAMESPACE, &schema, actor)
                     .await
                     .is_ok()
                 {
                     out.writable.push(schema.clone());
                 }
-                schemas.insert(schema.clone());
+                schemas.insert(schema);
             }
         }
         if catalog {
@@ -246,21 +249,20 @@ impl Engine {
         }
         let priority = requested
             .iter()
-            .cloned()
-            .chain(out.values.keys().cloned())
-            .chain(out.record.iter().cloned())
+            .map(String::as_str)
+            .chain(out.values.keys().map(String::as_str))
+            .chain(out.record.as_deref())
             .collect::<BTreeSet<_>>();
         let mut schemas = schemas.into_iter().collect::<Vec<_>>();
-        schemas.sort_by_key(|uid| (!priority.contains(uid), uid.clone()));
-        let mut bytes = serde_json::to_vec(&out.values)
-            .map_err(EngineError::Json)?
-            .len();
+        schemas.sort_by(|a, b| {
+            (!priority.contains(a.as_str()), a).cmp(&(!priority.contains(b.as_str()), b))
+        });
+        let mut bytes = nucleus::json::encoded_len(&out.values).map_err(EngineError::Json)?;
         for uid in schemas {
             match self.load_extension_schema(&uid, actor).await {
                 Ok(stored) => {
-                    let size = serde_json::to_vec(&stored.schema)
-                        .map_err(EngineError::Json)?
-                        .len();
+                    let size =
+                        nucleus::json::encoded_len(&stored.schema).map_err(EngineError::Json)?;
                     if bytes + size > nucleus::record_extension::MAX_BYTES * 8 {
                         out.more = true;
                         continue;
@@ -291,52 +293,45 @@ impl Engine {
                 Err(error) => return Err(error),
             }
         }
-        out.schemas.sort_by(|a, b| {
-            a.schema
-                .name
-                .to_lowercase()
-                .cmp(&b.schema.name.to_lowercase())
-                .then(a.uid.cmp(&b.uid))
-        });
-        let presets = out
+        out.schemas
+            .sort_by_cached_key(|entry| (entry.schema.name.to_lowercase(), entry.uid.clone()));
+        let mut concepts = BTreeSet::new();
+        let mut objects = BTreeSet::new();
+        for preset in out
             .schemas
             .iter()
             .flat_map(|entry| &entry.schema.fields)
             .flat_map(|field| &field.choices)
             .flat_map(|choice| &choice.assertions)
-            .collect::<Vec<_>>();
-        let concepts = presets
-            .iter()
-            .flat_map(|preset| std::iter::once(&preset.predicate).chain(preset.unit.iter()))
-            .collect::<BTreeSet<_>>();
+        {
+            concepts.insert(&preset.predicate);
+            concepts.extend(preset.unit.iter());
+            objects.extend(preset.object.iter());
+        }
         if !concepts.is_empty() {
             let rows: Vec<(String, String)> =
-                store::sqlx::query_as("SELECT uid,canonical_name FROM concept")
+                store::sqlx::query_as("SELECT uid,canonical_name FROM concept WHERE uid IN (SELECT value FROM json_each(?))")
+                    .bind(serde_json::to_string(&concepts).map_err(EngineError::Json)?)
                     .fetch_all(&self.store.pool)
                     .await?;
+            nucleus::performance::add("extension-inspection-concept-rows", rows.len() as u64);
             for (uid, name) in rows {
-                if concepts.contains(&uid) {
-                    if out.labels.len() < 4096 {
-                        out.labels.insert(uid, name);
-                    } else {
-                        out.more = true;
-                    }
+                if out.labels.len() < 4096 {
+                    out.labels.insert(uid, name);
+                } else {
+                    out.more = true;
                 }
             }
         }
-        let objects = presets
-            .iter()
-            .filter_map(|preset| preset.object.as_ref())
-            .collect::<BTreeSet<_>>();
         if objects.len() > 512 {
             out.more = true;
         }
         for uid in objects.into_iter().take(512) {
             if self.may_read_record(actor, uid).await?
-                && let Some(record) = store::records::get(&self.store.pool, uid).await?
+                && let Some(head) = store::records::head(&self.store.pool, uid).await?
             {
                 out.labels
-                    .insert(uid.clone(), record.head.chars().take(160).collect());
+                    .insert(uid.clone(), head.chars().take(160).collect());
             }
         }
         Ok(out)
@@ -376,7 +371,10 @@ impl Engine {
         if preset.unit.is_some() && preset.quantity.is_none() {
             return Err(invalid("An assertion with a unit also needs a quantity"));
         }
-        if store::vocabulary::feature_binding(&self.store.pool,"ancestry").await?.concept_uids.contains(&preset.predicate)
+        if store::vocabulary::feature_binding(&self.store.pool, "ancestry")
+            .await?
+            .concept_uids
+            .contains(&preset.predicate)
         {
             return Err(invalid(
                 "Prompt ancestry is configured through Fiote controls",
@@ -447,7 +445,13 @@ impl Engine {
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
-        store::sqlx::query("INSERT INTO record_change_receipt (actor,change_uid,record_uid,payload,result) VALUES (?,?,?,?,?)").bind(actor.unwrap_or("")).bind(id).bind(uid).bind(payload).bind(data.to_string()).execute(&mut *tx).await?;
+        let encoded = {
+            let _preparation = nucleus::performance::Span::new("extension-receipt-preparation");
+            let encoded = data.to_string();
+            nucleus::performance::add("extension-receipt-payloads-prepared", 1);
+            encoded
+        };
+        store::sqlx::query("INSERT INTO record_change_receipt (actor,change_uid,record_uid,payload,result) VALUES (?,?,?,?,?)").bind(actor.unwrap_or("")).bind(id).bind(uid).bind(payload).bind(&encoded).execute(&mut *tx).await?;
         let fact = crate::append::append_one_in_transaction(
             &mut tx,
             nucleus::NewFact {
@@ -457,13 +461,15 @@ impl Engine {
                 at: None,
                 actor_uid: actor.map(str::to_owned),
                 cause: nucleus::Cause::user_edit(),
-                payload: Some(data.to_string()),
+                payload: Some(encoded),
             },
             now,
             signer.as_ref(),
         )
         .await?;
-        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
+        if let Some(checkpoint) = checkpoint {
+            checkpoint.finish(&mut tx, Default::default()).await?;
+        }
         tx.commit().await?;
         drop(serial);
         let mut outcome = ActionOutcome {
@@ -516,7 +522,12 @@ impl Engine {
                 }
             }
         }
-        schema.validate().map_err(invalid)?;
+        let validated = if created {
+            schema.validate().map_err(invalid)?;
+            None
+        } else {
+            Some(schema.validated().map_err(invalid)?)
+        };
         let uid = target.unwrap_or_else(|| nucleus::new_uid("r"));
         if created {
             self.authorize_extension_create(&uid, &schema, actor)
@@ -535,8 +546,28 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
-        self.require_permission_on(&mut tx, actor, if created { "record:create" } else { "record:update" }).await?;
-        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], if created { protein::authority::Operation::Create } else { protein::authority::Operation::Update }).await?;
+        self.require_permission_on(
+            &mut tx,
+            actor,
+            if created {
+                "record:create"
+            } else {
+                "record:update"
+            },
+        )
+        .await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor,
+                vec![uid.clone()],
+                if created {
+                    protein::authority::Operation::Create
+                } else {
+                    protein::authority::Operation::Update
+                },
+            )
+            .await?;
         if let Some(data) = self.receipt(&mut tx, actor, &id, &payload).await? {
             return Ok(ActionOutcome {
                 created: created.then(|| data["schema"].as_str().unwrap_or_default().into()),
@@ -567,7 +598,11 @@ impl Engine {
         let before = extension_tx(&mut tx, &uid, SCHEMA_NAMESPACE).await?;
         let revision = if before.get("schema").is_some() {
             let before: StoredSchema = serde_json::from_value(before).map_err(EngineError::Json)?;
-            schema.update_from(&before.schema).map_err(invalid)?;
+            if let Some(validated) = &validated {
+                validated.update_from(&before.schema).map_err(invalid)?;
+            } else {
+                schema.update_from(&before.schema).map_err(invalid)?;
+            }
             before.revision
         } else {
             0
@@ -580,6 +615,7 @@ impl Engine {
         let revision = revision
             .checked_add(1)
             .ok_or_else(|| invalid("Schema revision overflow"))?;
+        drop(validated);
         let stored = StoredSchema { revision, schema };
         store::records::set_extension_on(
             &mut tx,
@@ -629,7 +665,12 @@ impl Engine {
         let Some(actor) = actor else {
             return Ok(());
         };
-        let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(Operation::Update)).await? else { return Ok(()); };
+        let Some(policy) =
+            protein::role_authority::policy_for(&self.store, actor, Some(Operation::Update))
+                .await?
+        else {
+            return Ok(());
+        };
         for grant in policy.grants {
             if grant.operation != Operation::Update {
                 continue;
@@ -696,7 +737,12 @@ impl Engine {
                 "This schema would be outside your access rules".into(),
             ));
         }
-        let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(Operation::Create)).await? else { return Ok(()); };
+        let Some(policy) =
+            protein::role_authority::policy_for(&self.store, actor, Some(Operation::Create))
+                .await?
+        else {
+            return Ok(());
+        };
         let allowed = policy
             .grants
             .iter()
@@ -761,42 +807,18 @@ impl Engine {
         let before = store::records::get_extension(&self.store.pool, &uid, VALUES_NAMESPACE)
             .await?
             .unwrap_or(json!({}));
-        let old: StoredValues = before
-            .get(&schema_uid)
-            .cloned()
-            .map(serde_json::from_value)
-            .transpose()
-            .map_err(EngineError::Json)?
-            .unwrap_or_default();
-        let mut next = old.clone();
-        for (id, value) in &values {
-            let field = definition
-                .schema
-                .fields
-                .iter()
-                .find(|field| field.id == *id)
-                .ok_or_else(|| invalid("Unknown field; reload the schema"))?;
-            field
-                .validate_value(value, old.fields.get(id).unwrap_or(&Value::Null))
-                .map_err(invalid)?;
-            if value.is_null() {
-                next.fields.remove(id);
-            } else {
-                next.fields.insert(id.clone(), value.clone());
-            }
-        }
-        let mut wanted = Vec::new();
+        let (old, mut next) =
+            preparation::values(&before, &schema_uid, &definition.schema, values)?;
+        let mut wanted = preparation::Presets::default();
         if !remove {
+            let _preparation =
+                nucleus::performance::Span::new("extension-preset-preparation-await");
             for field in &definition.schema.fields {
                 for choice in field
-                    .selection(next.fields.get(&field.id).unwrap_or(&Value::Null))
+                    .selected_choices(next.fields.get(&field.id).unwrap_or(&Value::Null))
                     .map_err(invalid)?
                 {
-                    let choice = field
-                        .choices
-                        .iter()
-                        .find(|entry| entry.id == choice)
-                        .ok_or_else(|| invalid("A selected choice is missing"))?;
+                    let choice = choice.ok_or_else(|| invalid("A selected choice is missing"))?;
                     for preset in &choice.assertions {
                         if !wanted.contains(preset) {
                             wanted.push(self.resolve_preset(preset.clone(), actor).await?);
@@ -808,26 +830,22 @@ impl Engine {
         if wanted.len() > 512 {
             return Err(invalid("Select at most 512 preset assertions"));
         }
-        for preset in &wanted {
+        for preset in wanted.iter() {
             self.authorize_preset(&uid, preset, None, actor).await?;
         }
         let mut removals = Vec::new();
+        let mut ownership = None;
         for managed in &old.assertions {
             if !managed.owned || wanted.contains(&managed.preset) {
                 continue;
             }
-            let referenced = before
+            let all = before
                 .as_object()
-                .ok_or_else(|| invalid("Invalid extension storage"))?
-                .iter()
-                .filter(|(key, _)| *key != &schema_uid)
-                .any(|(_, value)| {
-                    value["assertions"].as_array().is_some_and(|list| {
-                        list.iter()
-                            .any(|value| value["assertion"] == managed.assertion)
-                    })
-                });
-            if referenced {
+                .ok_or_else(|| invalid("Invalid extension storage"))?;
+            if ownership
+                .get_or_insert_with(|| preparation::AssertionOwnership::new(all, &schema_uid))
+                .referenced_elsewhere(&managed.assertion)
+            {
                 continue;
             }
             if let Some(row) = store::assertions::get(&self.store.pool, &managed.assertion).await? {
@@ -858,11 +876,22 @@ impl Engine {
                 }
             }
         }
+        let wanted = wanted.into_values();
+        let previous_revision = old.revision;
+        drop(old);
         let signer = self.signer.lock().await.clone();
         let serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
-        self.require_permission_on(&mut tx, actor, "record:update").await?;
-        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
+        self.require_permission_on(&mut tx, actor, "record:update")
+            .await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor,
+                vec![uid.clone()],
+                protein::authority::Operation::Update,
+            )
+            .await?;
         if let Some(data) = self.receipt(&mut tx, actor, &id, &payload).await? {
             return Ok(ActionOutcome {
                 data: Some(data),
@@ -870,7 +899,7 @@ impl Engine {
             });
         }
         let current = extension_tx(&mut tx, &uid, VALUES_NAMESPACE).await?;
-        if current != before || old.revision != expected_revision {
+        if current != before || previous_revision != expected_revision {
             return Err(invalid(
                 "These fields changed. Reload them before saving your draft",
             ));
@@ -910,7 +939,6 @@ impl Engine {
             }
             store::assertions::retract_tx(&mut tx, &assertion, actor).await?;
         }
-        next.assertions.clear();
         for preset in wanted {
             let existing = store::sqlx::query("SELECT uid,role,quantity_mantissa,quantity_scale,unit_uid FROM record_assertion WHERE subject_uid=? AND predicate_uid=? AND object_uid IS ? AND retracted_at IS NULL ORDER BY uid LIMIT 1").bind(&uid).bind(&preset.predicate).bind(&preset.object).fetch_optional(&mut *tx).await?;
             let quantity = preset
@@ -933,17 +961,14 @@ impl Engine {
                         "An existing assertion has different properties; review it before selecting this option",
                     ));
                 }
-                let owned = old
-                    .assertions
-                    .iter()
-                    .any(|entry| entry.assertion == assertion && entry.owned)
-                    || before.as_object().unwrap().values().any(|value| {
-                        value["assertions"].as_array().is_some_and(|list| {
-                            list.iter().any(|value| {
-                                value["assertion"] == assertion && value["owned"] == true
-                            })
-                        })
-                    });
+                let owned = ownership
+                    .get_or_insert_with(|| {
+                        preparation::AssertionOwnership::new(
+                            before.as_object().unwrap(),
+                            &schema_uid,
+                        )
+                    })
+                    .owned(&assertion);
                 (assertion, owned)
             } else {
                 let assertion = nucleus::new_uid("a");
@@ -969,15 +994,16 @@ impl Engine {
                 owned,
             });
         }
-        next.revision = old
-            .revision
+        drop(ownership);
+        drop(before);
+        next.revision = previous_revision
             .checked_add(1)
             .ok_or_else(|| invalid("Field revision overflow"))?;
         let mut all = current;
         next.detached = remove;
         all[&schema_uid] = serde_json::to_value(&next).map_err(EngineError::Json)?;
         if all.as_object().unwrap().len() > 128
-            || serde_json::to_vec(&all).map_err(EngineError::Json)?.len()
+            || nucleus::json::encoded_len(&all).map_err(EngineError::Json)?
                 > nucleus::record_extension::MAX_BYTES
         {
             return Err(invalid("This Record has too many extension fields"));

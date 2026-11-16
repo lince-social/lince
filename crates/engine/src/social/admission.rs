@@ -143,7 +143,7 @@ pub(super) async fn block_on(
         let mut retained = owner::extension_on(tx, &row.0, RETAINED_NAMESPACE).await?;
         retained[format!("{context}:{peer}")] =
             json!({"context":context,"peer":peer,"blocked":blocked,"window":window});
-        if serde_json::to_vec(&retained)?.len() > 256 * 1024 {
+        if nucleus::json::encoded_len(&retained)? > 256 * 1024 {
             return Err(invalid("The retained private block ledger is full"));
         }
         store::records::set_extension_on(tx, &row.0, RETAINED_NAMESPACE, &retained).await?;
@@ -665,7 +665,7 @@ impl Engine {
                 .sign_bytes(&signing_bytes("sender-admission", &a)?);
             request_auth::validate_admission(&a, &route, now)?;
             map[&field] = serde_json::to_value(&a)?;
-            if serde_json::to_vec(&map)?.len() > 1024 * 1024 {
+            if nucleus::json::encoded_len(&map)? > 1024 * 1024 {
                 return Err(invalid("The retained admission document exceeds its bound"));
             }
             store::records::set_extension_on(&mut tx, cache_record, &namespace, &map).await?;

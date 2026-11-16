@@ -13,9 +13,9 @@ pub(super) struct Draft {
     pub metric: usize,
     pub withdrawn: bool,
     pub import: String,
-    pub review: Option<(claims::commands::Review, nucleus::karma::CanonicalHash)>,
-    pub snapshot: Option<claims::Document>,
-    pub checks: Vec<Value>,
+    pub review: Option<(Arc<claims::commands::Review>, nucleus::karma::CanonicalHash)>,
+    pub snapshot: Option<Arc<claims::Document>>,
+    pub checks: Vec<profile_claims::CachedCheck>,
 }
 impl Default for Draft {
     fn default() -> Self {
@@ -37,7 +37,7 @@ impl Default for Draft {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Title,
     Amount,
@@ -169,7 +169,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                     .clone()
                     .ok_or("Preview the exact claim before signing")?;
                 Some(Request::Publish {
-                    review,
+                    review: review.as_ref().clone(),
                     expected_review,
                 })
             }
@@ -202,7 +202,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                 document: serde_json::to_string(
                     view.claims
                         .snapshot
-                        .as_ref()
+                        .as_deref()
                         .ok_or("Select a profile claim first")?,
                 )
                 .map_err(|error| error.to_string())?,
@@ -212,7 +212,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                 document: serde_json::to_string(
                     view.claims
                         .snapshot
-                        .as_ref()
+                        .as_deref()
                         .ok_or("Select a profile claim first")?,
                 )
                 .map_err(|error| error.to_string())?,
@@ -235,7 +235,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
             view.claims.review = None;
             view.recipes.review = None;
             view.review = None;
-            view.result = Value::Null;
+            view.result = Snapshot::default();
             match command {
                 UiCommand::Exact => view.claims.exact = !view.claims.exact,
                 UiCommand::Category => {
@@ -253,8 +253,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                     }
                 }
                 UiCommand::Revise(value, withdrawn) => {
-                    if let Ok(document) = serde_json::from_value::<claims::Document>(value.clone())
-                    {
+                    if let Ok(document) = decode::<claims::Document>(value) {
                         let statement = document.statement;
                         view.claims.category = statement.category;
                         let mut query = nucleus::trust_analysis::query::Query::for_subject(
@@ -508,8 +507,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 nucleus::trust_analysis::serving::SourceKind::Claim,
             );
         }
-        if let Ok(document) = serde_json::from_value::<claims::Document>(result["document"].clone())
-        {
+        if let Ok(document) = decode::<claims::Document>(&result["document"]) {
             let statement = &document.statement;
             label(world, owner, &provenance(&statement.authorship));
             label(

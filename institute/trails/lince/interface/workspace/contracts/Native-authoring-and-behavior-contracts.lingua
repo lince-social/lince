@@ -312,6 +312,8 @@ Finish able to build and furnish a low-poly room or simple castle using native t
 - [ ] Include model/port dependencies, trusted template references and supported restart state in save/offline manifests. Keep source retained while high-detail runtime payload releases. Ordinary source undo does not rewind a running clock. Restore uses the template's checkpoint or explicit initialization rule; no silent catch-up event burst after reopening.
 - [ ] **Acceptance and measured limits:** P04/P05 require functional behavior independent of view/detail, one writer, selected-copy isolation and no numerical solver starts. Adopt actual bounds for event queue depth, worst timer error, camera output size/cadence, CPU/bytes, transition work and last-demand release from the fixture/hardware. Compare event-only idle behavior and sampled active work without weakening required detection. Later 15a supplies a measured physical-to-equivalent reduction, while 18 proves a second physical domain using the same selection/transition path.
 
+- [ ] Publish B42's actual supported action/input/output/state schemas, clocks, interruption and activity isolation for [user-authored behavior composition](../features/Behavior-Authoring.lingua). That downstream package uses this runtime and owns the new composition editor; configurable B42 templates alone do not prove arbitrary user-defined behavior. The [object-authoring contract](Object-authoring-contracts.lingua) governs its additional native recipes, trials and appearance/control joins without making them prerequisites for the base Functional export.
+
 ## Fixture specifications owned here
 
 ### Owned fixture specifications

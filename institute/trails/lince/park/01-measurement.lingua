@@ -10,11 +10,11 @@ Park — 1. Measure complete interactions (
 
 **Continue through these Records:**
 
-- [Park — Latest Park visit: 3fdc9356, 2026-11-09 UTC](record:r_12E80VQY3A7TQAXK98A7C6NPAJ)
+- [Park — Historical Park visit: 3fdc9356, 2026-11-09 UTC](record:r_12E80VQY3A7TQAXK98A7C6NPAJ)
 - [Park — Existing tooling and source-check provenance](record:r_1TD3BGMVJKA4ESW1M6G97AQMRS)
 } r_3MCKF8DH9AWW9EGKNZANAVS95C
 
-Park — Latest Park visit: 3fdc9356, 2026-11-09 UTC (
+Park — Historical Park visit: 3fdc9356, 2026-11-09 UTC (
     @park-dev-55e211264a2477f2cdb7: 0,
     is #chapter,
     #part-of @park-dev-01-measurement: 4,
@@ -22,15 +22,15 @@ Park — Latest Park visit: 3fdc9356, 2026-11-09 UTC (
 ) { r_12E80VQY3A7TQAXK98A7C6NPAJ
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
-## Latest Park visit: 3fdc9356, 2026-11-09 UTC
+## Historical Park visit: 3fdc9356, 2026-11-09 UTC
 
 The optimized installed process and CI validation bundle match `3fdc93565941fbf90903773d7e739e77c45fe667`; all bundle hashes and the GitHub archive digest validate. No local Cargo/Nix compilation ran during this visit. With the running Park process's graphics libraries supplied to the raw test loader, **11/12 cases pass**. The main run has 31/43 transport-complete case/phase observations; a bounded repeat completes all six selected GPU/text phases, including the warmup that previously lost one detailed span. The mixed case fails on its second synthetic Unicode key in both capture modes, and **actual Bevy system-body rows are absent**. A complete transport window is not proof of those missing measurements. Installed-desktop startup capture is unset, so physical/daily acceptance remains open.
 
-[Full evidence and interpretation](record:r_619SAYW8V26804MDDR9RYB4JMC). Receipts: `/home/user/.local/state/lince/park-validation/a0-3fdc9356-20261109T012718Z/`; `analysis.json` is the compact machine-readable summary. P93's runner lifecycle is verified and its completed checkbox is removed. P152/P154/P156/P151 are the next broad Niri tooling batch; do not retry another Firefox FPS run before repairing the missing attribution and mixed-route evidence. Preserve the successful local-save, glyph, 3D, hardware-query and causal-input observations rather than rerunning them unchanged.
+[Full evidence and interpretation](record:r_619SAYW8V26804MDDR9RYB4JMC). Receipts: `/home/user/.local/state/lince/park-validation/a0-3fdc9356-20261109T012718Z/`; `analysis.json` is the compact machine-readable summary. P93's runner lifecycle is verified and its completed checkbox is removed. The missing-system/mixed-route repairs have since completed; see Overhaul.md for the later optimized evidence. P156 retains only automatic installed-runner verification. Preserve the successful local-save, glyph, 3D, hardware-query and causal-input observations rather than rerunning them unchanged.
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-**Performance comes first.** Follow [12 — measurement and delivery](record:r_7NBQGTF152S58NPT0Z9EM58C1T): repair only the measurement gaps needed to locate and judge the selected runtime changes, and ship those independent changes in the same broad batch. Do not finish unrelated measurement/UI platform work before reducing known runtime waste. Develop and compile useful checks in Niri; no retained alternate implementations or per-idea binary cycle. Park is needed for physical acceptance, not independent coding. CI normally builds the optimized application and matching checks. Push a reviewed Niri batch, then measure in Park, record findings/next work in the Markdown and stop.
+**Current phase:** source-only work, governed by the checkpoint and Overhaul.md. This dated visit does not authorize a build, test, shipment or session change. Its completed tooling fixes are removed from the active queue.
 
 Measure command-to-effect latency first, including native typing and local Record saving. Existing counters/timing histograms and private renderer fixtures are reusable; add missing causal links, actual Bevy system/family work and GPU/output coverage. An observation of high CPU or a stage's elapsed duration is not attribution of user-visible delay. P103 completed the [fixture definition](workloads.json); P101 added native/client correlation. Historical manifests do not identify a future running binary. The same bounded trace serves scheduling, storage, style and GPU questions; the tasks below own distinct missing pieces rather than another framework per subsystem.
 } r_12E80VQY3A7TQAXK98A7C6NPAJ
@@ -45,85 +45,43 @@ Park — Existing tooling and source-check provenance (
 
 ## Existing tooling and source-check provenance
 
-Reuse the delivered schema-2 reports, family work counters, causal IDs, hardware/glyph/edit fixtures and frozen v2 case definitions. Their implementation and the latest measured outcomes are in 00; they are not further rebuild tasks. V1 and v2 are different workloads. The current bundle declares 43 case/phases, with private and physical scopes kept distinct.
+Reuse the delivered schema-2 reports, family work counters, causal IDs, hardware/glyph/edit fixtures and frozen v2 case definitions. Their implementation and the latest measured outcomes are in 00; they are not further rebuild tasks. V1 and v2 are different workloads. That historical bundle declared 43 case/phases. Later suite identities and complete observations are in Overhaul.md; keep private and physical scopes distinct.
 
-Twenty-two standard-library tooling tests passed in Niri. The local combined native source/executable recheck was interrupted when `target/` disappeared; the later CI-built optimized, source-matched executables are now verified and have actually run in Park. Remaining failures are the specific runtime/coverage issues below, rather than a still-pending native compilation claim.
+Twenty-two standard-library tooling tests passed in Niri. The local combined native source/executable recheck was interrupted when `target/` disappeared; the later CI-built optimized, source-matched executables are now verified and have actually run in Park. Later optimized results supersede this old visit. Remaining source-batch and physical acceptance is in Overhaul.md; this is not a pending build request.
 
 **Continue through these Records:**
 
-- [P151 — Enforce required measurement coverage in report completion.](record:r_21F455CYWM5JWPGSCGEYSE5YD4)
-- [P152 — Capture real named Bevy system CPU in optimized builds.](record:r_121D0XG67MFKD0DBECPQYZBCZA)
 - [P153 — Finish GPU/source-frame and physical-output attribution.](record:r_7N5NNV5N2RBD81C5EYXHM22NPB)
-- [P154 — Repair the mixed daily fixture's input-to-completed-frame handshake.](record:r_6DQDKS9BNWN9CZD570GRFA8A3V)
-- [P155 — Complete per-case comparison identity and required-cost reporting.](record:r_0B3MSPZT92QG5QY441RHB24Z70)
-- [P156 — Supply the installed Nix graphics runtime to prepared tests automatically.](record:r_675XKW987Z53WQNE9T0F48XBPH)
+- [P155 — Verify comparison identity across independently changed cases.](record:r_0B3MSPZT92QG5QY441RHB24Z70)
+- [P156 — Verify the installed graphics runtime without an adapter script.](record:r_675XKW987Z53WQNE9T0F48XBPH)
 - [P66 — Produce one ranked bottleneck report for the current optimized candidate.](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8)
 - [P67 — Finish the CPU/GPU ownership map for the complete consumer path.](record:r_425JQ5QS3D33JJTE0QFYNP3CCW)
 - [P70 — Measure GLES consumer GPU execution and driver waits.](record:r_77FM19KDX0GXG96YB4AD0W4YP0)
 - [P36 — Attribute the remaining native wake stream.](record:r_0ABQ7XDA1CYGHYJ7C6S8H0CSJE)
-- [P102 — Finish causal local-edit attribution through visible publication.](record:r_2XC1E2G6YV3KFGFKQR795D8NR3)
 - [P104 — Expose the existing performance cases as useful Laboratory results.](record:r_3HYSQ1RTAA930T57X9W5CXKFQN)
 } r_1TD3BGMVJKA4ESW1M6G97AQMRS
 
-P151 — Enforce required measurement coverage in report completion. (
-    @park-p151: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a0,
+P151 — Required measurement coverage is implemented. (
+    @park-p151: 1,
+    is #chapter,
     #part-of @park-dev-7a6bbca2f8f348a63131: 22,
     #park-workflow @park-development-cycle
 ) { r_21F455CYWM5JWPGSCGEYSE5YD4
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** The existing strict suite reports missing phases, named bodies, loss and incomplete captures separately from its performance verdict. Later optimized recordings preserve complete required observations while still failing latency budgets. Reuse this contract; do not rebuild it.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
-
-
-Current candidate: required body coverage and separate transport/aggregate/detail status are implemented; Python regressions check missing bodies and optional detail loss. A Park run must prove real required rows without concealing capacity loss.
-
-**Why:** a successful repeated GPU/text run reports six complete windows while `bevy-system-bodies` is explicitly unobserved in every one. That is complete report transport, not the A0 accounting contract needed to attribute broad fixes. **Build:** reuse schema-2 coverage/phase contracts to distinguish transport completeness, required owner/signal coverage and optional detailed-trace loss. Require the real body signals expected by renderer cases; headless World-only edit cases do not acquire a false Bevy requirement. Preserve unavailable GPU/physical signals, histogram counts, source identity and bounded loss reporting without inventing zero costs or adding overlapping CPU/elapsed totals.
-
-**Verify:** a real Bevy case with absent named bodies fails the required-coverage gate; known headless cases retain their honest scope; optional trace loss is visible with the exact affected window and cannot silently erase valid aggregate evidence or masquerade as a fully observed causal trace. Reuse the verified reporter/finalization/comparison model. The first hardware warmup loses one detailed span with only 439 retained, while the repeat loses none; investigate contention as well as capacity instead of merely increasing the limit. Capture-on/off overhead must be checked again after P152 actually records bodies.
+**Evidence:** [Overhaul.md](Overhaul.md#fresh-verification-after-the-evidence-directory-loss). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_21F455CYWM5JWPGSCGEYSE5YD4
 
-Extension @park-p151 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
-
-P152 — Capture real named Bevy system CPU in optimized builds. (
-    @park-p152: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a0,
+P152 — Actual Bevy system attribution is implemented. (
+    @park-p152: 1,
+    is #chapter,
     #part-of @park-dev-7a6bbca2f8f348a63131: 30,
     #park-workflow @park-development-cycle
 ) { r_121D0XG67MFKD0DBECPQYZBCZA
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** Real optimized Main/Render system bodies, deferred work and executing-thread costs are present in the later reports. The old zero-name diagnosis is resolved. Capture overhead and current coverage remain checks for future recordings, not a missing observer implementation.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
-
-
-Current candidate: retain only bevy_utils static names, include Park/deferred owners, and add an actual Bevy App/Commands integration check. Native test compilation checks pass; the CI App execution and optimized capture-on/off Park run must confirm names, workers and observer cost; fabricated-span tests alone cannot close this.
-
-**Why:** every measured real renderer window has zero system-body records, despite nonzero native/render schedule timings. Synthetic hand-created spans pass their tests but do not prove Bevy integration. **Evidence:** the optimized test ELF contains `<Enable the debug feature to see the name>`; Bevy 0.19.1 `DebugName::type_name` omits names without its debug-name feature, while Park requests tracing only. The observer accepts module-qualified names and ignores the placeholder. **Build:** retain the minimum actual type-name support and validate the observer's creation/entry lifecycle on the executing threads. Keep release optimization, bounded cardinality, ordinary logging and disabled-capture behavior. Do not collapse all unnamed systems into one fake owner. Make deferred-command work and rejected/unsupported names explicit rather than claiming complete exclusive CPU from a partial system set.
-
-**Verify:** an actual Bevy App/native plugin—not fabricated tracing spans—emits recognizable real system names with nonzero body/worker samples under the same optimized artifact features. Exercise nested/reentered execution and deferred work, require those observations in the selected case contract, and rerun bounded capture-on/off controls. Existing family counters already work: the static 24-full-frame control visits 13,824 metric consumers, derives zero style values, makes zero direct style resolutions, changes zero layout runtimes and reuses 384 surfaces without creating/resizing them. Reuse those counters rather than rebuilding their framework. See the latest receipt's `bevy-name-check.json` and raw reports.
+**Evidence:** [Overhaul.md](Overhaul.md#optimized-private-acceptance-on-4f2f9dea). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_121D0XG67MFKD0DBECPQYZBCZA
-
-Extension @park-p152 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 P153 — Finish GPU/source-frame and physical-output attribution. (
     @park-p153: 0,
@@ -153,37 +111,18 @@ Extension @park-p153 "lince.controls" {
     }]
 }
 
-P154 — Repair the mixed daily fixture's input-to-completed-frame handshake. (
-    @park-p154: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a0,
+P154 — Mixed-route input handshake is repaired. (
+    @park-p154: 1,
+    is #chapter,
     #part-of @park-dev-7a6bbca2f8f348a63131: 44,
     #park-workflow @park-development-cycle
 ) { r_6DQDKS9BNWN9CZD570GRFA8A3V
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** Later complete optimized runs preserve all 960 interaction outcomes, including Unicode typing, with matching pixels and loss-free traces. The old second-key failure is no longer an open repair. The workload remains mandatory and its response budgets still fail.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
-
-
-Current candidate: use real pointer focus press/release frames before typing and retain all 24 exact per-key Unicode assertions, with failure context. This is an unverified readiness repair, not an established explanation of the second-key failure; rerun the full route in Park and preserve any remaining failure.
-
-**Why:** the 24-item/two-output route sees `é` when its second key expects `éé`, with capture both on and off. This stops the typing route and leaves scroll/pan/open/style/resize/description/active/return-quiet phases unavailable. Other glyph/autosave and controlled-input cases pass; that does not establish the mixed route is correct or prove its failure is merely a test defect. **Build:** trace target/focus, key admission/application serials and the completed frame/revision used by `advance(1)`. Reuse the existing causal-input worker and pixel oracles. Repair the shared behavior if an input is lost, or coordinate the fixture with the matching completed epoch if it inspects an older result. Do not hide the error with sleeps, discarded keys or weakened correctness checks.
-
-**Verify:** all 24 Unicode inputs are applied in order, reflected in complete pixels and retained text; every declared phase then runs with its expected work signals on both private outputs. Keep the 24-item mix, hidden demand and ordinary production paths. Record any changed fixture identity explicitly; P155 must preserve comparisons for independently unchanged cases.
+**Evidence:** [Overhaul.md](Overhaul.md#fresh-verification-after-the-evidence-directory-loss). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_6DQDKS9BNWN9CZD570GRFA8A3V
 
-Extension @park-p154 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
-
-P155 — Complete per-case comparison identity and required-cost reporting. (
+P155 — Verify comparison identity across independently changed cases. (
     @park-p155: 0,
     is #task,
     #park-performance-task,
@@ -191,16 +130,13 @@ P155 — Complete per-case comparison identity and required-cost reporting. (
     #part-of @park-dev-7a6bbca2f8f348a63131: 52,
     #park-workflow @park-development-cycle
 ) { r_0B3MSPZT92QG5QY441RHB24Z70
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** Per-case fixture/selector/environment identities and required-cost reporting are implemented. Existing complete comparisons are retained as evidence; the old instruction to build a second comparison engine is removed.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
+**Still to verify:** Retain or obtain the specific negative-control receipt: changing one case refuses its comparison while unchanged cases remain comparable. Missing old body/GPU signals remain unavailable, not zero.
 
+**Why:** Independent fixture changes should not erase useful controls or permit incomparable measurements.
 
-Current candidate: stamp individual case fixture/selector/environment identities, retain comparisons for independently unchanged controls and report changed cases as incomparable. Shared setup changes still require a workload version bump; do not silently compare old captures lacking the necessary identity.
-
-**Why:** a repair to the failed mixed fixture changes the current suite-wide fixture hash and would invalidate useful unchanged save/GPU/text evidence as well. Actual named CPU owners are also still absent. **Build:** retain the existing histogram/delta/missing-signal engine, but give each selected case its frozen relevant workload/fixture identity and required cost/coverage contract. Compare unchanged cases only when source/profile/host/graphics/quality and measurement scopes support it; a newly observable body is missing in the old baseline, not zero. Preserve complete-suite provenance and primary/secondary change attribution without algorithm switches or an alternative matrix.
-
-**Verified:** an unchanged-source typing comparison yields 535 comparable rows with zero missing rows; exact incomplete cases and missing signals stay visible. **Verify remaining:** changing only one fixture refuses comparison for that case while preserving independently unchanged cases; opposite costs and shared effects remain visible; repaired system/GPU and daily output fields carry their actual identities, sample counts and valid normalization. Source-identical capture controls are drift/overhead evidence, not product speedups. Reuse `unchanged-typing-comparison.json` and existing unit controls.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_0B3MSPZT92QG5QY441RHB24Z70
 
 Extension @park-p155 "lince.controls" {
@@ -213,7 +149,7 @@ Extension @park-p155 "lince.controls" {
     }]
 }
 
-P156 — Supply the installed Nix graphics runtime to prepared tests automatically. (
+P156 — Verify the installed graphics runtime without an adapter script. (
     @park-p156: 0,
     is #task,
     #park-performance-task,
@@ -221,16 +157,13 @@ P156 — Supply the installed Nix graphics runtime to prepared tests automatical
     #part-of @park-dev-7a6bbca2f8f348a63131: 60,
     #park-workflow @park-development-cycle
 ) { r_675XKW987Z53WQNE9T0F48XBPH
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** The runner and installed Nix graphics metadata already compose the explicit ELF loader environment. The old implementation task is removed. Later private optimized tests using compatible runtime copies do not alone prove this automatic installed entry point.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
+**Still to verify:** Run the prepared cases through the ordinary installed runner when execution is authorized. Require hardware loading without a manual adapter, exact artifact identity and preserved caller driver choices.
 
+**Why:** Prepared checks should use the installed runtime without asking for hand-written library paths.
 
-Current candidate: generate installed graphics metadata from the same values as the Nix wrapper; merge those libraries into the explicit loader and pass GBM/EGL defaults while preserving host overrides. Python checks exercise the composed path. The new installed Nix package must load hardware without the recorded adapter before closure.
-
-**Why:** the unmodified downloaded runner finds the correct ELF interpreter/RPATH but all five graphics cases fail to load a Vulkan adapter. The running Park wrapper supplies Vulkan/Mesa/GLVND library and vendor paths missing from the terminal. Merely copying `LD_LIBRARY_PATH` is insufficient because the explicit loader `--library-path` takes precedence. **Build:** reuse runtime discovery and the existing installed-wrapper/active-process contract to compose the effective library path and whitelisted graphics variables automatically. Preserve exact executable/source identity, Niri/headless fallback, normal host-driver choices and private fixture isolation; no manual binary/library paths, source build fallback or software-rendering substitution is introduced.
-
-**Verify:** the downloaded CLI runs the same GPU/glyph/3D/input cases on this installed Nix environment without the temporary adapter. Interpreter/RPATH decoding, optimized artifacts, nonzero selectors, checksums, final reports and failure preservation are already verified. The successful visit used `run-with-installed-graphics.py` only as an environment adapter; native artifact bytes remain unchanged. The main run and this workaround are recorded separately, so automatic runtime setup is not yet a pass.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
 } r_675XKW987Z53WQNE9T0F48XBPH
 
 Extension @park-p156 "lince.controls" {
@@ -256,15 +189,11 @@ P66 — Produce one ranked bottleneck report for the current optimized candidate
 **Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · baseline.
 
 
-**2026-11-09 current boundary:** 3fdc9356 is installed, but live startup tracing is unset and P152 records no actual system bodies. Private controls now distinguish queue/publication/readback and validate local edit/GPU paths; they do not rank the populated installed desktop. Before the next Park visit, prepare capture through the existing session wrapper/environment with a unique private log, rather than adding a hot-refresh service or another application path. Then measure the actual 20–30-item/external-client/two-output workload. Reuse the private receipts in 00 and do not ask for another untraced relogin.
+**Remaining task:** rank the current optimized candidate's largest contributors under matched quiet, Firefox/continuous activity and controlled interaction in the populated two-output desktop. Verify the actual running revision and collect CPU, waits, queue age, GPU execution and physical presentation separately. Close with the three largest evidenced costs, uncertainty and the next supported change; an old private fixture is not current daily acceptance.
 
-**Why:** the CPU/GPU/serialization breakdown of the current optimized session is unknown. **Scope:** verify the running executable and included changes; collect matched quiet, continuous-motion/Firefox and controlled-interaction observations with usable stage tracing. Separate on-CPU work, waiting, GPU execution, queue age and output presentation. Reuse the profiler and existing physical workload, not an empty desktop. **Close with:** the three largest evidenced contributors, their uncertainty and the next selected task. Record unobserved signals explicitly; no causal percentage from an untraced or mismatched run.
+**Completed prerequisites, removed from this task:** named Bevy-system attribution (P152), local-edit attribution (P102), mixed-route input repair (P154), and output-submission callback ownership/pacing (P53) are implemented. The November 7/9 setup diagnoses and pre-submission callback finding are historical evidence in 00 and Overhaul.md's lossless archive. They are not instructions to rebuild the observer, repeat an untraced relogin or repair callbacks again. P53 retains physical verification only.
 
-**Historical session and available evidence, 2026-11-07:** PID 57571 runs optimized 8c2348ed, including grouped export, ordinary-build main-phase attribution, clock cadence and no-progress import-frame removal. Its SHA-256 is `6569da1459e4975aab90d5675ccc700601d9770c314f8e64167ffc045fbd3021`. Live startup tracing remains unset; three private children enable the existing observer without changing the session. Their memory-backed state/logs isolate database writes during severe host I/O pressure. They are rendering attribution, not storage or daily/physical acceptance. The persistent first attempt times out before rendering and is explicitly invalid. Full receipts and source/tool/geometry limits are in 00.
-
-**Ranked local findings:** the populated native update averages 18.097 ms, including 10.214 ms native main and 6.084 ms render sub-app work; export follows at 1.240 ms. Main Update/PostUpdate owner CPU average 3.710/3.310 ms, with 373 complete observations of every present phase. These do not identify an expensive system body yet, and worker CPU is separate. In the real Ghostty pixel cohort, 535 pixel-only frames and 540 total preparations serve 539 pixel commits but only 163 outer submissions in 9.074874 seconds. Five native-main updates show that the client stream mostly already bypasses main; reducing main alone cannot resolve this case. Pixel-only execution averages 10.138 ms, with export 3.839 ms; GPU completion age is not GPU execution. P53's output-demand/callback boundary is the next supported fix. Source sends application callbacks at native preparation, before an output submission. Keep P60's larger native CPU/body work as the next separate contributor rather than retrying the rejected UI-layout/cache matrix.
-
-**Remaining to close:** obtain matched true-quiet, Firefox/continuous activity and controlled native-interaction observations under the normal populated two-output workload, including actual hardware GPU execution, queue age and each physical output. The static clock control receives pointer input and is not true idle. Current virtual geometry, graphics closures and shared I/O pressure prevent a code-only comparison with earlier runs. Owner CPU excludes workers; nested spans must not be added as independent contributions. Do not use the settling counter alone as proof of unowned work: required native updates can carry across a GPU wait after their dirty reason was consumed. A userspace profiler is unavailable in the checked offline environment; no denied live attachment is retried, no kernel policy is changed and no profiler/dependency build is started. Use the ordinary-build observer and existing native cases until a specific missing body measurement is available. P140/P146 and the existing P135 appearance failure remain explicit coverage limits. Reuse completed older source/device, batching, clock, input and save evidence from 00 rather than reproducing it unchanged.
+Reuse Overhaul.md's later optimized results and source-only receipts. The current accumulated candidate has not been built or measured. Preserve the title-save backlog, populated-reveal failure and unresolved physical gates; distinguish the remaining GLES/consumer attribution (P70), worker CPU and overlapping stages. Missing coverage stays unavailable, and required native updates carried across a GPU wait are not automatically wasted work. Execution remains deferred by the current instruction.
 } r_5MBWC32RYVSQ5XZA4MYYH87ME8
 
 Extension @park-p66 "lince.controls" {
@@ -361,37 +290,16 @@ Extension @park-p36 "lince.controls" {
     }]
 }
 
-P102 — Finish causal local-edit attribution through visible publication. (
-    @park-p102: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a0,
+P102 — Real local-edit attribution is implemented. (
+    @park-p102: 1,
+    is #chapter,
     #part-of @park-dev-7a6bbca2f8f348a63131: 98,
     #park-workflow @park-development-cycle
 ) { r_2XC1E2G6YV3KFGFKQR795D8NR3
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Completed implementation; removed from the work queue on 2026-11-15.** The Fiote/Kanban field fixtures now separate input, visible feedback, recovery, canonical writes, acknowledgement, backlog and continuous-unsaved duration, with file-backed reopen and whole-process CPU. The ordered-save and optimized-field receipts supersede the old request to build this tooling. Slow saving remains open under EDIT-ACK-2 and EDIT-1 in the report.
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · coordinate.
-
-
-**Latest verified reuse:** all six prepared file-backed edit cases pass on 3fdc9356 with exact reopen. Small title/body mirror medians are 0.133–0.620 ms and settled medians 22.761–31.889 ms; the near-1 MiB/eight-view case mirrors at 10.262 ms and settles at 84.821 ms median. Each dependent subscription updates once per edit and unrelated subscriptions stay silent. These three-edit cohorts exclude GUI paint/shared normal contention and do not establish tail budgets or real installed publication. Do not repeat completed backend fixes or relabel these as physical P136 acceptance.
-
-**Why:** local echo, durable recovery, canonical save and visible refresh have different waits. **Scope:** extend the existing per-edit correlation through actual production publication/presentation and separate CPU, scheduling and durable I/O. Complete statement/work accounting and the 1 KiB/64 KiB/1 MiB head/body adapters with one/eight views and distinct-Record controls. Reuse the implemented binding, queue, access/import, candidate/history, SQL writer/commit, reaction and refresh signals.
-
-**Verify:** immediate echo versus durable recovery/canonical completion, exact cold reopen, unrelated-query silence, required per-query history and honest failure/cancellation/retry. Keep file-backed WAL/FULL durability and actor/source/operation identity. Awaited nested spans are not additive CPU time; blocked writers are correctness probes. The existing four-run syscall result has five WAL syncs per edit and one 609.55 ms total across three edits, versus 53.06–64.35 ms in controls. Its device-latency variability remains unexplained.
-
-**Finished evidence to reuse:** metadata-only reads, allocator-statistics contention removal, accepted-history JSON-size reuse, canonical Record reuse, incremental recovery, borrowed text splicing and dependent query refresh are in 00. They do not complete production causal IDs, optimized normal-workload latency, graphical byte/entity churn or physical input-to-visible measurement. Select a specific remaining save boundary; no routine microtimer expansion or repeated completed save matrix is pending. P116/P117 own safe write-boundary reduction; P137 retains large preparation/diff work.
+**Evidence:** [Overhaul.md](Overhaul.md#ordered-local-save-backlog--2026-11-15). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_2XC1E2G6YV3KFGFKQR795D8NR3
-
-Extension @park-p102 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 P104 — Expose the existing performance cases as useful Laboratory results. (
     @park-p104: 0,
@@ -408,7 +316,7 @@ P104 — Expose the existing performance cases as useful Laboratory results. (
 
 **Current boundary:** the combined precompiled runner/report is coded, but the existing Laboratory UI has not been changed in this delivery. Validate the P151/P155/P156 source-stamped report contract with the new artifacts before wiring per-case visible values/status into the UI; do not manufacture missing GPU, save or physical measurements. This remains open.
 
-**Deferred until the performance gates are met:** reuse the existing Laboratory button/results and catalogue for the combined suite's supported private phases, timing scopes, budget comparisons and missing-check status. Show results with useful readable controls; do not create new optimization configuration UI. Live S3 observation remains separate from Laboratory's suspended-workspace fixtures. P156 supplies prepared execution without an implicit build during Park measurements; explicit local development checks in Niri are allowed.
+**Deferred until the performance gates are met:** reuse the existing Laboratory button/results and catalogue for the combined suite's supported private phases, timing scopes, budget comparisons and missing-check status. Show results with useful readable controls; do not create new optimization configuration UI. Live S3 observation remains separate from Laboratory's suspended-workspace fixtures. P156 supplies prepared execution without an implicit build during Park measurements; explicit local checks wait for an authorized execution phase.
 
 **Why:** ordinary tests must catch expensive work and the user needs a repeatable way to check the new behavior. **Scope:** extend the current Laboratory catalogue/driver and xtask report wiring for the selected workflow cases, work-count assertions and the benchmark metrics in 08. Show case/source/workload identity, observed values, target, timing scope, missing hardware evidence and cancellation. Reuse headless CPU cases and hardware cases through the same result model, without running physical-session acceptance inside an isolated fixture. **Verify:** known passing/failing controls, exact nonzero selectors, Stop/Close cleanup, temporary data isolation and no writes to the user's Records. A debug duration is not an optimized desktop pass. This is integration of the agreed measurements, not a new general benchmark product. **Needs:** P93 and the first usable P101/P102 cases.
 } r_3HYSQ1RTAA930T57X9W5CXKFQN

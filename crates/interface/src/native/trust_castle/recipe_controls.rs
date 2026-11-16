@@ -11,7 +11,7 @@ pub(super) struct Draft {
     pub permit_days: String,
     pub refresh: String,
     pub enabled: bool,
-    pub review: Option<(Review, nucleus::karma::CanonicalHash)>,
+    pub review: Option<(Arc<Review>, nucleus::karma::CanonicalHash)>,
 }
 impl Default for Draft {
     fn default() -> Self {
@@ -25,7 +25,7 @@ impl Default for Draft {
         }
     }
 }
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Recipe,
     Revision,
@@ -98,7 +98,7 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
                     .clone()
                     .ok_or("Review this exact publication permit first")?;
                 Some(Request::Save {
-                    review,
+                    review: review.as_ref().clone(),
                     expected_review: hash,
                 })
             }
@@ -140,11 +140,11 @@ pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
             view.recipes.review = None;
             view.claims.review = None;
             view.review = None;
-            view.result = Value::Null;
+            view.result = Snapshot::default();
             match command {
                 UiCommand::Enabled => view.recipes.enabled = !view.recipes.enabled,
                 UiCommand::Revise(value) => {
-                    if let Ok(recipe) = serde_json::from_value::<recipes::Recipe>(value.clone()) {
+                    if let Ok(recipe) = decode::<recipes::Recipe>(value) {
                         let definition = recipe.definition;
                         analysis::load(&mut view, definition.inputs);
                         view.claims.title = definition.terms.title;

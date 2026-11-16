@@ -24,7 +24,9 @@ use cell::{ClientMessage, ServerMessage};
 pub(crate) use persistence::{SavedKanban, snapshot};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::Arc;
 
 #[derive(Component, Clone, Debug, Serialize, Deserialize)]
 pub struct Kanban {
@@ -165,6 +167,27 @@ struct View {
     status: String,
     setup: bool,
     initialized: bool,
+    orders: Vec<Option<Arc<ColumnOrder>>>,
+}
+
+struct ColumnOrder {
+    ids: Arc<Vec<String>>,
+    ranks: Arc<HashMap<String, usize>>,
+}
+
+impl ColumnOrder {
+    fn new(ids: Arc<Vec<String>>) -> Self {
+        let _prepare = nucleus::performance::Span::new("kanban-order-preparation");
+        let mut ranks = HashMap::with_capacity(ids.len());
+        for (index, id) in ids.iter().enumerate() {
+            ranks.entry(id.clone()).or_insert(index);
+        }
+        nucleus::performance::add("kanban-ranks-prepared", ranks.len() as u64);
+        Self {
+            ids,
+            ranks: Arc::new(ranks),
+        }
+    }
 }
 
 #[derive(Component)]
@@ -173,7 +196,31 @@ struct Status;
 #[derive(Component)]
 struct Card {
     column: Option<Entity>,
-    quantity: String,
+    quantity: CardQuantity<'static>,
+}
+
+#[derive(PartialEq)]
+enum CardQuantity<'a> {
+    Text(Cow<'a, str>),
+    Json(Cow<'a, str>),
+}
+
+impl<'a> CardQuantity<'a> {
+    fn from_value(value: &'a serde_json::Value) -> Self {
+        match value {
+            serde_json::Value::String(text) => Self::Text(Cow::Borrowed(text)),
+            // Preserve exact serialized identity for other values, including
+            // signed zero and malformed/non-scalar source data.
+            value => Self::Json(Cow::Owned(value.to_string())),
+        }
+    }
+
+    fn into_owned(self) -> CardQuantity<'static> {
+        match self {
+            Self::Text(text) => CardQuantity::Text(Cow::Owned(text.into_owned())),
+            Self::Json(text) => CardQuantity::Json(Cow::Owned(text.into_owned())),
+        }
+    }
 }
 
 use crate::native::full_record::RecordCard;
@@ -228,7 +275,7 @@ fn config() -> Config {
     let mut config = Config::records();
     config.enabled = true;
     config.closest_end_date = true;
-    config.draft.query = json!({"source":"record", "where":[{"all":[{"kind_eq":"plain"},{"concept_in":"task"}]}], "order":[{"asc":"due_date"}], "limit":null});
+    config.draft.query = json!({"source":"record", "where":[{"all":[{"kind_eq":"plain"},{"concept_in":"task"}]}], "order":[{"asc":"due_date"}], "limit":null}).into();
     config
 }
 
@@ -792,41 +839,84 @@ fn update(
 }
 
 fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut ColumnLabels) {
+    let _maintain = nucleus::performance::Span::new("kanban-maintenance");
     let Some(source) = area(world, owner, &board.source) else {
-        world.get_mut::<View>(owner).unwrap().status = "Task source Area removed".into();
+        let mut view = world.get_mut::<View>(owner).unwrap();
+        if view.status != "Task source Area removed" {
+            view.status = "Task source Area removed".into();
+        }
+        if !view.orders.is_empty() {
+            view.orders.clear();
+        }
         return;
     };
-    arrange(world, owner, board, source);
     let root = world.get::<ChildOf>(owner).unwrap().parent();
     let columns: Vec<_> = board
         .columns
         .iter()
         .map(|c| area(world, owner, &c.area))
         .collect();
-    let orders: Vec<_> = board
-        .columns
+    arrange(world, &columns, source);
+    let orders: Vec<_> = columns
         .iter()
         .map(|column| {
-            area(world, owner, &column.area)
+            column
                 .and_then(|area| crate::native::protein_area::ordered_records(world, area))
                 .map(|(_, ids)| ids)
         })
         .collect();
-    let ranks: Vec<HashMap<_, _>> = orders.iter().map(|order| {
-        let mut ranks = HashMap::new();
-        if let Some(ids) = order {
-            for (index, id) in ids.iter().enumerate() {
-                ranks.entry(id.as_str()).or_insert(index);
-            }
-        }
-        ranks
-    }).collect();
+    let previous = &world.get::<View>(owner).unwrap().orders;
+    let ranks: Vec<_> = orders
+        .into_iter()
+        .enumerate()
+        .map(|(index, ids)| {
+            ids.map(|ids| {
+                if let Some(order) = previous.get(index).and_then(Option::as_ref) {
+                    if Arc::ptr_eq(&order.ids, &ids) {
+                        return order.clone();
+                    }
+                    if order.ids == ids {
+                        // Adopt the new allocation so equal publications do not
+                        // leave an O(n) comparison in every later native update.
+                        return Arc::new(ColumnOrder {
+                            ids,
+                            ranks: order.ranks.clone(),
+                        });
+                    }
+                }
+                Arc::new(ColumnOrder::new(ids))
+            })
+        })
+        .collect();
+    if previous.len() != ranks.len()
+        || !previous
+            .iter()
+            .zip(&ranks)
+            .all(|(before, after)| match (before, after) {
+                (Some(before), Some(after)) => Arc::ptr_eq(before, after),
+                (None, None) => true,
+                _ => false,
+            })
+    {
+        world.get_mut::<View>(owner).unwrap().orders = ranks.clone();
+    }
     let counts: Vec<_> = {
         let rows = crate::native::protein_area::calendar_feed(world, source)
             .map_or(&[][..], |(rows, _)| rows);
-        ranks.iter().map(|ranks| {
-            rows.iter().filter(|row| row["uid"].as_str().is_some_and(|uid| ranks.contains_key(uid))).count()
-        }).collect()
+        ranks
+            .iter()
+            .map(|order| {
+                order.as_ref().map_or(0, |order| {
+                    rows.iter()
+                        .filter(|row| {
+                            row["uid"]
+                                .as_str()
+                                .is_some_and(|uid| order.ranks.contains_key(uid))
+                        })
+                        .count()
+                })
+            })
+            .collect()
     };
     for (index, column) in columns.iter().enumerate() {
         let Some(column) = *column else {
@@ -856,8 +946,13 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             .get::<crate::native::canvas_selection::SandGroup>(column)
             .copied()
         {
-            world.entity_mut(part).insert(group);
-        } else {
+            if world.get::<crate::native::canvas_selection::SandGroup>(part) != Some(&group) {
+                world.entity_mut(part).insert(group);
+            }
+        } else if world
+            .get::<crate::native::canvas_selection::SandGroup>(part)
+            .is_some()
+        {
             world
                 .entity_mut(part)
                 .remove::<crate::native::canvas_selection::SandGroup>();
@@ -926,13 +1021,9 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
                     .get::<crate::native::protein_area::placement::Pending>(*e)
                     .is_none()
         })
-        .map(|(e, _, r)| (
-            e,
-            r.0["uid"].as_str().unwrap_or_default().to_owned(),
-            r.0["quantity"].to_string(),
-        ))
+        .map(|(entity, _, record)| (entity, record.0.clone()))
         .collect();
-    for (entity, uid, quantity) in cards {
+    for (entity, record) in cards {
         if crate::native::topology::rooms::owned(world, entity) {
             world.entity_mut(entity).remove::<Card>();
             continue;
@@ -947,7 +1038,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             }
             world.entity_mut(entity).remove::<HeldMembership>();
         }
-        let matching: Vec<_> = columns
+        let mut matching = columns
             .iter()
             .enumerate()
             .filter(|(_, column)| {
@@ -967,11 +1058,12 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
                         }
                 })
             })
-            .map(|(index, _)| index)
-            .collect();
-        let index = (matching.len() == 1).then(|| matching[0]);
+            .map(|(index, _)| index);
+        let index = matching.next().filter(|_| matching.next().is_none());
+        drop(matching);
         let column = index.and_then(|i| columns[i]);
         let old = world.get::<Card>(entity);
+        let quantity = CardQuantity::from_value(&record["quantity"]);
         let returned = released
             && column.is_some_and(|column| {
                 crate::native::topology::position(world, entity).is_some_and(|point| {
@@ -995,10 +1087,15 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             }
         }
         if changed {
-            world.entity_mut(entity).insert(Card { column, quantity });
+            world.entity_mut(entity).insert(Card {
+                column,
+                quantity: quantity.into_owned(),
+            });
         }
+        let uid = record["uid"].as_str().unwrap_or_default();
         let order = index
-            .and_then(|index| ranks[index].get(uid.as_str()).copied())
+            .and_then(|index| ranks[index].as_ref())
+            .and_then(|order| order.ranks.get(uid).copied())
             .unwrap_or(0) as i32;
         if world
             .get::<LayoutBox>(entity)
@@ -1105,12 +1202,8 @@ pub(crate) fn column_entity(world: &mut World, owner: Entity, index: usize) -> O
     area(world, owner, &id)
 }
 
-fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
-    let columns: Vec<_> = board
-        .columns
-        .iter()
-        .filter_map(|c| area(world, owner, &c.area))
-        .collect();
+fn arrange(world: &mut World, resolved: &[Option<Entity>], source: Entity) {
+    let columns: Vec<_> = resolved.iter().flatten().copied().collect();
     let Some(first) = columns.first().copied() else {
         return;
     };
@@ -1217,13 +1310,18 @@ fn refresh_attachment(world: &mut World, entity: Entity, anchor: Entity) {
     let inverse = bevy::math::DQuat::from_array(pose.rotation).inverse();
     let position = crate::native::topology::position(world, entity).unwrap_or_default();
     let rotation = crate::native::topology::spatial(world, entity).rotation();
-    world.entity_mut(entity).insert((
-        pose,
-        crate::native::topology::Attachment {
-            position: (inverse * (position - DVec3::from_array(pose.position))).to_array(),
-            rotation: (inverse * rotation).to_array(),
-        },
-    ));
+    let attachment = crate::native::topology::Attachment {
+        position: (inverse * (position - DVec3::from_array(pose.position))).to_array(),
+        rotation: (inverse * rotation).to_array(),
+    };
+    if world.get::<crate::native::topology::groups::GroupPose>(entity) != Some(&pose) {
+        world.entity_mut(entity).insert(pose);
+        nucleus::performance::add("kanban-attachment-updates", 1);
+    }
+    if world.get::<crate::native::topology::Attachment>(entity) != Some(&attachment) {
+        world.entity_mut(entity).insert(attachment);
+        nucleus::performance::add("kanban-attachment-updates", 1);
+    }
 }
 
 pub(crate) mod query_checks {

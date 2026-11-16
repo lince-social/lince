@@ -340,7 +340,9 @@ fn record(runtime: &tokio::runtime::Runtime, cell: &native::app::CellHandle, uid
         let mut rows = messages
             .into_iter()
             .find_map(|message| match message {
-                cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+                cell::ServerMessage::Snapshot { rows, .. } => {
+                    Some(std::sync::Arc::unwrap_or_clone(rows))
+                }
                 _ => None,
             })
             .unwrap();

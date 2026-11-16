@@ -12,44 +12,124 @@ pub struct Field {
     pub editable: bool,
 }
 
+pub const FIELDS: &[Field] = &[
+    Field {
+        key: "head",
+        title: "Title",
+        kind: "text",
+        editable: true,
+    },
+    Field {
+        key: "body",
+        title: "Description",
+        kind: "text",
+        editable: true,
+    },
+    Field {
+        key: "slug",
+        title: "Slug",
+        kind: "text",
+        editable: true,
+    },
+    Field {
+        key: "quantity",
+        title: "Quantity",
+        kind: "decimal",
+        editable: true,
+    },
+    Field {
+        key: "assertions",
+        title: "Assertions",
+        kind: "assertions",
+        editable: true,
+    },
+    Field {
+        key: "kind",
+        title: "Kind",
+        kind: "text",
+        editable: false,
+    },
+    Field {
+        key: "assignees",
+        title: "Assignees",
+        kind: "records",
+        editable: true,
+    },
+    Field {
+        key: "start_date",
+        title: "Start",
+        kind: "date-time",
+        editable: true,
+    },
+    Field {
+        key: "due_date",
+        title: "Due",
+        kind: "date-time",
+        editable: true,
+    },
+    Field {
+        key: "estimate_min",
+        title: "Estimate (minutes)",
+        kind: "number",
+        editable: true,
+    },
+    Field {
+        key: "spent_seconds",
+        title: "Time spent (seconds)",
+        kind: "number",
+        editable: false,
+    },
+    Field {
+        key: "running_since",
+        title: "Running since",
+        kind: "timestamp",
+        editable: false,
+    },
+    Field {
+        key: "work_logs",
+        title: "Work logs",
+        kind: "logs",
+        editable: true,
+    },
+    Field {
+        key: "work_timer",
+        title: "Work timer",
+        kind: "timer",
+        editable: true,
+    },
+    Field {
+        key: "threads",
+        title: "Threads and messages",
+        kind: "threads",
+        editable: true,
+    },
+    Field {
+        key: "created_at",
+        title: "Created",
+        kind: "timestamp",
+        editable: false,
+    },
+    Field {
+        key: "updated_at",
+        title: "Updated",
+        kind: "timestamp",
+        editable: false,
+    },
+];
+
 pub fn fields() -> Vec<Field> {
-    [
-        ("head", "Title", "text", true),
-        ("body", "Description", "text", true),
-        ("slug", "Slug", "text", true),
-        ("quantity", "Quantity", "decimal", true),
-        ("assertions", "Assertions", "assertions", true),
-        ("kind", "Kind", "text", false),
-        ("assignees", "Assignees", "records", true),
-        ("start_date", "Start", "date-time", true),
-        ("due_date", "Due", "date-time", true),
-        ("estimate_min", "Estimate (minutes)", "number", true),
-        ("spent_seconds", "Time spent (seconds)", "number", false),
-        ("running_since", "Running since", "timestamp", false),
-        ("work_logs", "Work logs", "logs", true),
-        ("work_timer", "Work timer", "timer", true),
-        ("threads", "Threads and messages", "threads", true),
-        ("created_at", "Created", "timestamp", false),
-        ("updated_at", "Updated", "timestamp", false),
-    ]
-    .into_iter()
-    .map(|(key, title, kind, editable)| Field {
-        key,
-        title,
-        kind,
-        editable,
-    })
-    .collect()
+    FIELDS.to_vec()
 }
 
 pub fn selected(protein: &Protein) -> Vec<Field> {
-    fields()
-        .into_iter()
+    FIELDS
+        .iter()
         .filter(|field| {
             protein.fields.as_ref().is_none_or(|fields| {
                 fields.iter().any(|key| key == field.key) || field.key == "kind"
             })
         })
+        .cloned()
         .collect()
 }
 
@@ -58,6 +138,71 @@ pub(crate) fn requests(query: &Protein, key: &str) -> bool {
         .fields
         .as_ref()
         .is_none_or(|fields| fields.iter().any(|field| field == key))
+}
+
+pub(crate) fn selected_include(query: &Protein) -> std::borrow::Cow<'_, Include> {
+    if query.fields.is_none() {
+        return std::borrow::Cow::Borrowed(&query.include);
+    }
+    let include = &query.include;
+    let wants = |key| requests(query, key);
+    std::borrow::Cow::Owned(Include {
+        relation_context: include
+            .relation_context
+            .as_ref()
+            .filter(|_| wants("relation_context"))
+            .cloned(),
+        record_after: include.record_after.clone(),
+        facts: include.facts.as_ref().filter(|_| wants("facts")).cloned(),
+        promises: include
+            .promises
+            .as_ref()
+            .filter(|_| wants("promises"))
+            .cloned(),
+        links: include.links.as_ref().filter(|_| wants("links")).cloned(),
+        threads: include
+            .threads
+            .as_ref()
+            .filter(|_| wants("threads"))
+            .cloned(),
+        availability: include.availability
+            && [
+                "actual",
+                "reserved",
+                "available",
+                "surplus",
+                "can_offer",
+                "actual_exact",
+                "reserved_exact",
+                "surplus_exact",
+                "can_offer_exact",
+                "availability_complete",
+                "availability_incomplete_count",
+                "scenario_required",
+            ]
+            .into_iter()
+            .any(wants),
+        extension: include
+            .extension
+            .as_ref()
+            .filter(|_| wants("extension"))
+            .cloned(),
+        shader_effect: include.shader_effect && wants("shader_effect"),
+        numeric_fields: if wants("numeric_values") {
+            include.numeric_fields.clone()
+        } else {
+            Vec::new()
+        },
+        numeric_extensions: include.numeric_extensions && wants("numeric_extensions"),
+        projection: include
+            .projection
+            .as_ref()
+            .filter(|_| wants("projected"))
+            .cloned(),
+        contact: include.contact && wants("contact"),
+        conversations: include.conversations && wants("conversations"),
+        reference_reads: include.reference_reads && wants("reference_reads"),
+    })
 }
 
 pub(crate) fn predicates_require_body(predicates: &[Predicate]) -> bool {
@@ -133,6 +278,9 @@ fn field_requires_body(field: &str) -> bool {
             | "reserved_exact"
             | "surplus_exact"
             | "can_offer_exact"
+            | "availability_complete"
+            | "availability_incomplete_count"
+            | "scenario_required"
     )
 }
 
@@ -251,7 +399,7 @@ pub(crate) async fn attach<Body>(
                 log["id"] = Value::String(
                     entries
                         .next()
-                        .unwrap_or_else(|| format!("work.log:seed-{index}"))
+                        .unwrap_or_else(|| format!("work.log:seed-{index}")),
                 );
             }
             value["work_logs"] = Value::Array(identified);
@@ -296,50 +444,60 @@ pub(crate) async fn attach<Body>(
         out.insert(record.uid.clone(), value);
     }
     if wants("assertions") || wants("assignees") {
-        let assignment = store::vocabulary::feature_binding(&store.pool, "assignment").await?;
-        let mut assignees = HashMap::<String, Option<String>>::new();
+        let assignment: HashSet<_> = if wants("assignees") {
+            store::vocabulary::feature_binding(&store.pool, "assignment")
+                .await?
+                .concept_uids
+                .into_iter()
+                .collect()
+        } else {
+            HashSet::new()
+        };
+        let mut assignees = HashMap::<String, String>::new();
         let ids: Vec<_> = records.iter().map(|r| r.uid.clone()).collect();
+        let mut assertions = Vec::new();
         for chunk in ids.chunks(400) {
-            for assertion in store::assertions::for_subjects(&store.pool, chunk).await? {
-                if visible.is_some_and(|visible| {
-                    assertion
-                        .object_uid
-                        .as_ref()
-                        .is_some_and(|uid| !visible.contains(uid))
-                }) {
-                    continue;
-                }
-                let Some(row) = out.get_mut(&assertion.subject_uid) else {
-                    continue;
-                };
-                if wants("assignees") && assignment.concept_uids.contains(&assertion.predicate_uid)
-                {
-                    if let Some(uid) = assertion.object_uid.as_deref() {
-                        if !assignees.contains_key(uid) {
-                            assignees.insert(
-                                uid.into(),
-                                store::records::read::<Option<String>>(
-                                    &store.pool,
-                                    store::records::RecordSelection::Uid(uid),
-                                    false,
-                                )
-                                .await?
-                                .into_iter()
-                                .next()
-                                .map(|person| person.head),
-                            );
-                        }
-                        if let Some(head) = assignees.get(uid).and_then(Option::as_ref) {
-                            row["assignees"]
-                                .as_array_mut()
-                                .unwrap()
-                                .push(json!({"uid":uid,"head":head,"assertion":assertion.uid,"predicate_uid":assertion.predicate_uid}));
-                        }
-                    }
-                }
-                if wants("assertions") {
-                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"uri":assertion.object_uri,"resolved_object":assertion.resolved_object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
-                }
+            assertions.extend(
+                store::assertions::for_subjects(&store.pool, chunk)
+                    .await?
+                    .into_iter()
+                    .filter(|assertion| {
+                        !visible.is_some_and(|visible| {
+                            assertion
+                                .object_uid
+                                .as_ref()
+                                .is_some_and(|uid| !visible.contains(uid))
+                        })
+                    }),
+            );
+        }
+        if wants("assignees") {
+            let people: HashSet<_> = assertions
+                .iter()
+                .filter(|assertion| assignment.contains(&assertion.predicate_uid))
+                .filter_map(|assertion| assertion.object_uid.as_deref())
+                .collect();
+            let people: Vec<_> = people.into_iter().collect();
+            assignees = store::records::live_heads_for(&store.pool, &people).await?;
+        }
+        for assertion in assertions {
+            let Some(row) = out.get_mut(&assertion.subject_uid) else {
+                continue;
+            };
+            if wants("assignees")
+                && assignment.contains(&assertion.predicate_uid)
+                && let Some(uid) = assertion.object_uid.as_deref()
+                && let Some(head) = assignees.get(uid)
+            {
+                row["assignees"].as_array_mut().unwrap().push(json!({
+                    "uid": uid,
+                    "head": head,
+                    "assertion": assertion.uid,
+                    "predicate_uid": assertion.predicate_uid,
+                }));
+            }
+            if wants("assertions") {
+                row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"uri":assertion.object_uri,"resolved_object":assertion.resolved_object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
             }
         }
     }

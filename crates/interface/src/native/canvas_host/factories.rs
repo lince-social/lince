@@ -3,13 +3,13 @@ use serde::{Serialize, de::DeserializeOwned};
 
 fn state<T: DeserializeOwned>(
     settings: &BTreeMap<String, serde_json::Value>,
-    fallback: T,
+    fallback: impl FnOnce() -> T,
 ) -> Result<T, String> {
     settings
         .get("state")
         .and_then(serde_json::Value::as_str)
         .map(|source| serde_json::from_str(source).map_err(|error| error.to_string()))
-        .unwrap_or(Ok(fallback))
+        .unwrap_or_else(|| Ok(fallback()))
 }
 
 fn component(kind: &str, state: &impl Serialize) -> ContentKind {
@@ -18,7 +18,7 @@ fn component(kind: &str, state: &impl Serialize) -> ContentKind {
         kind: kind.into(),
         settings: BTreeMap::from([(
             "state".into(),
-            serde_json::json!(serde_json::to_string(&value).unwrap()),
+            serde_json::Value::String(serde_json::to_string(&value).unwrap()),
         )]),
         bindings: record_references(&value),
     }
@@ -33,7 +33,7 @@ pub(super) fn capture(world: &World, entity: Entity) -> Option<ContentKind> {
                 kind: "layout".into(),
                 settings: BTreeMap::from([(
                     "rules".into(),
-                    serde_json::json!(serde_json::to_string(&layout.rules).unwrap()),
+                    serde_json::Value::String(serde_json::to_string(&layout.rules).unwrap()),
                 )]),
                 bindings: Vec::new(),
             });
@@ -193,7 +193,7 @@ pub(super) fn spawn(
         "document" => {
             let value = state(
                 settings,
-                crate::native::document_viewer::DocumentViewer::default(),
+                crate::native::document_viewer::DocumentViewer::default,
             )?;
             if !value.valid() {
                 return Err("Invalid document state.".into());
@@ -201,7 +201,7 @@ pub(super) fn spawn(
             crate::native::document_viewer::spawn(world, root, workspace, position, value)
         }
         "ide" => {
-            let value = state(settings, crate::native::ide::Ide::default())?;
+            let value = state(settings, crate::native::ide::Ide::default)?;
             if !value.valid() {
                 return Err("Invalid editor state.".into());
             }
@@ -210,7 +210,7 @@ pub(super) fn spawn(
         "explorer" => {
             let value = state(
                 settings,
-                crate::native::file_explorer::FileExplorer::default(),
+                crate::native::file_explorer::FileExplorer::default,
             )?;
             if !value.valid() {
                 return Err("Invalid explorer state.".into());
@@ -220,7 +220,7 @@ pub(super) fn spawn(
         "recorder" => {
             let value = state(
                 settings,
-                crate::native::recorder_castle::RecorderCastle::default(),
+                crate::native::recorder_castle::RecorderCastle::default,
             )?;
             if !value.valid() {
                 return Err("Invalid recorder state.".into());
@@ -228,26 +228,23 @@ pub(super) fn spawn(
             crate::native::recorder_castle::spawn(world, root, workspace, position, value)
         }
         "media" => {
-            let value = state(
-                settings,
-                crate::native::media_sand::MediaSand::Link {
-                    url: "https://lince.social".into(),
-                },
-            )?;
+            let value = state(settings, || crate::native::media_sand::MediaSand::Link {
+                url: "https://lince.social".into(),
+            })?;
             if !value.valid() {
                 return Err("Invalid media state.".into());
             }
             crate::native::media_sand::spawn(world, root, workspace, position, value)
         }
         "drawing" => {
-            let value = state(settings, nucleus::drawing::Drawing::default())?;
+            let value = state(settings, nucleus::drawing::Drawing::default)?;
             value.validate()?;
             crate::native::drawing::spawn(world, root, workspace, position, value)
         }
         "assertion" => {
             let value = state(
                 settings,
-                crate::native::assertion_castle::AssertionCastle::default(),
+                crate::native::assertion_castle::AssertionCastle::default,
             )?;
             if value
                 .selection
@@ -261,7 +258,7 @@ pub(super) fn spawn(
         "simulation" => {
             let value = state(
                 settings,
-                crate::native::simulation_castle::SimulationCastle::default(),
+                crate::native::simulation_castle::SimulationCastle::default,
             )?;
             if !value.valid() {
                 return Err("Invalid simulation state.".into());

@@ -95,10 +95,7 @@ impl Manifest {
             })
             || self.credits.len() > 64
             || self.credits.iter().any(|credit| !text(credit, 4096))
-            || serde_json::to_vec(self)
-                .map_err(|error| error.to_string())?
-                .len()
-                > 128 * 1024
+            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > 128 * 1024
         {
             return Err("Invalid package metadata, permissions, licenses or credits.".into());
         }
@@ -168,10 +165,7 @@ impl Package {
             || self.payload.len() > crate::component::composition::MAX_BYTES
             || self.digest != self.content_digest()?
             || !text(&self.signature, 128)
-            || serde_json::to_vec(self)
-                .map_err(|error| error.to_string())?
-                .len()
-                > MAX_BYTES
+            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES
         {
             return Err("Invalid package format, size or content digest.".into());
         }

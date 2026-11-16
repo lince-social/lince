@@ -11,7 +11,7 @@ use nucleus::{MessageState, RecordKind};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    io::Write,
+    io::{BufWriter, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -485,10 +485,12 @@ impl Host {
 fn save(path: &Path, value: &impl Serialize) -> Result<(), String> {
     let directory = path.parent().ok_or("Settings directory is missing.")?;
     let mut file = tempfile::NamedTempFile::new_in(directory).map_err(|e| e.to_string())?;
-    serde_json::to_writer(file.as_file_mut(), value).map_err(|e| e.to_string())?;
-    file.flush()
-        .and_then(|()| file.as_file().sync_all())
-        .map_err(|e| e.to_string())?;
+    {
+        let mut buffered = BufWriter::new(file.as_file_mut());
+        serde_json::to_writer(&mut buffered, value).map_err(|e| e.to_string())?;
+        buffered.flush().map_err(|e| e.to_string())?;
+    }
+    file.as_file().sync_all().map_err(|e| e.to_string())?;
     file.persist(path).map_err(|e| e.to_string())?;
     #[cfg(unix)]
     std::fs::File::open(directory)

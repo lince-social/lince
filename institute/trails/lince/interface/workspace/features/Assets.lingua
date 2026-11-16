@@ -63,5 +63,9 @@ Pass relevant independent correctness/security/performance checks and native acc
 
 Consumers: [Areas, influence and local mounts](Areas-Mounts.lingua); [Structural molecules crystals and proteins](Molecules.lingua)
 
+Additional consumer: [Camera sources](Camera-Feeds.lingua), extending the existing source/resource-demand and media lifecycle with a bounded transient feed adapter; no reverse dependency on live sources.
+
+Additional consumer: [Procedural appearance authoring](Procedural-Appearance.lingua), through the same render-product/demand/offline lifecycle.
+
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
 } r_317HTW2RB4GGGF4K56F7EBAQSZ

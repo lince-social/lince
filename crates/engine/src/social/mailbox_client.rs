@@ -147,7 +147,7 @@ impl Engine {
             let context: String = row.get("record_uid");
             store::sqlx::query("INSERT INTO social_context_retention(context,state,checked_at,queue_checked_at) VALUES(?,'active',0,?) ON CONFLICT(context) DO UPDATE SET queue_checked_at=excluded.queue_checked_at")
                 .bind(&context).bind(now).execute(&self.store.pool).await?;
-            let state: Value = serde_json::from_str(&row.get::<String, _>("fds"))?;
+            let state: Value = serde_json::from_str(row.get::<&str, _>("fds"))?;
             let result = self
                 .social_queue_reply_context(&context, &state, &cell.uid, now)
                 .await;

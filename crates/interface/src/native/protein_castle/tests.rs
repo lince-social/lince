@@ -181,7 +181,10 @@ async fn castle_filters_sorts_saves_loads_and_tracks_backend_changes() {
     assert_eq!(result.rows.len(), 2);
     assert_eq!(result.rows[0]["head"], "Apricot");
     assert_eq!(result.rows[1]["head"], "Apple");
-    assert_eq!(result.columns, vec!["head", "kind", "quantity", "uid"]);
+    assert_eq!(
+        result.columns.as_slice(),
+        &["head", "kind", "quantity", "uid"]
+    );
     save(app.world_mut(), castle);
     until(&mut app, |world| !world.get::<View>(castle).unwrap().saving).await;
     assert_eq!(app.world().get::<View>(castle).unwrap().status, "Saved");
@@ -256,7 +259,7 @@ fn late_replies_errors_and_large_results_do_not_replace_drafts_or_grow_the_view(
         app.world_mut(),
         ServerMessage::Snapshot {
             id,
-            rows: vec![json!({"head":"stale"})],
+            rows: vec![json!({"head":"stale"})].into(),
         },
     );
     assert!(
@@ -278,7 +281,8 @@ fn late_replies_errors_and_large_results_do_not_replace_drafts_or_grow_the_view(
             id: id.clone(),
             rows: (0..1000)
                 .map(|i| json!({"head":format!("Row {i}")}))
-                .collect(),
+                .collect::<Vec<_>>()
+                .into(),
         },
     );
     ui::output(app.world_mut(), castle);
@@ -293,7 +297,8 @@ fn late_replies_errors_and_large_results_do_not_replace_drafts_or_grow_the_view(
             id: id.clone(),
             rows: (0..10_000)
                 .map(|i| json!({"head":format!("Row {i}")}))
-                .collect(),
+                .collect::<Vec<_>>()
+                .into(),
         },
     );
     ui::output(app.world_mut(), castle);

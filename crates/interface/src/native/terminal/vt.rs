@@ -1,7 +1,9 @@
+mod api;
+
+use api::{Api, Function};
 use std::sync::OnceLock;
 use wasmi::{
-    Engine, Instance, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder, WasmParams,
-    WasmResults,
+    Engine, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder, WasmParams, WasmResults,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,7 +25,7 @@ pub(super) struct Frame {
 
 pub(super) struct Ghostty {
     store: Store<StoreLimits>,
-    instance: Instance,
+    api: Api,
     memory: Memory,
     scratch: u32,
     terminal: u32,
@@ -81,9 +83,10 @@ impl Ghostty {
         let memory = instance
             .get_memory(&store, "memory")
             .ok_or("libghostty memory missing")?;
+        let api = Api::bind(&store, &instance)?;
         let mut vt = Self {
             store,
-            instance,
+            api,
             memory,
             scratch: 0,
             terminal: 0,
@@ -96,8 +99,8 @@ impl Ghostty {
             rows,
             query: Vec::new(),
         };
-        vt.scratch = vt.call("ghostty_wasm_alloc_u8_array", 4096u32)?;
-        let layout: u32 = vt.call("ghostty_type_json", ())?;
+        vt.scratch = vt.call(vt.api.alloc, 4096u32)?;
+        let layout: u32 = vt.call(vt.api.type_json, ())?;
         let data = vt
             .memory
             .data(&vt.store)
@@ -114,31 +117,32 @@ impl Ghostty {
         }
         vt.put(0, &[cols.to_le_bytes(), rows.to_le_bytes()].concat())?;
         vt.put(4, &10000u32.to_le_bytes())?;
-        vt.ok("ghostty_terminal_new", (0u32, vt.scratch + 16, vt.scratch))?;
+        vt.ok(vt.api.terminal_new, (0u32, vt.scratch + 16, vt.scratch))?;
         vt.terminal = vt.u32(16)?;
-        vt.render = vt.create("ghostty_render_state_new")?;
-        vt.iterator = vt.create("ghostty_render_state_row_iterator_new")?;
-        vt.cells = vt.create("ghostty_render_state_row_cells_new")?;
-        vt.encoder = vt.create("ghostty_key_encoder_new")?;
-        vt.event = vt.create("ghostty_key_event_new")?;
+        vt.render = vt.create(vt.api.render_new)?;
+        vt.iterator = vt.create(vt.api.iterator_new)?;
+        vt.cells = vt.create(vt.api.cells_new)?;
+        vt.encoder = vt.create(vt.api.encoder_new)?;
+        vt.event = vt.create(vt.api.event_new)?;
         Ok(vt)
     }
 
-    fn create(&mut self, name: &str) -> Result<u32, String> {
-        self.ok(name, (0u32, self.scratch))?;
+    fn create(&mut self, function: Function<(u32, u32), i32>) -> Result<u32, String> {
+        self.ok(function, (0u32, self.scratch))?;
         self.u32(0)
     }
 
-    fn call<P: WasmParams, R: WasmResults>(&mut self, name: &str, args: P) -> Result<R, String> {
-        self.instance
-            .get_typed_func::<P, R>(&self.store, name)
-            .map_err(|e| format!("{name}: {e}"))?
-            .call(&mut self.store, args)
-            .map_err(|e| format!("{name}: {e}"))
+    fn call<P: WasmParams, R: WasmResults>(
+        &mut self,
+        function: Function<P, R>,
+        args: P,
+    ) -> Result<R, String> {
+        function.call(&mut self.store, args)
     }
 
-    fn ok<P: WasmParams>(&mut self, name: &str, args: P) -> Result<(), String> {
-        let result: i32 = self.call(name, args)?;
+    fn ok<P: WasmParams>(&mut self, function: Function<P, i32>, args: P) -> Result<(), String> {
+        let name = function.name;
+        let result = self.call(function, args)?;
         if result != 0 {
             return Err(format!("{name}: {result}"));
         }
@@ -169,16 +173,21 @@ impl Ghostty {
         ))
     }
 
-    fn number(&mut self, name: &str, handle: u32, kind: u32) -> Result<u16, String> {
+    fn number(
+        &mut self,
+        function: Function<(u32, u32, u32), i32>,
+        handle: u32,
+        kind: u32,
+    ) -> Result<u16, String> {
         self.put(0, &[0; 4])?;
-        self.ok(name, (handle, kind, self.scratch))?;
+        self.ok(function, (handle, kind, self.scratch))?;
         Ok(self.u32(0)? as u16)
     }
 
     pub(super) fn resize(&mut self, cols: u16, rows: u16) -> Result<(), String> {
         self.fuel()?;
         self.ok(
-            "ghostty_terminal_resize",
+            self.api.terminal_resize,
             (self.terminal, u32::from(cols), u32::from(rows), 9u32, 18u32),
         )?;
         self.cols = cols;
@@ -190,7 +199,7 @@ impl Ghostty {
         for chunk in bytes.chunks(4096) {
             self.put(0, chunk)?;
             self.call::<_, ()>(
-                "ghostty_terminal_vt_write",
+                self.api.terminal_write,
                 (self.terminal, self.scratch, chunk.len() as u32),
             )?;
         }
@@ -222,8 +231,8 @@ impl Ghostty {
                 let response = match self.query.as_slice() {
                     b"\x1b[5n" => "\x1b[0n".into(),
                     b"\x1b[6n" | b"\x1b[?6n" => {
-                        let x = self.number("ghostty_terminal_get", self.terminal, 3)? + 1;
-                        let y = self.number("ghostty_terminal_get", self.terminal, 4)? + 1;
+                        let x = self.number(self.api.terminal_get, self.terminal, 3)? + 1;
+                        let y = self.number(self.api.terminal_get, self.terminal, 4)? + 1;
                         format!(
                             "\x1b[{}{y};{x}R",
                             if self.query[2] == b'?' { "?" } else { "" }
@@ -250,15 +259,12 @@ impl Ghostty {
         self.put(0, &[0; 24])?;
         self.put(0, &if delta.is_some() { 2u32 } else { 1u32 }.to_le_bytes())?;
         self.put(8, &delta.unwrap_or(0).to_le_bytes())?;
-        self.call(
-            "ghostty_terminal_scroll_viewport",
-            (self.terminal, self.scratch),
-        )
+        self.call(self.api.terminal_scroll, (self.terminal, self.scratch))
     }
 
     pub(super) fn paste(&mut self, text: &str) -> Result<Vec<u8>, String> {
         self.fuel()?;
-        let bracketed = self.number("ghostty_terminal_mode_get", self.terminal, 2004)? != 0;
+        let bracketed = self.number(self.api.terminal_mode_get, self.terminal, 2004)? != 0;
         let text: String = text
             .chars()
             .filter(|c| !c.is_control() || matches!(c, '\n' | '\r' | '\t'))
@@ -281,20 +287,17 @@ impl Ghostty {
         if text.len() > 2048 {
             return Err("Keyboard text is too long".into());
         }
-        self.call::<_, ()>(
-            "ghostty_key_encoder_setopt_from_terminal",
-            (self.encoder, self.terminal),
-        )?;
-        self.call::<_, ()>("ghostty_key_event_set_action", (self.event, action))?;
-        self.call::<_, ()>("ghostty_key_event_set_key", (self.event, key))?;
-        self.call::<_, ()>("ghostty_key_event_set_mods", (self.event, mods))?;
+        self.call::<_, ()>(self.api.encoder_options, (self.encoder, self.terminal))?;
+        self.call::<_, ()>(self.api.event_action, (self.event, action))?;
+        self.call::<_, ()>(self.api.event_key, (self.event, key))?;
+        self.call::<_, ()>(self.api.event_mods, (self.event, mods))?;
         self.put(0, text.as_bytes())?;
         self.call::<_, ()>(
-            "ghostty_key_event_set_utf8",
+            self.api.event_utf8,
             (self.event, self.scratch, text.len() as u32),
         )?;
         self.call::<_, ()>(
-            "ghostty_key_event_set_unshifted_codepoint",
+            self.api.event_codepoint,
             (
                 self.event,
                 if (20..=45).contains(&key) {
@@ -305,7 +308,7 @@ impl Ghostty {
             ),
         )?;
         self.ok(
-            "ghostty_key_encoder_encode",
+            self.api.encode,
             (
                 self.encoder,
                 self.event,
@@ -323,12 +326,12 @@ impl Ghostty {
 
     fn color(
         &mut self,
-        name: &str,
+        function: Function<(u32, u32, u32), i32>,
         handle: u32,
         kind: u32,
         fallback: [u8; 3],
     ) -> Result<[u8; 3], String> {
-        let result: i32 = self.call(name, (handle, kind, self.scratch))?;
+        let result = self.call(function, (handle, kind, self.scratch))?;
         if result == 0 {
             Ok(self.bytes(0, 3)?.try_into().unwrap())
         } else {
@@ -337,55 +340,46 @@ impl Ghostty {
     }
 
     pub(super) fn frame(&mut self) -> Result<Frame, String> {
+        let _measurement = crate::host::performance::Span::new(
+            crate::host::performance::Stage::NativeTerminalSnapshot,
+        );
         self.fuel()?;
-        self.ok("ghostty_render_state_update", (self.render, self.terminal))?;
-        let background = self.color("ghostty_render_state_get", self.render, 5, [0; 3])?;
-        let foreground = self.color("ghostty_render_state_get", self.render, 6, [220; 3])?;
-        let cursor = if self.number("ghostty_render_state_get", self.render, 11)? != 0
-            && self.number("ghostty_render_state_get", self.render, 14)? != 0
+        self.ok(self.api.render_update, (self.render, self.terminal))?;
+        let background = self.color(self.api.render_get, self.render, 5, [0; 3])?;
+        let foreground = self.color(self.api.render_get, self.render, 6, [220; 3])?;
+        let cursor = if self.number(self.api.render_get, self.render, 11)? != 0
+            && self.number(self.api.render_get, self.render, 14)? != 0
         {
             Some((
-                self.number("ghostty_render_state_get", self.render, 15)?,
-                self.number("ghostty_render_state_get", self.render, 16)?,
+                self.number(self.api.render_get, self.render, 15)?,
+                self.number(self.api.render_get, self.render, 16)?,
             ))
         } else {
             None
         };
         self.put(0, &self.iterator.to_le_bytes())?;
-        self.ok(
-            "ghostty_render_state_get",
-            (self.render, 4u32, self.scratch),
-        )?;
+        self.ok(self.api.render_get, (self.render, 4u32, self.scratch))?;
         let mut lines = Vec::new();
-        while self.call::<_, u32>("ghostty_render_state_row_iterator_next", self.iterator)? != 0 {
+        while self.call::<_, u32>(self.api.iterator_next, self.iterator)? != 0 {
             if lines.len() >= usize::from(self.rows) {
                 return Err("Invalid libghostty row count".into());
             }
             self.put(0, &self.cells.to_le_bytes())?;
-            self.ok(
-                "ghostty_render_state_row_get",
-                (self.iterator, 3u32, self.scratch),
-            )?;
+            self.ok(self.api.row_get, (self.iterator, 3u32, self.scratch))?;
             let mut line = Vec::new();
-            while self.call::<_, u32>("ghostty_render_state_row_cells_next", self.cells)? != 0 {
+            while self.call::<_, u32>(self.api.cells_next, self.cells)? != 0 {
                 if line.len() >= usize::from(self.cols) {
                     return Err("Invalid libghostty column count".into());
                 }
-                self.ok(
-                    "ghostty_render_state_row_cells_get",
-                    (self.cells, 1u32, self.scratch),
-                )?;
+                self.ok(self.api.cells_get, (self.cells, 1u32, self.scratch))?;
                 let raw = u64::from_le_bytes(self.bytes(0, 8)?.try_into().unwrap());
-                self.ok("ghostty_cell_get", (raw, 3u32, self.scratch))?;
+                self.ok(self.api.cell_get, (raw, 3u32, self.scratch))?;
                 let width = match self.u32(0)? {
                     1 => 2,
                     2 => 0,
                     _ => 1,
                 };
-                self.ok(
-                    "ghostty_render_state_row_cells_get",
-                    (self.cells, 3u32, self.scratch),
-                )?;
+                self.ok(self.api.cells_get, (self.cells, 3u32, self.scratch))?;
                 let length = self.u32(0)? as usize;
                 if length > 1024 {
                     return Err("Terminal grapheme exceeds the display limit".into());
@@ -393,10 +387,7 @@ impl Ghostty {
                 let text = if length == 0 {
                     " ".into()
                 } else {
-                    self.ok(
-                        "ghostty_render_state_row_cells_get",
-                        (self.cells, 4u32, self.scratch),
-                    )?;
+                    self.ok(self.api.cells_get, (self.cells, 4u32, self.scratch))?;
                     self.bytes(0, length * 4)?
                         .chunks_exact(4)
                         .filter_map(|bytes| {
@@ -404,23 +395,10 @@ impl Ghostty {
                         })
                         .collect()
                 };
-                let mut fg = self.color(
-                    "ghostty_render_state_row_cells_get",
-                    self.cells,
-                    6,
-                    foreground,
-                )?;
-                let mut bg = self.color(
-                    "ghostty_render_state_row_cells_get",
-                    self.cells,
-                    5,
-                    background,
-                )?;
+                let mut fg = self.color(self.api.cells_get, self.cells, 6, foreground)?;
+                let mut bg = self.color(self.api.cells_get, self.cells, 5, background)?;
                 self.put(0, &72u32.to_le_bytes())?;
-                self.ok(
-                    "ghostty_render_state_row_cells_get",
-                    (self.cells, 2u32, self.scratch),
-                )?;
+                self.ok(self.api.cells_get, (self.cells, 2u32, self.scratch))?;
                 let style = self.bytes(0, 72)?;
                 if style[60] != 0 {
                     std::mem::swap(&mut fg, &mut bg);

@@ -156,7 +156,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: TextAction) -> bool
                 values[0] = current;
                 if let Some(mut text) =
                     text_field.and_then(|field| world.get_mut::<EditableText>(field))
-                    && text.value().to_string() != values[0]
+                    && text.value() != values[0].as_str()
                 {
                     text.editor.set_text(&values[0]);
                 }
@@ -170,7 +170,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: TextAction) -> bool
                     );
                     return false;
                 }
-                if text.value().to_string() != values[0] {
+                if text.value() != values[0].as_str() {
                     text.editor.set_text(&values[0]);
                 }
             } else if let Some(mut text) = world.get_mut::<Text>(selected)

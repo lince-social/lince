@@ -114,7 +114,7 @@ impl Engine {
                         expected_content = Some(current.unwrap_or_default());
                     }
                     if namespace == nucleus::shader_effect::NAMESPACE {
-                        if serde_json::to_vec(&fds)?.len() > 196_608 {
+                        if nucleus::json::encoded_len(&fds)? > 196_608 {
                             return Err(EngineError::Consequence(
                                 "WGSL extension is limited to 192 KB.".into(),
                             ));

@@ -264,8 +264,8 @@ async fn relation_protein_spawns_live_assertion_arrows_and_restores_record_posit
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config.clone()),
-            data,
+            applied: Some(config.clone().into()),
+            data: data.into(),
             ready: true,
             dirty: true,
             ..default()
@@ -311,8 +311,8 @@ async fn relation_protein_spawns_live_assertion_arrows_and_restores_record_posit
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data,
+            applied: Some(config.into()),
+            data: data.into(),
             ready: true,
             dirty: true,
             ..default()
@@ -342,7 +342,7 @@ async fn relation_protein_spawns_live_assertion_arrows_and_restores_record_posit
         .areas
         .get_mut(&owner)
         .unwrap();
-    state.data = data;
+    state.data = data.into();
     state.dirty = true;
     rows::reconcile(app.world_mut(), owner);
     assert_eq!(
@@ -446,8 +446,8 @@ pub(crate) fn authoring_record(world: &mut World, owner: Entity, data: Value) {
     world.resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data: vec![data],
+            applied: Some(config.into()),
+            data: vec![data].into(),
             ready: true,
             dirty: true,
             ..default()
@@ -470,8 +470,8 @@ fn relation_color_context_refresh_preserves_records_links_and_positions() {
     let assertion = nucleus::new_uid("a");
     let link = json!({"uid":assertion,"from":first,"to":second,"kind":"depends-on"});
     app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
-        applied:Some(previous.clone()), subscription:Some("old".into()), ready:true, dirty:true,
-        data:vec![json!({"uid":first,"kind":"plain","head":"First","quantity":"5","links":[link.clone()]}),json!({"uid":second,"kind":"plain","head":"Second","quantity":"5","links":[link]})],
+        applied:Some(previous.clone().into()), subscription:Some("old".into()), ready:true, dirty:true,
+        data:vec![json!({"uid":first,"kind":"plain","head":"First","quantity":"5","links":[link.clone()]}),json!({"uid":second,"kind":"plain","head":"Second","quantity":"5","links":[link]})].into(),
         ..default()
     });
     rows::reconcile(app.world_mut(), owner);
@@ -688,8 +688,8 @@ fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
         app.world_mut().resource_mut::<Runtime>().areas.insert(
             owner,
             State {
-                applied: Some(config),
-                data: vec![json!({"uid":uid,"head":"Title","body":"Body"})],
+                applied: Some(config.into()),
+                data: vec![json!({"uid":uid,"head":"Title","body":"Body"})].into(),
                 ready: true,
                 dirty: true,
                 ..default()
@@ -861,8 +861,8 @@ fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data: vec![json!({"uid":"record", "head":"Title", "body":"Description"})],
+            applied: Some(config.into()),
+            data: vec![json!({"uid":"record", "head":"Title", "body":"Description"})].into(),
             ready: true,
             dirty: true,
             ..default()
@@ -937,7 +937,7 @@ fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
     {
         let mut runtime = app.world_mut().resource_mut::<Runtime>();
         let state = runtime.areas.get_mut(&owner).unwrap();
-        state.data[0]["head"] = json!("Updated");
+        std::sync::Arc::make_mut(&mut state.data)[0]["head"] = json!("Updated");
         state.dirty = true;
     }
     rows::reconcile(app.world_mut(), owner);
@@ -959,8 +959,8 @@ fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data: vec![json!({"uid":"record", "slug":"original"})],
+            applied: Some(config.into()),
+            data: vec![json!({"uid":"record", "slug":"original"})].into(),
             ready: true,
             dirty: true,
             ..default()
@@ -1255,7 +1255,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
+            applied: Some(config.into()),
             subscription: Some("current".into()),
             ready: true,
             ..default()
@@ -1266,7 +1266,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
         owner,
         ServerMessage::Snapshot {
             id: "cancelled".into(),
-            rows: vec![json!({"uid":"wrong"})],
+            rows: vec![json!({"uid":"wrong"})].into(),
         },
     );
     assert!(
@@ -1296,7 +1296,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
         owner,
         ServerMessage::Snapshot {
             id: "current".into(),
-            rows: rows.clone(),
+            rows: rows.clone().into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -1331,7 +1331,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
         owner,
         ServerMessage::Update {
             id: "current".into(),
-            rows,
+            rows: rows.into(),
         },
     );
     rows::reconcile(app.world_mut(), owner);
@@ -1360,17 +1360,31 @@ fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
     let (mut app, root, owner) = fixture();
     let world = app.world_mut();
     world.entity_mut(owner).insert(WorkspaceMember(2));
-    world.resource_mut::<Runtime>().areas.insert(owner, State {
-        applied: Some(Config { enabled: true, ..default() }),
-        subscription: Some("demand".into()),
-        ..default()
-    });
+    world.resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(
+                Config {
+                    enabled: true,
+                    ..default()
+                }
+                .into(),
+            ),
+            subscription: Some("demand".into()),
+            ..default()
+        },
+    );
     let snapshot = |head: &str| ServerMessage::Snapshot {
-        id: "demand".into(), rows: vec![json!({"uid":"record-1","head":head,"body":"Details"})],
+        id: "demand".into(),
+        rows: vec![json!({"uid":"record-1","head":head,"body":"Details"})].into(),
     };
     receive(world, owner, snapshot("Old"));
     rows::reconcile(world, owner);
-    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    assert!(
+        world.resource::<Runtime>().areas[&owner]
+            .row_entities
+            .is_empty()
+    );
     receive(world, owner, snapshot("Latest"));
     rows::reconcile(world, owner);
     assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
@@ -1398,13 +1412,30 @@ fn inactive_rows_defer_materialization_but_follow_visibility_and_revocation() {
     }
     world.insert_resource(outputs);
     rows::reconcile(world, owner);
-    assert_eq!(world.resource::<Runtime>().areas[&owner].row_entities["record-1"], row);
-    assert_eq!(world.get::<rows::Row>(row).unwrap().data["head"], "Hidden latest");
+    assert_eq!(
+        world.resource::<Runtime>().areas[&owner].row_entities["record-1"],
+        row
+    );
+    assert_eq!(
+        world.get::<rows::Row>(row).unwrap().data["head"],
+        "Hidden latest"
+    );
     world.remove_resource::<OutputViews>();
-    receive(world, owner, ServerMessage::Update { id: "demand".into(), rows: vec![] });
+    receive(
+        world,
+        owner,
+        ServerMessage::Update {
+            id: "demand".into(),
+            rows: vec![].into(),
+        },
+    );
     rows::reconcile(world, owner);
     assert!(world.get_entity(row).is_err());
-    assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
+    assert!(
+        world.resource::<Runtime>().areas[&owner]
+            .row_entities
+            .is_empty()
+    );
     receive(world, owner, snapshot("Through portal"));
     rows::reconcile(world, owner);
     assert!(world.resource::<Runtime>().areas[&owner].row_entities.is_empty());
@@ -1454,13 +1485,16 @@ fn field_settings_retain_unchanged_wrapping_and_apply_real_changes() {
 
     let (mut app, _, owner) = fixture();
     let config = Config::records();
-    app.world_mut().get_mut::<InfluenceArea>(owner).unwrap().protein = Some(config.clone());
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(config.clone());
     app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
-        applied: Some(config),
+        applied: Some(config.into()),
         data: vec![json!({
             "uid": "wrapping-record", "head": "Short title", "body": "**Rich** café 日本語\n\nAnother paragraph",
             "slug": "wrapping", "quantity": "0",
-        })],
+        })].into(),
         ready: true,
         dirty: true,
         ..default()
@@ -1894,8 +1928,8 @@ fn record_source_stays_stable_while_paused_and_typing_resumes_at_selection() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data: vec![data],
+            applied: Some(config.into()),
+            data: vec![data].into(),
             ready: true,
             dirty: true,
             ..default()
@@ -1977,8 +2011,8 @@ fn clicking_any_property_reports_the_record_and_source_once() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(Config::default()),
-            data: vec![json!({"uid":"record","head":"Title","body":"Details"})],
+            applied: Some(Config::default().into()),
+            data: vec![json!({"uid":"record","head":"Title","body":"Details"})].into(),
             dirty: true,
             ..default()
         },
@@ -2307,8 +2341,8 @@ fn grouping_reuses_areas_limits_forces_to_members_and_cleans_up() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config.clone()),
-            data: data.clone(),
+            applied: Some(config.clone().into()),
+            data: data.clone().into(),
             dirty: true,
             ..default()
         },
@@ -2333,7 +2367,7 @@ fn grouping_reuses_areas_limits_forces_to_members_and_cleans_up() {
     let outsider = app
         .world_mut()
         .spawn((
-            crate::native::area::RecordProperties(data[0].clone()),
+            crate::native::area::RecordProperties(data[0].clone().into()),
             ChildOf(root),
         ))
         .id();
@@ -2378,8 +2412,8 @@ fn grouping_reuses_areas_limits_forces_to_members_and_cleans_up() {
             .areas
             .get_mut(&owner)
             .unwrap();
-        state.data[2]["assignees"] = people;
-        state.data[2]["due_date"] = json!("2026-09-01");
+        std::sync::Arc::make_mut(&mut state.data)[2]["assignees"] = people;
+        std::sync::Arc::make_mut(&mut state.data)[2]["due_date"] = json!("2026-09-01");
         state.dirty = true;
     }
     rows::reconcile(app.world_mut(), owner);
@@ -2424,8 +2458,8 @@ fn grouping_pages_are_bounded_and_direction_changes_keep_query_order() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data,
+            applied: Some(config.into()),
+            data: data.into(),
             dirty: true,
             page: 1,
             ..default()
@@ -2570,8 +2604,8 @@ fn grouped_cards_follow_physics_and_pinning() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(config),
-            data: vec![json!({"uid":"a","head":"Card","kind":"plain"})],
+            applied: Some(config.into()),
+            data: vec![json!({"uid":"a","head":"Card","kind":"plain"})].into(),
             dirty: true,
             ..default()
         },
@@ -2701,7 +2735,7 @@ async fn protein_pull_filters_query_real_properties_without_spawning_and_isolate
                         position: DVec2::new(100.0 + index as f64 * 50.0, 0.0),
                         size: Vec2::splat(20.0),
                     },
-                    RecordProperties(json!({"uid":uid})),
+                    RecordProperties(json!({"uid":uid}).into()),
                     ChildOf(root),
                     WorkspaceMember(1),
                 ))
@@ -2715,7 +2749,7 @@ async fn protein_pull_filters_query_real_properties_without_spawning_and_isolate
                 position: DVec2::new(100.0, 200.0),
                 size: Vec2::splat(20.0),
             },
-            RecordProperties(json!({"uid":ids[0]})),
+            RecordProperties(json!({"uid":ids[0]}).into()),
             RecordBinding {
                 area: owner,
                 uid: ids[0].clone(),
@@ -2801,7 +2835,7 @@ async fn protein_pull_filters_query_real_properties_without_spawning_and_isolate
         subscription,
         ServerMessage::Update {
             id: old_id,
-            rows: vec![json!({"uid":ids[0]})],
+            rows: vec![json!({"uid":ids[0]})].into(),
         },
     );
     until(&mut app, |world| {
@@ -2858,7 +2892,7 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         subscription,
         State {
-            applied: Some(config),
+            applied: Some(config.into()),
             ready: true,
             subscription: Some("remote-current".into()),
             ..default()
@@ -2869,12 +2903,12 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
         subscription,
         ServerMessage::Snapshot {
             id: "remote-current".into(),
-            rows: vec![json!({"uid":"a"})],
+            rows: vec![json!({"uid":"a"})].into(),
         },
     );
     filter::publish(app.world_mut());
     let matches = app.world().get::<filter::Matches>(owner).unwrap();
-    let record = crate::native::area::RecordProperties(json!({"uid":"a"}));
+    let record = crate::native::area::RecordProperties(json!({"uid":"a"}).into());
     let binding = RecordBinding {
         area: owner,
         uid: "a".into(),
@@ -2985,7 +3019,7 @@ async fn independent_sorting_uses_live_protein_order_without_spawning_and_clears
                         position: DVec2::ZERO,
                         size: Vec2::splat(40.0),
                     },
-                    RecordProperties(json!({"uid":uid})),
+                    RecordProperties(json!({"uid":uid}).into()),
                     WorkspaceMember(1),
                     ChildOf(root),
                 ))
@@ -2999,7 +3033,7 @@ async fn independent_sorting_uses_live_protein_order_without_spawning_and_clears
                 position: DVec2::ZERO,
                 size: Vec2::splat(40.0),
             },
-            RecordProperties(json!({"uid":ids[1]})),
+            RecordProperties(json!({"uid":ids[1]}).into()),
             RecordBinding {
                 area: owner,
                 uid: ids[1].clone(),
@@ -3078,8 +3112,8 @@ fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
     world.resource_mut::<Runtime>().areas.insert(area, State {
         ready: true,
         subscription: Some("thread-feed".into()),
-        applied: Some(crate::native::full_record::config("test", Source::Local)),
-        data: vec![json!({"uid":"record", "threads":[{"uid":"thread", "messages":[{"uid":"message","tool_call":{"thread":"transcript"}}]}]})],
+        applied: Some(crate::native::full_record::config("test", Source::Local).into()),
+        data: vec![json!({"uid":"record", "threads":[{"uid":"thread", "messages":[{"uid":"message","tool_call":{"thread":"transcript"}}]}]})].into(),
         ..default()
     });
     assert!(load_thread_messages(&mut world, &binding, "unrelated", 100).is_err());

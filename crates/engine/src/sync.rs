@@ -31,10 +31,10 @@ fn outgoing_pages(batch: OpBatch) -> Result<Vec<OpBatch>, EngineError> {
         from_organ: batch.from_organ,
         ops: Vec::new(),
     };
-    let overhead = serde_json::to_vec(&page)?.len();
+    let overhead = nucleus::json::encoded_len(&page)?;
     let mut bytes = overhead;
     for op in batch.ops {
-        let size = serde_json::to_vec(&op)?.len() + usize::from(!page.ops.is_empty());
+        let size = nucleus::json::encoded_len(&op)? + usize::from(!page.ops.is_empty());
         if !page.ops.is_empty()
             && (bytes.saturating_add(size) > crate::mailbox::MAX_BUNDLE_BYTES / 2
                 || page.ops.len() == 128)

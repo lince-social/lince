@@ -195,7 +195,7 @@ impl crate::Engine {
         let mut accepted = if let Some(stored) = stored {
             AcceptedDoc::from_trusted_snapshot(&stored.snapshot, &limits()).map_err(refused)?
         } else if tail.is_empty() {
-            let record = store::records::get(&self.store.pool, uid)
+            let record = store::records::text(&self.store.pool, uid)
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(uid.into()))?;
             let doc = LoroDoc::new();
@@ -300,7 +300,7 @@ impl crate::Engine {
         if !self.may_read_record(actor, uid).await? {
             return Err(EngineError::Forbidden("Record is no longer visible".into()));
         }
-        let record = store::records::get(&self.store.pool, uid)
+        let record = store::records::routing(&self.store.pool, uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(uid.into()))?;
         if record.kind == "message" {
@@ -432,9 +432,9 @@ impl crate::Engine {
         let publish = publish && !prepared.is_duplicate();
         let candidate = &prepared;
         let composition = crate::performance::Span::new("record-composition-check-await");
-        let record = store::records::get(&self.store.pool, uid).await?;
-        if let Some(record) = &record
-            && let Ok(previous) = nucleus::component::Document::decode(&record.body)
+        let previous_body = store::records::body(&self.store.pool, uid).await?;
+        if let Some(previous_body) = &previous_body
+            && let Ok(previous) = nucleus::component::Document::decode(previous_body)
         {
             let document =
                 nucleus::component::Document::decode(candidate.body()).map_err(refused)?;
@@ -448,13 +448,13 @@ impl crate::Engine {
             let component = nucleus::component::ComponentState::Composition {
                 composition: document.composition,
             };
-            self.resolve_component(component.clone()).await?;
+            self.resolve_component_records(&component).await?;
             if publish {
                 self.authorize_component(&component, actor).await?;
             }
         }
-        if let Some(record) = &record
-            && let Ok(previous) = nucleus::canvas::Document::decode(&record.body)
+        if let Some(previous_body) = &previous_body
+            && let Ok(previous) = nucleus::canvas::Document::decode(previous_body)
         {
             let mut document =
                 nucleus::canvas::Document::decode(candidate.body()).map_err(refused)?;
@@ -473,7 +473,7 @@ impl crate::Engine {
             self.resolve_canvas_component(&mut document.component, actor)
                 .await?;
         }
-        drop(record);
+        drop(previous_body);
         drop(composition);
         let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
         let beginning = VersionVector::default();
@@ -489,12 +489,13 @@ impl crate::Engine {
         crate::performance::add("record-canonical-delta-bytes", delta.len() as u64);
         let relay = if let Some((op, _)) = incoming {
             let local = store::cells::local(&self.store.pool).await?;
-            let record = store::records::get(&self.store.pool, uid).await?;
+            // Preserve the relay decision's fresh ownership read without loading
+            // and decoding the whole Record (including its body) a second time.
+            let organ_uid = store::records::organ_uid(&self.store.pool, uid).await?;
             !prepared.is_duplicate()
                 && local.is_some_and(|local| {
                     op.organ_uid != local.organ_uid
-                        && record.and_then(|record| record.organ_uid).as_deref()
-                            == Some(local.organ_uid.as_str())
+                        && organ_uid.as_deref() == Some(local.organ_uid.as_str())
                 })
         } else {
             false
@@ -559,16 +560,7 @@ impl crate::Engine {
         let compact = if prepared.new_atoms() >= COMPACT_ATOMS {
             true
         } else {
-            let through: i64 = store::sqlx::query_scalar(
-                "SELECT COALESCE(through_seq, 0) FROM record_doc WHERE record_uid = ?",
-            )
-            .bind(uid)
-            .fetch_optional(&mut *tx)
-            .await?
-            .unwrap_or(0);
-            let count: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind = 'crdt' AND seq > ?")
-                .bind(uid).bind(through).fetch_one(&mut *tx).await?;
-            count >= COMPACT_OPS
+            store::record_docs::compaction_due_on(&mut tx, uid, COMPACT_OPS).await?
         };
         if compact {
             let seq: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(seq), 0) FROM sync_op")

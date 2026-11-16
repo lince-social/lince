@@ -61,14 +61,16 @@ fn scoped_binding(
 }
 
 pub(crate) fn desktop_input(world: &mut World) {
+    let _dispatch = engine::performance::Span::new("keyboard-dispatch");
     use crate::native::actions::Modifiers;
     use bevy::{
         ecs::message::Messages, input::keyboard::KeyboardInput, input_focus::dispatch_focused_input,
     };
     world.init_resource::<DesktopKeys>();
     let mut state = world.remove_resource::<DesktopKeys>().unwrap();
-    let input = crate::native::keyboard::take(world);
+    let mut input = crate::native::keyboard::take(world);
     let Some(mut original) = world.remove_resource::<Messages<KeyboardInput>>() else {
+        crate::native::keyboard::recycle(world, input);
         world.insert_resource(state);
         return;
     };
@@ -78,7 +80,7 @@ pub(crate) fn desktop_input(world: &mut World) {
     }
     state.forwarded.update();
     world.insert_resource(std::mem::take(&mut state.forwarded));
-    for prepared in input {
+    for prepared in input.drain(..) {
         world.insert_resource(crate::native::keyboard::Dispatch {
             window: prepared.input.window,
             modifiers: prepared.modifiers,
@@ -87,6 +89,7 @@ pub(crate) fn desktop_input(world: &mut World) {
         dispatch_key(world, &mut state, prepared);
         world.remove_resource::<crate::native::keyboard::Dispatch>();
     }
+    crate::native::keyboard::recycle(world, input);
     if let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() {
         state
             .consumed
@@ -126,9 +129,11 @@ fn dispatch_key(
         return;
     }
     let previous = state.consumed.get(&identity).copied();
-    let binding = active_desktop_bindings(world)
-        .into_iter()
-        .find(|binding| binding.key == event.key_code && binding.modifiers == modifiers);
+    let binding = {
+        let _matching = engine::performance::Span::new("shortcut-key-matching");
+        active_bindings(world)
+            .find(|binding| binding.key == event.key_code && binding.modifiers == modifiers)
+    };
     let root = world
         .get::<WindowActionTarget>(event.window)
         .map(|target| target.0)
@@ -197,24 +202,50 @@ fn dispatch_key(
 pub(crate) struct KeyboardModalOwner(pub Option<Entity>);
 
 pub fn keyboard_owner(world: &World) -> Option<Entity> {
-    world.get_resource::<KeyboardModalOwner>().and_then(|owner| owner.0)
+    world
+        .get_resource::<KeyboardModalOwner>()
+        .and_then(|owner| owner.0)
 }
 
 pub(crate) fn input_eligible(world: &World, root: Entity, canvas: &str, target: Entity) -> bool {
-    use crate::native::workspace::{Workspaces, WorkspaceMember};
-    if world.get_resource::<crate::host::input::InputActivity>().is_some_and(|activity| !activity.active()) { return false; }
-    let Some(spaces) = world.get::<Workspaces>(root).filter(|spaces| spaces.canvas_id == canvas) else { return false; };
+    use crate::native::workspace::{WorkspaceMember, Workspaces};
+    if world
+        .get_resource::<crate::host::input::InputActivity>()
+        .is_some_and(|activity| !activity.active())
+    {
+        return false;
+    }
+    let Some(spaces) = world
+        .get::<Workspaces>(root)
+        .filter(|spaces| spaces.canvas_id == canvas)
+    else {
+        return false;
+    };
     let mut ancestor = Some(target);
     for _ in 0..crate::native::layout::MAX_DEPTH {
-        let Some(entity) = ancestor else { return false; };
+        let Some(entity) = ancestor else {
+            return false;
+        };
         if world.get_entity(entity).is_err()
-            || world.get::<WorkspaceMember>(entity).is_some_and(|member| member.0 != spaces.active)
-            || world.get::<Node>(entity).is_some_and(|node| node.display == Display::None)
-            || world.get::<Visibility>(entity).is_some_and(|visibility| *visibility == Visibility::Hidden)
-            || world.get::<InheritedVisibility>(entity).is_some_and(|visibility| !visibility.get())
+            || world
+                .get::<WorkspaceMember>(entity)
+                .is_some_and(|member| member.0 != spaces.active)
+            || world
+                .get::<Node>(entity)
+                .is_some_and(|node| node.display == Display::None)
+            || world
+                .get::<Visibility>(entity)
+                .is_some_and(|visibility| *visibility == Visibility::Hidden)
+            || world
+                .get::<InheritedVisibility>(entity)
+                .is_some_and(|visibility| !visibility.get())
             || world.get::<bevy::ui::InteractionDisabled>(entity).is_some()
-        { return false; }
-        if entity == root { return true; }
+        {
+            return false;
+        }
+        if entity == root {
+            return true;
+        }
         ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
     }
     false
@@ -342,68 +373,68 @@ impl Shortcut {
     }
 }
 
+fn settings(world: &World) -> &Settings {
+    static DEFAULTS: std::sync::OnceLock<Settings> = std::sync::OnceLock::new();
+    world
+        .get_resource::<Settings>()
+        .unwrap_or_else(|| DEFAULTS.get_or_init(Settings::default))
+}
+
 pub fn desktop_bindings(world: &World) -> Vec<DesktopBinding> {
-    let defaults = Settings::default();
-    let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
-    Shortcut::ALL
-        .into_iter()
-        .filter_map(|shortcut| {
-            let action = shortcut.desktop_action()?;
-            let chord = settings.chord(shortcut)?;
-            Some(DesktopBinding {
-                key: chord.key,
-                modifiers: chord.modifiers,
-                action,
-                repeat: shortcut.repeats(),
-            })
-        })
-        .collect()
+    settings(world).desktop().to_vec()
 }
 
 pub fn active_desktop_bindings(world: &World) -> Vec<DesktopBinding> {
-    active_bindings(world, desktop_bindings(world))
+    active_bindings(world).collect()
 }
 
-fn active_bindings(world: &World, bindings: Vec<DesktopBinding>) -> Vec<DesktopBinding> {
+fn active_bindings(world: &World) -> impl Iterator<Item = DesktopBinding> + '_ {
     let hosted = world.contains_resource::<crate::native::layout::desktop::HostRequests>();
     let owned = keyboard_owned(world);
     let overview = crate::native::layout::desktop::overview::active(world);
     let recent = crate::native::layout::desktop::recent::active(world);
-    bindings
-        .into_iter()
-        .filter(|binding| {
+    settings(world)
+        .desktop()
+        .iter()
+        .copied()
+        .filter(move |binding| {
             (!binding.action.requires_host() || hosted)
                 && (!owned
                     || overview && binding.action == crate::host::DesktopAction::ToggleOverview
                     || recent && binding.action.is_recent())
         })
-        .collect()
 }
 
 pub fn binding_snapshot(world: &World) -> (Vec<DesktopBinding>, Vec<DesktopBinding>) {
+    let _snapshot = engine::performance::Span::new("shortcut-binding-snapshot");
     let hosted = world.contains_resource::<crate::native::layout::desktop::HostRequests>();
-    let all = desktop_bindings(world);
-    let hardware = all.iter().copied().filter(|binding| {
+    let hardware = settings(world).desktop().iter().copied().filter(|binding| {
         hosted && matches!(binding.action, crate::host::DesktopAction::External(action) if action.lockable())
     }).collect();
-    (active_bindings(world, all), hardware)
+    (active_bindings(world).collect(), hardware)
+}
+
+fn pointer_candidates(world: &World) -> impl Iterator<Item = PointerBinding> + '_ {
+    let bindings = if keyboard_owned(world) {
+        &[]
+    } else {
+        settings(world).pointers()
+    };
+    bindings.iter().copied()
 }
 
 pub fn pointer_bindings(world: &World) -> Vec<PointerBinding> {
-    if keyboard_owned(world) {
-        return Vec::new();
-    }
-    let defaults = Settings::default();
-    let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
-    Shortcut::ALL
-        .into_iter()
-        .filter_map(|shortcut| {
-            Some(PointerBinding {
-                operation: shortcut.pointer_action()?,
-                chord: settings.pointer(shortcut)?,
-            })
-        })
-        .collect()
+    pointer_candidates(world).collect()
+}
+
+pub(crate) fn pointer_binding(
+    world: &World,
+    button: bevy::input::mouse::MouseButton,
+    modifiers: crate::native::actions::Modifiers,
+) -> Option<PointerBinding> {
+    let _matching = engine::performance::Span::new("shortcut-pointer-matching");
+    pointer_candidates(world)
+        .find(|binding| binding.chord.button == button && binding.chord.modifiers == modifiers)
 }
 
 pub(crate) fn edit_binding(world: &mut World, root: Entity, shortcut: Shortcut) {
@@ -414,21 +445,24 @@ pub(crate) fn install(world: &mut World, root: Entity) {
     use crate::native::actions::KeyBinding;
     let settings = world.resource::<Settings>();
     let mut bindings = Vec::new();
-    for (shortcut, actions) in [
-        (
-            Shortcut::DeleteSand,
-            crate::native::actions![crate::native::deletion::DeleteSelected],
-        ),
-        (
-            Shortcut::ToggleEdit,
-            crate::native::actions![crate::native::edit_mode::EditAction::Toggle],
-        ),
-        (
-            Shortcut::OpenOperation,
-            crate::native::actions![crate::native::operation::OpenOperation],
-        ),
+    for shortcut in [
+        Shortcut::DeleteSand,
+        Shortcut::ToggleEdit,
+        Shortcut::OpenOperation,
     ] {
         if let Some(chord) = settings.chord(shortcut) {
+            let actions = match shortcut {
+                Shortcut::DeleteSand => {
+                    crate::native::actions![crate::native::deletion::DeleteSelected]
+                }
+                Shortcut::ToggleEdit => {
+                    crate::native::actions![crate::native::edit_mode::EditAction::Toggle]
+                }
+                Shortcut::OpenOperation => {
+                    crate::native::actions![crate::native::operation::OpenOperation]
+                }
+                _ => unreachable!(),
+            };
             let binding = KeyBinding::new(chord.key, chord.modifiers, actions);
             bindings.push(
                 if shortcut == Shortcut::DeleteSand
@@ -443,7 +477,7 @@ pub(crate) fn install(world: &mut World, root: Entity) {
             );
         }
     }
-    for binding in desktop_bindings(world) {
+    for binding in settings.desktop() {
         let mut configured = KeyBinding::new(
             binding.key,
             binding.modifiers,
@@ -469,24 +503,18 @@ pub(crate) fn synchronize(world: &mut World) {
 }
 
 pub(crate) fn pressed(world: &World, shortcut: Shortcut, keys: &ButtonInput<KeyCode>) -> bool {
-    let defaults = Settings::default();
-    world
-        .get_resource::<Settings>()
-        .unwrap_or(&defaults)
-        .chord(shortcut)
-        .is_some_and(|chord| {
-            if let Some(modifiers) = crate::native::keyboard::current(world) {
-                keys.pressed(chord.key) && modifiers == chord.modifiers
-            } else if let Some(keyboard) =
-                world.get_resource::<crate::host::input::KeyboardSnapshot>()
-            {
-                keys.pressed(chord.key)
-                    && crate::native::actions::Modifiers::pressed_for(keys, Some(keyboard))
-                        == chord.modifiers
-            } else {
-                chord.pressed(keys)
-            }
-        })
+    settings(world).chord(shortcut).is_some_and(|chord| {
+        if let Some(modifiers) = crate::native::keyboard::current(world) {
+            keys.pressed(chord.key) && modifiers == chord.modifiers
+        } else if let Some(keyboard) = world.get_resource::<crate::host::input::KeyboardSnapshot>()
+        {
+            keys.pressed(chord.key)
+                && crate::native::actions::Modifiers::pressed_for(keys, Some(keyboard))
+                    == chord.modifiers
+        } else {
+            chord.pressed(keys)
+        }
+    })
 }
 
 pub(crate) fn editing_text(world: &World) -> bool {

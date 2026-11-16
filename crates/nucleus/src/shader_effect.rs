@@ -274,11 +274,7 @@ impl Extension {
         {
             return Err("Use 1–8 effects and choose an existing default effect.".into());
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > 196_608
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > 196_608 {
             return Err(
                 "The complete effect catalog is limited to 192 KiB of serialized data.".into(),
             );
@@ -340,7 +336,7 @@ impl Extension {
                 .map(str::len)
                 .sum::<usize>()
                 <= 131_072
-            && serde_json::to_vec(self).is_ok_and(|data| data.len() <= 196_608)
+            && crate::json::encoded_len(self).is_ok_and(|data| data <= 196_608)
     }
 }
 

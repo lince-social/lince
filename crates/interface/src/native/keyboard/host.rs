@@ -20,6 +20,7 @@ pub(super) struct Host {
 
 impl Host {
     pub(super) fn prepare(&mut self, world: &World) {
+        let _preparation = engine::performance::Span::new("keyboard-host-preparation");
         self.keys.clear();
         self.buttons.clear();
         self.masks

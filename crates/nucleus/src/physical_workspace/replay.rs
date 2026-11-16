@@ -67,7 +67,7 @@ impl Trace {
     pub fn run(&self) -> Result<(Runtime, Report), String> {
         if self.workspace == 0
             || self.steps.len() > 512
-            || serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 1_048_576
+            || crate::json::encoded_len(self).map_err(|e| e.to_string())? > 1_048_576
         {
             return Err("Use a replay of at most 512 events and 1 MiB.".into());
         }

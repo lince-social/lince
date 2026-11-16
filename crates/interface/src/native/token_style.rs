@@ -81,6 +81,7 @@ fn stored_kind(kind: SandKind) -> SandStyleKind {
         | SandKind::HandCamera
         | SandKind::Video
         | SandKind::Sync
+        | SandKind::Kamalie
         | SandKind::Terminal
         | SandKind::Organ
         | SandKind::Configuration
@@ -93,19 +94,18 @@ fn stored_kind(kind: SandKind) -> SandStyleKind {
 }
 
 pub fn overrides(world: &World, entity: Entity) -> TokenOverrides {
+    overrides_ref(world, entity).cloned().unwrap_or_default()
+}
+
+pub(crate) fn overrides_ref(world: &World, entity: Entity) -> Option<&TokenOverrides> {
     world
         .get::<TokenOverrides>(entity)
-        .cloned()
-        .or_else(|| {
-            world
-                .get::<SandText>(entity)
-                .map(|text| text.tokens.clone())
-        })
-        .unwrap_or_default()
+        .or_else(|| world.get::<SandText>(entity).map(|text| &text.tokens))
 }
 
 pub fn set_overrides(world: &mut World, entity: Entity, values: TokenOverrides) {
-    let changed = overrides(world, entity) != values;
+    let changed =
+        overrides_ref(world, entity).map_or(!values.0.is_empty(), |current| current != &values);
     if let Some(mut text) = world.get_mut::<SandText>(entity) {
         if text.tokens != values {
             text.tokens = values;
@@ -149,9 +149,7 @@ pub(crate) fn resolve_base(
     let mut style_kind = None;
     while let Some(current) = ancestor {
         style_kind = style_kind.or_else(|| kind(world, current));
-        let values = world
-            .get::<TokenOverrides>(current)
-            .or_else(|| world.get::<SandText>(current).map(|text| &text.tokens));
+        let values = overrides_ref(world, current);
         if let Some(value) = values.and_then(|values| values.0.get(&token)) {
             return (
                 *value,
@@ -230,11 +228,17 @@ fn sizes(world: &mut World, mut state: Local<Sizes>) {
             .iter(world)
             .filter(|(entity, _, _)| kind(world, *entity).is_some())
             .map(|(entity, item, applied)| {
-                (entity, item.size, applied.map(|size| size.0), Vec2::ZERO)
+                (entity, item.size, applied.map(|size| size.0), item.size)
             }),
     );
-    crate::host::performance::add(crate::host::performance::Count::SandSizesVisited, sands.len() as u64);
+    crate::host::performance::add(
+        crate::host::performance::Count::SandSizesVisited,
+        sands.len() as u64,
+    );
     for &(entity, size, previous, _) in sands.iter() {
+        if previous == Some(size) {
+            continue;
+        }
         let mut values = overrides(world, entity);
         let baseline = previous.unwrap_or_else(|| {
             let defaults = ThemeSettings::default();
@@ -262,11 +266,16 @@ fn sizes(world: &mut World, mut state: Local<Sizes>) {
     {
         let mut tokens = tokens.get(world).unwrap();
         tokens.refresh();
-        for &(entity, _, _, _) in sands.iter() {
-            tokens.prepare(entity, [Token::Width, Token::Height]);
+        for &(entity, _, previous, _) in sands.iter() {
+            if previous.is_none() || tokens.invalidated(entity) {
+                tokens.prepare(entity, [Token::Width, Token::Height]);
+            }
         }
         tokens.finish_preparing();
-        for (entity, _, _, next) in sands.iter_mut() {
+        for (entity, _, previous, next) in sands.iter_mut() {
+            if previous.is_some() && !tokens.invalidated(*entity) {
+                continue;
+            }
             *next = Vec2::new(
                 tokens.resolve(*entity, Token::Width).0.number(),
                 tokens.resolve(*entity, Token::Height).0.number(),

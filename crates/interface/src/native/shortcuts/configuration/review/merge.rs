@@ -49,8 +49,13 @@ impl Proposal {
     pub(super) fn new(base: &Value, local: &Value, file: &Value) -> Result<Self, String> {
         for value in [base, local, file] {
             let mut count = 0;
-            if !bounded(value, 0, &mut count) || serde_json::to_vec(value).map_err(|error| error.to_string())?.len() > super::super::LIMIT {
-                return Err("This settings draft exceeds the bounded configuration review size.".into());
+            if !bounded(value, 0, &mut count)
+                || nucleus::json::encoded_len(value).map_err(|error| error.to_string())?
+                    > super::super::LIMIT
+            {
+                return Err(
+                    "This settings draft exceeds the bounded configuration review size.".into(),
+                );
             }
         }
         let mut conflicts = Vec::new();

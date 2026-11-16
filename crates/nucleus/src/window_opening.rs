@@ -79,9 +79,14 @@ pub struct Rule {
 
 impl Rule {
     pub fn validate(&self) -> Result<(), String> {
-        if self.revision == 0 || self.conditions.is_empty() || self.conditions.len() > 32
-            || self.conditions.iter().any(|condition| !condition.validate())
-            || serde_json::to_vec(self).map_err(|error| error.to_string())?.len() > MAX_BYTES
+        if self.revision == 0
+            || self.conditions.is_empty()
+            || self.conditions.len() > 32
+            || self
+                .conditions
+                .iter()
+                .any(|condition| !condition.validate())
+            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES
         {
             return Err("An opening rule needs a revision and 1–32 valid matching conditions within 64 KiB.".into());
         }
@@ -112,8 +117,10 @@ impl Window {
 }
 
 pub fn revision(namespace: &str, value: &Value) -> Result<Option<u64>, String> {
-    if namespace != RULE_NAMESPACE && namespace != WINDOW_NAMESPACE { return Ok(None); }
-    if serde_json::to_vec(value).map_err(|error| error.to_string())?.len() > MAX_BYTES {
+    if namespace != RULE_NAMESPACE && namespace != WINDOW_NAMESPACE {
+        return Ok(None);
+    }
+    if crate::json::encoded_len(value).map_err(|error| error.to_string())? > MAX_BYTES {
         return Err("Opening preferences exceed 64 KiB.".into());
     }
     let revision = if namespace == RULE_NAMESPACE {

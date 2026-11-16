@@ -320,7 +320,7 @@ fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
     app.world_mut()
         .write_message(CellMessage::new(cell::ServerMessage::Snapshot {
             id: "test-transfers".into(),
-            rows,
+            rows: rows.into(),
         }));
     app.update();
     assert!(app.world().get::<View>(owner).unwrap().ready);
@@ -1080,7 +1080,7 @@ fn receipt_results_survive_refresh_and_clear_when_the_acting_person_changes() {
         .0
         .insert("receipt-viewer-change".into(), (owner, "transfers".into()));
     app.world_mut().write_message(CellMessage::new(cell::ServerMessage::Snapshot {
-        id:"receipt-viewer-change".into(),rows:vec![json!({"kind":"transfer_context","viewer":{"local":false,"person":"beto"},"organ":"organ"})],
+        id:"receipt-viewer-change".into(),rows:vec![json!({"kind":"transfer_context","viewer":{"local":false,"person":"beto"},"organ":"organ"})].into(),
     }));
     app.update();
     assert!(app.world().get::<View>(owner).unwrap().pending.is_none());

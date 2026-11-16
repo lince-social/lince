@@ -233,7 +233,7 @@ pub(super) async fn control_on(
         let profile: Profile = serde_json::from_value(state["peer"]["profile"].clone())?;
         contact_on(tx, &profile, now).await?;
     }
-    if serde_json::to_vec(&state)?.len() > 64 * 1024 {
+    if nucleus::json::encoded_len(&state)? > 64 * 1024 {
         return Err(invalid("The retained private reveal exceeds its bound"));
     }
     store::records::set_extension_on(tx, root, REVEAL_NAMESPACE, &state).await?;

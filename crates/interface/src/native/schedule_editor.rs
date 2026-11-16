@@ -201,7 +201,7 @@ pub(crate) fn maintain(world: &mut World) {
 fn value(world: &World, entity: Entity) -> String {
     world
         .get::<EditableText>(entity)
-        .map(|text| text.value().to_string().trim().to_owned())
+        .map(|text| text.value().to_cow().trim().to_owned())
         .unwrap_or_default()
 }
 

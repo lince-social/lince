@@ -49,7 +49,7 @@ impl Modify {
             &mut value
         };
         let mut policy: RolePolicy =
-            serde_json::from_value(chosen.clone()).map_err(|error| error.to_string())?;
+            serde::Deserialize::deserialize(&*chosen).map_err(|error| error.to_string())?;
         let index = panel::value(world, self.grant)?
             .parse::<usize>()
             .ok()

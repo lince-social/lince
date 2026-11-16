@@ -74,16 +74,16 @@ fn unit(value: Unit) -> &'static str {
         Unit::Kj => "kJ",
     }
 }
-fn food_label(state: &DemeterCastle, uid: &str) -> String {
-    state.catalog["foods"]
-        .as_array()
-        .and_then(|rows| rows.iter().find(|v| v["uid"] == uid))
+fn food_label<'a>(state: &'a DemeterCastle, uid: &'a str) -> &'a str {
+    state
+        .catalog
+        .find(catalog::Rows::Foods, uid)
         .and_then(|v| v["label"].as_str())
         .unwrap_or(uid)
-        .into()
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
+    let _render = nucleus::performance::Span::new("demeter-view-presentation");
     let Some(view) = world.get::<View>(owner) else {
         return;
     };
@@ -268,12 +268,9 @@ fn requirements(world: &mut World, owner: Entity, state: &DemeterCastle) {
                     number(bound.bounds.upper),
                 );
                 label(world, body, &bound.source);
-                if let Some(reference) = state.catalog["references"]
-                    .as_array()
-                    .and_then(|refs| {
-                        refs.iter()
-                            .find(|r| r["reference"]["nutrient"] == bound.nutrient)
-                    })
+                if let Some(reference) = state
+                    .catalog
+                    .find(catalog::Rows::NutrientReferences, &bound.nutrient)
                     .and_then(|r| r["uid"].as_str())
                 {
                     let r = row(world, body);
@@ -406,7 +403,7 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
             world,
             r,
             owner,
-            &food_label(state, &food.food),
+            food_label(state, &food.food),
             Operation::Select(food.food.clone()),
         );
         button(
@@ -563,7 +560,7 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
             let market = &info["market"];
             let offer = &market["offer"];
             let uid = info["uid"].as_str().unwrap_or_default();
-            let price = serde_json::from_value::<nucleus::DecimalValue>(offer["price"].clone())
+            let price = nucleus::DecimalValue::deserialize(&offer["price"])
                 .map(|v| v.to_string())
                 .unwrap_or_default();
             let currency = state.catalog["vocabulary"]
@@ -575,14 +572,12 @@ fn foods(world: &mut World, owner: Entity, state: &DemeterCastle) {
                         .map(|(name, _)| name.as_str())
                 })
                 .unwrap_or_else(|| offer["currency"].as_str().unwrap_or("currency"));
-            let package =
-                serde_json::from_value::<nucleus::DecimalValue>(offer["package_g"].clone())
-                    .map(|v| v.to_string())
-                    .unwrap_or_default();
-            let usable =
-                serde_json::from_value::<nucleus::DecimalValue>(offer["usable_yield"].clone())
-                    .map(|v| v.to_string())
-                    .unwrap_or_default();
+            let package = nucleus::DecimalValue::deserialize(&offer["package_g"])
+                .map(|v| v.to_string())
+                .unwrap_or_default();
+            let usable = nucleus::DecimalValue::deserialize(&offer["usable_yield"])
+                .map(|v| v.to_string())
+                .unwrap_or_default();
             let caption = format!(
                 "{} {} — {} {} / {package} purchased g × {usable} usable g/g ({}){}",
                 if state.config.offers.iter().any(|v| v == uid) {
@@ -788,9 +783,9 @@ fn results(world: &mut World, owner: Entity, state: &DemeterCastle) {
         "Package rounding is performed after the continuous solve; the rounded bill is not a proven checkout optimum.",
     );
     for item in &result.shopping {
-        let vendor = state.catalog["offers"]
-            .as_array()
-            .and_then(|offers| offers.iter().find(|o| o["uid"] == item.offer))
+        let vendor = state
+            .catalog
+            .find(catalog::Rows::Offers, &item.offer)
             .and_then(|o| o["market"]["vendor"].as_str())
             .unwrap_or("selected offer");
         label(
@@ -967,7 +962,7 @@ fn production(world: &mut World, owner: Entity, state: &DemeterCastle) {
             world,
             r,
             owner,
-            &food_label(state, &food.food),
+            food_label(state, &food.food),
             Operation::Select(food.food.clone()),
         );
     }
@@ -1013,10 +1008,10 @@ fn production(world: &mut World, owner: Entity, state: &DemeterCastle) {
             }
         }
         if let Some(choice) = state.config.production.iter().find(|c| &c.food == food) {
-            let template: Option<production::Template> = state.catalog["templates"]
-                .as_array()
-                .and_then(|v| v.iter().find(|t| t["uid"] == choice.template))
-                .and_then(|v| serde_json::from_value(v["template"].clone()).ok());
+            let template: Option<production::Template> = state
+                .catalog
+                .find(catalog::Rows::Templates, &choice.template)
+                .and_then(|v| production::Template::deserialize(&v["template"]).ok());
             if let Some(template) = template {
                 label(
                     world,
@@ -1201,7 +1196,7 @@ fn production(world: &mut World, owner: Entity, state: &DemeterCastle) {
                 "forecast:from",
                 "Expected available date",
                 demeter::date(&choice.start_on).ok().and_then(|at| {
-                    let lead = choice.lead_days_override.or_else(|| state.catalog["templates"].as_array()?.iter().find(|t| t["uid"] == choice.template)?["template"]["first_harvest_days"].as_u64().and_then(|n| u32::try_from(n).ok())).unwrap_or(0);
+                    let lead = choice.lead_days_override.or_else(|| state.catalog.find(catalog::Rows::Templates, &choice.template)?["template"]["first_harvest_days"].as_u64().and_then(|n| u32::try_from(n).ok())).unwrap_or(0);
                     at.checked_add_days(chrono::Days::new(u64::from(lead)))
                 }).map(|at| at.to_string()).unwrap_or_else(|| choice.start_on.clone()),
             );

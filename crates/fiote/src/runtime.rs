@@ -27,12 +27,12 @@ pub fn context_bytes(messages: &[Message]) -> Result<usize, String> {
                                 16384
                             }
                         }
-                        other => serde_json::to_vec(other).map_err(|e| e.to_string())?.len(),
+                        other => nucleus::json::encoded_len(other).map_err(|e| e.to_string())?,
                     });
                 }
                 size
             }
-            other => serde_json::to_vec(other).map_err(|e| e.to_string())?.len(),
+            other => nucleus::json::encoded_len(other).map_err(|e| e.to_string())?,
         });
     }
     Ok(size)
@@ -71,9 +71,7 @@ pub fn validate_context(system: &str, messages: &[Message]) -> Result<(), String
                 }
             }
         } else {
-            text += serde_json::to_vec(message)
-                .map_err(|error| error.to_string())?
-                .len();
+            text += nucleus::json::encoded_len(message).map_err(|error| error.to_string())?;
         }
         if text > MAX_CONTEXT_BYTES || text + binary > 8 * 1024 * 1024 {
             return Err("This thread exceeds the context limit. Start another thread.".into());
@@ -158,9 +156,8 @@ async fn turn(
     output: &dyn TextOutput,
 ) -> Result<String, String> {
     let definitions = tools.definitions();
-    let tool_bytes = serde_json::to_vec(&definitions)
-        .map_err(|_| "Cannot encode tool descriptions.")?
-        .len();
+    let tool_bytes =
+        nucleus::json::encoded_len(&definitions).map_err(|_| "Cannot encode tool descriptions.")?;
     let mut previous_calls: HashSet<String> = messages
         .iter()
         .filter_map(|m| {

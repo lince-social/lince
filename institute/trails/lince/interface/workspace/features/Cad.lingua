@@ -15,6 +15,8 @@ This is a core work package. Start only after the named providers publish verifi
 
 Selected exact kernel, typed sketch constraints and feature history, robust correspondence, bounded native tools and declared exchange.
 
+Publish actual typed parameter/feature correspondence and affected-product semantics for the downstream [CAD/behavior binding](Cad-Behavior-Bindings.lingua) adapter. This requires no behavior runtime inside the CAD kernel and no per-frame reconstruction for ordinary runtime motion.
+
 ## Ownership and possible overlap
 
 CAD kernel adapter, feature solver and CAD UI; shared command/history extensions negotiated through the base owner.
@@ -60,6 +62,8 @@ Publish the actual API/source owners, supported schemas/units, captured revision
 Pass relevant independent correctness/security/performance checks and native acceptance through the repository cargo xtask/Nix workflow, using `cargo check` rather than `cargo build`, with warnings as errors. Isolate timed measurements from concurrent builds/development. Retain unchanged evidence; reopen only for an observed regression or explicitly changed requirement, with an owner and affected-consumer list. A planned later extension is its own package, not a claim that an earlier incomplete package was done.
 
 Consumers: [Exact assembly geometry and interference](Exact-Assemblies.lingua); [Verified elasticity and thermal models](Continuum.lingua)
+
+Additional consumer: [CAD and behavior parameter bindings](Cad-Behavior-Bindings.lingua).
 
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
 } r_2E87RY7102SP683C7THS0RGG17

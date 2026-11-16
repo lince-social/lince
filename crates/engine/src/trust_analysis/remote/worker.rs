@@ -128,7 +128,7 @@ impl Engine {
         }
         self.remote_access(review, actor, Some(peer)).await?;
         let settings = self.social_settings().await?;
-        let sent = serde_json::to_vec(&message)?.len();
+        let sent = nucleus::json::encoded_len(&message)?;
         let reserve = nucleus::social::MAX_FRAME_BYTES;
         let deadline = {
             let mut jobs = self.trust_remote.jobs.lock().await;

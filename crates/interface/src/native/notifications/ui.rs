@@ -16,6 +16,7 @@ use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
 };
+use std::{collections::HashSet, sync::Arc};
 
 pub(super) fn setup(world: &mut World) {
     let roots: Vec<_> = world
@@ -50,7 +51,8 @@ pub(super) fn setup(world: &mut World) {
 }
 
 pub(super) fn render_badges(world: &mut World) {
-    let count = world.resource::<Notifications>().notices.len();
+    let snapshot = Arc::clone(&world.resource::<Notifications>().snapshot);
+    let count = snapshot.notices.len();
     let buttons: Vec<_> = world
         .query_filtered::<Entity, With<NotificationCount>>()
         .iter(world)
@@ -95,7 +97,7 @@ pub(super) fn render_badges(world: &mut World) {
             let font = world.resource::<Typography>().text(font_size);
             let label = world
                 .spawn((
-                    Text::new(count.to_string()),
+                    Text::new(snapshot.badge.clone()),
                     font,
                     TextLayout::no_wrap(),
                     crate::native::token_style::text(Token::Surface),
@@ -107,9 +109,12 @@ pub(super) fn render_badges(world: &mut World) {
             badge
         });
         let label = world.get::<NotificationBadge>(badge).unwrap().0;
-        let value = count.to_string();
-        if world.get::<Text>(label).unwrap().0 != value {
-            world.get_mut::<Text>(label).unwrap().0 = value;
+        if world.get::<Text>(label).unwrap().0 != snapshot.badge {
+            world
+                .get_mut::<Text>(label)
+                .unwrap()
+                .0
+                .clone_from(&snapshot.badge);
         }
         if world.get::<TextFont>(label).unwrap().font_size != FontSize::Px(font_size) {
             world.get_mut::<TextFont>(label).unwrap().font_size = FontSize::Px(font_size);
@@ -256,7 +261,7 @@ pub(super) fn anchor(
 }
 
 pub(super) fn remove_toast(world: &mut World, id: u64) {
-    world.resource_mut::<Notifications>().toasts.remove(&id);
+    Arc::make_mut(&mut world.resource_mut::<Notifications>().toasts).remove(&id);
     let entities: Vec<_> = world
         .query::<(Entity, &NotificationToast)>()
         .iter(world)
@@ -305,20 +310,12 @@ fn remove_empty_stacks(world: &mut World) {
 
 pub(super) fn render_toasts(world: &mut World) {
     let state = world.resource::<Notifications>();
-    let notices: Vec<_> = state
-        .notices
-        .iter()
-        .filter(|notice| state.toasts.contains(&notice.id))
-        .cloned()
-        .collect();
+    let snapshot = Arc::clone(&state.snapshot);
+    let toasts = Arc::clone(&state.toasts);
     let stale: Vec<_> = world
         .query::<(Entity, &NotificationToast)>()
         .iter(world)
-        .filter(|(_, toast)| {
-            !notices
-                .iter()
-                .any(|notice| notice.id == toast.id && notice.occurrences == toast.occurrences)
-        })
+        .filter(|(_, toast)| toasts.get(&toast.id) != Some(&toast.occurrences))
         .map(|(entity, _)| entity)
         .collect();
     for entity in stale {
@@ -326,7 +323,7 @@ pub(super) fn render_toasts(world: &mut World) {
         world.despawn(entity);
     }
     remove_empty_stacks(world);
-    if notices.is_empty() {
+    if toasts.is_empty() {
         return;
     }
     let roots: Vec<_> = world
@@ -362,15 +359,18 @@ pub(super) fn render_toasts(world: &mut World) {
             crate::native::scroll_sand::attach(world, stack);
             stack
         });
-        for notice in &notices {
-            let exists = world.get::<Children>(stack).is_some_and(|children| {
-                children.iter().any(|child| {
-                    world
-                        .get::<NotificationToast>(child)
-                        .is_some_and(|toast| toast.id == notice.id)
-                })
-            });
-            if exists {
+        let mut existing: HashSet<_> = world
+            .get::<Children>(stack)
+            .into_iter()
+            .flat_map(|children| children.iter())
+            .filter_map(|child| world.get::<NotificationToast>(child).map(|toast| toast.id))
+            .collect();
+        for notice in snapshot
+            .notices
+            .iter()
+            .filter(|notice| toasts.contains_key(&notice.id))
+        {
+            if !existing.insert(notice.id) {
                 continue;
             }
             let row = card(world, root, stack, notice, true);
@@ -393,7 +393,7 @@ pub(super) fn render_panels(world: &mut World) {
     if panels.is_empty() {
         return;
     }
-    let notices = world.resource::<Notifications>().notices.clone();
+    let snapshot = Arc::clone(&world.resource::<Notifications>().snapshot);
     for panel in panels {
         let root = root(world, panel).unwrap();
         preserve_focus(world, panel);
@@ -403,7 +403,7 @@ pub(super) fn render_panels(world: &mut World) {
             crate::native::sand_store::SandCredits(crate::native::credits::ATTRIBUTIONS),
             ChildOf(panel),
         ));
-        if notices.is_empty() {
+        if snapshot.notices.is_empty() {
             label(world, panel, Tr::NoNotificationsShort.text(), 15.0);
             continue;
         }
@@ -415,7 +415,7 @@ pub(super) fn render_panels(world: &mut World) {
             Icon::Delete,
             Tr::DeleteNotifications.text(),
         );
-        for notice in notices.iter().rev() {
+        for notice in snapshot.notices.iter().rev() {
             card(world, root, panel, notice, false);
         }
     }
@@ -428,6 +428,7 @@ fn card(
     notice: &cell::Notice,
     toast: bool,
 ) -> Entity {
+    nucleus::performance::add("notification-cards-created", 1);
     let row = world
         .spawn((
             ChildOf(parent),

@@ -4,7 +4,7 @@ pub(super) struct Overlay {
     entity: Entity,
     material: Handle<StandardMaterial>,
     output: Entity,
-    last: Option<(model::Material, u32, Handle<Image>)>,
+    last: Option<(Arc<model::Material>, u32, Handle<Image>)>,
 }
 
 pub(crate) fn extract_images(
@@ -42,7 +42,7 @@ pub(super) fn update(
     world: &mut World,
     owner: Entity,
     painted: &mut Painted,
-    settings: &model::Material,
+    settings: &Arc<model::Material>,
     opacity: f32,
 ) {
     let Some((output, image)) = crate::native::shader_effects::surface_image(world, owner) else {
@@ -101,8 +101,13 @@ pub(super) fn update(
     {
         world.entity_mut(output).insert(LitEffectOutput(owner));
     }
-    let key = (settings.clone(), opacity.to_bits(), image.clone());
-    if overlay.last.as_ref() != Some(&key) {
+    if overlay
+        .last
+        .as_ref()
+        .is_none_or(|(previous, alpha, texture)| {
+            !Arc::ptr_eq(previous, settings) || *alpha != opacity.to_bits() || texture != &image
+        })
+    {
         *world
             .resource_mut::<Assets<StandardMaterial>>()
             .get_mut(&overlay.material)
@@ -111,7 +116,7 @@ pub(super) fn update(
             base_color_texture: Some(image.clone()),
             emissive: LinearRgba::WHITE * settings.emissive,
             emissive_texture: if settings.emissive > 0.0 {
-                Some(image)
+                Some(image.clone())
             } else {
                 None
             },
@@ -122,11 +127,13 @@ pub(super) fn update(
             depth_bias: 1.0,
             ..default()
         };
-        world
+        if let Some(mut consumer) = world
             .get_mut::<crate::native::description::shader::extent::SurfaceConsumer>(overlay.entity)
-            .unwrap()
-            .image = key.2.clone();
-        overlay.last = Some(key);
+            && consumer.image != image
+        {
+            consumer.image = image.clone();
+        }
+        overlay.last = Some((settings.clone(), opacity.to_bits(), image));
     }
     let mesh = world.get::<Mesh3d>(painted.plate).unwrap().clone();
     if world.get::<Mesh3d>(overlay.entity).unwrap().0 != mesh.0 {

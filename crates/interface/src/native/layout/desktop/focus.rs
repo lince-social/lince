@@ -180,18 +180,35 @@ fn active(world: &World, root: Entity) -> Option<u64> {
 }
 
 fn focused(world: &World, root: Entity, workspace: u64) -> Option<PlacementId> {
+    workspace_model(world, root, workspace)?.focused()
+}
+
+fn workspace_model(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+) -> Option<&crate::layout::desktop::Workspace> {
     world
         .get::<Workspaces>(root)?
         .entries
         .iter()
-        .find(|space| space.id == workspace)?
-        .desktop
-        .focused()
+        .find(|space| space.id == workspace)
+        .map(|space| &space.desktop)
 }
 
 pub(super) fn eligible(world: &World, root: Entity, workspace: u64, entity: Entity) -> bool {
+    workspace_model(world, root, workspace)
+        .is_some_and(|model| eligible_in(world, root, workspace, entity, model))
+}
+
+fn eligible_in(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+    entity: Entity,
+    model: &crate::layout::desktop::Workspace,
+) -> bool {
     candidate(world, entity)
-        && !crate::native::inspection::excluded(world, entity)
         && world
             .get::<bevy::ecs::entity_disabling::Disabled>(entity)
             .is_none()
@@ -207,31 +224,42 @@ pub(super) fn eligible(world: &World, root: Entity, workspace: u64, entity: Enti
         && world.get::<CanvasItem>(entity).is_some_and(|item| {
             item.position.is_finite() && item.size.is_finite() && item.size.min_element() > 0.0
         })
-        && world.get::<Workspaces>(root).is_some_and(|spaces| {
-            spaces
-                .entries
-                .iter()
-                .find(|space| space.id == workspace)
-                .is_some_and(|space| !transients::minimized(world, entity, &space.desktop))
-        })
+        && !transients::minimized(world, entity, model)
 }
 
 fn candidates(world: &World, root: Entity, workspace: u64) -> Vec<Entity> {
     candidate_entities(world, root, workspace).collect()
 }
 
-fn candidate_entities(world: &World, root: Entity, workspace: u64) -> impl Iterator<Item = Entity> + '_ {
-    world
-        .get::<Children>(root)
+fn candidate_entities(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+) -> impl Iterator<Item = Entity> + '_ {
+    let model = workspace_model(world, root, workspace);
+    model
+        .and_then(|_| world.get::<Children>(root))
         .into_iter()
         .flat_map(|children| children.iter())
-        .filter(move |entity| eligible(world, root, workspace, *entity))
+        .filter(move |entity| {
+            model.is_some_and(|model| eligible_in(world, root, workspace, *entity, model))
+        })
 }
 
 fn entity(world: &World, root: Entity, workspace: u64, id: PlacementId) -> Option<Entity> {
-    candidate_entities(world, root, workspace)
+    let _lookup = engine::performance::Span::new("desktop-focus-target-lookup");
+    let model = workspace_model(world, root, workspace)?;
+    let mut examined = 0;
+    let mut considered = 0;
+    // Identity is cheap and authoritative Managed identity takes precedence.
+    // Keep child order, but only inspect eligibility for actual ID matches.
+    let target = world
+        .get::<Children>(root)
+        .into_iter()
+        .flat_map(|children| children.iter())
         .find(|entity| {
-            world
+            examined += 1;
+            let matches = world
                 .get::<Managed>(*entity)
                 .map(|managed| managed.id)
                 .or_else(|| {
@@ -239,8 +267,16 @@ fn entity(world: &World, root: Entity, workspace: u64, id: PlacementId) -> Optio
                         .get::<LayoutBox>(*entity)
                         .map(|layout| PlacementId(layout.id))
                 })
-                == Some(id)
-        })
+                == Some(id);
+            if !matches {
+                return false;
+            }
+            considered += 1;
+            eligible_in(world, root, workspace, *entity, model)
+        });
+    engine::performance::add("desktop-focus-target-children", examined);
+    engine::performance::add("desktop-focus-target-eligibility-checks", considered);
+    target
 }
 
 pub(super) fn contains_input(world: &World, mut input: Entity, target: Entity) -> bool {
@@ -701,6 +737,7 @@ fn viewport_for(world: &World, root: Entity, workspace: u64) -> Option<(Rectangl
 }
 
 pub(crate) fn resolve(world: &mut World) {
+    let _focus = engine::performance::Span::new("desktop-focus-resolve");
     memory::restore_missing(world);
     let Some(mut states) = world.remove_resource::<FocusState>() else {
         return;
@@ -712,14 +749,24 @@ pub(crate) fn resolve(world: &mut World) {
     });
     for ((root, workspace), state) in &mut states.0 {
         let (root, workspace) = (*root, *workspace);
-        if let Some(last) = state.last
-            && entity(world, root, workspace, last).is_none()
-        {
+        // World sources remain immutable through target selection. Reuse the
+        // same ID's result within this phase, never across camera/state writes.
+        let previous_id = state.last;
+        let previous_target = previous_id.and_then(|id| entity(world, root, workspace, id));
+        if previous_id.is_some() && previous_target.is_none() {
             state.last = None;
         }
+        let mut active_target = None;
         if state.active.is_some_and(|id| {
-            focused(world, root, workspace) != Some(id)
-                || entity(world, root, workspace, id).is_none()
+            if focused(world, root, workspace) != Some(id) {
+                return true;
+            }
+            active_target = if Some(id) == previous_id {
+                previous_target
+            } else {
+                entity(world, root, workspace, id)
+            };
+            active_target.is_none()
         }) {
             state.active = None;
             state.follow = None;
@@ -731,7 +778,14 @@ pub(crate) fn resolve(world: &mut World) {
             state.follow = Some(follow);
             continue;
         };
-        let Some(target) = entity(world, root, workspace, follow.target) else {
+        let target = if Some(follow.target) == previous_id {
+            previous_target
+        } else if Some(follow.target) == state.active {
+            active_target
+        } else {
+            entity(world, root, workspace, follow.target)
+        };
+        let Some(target) = target else {
             continue;
         };
         let model = &world
@@ -762,7 +816,7 @@ pub(crate) fn resolve(world: &mut World) {
                 .get::<crate::native::area_effects::AreaScale>(target)
                 .map_or(1.0, |scale| scale.0),
         );
-        let (offset, _) = crate::native::layout::viewport::clip(world, target);
+        let offset = crate::native::layout::viewport::visual_offset(world, target);
         let position = item.position - offset.as_dvec2();
         let size = item.size.as_dvec2() * scale;
         let placement = crate::native::topology::spatial(world, target);

@@ -246,8 +246,23 @@ fn fingerprint_captures(
     nodes: Res<ExtractedUiNodes>,
     changed: Res<ExtractedAssets<GpuImage>>,
     images: Res<RenderAssets<GpuImage>>,
+    completed: Option<Res<CompletedCaptures>>,
+    materials: Option<Res<origins::MaterialInputs>>,
 ) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeSurfaceFingerprint);
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeSurfaceFingerprint,
+    );
+    // Filtered captures own a separate write/provenance history and can refresh
+    // aliases explicitly. Keep their existing conservative invalidation.
+    let dormant = if cache.external {
+        HashMap::new()
+    } else {
+        completed
+            .as_ref()
+            .zip(materials.as_ref())
+            .map(|(completed, materials)| completed.dormant_versions(materials))
+            .unwrap_or_default()
+    };
     cache.targets.get_mut().unwrap().retain(|entity, _| {
         captures
             .get(*entity)
@@ -271,7 +286,14 @@ fn fingerprint_captures(
         }
         cache.fingerprints.insert(entity, hash);
     }
-    let CaptureCache { fingerprints, dirty, blocked, .. } = &mut *cache;
+    let CaptureCache {
+        fingerprints,
+        dirty,
+        blocked,
+        ..
+    } = &mut *cache;
+    let mut dormant_references = 0;
+    let mut dynamic_references = 0;
     for node in &nodes.uinodes {
         let entity = node.extracted_camera_entity;
         let Some(hash) = fingerprints.get_mut(&entity) else {
@@ -281,16 +303,26 @@ fn fingerprint_captures(
         if node.image != AssetId::default() && image.is_none() {
             blocked.insert(entity);
         }
-        if changed.modified.contains(&node.image)
-            || changed.added.contains(&node.image)
-            || image.is_some_and(|image| {
-                image
-                    .texture
-                    .usage()
-                    .intersects(TextureUsages::RENDER_ATTACHMENT | TextureUsages::STORAGE_BINDING)
-            })
-        {
+        if changed.modified.contains(&node.image) || changed.added.contains(&node.image) {
             dirty.insert(entity);
+        }
+        if let Some(image) = image {
+            let usage = image.texture.usage();
+            if usage.intersects(TextureUsages::RENDER_ATTACHMENT | TextureUsages::STORAGE_BINDING) {
+                if !usage.contains(TextureUsages::STORAGE_BINDING)
+                    && let Some(version) = dormant.get(&node.image)
+                {
+                    // Texture identity below still invalidates replacement or
+                    // resize; CPU asset updates above still invalidate uploads.
+                    // Every camera for this image is currently inactive, and a
+                    // real encoded write has established its content revision.
+                    version.hash(hash);
+                    dormant_references += 1;
+                } else {
+                    dirty.insert(entity);
+                    dynamic_references += 1;
+                }
+            }
         }
         node.main_entity.hash(hash);
         node.image.hash(hash);
@@ -354,6 +386,14 @@ fn fingerprint_captures(
             }
         }
     }
+    crate::host::performance::add(
+        crate::host::performance::Count::SurfaceDormantImageReferences,
+        dormant_references,
+    );
+    crate::host::performance::add(
+        crate::host::performance::Count::SurfaceDynamicImageReferences,
+        dynamic_references,
+    );
 }
 
 fn prepare_captures(
@@ -434,6 +474,9 @@ fn reuse_captures(
         if cache.rendered.get_mut().unwrap().get(&entity) == Some(&fingerprint) {
             phase.clear();
             cache.skipped.insert(entity);
+            crate::host::performance::count(
+                crate::host::performance::Count::SurfaceCapturePassesReused,
+            );
         }
     }
 }
@@ -526,6 +569,9 @@ fn render_surface(
             && !cache.dirty.contains(&entity)
             && cache.rendered.lock().unwrap().get(&entity) == Some(&fingerprint)
         {
+            crate::host::performance::count(
+                crate::host::performance::Count::SurfaceCapturePassesReused,
+            );
             continue;
         }
         let target = {
@@ -584,6 +630,9 @@ fn render_surface(
                 target.as_image_copy(),
                 image.texture.as_image_copy(),
                 image.texture.size(),
+            );
+            crate::host::performance::count(
+                crate::host::performance::Count::SurfaceCapturePassesEncoded,
             );
             let order = if cache.external { (first_order, index) }
                 else { world.get::<ExtractedCamera>(entity).map_or((0, 0), |camera| (camera.order, camera.sorted_camera_index_for_target)) };

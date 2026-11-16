@@ -1,6 +1,7 @@
 use crate::{MessageCursor, ProteinError, ThreadsInclude};
 use serde_json::{Value, json};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use store::sqlx::Row;
 use store::{Store, records::RecordRow};
 
 #[derive(Default)]
@@ -9,6 +10,7 @@ pub(crate) struct Selection {
     message_in: Option<String>,
     reply_to: Option<String>,
     references: Option<String>,
+    call: Option<String>,
 }
 
 impl Selection {
@@ -24,6 +26,7 @@ impl Selection {
         let message_in = store::vocabulary::feature_read(&store.pool, "message").await?;
         let reply_to = store::vocabulary::feature_read(&store.pool, "reply").await?;
         let references = store::vocabulary::feature_read(&store.pool, "reference").await?;
+        let call = store::vocabulary::feature_read(&store.pool, "call").await?;
         let threads =
             store::assertions::subjects_pointing_to_many(&store.pool, &thread_of, records).await?;
         Ok(Self {
@@ -31,6 +34,7 @@ impl Selection {
             message_in,
             reply_to,
             references,
+            call,
         })
     }
 
@@ -52,11 +56,18 @@ impl Selection {
         } = self;
         let mut out = Vec::new();
         let mut organ_names: HashMap<Option<String>, Option<String>> = HashMap::new();
+        let thread_ids: Vec<_> = threads
+            .iter()
+            .filter(|thread| thread.kind == "thread" && thread.quantity.is_positive())
+            .map(|thread| thread.uid.as_str())
+            .collect();
+        let mut thread_metadata = metadata(store, &thread_ids).await?;
         for thread in threads {
             if thread.kind != "thread" || !thread.quantity.is_positive() {
                 continue;
             }
-            let social_root = store::replica::root_of(&store.pool, &thread.uid).await?;
+            let thread_data = thread_metadata.remove(&thread.uid).unwrap_or_default();
+            let social_root = thread_data.replica_root;
             let social_participant = if let Some(root) = &social_root {
                 store::records::get_extension(
                     &store.pool,
@@ -107,27 +118,49 @@ impl Selection {
                 uid: message.uid.clone(),
             });
             linked_messages.reverse();
+            let ids: Vec<_> = linked_messages
+                .iter()
+                .map(|message| message.uid.as_str())
+                .collect();
+            let mut message_metadata = metadata(store, &ids).await?;
+            let mut extensions = message_extensions(store, &ids).await?;
+            let mut replies = match reply_to {
+                Some(predicate) => {
+                    store::assertions::objects_from_subjects::<Option<String>>(
+                        &store.pool,
+                        &ids,
+                        predicate,
+                        false,
+                    )
+                    .await?
+                }
+                None => HashMap::new(),
+            };
+            let (mut references_by_message, mut reference_ids) = match references {
+                Some(predicate) => (
+                    store::assertions::objects_from_subjects::<String>(
+                        &store.pool,
+                        &ids,
+                        predicate,
+                        true,
+                    )
+                    .await?,
+                    store::assertions::object_uids_from_subjects(&store.pool, &ids, predicate)
+                        .await?,
+                ),
+                None => (HashMap::new(), HashMap::new()),
+            };
             for message in linked_messages {
                 if message.kind != "message" || !message.quantity.is_positive() {
                     continue;
                 }
-                let parent_message_uid = match reply_to {
-                    Some(reply_to) => {
-                        store::assertions::objects_from_subject(&store.pool, &message.uid, reply_to)
-                            .await?
-                            .into_iter()
-                            .next()
-                            .map(|r| r.uid)
-                    }
-                    None => None,
-                };
-                let record_references = match references {
-                    Some(references) => store::assertions::objects_from_subject(
-                        &store.pool,
-                        &message.uid,
-                        references,
-                    )
-                    .await?
+                let parent_message_uid = replies
+                    .remove(&message.uid)
+                    .and_then(|records| records.into_iter().next())
+                    .map(|record| record.uid);
+                let record_references = references_by_message
+                    .remove(&message.uid)
+                    .unwrap_or_default()
                     .into_iter()
                     .map(|record| {
                         json!({
@@ -138,22 +171,28 @@ impl Selection {
                             "body": record.body,
                         })
                     })
-                    .collect::<Vec<_>>(),
-                    None => Vec::new(),
-                };
-                let created_at = store::records::created_at(&store.pool, &message.uid).await?;
-                let (created_by, sender) = creator_info(store, &message.uid).await?;
+                    .collect::<Vec<_>>();
+                let held: HashSet<_> = record_references
+                    .iter()
+                    .filter_map(|record| record["uid"].as_str())
+                    .collect();
+                let live_references: Vec<_> = reference_ids
+                    .remove(&message.uid)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|uid| !held.contains(uid.as_str()))
+                    .collect();
+                let Metadata {
+                    created_at,
+                    created_by,
+                    sender,
+                    replica_root,
+                } = message_metadata.remove(&message.uid).unwrap_or_default();
                 let organ_name =
                     organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
-                let lifecycle =
-                    store::records::get_extension(&store.pool, &message.uid, "lince.message")
-                        .await?;
-                let social = store::records::get_extension(
-                    &store.pool,
-                    &message.uid,
-                    nucleus::social::requests::MESSAGE_NAMESPACE,
-                )
-                .await?;
+                let mut properties = extensions.remove(&message.uid).unwrap_or_default();
+                let lifecycle = properties.remove("lince.message");
+                let social = properties.remove(nucleus::social::requests::MESSAGE_NAMESPACE);
                 let author = social
                     .as_ref()
                     .and_then(|s| s["content"]["author_owner"].as_str())
@@ -205,9 +244,7 @@ impl Selection {
                     .and_then(Value::as_str)
                     .filter(|value| matches!(*value, "writing" | "finished" | "interrupted"))
                     .unwrap_or("finished");
-                let tool_call =
-                    store::records::get_extension(&store.pool, &message.uid, "lince.tool-call")
-                        .await?;
+                let tool_call = properties.remove("lince.tool-call");
                 messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
@@ -222,42 +259,24 @@ impl Selection {
                 "operator": operator,
                 "message_state": message_state,
                 "social": social,
-                "social_delivery": store::records::get_extension(&store.pool,&message.uid,nucleus::social::requests::DELIVERY_NAMESPACE).await?,
+                "social_delivery": properties.remove(nucleus::social::requests::DELIVERY_NAMESPACE),
                 "tool_call": tool_call,
-                "progress": store::records::get_extension(&store.pool, &message.uid, "lince.message-progress").await?,
-                "content": store::records::get_extension(&store.pool, &message.uid, "lince.message-content").await?,
+                "progress": properties.remove("lince.message-progress"),
+                "content": properties.remove("lince.message-content"),
                 "organ_name": organ_name,
                 "references": record_references,
-                "live_references": match references {
-                    Some(predicate) => {
-                        let held: Vec<&str> = record_references
-                            .iter()
-                            .filter_map(|item| item["uid"].as_str())
-                            .collect();
-                        store::assertions::object_uids_from_subject(
-                            &store.pool,
-                            &message.uid,
-                            predicate,
-                        )
-                        .await?
-                        .into_iter()
-                        .filter(|uid| !held.iter().any(|kept| kept == uid))
-                        .collect::<Vec<_>>()
-                    }
-                    None => Vec::new(),
-                },
+                "live_references": live_references,
                 "organ_uid": message.organ_uid,
-                "replica_root": store::replica::root_of(&store.pool, &message.uid).await?,
+                "replica_root": replica_root,
             }));
                 if messages.len() >= messages_limit {
                     break;
                 }
             }
-            let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
             let mut calls = Vec::new();
-            if let Some(predicate) = store::vocabulary::feature_read(&store.pool, "call").await? {
+            if let Some(predicate) = &self.call {
                 for record in
-                    store::assertions::subjects_pointing_to(&store.pool, &predicate, &thread.uid)
+                    store::assertions::subjects_pointing_to(&store.pool, predicate, &thread.uid)
                         .await?
                         .into_iter()
                         .filter(|record| record.kind == "call_session")
@@ -268,7 +287,6 @@ impl Selection {
                     }
                 }
             }
-            let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
             let thread_organ_name =
                 organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
             let social_conversation = social_participant.is_some();
@@ -277,9 +295,9 @@ impl Selection {
                 "head": thread.head,
                 "body": thread.body,
                 "quantity": thread.quantity_f64(),
-                "created_at": thread_created_at,
-                "created_by": thread_created_by,
-                "sender": thread_sender,
+                "created_at": thread_data.created_at,
+                "created_by": thread_data.created_by,
+                "sender": thread_data.sender,
                 "organ_name": thread_organ_name,
                 "messages": messages,
                 "calls": calls,
@@ -304,22 +322,93 @@ pub(crate) async fn for_record(
         .await
 }
 
-async fn creator_info(
+#[derive(Default)]
+struct Metadata {
+    created_at: Option<String>,
+    created_by: Option<String>,
+    sender: Option<String>,
+    replica_root: Option<String>,
+}
+
+async fn metadata(
     store: &Store,
-    record_uid: &str,
-) -> Result<(Option<String>, Option<String>), ProteinError> {
-    let Some(actor_uid) = store::facts::creator_uid(&store.pool, record_uid).await? else {
-        return Ok((None, None));
-    };
-    let Some(user) = store::auth::user_by_uid(&store.pool, &actor_uid).await? else {
-        return Ok((None, None));
-    };
-    let name = if user.name.trim().is_empty() {
-        user.username
-    } else {
-        user.name
-    };
-    Ok((Some(actor_uid), Some(name)))
+    records: &[&str],
+) -> Result<HashMap<String, Metadata>, ProteinError> {
+    let mut metadata = HashMap::new();
+    if records.is_empty() {
+        return Ok(metadata);
+    }
+    let ids = serde_json::to_string(records)
+        .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+    let rows = store::sqlx::query(
+        "SELECT r.uid, CASE WHEN r.deleted_at IS NULL THEN r.created_at END AS created_at,
+                r.replica_root, person.uid AS created_by, person.head AS sender_name, c.username
+           FROM record r
+           LEFT JOIN fact creator ON creator.rowid =
+                (SELECT rowid FROM fact WHERE record_uid = r.uid ORDER BY rowid ASC LIMIT 1)
+           LEFT JOIN person_credential c ON c.person_uid = creator.actor_uid
+           LEFT JOIN record person ON person.uid = c.person_uid
+                AND person.kind = 'person' AND person.deleted_at IS NULL
+          WHERE r.uid IN (SELECT value FROM json_each(?))",
+    )
+    .bind(ids)
+    .fetch_all(&store.pool)
+    .await?;
+    for row in rows {
+        let created_by: Option<String> = row.get("created_by");
+        let sender = row.get::<Option<String>, _>("sender_name").map(|name| {
+            if name.trim().is_empty() {
+                row.get("username")
+            } else {
+                name
+            }
+        });
+        metadata.insert(
+            row.get("uid"),
+            Metadata {
+                created_at: row.get("created_at"),
+                created_by,
+                sender,
+                replica_root: row.get("replica_root"),
+            },
+        );
+    }
+    Ok(metadata)
+}
+
+async fn message_extensions(
+    store: &Store,
+    records: &[&str],
+) -> Result<HashMap<String, HashMap<String, Value>>, ProteinError> {
+    let mut extensions = HashMap::<String, HashMap<String, Value>>::new();
+    if records.is_empty() {
+        return Ok(extensions);
+    }
+    let ids = serde_json::to_string(records)
+        .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+    let rows = store::sqlx::query(
+        "SELECT record_uid, namespace, fds FROM record_extension
+          WHERE record_uid IN (SELECT value FROM json_each(?))
+            AND namespace IN (?, ?, ?, ?, ?, ?)",
+    )
+    .bind(ids)
+    .bind("lince.message")
+    .bind(nucleus::social::requests::MESSAGE_NAMESPACE)
+    .bind(nucleus::social::requests::DELIVERY_NAMESPACE)
+    .bind("lince.tool-call")
+    .bind("lince.message-progress")
+    .bind("lince.message-content")
+    .fetch_all(&store.pool)
+    .await?;
+    for row in rows {
+        if let Ok(value) = serde_json::from_str(row.get::<&str, _>("fds")) {
+            extensions
+                .entry(row.get("record_uid"))
+                .or_default()
+                .insert(row.get("namespace"), value);
+        }
+    }
+    Ok(extensions)
 }
 
 async fn organ_name_for(
@@ -332,9 +421,9 @@ async fn organ_name_for(
         return Ok(cached.clone());
     }
     let name = match organ_uid {
-        Some(uid) => store::records::get(&store.pool, uid)
+        Some(uid) => store::records::live_heads_for(&store.pool, &[uid])
             .await?
-            .map(|record| record.head),
+            .remove(uid),
         None => store::organs::local(&store.pool)
             .await?
             .map(|organ| organ.head),

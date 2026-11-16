@@ -8,12 +8,12 @@ use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
     change_detection::DetectChanges,
     component::Component,
-    entity::Entity,
+    entity::{Entity, EntityHashMap},
     hierarchy::ChildOf,
     query::With,
     reflect::ReflectComponent,
     resource::Resource,
-    system::{Query, Res, ResMut},
+    system::{Local, Query, Res, ResMut, SystemParam},
     world::Ref,
 };
 use bevy_image::prelude::*;
@@ -42,21 +42,44 @@ pub enum UiTextMeasureReading {
     },
 }
 
-pub(super) fn has_display_box(
-    mut entity: Entity,
-    nodes: &Query<(Option<&Node>, Option<&ChildOf>)>,
-) -> bool {
-    loop {
-        let Ok((node, parent)) = nodes.get(entity) else {
-            return false;
+/// Shares ancestor display checks among text nodes within a single system run.
+///
+/// Each system clears its results before use so hierarchy and display changes
+/// between measurement and layout are observed immediately.
+#[derive(SystemParam)]
+pub struct TextDisplayBoxes<'w, 's> {
+    nodes: Query<'w, 's, (Option<&'static Node>, Option<&'static ChildOf>)>,
+    results: Local<'s, EntityHashMap<bool>>,
+    path: Local<'s, Vec<Entity>>,
+}
+
+impl TextDisplayBoxes<'_, '_> {
+    pub(super) fn clear(&mut self) {
+        self.results.clear();
+    }
+
+    pub(super) fn contains(&mut self, mut entity: Entity) -> bool {
+        self.path.clear();
+        let displayed = loop {
+            if let Some(displayed) = self.results.get(&entity) {
+                break *displayed;
+            }
+            self.path.push(entity);
+            let Ok((node, parent)) = self.nodes.get(entity) else {
+                break false;
+            };
+            if node.is_some_and(|node| node.display == Display::None) {
+                break false;
+            }
+            let Some(parent) = parent else {
+                break true;
+            };
+            entity = parent.parent();
         };
-        if node.is_some_and(|node| node.display == Display::None) {
-            return false;
+        for entity in self.path.drain(..) {
+            self.results.insert(entity, displayed);
         }
-        let Some(parent) = parent else {
-            return true;
-        };
-        entity = parent.parent();
+        displayed
     }
 }
 
@@ -70,6 +93,7 @@ pub struct TextNodeFlags {
     needs_measure_fn: bool,
     /// If set then the text will be recomputed.
     needs_recompute: bool,
+    layout_bounds: Option<[Option<f32>; 2]>,
 }
 
 impl Default for TextNodeFlags {
@@ -77,6 +101,7 @@ impl Default for TextNodeFlags {
         Self {
             needs_measure_fn: true,
             needs_recompute: true,
+            layout_bounds: None,
         }
     }
 }
@@ -309,13 +334,14 @@ pub fn measure_text_system(
         ),
         With<Node>,
     >,
-    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
+    mut display_boxes: TextDisplayBoxes,
     mut text_reader: TextUiReader,
     mut text_pipeline: ResMut<TextPipeline>,
     mut font_system: ResMut<FontCx>,
     mut layout_cx: ResMut<LayoutCx>,
     rem_size: Res<RemSize>,
 ) {
+    display_boxes.clear();
     for (
         entity,
         text,
@@ -339,7 +365,7 @@ pub fn measure_text_system(
             continue;
         }
 
-        if !has_display_box(entity, &nodes) {
+        if !display_boxes.contains(entity) {
             if let Some(diagnostics) = &diagnostics {
                 (diagnostics.0)(UiTextMeasureReading::Hidden);
             }
@@ -426,25 +452,31 @@ pub fn text_system(
     mut text_query: Query<(
         Entity,
         Ref<ComputedNode>,
-        &TextLayout,
+        Ref<TextLayout>,
         &mut TextLayoutInfo,
         &mut TextNodeFlags,
         &mut ComputedTextBlock,
         Ref<FontHinting>,
     )>,
-    nodes: Query<(Option<&Node>, Option<&ChildOf>)>,
+    mut display_boxes: TextDisplayBoxes,
     mut scale_cx: ResMut<ScaleCx>,
 ) {
+    display_boxes.clear();
     for (entity, node, block, mut text_layout_info, mut text_flags, mut computed, hinting) in
         &mut text_query
     {
-        if node.is_changed() || text_flags.needs_recompute || hinting.is_changed() {
+        if node.is_changed()
+            || block.is_changed()
+            || text_flags.needs_recompute
+            || hinting.is_changed()
+            || text_layout_info.is_changed()
+        {
             // Skip the text node if it is waiting for a new measure func
             if text_flags.needs_measure_fn {
                 continue;
             }
 
-            if !has_display_box(entity, &nodes) {
+            if !display_boxes.contains(entity) {
                 if !text_flags.needs_recompute {
                     text_flags.needs_recompute = true;
                 }
@@ -458,6 +490,17 @@ pub fn text_system(
                 let content_box_size = node.content_box().size();
                 TextBounds::new(content_box_size.x, content_box_size.y)
             };
+            let bounds = [physical_node_size.width, physical_node_size.height];
+            if !text_flags.needs_recompute
+                && !hinting.is_changed()
+                && !block.is_changed()
+                && !computed.is_changed()
+                && !text_layout_info.is_changed()
+                && text_flags.layout_bounds == Some(bounds)
+                && text_layout_info.scale_factor == node.inverse_scale_factor().recip()
+            {
+                continue;
+            }
 
             match text_pipeline.update_text_layout_info(
                 &mut text_layout_info,
@@ -480,6 +523,7 @@ pub fn text_system(
                 Err(e @ TextError::FailedToGetGlyphImage(_)) => {
                     warn_once!("{e}.");
                     text_flags.needs_recompute = false;
+                    text_flags.layout_bounds = None;
                     text_layout_info.clear();
                 }
                 Err(
@@ -494,6 +538,7 @@ pub fn text_system(
                     text_layout_info.scale_factor = node.inverse_scale_factor().recip();
                     text_layout_info.size *= node.inverse_scale_factor();
                     text_flags.needs_recompute = false;
+                    text_flags.layout_bounds = Some(bounds);
                 }
             }
         }

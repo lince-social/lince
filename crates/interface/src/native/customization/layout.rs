@@ -12,14 +12,29 @@ struct Save;
 
 impl Action for Save {
     fn apply(&self, world: &mut World, page: Entity) {
-        let Some(editor) = world.get::<GapEditor>(page) else { return; };
+        let Some(editor) = world.get::<GapEditor>(page) else {
+            return;
+        };
         let (field, status) = (editor.field, editor.status);
-        let Some(input) = world.get::<EditableText>(field) else { return; };
-        if input.is_composing() || input.pending_paste.is_some() { return; }
-        let result = input.value().to_string().trim().parse::<u16>().ok().filter(|value| *value <= 256)
+        let Some(input) = world.get::<EditableText>(field) else {
+            return;
+        };
+        if input.is_composing() || input.pending_paste.is_some() {
+            return;
+        }
+        let result = input
+            .value()
+            .to_cow()
+            .trim()
+            .parse::<u16>()
+            .ok()
+            .filter(|value| *value <= 256)
             .ok_or_else(|| "Use a whole gap from 0 to 256 logical pixels.".to_owned())
             .and_then(|gap| {
-                let mut settings = world.get_resource::<LayoutSettings>().cloned().unwrap_or_default();
+                let mut settings = world
+                    .get_resource::<LayoutSettings>()
+                    .cloned()
+                    .unwrap_or_default();
                 settings.gaps = gap;
                 let bindings = world.get_resource::<Settings>().cloned().unwrap_or_default();
                 configuration::commit(world, bindings, settings)

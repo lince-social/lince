@@ -61,6 +61,8 @@ struct Pending {
 struct State {
     images: BTreeMap<AssetId<Image>, Arc<CaptureOrigins>>,
     pending: BTreeMap<AssetId<Image>, Vec<Pending>>,
+    writes: HashMap<AssetId<Image>, u64>,
+    write_serial: u64,
     links: usize,
     pending_links: usize,
 }
@@ -77,22 +79,67 @@ impl CompletedCaptures {
         self.0.lock().ok().map(|state| state.images.clone())
     }
 
-    pub(crate) fn queue(&self, image: AssetId<Image>, order: (isize, usize), clears: bool, mut origins: CaptureOrigins) {
+    pub(crate) fn queue(
+        &self,
+        image: AssetId<Image>,
+        order: (isize, usize),
+        clears: bool,
+        mut origins: CaptureOrigins,
+    ) {
         origins.bound();
         let mut state = self.0.lock().unwrap();
         if state.pending_links.saturating_add(origins.links()) > MAX_LINKS {
             origins = CaptureOrigins::default();
         }
         state.pending_links += origins.links();
-        state.pending.entry(image).or_default().push(Pending { order, clears, origins });
+        state.pending.entry(image).or_default().push(Pending {
+            order,
+            clears,
+            origins,
+        });
+        // Callers acknowledge an encoded image write, not merely a texture's
+        // ability to be rendered into. This is not GPU-completion evidence.
+        state.write_serial = state.write_serial.wrapping_add(1);
+        let serial = state.write_serial;
+        state.writes.insert(image, serial);
+    }
+
+    pub(super) fn dormant_versions(&self, inputs: &MaterialInputs) -> HashMap<AssetId<Image>, u64> {
+        let state = self.0.lock().unwrap();
+        inputs
+            .writers
+            .iter()
+            .filter_map(|(image, active)| {
+                if *active {
+                    None
+                } else {
+                    state.writes.get(image).map(|serial| (*image, *serial))
+                }
+            })
+            .collect()
+    }
+
+    fn include_retained(&self, writers: &mut BTreeMap<AssetId<Image>, bool>) {
+        // Retained provenance without a current camera is not writer ownership.
+        // Visit the keys in place rather than cloning every Arc and map entry.
+        let Ok(state) = self.0.lock() else {
+            return;
+        };
+        for image in state.images.keys() {
+            writers.entry(*image).or_insert(true);
+        }
     }
 
     pub(crate) fn seed(&self, images: BTreeMap<AssetId<Image>, Arc<CaptureOrigins>>) {
         let mut state = self.0.lock().unwrap();
         state.links = 0;
         state.images.clear();
+        // Imported provenance does not establish an observed content write.
+        state.writes.clear();
         for (image, mut origins) in images {
-            if state.links.saturating_add(origins.links()) > MAX_LINKS { origins = Arc::new(CaptureOrigins::default()); }
+            if state.links.saturating_add(origins.links()) > MAX_LINKS {
+                origins = Arc::new(CaptureOrigins::default());
+            }
             state.links += origins.links();
             state.images.insert(image, origins);
         }
@@ -103,17 +150,20 @@ impl CompletedCaptures {
 pub(super) struct Inputs(CaptureOrigins);
 
 #[derive(Resource)]
-pub(super) struct MaterialInputs(
-    BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
-    BTreeSet<AssetId<Image>>,
-    crate::native::capture::Snapshot,
-);
+pub(super) struct MaterialInputs {
+    materials: BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
+    // True means an active or untracked writer: keep conservative invalidation.
+    // False requires every current camera writing that image to be inactive.
+    writers: BTreeMap<AssetId<Image>, bool>,
+    scopes: crate::native::capture::Snapshot,
+}
 
 pub(super) fn begin(completed: Res<CompletedCaptures>, images: Res<RenderAssets<GpuImage>>) {
     let mut state = completed.0.lock().unwrap();
     state.pending.clear();
     state.pending_links = 0;
     state.images.retain(|image, _| images.get(*image).is_some());
+    state.writes.retain(|image, _| images.get(*image).is_some());
     state.links = state.images.values().map(|origins| origins.links()).sum();
 }
 
@@ -155,27 +205,58 @@ pub(super) fn finish(
 pub(super) fn extract(
     mut commands: Commands,
     world: Extract<&World>,
-    cameras: Extract<Query<(Entity, RenderEntity, Option<&VisibleEntities>, Option<&RenderTarget>), (With<Camera>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>>,
+    cameras: Extract<
+        Query<
+            (
+                Entity,
+                RenderEntity,
+                &Camera,
+                Option<&VisibleEntities>,
+                Option<&RenderTarget>,
+                Option<&SurfaceCapture>,
+            ),
+            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+        >,
+    >,
     sources: Extract<crate::native::capture::Sources>,
-    materials: Extract<Query<Entity, Or<(
-        With<MeshMaterial3d<StandardMaterial>>,
-        With<MeshMaterial3d<crate::native::description::shader::spatial::MeshMaterial>>,
-        With<crate::native::description::shader::extent::SurfaceConsumer>,
-    )>>>,
+    materials: Extract<
+        Query<
+            Entity,
+            Or<(
+                With<MeshMaterial3d<StandardMaterial>>,
+                With<MeshMaterial3d<crate::native::description::shader::spatial::MeshMaterial>>,
+                With<crate::native::description::shader::extent::SurfaceConsumer>,
+            )>,
+        >,
+    >,
 ) {
-    let mut targets: BTreeSet<_> = cameras.iter().filter_map(|(_, _, _, target)| match target {
-        Some(RenderTarget::Image(image)) => Some(image.handle.id()),
-        _ => None,
-    }).collect();
-    if let Some(history) = world.get_resource::<CompletedCaptures>().and_then(CompletedCaptures::snapshot) { targets.extend(history.into_keys()); }
+    let mut writers = BTreeMap::new();
+    for (_, _, camera, _, target, capture) in &cameras {
+        if let Some(RenderTarget::Image(image)) = target {
+            *writers.entry(image.handle.id()).or_default() |= camera.is_active;
+        }
+        if let Some(capture) = capture {
+            *writers.entry(capture.0.id()).or_default() |= camera.is_active;
+        }
+    }
+    if let Some(completed) = world.get_resource::<CompletedCaptures>() {
+        completed.include_retained(&mut writers);
+    }
     let mut material_images = BTreeMap::new();
     for entity in &materials {
         let mut images = BTreeSet::new();
-        if let Some(material) = world.get::<MeshMaterial3d<StandardMaterial>>(entity)
-            .and_then(|material| world.get_resource::<Assets<StandardMaterial>>()?.get(&material.0))
+        if let Some(material) = world
+            .get::<MeshMaterial3d<StandardMaterial>>(entity)
+            .and_then(|material| {
+                world
+                    .get_resource::<Assets<StandardMaterial>>()?
+                    .get(&material.0)
+            })
         {
             material.visit_dependencies(&mut |image| {
-                if let Ok(image) = image.try_typed::<Image>() { images.insert(image); }
+                if let Ok(image) = image.try_typed::<Image>() {
+                    images.insert(image);
+                }
             });
         }
         if let Some(material) = world.get::<MeshMaterial3d<crate::native::description::shader::spatial::MeshMaterial>>(entity)
@@ -185,26 +266,38 @@ pub(super) fn extract(
                 if let Ok(image) = image.try_typed::<Image>() { images.insert(image); }
             });
         }
-        if let Some(consumer) = world.get::<crate::native::description::shader::extent::SurfaceConsumer>(entity) { images.insert(consumer.image.id()); }
+        if let Some(consumer) =
+            world.get::<crate::native::description::shader::extent::SurfaceConsumer>(entity)
+        {
+            images.insert(consumer.image.id());
+        }
         material_images.insert(entity, images);
     }
-    for (camera, render, visible, _) in &cameras {
+    for (camera, render, _, visible, _, _) in &cameras {
         let mut origins = CaptureOrigins::empty();
         origins.contributors.insert(camera);
         if let Some(visible) = visible {
             for entity in visible.entities.values().flatten().take(MAX_LINKS + 1) {
                 origins.contributors.insert(*entity);
-                if let Some(images) = material_images.get(entity) { origins.images.extend(images.iter().copied()); }
+                if let Some(images) = material_images.get(entity) {
+                    origins.images.extend(images.iter().copied());
+                }
             }
         }
         origins.bound();
         commands.entity(render).insert(Inputs(origins));
     }
     let scopes = {
-        let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeCaptureSources);
+        let _timing = crate::host::performance::Span::new(
+            crate::host::performance::Stage::NativeCaptureSources,
+        );
         sources.snapshot(MAX_LINKS + 1)
     };
-    commands.insert_resource(MaterialInputs(material_images, targets, scopes));
+    commands.insert_resource(MaterialInputs {
+        materials: material_images,
+        writers,
+        scopes,
+    });
 }
 
 #[derive(Resource, Default)]
@@ -215,7 +308,7 @@ pub(super) fn prepare_ui(nodes: Res<ExtractedUiNodes>, materials: Res<MaterialIn
     for node in &nodes.uinodes {
         let origins = saved.0.entry(node.extracted_camera_entity).or_insert_with(CaptureOrigins::empty);
         origins.contributors.insert(node.main_entity.id());
-        if materials.1.contains(&node.image) { origins.images.insert(node.image); }
+        if materials.writers.contains_key(&node.image) { origins.images.insert(node.image); }
         origins.bound();
     }
 }
@@ -229,8 +322,8 @@ pub(super) fn surface(
     let Some(materials) = world.get_resource::<MaterialInputs>() else { origins.complete = false; return origins; };
     for item in phase.items.values().take(MAX_LINKS + 1) { origins.contributors.insert(item.entity.1.id()); }
     if let Some(ui) = world.get_resource::<UiOrigins>().and_then(|ui| ui.0.get(&camera)) { origins.extend(ui); }
-    origins.images.retain(|image| materials.1.contains(image));
-    origins.normalize(&materials.2);
+    origins.images.retain(|image| materials.writers.contains_key(image));
+    origins.normalize(&materials.scopes);
     origins
 }
 
@@ -256,7 +349,7 @@ pub(super) fn record_view(
     if let Some(visible) = visible {
         for (_, main) in visible.classes.values().flat_map(|class| class.iter_visible()).take(MAX_LINKS + 1) {
             origins.contributors.insert(main.id());
-            if let Some(images) = materials.0.get(&main.id()) { origins.images.extend(images.iter().copied()); }
+            if let Some(images) = materials.materials.get(&main.id()) { origins.images.extend(images.iter().copied()); }
         }
     }
     if let Some(ui) = ui.0.get(&entity) { origins.extend(ui); }
@@ -265,8 +358,8 @@ pub(super) fn record_view(
     {
         for item in phase.items.values().take(MAX_LINKS + 1) { origins.contributors.insert(item.entity.1.id()); }
     }
-    origins.images.retain(|image| materials.1.contains(image));
-    origins.normalize(&materials.2);
+    origins.images.retain(|image| materials.writers.contains_key(image));
+    origins.normalize(&materials.scopes);
     let full = camera.physical_viewport_size == camera.physical_target_size
         && camera.viewport.as_ref().is_none_or(|viewport| viewport.physical_position == UVec2::ZERO);
     let clears = !matches!(camera.clear_color, ClearColorConfig::None)

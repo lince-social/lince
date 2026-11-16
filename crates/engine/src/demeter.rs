@@ -22,7 +22,7 @@ pub const PLAN: &str = "lince.demeter.plan";
 pub const OFFER: &str = "lince.demeter.offer";
 pub const TASK: &str = "lince.demeter.task";
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub name: String,
@@ -84,7 +84,7 @@ impl Config {
             || self.production.len() > 600
             || self.overrides.len() > 100
             || self.disabled_nutrients.len() > 100
-            || serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 500_000
+            || nucleus::json::encoded_len(self).map_err(|e| e.to_string())? > 500_000
         {
             return Err("Check plan name, dates, duration, and selection limits".into());
         }

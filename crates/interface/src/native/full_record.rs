@@ -28,7 +28,7 @@ pub fn config(reference: &str, source: Source) -> Config {
     };
     config.draft.name = "Record".into();
     config.draft.query =
-        json!({"source":"record","where":[{"all":[predicate]}],"order":[],"limit":1});
+        json!({"source":"record","where":[{"all":[predicate]}],"order":[],"limit":1}).into();
     config
 }
 

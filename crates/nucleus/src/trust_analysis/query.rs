@@ -164,11 +164,7 @@ impl Query {
                 "Influence caps must be nonnegative indices in each measurement basis".into(),
             );
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > 65536
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > 65536 {
             return Err("Trust query exceeds 64 KiB".into());
         }
         Ok(())
@@ -363,9 +359,7 @@ pub fn analyze(
         }
         analysis.input_events = analysis.input_events.saturating_add(source.copies.len());
         bytes = bytes.saturating_add(
-            serde_json::to_vec(&source.copies)
-                .map_err(|error| error.to_string())?
-                .len(),
+            crate::json::encoded_len(&source.copies).map_err(|error| error.to_string())?,
         );
         if analysis.input_events > MAX_DISCLOSURES || bytes > MAX_BYTES {
             return Err("Trust analysis exceeds its event or byte budget; load bounded complete source groups".into());

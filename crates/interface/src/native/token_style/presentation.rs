@@ -1,6 +1,9 @@
 use super::*;
 use crate::native::icons::{IconButton, IconStyle};
-use bevy::{ecs::query::QueryData, text::TextCursorStyle};
+use bevy::{
+    ecs::{entity::EntityHashSet, query::QueryData},
+    text::TextCursorStyle,
+};
 
 #[derive(QueryData)]
 #[query_data(mutable)]
@@ -21,6 +24,8 @@ pub(super) struct StyleData {
     icon: Has<IconButton>,
     item: Has<CanvasItem>,
     preview: Has<crate::native::sand_store::PreviewKind>,
+    save: Option<&'static mut crate::native::save_feedback::SaveFeedback>,
+    unsaved: Has<crate::native::sand::Unsaved>,
 }
 
 type Styled = Or<(
@@ -51,6 +56,7 @@ fn text_token(tokens: &Tokens, entity: Entity, binding: Token) -> Token {
 
 pub(super) fn apply(
     mut tokens: Tokens,
+    mut removed_save: RemovedComponents<crate::native::sand::Unsaved>,
     mut queries: ParamSet<(
         Query<StyleData, Styled>,
         Query<
@@ -77,15 +83,16 @@ pub(super) fn apply(
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeStyles);
     tokens.refresh();
-    let changed: std::collections::HashSet<_> = queries.p1().iter().collect();
+    let mut pending: EntityHashSet = queries.p1().iter().collect();
+    pending.extend(removed_save.read());
     let mut styles = queries.p0();
-    let mut pending = Vec::new();
-    for style in styles.iter() {
-        let entity = style.entity;
-        if !tokens.invalidated(entity) && !changed.contains(&entity) {
+    tokens.extend_invalidated(&mut pending, styles.iter().map(|style| style.entity));
+    pending.retain(|entity| styles.contains(*entity));
+    for &entity in &pending {
+        let Ok(style) = styles.get(entity) else {
             continue;
-        }
-        pending.push(entity);
+        };
+        let save = style.unsaved && style.save.as_ref().is_some_and(|state| state.color_owned);
         if style.item && tokens.kind(entity).is_some() {
             tokens.prepare(
                 entity,
@@ -114,7 +121,7 @@ pub(super) fn apply(
         }
         if let Some(binding) = style
             .border
-            .filter(|_| !style.icon || tokens.has_use(entity, "border"))
+            .filter(|_| !save && (!style.icon || tokens.has_use(entity, "border")))
         {
             tokens.prepare(entity, [binding.0]);
         }
@@ -131,6 +138,7 @@ pub(super) fn apply(
             continue;
         };
         let entity = style.entity;
+        let save = style.unsaved && style.save.as_ref().is_some_and(|state| state.color_owned);
         if style.item && tokens.kind(entity).is_some() {
             let clock = tokens.clock(entity);
             let background = if clock {
@@ -141,15 +149,17 @@ pub(super) fn apply(
                     .0
                     .linear_color()
             };
-            let border =
-                BorderColor::all(tokens.resolve(entity, Token::SandBorder).0.linear_color());
             if let Some(color) = style.background_color.as_mut() {
                 color.set_if_neq(BackgroundColor(background));
             }
-            if let Some(color) = style.border_color.as_mut() {
-                color.set_if_neq(border);
-            } else {
-                commands.entity(entity).insert(border);
+            if !save {
+                let border =
+                    BorderColor::all(tokens.resolve(entity, Token::SandBorder).0.linear_color());
+                if let Some(color) = style.border_color.as_mut() {
+                    color.set_if_neq(border);
+                } else {
+                    commands.entity(entity).insert(border);
+                }
             }
             if let Some(node) = style.node.as_mut() {
                 let radius =
@@ -162,7 +172,9 @@ pub(super) fn apply(
                 if node.border_radius != radius {
                     node.border_radius = radius;
                 }
-                if node.border != border {
+                if let Some(feedback) = style.save.as_mut().filter(|_| save) {
+                    feedback.style_border(border);
+                } else if node.border != border {
                     node.border = border;
                 }
             }
@@ -206,7 +218,7 @@ pub(super) fn apply(
         }
         if let Some(binding) = style
             .border
-            .filter(|_| !style.icon || tokens.has_use(entity, "border"))
+            .filter(|_| !save && (!style.icon || tokens.has_use(entity, "border")))
         {
             let value = BorderColor::all(tokens.resolve(entity, binding.0).0.linear_color());
             if let Some(color) = style.border_color.as_mut() {
@@ -236,12 +248,22 @@ pub(super) fn apply(
 
 pub(super) fn icons(
     mut tokens: Tokens,
-    mut icons: Query<(Entity, &mut IconStyle, &mut AppliedIconColors)>,
+    mut queries: ParamSet<(
+        Query<(Entity, &mut IconStyle, &mut AppliedIconColors)>,
+        Query<Entity, Or<(Changed<IconStyle>, Changed<AppliedIconColors>)>>,
+    )>,
 ) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconColors);
     tokens.refresh();
-    for (entity, style, previous) in icons.iter() {
+    let mut pending: EntityHashSet = queries.p1().iter().collect();
+    let mut icons = queries.p0();
+    tokens.extend_invalidated(&mut pending, icons.iter().map(|(entity, _, _)| entity));
+    pending.retain(|entity| icons.contains(*entity));
+    for &entity in &pending {
+        let Ok((_, style, previous)) = icons.get(entity) else {
+            continue;
+        };
         for (index, (token, color)) in [Token::Ink, Token::Surface, Token::Accent]
             .into_iter()
             .zip([style.color, style.background, style.border_color])
@@ -253,7 +275,10 @@ pub(super) fn icons(
         }
     }
     tokens.finish_preparing();
-    for (entity, mut style, mut previous) in &mut icons {
+    for entity in pending {
+        let Ok((_, mut style, mut previous)) = icons.get_mut(entity) else {
+            continue;
+        };
         let mut next = *previous;
         let mut colors = [style.color, style.background, style.border_color];
         for (index, token) in [Token::Ink, Token::Surface, Token::Accent]

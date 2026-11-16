@@ -11,22 +11,22 @@ fn standalone_log_crud_validates_and_roundtrips_a_running_stopwatch() {
         serde_json::from_str(&serde_json::to_string(&local).unwrap()).unwrap();
     assert_eq!(restored, local);
     assert_eq!(
-        local.logs[0].seconds(start + chrono::Duration::seconds(75)),
+        model::Logs::new(local.logs.clone()).seconds(start + chrono::Duration::seconds(75)),
         75
     );
     local.toggle(start + chrono::Duration::seconds(75)).unwrap();
     assert_eq!(
-        local.logs[0].seconds(start + chrono::Duration::hours(1)),
+        model::Logs::new(local.logs.clone()).seconds(start + chrono::Duration::hours(1)),
         75
     );
     let id = local.logs[0].id.clone();
     let mut edited = local.logs[0].clone();
     edited.end = Some((start + chrono::Duration::seconds(90)).to_rfc3339());
     local.change(&id, Some(edited.clone())).unwrap();
-    assert_eq!(local.logs[0].seconds(start), 90);
+    assert_eq!(model::Logs::new(local.logs.clone()).seconds(start), 90);
     edited.end = Some((start - chrono::Duration::seconds(1)).to_rfc3339());
     assert!(local.change(&id, Some(edited)).is_err());
-    assert_eq!(local.logs[0].seconds(start), 90);
+    assert_eq!(model::Logs::new(local.logs.clone()).seconds(start), 90);
     local.change(&id, None).unwrap();
     assert!(local.logs.is_empty());
 }
@@ -105,7 +105,14 @@ async fn record_log_crud_uses_shared_mutations_and_reference_changes_preserve_lo
             .uid,
         uid
     );
-    assert!(app.world().get::<WorkTimer>(owner).unwrap().logs.is_empty());
+    assert!(
+        app.world()
+            .get::<WorkTimer>(owner)
+            .unwrap()
+            .logs
+            .entries()
+            .is_empty()
+    );
     let id = "work.log:manual";
     let mut entry = Entry {
         id: id.into(),
@@ -115,32 +122,32 @@ async fn record_log_crud_uses_shared_mutations_and_reference_changes_preserve_lo
     change(app.world_mut(), owner, id, Some(entry.clone()), None).unwrap();
     settle(&mut app, |world| {
         let timer = world.get::<WorkTimer>(owner).unwrap();
-        timer.pending.is_none() && timer.logs.len() == 1
+        timer.pending.is_none() && timer.logs.entries().len() == 1
     })
     .await;
     entry.end = Some("2026-09-19T10:03:00Z".into());
     change(app.world_mut(), owner, id, Some(entry.clone()), None).unwrap();
     settle(&mut app, |world| {
         let timer = world.get::<WorkTimer>(owner).unwrap();
-        timer.pending.is_none() && timer.logs == [entry.clone()]
+        timer.pending.is_none() && timer.logs.entries() == [entry.clone()]
     })
     .await;
     change(app.world_mut(), owner, id, None, None).unwrap();
     settle(&mut app, |world| {
         let timer = world.get::<WorkTimer>(owner).unwrap();
-        timer.pending.is_none() && timer.logs.is_empty()
+        timer.pending.is_none() && timer.logs.entries().is_empty()
     })
     .await;
     Toggle.apply(app.world_mut(), owner);
     settle(&mut app, |world| {
         let timer = world.get::<WorkTimer>(owner).unwrap();
-        timer.pending.is_none() && timer.logs.iter().any(|log| log.end.is_none())
+        timer.pending.is_none() && timer.logs.entries().iter().any(|log| log.end.is_none())
     })
     .await;
     Toggle.apply(app.world_mut(), owner);
     settle(&mut app, |world| {
         let timer = world.get::<WorkTimer>(owner).unwrap();
-        timer.pending.is_none() && timer.logs.iter().all(|log| log.end.is_some())
+        timer.pending.is_none() && timer.logs.entries().iter().all(|log| log.end.is_some())
     })
     .await;
     let old_subscription = app
@@ -160,12 +167,12 @@ async fn record_log_crud_uses_shared_mutations_and_reference_changes_preserve_lo
         app.world_mut(),
         &ServerMessage::Snapshot {
             id: old_subscription,
-            rows: vec![json!({"uid":uid, "work_logs":[]})],
+            rows: vec![json!({"uid":uid, "work_logs":[]})].into(),
         },
     );
     let timer = app.world().get::<WorkTimer>(owner).unwrap();
     assert!(timer.binding.is_none());
-    assert_eq!(timer.logs, local.logs);
+    assert_eq!(timer.logs.entries(), local.logs.as_slice());
     assert_eq!(app.world().get::<LocalTimer>(owner).unwrap(), &local);
 }
 
@@ -183,6 +190,6 @@ fn standalone_rejects_multiple_running_entries_and_clamps_clock_reversal() {
     assert!(local.change(&entry.id.clone(), Some(entry)).is_err());
     assert_eq!(local, before);
     local.toggle(now - chrono::Duration::hours(1)).unwrap();
-    assert_eq!(local.logs[0].seconds(now), 0);
+    assert_eq!(model::Logs::new(local.logs.clone()).seconds(now), 0);
     assert!(local.valid());
 }

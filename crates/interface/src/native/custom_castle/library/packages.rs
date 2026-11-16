@@ -399,7 +399,7 @@ fn render(world: &mut World, root: Entity) {
             "Local package library",
             Command::Source(None),
         );
-        for contact in &contacts {
+        for contact in contacts.iter() {
             if contact["slug"] == "local-organ" {
                 continue;
             }

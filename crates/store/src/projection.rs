@@ -3,6 +3,81 @@ use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
+pub struct ManualInputs {
+    pub revision: i64,
+    pub records: Vec<crate::records::RecordRow<Option<String>>>,
+    pub work: std::collections::HashMap<String, serde_json::Value>,
+}
+
+/// Read a forecast with no execution sources from one consistent database view.
+/// Any execution, roster, effect or loan state keeps the isolated simulation path.
+pub async fn manual_inputs(pool: &SqlitePool) -> Result<Option<ManualInputs>, StoreError> {
+    let mut transaction = pool.begin().await?;
+    let revision = sqlx::query_scalar("SELECT revision FROM projection_source WHERE id = 1")
+        .fetch_one(&mut *transaction)
+        .await?;
+    let simulation: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM recurrence)
+             OR EXISTS(SELECT 1 FROM karma_program_revision)
+             OR EXISTS(SELECT 1 FROM karma_frequency)
+             OR EXISTS(SELECT 1 FROM karma_schedule)
+             OR EXISTS(SELECT 1 FROM karma_schedule_cursor)
+             OR EXISTS(SELECT 1 FROM karma_schedule_occurrence)
+             OR EXISTS(SELECT 1 FROM karma_occurrence)
+             OR EXISTS(SELECT 1 FROM karma_rule_application)
+             OR EXISTS(SELECT 1 FROM signal)
+             OR EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))
+             OR EXISTS(SELECT 1 FROM transfer_delivery_outbox WHERE status IN ('queued', 'failed'))
+             OR EXISTS(SELECT 1 FROM promise)
+             OR EXISTS(SELECT 1 FROM transfer_remote_reference)
+             OR EXISTS(SELECT 1 FROM organ_roster)
+             OR EXISTS(SELECT 1 FROM identity_key WHERE key_id = 'projection')
+             OR NOT EXISTS(SELECT 1 FROM record WHERE slug = 'local-cell' AND kind = 'device')
+             OR NOT EXISTS(SELECT 1 FROM record WHERE slug = 'local-organ' AND kind = 'organ')",
+    )
+    .fetch_one(&mut *transaction)
+    .await?;
+    if simulation {
+        transaction.rollback().await?;
+        return Ok(None);
+    }
+    let runtime: Option<String> = sqlx::query_scalar(
+        "SELECT e.fds FROM record_extension e JOIN record r ON r.uid = e.record_uid
+         WHERE r.slug = 'local-cell' AND r.kind = 'device' AND e.namespace = 'lince.karma-runtime'",
+    )
+    .fetch_optional(&mut *transaction)
+    .await?;
+    let running = runtime
+        .as_deref()
+        .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
+        .and_then(|value| value["running"].as_bool())
+        .unwrap_or(true);
+    if !running {
+        transaction.rollback().await?;
+        return Ok(None);
+    }
+    let records = crate::records::read_rows(
+        &mut *transaction,
+        crate::records::RecordSelection::All,
+        false,
+    )
+    .await?;
+    let work = crate::records::extension_rows(&mut *transaction, "work").await?;
+    transaction.rollback().await?;
+    // The owned SQL rows retain the consistent view. Release the connection
+    // before decoding metadata and potentially large extension payloads.
+    let records = records
+        .into_iter()
+        .map(crate::records::map_row)
+        .collect::<Result<_, _>>()?;
+    let work = crate::records::map_extensions(work);
+    Ok(Some(ManualInputs {
+        revision,
+        records,
+        work,
+    }))
+}
+
 pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
     let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND substr(name, 1, 7) <> 'sqlite_' AND substr(name, 1, 5) <> '_sqlx' AND substr(name, 1, 11) <> 'projection_' ORDER BY name").fetch_all(pool).await?;
     let mut tx = crate::write_tx(pool).await?;
@@ -93,6 +168,13 @@ pub async fn revision(pool: &SqlitePool) -> Result<i64, StoreError> {
 }
 
 pub async fn set_runtime(pool: &SqlitePool, runtime: &str) -> Result<(), StoreError> {
+    let current: Option<String> =
+        sqlx::query_scalar("SELECT runtime FROM projection_source WHERE id = 1")
+            .fetch_one(pool)
+            .await?;
+    if current.as_deref() == Some(runtime) {
+        return Ok(());
+    }
     sqlx::query("UPDATE projection_source SET runtime = ?, revision = revision + 1 WHERE id = 1 AND runtime IS NOT ?").bind(runtime).bind(runtime).execute(pool).await?;
     Ok(())
 }
@@ -102,6 +184,34 @@ pub struct Cached {
     pub spans: Vec<Span>,
     pub schedule: Vec<Scheduled>,
     pub expires_ms: i64,
+}
+
+async fn current_window(
+    connection: &mut sqlx::SqliteConnection,
+    key: &str,
+    context: &Context,
+    now_ms: i64,
+) -> Result<Option<sqlx::sqlite::SqliteRow>, StoreError> {
+    sqlx::query("SELECT base_ms, expires_ms, incomplete FROM projection_window WHERE id = 1 AND cache_key = ? AND source_revision = (SELECT revision FROM projection_source WHERE id = 1) AND expires_ms > ? AND base_ms <= ? AND from_ms <= MAX(?, base_ms) AND until_ms >= ?")
+        .bind(key).bind(now_ms).bind(now_ms).bind(context.window.from_ms).bind(context.window.until_ms)
+        .fetch_optional(connection).await
+}
+
+pub async fn cached_until(
+    store: &crate::Store,
+    context: &Context,
+    now_ms: i64,
+) -> Result<Option<i64>, StoreError> {
+    let Some(identity) = store.execution_identity() else {
+        return Ok(None);
+    };
+    let key = context.key(identity).map_err(protocol)?;
+    let mut connection = store.pool.acquire().await?;
+    Ok(
+        current_window(&mut connection, key.as_str(), context, now_ms)
+            .await?
+            .map(|row| row.get("expires_ms")),
+    )
 }
 
 pub async fn read(
@@ -115,41 +225,40 @@ pub async fn read(
     let pool = &store.pool;
     let key = context.key(identity).map_err(protocol)?;
     let mut tx = pool.begin().await?;
-    let row = sqlx::query("SELECT base_ms, expires_ms, incomplete FROM projection_window WHERE id = 1 AND cache_key = ? AND source_revision = (SELECT revision FROM projection_source WHERE id = 1) AND expires_ms > ? AND base_ms <= ? AND from_ms <= MAX(?, base_ms) AND until_ms >= ?")
-        .bind(key.as_str()).bind(now_ms).bind(now_ms).bind(context.window.from_ms).bind(context.window.until_ms).fetch_optional(&mut *tx).await?;
+    let row = current_window(&mut tx, key.as_str(), context, now_ms).await?;
     let Some(row) = row else {
         tx.rollback().await?;
         return Ok(None);
     };
-    let incomplete: Option<String> = row.get("incomplete");
+    let span_rows = sqlx::query("SELECT payload FROM projection_span WHERE from_ms < ? AND until_ms > ? ORDER BY from_ms, id LIMIT ?")
+        .bind(context.window.until_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
+    let schedule_rows = sqlx::query("SELECT payload FROM projection_schedule WHERE from_ms < ? AND ((until_ms IS NULL AND from_ms >= ?) OR until_ms > ?) ORDER BY from_ms, id LIMIT ?")
+        .bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
+    tx.rollback().await?;
+    let incomplete: Option<&str> = row.get("incomplete");
     let status = match incomplete {
         Some(incomplete) => Status::Incomplete {
             base_ms: row.get("base_ms"),
-            reason: serde_json::from_str(&incomplete).map_err(protocol)?,
+            reason: serde_json::from_str(incomplete).map_err(protocol)?,
         },
         None => Status::Ready {
             base_ms: row.get("base_ms"),
             expires_ms: row.get("expires_ms"),
         },
     };
-    let rows: Vec<String> = sqlx::query_scalar("SELECT payload FROM projection_span WHERE from_ms < ? AND until_ms > ? ORDER BY from_ms, id LIMIT ?")
-        .bind(context.window.until_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
-    let spans = rows
+    let spans = span_rows
         .iter()
         .map(|row| {
-            let mut span: Span = serde_json::from_str(row).map_err(protocol)?;
+            let mut span: Span = serde_json::from_str(row.get("payload")).map_err(protocol)?;
             span.from_ms = span.from_ms.max(context.window.from_ms);
             span.until_ms = span.until_ms.min(context.window.until_ms);
             Ok::<Span, StoreError>(span)
         })
         .collect::<Result<Vec<Span>, _>>()?;
-    let rows: Vec<String> = sqlx::query_scalar("SELECT payload FROM projection_schedule WHERE from_ms < ? AND ((until_ms IS NULL AND from_ms >= ?) OR until_ms > ?) ORDER BY from_ms, id LIMIT ?")
-        .bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
-    let schedule = rows
+    let schedule = schedule_rows
         .iter()
-        .map(|row| serde_json::from_str(row).map_err(protocol))
+        .map(|row| serde_json::from_str(row.get("payload")).map_err(protocol))
         .collect::<Result<Vec<Scheduled>, StoreError>>()?;
-    tx.rollback().await?;
     Ok(Some(Cached {
         status,
         spans,
@@ -182,10 +291,10 @@ pub async fn previous_schedule(
     };
     let pool = &store.pool;
     let key = context.key(identity).map_err(protocol)?;
-    let rows: Vec<String> = sqlx::query_scalar("SELECT s.payload FROM projection_schedule s JOIN projection_window w ON w.id = 1 WHERE w.cache_key = ? AND w.base_ms <= ? AND w.expires_ms > ? AND s.from_ms >= ? AND s.from_ms < ? ORDER BY s.from_ms, s.id LIMIT ?")
+    let rows = sqlx::query("SELECT s.payload FROM projection_schedule s JOIN projection_window w ON w.id = 1 WHERE w.cache_key = ? AND w.base_ms <= ? AND w.expires_ms > ? AND s.from_ms >= ? AND s.from_ms < ? ORDER BY s.from_ms, s.id LIMIT ?")
         .bind(key.as_str()).bind(now_ms).bind(now_ms.saturating_sub(60_000)).bind(now_ms.max(context.window.from_ms)).bind(context.window.until_ms).bind(MAX_SPANS as i64).fetch_all(pool).await?;
     rows.iter()
-        .map(|row| serde_json::from_str(row).map_err(protocol))
+        .map(|row| serde_json::from_str(row.get("payload")).map_err(protocol))
         .collect()
 }
 

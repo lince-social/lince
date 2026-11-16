@@ -1,3 +1,4 @@
+use crate::host::performance::{self, Count, Span, Stage};
 use crate::native::{
     actions::Action,
     cell_bridge::{CellMessage, ReceiveCell},
@@ -7,7 +8,7 @@ use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
 use engine::file_sync::FileFormat;
 use serde_json::{Value, json};
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 mod blobs;
 mod offers;
@@ -27,19 +28,33 @@ struct SyncCastle {
     format_label: Entity,
     status: Entity,
     library: Entity,
+    library_rows: crate::native::retained::Children<Option<(String, String)>>,
+    subscriptions: [String; 2],
     protein: String,
     format: FileFormat,
     config_requested: bool,
     loaded: bool,
     library_requested: bool,
     pending: Option<String>,
-    names: std::collections::HashMap<String, String>,
+    names: HashMap<String, String>,
+}
+
+#[derive(Clone, Copy)]
+enum Reply {
+    Config,
+    Library,
+    Save,
+}
+
+struct Route {
+    owner: Entity,
+    reply: Reply,
+    sender: Option<crate::native::cell_bridge::Sender>,
 }
 
 #[derive(Resource, Default)]
 struct Requests {
-    subscriptions: HashSet<String>,
-    senders: std::collections::HashMap<String, crate::native::cell_bridge::Sender>,
+    routes: HashMap<String, Route>,
     next: u64,
 }
 
@@ -56,7 +71,7 @@ impl Plugin for SyncCastlePlugin {
 
 fn status(world: &mut World, owner: Entity, value: &str) {
     let entity = world.get::<SyncCastle>(owner).unwrap().status;
-    world.get_mut::<Text>(entity).unwrap().0 = value.into();
+    crate::native::sand_panel::status(world, entity, value);
 }
 
 fn config_status(config: &Value) -> &'static str {
@@ -71,6 +86,9 @@ fn config_status(config: &Value) -> &'static str {
 
 fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
     let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+    if view.enabled == enabled {
+        return;
+    }
     view.enabled = enabled;
     let (toggle, controls) = (view.toggle, view.controls);
     world.get_mut::<Node>(controls).unwrap().display = if enabled {
@@ -88,8 +106,6 @@ fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
     let mut node = world
         .get_mut::<bevy::a11y::AccessibilityNode>(toggle)
         .unwrap();
-    node.set_role(accesskit::Role::Switch);
-    node.set_label("File sync");
     node.set_toggled(if enabled {
         accesskit::Toggled::True
     } else {
@@ -97,17 +113,49 @@ fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
     });
 }
 
-fn send(world: &World, owner: Entity, message: ClientMessage) -> Result<(), &'static str> {
+fn send(
+    world: &World,
+    owner: Entity,
+    message: impl FnOnce() -> ClientMessage,
+) -> Result<crate::native::cell_bridge::Sender, &'static str> {
     if crate::native::laboratory::blocked(world, owner) {
         return Err("Directory sync is unavailable in the Laboratory.");
     }
-    crate::native::practice_cells::sender(world, owner)
-        .ok_or("No Cell connection")?
-        .try_send(message)
-        .map_err(|error| match error {
+    let sender = crate::native::practice_cells::sender(world, owner).ok_or("No Cell connection")?;
+    {
+        let mut permits = sender.try_reserve_many(1).map_err(|error| match error {
             tokio::sync::mpsc::error::TrySendError::Full(_) => "Connection busy. Try again.",
             tokio::sync::mpsc::error::TrySendError::Closed(_) => "Connection closed",
-        })
+        })?;
+        permits.next().unwrap().send(message());
+    }
+    Ok(sender)
+}
+
+fn begin_save(world: &mut World, owner: Entity, id: String) {
+    clear_save(world, owner);
+    world.resource_mut::<Requests>().routes.insert(
+        id.clone(),
+        Route {
+            owner,
+            reply: Reply::Save,
+            sender: None,
+        },
+    );
+    world.get_mut::<SyncCastle>(owner).unwrap().pending = Some(id);
+}
+
+fn clear_save(world: &mut World, owner: Entity) {
+    if let Some(id) = world.get_mut::<SyncCastle>(owner).unwrap().pending.take() {
+        world.resource_mut::<Requests>().routes.remove(&id);
+    }
+}
+
+fn failed(world: &mut World, owner: Entity, message: &str) {
+    let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
+    clear_save(world, owner);
+    set_enabled(world, owner, enabled);
+    status(world, owner, message);
 }
 
 #[derive(Clone)]
@@ -169,16 +217,12 @@ impl Action for Command {
                 }
                 world.resource_mut::<Requests>().next += 1;
                 let id = format!("sync-save-{}", world.resource::<Requests>().next);
-                match send(
-                    world,
-                    owner,
-                    ClientMessage::Act {
-                        id: id.clone(),
-                        action,
-                    },
-                ) {
-                    Ok(()) => {
-                        world.get_mut::<SyncCastle>(owner).unwrap().pending = Some(id);
+                match send(world, owner, || ClientMessage::Act {
+                    id: id.clone(),
+                    action,
+                }) {
+                    Ok(_) => {
+                        begin_save(world, owner, id);
                         status(world, owner, "Saving…");
                     }
                     Err(error) => {
@@ -247,14 +291,20 @@ pub(crate) fn stop_directory(world: &mut World, owner: Entity) {
     }
 }
 
-fn button(world: &mut World, parent: Entity, owner: Entity, name: &str, command: Command) {
+fn button(
+    world: &mut World,
+    parent: Entity,
+    owner: Entity,
+    name: &str,
+    command: Command,
+) -> Entity {
     crate::native::information::action_button(
         world,
         parent,
         owner,
         name,
         crate::native::actions![command],
-    );
+    )
 }
 
 pub fn open_source(world: &mut World, root: Entity, uri: &str) -> Entity {
@@ -313,6 +363,12 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "File sync: off",
         crate::native::actions![Command::Toggle],
     );
+    let mut node = world
+        .get_mut::<bevy::a11y::AccessibilityNode>(toggle)
+        .unwrap();
+    node.set_role(accesskit::Role::Switch);
+    node.set_label("File sync");
+    node.set_toggled(accesskit::Toggled::False);
     let controls = world
         .spawn((
             Node {
@@ -374,6 +430,17 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     button(world, controls, sand, "Save directory", Command::Save);
     button(world, content, sand, "Reload settings", Command::Reload);
     let status = label(world, content, "Loading…", 14.0);
+    let subscriptions = [subscription(sand, false), subscription(sand, true)];
+    for (id, reply) in subscriptions.iter().zip([Reply::Config, Reply::Library]) {
+        world.resource_mut::<Requests>().routes.insert(
+            id.clone(),
+            Route {
+                owner: sand,
+                reply,
+                sender: None,
+            },
+        );
+    }
     world.entity_mut(sand).insert(SyncCastle {
         enabled: false,
         confirmed_enabled: false,
@@ -384,6 +451,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         format_label,
         status,
         library,
+        library_rows: Default::default(),
+        subscriptions,
         protein: String::new(),
         format: FileFormat::Lingua,
         config_requested: false,
@@ -392,7 +461,6 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         pending: None,
         names: Default::default(),
     });
-    set_enabled(world, sand, false);
     crate::native::source_view::exchange(world, content, "");
     blobs::populate(world, content);
     offers::populate(world, content);
@@ -419,79 +487,83 @@ fn query(library: bool) -> protein::Protein {
 }
 
 fn maintain(world: &mut World) {
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<SyncCastle>>()
-        .iter(world)
-        .collect();
-    let active: HashSet<_> = owners
-        .iter()
-        .flat_map(|owner| [subscription(*owner, false), subscription(*owner, true)])
-        .collect();
-    let stale: Vec<_> = world
-        .resource::<Requests>()
-        .subscriptions
-        .difference(&active)
-        .cloned()
-        .collect();
-    for id in stale {
-        if world
-            .resource::<Requests>()
-            .senders
-            .get(&id)
-            .is_none_or(|sender| {
-                sender.is_closed()
-                    || sender
+    world.resource_scope(|world, mut requests: Mut<Requests>| {
+        requests.routes.retain(|id, route| {
+            if world.get::<SyncCastle>(route.owner).is_some() {
+                return true;
+            }
+            // Retain only subscriptions whose cleanup is still queued behind backpressure.
+            route.sender.as_ref().is_some_and(|sender| {
+                !sender.is_closed()
+                    && sender
                         .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                        .is_ok()
+                        .is_err()
             })
-        {
-            world.resource_mut::<Requests>().subscriptions.remove(&id);
-            world.resource_mut::<Requests>().senders.remove(&id);
-        }
-    }
-    for owner in owners {
-        for library in [false, true] {
-            let view = world.get::<SyncCastle>(owner).unwrap();
-            if if library {
-                view.library_requested
-            } else {
-                view.config_requested
-            } {
-                continue;
-            }
-            let id = subscription(owner, library);
-            match send(
-                world,
-                owner,
-                ClientMessage::Subscribe {
-                    id: id.clone(),
-                    protein: query(library),
-                },
-            ) {
-                Ok(()) => {
-                    if let Some(sender) = crate::native::practice_cells::sender(world, owner) {
-                        world
-                            .resource_mut::<Requests>()
-                            .senders
-                            .insert(id.clone(), sender);
-                    }
-                    world.resource_mut::<Requests>().subscriptions.insert(id);
-                    let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
-                    if library {
-                        view.library_requested = true;
-                    } else {
-                        view.config_requested = true;
-                    }
+        });
+    });
+    let requests: Vec<_> = world
+        .query::<(Entity, &SyncCastle)>()
+        .iter(world)
+        .flat_map(|(owner, view)| {
+            [
+                (false, view.config_requested),
+                (true, view.library_requested),
+            ]
+            .into_iter()
+            .filter_map(move |(library, requested)| {
+                (!requested).then(|| {
+                    (
+                        owner,
+                        library,
+                        view.subscriptions[usize::from(library)].clone(),
+                    )
+                })
+            })
+        })
+        .collect();
+    for (owner, library, id) in requests {
+        match send(world, owner, || ClientMessage::Subscribe {
+            id: id.clone(),
+            protein: query(library),
+        }) {
+            Ok(sender) => {
+                world
+                    .resource_mut::<Requests>()
+                    .routes
+                    .get_mut(&id)
+                    .unwrap()
+                    .sender = Some(sender);
+                let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+                if library {
+                    view.library_requested = true;
+                } else {
+                    view.config_requested = true;
                 }
-                Err(error) => status(world, owner, error),
             }
+            Err(error) => status(world, owner, error),
         }
     }
 }
 
+fn reply_id(message: &ServerMessage) -> Option<&str> {
+    match message {
+        ServerMessage::Snapshot { id, .. }
+        | ServerMessage::Update { id, .. }
+        | ServerMessage::ActionOk { id, .. }
+        | ServerMessage::Error { id, .. } => Some(id),
+        _ => None,
+    }
+}
+
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
+    let requests = world.resource::<Requests>();
     let messages: Vec<_> = cursor
         .read(world.resource::<Messages<CellMessage>>())
+        .filter(|message| {
+            reply_id(&message.0).is_some_and(|id| requests.routes.contains_key(id))
+                || matches!(message.0.as_ref(), ServerMessage::Error { id, .. }
+                    if id == crate::native::cell_bridge::CONNECTION)
+        })
         .map(|message| message.0.clone())
         .collect();
     for message in messages.iter().map(|message| message.as_ref()) {
@@ -499,104 +571,95 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     }
 }
 
+fn library(world: &mut World, owner: Entity, rows: &[Value]) {
+    let _span = Span::new(Stage::NativeSyncLibrary);
+    let view = world.get::<SyncCastle>(owner).unwrap();
+    let (parent, selected) = (view.library, view.selected);
+    let mut names = HashMap::with_capacity(rows.len());
+    let mut choices = Vec::with_capacity(rows.len() + 1);
+    choices.push((None, ("", "All local Records")));
+    let mut selected_name = None;
+    for row in rows {
+        let Some(uid) = row["uid"].as_str() else {
+            continue;
+        };
+        let head = row["head"].as_str();
+        let name = head.unwrap_or(uid);
+        if let Some(head) = head {
+            names.insert(uid.to_owned(), head.to_owned());
+        }
+        if uid == view.protein {
+            selected_name = Some(name);
+        }
+        choices.push((Some((uid.to_owned(), name.to_owned())), (uid, name)));
+    }
+    if let Some(name) = selected_name {
+        crate::native::sand_panel::status(world, selected, name);
+    }
+    let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+    view.names = names;
+    let mut children = std::mem::take(&mut view.library_rows);
+    let (mut created, mut retained) = (0, 0);
+    children.reconcile(
+        world,
+        parent,
+        choices,
+        |world, parent, &(uid, name)| {
+            created += 1;
+            button(
+                world,
+                parent,
+                owner,
+                name,
+                Command::Select(uid.into(), name.into()),
+            )
+        },
+        |_, _, _| retained += 1,
+    );
+    performance::add(Count::SyncProteinChoicesCreated, created);
+    performance::add(Count::SyncProteinChoicesRetained, retained);
+    world.get_mut::<SyncCastle>(owner).unwrap().library_rows = children;
+}
+
 fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
     let message = message.borrow();
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<SyncCastle>>()
-        .iter(world)
-        .collect();
-    for owner in owners {
-        let view = world.get::<SyncCastle>(owner).unwrap();
-        match &message {
-            ServerMessage::Snapshot { id, rows, .. } | ServerMessage::Update { id, rows, .. }
-                if *id == subscription(owner, true) =>
-            {
-                let parent = view.library;
-                let selected = view.selected;
-                let protein = view.protein.clone();
-                world.get_mut::<SyncCastle>(owner).unwrap().names = rows
-                    .iter()
-                    .filter_map(|row| {
-                        Some((
-                            row["uid"].as_str()?.to_owned(),
-                            row["head"].as_str()?.to_owned(),
-                        ))
-                    })
-                    .collect();
-                world.entity_mut(parent).despawn_children();
-                button(
-                    world,
-                    parent,
-                    owner,
-                    "All local Records",
-                    Command::Select(String::new(), "All local Records".into()),
-                );
-                for row in rows {
-                    if let Some(uid) = row["uid"].as_str() {
-                        let name = row["head"].as_str().unwrap_or(uid);
-                        if uid == protein {
-                            world.get_mut::<Text>(selected).unwrap().0 = name.into();
-                        }
-                        button(
-                            world,
-                            parent,
-                            owner,
-                            name,
-                            Command::Select(uid.into(), name.into()),
-                        );
-                    }
-                }
-            }
-            ServerMessage::Update { id, rows } | ServerMessage::Snapshot { id, rows, .. }
-                if *id == subscription(owner, false) && view.loaded =>
-            {
-                if view.pending.is_none() {
-                    let config = rows
-                        .first()
-                        .map(|row| &row["extension"])
-                        .unwrap_or(&Value::Null);
-                    world
-                        .get_mut::<SyncCastle>(owner)
-                        .unwrap()
-                        .confirmed_enabled = config["enabled"] == true;
-                    set_enabled(world, owner, config["enabled"] == true);
-                    status(world, owner, config_status(config));
-                }
-            }
-            ServerMessage::Snapshot { id, rows, .. } if *id == subscription(owner, false) => {
-                if view.pending.is_some() {
-                    continue;
-                }
+    if let ServerMessage::Error { id, message, .. } = message
+        && id == crate::native::cell_bridge::CONNECTION
+    {
+        let owners: Vec<_> = world
+            .query_filtered::<Entity, With<SyncCastle>>()
+            .iter(world)
+            .collect();
+        for owner in owners {
+            failed(world, owner, message);
+        }
+        return;
+    }
+    let Some(route) = reply_id(message).and_then(|id| world.resource::<Requests>().routes.get(id))
+    else {
+        return;
+    };
+    let (owner, reply) = (route.owner, route.reply);
+    let Some(view) = world.get::<SyncCastle>(owner) else {
+        return;
+    };
+    performance::count(Count::SyncCastleRepliesRouted);
+    match (reply, message) {
+        (
+            Reply::Library,
+            ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. },
+        ) => {
+            library(world, owner, rows);
+        }
+        (
+            Reply::Config,
+            ServerMessage::Update { rows, .. } | ServerMessage::Snapshot { rows, .. },
+        ) if view.loaded => {
+            if view.pending.is_none() {
                 let config = rows
                     .first()
                     .map(|row| &row["extension"])
                     .unwrap_or(&Value::Null);
-                let path = view.path;
-                let selected = view.selected;
-                let format_label = view.format_label;
-                let protein = config["protein"].as_str().unwrap_or_default().to_string();
-                let name = view
-                    .names
-                    .get(&protein)
-                    .cloned()
-                    .unwrap_or_else(|| protein.clone());
-                let format =
-                    serde_json::from_value(config["format"].clone()).unwrap_or(FileFormat::Lingua);
-                world
-                    .get_mut::<EditableText>(path)
-                    .unwrap()
-                    .editor
-                    .set_text(config["path"].as_str().unwrap_or_default());
-                world.get_mut::<Text>(selected).unwrap().0 = if protein.is_empty() {
-                    "All local Records".into()
-                } else {
-                    name
-                };
-                world.get_mut::<Text>(format_label).unwrap().0 = format_name(format).into();
-                let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
-                view.loaded = true;
-                view.protein = protein;
-                view.format = format;
                 world
                     .get_mut::<SyncCastle>(owner)
                     .unwrap()
@@ -604,25 +667,60 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                 set_enabled(world, owner, config["enabled"] == true);
                 status(world, owner, config_status(config));
             }
-            ServerMessage::ActionOk { id, .. } if view.pending.as_ref() == Some(id) => {
-                let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
-                view.pending = None;
-                view.config_requested = false;
-                status(world, owner, "Saved");
-            }
-            ServerMessage::Error { id, message, .. }
-                if view.pending.as_ref() == Some(id)
-                    || *id == subscription(owner, false)
-                    || *id == subscription(owner, true)
-                    || id == crate::native::cell_bridge::CONNECTION =>
-            {
-                let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
-                world.get_mut::<SyncCastle>(owner).unwrap().pending = None;
-                set_enabled(world, owner, enabled);
-                status(world, owner, message);
-            }
-            _ => {}
         }
+        (Reply::Config, ServerMessage::Snapshot { rows, .. }) => {
+            if view.pending.is_some() {
+                return;
+            }
+            let config = rows
+                .first()
+                .map(|row| &row["extension"])
+                .unwrap_or(&Value::Null);
+            let path = view.path;
+            let selected = view.selected;
+            let format_label = view.format_label;
+            let protein = config["protein"].as_str().unwrap_or_default().to_string();
+            let name = view
+                .names
+                .get(&protein)
+                .cloned()
+                .unwrap_or_else(|| protein.clone());
+            let format =
+                serde_json::from_value(config["format"].clone()).unwrap_or(FileFormat::Lingua);
+            world
+                .get_mut::<EditableText>(path)
+                .unwrap()
+                .editor
+                .set_text(config["path"].as_str().unwrap_or_default());
+            world.get_mut::<Text>(selected).unwrap().0 = if protein.is_empty() {
+                "All local Records".into()
+            } else {
+                name
+            };
+            world.get_mut::<Text>(format_label).unwrap().0 = format_name(format).into();
+            let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+            view.loaded = true;
+            view.protein = protein;
+            view.format = format;
+            world
+                .get_mut::<SyncCastle>(owner)
+                .unwrap()
+                .confirmed_enabled = config["enabled"] == true;
+            set_enabled(world, owner, config["enabled"] == true);
+            status(world, owner, config_status(config));
+        }
+        (Reply::Save, ServerMessage::ActionOk { id, .. }) if view.pending.as_ref() == Some(id) => {
+            clear_save(world, owner);
+            let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+            view.config_requested = false;
+            status(world, owner, "Saved");
+        }
+        (_, ServerMessage::Error { id, message, .. })
+            if !matches!(reply, Reply::Save) || view.pending.as_ref() == Some(id) =>
+        {
+            failed(world, owner, message);
+        }
+        _ => {}
     }
 }
 
@@ -656,7 +754,7 @@ pub(crate) mod tests {
                 id: subscription(castle, false),
                 rows: vec![
                     json!({"extension":{"enabled":true,"path":"/saved","protein":"protein-a","format":"markdown"}}),
-                ],
+                ].into(),
             },
         );
         let path = world.get::<SyncCastle>(castle).unwrap().path;
@@ -682,7 +780,7 @@ pub(crate) mod tests {
                     id: subscription(castle, false),
                     rows: vec![
                         json!({"extension":{"enabled":true,"path":"/saved","protein":"protein-a","format":"markdown"}}),
-                    ],
+                    ].into(),
                 },
             );
         }
@@ -692,17 +790,17 @@ pub(crate) mod tests {
                 id: subscription(castle, false),
                 rows: vec![
                     json!({"extension":{"enabled":false,"path":"/elsewhere","protein":"protein-a","format":"markdown"}}),
-                ],
+                ].into(),
             },
         );
         receive_message(
             &mut world,
             ServerMessage::Update {
                 id: subscription(castle, true),
-                rows: vec![json!({"uid":"protein-b","head":"Renamed notes"})],
+                rows: vec![json!({"uid":"protein-b","head":"Renamed notes"})].into(),
             },
         );
-        world.get_mut::<SyncCastle>(castle).unwrap().pending = Some("save-test".into());
+        begin_save(&mut world, castle, "save-test".into());
         receive_message(
             &mut world,
             ServerMessage::Error {
@@ -741,15 +839,17 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn saved_settings_refresh_preserves_new_typing_until_explicit_reload() {
         let (mut world, castle) = fixture();
-        let snapshot = || ServerMessage::Snapshot {
+        let snapshot = || {
+            ServerMessage::Snapshot {
             id: subscription(castle, false),
             rows: vec![
                 json!({"extension":{"enabled":true,"path":"/saved","protein":"protein-a","format":"markdown"}}),
-            ],
+            ].into(),
+        }
         };
         receive_message(&mut world, snapshot());
         let path = world.get::<SyncCastle>(castle).unwrap().path;
-        world.get_mut::<SyncCastle>(castle).unwrap().pending = Some("save-test".into());
+        begin_save(&mut world, castle, "save-test".into());
         world
             .get_mut::<EditableText>(path)
             .unwrap()

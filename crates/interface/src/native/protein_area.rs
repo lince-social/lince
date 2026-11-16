@@ -56,14 +56,35 @@ pub(crate) fn preview_record(world: &mut World, parent: Entity, config: &Config,
     );
 }
 
-pub(crate) fn calendar_feed(world: &World, owner: Entity) -> Option<(&[Value], String)> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct FeedVersion<'a> {
+    subscription: Option<std::borrow::Cow<'a, str>>,
+    revision: u64,
+    status: std::borrow::Cow<'a, str>,
+}
+
+impl FeedVersion<'_> {
+    pub(crate) fn into_owned(self) -> FeedVersion<'static> {
+        FeedVersion {
+            subscription: self.subscription.map(|value| value.into_owned().into()),
+            revision: self.revision,
+            status: self.status.into_owned().into(),
+        }
+    }
+}
+
+pub(crate) fn calendar_feed(world: &World, owner: Entity) -> Option<(&[Value], FeedVersion<'_>)> {
     let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
     Some((
         &state.data,
-        format!(
-            "{:?}:{}:{}",
-            state.subscription, state.revision, state.status
-        ),
+        FeedVersion {
+            subscription: state
+                .subscription
+                .as_deref()
+                .map(std::borrow::Cow::Borrowed),
+            revision: state.revision,
+            status: std::borrow::Cow::Borrowed(&state.status),
+        },
     ))
 }
 
@@ -247,7 +268,8 @@ struct State {
     thread_requests: usize,
     thread_error: Option<String>,
     revision: u64,
-    applied: Option<Config>,
+    configured: Option<std::sync::Arc<Config>>,
+    applied: Option<std::sync::Arc<Config>>,
     subscription: Option<String>,
     remote: Option<String>,
     ready: bool,
@@ -256,7 +278,7 @@ struct State {
     login: bool,
     login_pending: bool,
     status: String,
-    data: Vec<Value>,
+    data: std::sync::Arc<Vec<Value>>,
     ordered_day: Option<chrono::NaiveDate>,
     order: std::sync::Arc<Vec<String>>,
     row_entities: HashMap<String, Entity>,
@@ -294,9 +316,9 @@ pub(crate) fn laboratory_attach(world: &mut World, owner: Entity, data: Value) {
     world.resource_mut::<Runtime>().areas.insert(
         owner,
         State {
-            applied: Some(Config::records()),
+            applied: Some(Config::records().into()),
             ready: true,
-            data: vec![data],
+            data: vec![data].into(),
             subscription: Some(subscription.clone()),
             pending: VecDeque::from([ClientMessage::Subscribe {
                 id: subscription,
@@ -558,7 +580,8 @@ pub(crate) fn connect_organ(world: &World, organ: &str) -> Result<Remote, String
     })
 }
 
-fn start(world: &mut World, owner: Entity, config: Config) {
+fn start(world: &mut World, owner: Entity, config: impl Into<std::sync::Arc<Config>>) {
+    let config = config.into();
     stop(world, owner);
     crate::native::full_record::window::restore(world, owner, &config);
     let single_record = availability::target(&config);
@@ -625,7 +648,7 @@ fn refresh_relation_styles(
         .areas
         .get_mut(&owner)
         .unwrap();
-    state.applied = Some(config.clone());
+    state.applied = Some(config.clone().into());
     state.dirty = true;
     if let Some(id) = state.subscription.replace(subscription.clone()) {
         state.pending.push_back(ClientMessage::Unsubscribe { id });
@@ -844,7 +867,7 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
                     .any(|row| !row.is_object() || row["uid"].as_str().is_none())
                 || state
                     .applied
-                    .as_ref()
+                    .as_deref()
                     .and_then(availability::target)
                     .is_some_and(|uid| {
                         rows.iter()
@@ -853,7 +876,7 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
             {
                 state.status = "Invalid Record rows".into();
                 state.ready = false;
-                state.data.clear();
+                state.data = Default::default();
                 state.order = Default::default();
                 state.dirty = true;
             } else {
@@ -882,7 +905,7 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
             state.ready = false;
             state.login = true;
             state.login_pending = false;
-            state.data.clear();
+            state.data = Default::default();
             state.refreshing = false;
             state.order = Default::default();
             state.dirty = true;
@@ -954,7 +977,7 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
                 || state.subscription.as_ref() == Some(id)
             {
                 state.ready = false;
-                state.data.clear();
+                state.data = Default::default();
                 state.order = Default::default();
                 state.dirty = true;
                 state.pending.clear();
@@ -980,52 +1003,83 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
     }
     filter::maintain(world);
     let editors: Vec<_> = world
-        .query::<(&QueryEditor, &ProteinCastle)>()
+        .query_filtered::<(Entity, &QueryEditor), With<ProteinCastle>>()
         .iter(world)
-        .map(|(link, castle)| (link.0, castle.draft.clone()))
+        .map(|(entity, link)| (entity, link.0))
         .collect();
-    for (owner, draft) in editors {
+    for (editor, owner) in editors {
         if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
-        if let Some(mut config) = configuration(world, owner) {
-            if config.draft != draft {
-                config.draft = draft;
-                config.enabled = false;
-                set_configuration(world, owner, Some(config));
-            }
+        let draft = &world.get::<ProteinCastle>(editor).unwrap().draft;
+        if let Some(config) = configuration_ref(world, owner)
+            && &config.draft != draft
+        {
+            let mut config = config.clone();
+            config.draft = draft.clone();
+            config.enabled = false;
+            set_configuration(world, owner, Some(config));
         }
     }
-    let mut configs: Vec<_> = world
+    let mut owners: Vec<_> = world
         .query::<(Entity, &InfluenceArea)>()
         .iter(world)
-        .filter_map(|(entity, area)| area.protein.clone().map(|config| (entity, config)))
+        .filter(|(_, area)| area.protein.is_some())
+        .map(|(entity, _)| entity)
         .collect();
-    configs.extend(
+    owners.extend(
         world
-            .query::<(Entity, &filter::Subscription)>()
-            .iter(world)
-            .filter_map(|(entity, _)| configuration(world, entity).map(|config| (entity, config))),
+            .query_filtered::<Entity, With<filter::Subscription>>()
+            .iter(world),
     );
-    configs.retain(|(owner, _)| !crate::native::laboratory::blocked(world, *owner));
-    for (entity, config) in &mut configs {
-        let owner = world
-            .get::<filter::Subscription>(*entity)
-            .map_or(*entity, |s| s.0);
-        if world
-            .get::<InfluenceArea>(owner)
-            .is_some_and(|area| !area.enabled)
-        {
-            config.enabled = false;
-        }
-    }
+    let configs: Vec<_> = owners
+        .into_iter()
+        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
+        .filter_map(|entity| {
+            let config = configuration_ref(world, entity)?;
+            let owner = world
+                .get::<filter::Subscription>(entity)
+                .map_or(entity, |subscription| subscription.0);
+            let enabled = config.enabled
+                && !world
+                    .get::<InfluenceArea>(owner)
+                    .is_some_and(|area| !area.enabled);
+            let state = world.resource::<Runtime>().areas.get(&entity);
+            let configured = state
+                .and_then(|state| state.configured.as_ref().or(state.applied.as_ref()))
+                .filter(|previous| previous.as_ref() == config)
+                .cloned()
+                .unwrap_or_else(|| std::sync::Arc::new(config.clone()));
+            let applied = if configured.enabled == enabled {
+                configured.clone()
+            } else {
+                state
+                    .filter(|state| {
+                        state
+                            .configured
+                            .as_ref()
+                            .is_some_and(|previous| std::sync::Arc::ptr_eq(previous, &configured))
+                    })
+                    .and_then(|state| state.applied.as_ref())
+                    .filter(|applied| applied.enabled == enabled)
+                    .cloned()
+                    .unwrap_or_else(|| {
+                        let mut config = configured.as_ref().clone();
+                        config.enabled = enabled;
+                        std::sync::Arc::new(config)
+                    })
+            };
+            Some((entity, configured, applied))
+        })
+        .collect();
+    let configured: std::collections::HashSet<_> =
+        configs.iter().map(|(owner, _, _)| *owner).collect();
     let gone: Vec<_> = world
         .resource::<Runtime>()
         .areas
         .keys()
         .filter(|entity| {
-            world.get::<LaboratoryFeed>(**entity).is_none()
-                && !configs.iter().any(|(owner, _)| owner == *entity)
+            world.get::<LaboratoryFeed>(**entity).is_none() && !configured.contains(*entity)
         })
         .copied()
         .collect();
@@ -1041,26 +1095,24 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             world.despawn(editor);
         }
     }
-    for (owner, config) in configs {
+    for (owner, configured, config) in configs {
         crate::native::full_record::window::restore(world, owner, &config);
         let previous = world
             .resource::<Runtime>()
             .areas
             .get(&owner)
             .and_then(|state| state.applied.as_ref());
-        if previous != Some(&config) {
+        if previous.is_none_or(|previous| {
+            !std::sync::Arc::ptr_eq(previous, &config) && previous != &config
+        }) {
             let previous = previous.cloned();
             let query_same = previous.as_ref().is_some_and(|old| {
                 old.enabled == config.enabled
                     && old.source == config.source
-                    && query(world, owner, old)
-                        .ok()
-                        .and_then(|q| serde_json::to_value(q).ok())
-                        == query(world, owner, &config)
-                            .ok()
-                            .and_then(|q| serde_json::to_value(q).ok())
+                    && query(world, owner, old).ok() == query(world, owner, &config).ok()
             });
-            if query_same && previous.as_ref().is_some_and(Config::creating) && !config.creating() {
+            if query_same && previous.as_deref().is_some_and(Config::creating) && !config.creating()
+            {
                 let mut state = world
                     .resource_mut::<Runtime>()
                     .areas
@@ -1071,7 +1123,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 subscribe(world, owner, &config, &mut state);
                 world.resource_mut::<Runtime>().areas.insert(owner, state);
             } else if query_same
-                && previous.as_ref().is_some_and(Config::creating) != config.creating()
+                && previous.as_deref().is_some_and(Config::creating) != config.creating()
             {
                 start(world, owner, config);
             } else if query_same {
@@ -1086,9 +1138,12 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                     .is_none_or(|old| !old.same_template(&config));
                 state.applied = Some(config);
                 state.dirty = true;
-            } else if !refresh_relation_styles(world, owner, previous.as_ref(), &config) {
+            } else if !refresh_relation_styles(world, owner, previous.as_deref(), &config) {
                 start(world, owner, config);
             }
+        }
+        if let Some(state) = world.resource_mut::<Runtime>().areas.get_mut(&owner) {
+            state.configured = Some(configured);
         }
     }
     let local: Vec<_> = cursor
@@ -1156,7 +1211,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         state.login_pending = false;
                         state.status = "Connection closed".into();
                         if !local::owns(&state) {
-                            state.data.clear();
+                            state.data = Default::default();
                             state.order = Default::default();
                             state.pending.clear();
                             state.dirty = true;
@@ -1464,41 +1519,35 @@ fn mirror_editor(world: &mut World, owner: Entity) {
         .filter(|(_, link)| link.0 == owner)
         .map(|(entity, _)| entity)
         .collect();
-    for editor in editors {
-        let Some(state) = world.resource::<Runtime>().areas.get(&owner) else {
-            continue;
+    if editors.is_empty() {
+        return;
+    }
+    world.resource_scope(|world, runtime: Mut<Runtime>| {
+        let Some(state) = runtime.areas.get(&owner) else {
+            return;
         };
-        let rows = state.data.clone();
-        let ready = state.ready;
-        let status = state.status.clone();
         let query = state
             .applied
             .as_ref()
             .and_then(|config| query(world, owner, config).ok());
-        if let Some(mut results) =
-            world.get_mut::<crate::native::protein_castle::ProteinResults>(editor)
-        {
-            results.columns = rows
-                .iter()
-                .filter_map(Value::as_object)
-                .flat_map(|row| row.keys().cloned())
-                .collect::<std::collections::BTreeSet<_>>()
-                .into_iter()
-                .collect();
-            results.rows = rows;
-            results.current = ready;
-            results.query = query;
-            results.revision += 1;
+        for editor in editors {
+            crate::native::protein_castle::publish_results(
+                world,
+                editor,
+                &state.data,
+                query.as_ref(),
+                state.ready,
+                &state.status,
+            );
         }
-        crate::native::protein_castle::status(world, editor, status);
-    }
+    });
 }
 
 pub(crate) fn configuration(world: &World, entity: Entity) -> Option<Config> {
     configuration_ref(world, entity).cloned()
 }
 
-fn configuration_ref(world: &World, entity: Entity) -> Option<&Config> {
+pub(crate) fn configuration_ref(world: &World, entity: Entity) -> Option<&Config> {
     if let Some(filter) = world.get::<filter::Subscription>(entity) {
         let area = world.get::<InfluenceArea>(filter.0)?;
         if filter.1 {
@@ -1597,7 +1646,7 @@ fn read_order(
     };
     let ids = entity
         .and_then(|e| world.get_resource::<Runtime>()?.areas.get(&e))
-        .filter(|state| config.enabled && state.ready && state.applied.as_ref() == Some(config))
+        .filter(|state| config.enabled && state.ready && state.applied.as_deref() == Some(config))
         .map(|state| state.order.clone())
         .unwrap_or_default();
     Some((config.source.clone(), ids))

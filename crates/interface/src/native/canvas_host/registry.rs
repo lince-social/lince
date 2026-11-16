@@ -1,4 +1,17 @@
 use super::*;
+use std::{cell::RefCell, sync::Arc};
+
+struct CachedRegistry {
+    timezone: String,
+    language: crate::i18n::Language,
+    descriptors: Arc<Vec<api::Descriptor>>,
+}
+
+thread_local! {
+    // Retain one current schema per calling thread, not one per workspace or
+    // historical timezone/language. Other defaults are static data.
+    static CURRENT: RefCell<Option<CachedRegistry>> = const { RefCell::new(None) };
+}
 
 pub(super) fn kind_id(kind: SandKind) -> String {
     serde_json::to_value(kind)
@@ -9,6 +22,36 @@ pub(super) fn kind_id(kind: SandKind) -> String {
 }
 
 pub fn registry() -> Vec<api::Descriptor> {
+    (*shared_registry()).clone()
+}
+
+pub(crate) fn shared_registry() -> Arc<Vec<api::Descriptor>> {
+    let _prepare = nucleus::performance::Span::new("native-canvas-registry-preparation");
+    // Preserve the previous call-time timezone lookup; do not freeze a machine
+    // setting at startup or rely on an unrelated canvas revision to refresh it.
+    let timezone = crate::native::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into());
+    let language = crate::i18n::catalog().language;
+    CURRENT.with(|current| {
+        let mut current = current.borrow_mut();
+        if let Some(cached) = current.as_ref()
+            && cached.timezone == timezone
+            && cached.language == language
+        {
+            nucleus::performance::add("native-canvas-registry-reuses", 1);
+            return cached.descriptors.clone();
+        }
+        let descriptors = Arc::new(build_registry(&timezone));
+        *current = Some(CachedRegistry {
+            timezone,
+            language,
+            descriptors: descriptors.clone(),
+        });
+        nucleus::performance::add("native-canvas-registry-builds", 1);
+        descriptors
+    })
+}
+
+fn build_registry(timezone: &str) -> Vec<api::Descriptor> {
     let mut result: Vec<_> = SandKind::ALL
         .into_iter()
         .map(|kind| {
@@ -31,8 +74,7 @@ pub fn registry() -> Vec<api::Descriptor> {
                     "time_castle".into(),
                     api::Setting::Text {
                         default: serde_json::to_string(&lince_interface::time_castle::Settings {
-                            timezone: crate::native::schedule_editor::local_timezone()
-                                .unwrap_or_else(|| "UTC".into()),
+                            timezone: timezone.into(),
                             ..default()
                         })
                         .unwrap(),

@@ -9,6 +9,10 @@ use bevy::{
     mesh::PrimitiveTopology,
     prelude::*,
 };
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 type Polygon = Vec<DVec2>;
 
@@ -50,8 +54,30 @@ pub(crate) fn live_in(world: &World, root: Entity, active: u64, workspace: u64) 
 #[derive(Component, PartialEq)]
 struct Inputs {
     active: u64,
-    entries: Vec<u64>,
-    holes: Vec<(Entity, u64, DVec2, Polygon, super::Spatial)>,
+    entries: Arc<[u64]>,
+    holes: Arc<[Hole]>,
+}
+
+#[derive(PartialEq)]
+struct HoleGeometry {
+    center: DVec2,
+    outline: Polygon,
+}
+
+struct Hole {
+    entity: Entity,
+    workspace: u64,
+    geometry: Arc<HoleGeometry>,
+    placement: super::Spatial,
+}
+
+impl PartialEq for Hole {
+    fn eq(&self, other: &Self) -> bool {
+        self.entity == other.entity
+            && self.workspace == other.workspace
+            && self.placement == other.placement
+            && (Arc::ptr_eq(&self.geometry, &other.geometry) || self.geometry == other.geometry)
+    }
 }
 
 pub(crate) fn live(world: &World, root: Entity, workspace: u64) -> bool {
@@ -168,13 +194,14 @@ fn union(polygons: Vec<Polygon>) -> Vec<Polygon> {
 }
 
 pub(super) fn triangles(area: &InfluenceArea, placement: super::Spatial) -> Vec<Polygon> {
-    triangulate(area.outline(), DVec2::from_array(area.center), placement)
+    triangulate(&area.outline(), DVec2::from_array(area.center), placement)
 }
 
-fn triangulate(outline: Polygon, center: DVec2, placement: super::Spatial) -> Vec<Polygon> {
+fn triangulate(outline: &[DVec2], center: DVec2, placement: super::Spatial) -> Vec<Polygon> {
     let basis = basis(placement);
     let outline: Vec<_> = outline
-        .into_iter()
+        .iter()
+        .copied()
         .map(|point| center + basis * (point - center))
         .collect();
     let mut convex = outline[..outline.len().saturating_sub(1)].to_vec();
@@ -234,10 +261,33 @@ fn basis(placement: super::Spatial) -> DMat2 {
 }
 
 pub(crate) fn refresh(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeHoleLayers);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeHoleLayers);
+    world
+        .run_system_cached(refresh_layers)
+        .expect("refresh workspace holes");
+}
+
+fn refresh_layers(
+    world: &mut World,
+    workspaces: &mut QueryState<(Entity, &'static Workspaces)>,
+    sources: &mut QueryState<
+        (
+            Entity,
+            Ref<'static, InfluenceArea>,
+            &'static ChildOf,
+            &'static WorkspaceMember,
+            Option<&'static super::Spatial>,
+        ),
+        (
+            Without<crate::native::component_push::composition::Generated>,
+            Without<crate::native::canvas_host::composition::Generated>,
+        ),
+    >,
+    mut geometries: Local<HashMap<Entity, Option<Arc<HoleGeometry>>>>,
+) {
     world.init_resource::<Contexts>();
-    let roots: Vec<_> = world
-        .query::<(Entity, &Workspaces)>()
+    let roots: Vec<_> = workspaces
         .iter(world)
         .flat_map(|(entity, spaces)| {
             let mut active = vec![spaces.active];
@@ -249,50 +299,51 @@ pub(crate) fn refresh(world: &mut World) {
             }
             active.sort_unstable();
             active.dedup();
+            let entries: Arc<[u64]> = spaces.entries.iter().map(|space| space.id).collect();
             active
                 .into_iter()
-                .map(|active| {
-                    (
-                        entity,
-                        active,
-                        spaces
-                            .entries
-                            .iter()
-                            .map(|space| space.id)
-                            .collect::<Vec<_>>(),
-                    )
-                })
+                .map(|active| (entity, active, entries.clone()))
                 .collect::<Vec<_>>()
         })
         .collect();
-    let areas: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
-        .iter(world)
-        .filter(|(entity, area, parent, member)| {
-            area.hole
-                && area.enabled
-                && !area.paused
-                && area.validate()
-                && !area.backend_components
-                && world
-                    .get::<crate::native::component_push::composition::Generated>(*entity)
-                    .is_none()
-                && world
-                    .get::<crate::native::canvas_host::composition::Generated>(*entity)
-                    .is_none()
-                && crate::native::workspace_config::rules_enabled(world, parent.parent(), member.0)
-        })
-        .map(|(entity, area, parent, member)| {
-            (
-                parent.parent(),
-                (
-                    entity,
-                    member.0,
-                    DVec2::from_array(area.center),
-                    area.outline(),
-                    super::spatial(world, entity),
-                ),
-            )
+    let mut areas: HashMap<Entity, Vec<Hole>> = HashMap::new();
+    let mut living = HashSet::new();
+    for (entity, area, parent, member, placement) in sources.iter(world) {
+        if !area.hole
+            || !area.enabled
+            || area.paused
+            || area.backend_components
+            || !crate::native::workspace_config::rules_enabled(world, parent.parent(), member.0)
+        {
+            continue;
+        }
+        living.insert(entity);
+        if area.is_changed() || !geometries.contains_key(&entity) {
+            geometries.insert(
+                entity,
+                area.validate().then(|| {
+                    Arc::new(HoleGeometry {
+                        center: DVec2::from_array(area.center),
+                        outline: area.outline(),
+                    })
+                }),
+            );
+        }
+        if let Some(geometry) = geometries.get(&entity).and_then(Option::as_ref) {
+            areas.entry(parent.parent()).or_default().push(Hole {
+                entity,
+                workspace: member.0,
+                geometry: geometry.clone(),
+                placement: placement.copied().unwrap_or_default(),
+            });
+        }
+    }
+    geometries.retain(|entity, _| living.contains(entity));
+    let areas: HashMap<_, Arc<[Hole]>> = areas
+        .into_iter()
+        .map(|(root, mut holes)| {
+            holes.sort_by_key(|hole| hole.entity);
+            (root, holes.into())
         })
         .collect();
     let living: std::collections::HashSet<_> = roots
@@ -311,14 +362,10 @@ pub(crate) fn refresh(world: &mut World) {
             if focused {
                 world.entity_mut(root).remove::<(Layers, Inputs)>();
             }
+            world.resource_mut::<Contexts>().0.remove(&(root, active));
             continue;
         };
-        let mut holes: Vec<_> = areas
-            .iter()
-            .filter(|(owner, _)| *owner == root)
-            .map(|(_, source)| source.clone())
-            .collect();
-        holes.sort_by_key(|source| source.0);
+        let holes = areas.get(&root).cloned().unwrap_or_default();
         let inputs = Inputs {
             active,
             entries: entries.clone(),
@@ -337,10 +384,10 @@ pub(crate) fn refresh(world: &mut World) {
         let shapes: Vec<_> = inputs
             .holes
             .iter()
-            .map(|(_, workspace, center, outline, placement)| {
+            .map(|hole| {
                 (
-                    *workspace,
-                    triangulate(outline.clone(), *center, *placement),
+                    hole.workspace,
+                    triangulate(&hole.geometry.outline, hole.geometry.center, hole.placement),
                 )
             })
             .collect();

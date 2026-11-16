@@ -1,6 +1,67 @@
 use crate::host::performance::{self, Count};
 use crate::native::wake::WakeSignal;
+use bevy::prelude::{Component, Entity, World};
 use tokio::sync::watch;
+
+/// Current-state readers whose data does not depend on forecast projections.
+/// Keep periodic freshness and general invalidations, without rereading unrelated
+/// tables for forecast-only notices or replaying missed polling intervals.
+pub(super) struct QueryRefresh {
+    changes: watch::Receiver<engine::QueryChanges>,
+    general: u64,
+    timer: tokio::time::Interval,
+}
+
+impl QueryRefresh {
+    pub(super) fn new(engine: &engine::Engine, interval: std::time::Duration) -> Self {
+        let changes = engine.watch_query_changes();
+        let general = changes.borrow().general;
+        let mut timer = tokio::time::interval(interval);
+        timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        Self {
+            changes,
+            general,
+            timer,
+        }
+    }
+
+    pub(super) async fn next(&mut self) -> bool {
+        loop {
+            tokio::select! {
+                _ = self.timer.tick() => {
+                    self.general = self.changes.borrow_and_update().general;
+                }
+                changed = self.changes.changed() => {
+                    if changed.is_err() { return false; }
+                    let general = self.changes.borrow_and_update().general;
+                    if general == self.general {
+                        performance::count(Count::SyncProjectionNoticesSkipped);
+                        continue;
+                    }
+                    self.general = general;
+                    self.timer.reset();
+                }
+            }
+            performance::count(Count::SyncSnapshotReadsAdmitted);
+            return true;
+        }
+    }
+}
+
+/// Retire a display-only snapshot watcher while its panel has no presentation
+/// demand. Its component's Drop cancels the read worker. Returning true asks the
+/// caller to start a fresh watcher, whose first snapshot refreshes a revealed
+/// panel. Action jobs and watchers serving non-UI consumers must stay separate.
+pub(super) fn needs_watch<T: Component>(world: &mut World, owner: Entity) -> bool {
+    if !crate::native::output_views::presents_entity(world, owner) {
+        if world.get::<T>(owner).is_some() {
+            world.entity_mut(owner).remove::<T>();
+            performance::count(Count::SyncPresentationWatchesRetired);
+        }
+        return false;
+    }
+    world.get::<T>(owner).is_none()
+}
 
 pub(super) fn publish<T: PartialEq>(
     sender: &watch::Sender<Option<T>>,

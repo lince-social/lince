@@ -673,10 +673,7 @@ impl Publication {
             || self.approvals.len() > 3
             || (!complete && !self.events.is_empty())
             || self.events.len() > MAX_EVENTS
-            || serde_json::to_vec(self)
-                .map_err(|error| error.to_string())?
-                .len()
-                > MAX_BYTES
+            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES
         {
             return Err("Invalid public receipt approval, time or resource budget".into());
         }
@@ -1055,10 +1052,7 @@ impl Bundle {
             .validate_mode(now, complete, dependencies)?;
         if self.authorities.len() + self.publication.scope.original_authorities.len()
             > MAX_AUTHORITIES
-            || serde_json::to_vec(self)
-                .map_err(|error| error.to_string())?
-                .len()
-                > MAX_BUNDLE_BYTES
+            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BUNDLE_BYTES
         {
             return Err("Public receipt authority or byte budget exceeded".into());
         }

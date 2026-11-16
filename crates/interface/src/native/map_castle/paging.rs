@@ -1,10 +1,16 @@
 use super::*;
-use serde_json::{Value, json};
-use std::time::{Duration, Instant};
+mod identity;
+pub(super) use identity::Key;
+use serde::Deserialize;
+use serde_json::Value;
+use std::{
+    collections::{HashMap, HashSet},
+    time::{Duration, Instant},
+};
 
 #[derive(Component)]
 pub(super) struct Pages {
-    key: String,
+    key: Arc<Key>,
     generation: String,
     pending: Option<(String, Instant)>,
     after: Option<String>,
@@ -17,84 +23,22 @@ pub(super) struct Pages {
     next: Instant,
 }
 
-fn source(world: &World, owner: Entity) -> (Option<Value>, String) {
-    let sand = world.get::<MapSand>(owner).unwrap();
-    let Some(id) = &sand.area else {
-        return (None, String::new());
-    };
-    let mut stack = ui::scope(world, owner)
-        .map(|(root, _)| root)
+pub(super) fn key(world: &mut World, owner: Entity) -> Arc<Key> {
+    identity::prepare(world, owner).key.clone()
+}
+
+pub(super) fn records(world: &World, owner: Entity) -> impl Iterator<Item = &String> + Clone {
+    let pages = world.get::<Pages>(owner);
+    pages
         .into_iter()
-        .collect::<Vec<_>>();
-    let mut source = None;
-    while let Some(entity) = stack.pop() {
-        if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity)
-            && area.id == *id
-            && ui::scope(world, entity) == ui::scope(world, owner)
-        {
-            source = Some((entity, area));
-            break;
-        }
-        if let Some(children) = world.get::<Children>(entity) {
-            stack.extend(children.iter());
-        }
-    }
-    source.map_or((None, String::new()), |(entity, area)| {
-        let query = area
-            .protein
-            .as_ref()
-            .and_then(|config| config.query().ok())
-            .and_then(|query| serde_json::to_value(query).ok());
-        let stamp = crate::native::protein_area::calendar_feed(world, entity)
-            .map(|(_, stamp)| stamp)
-            .unwrap_or_default();
-        (query, stamp)
-    })
-}
-
-fn bounds(sand: &MapSand) -> [f64; 4] {
-    let size = sand.size.map(f64::from);
-    let southwest = sand.camera.coordinate([0.0, size[1]], size);
-    let northeast = sand.camera.coordinate([size[0], 0.0], size);
-    let whole_world = size[0] >= 256.0 * 2.0_f64.powf(sand.camera.zoom);
-    [
-        if whole_world {
-            -180.0
-        } else {
-            southwest.longitude
-        },
-        southwest.latitude,
-        if whole_world {
-            180.0
-        } else {
-            northeast.longitude
-        },
-        northeast.latitude,
-    ]
-}
-
-pub(super) fn key(world: &World, owner: Entity) -> String {
-    let sand = world.get::<MapSand>(owner).unwrap();
-    let (query, stamp) = source(world, owner);
-    nucleus::fact::sha256_hex(
-        &serde_json::to_vec(&json!([
-            sand.person,
-            sand.authority_node_id,
-            sand.invitation,
-            sand.records,
-            query,
-            stamp,
-            bounds(sand)
-        ]))
-        .unwrap(),
-    )
-}
-
-pub(super) fn records(world: &World, owner: Entity) -> Vec<String> {
-    world
-        .get::<Pages>(owner)
-        .map(|pages| pages.rows.iter().map(|(uid, _)| uid.clone()).collect())
-        .unwrap_or_else(|| world.get::<MapSand>(owner).unwrap().records.clone())
+        .flat_map(|pages| pages.rows.iter().map(|(uid, _)| uid))
+        .chain(
+            pages
+                .is_none()
+                .then(|| world.get::<MapSand>(owner).unwrap())
+                .into_iter()
+                .flat_map(|sand| sand.records.iter()),
+        )
 }
 
 pub(super) fn more(world: &mut World, owner: Entity) {
@@ -137,7 +81,8 @@ pub(super) fn maintain(world: &mut World) {
             crate::native::sand_panel::clear(world, list);
             continue;
         }
-        let current = key(world, owner);
+        let prepared = identity::prepare(world, owner);
+        let current = prepared.key.clone();
         let changed = world
             .get::<Pages>(owner)
             .is_none_or(|pages| pages.key != current);
@@ -186,14 +131,14 @@ pub(super) fn maintain(world: &mut World) {
         }
         let pages = world.get::<Pages>(owner).unwrap();
         let sand = world.get::<MapSand>(owner).unwrap();
-        let (query, _) = source(world, owner);
+        let query = prepared.query.as_deref().cloned();
         let action = engine::actions::Action::SavedLocation {
             request: nucleus::vocabulary::SavedLocationCommand::Page {
                 query,
                 records: sand.records.clone(),
                 after: pages.after.clone(),
                 generation: pages.generation.clone(),
-                bounds: bounds(sand),
+                bounds: prepared.bounds,
             },
         };
         let id = nucleus::new_uid("map-page");
@@ -271,7 +216,11 @@ pub(super) fn receive(
         let Some(owner) = owner else {
             continue;
         };
-        if !visible(world, owner) || world.get::<Pages>(owner).unwrap().key != key(world, owner) {
+        let _apply = nucleus::performance::Span::new("map-page-application");
+        if !visible(world, owner) || {
+            let current = key(world, owner);
+            world.get::<Pages>(owner).unwrap().key != current
+        } {
             world.entity_mut(owner).remove::<Pages>();
             feed::reset(world, owner);
             continue;
@@ -285,7 +234,7 @@ pub(super) fn receive(
             world.get_mut::<MapSand>(owner).unwrap().markers.clear();
             continue;
         };
-        let features = data["features"].as_array().cloned().unwrap_or_default();
+        let features = data["features"].as_array().map_or(&[][..], Vec::as_slice);
         let query_micros = data["query_micros"].as_u64();
         if features.len() > 128 {
             pages.done = true;
@@ -299,29 +248,42 @@ pub(super) fn receive(
             pages.next = Instant::now() + Duration::from_secs(5);
         }
         let limited = pages.limited;
-        for feature in &features {
-            if let Some(uid) = feature["record"]
-                .as_str()
-                .filter(|uid| nucleus::valid_uid(uid, "r"))
-            {
-                if !pages.rows.iter().any(|(record, _)| record == uid) {
-                    pages.rows.push((
-                        uid.into(),
-                        feature["head"].as_str().unwrap_or("Record").into(),
-                    ));
-                }
-            }
-        }
+        let additions: Vec<_> = {
+            let mut known: HashSet<_> = pages.rows.iter().map(|(uid, _)| uid.as_str()).collect();
+            features
+                .iter()
+                .filter_map(|feature| {
+                    let uid = feature["record"]
+                        .as_str()
+                        .filter(|uid| nucleus::valid_uid(uid, "r"))?;
+                    known.insert(uid).then(|| {
+                        (
+                            uid.to_owned(),
+                            feature["head"].as_str().unwrap_or("Record").to_owned(),
+                        )
+                    })
+                })
+                .collect()
+        };
+        pages.rows.extend(additions);
+        let latest: HashMap<_, _> = features
+            .iter()
+            .enumerate()
+            .filter_map(|(index, feature)| feature["record"].as_str().map(|uid| (uid, index)))
+            .collect();
         let mut sand = world.get_mut::<MapSand>(owner).unwrap();
-        for feature in features {
+        sand.markers
+            .retain(|marker| marker.live || !latest.contains_key(marker.record.as_str()));
+        for (index, feature) in features.iter().enumerate() {
             let Some(uid) = feature["record"].as_str() else {
                 continue;
             };
-            sand.markers
-                .retain(|marker| marker.live || marker.record != uid);
-            if let Ok(location) = serde_json::from_value::<nucleus::vocabulary::LocationCandidate>(
-                feature["location"].clone(),
-            ) {
+            if latest.get(uid) != Some(&index) {
+                continue;
+            }
+            if let Ok(location) =
+                nucleus::vocabulary::LocationCandidate::deserialize(&feature["location"])
+            {
                 let coordinate = Coordinate {
                     latitude: location.latitude,
                     longitude: location.longitude,
@@ -360,6 +322,8 @@ pub(super) fn list_page(world: &mut World, owner: Entity, delta: isize) {
 }
 
 pub(super) fn retained_bytes(world: &World, owner: Entity) -> usize {
+    // Tracked row buffers only: the retained request's Config/query/scope and
+    // allocator overhead are not covered by this diagnostic.
     world.get::<Pages>(owner).map_or(0, |pages| {
         pages.rows.capacity() * std::mem::size_of::<(String, String)>()
             + pages
@@ -373,10 +337,11 @@ pub(super) fn retained_bytes(world: &World, owner: Entity) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn respond(app: &mut App, owner: Entity, index: usize, features: Vec<Value>) {
         let id = format!("page-{index}");
-        let current = key(app.world(), owner);
+        let current = key(app.world_mut(), owner);
         if app.world().get::<Pages>(owner).is_none() {
             app.world_mut().entity_mut(owner).insert(Pages {
                 key: current,
@@ -441,9 +406,9 @@ mod tests {
             vec![json!({"record":records[2048],"head":"Next permitted Record","location":null})],
         );
         assert_eq!(app.world().get::<Pages>(owner).unwrap().rows.len(), 1);
-        let previous = key(app.world(), owner);
+        let previous = key(app.world_mut(), owner);
         app.world_mut().get_mut::<MapSand>(owner).unwrap().person = nucleus::new_uid("r");
-        assert_ne!(key(app.world(), owner), previous);
+        assert_ne!(key(app.world_mut(), owner), previous);
         respond(
             &mut app,
             owner,
@@ -467,12 +432,33 @@ mod tests {
 }
 
 fn render_list(world: &mut World, owner: Entity) {
+    let _prepare = nucleus::performance::Span::new("map-record-list-preparation");
     let parent = world.get::<MapSand>(owner).unwrap().record_list;
-    let rows = world
-        .get::<Pages>(owner)
-        .map(|pages| pages.rows.clone())
-        .unwrap_or_default();
     let page = world.get::<Pages>(owner).map_or(0, |pages| pages.list_page);
+    let count = world
+        .get::<Pages>(owner)
+        .map_or(0, |pages| pages.rows.len());
+    let rows = {
+        let located: HashSet<_> = world
+            .get::<MapSand>(owner)
+            .unwrap()
+            .markers
+            .iter()
+            .map(|marker| marker.record.as_str())
+            .collect();
+        world
+            .get::<Pages>(owner)
+            .map(|pages| {
+                pages
+                    .rows
+                    .iter()
+                    .skip(page * 128)
+                    .take(128)
+                    .map(|(uid, head)| (uid.clone(), head.clone(), located.contains(uid.as_str())))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    };
     crate::native::sand_panel::clear(world, parent);
     let controls = crate::native::sand_panel::row(world, parent);
     if page > 0 {
@@ -484,7 +470,7 @@ fn render_list(world: &mut World, owner: Entity) {
             Command::RecordListPage(-1),
         );
     }
-    if (page + 1) * 128 < rows.len() {
+    if (page + 1) * 128 < count {
         crate::native::sand_panel::button(
             world,
             controls,
@@ -493,13 +479,7 @@ fn render_list(world: &mut World, owner: Entity) {
             Command::RecordListPage(1),
         );
     }
-    for (uid, head) in rows.into_iter().skip(page * 128).take(128) {
-        let located = world
-            .get::<MapSand>(owner)
-            .unwrap()
-            .markers
-            .iter()
-            .any(|marker| marker.record == uid);
+    for (uid, head, located) in rows {
         crate::native::sand_panel::button(
             world,
             parent,

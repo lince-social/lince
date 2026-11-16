@@ -167,7 +167,7 @@ mod tests {
         let mut first = None;
         for index in 0..10 {
             let uid = nucleus::new_uid("r");
-            let entity = world.spawn((ChildOf(root), WorkspaceMember(1), crate::native::protein_area::RecordBinding { area: source, uid: uid.clone(), source: crate::native::protein_area::Source::Local }, crate::native::area::RecordProperties(serde_json::json!({"uid":uid,"head":format!("Task {index}"),"quantity":0,"body":"PRIVATE DESCRIPTION"})), crate::native::layout::LayoutRuntime { parent: Some(column), ..default() })).id();
+            let entity = world.spawn((ChildOf(root), WorkspaceMember(1), crate::native::protein_area::RecordBinding { area: source, uid: uid.clone(), source: crate::native::protein_area::Source::Local }, crate::native::area::RecordProperties(serde_json::json!({"uid":uid,"head":format!("Task {index}"),"quantity":0,"body":"PRIVATE DESCRIPTION"}).into()), crate::native::layout::LayoutRuntime { parent: Some(column), ..default() })).id();
             first.get_or_insert(entity);
         }
         let foreign = world.spawn_empty().id();
@@ -179,7 +179,9 @@ mod tests {
                 uid: nucleus::new_uid("r"),
                 source: crate::native::protein_area::Source::Local,
             },
-            crate::native::area::RecordProperties(serde_json::json!({"head":"FOREIGN ROOT"})),
+            crate::native::area::RecordProperties(
+                serde_json::json!({"head":"FOREIGN ROOT"}).into(),
+            ),
             crate::native::layout::LayoutRuntime {
                 parent: Some(column),
                 ..default()
@@ -211,10 +213,12 @@ mod tests {
             revision: task_revision(properties).unwrap(),
         };
         assert!(validate_task(world, root, 1, &selection).is_ok());
-        world
-            .get_mut::<crate::native::area::RecordProperties>(entity)
-            .unwrap()
-            .0["quantity"] = 1.into();
+        std::sync::Arc::make_mut(
+            &mut world
+                .get_mut::<crate::native::area::RecordProperties>(entity)
+                .unwrap()
+                .0,
+        )["quantity"] = 1.into();
         assert!(validate_task(world, root, 1, &selection).is_err());
     }
 }

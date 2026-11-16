@@ -27,11 +27,12 @@ fn key(window: Entity, pressed: bool) -> PreparedKey {
         },
         modifier: true,
         roles: Modifiers::CONTROL,
-        held: if pressed {
+        held: (if pressed {
             vec![KeyCode::ControlLeft]
         } else {
             Vec::new()
-        },
+        })
+        .into(),
     }
 }
 

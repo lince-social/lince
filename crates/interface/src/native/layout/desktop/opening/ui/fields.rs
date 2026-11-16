@@ -9,6 +9,7 @@ pub(super) struct Form {
     output_control: Entity,
     dimensions: [Entity; 2],
     flag_controls: [(Entity, Entity); 3],
+    presentation: Presentation,
 }
 
 fn dimension(value: Option<Dimension>) -> String {
@@ -91,8 +92,19 @@ fn selector(world: &mut World, parent: Entity, owner: Entity, name: &str, select
 }
 
 fn selected(world: &mut World, toggle: Entity, value: &str) {
-    if let Some(entity) = world.get::<Children>(toggle).and_then(|children| children.first()).copied() { text(world, entity, value); }
-    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle) { node.set_value(value); }
+    if let Some(entity) = world
+        .get::<Children>(toggle)
+        .and_then(|children| children.first())
+        .copied()
+    {
+        text(world, entity, value);
+    }
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle)
+        && node.value() != Some(value)
+    {
+        node.set_value(value);
+        engine::performance::add("native-settings-label-writes", 1);
+    }
 }
 
 fn close_menu(world: &mut World, toggle: Entity) {
@@ -126,31 +138,69 @@ impl Form {
         let flags = [properties.floating, properties.maximized, properties.focus];
         let flag_controls = ["Floating", "Maximized", "Initial focus"].into_iter().enumerate()
             .map(|(index, name)| button(world, parent, owner, name, EditChange::Flag(index))).collect::<Vec<_>>().try_into().unwrap();
-        let form = Self { workspace: properties.workspace, output: properties.output.clone(), flags, workspace_control, output_control, dimensions, flag_controls };
+        let mut form = Self { workspace: properties.workspace, output: properties.output.clone(), flags, workspace_control, output_control, dimensions, flag_controls, presentation: Default::default() };
         form.refresh(world, root);
         form
+    }
+
+    pub(super) fn inputs(&self) -> [Entity; 2] {
+        self.dimensions
     }
 
     pub(super) fn properties(&self, world: &World) -> Result<Properties, String> {
         let mut sizes = [None, None];
         for (index, entity) in self.dimensions.into_iter().enumerate() {
-            let input = world.get::<EditableText>(entity).ok_or("The opening-preference field is unavailable.")?;
-            if input.is_composing() || !input.pending_edits.is_empty() || input.pending_paste.is_some() { return Err("Finish text composition or the pending paste before saving.".into()); }
-            sizes[index] = parse_dimension(&input.value().to_string())?;
+            let input = world
+                .get::<EditableText>(entity)
+                .ok_or("The opening-preference field is unavailable.")?;
+            if input.is_composing()
+                || !input.pending_edits.is_empty()
+                || input.pending_paste.is_some()
+            {
+                return Err("Finish text composition or the pending paste before saving.".into());
+            }
+            sizes[index] = parse_dimension(&input.value().to_cow())?;
         }
-        let properties = Properties { workspace: self.workspace, output: self.output.clone(), width: sizes[0], height: sizes[1], floating: self.flags[0], maximized: self.flags[1], focus: self.flags[2] };
+        let properties = Properties {
+            workspace: self.workspace,
+            output: self.output.clone(),
+            width: sizes[0],
+            height: sizes[1],
+            floating: self.flags[0],
+            maximized: self.flags[1],
+            focus: self.flags[2],
+        };
         properties.validate()?;
         Ok(properties)
     }
 
-    pub(super) fn refresh(&self, world: &mut World, root: Entity) {
-        let workspace = workspace_name(world, root, self.workspace);
-        let output = output_name(world, self.output.as_deref());
-        selected(world, self.workspace_control, &workspace);
-        selected(world, self.output_control, &output);
-        for (index, name) in ["Floating", "Maximized", "Initial focus"].into_iter().enumerate() {
-            let value = match self.flags[index] { None => "Inherit", Some(true) => "Yes", Some(false) => "No" };
-            caption(world, self.flag_controls[index], &format!("{name}: {value}"));
+    pub(super) fn refresh(&mut self, world: &mut World, root: Entity) {
+        self.presentation
+            .prepare(world, root, self.workspace, self.output.as_deref());
+        selected(
+            world,
+            self.workspace_control,
+            &self.presentation.workspace_text,
+        );
+        selected(world, self.output_control, &self.presentation.output_text);
+        for (index, captions) in [
+            ["Floating: Inherit", "Floating: Yes", "Floating: No"],
+            ["Maximized: Inherit", "Maximized: Yes", "Maximized: No"],
+            [
+                "Initial focus: Inherit",
+                "Initial focus: Yes",
+                "Initial focus: No",
+            ],
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let selected = match self.flags[index] {
+                None => 0,
+                Some(true) => 1,
+                Some(false) => 2,
+            };
+            caption(world, self.flag_controls[index], captions[selected]);
         }
     }
 
@@ -168,4 +218,51 @@ pub(super) fn summary(properties: &Properties) -> String {
         if let Some(flag) = flag { values.push(format!("{name} {}", if flag { "yes" } else { "no" })); }
     }
     if values.is_empty() { "inherit normal/retained preferences".into() } else { values.join(" · ") }
+}
+
+#[derive(Default)]
+struct Presentation {
+    ready: bool,
+    workspace: Option<u64>,
+    workspace_name: Option<String>,
+    workspace_text: String,
+    output: Option<String>,
+    output_available: bool,
+    output_text: String,
+}
+
+impl Presentation {
+    fn prepare(
+        &mut self,
+        world: &World,
+        root: Entity,
+        workspace: Option<u64>,
+        output: Option<&str>,
+    ) {
+        let name = workspace
+            .and_then(|id| {
+                world
+                    .get::<Workspaces>(root)
+                    .and_then(|spaces| spaces.entries.iter().find(|entry| entry.id == id))
+            })
+            .map(|entry| entry.name.as_str());
+        if !self.ready || self.workspace != workspace || self.workspace_name.as_deref() != name {
+            self.workspace = workspace;
+            self.workspace_name = name.map(str::to_owned);
+            self.workspace_text = workspace_name(world, root, workspace);
+            engine::performance::add("opening-editor-form-labels-prepared", 1);
+        }
+        let available = output.is_some_and(|name| {
+            world
+                .get_resource::<crate::host::display::DisplaySnapshot>()
+                .is_some_and(|snapshot| snapshot.heads.iter().any(|head| head.name == name))
+        });
+        if !self.ready || self.output.as_deref() != output || self.output_available != available {
+            self.output = output.map(str::to_owned);
+            self.output_available = available;
+            self.output_text = output_name(world, output);
+            engine::performance::add("opening-editor-form-labels-prepared", 1);
+        }
+        self.ready = true;
+    }
 }

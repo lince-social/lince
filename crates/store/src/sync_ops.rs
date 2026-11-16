@@ -1,4 +1,4 @@
-use sqlx::{Row, Sqlite, SqlitePool, Transaction};
+use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::StoreError;
 
@@ -99,8 +99,7 @@ pub async fn append(
     replica_root: Option<&str>,
 ) -> Result<Option<i64>, StoreError> {
     let seq = if from_contact.is_none() {
-        match insert_local(
-            pool,
+        LocalOperation {
             tbl,
             uid,
             field,
@@ -109,13 +108,9 @@ pub async fn append(
             actor_cell,
             organ_uid,
             replica_root,
-            Some(hlc),
-        )
-        .await?
-        {
-            Some(seq) => seq,
-            None => return Ok(None),
         }
+        .insert(pool, Some(hlc))
+        .await?
     } else {
         let res = sqlx::query(INSERT)
             .bind(tbl)
@@ -171,79 +166,117 @@ pub async fn append(
     Ok(Some(seq))
 }
 
-const LOCAL_IDENTITY: &str =
-    "SELECT uid, organ_uid FROM record WHERE slug = ? AND kind = 'device' LIMIT 1";
+// Resolve provenance and target routing in one statement. These are fresh
+// database values, not a retained permission/identity cache. Keep the same root
+// relation as replica::root_for_op[_tx], including missing/deleted targets.
+const LOCAL_CONTEXT: &str = "
+    SELECT device.uid, device.organ_uid,
+           CASE
+             WHEN ?1 IN ('record', 'record_extension') THEN
+               (SELECT replica_root FROM record WHERE uid = ?2)
+             WHEN ?1 = 'record_assertion' THEN
+               (SELECT r.replica_root FROM record_assertion a
+                  JOIN record r ON r.uid = a.subject_uid WHERE a.uid = ?2)
+             WHEN ?1 = 'fact' THEN
+               (SELECT r.replica_root FROM fact f
+                  JOIN record r ON r.uid = f.record_uid WHERE f.uid = ?2)
+             ELSE NULL
+           END AS replica_root
+      FROM record device
+     WHERE device.slug = ?3 AND device.kind = 'device' LIMIT 1";
 
-async fn local_identity_tx(
-    tx: &mut Transaction<'_, Sqlite>,
-) -> Result<Option<(String, String)>, StoreError> {
-    Ok(sqlx::query(LOCAL_IDENTITY)
+async fn local_context_on<'e>(
+    executor: impl sqlx::Executor<'e, Database = Sqlite>,
+    tbl: &str,
+    uid: &str,
+) -> Result<Option<(String, String, Option<String>)>, StoreError> {
+    let _read = nucleus::performance::Span::new("sync-local-context-read-await");
+    nucleus::performance::add("sync-local-context-reads", 1);
+    Ok(sqlx::query(LOCAL_CONTEXT)
+        .bind(tbl)
+        .bind(uid)
         .bind(crate::cells::LOCAL_CELL_SLUG)
-        .fetch_optional(&mut **tx)
+        .fetch_optional(executor)
         .await?
-        .map(|row| (row.get("uid"), row.get("organ_uid"))))
-}
-
-async fn local_identity(pool: &SqlitePool) -> Result<Option<(String, String)>, StoreError> {
-    Ok(sqlx::query(LOCAL_IDENTITY)
-        .bind(crate::cells::LOCAL_CELL_SLUG)
-        .fetch_optional(pool)
-        .await?
-        .map(|row| (row.get("uid"), row.get("organ_uid"))))
+        .map(|row| {
+            (
+                row.get("uid"),
+                row.get("organ_uid"),
+                row.get("replica_root"),
+            )
+        }))
 }
 
 const LOCAL_STAMP_ATTEMPTS: usize = 8;
 
-#[allow(clippy::too_many_arguments)]
-async fn insert_local(
-    pool: &SqlitePool,
-    tbl: &str,
-    uid: &str,
-    field: &str,
+// One borrowed operation description drives pool and transactional insertion.
+// It owns no payload and cannot outlive the caller's provenance/target values.
+struct LocalOperation<'a> {
+    tbl: &'a str,
+    uid: &'a str,
+    field: &'a str,
     kind: OpKind,
-    value: Option<&str>,
-    actor_cell: &str,
-    organ_uid: &str,
-    replica_root: Option<&str>,
-    first_hlc: Option<i64>,
-) -> Result<Option<i64>, StoreError> {
-    let mut stamp = first_hlc.unwrap_or_else(nucleus::hlc::next);
-    for attempt in 0..LOCAL_STAMP_ATTEMPTS {
-        if attempt > 0 {
-            stamp = nucleus::hlc::next();
-        }
-        let res = sqlx::query(INSERT)
-            .bind(tbl)
-            .bind(uid)
-            .bind(field)
-            .bind(kind.as_str())
-            .bind(value)
-            .bind(stamp)
-            .bind(actor_cell)
-            .bind(organ_uid)
-            .bind(replica_root)
-            .execute(pool)
-            .await?;
-        if res.rows_affected() > 0 {
-            return Ok(Some(res.last_insert_rowid()));
-        }
-        if let Some(theirs) = max_hlc_for_actor(pool, actor_cell).await? {
-            nucleus::hlc::adopt_own(theirs);
-        }
-    }
-    Err(sqlx::Error::Protocol(format!(
-        "could not mint a free op identity for cell {actor_cell} after \
-         {LOCAL_STAMP_ATTEMPTS} attempts"
-    )))
+    value: Option<&'a str>,
+    actor_cell: &'a str,
+    organ_uid: &'a str,
+    replica_root: Option<&'a str>,
 }
 
-async fn max_hlc_for_actor(pool: &SqlitePool, actor_cell: &str) -> Result<Option<i64>, StoreError> {
-    Ok(
-        sqlx::query_scalar::<_, Option<i64>>("SELECT MAX(hlc) FROM sync_op WHERE actor_cell = ?")
-            .bind(actor_cell)
-            .fetch_one(pool)
-            .await?,
-    )
+impl LocalOperation<'_> {
+    async fn insert(&self, pool: &SqlitePool, first_hlc: Option<i64>) -> Result<i64, StoreError> {
+        let _insert = nucleus::performance::Span::new("sync-local-operation-insert-await");
+        let stamp = first_hlc.unwrap_or_else(nucleus::hlc::next);
+        let mut connection = pool.acquire().await?;
+        self.try_insert_on(&mut connection, stamp)
+            .await?
+            .ok_or_else(|| {
+                let actor_cell = self.actor_cell;
+                sqlx::Error::Protocol(format!(
+                    "could not mint a free op identity for cell {actor_cell} after \
+                 {LOCAL_STAMP_ATTEMPTS} attempts"
+                ))
+            })
+    }
+
+    // A collision retries on the caller's connection/transaction, without
+    // reacquiring the pool for each insert or current-clock read.
+    async fn try_insert_on(
+        &self,
+        connection: &mut SqliteConnection,
+        first_hlc: i64,
+    ) -> Result<Option<i64>, StoreError> {
+        let mut stamp = first_hlc;
+        for attempt in 0..LOCAL_STAMP_ATTEMPTS {
+            if attempt > 0 {
+                stamp = nucleus::hlc::next();
+            }
+            nucleus::performance::add("sync-local-operation-insert-attempts", 1);
+            let res = sqlx::query(INSERT)
+                .bind(self.tbl)
+                .bind(self.uid)
+                .bind(self.field)
+                .bind(self.kind.as_str())
+                .bind(self.value)
+                .bind(stamp)
+                .bind(self.actor_cell)
+                .bind(self.organ_uid)
+                .bind(self.replica_root)
+                .execute(&mut *connection)
+                .await?;
+            if res.rows_affected() > 0 {
+                return Ok(Some(res.last_insert_rowid()));
+            }
+            let theirs: Option<i64> =
+                sqlx::query_scalar("SELECT MAX(hlc) FROM sync_op WHERE actor_cell = ?")
+                    .bind(self.actor_cell)
+                    .fetch_one(&mut *connection)
+                    .await?;
+            if let Some(theirs) = theirs {
+                nucleus::hlc::adopt_own(theirs);
+            }
+        }
+        Ok(None)
+    }
 }
 
 pub async fn log_local(
@@ -265,54 +298,50 @@ pub async fn log_local(
     } else {
         value
     };
-    let Some((actor_cell, organ_uid)) = local_identity(pool).await? else {
+    let Some((actor_cell, organ_uid, root)) = local_context_on(pool, tbl, uid).await? else {
         return Ok(());
     };
-    let root = crate::replica::root_for_op(pool, tbl, uid).await?;
-    let res = insert_local(
-        pool,
+    let seq = LocalOperation {
         tbl,
         uid,
         field,
         kind,
-        value.as_deref(),
-        &actor_cell,
-        &organ_uid,
-        root.as_deref(),
-        None,
-    )
+        value: value.as_deref(),
+        actor_cell: &actor_cell,
+        organ_uid: &organ_uid,
+        replica_root: root.as_deref(),
+    }
+    .insert(pool, None)
     .await?;
-    if let Some(seq) = res {
-        if tbl == "record" && kind == OpKind::Set {
-            crate::record_changes::note_local(pool, uid, field).await?;
+    if tbl == "record" && kind == OpKind::Set {
+        crate::record_changes::note_local(pool, uid, field).await?;
+    }
+    let now = nucleus::execution::now().to_rfc3339();
+    match &root {
+        Some(root) => {
+            sqlx::query(ENQUEUE_GRANT)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(kind.as_str())
+                .bind(seq)
+                .bind(&now)
+                .bind(root)
+                .bind("")
+                .execute(pool)
+                .await?;
         }
-        let now = nucleus::execution::now().to_rfc3339();
-        match &root {
-            Some(root) => {
-                sqlx::query(ENQUEUE_GRANT)
-                    .bind(tbl)
-                    .bind(uid)
-                    .bind(field)
-                    .bind(kind.as_str())
-                    .bind(seq)
-                    .bind(&now)
-                    .bind(root)
-                    .bind("")
-                    .execute(pool)
-                    .await?;
-            }
-            None => {
-                sqlx::query(ENQUEUE)
-                    .bind(tbl)
-                    .bind(uid)
-                    .bind(field)
-                    .bind(kind.as_str())
-                    .bind(seq)
-                    .bind(&now)
-                    .bind("")
-                    .execute(pool)
-                    .await?;
-            }
+        None => {
+            sqlx::query(ENQUEUE)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(kind.as_str())
+                .bind(seq)
+                .bind(&now)
+                .bind("")
+                .execute(pool)
+                .await?;
         }
     }
     Ok(())
@@ -337,37 +366,24 @@ pub async fn log_local_tx(
     } else {
         value
     };
-    let Some((actor_cell, organ_uid)) = local_identity_tx(tx).await? else {
+    let Some((actor_cell, organ_uid, root)) = local_context_on(&mut **tx, tbl, uid).await? else {
         return Ok(());
     };
-    let root = crate::replica::root_for_op_tx(tx, tbl, uid).await?;
-    let mut seq = None;
-    for _ in 0..LOCAL_STAMP_ATTEMPTS {
-        let res = sqlx::query(INSERT)
-            .bind(tbl)
-            .bind(uid)
-            .bind(field)
-            .bind(kind.as_str())
-            .bind(&value)
-            .bind(nucleus::hlc::next())
-            .bind(&actor_cell)
-            .bind(&organ_uid)
-            .bind(root.as_deref())
-            .execute(&mut **tx)
-            .await?;
-        if res.rows_affected() > 0 {
-            seq = Some(res.last_insert_rowid());
-            break;
+    let seq = {
+        let _insert = nucleus::performance::Span::new("sync-local-operation-insert-await");
+        LocalOperation {
+            tbl,
+            uid,
+            field,
+            kind,
+            value: value.as_deref(),
+            actor_cell: &actor_cell,
+            organ_uid: &organ_uid,
+            replica_root: root.as_deref(),
         }
-        let theirs: Option<i64> =
-            sqlx::query_scalar("SELECT MAX(hlc) FROM sync_op WHERE actor_cell = ?")
-                .bind(&actor_cell)
-                .fetch_one(&mut **tx)
-                .await?;
-        if let Some(theirs) = theirs {
-            nucleus::hlc::adopt_own(theirs);
-        }
-    }
+        .try_insert_on(&mut **tx, nucleus::hlc::next())
+        .await?
+    };
     let Some(seq) = seq else {
         return Err(sqlx::Error::Protocol(format!(
             "could not mint a free op identity for cell {actor_cell}"

@@ -2906,6 +2906,19 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreEr
     .collect())
 }
 
+/// The presence relation used by `get`, without decoding an unused Transfer.
+/// This deliberately does not add active/visibility/revision policy filters.
+pub async fn exists(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
+    let _read = nucleus::performance::Span::new("transfer-exists-await");
+    sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM transfer t JOIN record r ON r.uid = t.record_uid
+         WHERE t.record_uid = ?)",
+    )
+    .bind(uid)
+    .fetch_one(pool)
+    .await
+}
+
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<TransferRow>, StoreError> {
     Ok(sqlx::query(
         "SELECT t.*, r.quantity_mantissa, r.quantity_scale FROM transfer t JOIN record r ON r.uid = t.record_uid
@@ -4980,7 +4993,7 @@ where
         sqlx::Error::Protocol("agreement requires an existing signed Transfer revision".into())
     })?;
     let revision_evidence: TransferRevisionEvidence =
-        serde_json::from_str(&signed_revision.get::<String, _>("payload"))
+        serde_json::from_str(signed_revision.get::<&str, _>("payload"))
             .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
     let party_uid: String = sqlx::query_scalar(
         "SELECT tp.uid FROM transfer_party tp
@@ -5822,7 +5835,7 @@ where
     .fetch_one(&mut *tx)
     .await?;
     let revision_evidence: TransferRevisionEvidence =
-        serde_json::from_str(&signed_revision.get::<String, _>("payload"))
+        serde_json::from_str(signed_revision.get::<&str, _>("payload"))
             .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
     let original_authorities = participation::read_on(
         &mut tx,

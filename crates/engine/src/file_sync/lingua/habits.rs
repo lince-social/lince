@@ -229,7 +229,7 @@ impl Engine {
             .bind(organ).bind(TUTORIAL).fetch_optional(&self.store.pool).await?;
         row.map(|row| {
             Ok((
-                serde_json::from_str::<Definition>(&row.get::<String, _>("definition"))
+                serde_json::from_str::<Definition>(row.get::<&str, _>("definition"))
                     .map_err(EngineError::Json)?,
                 row.get::<i64, _>("completed") == 1,
             ))

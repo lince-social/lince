@@ -183,10 +183,10 @@ impl Engine {
                 continue;
             }
             let namespace: String = row.get("namespace");
-            let state: Value = serde_json::from_str(&row.get::<String, _>("fds"))?;
+            let state: Value = serde_json::from_str(row.get::<&str, _>("fds"))?;
             let messages = store::sqlx::query("SELECT r.uid,r.body,e.fds,(SELECT fds FROM record_extension WHERE record_uid=r.uid AND namespace=?) AS delivery FROM record r JOIN record_extension e ON e.record_uid=r.uid AND e.namespace=? WHERE r.replica_root=? AND r.deleted_at IS NULL ORDER BY CAST(json_extract(e.fds,'$.content.issued_at') AS INTEGER) DESC,r.uid LIMIT 16")
                 .bind(DELIVERY_NAMESPACE).bind(MESSAGE_NAMESPACE).bind(&uid).fetch_all(&self.store.pool).await?;
-            let mut messages: Vec<Value> = messages.into_iter().map(|r| Ok(json!({"uid":r.get::<String,_>("uid"),"body":r.get::<String,_>("body"),"message":serde_json::from_str::<Value>(&r.get::<String,_>("fds"))?,"delivery":r.get::<Option<String>,_>("delivery").map(|s| serde_json::from_str::<Value>(&s)).transpose()?}))).collect::<Result<_,serde_json::Error>>()?;
+            let mut messages: Vec<Value> = messages.into_iter().map(|r| Ok(json!({"uid":r.get::<String,_>("uid"),"body":r.get::<String,_>("body"),"message":serde_json::from_str::<Value>(r.get::<&str,_>("fds"))?,"delivery":r.get::<Option<String>,_>("delivery").map(|s| serde_json::from_str::<Value>(&s)).transpose()?}))).collect::<Result<_,serde_json::Error>>()?;
             for message in &mut messages {
                 let destinations=store::sqlx::query("SELECT d.service,SUM(d.state='pending') AS pending,SUM(d.state='stored') AS stored,SUM(d.state='cancelled') AS cancelled,MAX(d.error) AS error FROM social_private_destination d JOIN social_private_outbox o ON o.id=d.envelope WHERE o.record_uid=? GROUP BY d.service ORDER BY d.service LIMIT 8").bind(message["uid"].as_str().unwrap_or_default()).fetch_all(&self.store.pool).await?;
                 message["destinations"]=json!(destinations.into_iter().map(|d|json!({"service":d.get::<String,_>("service"),"pending":d.get::<i64,_>("pending"),"stored":d.get::<i64,_>("stored"),"cancelled":d.get::<i64,_>("cancelled"),"error":d.get::<Option<String>,_>("error")})).collect::<Vec<_>>());
@@ -202,7 +202,7 @@ impl Engine {
                 Value::Null
             };
             let request = json!({"record":uid,"title":row.get::<String,_>("head"),"draft":namespace==REQUEST_DRAFT_NAMESPACE,"state":state,"reveal":reveal,"verification":verification,"messages":messages});
-            let length = serde_json::to_vec(&request)?.len();
+            let length = nucleus::json::encoded_len(&request)?;
             if size + length > 2 * 1024 * 1024 {
                 if requests.is_empty() {
                     return Err(invalid(
@@ -307,14 +307,14 @@ impl Engine {
         };
         draft.signature = signer.sign_bytes(&signing_bytes("private-request-draft", &draft)?);
         let body = json!({"draft":draft});
-        if serde_json::to_vec(&body)?.len() > 64 * 1024 {
+        if nucleus::json::encoded_len(&body)? > 64 * 1024 {
             return Err(invalid("The private introduction draft is oversized"));
         }
         let context = nucleus::new_uid("r");
         let mut tx = self.social_write_tx().await?;
         let (count,bytes):(i64,i64) = store::sqlx::query_as("SELECT COUNT(*),COALESCE(SUM(length(CAST(e.fds AS BLOB))),0) FROM record_extension e JOIN record r ON r.uid=e.record_uid WHERE e.namespace=? AND r.organ_uid=? AND r.deleted_at IS NULL AND json_extract(e.fds,'$.materialized') IS NULL AND CAST(json_extract(e.fds,'$.draft.issued_at') AS INTEGER)>?")
             .bind(REQUEST_DRAFT_NAMESPACE).bind(&organ).bind(now-AUTHORITY_LIFETIME).fetch_one(&mut *tx).await?;
-        if count >= 32 || bytes + serde_json::to_vec(&body)?.len() as i64 > 1024 * 1024 {
+        if count >= 32 || bytes + nucleus::json::encoded_len(&body)? as i64 > 1024 * 1024 {
             return Err(invalid("Your pending introduction draft partition is full"));
         }
         conversation::record_on(
@@ -556,7 +556,7 @@ impl Engine {
         if content.kind.purpose() == EnvelopePurpose::Content
             && participant.state == ConversationState::Pending
         {
-            if serde_json::to_vec(&content)?.len() > MAX_CONTENT_BYTES {
+            if nucleus::json::encoded_len(&content)? > MAX_CONTENT_BYTES {
                 return Err(invalid(
                     "Accept this conversation before sending larger attachments",
                 ));
@@ -668,7 +668,7 @@ impl Engine {
                 &organ,
                 root,
                 &message,
-                serde_json::to_vec(&content)?.len() + text.len() + 4096,
+                nucleus::json::encoded_len(&content)? + text.len() + 4096,
                 now.timestamp(),
             )
             .await?;

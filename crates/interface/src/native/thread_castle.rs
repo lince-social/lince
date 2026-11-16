@@ -523,6 +523,7 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
     let Some(mut castle) = world.entity_mut(parent).take::<ThreadCastle>() else {
         return false;
     };
+    let _reconciliation = nucleus::performance::Span::new("thread-page-reconciliation");
     let mut selected_new = false;
     let requested = world
         .get::<RequestedThread>(castle.binding.area)
@@ -536,10 +537,12 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         let Some(uid) = thread["uid"].as_str() else {
             continue;
         };
-        retained.insert(uid.to_owned());
+        retained.insert(uid);
         let title = thread["head"].as_str().unwrap_or("Thread");
-        let entity = *castle.pages.entry(uid.into()).or_insert_with(|| {
-            page(
+        let entity = if let Some(&entity) = castle.pages.get(uid) {
+            entity
+        } else {
+            let entity = page(
                 world,
                 parent,
                 castle.tabs,
@@ -547,8 +550,10 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
                 uid,
                 title,
                 thread["social_conversation"] == true,
-            )
-        });
+            );
+            castle.pages.insert(uid.into(), entity);
+            entity
+        };
         if castle.select_new.as_deref() == Some(uid) {
             selected_new = true;
             castle.active = Some(uid.into());
@@ -575,58 +580,66 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             world.get_mut::<Text>(page.status).unwrap().0.clear();
         }
         page.has_more = thread["messages_has_more"].as_bool().unwrap_or(false);
-        world.get_mut::<Node>(page.older).unwrap().display = if page.has_more {
+        let display = if page.has_more {
             Display::Flex
         } else {
             Display::None
         };
+        world
+            .get_mut::<Node>(page.older)
+            .unwrap()
+            .map_unchanged(|node| &mut node.display)
+            .set_if_neq(display);
         let mut order = Vec::new();
         let mut seen = HashSet::new();
-        let mut entities = Vec::new();
         let mut previous_author = None;
         for data in thread["messages"].as_array().into_iter().flatten() {
             let Some(uid) = data["uid"].as_str() else {
                 continue;
             };
-            if !seen.insert(uid.to_owned()) {
+            if !seen.insert(uid) {
                 continue;
             }
-            order.push(uid.to_owned());
-            let entity = *page
-                .messages
-                .entry(uid.into())
-                .or_insert_with(|| message_view::spawn(world, page.list, &castle.binding, data));
+            order.push(uid);
+            let entity = if let Some(&entity) = page.messages.get(uid) {
+                entity
+            } else {
+                let entity = message_view::spawn(world, page.list, &castle.binding, data);
+                page.messages.insert(uid.into(), entity);
+                entity
+            };
             if world.get::<transcript::Transcript>(entity).is_none() {
                 transcript::populate(world, entity, &castle.binding, data);
             }
             message_view::refresh(world, entity, data, previous_author);
             previous_author = data["author"].as_str();
             transcript::refresh(world, entity, data);
-            entities.push(entity);
         }
-        if !page.order.is_empty()
-            && order.first() != page.order.first()
-            && order.iter().any(|uid| page.order.first() == Some(uid))
+        if let Some(previous_first) = page.order.first().map(String::as_str)
+            && order.first().copied() != Some(previous_first)
+            && seen.contains(previous_first)
         {
             world.get_mut::<Viewport>(page.viewport).unwrap().prepend = true;
         }
-        let kept: HashSet<_> = order.iter().collect();
         page.messages.retain(|uid, entity| {
-            if kept.contains(uid) {
+            if seen.contains(uid.as_str()) {
                 true
             } else {
                 let _ = world.despawn(*entity);
                 false
             }
         });
-        if order != page.order {
+        if !order.iter().copied().eq(page.order.iter().map(String::as_str)) {
+            let entities: Vec<_> = order.iter().map(|uid| page.messages[*uid]).collect();
             world.entity_mut(page.list).replace_children(&entities);
+            nucleus::performance::add("thread-message-orders-updated", 1);
+            nucleus::performance::add("thread-message-order-ids-prepared", order.len() as u64);
+            page.order = order.into_iter().map(str::to_owned).collect();
         }
-        page.order = order;
         world.entity_mut(entity).insert(page);
     }
     castle.pages.retain(|uid, entity| {
-        if retained.contains(uid) {
+        if retained.contains(uid.as_str()) {
             true
         } else {
             if let Some(page) = world.get::<Page>(*entity) {
@@ -640,7 +653,7 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
     if castle
         .active
         .as_ref()
-        .is_none_or(|uid| !retained.contains(uid))
+        .is_none_or(|uid| !retained.contains(uid.as_str()))
     {
         castle.active = data["threads"]
             .as_array()
@@ -683,19 +696,30 @@ fn show_active(world: &mut World, owner: Entity) {
         .map(|(uid, entity)| (*entity, castle.active.as_ref() == Some(uid)))
         .collect();
     for (entity, active) in pages {
-        world.get_mut::<Node>(entity).unwrap().display =
-            if active { Display::Flex } else { Display::None };
+        world
+            .get_mut::<Node>(entity)
+            .unwrap()
+            .map_unchanged(|node| &mut node.display)
+            .set_if_neq(if active { Display::Flex } else { Display::None });
         let tab = world.get::<Page>(entity).unwrap().tab;
-        if let Some(mut node) = world.get_mut::<AccessibilityNode>(tab) {
+        if let Some(mut node) = world.get_mut::<AccessibilityNode>(tab)
+            && node.is_selected() != Some(active)
+        {
             node.set_selected(active);
         }
-        world
-            .entity_mut(tab)
-            .insert(crate::native::token_style::background(if active {
-                crate::native::tokens::Token::Accent
-            } else {
-                crate::native::tokens::Token::Surface
-            }));
+        let background = if active {
+            crate::native::tokens::Token::Accent
+        } else {
+            crate::native::tokens::Token::Surface
+        };
+        if world
+            .get::<crate::native::token_style::BackgroundToken>(tab)
+            .is_none_or(|token| token.0 != background)
+        {
+            world
+                .entity_mut(tab)
+                .insert(crate::native::token_style::background(background));
+        }
     }
 }
 
@@ -1179,7 +1203,7 @@ pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>)
         && sent.as_ref().is_some_and(|sent| {
             world
                 .get::<EditableText>(input)
-                .is_some_and(|text| &text.value().to_string() == sent)
+                .is_some_and(|text| text.value() == sent.as_str())
         })
     {
         world

@@ -71,11 +71,7 @@ impl Definition {
                 .validate_for(Data::Record)
                 .map_err(str::to_owned)?;
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES / 2
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES / 2 {
             return Err("Audience plan exceeds its size limit".into());
         }
         Ok(())
@@ -100,11 +96,7 @@ pub struct Review {
 
 impl Review {
     pub fn commitment(&self) -> Result<String, String> {
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES - 4096
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES - 4096 {
             return Err("Audience review exceeds its byte limit".into());
         }
         crate::karma::canonical_hash("lince.record-audience-plan.v1", self)

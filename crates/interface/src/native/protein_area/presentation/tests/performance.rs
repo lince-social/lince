@@ -33,10 +33,10 @@ fn retained_record_projection_cost_with_unchanged_rows_and_single_row_updates() 
             .unwrap()
             .protein = Some(config.clone());
         app.world_mut().resource_mut::<Runtime>().areas.insert(owner, super::super::super::State {
-            applied: Some(config), data: (0..count).map(|index| json!({
+            applied: Some(config.into()), data: (0..count).map(|index| json!({
                 "uid":format!("projection-{index}"), "head":format!("Record {index}"),
                 "due_date":"2026-11-04", "quantity":index.to_string(), "slug":format!("slug-{index}"),
-            })).collect(), ready:true, dirty:true, ..Default::default()
+            })).collect::<Vec<_>>().into(), ready:true, dirty:true, ..Default::default()
         });
         super::super::super::rows::reconcile(app.world_mut(), owner);
         for _ in 0..5 {
@@ -53,10 +53,12 @@ fn retained_record_projection_cost_with_unchanged_rows_and_single_row_updates() 
                     let world = app.world_mut();
                     let row =
                         world.resource::<Runtime>().areas[&owner].row_entities["projection-0"];
-                    world
-                        .get_mut::<super::super::super::rows::Row>(row)
-                        .unwrap()
-                        .data["quantity"] = json!(round.to_string());
+                    std::sync::Arc::make_mut(
+                        &mut world
+                            .get_mut::<super::super::super::rows::Row>(row)
+                            .unwrap()
+                            .data,
+                    )["quantity"] = json!(round.to_string());
                 }
                 let started = Instant::now();
                 update(app.world_mut());

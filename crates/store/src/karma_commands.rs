@@ -29,7 +29,7 @@ pub async fn get(pool: &SqlitePool, command: &str) -> Result<Option<State>, Stor
         .await?
         .map(|row| {
             Ok(State {
-                origin: serde_json::from_str(&row.get::<String, _>("origin"))
+                origin: serde_json::from_str(row.get::<&str, _>("origin"))
                     .map_err(|error| invalid(&error.to_string()))?,
                 cancelled: row.get("cancelled"),
                 reason: row.get("reason"),

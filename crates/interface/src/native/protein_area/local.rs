@@ -135,13 +135,16 @@ mod tests {
         world.resource_mut::<Runtime>().areas.insert(
             owner,
             State {
-                applied: Some(Config {
-                    enabled: true,
-                    ..Config::records()
-                }),
+                applied: Some(
+                    Config {
+                        enabled: true,
+                        ..Config::records()
+                    }
+                    .into(),
+                ),
                 ready: true,
                 subscription: Some("original-subscription".into()),
-                data: vec![serde_json::json!({"uid":uid,"head":"Original"})],
+                data: vec![serde_json::json!({"uid":uid,"head":"Original"})].into(),
                 order: std::sync::Arc::new(vec![uid.clone()]),
                 row_entities: HashMap::from([(uid.clone(), editor)]),
                 ..default()
@@ -215,13 +218,16 @@ mod tests {
         world.resource_mut::<Runtime>().areas.insert(
             second,
             State {
-                applied: Some(Config {
-                    enabled: true,
-                    ..Config::records()
-                }),
+                applied: Some(
+                    Config {
+                        enabled: true,
+                        ..Config::records()
+                    }
+                    .into(),
+                ),
                 ready: true,
                 subscription: Some("second-subscription".into()),
-                data: vec![serde_json::json!({"uid":uid,"head":"Original"})],
+                data: vec![serde_json::json!({"uid":uid,"head":"Original"})].into(),
                 ..default()
             },
         );
@@ -288,7 +294,7 @@ mod tests {
             owner,
             ServerMessage::Snapshot {
                 id: "original-subscription".into(),
-                rows: vec![],
+                rows: vec![].into(),
             },
         );
         receive(
@@ -311,7 +317,7 @@ mod tests {
             owner,
             ServerMessage::Snapshot {
                 id: fresh,
-                rows: vec![serde_json::json!({"uid":uid,"head":"Recovered"})],
+                rows: vec![serde_json::json!({"uid":uid,"head":"Recovered"})].into(),
             },
         );
         assert!(world.resource::<Runtime>().areas[&owner].ready);
@@ -341,7 +347,8 @@ mod tests {
                     .get_mut(&owner)
                     .unwrap();
                 state.remote = Some("remote".into());
-                state.applied.as_mut().unwrap().source = Source::Organ("remote".into());
+                std::sync::Arc::make_mut(state.applied.as_mut().unwrap()).source =
+                    Source::Organ("remote".into());
             }
             receive(
                 &mut world,

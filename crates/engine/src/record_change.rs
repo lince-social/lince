@@ -116,6 +116,7 @@ async fn current_register(
 }
 
 async fn work_on(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<Value, EngineError> {
+    let _read = crate::performance::Span::new("record-work-projection-read-await");
     let raw: Option<String> = store::sqlx::query_scalar(
         "SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = 'work'",
     )
@@ -131,7 +132,7 @@ async fn save_work(
     uid: &str,
     work: &Value,
 ) -> Result<(), EngineError> {
-    crate::private_work::WorkMetadata::parse(work).map_err(invalid_display)?;
+    crate::private_work::WorkMetadata::validate(work).map_err(invalid_display)?;
     write_work(tx, uid, work).await
 }
 
@@ -140,8 +141,10 @@ async fn write_work(
     uid: &str,
     work: &Value,
 ) -> Result<(), EngineError> {
+    let _write = crate::performance::Span::new("record-work-projection-write-await");
     store::sqlx::query("INSERT INTO record_extension (record_uid, namespace, version, fds) VALUES (?, 'work', 1, ?) ON CONFLICT(record_uid, namespace) DO UPDATE SET fds = excluded.fds")
         .bind(uid).bind(work.to_string()).execute(&mut **tx).await?;
+    crate::performance::add("record-work-projection-writes", 1);
     Ok(())
 }
 
@@ -158,17 +161,18 @@ async fn put_register(
     store::sqlx::query("INSERT INTO record_property (record_uid, property, clock, peer, change_uid, value) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(record_uid, property) DO UPDATE SET clock = excluded.clock, peer = excluded.peer, change_uid = excluded.change_uid, value = excluded.value")
         .bind(uid).bind(property).bind(register.clock).bind(&register.peer).bind(&register.change_uid).bind(register.value.to_string())
         .execute(&mut **tx).await?;
+    crate::performance::add("record-property-register-writes", 1);
     Ok(())
 }
 
 async fn seed_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(), EngineError> {
-    let count: i64 = store::sqlx::query_scalar(
-        "SELECT COUNT(*) FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%'",
+    let seeded: bool = store::sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%')",
     )
     .bind(uid)
     .fetch_one(&mut **tx)
     .await?;
-    if count != 0 {
+    if seeded {
         return Ok(());
     }
     let work = work_on(tx, uid).await?;
@@ -190,17 +194,73 @@ async fn seed_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(), En
     Ok(())
 }
 
-async fn project_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(), EngineError> {
+// Incoming logs have already passed WorkMetadata validation. Match literal start
+// strings (not normalized instants), consuming duplicate starts in the original
+// property order. Unmatched old properties retain that order for retraction.
+fn work_log_changes(
+    existing: Vec<(String, String)>,
+    logs: &[Value],
+    change_id: &str,
+) -> Vec<(String, Value)> {
+    use std::collections::{HashMap, VecDeque};
+
+    let _prepare = crate::performance::Span::new("record-work-log-preparation");
+    let mut available: HashMap<String, VecDeque<usize>> = HashMap::new();
+    let mut keys = Vec::with_capacity(existing.len());
+    for (index, (key, raw)) in existing.into_iter().enumerate() {
+        keys.push(Some(key));
+        if !logs.is_empty()
+            && let Ok(mut old) = serde_json::from_str::<Value>(&raw)
+            && let Some(Value::String(start)) = old
+                .as_object_mut()
+                .and_then(|object| object.remove("start"))
+        {
+            available.entry(start).or_default().push_back(index);
+        }
+    }
+    let mut changes = Vec::with_capacity(keys.len().max(logs.len()));
+    for (index, log) in logs.iter().enumerate() {
+        let key = log["start"]
+            .as_str()
+            .and_then(|start| available.get_mut(start))
+            .and_then(VecDeque::pop_front)
+            .and_then(|index| keys[index].take())
+            .unwrap_or_else(|| format!("work.log:{change_id}-{index}"));
+        changes.push((key, log.clone()));
+    }
+    changes.extend(keys.into_iter().flatten().map(|key| (key, Value::Null)));
+    changes
+}
+
+async fn work_logs_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<Vec<Value>, EngineError> {
+    let _read = crate::performance::Span::new("record-work-logs-read-await");
+    crate::performance::add("record-work-log-projections", 1);
     let rows: Vec<String> = store::sqlx::query_scalar("SELECT value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY json_extract(value, '$.start'), property")
         .bind(uid).fetch_all(&mut **tx).await?;
+    rows.into_iter()
+        .map(|raw| serde_json::from_str(&raw))
+        .collect::<Result<_, _>>()
+        .map_err(EngineError::Json)
+}
+
+async fn project_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(), EngineError> {
+    let logs = work_logs_on(tx, uid).await?;
     let mut work = work_on(tx, uid).await?;
-    work["logs"] = Value::Array(
-        rows.into_iter()
-            .map(|raw| serde_json::from_str(&raw))
-            .collect::<Result<Vec<Value>, _>>()
-            .map_err(EngineError::Json)?,
-    );
+    work["logs"] = Value::Array(logs);
     save_work(tx, uid, &work).await
+}
+
+fn apply_work_field(work: &mut Value, field: &str, value: Value) {
+    if value.is_null() {
+        if let Some(work) = work.as_object_mut() {
+            work.remove(field);
+        }
+    } else {
+        work[field] = value;
+    }
 }
 
 pub(crate) async fn apply_register(
@@ -209,7 +269,17 @@ pub(crate) async fn apply_register(
     property: &str,
     register: &Register,
 ) -> Result<bool, EngineError> {
-    apply_register_on(tx, uid, property, register, false).await
+    apply_register_on(tx, uid, property, register, WorkProjection::Immediate).await
+}
+
+enum WorkProjection<'a> {
+    Immediate,
+    // The complete incoming metadata has been validated before preparing its
+    // registers. Every submitted value is an unchanged subtree or a tombstone,
+    // so its size/log validation is already covered. The merged final projection
+    // still needs its own validation, including any higher-ranked retained data.
+    FinalMetadata(&'a mut Value),
+    FinalLogs,
 }
 
 async fn apply_register_on(
@@ -217,11 +287,15 @@ async fn apply_register_on(
     uid: &str,
     property: &str,
     register: &Register,
-    stage_work: bool,
+    projection: WorkProjection<'_>,
 ) -> Result<bool, EngineError> {
+    let immediate_work = matches!(&projection, WorkProjection::Immediate);
+    let metadata_validated = matches!(&projection, WorkProjection::FinalMetadata(_));
     if register.peer.len() > 128
         || register.change_uid.len() > 128
-        || register.value.to_string().len() > crate::private_work::MAX_WORK_BYTES
+        || (!metadata_validated
+            && nucleus::json::encoded_len(&register.value).map_err(EngineError::Json)?
+                > crate::private_work::MAX_WORK_BYTES)
     {
         return Err(invalid("Property change exceeds its limits"));
     }
@@ -329,34 +403,35 @@ async fn apply_register_on(
                         .await?;
                 }
             }
+            // Arbitration above needs the newly stored register. Do not write
+            // that identical register again through the common path below.
+            return Ok(true);
         }
         "work.start" | "work.due" | "work.estimate_min" | "work.projection_occurrence" => {
-            let mut work = work_on(tx, uid).await?;
             let field = property.strip_prefix("work.").expect("work field");
-            if register.value.is_null() {
-                if let Some(work) = work.as_object_mut() {
-                    work.remove(field);
-                }
+            if let WorkProjection::FinalMetadata(work) = projection {
+                apply_work_field(work, field, register.value.clone());
             } else {
-                work[field] = register.value.clone();
-            }
-            if stage_work {
-                write_work(tx, uid, &work).await?;
-            } else {
+                let mut work = work_on(tx, uid).await?;
+                apply_work_field(&mut work, field, register.value.clone());
                 save_work(tx, uid, &work).await?;
             }
         }
         property if property.starts_with("work.log:") && property.len() <= 160 => {
-            if !register.value.is_null() {
-                crate::private_work::WorkMetadata::parse(&json!({"logs": [register.value]}))
+            if !metadata_validated && !register.value.is_null() {
+                crate::private_work::WorkMetadata::validate_log(&register.value)
                     .map_err(invalid_display)?;
             }
-            seed_logs(tx, uid).await?;
+            // Metadata replacements and Timer requests seed before preparing
+            // their registers, then project the accepted final state once.
+            if immediate_work {
+                seed_logs(tx, uid).await?;
+            }
         }
         _ => return Err(invalid("Unsupported collaborative property")),
     }
     put_register(tx, uid, property, register).await?;
-    if property.starts_with("work.log:") {
+    if property.starts_with("work.log:") && immediate_work {
         project_logs(tx, uid).await?;
     }
     Ok(true)
@@ -405,23 +480,18 @@ impl Engine {
         let mut tx = store::write_tx(&self.store.pool).await?;
         let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property IN ('work.start', 'work.due', 'work.estimate_min', 'work.projection_occurrence')").bind(uid).fetch_all(&mut *tx).await?;
         let mut work = work_on(&mut tx, uid).await?;
-        for (property, raw) in &rows {
+        let fields = !rows.is_empty();
+        for (property, raw) in rows {
             let field = property.strip_prefix("work.").expect("work field");
-            let value: Value = serde_json::from_str(raw).map_err(EngineError::Json)?;
-            if value.is_null() {
-                if let Some(work) = work.as_object_mut() {
-                    work.remove(field);
-                }
-            } else {
-                work[field] = value;
-            }
-        }
-        if !rows.is_empty() {
-            save_work(&mut tx, uid, &work).await?;
+            let value = serde_json::from_str(&raw).map_err(EngineError::Json)?;
+            apply_work_field(&mut work, field, value);
         }
         let logs: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%')").bind(uid).fetch_one(&mut *tx).await?;
         if logs {
-            project_logs(&mut tx, uid).await?;
+            work["logs"] = Value::Array(work_logs_on(&mut tx, uid).await?);
+        }
+        if fields || logs {
+            save_work(&mut tx, uid, &work).await?;
         }
         tx.commit().await?;
         Ok(())
@@ -651,7 +721,7 @@ impl Engine {
         let mut related = Vec::new();
         let (property, value) = match &request.mutation {
             Mutation::WorkMetadata { value } => {
-                crate::private_work::WorkMetadata::parse(value).map_err(invalid_display)?;
+                crate::private_work::WorkMetadata::validate(value).map_err(invalid_display)?;
                 seed_logs(&mut tx, uid).await?;
                 for field in ["start", "due", "estimate_min"] {
                     related.push((format!("work.{field}"), value[field].clone()));
@@ -659,20 +729,12 @@ impl Engine {
                 if let Some(link) = value.get("projection_occurrence") {
                     related.push(("work.projection_occurrence".into(), link.clone()));
                 }
-                let mut existing: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY property").bind(uid).fetch_all(&mut *tx).await?;
-                for (index, log) in value["logs"].as_array().into_iter().flatten().enumerate() {
-                    let found = existing.iter().position(|(_, raw)| {
-                        serde_json::from_str::<Value>(raw)
-                            .is_ok_and(|old| old["start"] == log["start"])
-                    });
-                    let key = found
-                        .map(|index| existing.remove(index).0)
-                        .unwrap_or_else(|| format!("work.log:{}-{index}", request.id));
-                    related.push((key, log.clone()));
-                }
-                for (key, _) in existing {
-                    related.push((key, Value::Null));
-                }
+                let existing: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY property").bind(uid).fetch_all(&mut *tx).await?;
+                related.extend(work_log_changes(
+                    existing,
+                    value["logs"].as_array().map_or(&[][..], Vec::as_slice),
+                    &request.id,
+                ));
                 related.pop().expect("work fields")
             }
             Mutation::WorkLog { log_id, value } => {
@@ -757,6 +819,14 @@ impl Engine {
         };
         related.push((property, value));
         let mut changed = false;
+        let stage_work = matches!(request.mutation, Mutation::WorkMetadata { .. });
+        let final_logs = matches!(request.mutation, Mutation::Timer { .. });
+        let mut staged_work = if stage_work {
+            Some(work_on(&mut tx, uid).await?)
+        } else {
+            None
+        };
+        let mut logs_changed = false;
         let mut changes = Vec::new();
         for (property, value) in related {
             let register = Register {
@@ -765,14 +835,14 @@ impl Engine {
                 change_uid: request.id.clone(),
                 value,
             };
-            changed |= apply_register_on(
-                &mut tx,
-                uid,
-                &property,
-                &register,
-                matches!(request.mutation, Mutation::WorkMetadata { .. }),
-            )
-            .await?;
+            let projection = match staged_work.as_mut() {
+                Some(work) => WorkProjection::FinalMetadata(work),
+                None if final_logs => WorkProjection::FinalLogs,
+                None => WorkProjection::Immediate,
+            };
+            let applied = apply_register_on(&mut tx, uid, &property, &register, projection).await?;
+            changed |= applied;
+            logs_changed |= applied && property.starts_with("work.log:");
             store::sync_ops::log_local_tx(
                 &mut tx,
                 "record",
@@ -784,9 +854,23 @@ impl Engine {
             .await?;
             changes.push(json!({"property":property,"value":register.value}));
         }
-        if matches!(request.mutation, Mutation::WorkMetadata { .. }) {
-            crate::private_work::WorkMetadata::parse(&work_on(&mut tx, uid).await?)
-                .map_err(invalid_display)?;
+        if let Some(mut work) = staged_work {
+            if logs_changed {
+                // No intermediate projection leaves this transaction. Preserve
+                // every register/op in order, including higher-ranked retained
+                // values, and load the final log list once.
+                work["logs"] = Value::Array(work_logs_on(&mut tx, uid).await?);
+            }
+            if changed {
+                save_work(&mut tx, uid, &work).await?;
+            } else {
+                crate::private_work::WorkMetadata::validate(&work).map_err(invalid_display)?;
+            }
+        } else if final_logs && logs_changed {
+            // One Timer request may stop several active logs. Each register and
+            // sync operation remains ordered; no intermediate projection escapes
+            // this transaction. Stale/no-op registers still do not read or write it.
+            project_logs(&mut tx, uid).await?;
         }
         let now = nucleus::execution::now();
         let fact = crate::append::append_one_in_transaction(
@@ -1238,9 +1322,7 @@ impl Engine {
         if register.clock <= 0 || !nucleus::hlc::within_drift(register.clock) {
             return Err(invalid("Invalid property clock"));
         }
-        let owner = store::records::get(&self.store.pool, &op.uid)
-            .await?
-            .and_then(|row| row.organ_uid);
+        let owner = store::records::organ_uid(&self.store.pool, &op.uid).await?;
         let local = store::cells::local(&self.store.pool).await?;
         let relay = local.is_some_and(|local| {
             local.organ_uid != op.organ_uid && owner.as_deref() == Some(local.organ_uid.as_str())

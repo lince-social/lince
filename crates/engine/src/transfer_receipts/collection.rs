@@ -240,7 +240,7 @@ impl Collection {
                 .document
                 .public_bundle()
                 .ok_or_else(|| invalid("Only original public proof artifacts enter history"))?;
-            let size = serde_json::to_vec(&saved.document)?.len();
+            let size = nucleus::json::encoded_len(&saved.document)?;
             if self.bytes.saturating_add(size) > self.max_bytes
                 || self.work.saturating_add(bundle.publication.events.len()) > self.max_work
             {

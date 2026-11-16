@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::sync::Arc;
 
 use nucleus::DecimalValue;
 use serde::Serialize;
@@ -39,7 +40,6 @@ pub struct Balance {
     pub incomplete: Vec<String>,
 }
 
-#[derive(Clone)]
 struct Promise {
     transfer: String,
     title: String,
@@ -56,7 +56,7 @@ struct Promise {
     receiver: Option<String>,
     due: Option<String>,
     alternative: Option<String>,
-    remote_occurrences: Option<Vec<Value>>,
+    remote_occurrences: Option<Arc<[Value]>>,
     unavailable: bool,
 }
 
@@ -130,8 +130,8 @@ async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, Sto
     let mut promises = Vec::new();
     for row in rows {
         let item = row
-            .get::<Option<String>, _>("item_json")
-            .and_then(|value| serde_json::from_str::<Value>(&value).ok())
+            .get::<Option<&str>, _>("item_json")
+            .and_then(|value| serde_json::from_str::<Value>(value).ok())
             .unwrap_or(Value::Null);
         let uid: String = row.get("uid");
         let transfer: Option<String> = row.get("transfer_uid");
@@ -165,13 +165,31 @@ async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, Sto
             unavailable: false,
         });
     }
-    let references: Vec<(String, String)> = sqlx::query_as("SELECT projection, state FROM transfer_remote_reference WHERE projection IS NOT NULL AND recipient_organ_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ') ORDER BY last_transfer_revision")
+    let references = sqlx::query("SELECT projection, state FROM transfer_remote_reference WHERE projection IS NOT NULL AND recipient_organ_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ') ORDER BY last_transfer_revision")
         .fetch_all(&mut *connection).await?;
-    for (projection, state) in references {
-        let projection: Value = serde_json::from_str(&projection)
+    if references.is_empty() {
+        return Ok(promises);
+    }
+    let mut indices = HashMap::<String, HashMap<String, usize>>::new();
+    for (index, promise) in promises.iter().enumerate() {
+        indices
+            .entry(promise.transfer.clone())
+            .or_default()
+            .insert(promise.uid.clone(), index);
+    }
+    let mut promises: Vec<_> = promises.into_iter().map(Some).collect();
+    for reference in references {
+        let state: &str = reference.get("state");
+        let mut projection: Value = serde_json::from_str(reference.get::<&str, _>("projection"))
             .map_err(|error| StoreError::Protocol(error.to_string()))?;
         let transfer = field(&projection, "uid").unwrap_or_default();
         let revision = projection["revision"].as_u64().unwrap_or(0);
+        let occurrences: Arc<[Value]> = projection
+            .get_mut("occurrences")
+            .and_then(Value::as_array_mut)
+            .map(std::mem::take)
+            .unwrap_or_default()
+            .into();
         for row in projection["promises"].as_array().into_iter().flatten() {
             if projection["status"] == "satiated"
                 && !matches!(row["state"].as_str(), Some("active" | "kept"))
@@ -182,13 +200,22 @@ async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, Sto
             let Some(uid) = field(row, "uid") else {
                 continue;
             };
-            if promises.iter().any(|promise| {
-                promise.transfer == transfer && promise.uid == uid && promise.revision >= revision
-            }) {
+            let previous = indices
+                .get(&transfer)
+                .and_then(|promises| promises.get(&uid))
+                .copied();
+            if previous.is_some_and(|index| promises[index].as_ref().unwrap().revision >= revision)
+            {
                 continue;
             }
-            promises.retain(|promise| promise.transfer != transfer || promise.uid != uid);
-            promises.push(Promise {
+            if let Some(index) = previous {
+                promises[index] = None;
+            }
+            indices
+                .entry(transfer.clone())
+                .or_default()
+                .insert(uid.clone(), promises.len());
+            promises.push(Some(Promise {
                 transfer: transfer.clone(),
                 title: field(row, "title")
                     .or_else(|| field(&row["item"], "title"))
@@ -211,17 +238,169 @@ async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, Sto
                 } else {
                     None
                 },
-                remote_occurrences: Some(
-                    projection["occurrences"]
-                        .as_array()
-                        .cloned()
-                        .unwrap_or_default(),
-                ),
+                remote_occurrences: Some(occurrences.clone()),
                 unavailable: state != "active",
-            });
+            }));
         }
     }
-    Ok(promises)
+    Ok(promises.into_iter().flatten().collect())
+}
+
+#[derive(Default)]
+struct RecordInputs {
+    promises: Vec<usize>,
+    mappings: Vec<usize>,
+    previous: Vec<usize>,
+}
+
+struct Prepared {
+    promises: Vec<Promise>,
+    mappings: Vec<(String, String, String, String)>,
+    mapped_people: HashMap<String, HashMap<String, Vec<usize>>>,
+    handoffs: Vec<(String, String, String, String)>,
+    records: HashMap<String, RecordInputs>,
+    loans: HashMap<String, crate::transfer_loans::Adjustment>,
+    occurrences: HashMap<String, HashMap<String, Vec<Value>>>,
+    scenario_table: bool,
+}
+
+impl Prepared {
+    async fn load(
+        connection: &mut SqliteConnection,
+        selected: &[&str],
+    ) -> Result<Self, StoreError> {
+        let mut records: HashMap<_, _> = selected
+            .iter()
+            .map(|record| ((*record).to_owned(), RecordInputs::default()))
+            .collect();
+        let mappings: Vec<(String, String, String, String)> = sqlx::query_as("SELECT e.transfer_uid, e.exchange_uid, e.person_uid, COALESCE(json_extract(effect.value, '$.record'),e.record_uid) FROM transfer_private_policy p JOIN transfer_private_policy_event e ON e.uid = p.event_uid LEFT JOIN json_each(e.effects_json) effect")
+            .fetch_all(&mut *connection).await?;
+        let mut mapped_people = HashMap::<String, HashMap<String, Vec<usize>>>::new();
+        for (index, (transfer, exchange, _, target)) in mappings.iter().enumerate() {
+            mapped_people
+                .entry(transfer.clone())
+                .or_default()
+                .entry(exchange.clone())
+                .or_default()
+                .push(index);
+            if let Some(record) = records.get_mut(target) {
+                record.mappings.push(index);
+            }
+        }
+        let ids = serde_json::to_string(selected)
+            .map_err(|error| StoreError::Protocol(error.to_string()))?;
+        let handoffs: Vec<(String, String, String, String)> = sqlx::query_as("SELECT DISTINCT h.transfer_uid, h.source_promise_uid, h.participant_person_uid, a.local_record_uid FROM transfer_local_application a JOIN transfer_application_effect_handoff h ON h.uid = a.handoff_uid WHERE a.local_record_uid IN (SELECT value FROM json_each(?))")
+            .bind(ids).fetch_all(&mut *connection).await?;
+        let promises = promises(connection).await?;
+        {
+            let mut previous_records = HashMap::<(&str, &str), Vec<&str>>::new();
+            for (index, (transfer, source, _, target)) in handoffs.iter().enumerate() {
+                previous_records
+                    .entry((transfer.as_str(), source.as_str()))
+                    .or_default()
+                    .push(target);
+                if let Some(record) = records.get_mut(target) {
+                    record.previous.push(index);
+                }
+            }
+            for (index, promise) in promises.iter().enumerate() {
+                let mapped = mapped_people
+                    .get(&promise.transfer)
+                    .and_then(|exchanges| exchanges.get(&promise.exchange))
+                    .map_or(&[][..], Vec::as_slice);
+                let previous = previous_records
+                    .get(&(promise.transfer.as_str(), promise.uid.as_str()))
+                    .map_or(&[][..], Vec::as_slice);
+                for target in promise
+                    .record
+                    .iter()
+                    .map(String::as_str)
+                    .chain(mapped.iter().map(|&index| mappings[index].3.as_str()))
+                    .chain(previous.iter().copied())
+                {
+                    if let Some(record) = records.get_mut(target)
+                        && record.promises.last() != Some(&index)
+                    {
+                        record.promises.push(index);
+                    }
+                }
+            }
+        }
+        let loans = crate::transfer_loans::adjustments_on(
+            connection,
+            nucleus::execution::now().timestamp_millis(),
+        )
+        .await?
+        .into_iter()
+        .map(|adjustment| (adjustment.record.clone(), adjustment))
+        .collect();
+        let selected_exchanges: BTreeSet<_> = records
+            .values()
+            .flat_map(|record| &record.promises)
+            .map(|&index| &promises[index])
+            .filter(|promise| promise.remote_occurrences.is_none())
+            .filter(|promise| {
+                !matches!(
+                    promise.state.as_str(),
+                    "open" | "withdrawn" | "broken" | "expired"
+                )
+            })
+            .map(|promise| (promise.transfer.as_str(), promise.exchange.as_str()))
+            .collect();
+        let mut occurrences = HashMap::<String, HashMap<String, Vec<Value>>>::new();
+        if !selected_exchanges.is_empty() {
+            let selected_exchanges = serde_json::to_string(&selected_exchanges)
+                .map_err(|error| StoreError::Protocol(error.to_string()))?;
+            let rows = sqlx::query(
+                "SELECT o.transfer_uid, o.uid, o.promise_uid, o.quantity, o.window_end,
+                        o.exchange_path_uid, COALESCE(path.public_exchange_uid,o.promise_uid) AS exchange_uid
+                 FROM json_each(?) selected
+                 JOIN transfer_occurrence o ON o.transfer_uid = json_extract(selected.value, '$[0]')
+                 JOIN transfer_exchange_path path ON path.uid = o.exchange_path_uid
+                    AND COALESCE(path.public_exchange_uid,o.promise_uid) = json_extract(selected.value, '$[1]')
+                 ORDER BY o.created_at,o.uid",
+            )
+            .bind(selected_exchanges)
+            .fetch_all(&mut *connection)
+            .await?;
+            for row in rows {
+                let exchange: String = row.get("exchange_uid");
+                let occurrence = serde_json::json!({
+                    "uid": row.get::<String, _>("uid"),
+                    "promise": row.get::<String, _>("promise_uid"),
+                    "quantity": row.get::<f64, _>("quantity"),
+                    "window_end": row.get::<Option<String>, _>("window_end"),
+                    "exchange": exchange,
+                    "exchange_path": row.get::<String, _>("exchange_path_uid"),
+                });
+                occurrences
+                    .entry(row.get("transfer_uid"))
+                    .or_default()
+                    .entry(exchange)
+                    .or_default()
+                    .push(occurrence);
+            }
+        }
+        let scenario_table = if nucleus::execution::current().is_some() {
+            sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'simulation_assumed_transfer_effect')",
+            )
+            .fetch_one(&mut *connection)
+            .await?
+        } else {
+            false
+        };
+        Ok(Self {
+            promises,
+            mappings,
+            mapped_people,
+            handoffs,
+            records,
+            loans,
+            occurrences,
+            scenario_table,
+        })
+    }
 }
 
 pub async fn read(pool: &SqlitePool, record: &str) -> Result<Balance, StoreError> {
@@ -242,64 +421,109 @@ pub async fn read_on(
     .fetch_one(&mut *connection)
     .await?;
     let actual = exact::read_decimal(&resource, "quantity")?;
-    let mappings: Vec<(String,String,String,String)> = sqlx::query_as("SELECT e.transfer_uid, e.exchange_uid, e.person_uid, COALESCE(json_extract(effect.value, '$.record'),e.record_uid) FROM transfer_private_policy p JOIN transfer_private_policy_event e ON e.uid = p.event_uid LEFT JOIN json_each(e.effects_json) effect")
-        .fetch_all(&mut *connection).await?;
-    let previous: Vec<(String,String,String,String)> = sqlx::query_as("SELECT DISTINCT h.transfer_uid, h.source_promise_uid, h.participant_person_uid, a.local_record_uid FROM transfer_local_application a JOIN transfer_application_effect_handoff h ON h.uid = a.handoff_uid WHERE a.local_record_uid = ?")
-        .bind(record).fetch_all(&mut *connection).await?;
-    let all = promises(connection).await?;
-    let mut selected: BTreeMap<(String, String, String), Promise> = BTreeMap::new();
-    for promise in all {
+    let prepared = Prepared::load(connection, &[record]).await?;
+    read_prepared_on(connection, record, actual, &prepared).await
+}
+
+/// Calculate a Record selection from one read transaction and one loan timestamp.
+pub async fn read_many(
+    pool: &SqlitePool,
+    records: &[&str],
+) -> Result<HashMap<String, Balance>, StoreError> {
+    let mut balances = HashMap::new();
+    if records.is_empty() {
+        return Ok(balances);
+    }
+    let ids =
+        serde_json::to_string(records).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let mut tx = pool.begin().await?;
+    let rows = sqlx::query("SELECT uid, quantity_mantissa, quantity_scale FROM record WHERE deleted_at IS NULL AND uid IN (SELECT value FROM json_each(?))")
+        .bind(ids).fetch_all(&mut *tx).await?;
+    let mut actuals = HashMap::<String, DecimalValue>::with_capacity(rows.len());
+    for row in rows {
+        actuals.insert(row.get("uid"), exact::read_decimal(&row, "quantity")?);
+    }
+    if records.iter().any(|record| !actuals.contains_key(*record)) {
+        return Err(StoreError::RowNotFound);
+    }
+    let prepared = Prepared::load(&mut tx, records).await?;
+    for (record, actual) in actuals {
+        let balance = read_prepared_on(&mut tx, &record, actual, &prepared).await?;
+        balances.insert(record, balance);
+    }
+    tx.rollback().await?;
+    Ok(balances)
+}
+
+async fn read_prepared_on(
+    connection: &mut SqliteConnection,
+    record: &str,
+    actual: DecimalValue,
+    prepared: &Prepared,
+) -> Result<Balance, StoreError> {
+    let inputs = &prepared.records[record];
+    let mut previous_people = HashMap::<(&str, &str), Vec<&str>>::new();
+    for &index in &inputs.previous {
+        let (transfer, source, person, _) = &prepared.handoffs[index];
+        previous_people
+            .entry((transfer.as_str(), source.as_str()))
+            .or_default()
+            .push(person.as_str());
+    }
+    let mut selected: BTreeMap<(&str, &str, &str), &Promise> = BTreeMap::new();
+    for &index in &inputs.promises {
+        let promise = &prepared.promises[index];
         let mut people = BTreeSet::new();
         if promise.record.as_deref() == Some(record) {
-            people.insert(promise.owner.clone());
+            people.insert(promise.owner.as_str());
         }
-        for (transfer, exchange, person, target) in &mappings {
-            if *transfer == promise.transfer && *exchange == promise.exchange && target == record {
-                people.insert(person.clone());
+        let mapped = prepared
+            .mapped_people
+            .get(&promise.transfer)
+            .and_then(|exchanges| exchanges.get(&promise.exchange))
+            .map_or(&[][..], Vec::as_slice);
+        for &index in mapped {
+            let (_, _, person, target) = &prepared.mappings[index];
+            if target == record {
+                people.insert(person.as_str());
             }
         }
-        for (transfer, source, person, _) in &previous {
-            if *transfer == promise.transfer && *source == promise.uid {
-                people.insert(person.clone());
-            }
+        if let Some(previous) =
+            previous_people.get(&(promise.transfer.as_str(), promise.uid.as_str()))
+        {
+            people.extend(previous.iter().copied());
         }
         for person in people {
             if person != promise.owner
-                && promise.giver.as_deref() != Some(&person)
-                && promise.receiver.as_deref() != Some(&person)
+                && promise.giver.as_deref() != Some(person)
+                && promise.receiver.as_deref() != Some(person)
             {
                 continue;
             }
-            if mappings.iter().any(|(transfer, exchange, owner, _)| {
-                *transfer == promise.transfer && *exchange == promise.exchange && *owner == person
-            }) && !mappings.iter().any(|(transfer, exchange, owner, target)| {
-                *transfer == promise.transfer
-                    && *exchange == promise.exchange
-                    && *owner == person
-                    && target == record
-            }) {
+            if mapped
+                .iter()
+                .any(|&index| prepared.mappings[index].2 == person)
+                && !mapped.iter().any(|&index| {
+                    prepared.mappings[index].2 == person && prepared.mappings[index].3 == record
+                })
+            {
                 continue;
             }
-            let key = (
-                promise.transfer.clone(),
-                promise.exchange.clone(),
-                person.clone(),
-            );
+            let key = (promise.transfer.as_str(), promise.exchange.as_str(), person);
             let replace = selected.get(&key).is_none_or(|current| {
                 promise.revision > current.revision
                     || (current.owner != person && promise.owner == person)
             });
             if replace {
-                selected.insert(key, promise.clone());
+                selected.insert(key, promise);
             }
         }
     }
     let mut commitments = Vec::new();
     let mut incomplete = Vec::new();
-    for (transfer, exchange, person, target) in &mappings {
-        if target == record
-            && !selected.contains_key(&(transfer.clone(), exchange.clone(), person.clone()))
-        {
+    for &index in &inputs.mappings {
+        let (transfer, exchange, person, _) = &prepared.mappings[index];
+        if !selected.contains_key(&(transfer.as_str(), exchange.as_str(), person.as_str())) {
             incomplete.push(format!(
                 "{transfer}: a private commitment has no available current terms"
             ));
@@ -318,23 +542,23 @@ pub async fn read_on(
                 promise.transfer
             ));
         }
-        let occurrences = if let Some(rows) = &promise.remote_occurrences {
-            rows.clone()
-        } else {
-            sqlx::query("SELECT o.uid, o.promise_uid, o.quantity, o.window_end, o.exchange_path_uid FROM transfer_occurrence o JOIN transfer_exchange_path path ON path.uid = o.exchange_path_uid WHERE o.transfer_uid = ? AND COALESCE(path.public_exchange_uid,o.promise_uid) = ? ORDER BY o.created_at,o.uid")
-                .bind(&promise.transfer).bind(&promise.exchange).fetch_all(&mut *connection).await?
-                .into_iter().map(|row|serde_json::json!({"uid":row.get::<String,_>("uid"),"promise":row.get::<String,_>("promise_uid"),"quantity":row.get::<f64,_>("quantity"),"window_end":row.get::<Option<String>,_>("window_end"),"exchange":promise.exchange,"exchange_path":row.get::<String,_>("exchange_path_uid")})).collect()
-        };
-        let mut paths: BTreeMap<String, Value> = BTreeMap::new();
+        let occurrences = promise.remote_occurrences.as_deref().unwrap_or_else(|| {
+            prepared
+                .occurrences
+                .get(&promise.transfer)
+                .and_then(|exchanges| exchanges.get(&promise.exchange))
+                .map_or(&[][..], Vec::as_slice)
+        });
+        let mut paths: BTreeMap<&str, &Value> = BTreeMap::new();
         for occurrence in occurrences
-            .into_iter()
+            .iter()
             .filter(|row| row["exchange"] == promise.exchange || row["promise"] == promise.uid)
         {
-            let Some(uid) = field(&occurrence, "uid") else {
+            let Some(uid) = occurrence["uid"].as_str() else {
                 continue;
             };
-            let path = field(&occurrence, "exchange_path").unwrap_or(uid);
-            if !paths.contains_key(&path) || occurrence["promise"] == promise.uid {
+            let path = occurrence["exchange_path"].as_str().unwrap_or(uid);
+            if !paths.contains_key(path) || occurrence["promise"] == promise.uid {
                 paths.insert(path, occurrence);
             }
         }
@@ -359,11 +583,13 @@ pub async fn read_on(
             let result = commitment(
                 connection,
                 record,
-                &person,
-                &promise,
+                person,
+                promise,
                 occurrence.as_deref(),
                 total,
                 due,
+                &prepared.loans,
+                prepared.scenario_table,
             )
             .await;
             match result {
@@ -374,24 +600,12 @@ pub async fn read_on(
         }
     }
     let reserved = reserved_for(&commitments)?;
-    let availability = crate::transfer_loans::adjustments_on(
-        connection,
-        nucleus::execution::now().timestamp_millis(),
-    )
-    .await?;
-    let loan_unit_changed = availability
-        .iter()
-        .any(|adjustment| adjustment.record == record && adjustment.unit_changed);
+    let loan = prepared.loans.get(record);
+    let loan_unit_changed = loan.is_some_and(|loan| loan.unit_changed);
     if loan_unit_changed {
         incomplete.push("Loan availability needs the original Record unit".into());
     }
-    let available = exact::sum_exact([
-        actual,
-        availability
-            .iter()
-            .find(|adjustment| adjustment.record == record)
-            .map_or_else(exact::zero, |adjustment| adjustment.delta),
-    ])?;
+    let available = exact::sum_exact([actual, loan.map_or_else(exact::zero, |loan| loan.delta)])?;
     let surplus = exact::difference(available, reserved)?;
     let can_offer = if loan_unit_changed || surplus.is_negative() {
         exact::zero()
@@ -417,6 +631,8 @@ async fn commitment(
     occurrence: Option<&str>,
     total: f64,
     due: Option<String>,
+    loans: &HashMap<String, crate::transfer_loans::Adjustment>,
+    scenario_table: bool,
 ) -> Result<Option<Commitment>, StoreError> {
     if total <= 0.0 {
         return Err(StoreError::Protocol(
@@ -430,12 +646,7 @@ async fn commitment(
             local: exact::zero(),
         },
     };
-    let scenario_table = if nucleus::execution::current().is_some() {
-        sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'simulation_assumed_transfer_effect')").fetch_one(&mut *connection).await?
-    } else {
-        false
-    };
-    if scenario_table && nucleus::execution::current().is_some() {
+    if scenario_table {
         let effects = sqlx::query("SELECT canonical_mantissa, canonical_scale, local_mantissa, local_scale FROM simulation_assumed_transfer_effect WHERE transfer_uid = ? AND exchange_uid = ? AND person_uid = ? AND record_uid = ? AND (occurrence_uid IS ? OR occurrence_uid IS NULL)")
             .bind(&promise.transfer).bind(&promise.exchange).bind(person).bind(record).bind(occurrence).fetch_all(&mut *connection).await?;
         for effect in effects {
@@ -472,11 +683,11 @@ async fn commitment(
     if !remaining.is_positive() {
         return Ok(None);
     }
-    let policy_record =
-        accounting::policy_on(connection, &promise.transfer, &promise.exchange, person)
-            .await?
-            .map(|policy| policy.record)
-            .unwrap_or_else(|| record.into());
+    let policy =
+        accounting::policy_on(connection, &promise.transfer, &promise.exchange, person).await?;
+    let policy_record = policy
+        .as_ref()
+        .map_or_else(|| record.to_owned(), |policy| policy.record.clone());
     let binding = accounting::Binding {
         transfer: &promise.transfer,
         exchange: &promise.exchange,
@@ -486,9 +697,10 @@ async fn commitment(
         unit: promise.unit.as_deref(),
         outgoing: promise.outgoing(person),
     };
-    let policy = accounting::effective_on(connection, &binding).await?;
+    let policy = accounting::effective_with_policy_on(connection, &binding, policy).await?;
     let private_remaining = if let Some(group) =
-        crate::transfer_effects::quote_on(connection, &binding, total).await?
+        crate::transfer_effects::quote_prepared_on(connection, &binding, total, &policy, loans)
+            .await?
     {
         group
             .effects

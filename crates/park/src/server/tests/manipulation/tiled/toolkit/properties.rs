@@ -518,7 +518,9 @@ fn records(
     let rows = replies
         .into_iter()
         .find_map(|reply| match reply {
-            cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+            cell::ServerMessage::Snapshot { rows, .. } => {
+                Some(std::sync::Arc::unwrap_or_clone(rows))
+            }
             _ => None,
         })
         .unwrap();

@@ -97,11 +97,42 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedProteinCastl
 #[derive(Component, Default)]
 pub struct ProteinResults {
     pub query: Option<protein::Protein>,
-    pub rows: Vec<Value>,
-    pub columns: Vec<String>,
+    pub rows: std::sync::Arc<Vec<Value>>,
+    pub columns: std::sync::Arc<Vec<String>>,
     pub revision: u64,
     pub current: bool,
     pub error: Option<String>,
+}
+
+impl ProteinResults {
+    fn replace_rows(
+        &mut self,
+        rows: &[Value],
+        retain: impl FnOnce() -> std::sync::Arc<Vec<Value>>,
+    ) -> bool {
+        let _preparation = nucleus::performance::Span::new("protein-result-preparation");
+        if nucleus::json::same_values_encoding(self.rows.as_slice(), rows) {
+            return false;
+        }
+        // Collect borrowed keys first: each displayed column needs one owned
+        // name, not a name copy for every row containing that column.
+        self.columns = rows
+            .iter()
+            .filter_map(Value::as_object)
+            .flat_map(|row| row.keys().map(String::as_str))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+            .into();
+        self.rows = retain();
+        nucleus::performance::add("protein-result-row-sets-prepared", 1);
+        nucleus::performance::add(
+            "protein-result-column-names-prepared",
+            self.columns.len() as u64,
+        );
+        true
+    }
 }
 
 #[derive(Component)]
@@ -109,13 +140,14 @@ struct View {
     editor: Entity,
     output: Entity,
     status: String,
+    status_label: Option<Entity>,
     page: usize,
-    library: Vec<Value>,
+    library: std::sync::Arc<Vec<Value>>,
     library_open: bool,
     saving: bool,
     subscription: Option<String>,
     output_dirty: bool,
-    binding: Option<Value>,
+    binding: Option<std::sync::Arc<protein::Protein>>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -241,8 +273,9 @@ pub fn spawn(
         editor,
         output,
         status: "Draft".into(),
+        status_label: None,
         page: 0,
-        library: Vec::new(),
+        library: Default::default(),
         library_open: false,
         saving: false,
         subscription: None,
@@ -325,18 +358,65 @@ pub(crate) fn remove(world: &mut World, owner: Entity) {
     world.despawn(owner);
 }
 
-pub(crate) fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
-    if let Some(mut view) = world.get_mut::<View>(owner) {
-        view.status = message.into();
+pub(crate) fn status(world: &mut World, owner: Entity, message: impl AsRef<str>) {
+    let message = message.as_ref();
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
+    if view.status == message {
+        return;
+    }
+    message.clone_into(&mut view.status);
+    let label = view.status_label;
+    nucleus::performance::add("protein-result-status-updates", 1);
+    if let Some(label) = label.filter(|label| world.get::<Text>(*label).is_some()) {
+        crate::native::sand_panel::status(world, label, message);
+        if let Some(mut tooltip) = world.get_mut::<crate::native::icons::Tooltip>(label)
+            && tooltip.0 != message
+        {
+            message.clone_into(&mut tooltip.0);
+        }
+    } else {
+        world.get_mut::<View>(owner).unwrap().output_dirty = true;
+    }
+}
+
+pub(crate) fn publish_results(
+    world: &mut World,
+    owner: Entity,
+    rows: &[Value],
+    query: Option<&protein::Protein>,
+    current: bool,
+    message: &str,
+) {
+    let mut changed = false;
+    if let Some(mut component) = world.get_mut::<ProteinResults>(owner) {
+        let results = component.bypass_change_detection();
+        changed |= results.replace_rows(rows, || std::sync::Arc::new(rows.to_vec()));
+        if results.query.as_ref() != query {
+            results.query = query.cloned();
+            changed = true;
+        }
+        if results.current != current {
+            results.current = current;
+            changed = true;
+        }
+        if changed {
+            results.revision = results.revision.wrapping_add(1);
+            component.set_changed();
+        }
+    }
+    if changed && let Some(mut view) = world.get_mut::<View>(owner) {
         view.output_dirty = true;
     }
+    status(world, owner, message);
 }
 
 fn run(world: &mut World, owner: Entity) {
     let Some(castle) = world.get::<ProteinCastle>(owner) else {
         return;
     };
-    let query = match castle.draft.compile() {
+    let query = match castle.draft.compile_shared() {
         Ok(query) => query,
         Err(error) => {
             status(world, owner, error);
@@ -350,14 +430,12 @@ fn run(world: &mut World, owner: Entity) {
     cancel(world, owner, Some(RequestKind::Results));
     cancel(world, owner, Some(RequestKind::Bind));
     world.get_mut::<ProteinResults>(owner).unwrap().current = false;
-    let value = serde_json::to_value(&query).unwrap();
-    world.get_mut::<View>(owner).unwrap().binding = Some(value.clone());
+    let value = serde_json::to_string(query.as_ref()).unwrap();
+    world.get_mut::<View>(owner).unwrap().binding = Some(query);
     request(world, owner, RequestKind::Bind, |id| ClientMessage::Act {
         id,
         action: engine::actions::Action::Vocabulary {
-            request: nucleus::vocabulary::Command::BindQuery {
-                query: value.to_string(),
-            },
+            request: nucleus::vocabulary::Command::BindQuery { query: value },
         },
     });
     status(world, owner, "Resolving selected meanings…");
@@ -409,7 +487,7 @@ fn save(world: &mut World, owner: Entity) {
         return;
     }
     let draft = castle.draft.clone();
-    let query = match draft.compile() {
+    let query = match draft.compile_shared() {
         Ok(query) => query,
         Err(error) => {
             status(world, owner, error);
@@ -429,7 +507,7 @@ fn save(world: &mut World, owner: Entity) {
         action: engine::actions::Action::SaveProtein {
             slug: draft.slug.trim().into(),
             head: draft.name.trim().into(),
-            ast: serde_json::to_value(query).unwrap(),
+            ast: serde_json::to_value(query.as_ref()).unwrap(),
         },
     });
     world.get_mut::<View>(owner).unwrap().saving = true;
@@ -465,71 +543,81 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
     if world.get::<View>(owner).is_none() {
         return;
     }
-    match message.clone() {
+    match message {
         ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => match kind {
             RequestKind::Results => {
-                let columns: BTreeSet<_> = rows
-                    .iter()
-                    .filter_map(Value::as_object)
-                    .flat_map(|row| row.keys().cloned())
-                    .collect();
                 let draft = world
                     .get::<ProteinCastle>(owner)
                     .unwrap()
                     .draft
-                    .compile()
-                    .ok()
-                    .map(|query| serde_json::to_value(query).unwrap());
-                let mut result = world.get_mut::<ProteinResults>(owner).unwrap();
-                result.current = result
+                    .compile_shared()
+                    .ok();
+                let mut component = world.get_mut::<ProteinResults>(owner).unwrap();
+                let result = component.bypass_change_detection();
+                let current = result
                     .query
                     .as_ref()
-                    .is_some_and(|query| Some(serde_json::to_value(query).unwrap()) == draft);
-                result.rows = rows;
-                result.columns = columns.into_iter().collect();
-                result.revision += 1;
+                    .is_some_and(|query| Some(query) == draft.as_deref());
+                let changed = result.replace_rows(rows, || rows.clone())
+                    || result.current != current
+                    || result.error.is_some();
+                result.current = current;
                 result.error = None;
-                let current = result.current;
-                let saved = world
-                    .get::<View>(owner)
-                    .filter(|view| {
+                if changed {
+                    result.revision = result.revision.wrapping_add(1);
+                    component.set_changed();
+                    world.get_mut::<View>(owner).unwrap().output_dirty = true;
+                }
+                let preserve_saved_status = current
+                    && world.get::<View>(owner).is_some_and(|view| {
                         view.saving || view.status == "Saved" || view.status.starts_with("Saved · ")
-                    })
-                    .map(|view| view.status.clone());
-                status(
-                    world,
-                    owner,
-                    if current {
-                        saved.as_deref().unwrap_or("Live")
-                    } else {
-                        "Draft changed · showing previous query"
-                    },
-                );
+                    });
+                if !preserve_saved_status {
+                    status(
+                        world,
+                        owner,
+                        if current {
+                            "Live"
+                        } else {
+                            "Draft changed · showing previous query"
+                        },
+                    );
+                }
             }
             RequestKind::Library => {
-                world.get_mut::<View>(owner).unwrap().library = rows;
-                ui::editor(world, owner);
+                let changed = {
+                    let _preparation =
+                        nucleus::performance::Span::new("protein-library-preparation");
+                    !nucleus::json::same_values_encoding(
+                        world.get::<View>(owner).unwrap().library.as_slice(),
+                        rows,
+                    )
+                };
+                if changed {
+                    world.get_mut::<View>(owner).unwrap().library = rows.clone();
+                    ui::editor(world, owner);
+                }
                 status(world, owner, "Saved Proteins");
             }
             RequestKind::Save | RequestKind::Bind => {}
         },
         ServerMessage::ActionOk { id, data, .. } if kind == RequestKind::Bind => {
-            world.resource_mut::<Requests>().owners.remove(&id);
+            world.resource_mut::<Requests>().owners.remove(id);
             let current = world
                 .get::<ProteinCastle>(owner)
                 .unwrap()
                 .draft
-                .compile()
-                .ok()
-                .and_then(|query| serde_json::to_value(query).ok());
+                .compile_shared()
+                .ok();
             let expected = world.get_mut::<View>(owner).unwrap().binding.take();
             if current != expected {
                 status(world, owner, "Draft changed; run the query again");
                 return;
             }
-            let Some(query) = data.and_then(|data| {
-                serde_json::from_value::<protein::Protein>(data["query"].clone()).ok()
-            }) else {
+            let Some(query) = data
+                .as_ref()
+                .and_then(|data| protein::Protein::deserialize(&data["query"]).ok())
+            else {
                 status(world, owner, "Selected meanings could not be resolved");
                 return;
             };
@@ -552,11 +640,12 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
         ServerMessage::ActionOk {
             id, warnings, data, ..
         } if kind == RequestKind::Save => {
-            world.resource_mut::<Requests>().owners.remove(&id);
+            world.resource_mut::<Requests>().owners.remove(id);
             world.get_mut::<View>(owner).unwrap().saving = false;
-            if let Some(query) = data.and_then(|data| {
-                serde_json::from_value::<protein::Protein>(data["query"].clone()).ok()
-            }) {
+            if let Some(query) = data
+                .as_ref()
+                .and_then(|data| protein::Protein::deserialize(&data["query"]).ok())
+            {
                 let mut castle = world.get_mut::<ProteinCastle>(owner).unwrap();
                 let draft = &mut castle.draft;
                 *draft = ProteinDraft::from_protein(draft.name.clone(), draft.slug.clone(), query);
@@ -574,11 +663,11 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
         }
         ServerMessage::Error { id, message, .. } => {
             if kind == RequestKind::Bind {
-                world.resource_mut::<Requests>().owners.remove(&id);
+                world.resource_mut::<Requests>().owners.remove(id);
                 world.get_mut::<View>(owner).unwrap().binding = None;
             }
             if kind == RequestKind::Save {
-                world.resource_mut::<Requests>().owners.remove(&id);
+                world.resource_mut::<Requests>().owners.remove(id);
                 world.get_mut::<View>(owner).unwrap().saving = false;
             }
             if kind == RequestKind::Results {

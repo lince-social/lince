@@ -1526,10 +1526,7 @@ impl Engine {
         let Some(transfer_uid) = remote_action_transfer_token(action) else {
             return Ok(None);
         };
-        if store::transfers::get(&self.store.pool, transfer_uid)
-            .await?
-            .is_some()
-        {
+        if store::transfers::exists(&self.store.pool, transfer_uid).await? {
             return Ok(None);
         }
         let Some((submitted_person, request_id, expected_revision)) = remote_action_binding(action)

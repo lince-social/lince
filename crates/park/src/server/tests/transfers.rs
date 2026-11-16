@@ -72,7 +72,7 @@ fn present(
 ) -> crate::presentation::Frame {
     canvas.sync_windows(&harness.server.windows()).unwrap();
     let frame = settle(canvas);
-    for request in &frame.windows {
+    for request in frame.windows.iter() {
         harness
             .server
             .configure_state(

@@ -53,7 +53,7 @@ pub(super) fn normalize(world: &World, root: Entity, document: &mut Document) ->
                 let identity = &world.get::<crate::native::canvas_host::Identity>(entity)?.0;
                 Some((identity.clone(), id))
             }).collect::<HashMap<_, _>>();
-        for placement in &mut state.snapshot.placements {
+        for placement in &mut std::sync::Arc::make_mut(&mut state.snapshot).placements {
             if let Some(home) = identities.get(&placement.id).and_then(|id| homes.get(id)) {
                 placement.workspace = home.workspace;
                 placement.geometry.position = std::array::from_fn(|axis| home.geometry.origin[axis] + home.geometry.size[axis] * 0.5);

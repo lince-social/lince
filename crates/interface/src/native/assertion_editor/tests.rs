@@ -39,7 +39,7 @@ fn live_catalogue_updates_preserve_chips_and_only_change_resolved_names() {
             app.world_mut(),
             &ServerMessage::Update {
                 id: "catalogue".into(),
-                rows: vec![json!({"uid":"r_project", "slug":slug, "head":head})],
+                rows: vec![json!({"uid":"r_project", "slug":slug, "head":head})].into(),
             },
         );
         assert_eq!(app.world().get::<Field>(parent).unwrap().chips, vec![chip]);
@@ -70,7 +70,7 @@ fn live_catalogue_updates_preserve_chips_and_only_change_resolved_names() {
         app.world_mut(),
         &ServerMessage::Update {
             id: "catalogue".into(),
-            rows: vec![json!({"uid":"r_project", "slug":"renamed", "head":"Renamed"})],
+            rows: vec![json!({"uid":"r_project", "slug":"renamed", "head":"Renamed"})].into(),
         },
     );
     assert_eq!(

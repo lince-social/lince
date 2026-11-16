@@ -255,7 +255,7 @@ impl Engine {
                     _ => None,
                 })
                 .collect::<BTreeSet<_>>();
-            let size = serde_json::to_vec(&copies)?.len();
+            let size = nucleus::json::encoded_len(&copies)?;
             if partial
                 || projected_bytes.saturating_add(size) > byte_limit
                 || evidence

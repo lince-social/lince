@@ -11,8 +11,8 @@ pub(super) struct Searches {
 
 #[derive(Component)]
 struct Search {
-    rows: Vec<Value>,
-    concepts: Vec<Value>,
+    rows: Arc<Vec<Value>>,
+    concepts: Arc<Vec<Value>>,
     signature: String,
     options: Vec<(String, String)>,
     selected: usize,
@@ -67,8 +67,8 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
             .unwrap(),
         });
     world.entity_mut(form).insert(Search {
-        rows: Vec::new(),
-        concepts: Vec::new(),
+        rows: Arc::default(),
+        concepts: Arc::default(),
         signature: String::new(),
         options: Vec::new(),
         selected: 0,
@@ -396,8 +396,8 @@ pub(super) fn update(
                         search.message.clear();
                     }
                     Err(error) => {
-                        search.rows.clear();
-                        search.concepts.clear();
+                        search.rows = Arc::default();
+                        search.concepts = Arc::default();
                         search.message = (*error).clone();
                     }
                 }
@@ -709,7 +709,8 @@ mod tests {
         app.world_mut().get_mut::<Search>(form).unwrap().rows = vec![
             json!({"uid":"first","head":"A"}),
             json!({"uid":"second","head":"B"}),
-        ];
+        ]
+        .into();
         app.world_mut()
             .get_mut::<Search>(form)
             .unwrap()

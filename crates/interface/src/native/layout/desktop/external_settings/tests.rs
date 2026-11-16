@@ -46,13 +46,23 @@ fn write(app: &mut App, entity: Entity, value: &str) {
 #[test]
 fn action_selection_preserves_literal_argument_drafts_and_saving_never_executes_them() {
     let (mut app, page, receiver) = fixture(true);
-    let program = app.world().get::<Page>(page).unwrap().program;
+    let program = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap()
+        .program;
     write(&mut app, program, "brightness-tool");
     Change::AddArgument.apply(app.world_mut(), page);
     settle(&mut app);
     Change::AddArgument.apply(app.world_mut(), page);
     settle(&mut app);
-    let argument = app.world().get::<Page>(page).unwrap().arguments[1];
+    let argument = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap()
+        .arguments[1];
     write(&mut app, argument, "$(printf literal) with spaces");
     Change::Locked.apply(app.world_mut(), page);
     Change::Select(ExternalAction::MediaPlayPause).apply(app.world_mut(), page);
@@ -60,7 +70,14 @@ fn action_selection_preserves_literal_argument_drafts_and_saving_never_executes_
     write(&mut app, program, "media-tool");
     Change::Select(ExternalAction::BrightnessDown).apply(app.world_mut(), page);
     settle(&mut app);
-    assert_eq!(app.world().get::<Page>(page).unwrap().program, program);
+    assert_eq!(
+        app.world()
+            .get::<Page>(page)
+            .and_then(|page| page.0.as_ref())
+            .unwrap()
+            .program,
+        program
+    );
     assert_eq!(value(app.world(), program).unwrap(), "brightness-tool");
     Change::Save.apply(app.world_mut(), page);
     let HostRequest::External(request) = receiver.try_recv().unwrap() else {
@@ -84,7 +101,12 @@ fn action_selection_preserves_literal_argument_drafts_and_saving_never_executes_
 #[test]
 fn pending_clipboard_input_blocks_saving_and_selection_and_cancel_discards_it() {
     let (mut app, page, receiver) = fixture(true);
-    let program = app.world().get::<Page>(page).unwrap().program;
+    let program = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap()
+        .program;
     write(&mut app, program, "first-tool");
     app.world_mut()
         .resource_mut::<InputFocus>()
@@ -97,7 +119,11 @@ fn pending_clipboard_input_blocks_saving_and_selection_and_cancel_discards_it() 
     Change::Select(ExternalAction::Editor).apply(app.world_mut(), page);
     assert!(receiver.try_recv().is_err());
     assert_eq!(
-        app.world().get::<Page>(page).unwrap().selected,
+        app.world()
+            .get::<Page>(page)
+            .and_then(|page| page.0.as_ref())
+            .unwrap()
+            .selected,
         ExternalAction::BrightnessDown
     );
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(program));
@@ -126,7 +152,12 @@ fn pending_clipboard_input_blocks_saving_and_selection_and_cancel_discards_it() 
 #[test]
 fn failed_stale_and_late_replies_retain_fields_focus_and_newer_edits() {
     let (mut app, page, receiver) = fixture(true);
-    let program = app.world().get::<Page>(page).unwrap().program;
+    let program = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap()
+        .program;
     write(&mut app, program, "first-tool");
     app.world_mut()
         .resource_mut::<InputFocus>()
@@ -150,7 +181,14 @@ fn failed_stale_and_late_replies_retain_fields_focus_and_newer_edits() {
     settle(&mut app);
     assert_eq!(value(app.world(), program).unwrap(), "newer-tool");
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(program));
-    assert!(app.world().get::<Page>(page).unwrap().pending.is_none());
+    assert!(
+        app.world()
+            .get::<Page>(page)
+            .and_then(|page| page.0.as_ref())
+            .unwrap()
+            .pending
+            .is_none()
+    );
     Change::Save.apply(app.world_mut(), page);
     let HostRequest::External(second) = receiver.try_recv().unwrap() else {
         panic!("request");
@@ -171,6 +209,7 @@ fn failed_stale_and_late_replies_retain_fields_focus_and_newer_edits() {
     assert!(
         app.world()
             .get::<Page>(page)
+            .and_then(|page| page.0.as_ref())
             .unwrap()
             .message
             .contains("write failed")
@@ -192,7 +231,12 @@ fn failed_stale_and_late_replies_retain_fields_focus_and_newer_edits() {
 #[test]
 fn sandbox_and_pending_text_cannot_submit_or_enable_privileged_lock_actions() {
     let (mut app, page, receiver) = fixture(false);
-    let program = app.world().get::<Page>(page).unwrap().program;
+    let program = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap()
+        .program;
     write(&mut app, program, "tool");
     Change::Save.apply(app.world_mut(), page);
     assert!(receiver.try_recv().is_err());
@@ -230,7 +274,12 @@ fn display_power_commands_save_only_output_control_authority_without_executing()
         let (mut app, page, receiver) = fixture(true);
         Change::Select(action).apply(app.world_mut(), page);
         settle(&mut app);
-        let program = app.world().get::<Page>(page).unwrap().program;
+        let program = app
+            .world()
+            .get::<Page>(page)
+            .and_then(|page| page.0.as_ref())
+            .unwrap()
+            .program;
         write(&mut app, program, "power-tool");
         Change::Locked.apply(app.world_mut(), page);
         Change::Save.apply(app.world_mut(), page);
@@ -248,7 +297,11 @@ fn screenshot_settings_expose_folder_and_pointer_without_requiring_shell_argumen
     let (mut app, page, receiver) = fixture(true);
     Change::Select(ExternalAction::ScreenshotRegion).apply(app.world_mut(), page);
     settle(&mut app);
-    let state = app.world().get::<Page>(page).unwrap();
+    let state = app
+        .world()
+        .get::<Page>(page)
+        .and_then(|page| page.0.as_ref())
+        .unwrap();
     let folder = state.capture_directory;
     assert!(state.capture_options.is_some());
     assert_eq!(

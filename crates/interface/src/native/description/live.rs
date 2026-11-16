@@ -2,6 +2,16 @@ use super::*;
 use cell::{ClientMessage, ServerMessage};
 use std::collections::HashMap;
 
+#[derive(Component)]
+pub(super) struct SubscriptionRefused;
+
+#[derive(Component)]
+struct Watched;
+
+pub(super) fn watched(world: &World, entity: Entity) -> bool {
+    world.get::<Watched>(entity).is_some()
+}
+
 struct Feed {
     entity: Entity,
     reference: String,
@@ -15,9 +25,17 @@ struct Feeds(HashMap<String, Feed>);
 pub(super) fn watch(world: &mut World, entity: Entity, reference: &str, source: Source) {
     world.init_resource::<Feeds>();
     if world.resource::<Feeds>().0.len() >= 128 {
+        world
+            .entity_mut(entity)
+            .remove::<Watched>()
+            .insert(SubscriptionRefused);
         crate::native::edit_mode::label(world, entity, "Description view limit reached.", 14.0);
         return;
     }
+    world
+        .entity_mut(entity)
+        .remove::<SubscriptionRefused>()
+        .insert(Watched);
     let id = nucleus::new_uid("description");
     world.resource_mut::<Feeds>().0.insert(
         id,

@@ -12,8 +12,8 @@ pub(crate) enum Sync {
 pub(super) struct Retained {
     pub geometry: Option<Arc<lince_interface::host::GeometrySnapshot>>,
     pub input: Arc<InputSnapshot>,
-    pub windows: Vec<WindowConfiguration>,
-    pub previewed: Vec<lince_interface::host::SurfaceId>,
+    pub windows: Arc<[WindowConfiguration]>,
+    pub previewed: Arc<[lince_interface::host::SurfaceId]>,
 }
 
 impl Presentation {
@@ -39,7 +39,17 @@ impl Presentation {
             })
     }
 
+    #[cfg(test)]
     pub(crate) fn pixel_frame(&mut self) -> Result<Frame, ProbeFailure> {
+        loop {
+            if let Some(frame) = self.try_pixel_frame()? {
+                return Ok(frame);
+            }
+            self.complete_pipelines();
+        }
+    }
+
+    pub(crate) fn try_pixel_frame(&mut self) -> Result<Option<Frame>, ProbeFailure> {
         let _timing = lince_interface::host::performance::Span::new(
             lince_interface::host::performance::Stage::NativePixels,
         );
@@ -61,9 +71,13 @@ impl Presentation {
             .resource_mut::<Messages<bevy::asset::AssetEvent<clients::ClientMaterial>>>()
             .update();
         self.retain_capture_windows();
+        if self.pipelines_pending() {
+            self.release_capture_uploads();
+            return Ok(None);
+        }
         lince_interface::host::performance::count(
             lince_interface::host::performance::Count::PixelFrame,
         );
-        self.export_frame(retained)
+        self.export_frame(retained).map(Some)
     }
 }

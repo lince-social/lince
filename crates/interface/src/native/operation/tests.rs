@@ -195,7 +195,8 @@ fn suggestions_narrow_complete_and_refresh_without_mutating_records() {
             rows: vec![
                 serde_json::json!({"uid":"one", "slug":"apple", "head":"Apple"}),
                 serde_json::json!({"uid":"two", "slug":"apricot", "head":"Apricot"}),
-            ],
+            ]
+            .into(),
         }));
     OpenOperation.apply(app.world_mut(), root);
     let sand = app.world().get::<Popup>(root).unwrap().panel;
@@ -229,7 +230,7 @@ fn suggestions_narrow_complete_and_refresh_without_mutating_records() {
     app.world_mut()
         .write_message(CellMessage::new(ServerMessage::Update {
             id: RECORDS.into(),
-            rows: vec![],
+            rows: vec![].into(),
         }));
     app.update();
     assert!(

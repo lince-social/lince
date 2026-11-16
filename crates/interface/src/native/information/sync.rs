@@ -6,13 +6,7 @@ use crate::native::{
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};
 use nucleus::sync::{Destination, Direction, Instance, Outcome, Overview, Retention};
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 const REQUEST: &str = "interface-sync-status";
 
@@ -25,6 +19,7 @@ struct SyncState {
     waiting: Option<Instant>,
     before: Option<i64>,
     presented: bool,
+    wake: crate::host::WakeDeadline,
 }
 
 impl Default for SyncState {
@@ -37,19 +32,16 @@ impl Default for SyncState {
             waiting: None,
             before: None,
             presented: false,
+            wake: Default::default(),
         }
     }
 }
 
-#[derive(Resource)]
-struct SyncWake {
-    open: Arc<AtomicBool>,
-    task: tokio::task::JoinHandle<()>,
-}
-
-impl Drop for SyncWake {
-    fn drop(&mut self) {
-        self.task.abort();
+impl SyncState {
+    fn due(&self) -> Instant {
+        self.waiting.map_or(self.next, |at| {
+            self.next.max(at + Duration::from_secs(10))
+        })
     }
 }
 
@@ -65,30 +57,8 @@ pub(super) struct SyncPlugin;
 impl Plugin for SyncPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SyncState>()
-            .add_systems(Startup, connect)
             .add_systems(Update, (receive, poll, render).chain());
     }
-}
-
-fn connect(world: &mut World) {
-    let Some(wake) = world
-        .get_resource::<crate::native::wake::WakeSignal>()
-        .cloned()
-    else {
-        return;
-    };
-    let open = Arc::new(AtomicBool::new(false));
-    let watching = open.clone();
-    let task = tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(3));
-        loop {
-            interval.tick().await;
-            if watching.load(Ordering::Relaxed) {
-                wake.ring();
-            }
-        }
-    });
-    world.insert_resource(SyncWake { open, task });
 }
 
 pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
@@ -129,15 +99,32 @@ fn send(world: &mut World, request: ClientMessage) {
                     }
                 })
         });
+    let wake = world
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned();
     let mut state = world.resource_mut::<SyncState>();
+    state.wake.cancel();
     state.next = Instant::now() + Duration::from_secs(3);
     match result {
-        Ok(()) => state.waiting = Some(Instant::now()),
+        Ok(()) => {
+            state.waiting = Some(Instant::now());
+            crate::host::performance::count(
+                crate::host::performance::Count::SyncHistoryRequestsAdmitted,
+            );
+        }
         Err(error) => {
             state.waiting = None;
             state.error = Some(error);
             state.revision += 1;
         }
+    }
+    // Actions may send after this frame's poll system. Arm their response/retry
+    // deadline here too, so waiting for the Cell never relies on another input.
+    if state.presented
+        && let Some(wake) = wake
+    {
+        let due = state.due();
+        state.wake.at(&wake, due);
     }
 }
 
@@ -146,9 +133,6 @@ fn poll(world: &mut World) {
         .query_filtered::<Entity, With<SyncPanel>>()
         .iter(world)
         .any(|entity| crate::native::output_views::presents_entity(world, entity));
-    if let Some(wake) = world.get_resource::<SyncWake>() {
-        wake.open.store(open, Ordering::Relaxed);
-    }
     {
         let mut state = world.resource_mut::<SyncState>();
         if state.presented != open {
@@ -159,24 +143,28 @@ fn poll(world: &mut World) {
         }
     }
     if !open {
+        world.resource_mut::<SyncState>().wake.cancel();
         return;
     }
     let state = world.resource::<SyncState>();
-    if state.next > Instant::now()
-        || state
-            .waiting
-            .is_some_and(|at| at.elapsed() < Duration::from_secs(10))
-    {
-        return;
+    if state.due() <= Instant::now() {
+        let before = state.before;
+        send(
+            world,
+            ClientMessage::SyncInspect {
+                id: REQUEST.into(),
+                before,
+            },
+        );
     }
-    let before = state.before;
-    send(
-        world,
-        ClientMessage::SyncInspect {
-            id: REQUEST.into(),
-            before,
-        },
-    );
+    if let Some(wake) = world
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned()
+    {
+        let mut state = world.resource_mut::<SyncState>();
+        let due = state.due();
+        state.wake.at(&wake, due);
+    }
 }
 
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
@@ -185,8 +173,16 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     };
     let messages: Vec<_> = cursor
         .read(messages)
+        .filter(|message| {
+            matches!(message.0.as_ref(),
+            ServerMessage::SyncStatus { id, .. } | ServerMessage::Error { id, .. } if id == REQUEST)
+        })
         .map(|message| message.0.clone())
         .collect();
+    crate::host::performance::add(
+        crate::host::performance::Count::SyncHistoryReplies,
+        messages.len() as u64,
+    );
     for message in messages.iter().map(|message| message.as_ref()) {
         let mut state = world.resource_mut::<SyncState>();
         match message {

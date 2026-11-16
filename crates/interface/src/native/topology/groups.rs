@@ -50,6 +50,7 @@ pub fn members(world: &World, entity: Entity) -> Vec<Entity> {
     let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
         return vec![entity];
     };
+    let workspace = world.get::<crate::native::workspace::WorkspaceMember>(entity);
     world
         .get::<Children>(root)
         .map_or_else(Vec::new, |children| {
@@ -57,8 +58,7 @@ pub fn members(world: &World, entity: Entity) -> Vec<Entity> {
                 .iter()
                 .filter(|e| {
                     world.get::<crate::native::canvas_selection::SandGroup>(*e) == Some(group)
-                        && world.get::<crate::native::workspace::WorkspaceMember>(*e)
-                            == world.get::<crate::native::workspace::WorkspaceMember>(entity)
+                        && world.get::<crate::native::workspace::WorkspaceMember>(*e) == workspace
                 })
                 .collect()
         })

@@ -67,6 +67,13 @@ impl Default for Sorting {
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct AreaScale(pub f32);
 
+#[derive(Default, PartialEq)]
+struct Arrangement {
+    targets: HashMap<Entity, DVec2>,
+    ranks: HashMap<Entity, usize>,
+    members: Vec<(Entity, Vec2, String)>,
+}
+
 #[derive(Clone)]
 struct Field {
     entity: Entity,
@@ -76,10 +83,8 @@ struct Field {
     activity: crate::native::influence_report::Outcome,
     filter: Option<Arc<Matches>>,
     group: Option<GeneratedGroup>,
-    targets: HashMap<Entity, DVec2>,
-    ranks: HashMap<Entity, usize>,
+    arrangement: Option<Arc<Arrangement>>,
     order: Option<(Source, Arc<Vec<String>>)>,
-    members: Vec<(Entity, Vec2, String)>,
 }
 
 impl PartialEq for Field {
@@ -91,10 +96,12 @@ impl PartialEq for Field {
             && self.activity == other.activity
             && self.filter == other.filter
             && self.group == other.group
-            && self.targets == other.targets
-            && self.ranks == other.ranks
             && self.order == other.order
-            && self.members == other.members
+            && match (&self.arrangement, &other.arrangement) {
+                (Some(left), Some(right)) => Arc::ptr_eq(left, right) || left == right,
+                (None, None) => true,
+                _ => false,
+            }
     }
 }
 
@@ -335,10 +342,8 @@ fn refresh_fields(
                     .unwrap_or_else(|| Arc::new((**f).clone()))
             }),
             group: group.cloned(),
-            targets: HashMap::new(),
-            ranks: HashMap::new(),
+            arrangement: None,
             order: None,
-            members: Vec::new(),
         })
         .collect();
     crate::host::performance::add(
@@ -372,28 +377,36 @@ fn refresh_fields(
                 (
                     entity,
                     item.size,
-                    record
-                        .and_then(|r| r.0["uid"].as_str())
-                        .unwrap_or_default()
-                        .to_string(),
+                    record.and_then(|r| r.0["uid"].as_str()).unwrap_or_default(),
                 )
             })
             .collect();
         sands.sort_by_key(|(entity, _, _)| *entity);
-        field.members = sands.clone();
         field.order = ordered;
         if let Some(old) = runtime.field(field.entity)
             && (Arc::ptr_eq(&old.area, &field.area) || old.area == field.area)
             && old.filter == field.filter
             && old.root == field.root
             && old.workspace == field.workspace
-            && old.members == field.members
             && old.order == field.order
+            && let Some(arrangement) = &old.arrangement
+            && arrangement.members.len() == sands.len()
+            && arrangement
+                .members
+                .iter()
+                .zip(&sands)
+                .all(|(old, new)| old.0 == new.0 && old.1 == new.1 && old.2 == new.2)
         {
-            field.targets = old.targets.clone();
-            field.ranks = old.ranks.clone();
+            field.arrangement = Some(arrangement.clone());
             continue;
         }
+        let mut arrangement = Arrangement {
+            members: sands
+                .iter()
+                .map(|(entity, size, uid)| (*entity, *size, (*uid).to_owned()))
+                .collect(),
+            ..default()
+        };
         let ranks: HashMap<_, _> = field
             .order
             .as_ref()
@@ -405,13 +418,13 @@ fn refresh_fields(
             })
             .unwrap_or_default();
         if field.order.is_some() {
-            sands.retain(|(_, _, uid)| ranks.contains_key(uid.as_str()));
+            sands.retain(|(_, _, uid)| ranks.contains_key(uid));
         }
         sands.sort_by(|a, b| {
             ranks
-                .get(a.2.as_str())
-                .cmp(&ranks.get(b.2.as_str()))
-                .then(a.2.cmp(&b.2))
+                .get(a.2)
+                .cmp(&ranks.get(b.2))
+                .then(a.2.cmp(b.2))
                 .then(a.0.cmp(&b.0))
         });
         if sort.reverse {
@@ -430,9 +443,10 @@ fn refresh_fields(
             let mut target = DVec2::from_array(field.area.center);
             target[axis] += cursor + f64::from(size[axis]) * ratio * 0.5;
             cursor += (f64::from(size[axis]) + 16.0) * ratio;
-            field.targets.insert(entity, target);
-            field.ranks.insert(entity, rank);
+            arrangement.targets.insert(entity, target);
+            arrangement.ranks.insert(entity, rank);
         }
+        field.arrangement = Some(Arc::new(arrangement));
     }
     let living: std::collections::HashSet<_> = canvas.iter(world).collect();
     if runtime.fields != fields {
@@ -502,6 +516,8 @@ impl Influences {
                     return None;
                 }
                 field
+                    .arrangement
+                    .as_ref()?
                     .ranks
                     .get(&sand)
                     .and_then(|rank| i64::try_from(*rank).ok())
@@ -513,9 +529,9 @@ impl Influences {
     }
 
     pub(crate) fn topology_target(&self, area: Entity, sand: Entity) -> Option<DVec2> {
-        self.fields
-            .iter()
-            .find(|field| field.entity == area)?
+        self.field(area)?
+            .arrangement
+            .as_ref()?
             .targets
             .get(&sand)
             .copied()
@@ -620,10 +636,12 @@ impl Influences {
             self.evaluations += 1;
             let mut evaluation = crate::native::influence_report::Evaluation::new(field.entity);
             evaluation.inside = field.area.contains(point);
-            evaluation.slot = field
-                .targets
-                .get(&sand)
-                .map(|target| bevy::math::DVec3::new(target.x, 0.0, target.y));
+            let target = field
+                .arrangement
+                .as_ref()
+                .and_then(|arrangement| arrangement.targets.get(&sand))
+                .copied();
+            evaluation.slot = target.map(|target| bevy::math::DVec3::new(target.x, 0.0, target.y));
             let reason = if field.activity != crate::native::influence_report::Outcome::Active {
                 Some(field.activity.clone())
             } else if let Some(shield) = self.blocker(field, point, record, binding, true) {
@@ -645,7 +663,7 @@ impl Influences {
                 force += group.force(&field.area, sand, point);
             } else if field.area.force_mode == ForceMode::Simple {
                 let matches = field.matches(record, binding, false);
-                if !matches && !field.targets.contains_key(&sand) {
+                if !matches && target.is_none() {
                     evaluation.motion = crate::native::influence_report::Outcome::Filter;
                     if let Some(trace) = &mut trace {
                         trace.push(evaluation);
@@ -654,9 +672,7 @@ impl Influences {
                 }
                 force += simple
                     .entry(field.entity)
-                    .or_insert_with(|| {
-                        Destination::new(&field.area, field.targets.get(&sand).copied(), matches)
-                    })
+                    .or_insert_with(|| Destination::new(&field.area, target, matches))
                     .force(point);
             } else if field.matches(record, binding, false) {
                 let radius = DVec2::from_array(field.area.size).min_element() * 0.5;
@@ -668,9 +684,9 @@ impl Influences {
             }
             if let Some(sort) = &field.area.sorting
                 && (field.area.force_mode != ForceMode::Simple || field.group.is_some())
-                && let Some(target) = field.targets.get(&sand)
+                && let Some(target) = target
             {
-                let delta = *target - point;
+                let delta = target - point;
                 force += delta.normalize_or_zero()
                     * simple_strength(
                         delta.length(),

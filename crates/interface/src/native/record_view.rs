@@ -31,8 +31,19 @@ struct AutoSave(Option<String>);
 struct RecordsView {
     root: Entity,
     records: HashMap<String, (Entity, Entity)>,
+    pending: HashMap<String, Entity>,
     next_slot: usize,
     next_request: u64,
+}
+
+impl RecordsView {
+    fn admit(&mut self, entity: Entity, record: &mut RecordEditor, id: String, head: String) {
+        if let Some((previous, _)) = record.pending.take() {
+            self.pending.remove(&previous);
+        }
+        self.pending.insert(id.clone(), entity);
+        record.pending = Some((id, head));
+    }
 }
 
 pub struct RecordViewPlugin;
@@ -57,6 +68,7 @@ fn setup(world: &mut World) {
     world.insert_resource(RecordsView {
         root,
         records: HashMap::new(),
+        pending: HashMap::new(),
         next_slot: 0,
         next_request: 0,
     });
@@ -89,16 +101,21 @@ fn save(
         if record.pending.is_some() {
             continue;
         }
-        let head = text.value().to_string();
-        if head == record.confirmed {
+        let value = text.value();
+        if value == record.confirmed.as_str() {
             if automatic.0.is_some() {
                 automatic.0 = None;
             }
             continue;
         }
-        if automatic.0.as_ref() == Some(&head) {
+        if automatic
+            .0
+            .as_ref()
+            .is_some_and(|attempted| value == attempted.as_str())
+        {
             continue;
         }
+        let head = value.to_string();
         view.next_request += 1;
         let id = format!("edit-{}", view.next_request);
         let request = ClientMessage::Act {
@@ -113,7 +130,7 @@ fn save(
             Ok(()) => {
                 feedback.set_failed(false);
                 automatic.0 = Some(head.clone());
-                record.pending = Some((id, head));
+                view.admit(entity, &mut record, id, head);
                 "Saving…"
             }
             Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
@@ -128,15 +145,39 @@ fn save(
                 "Connection closed. Your draft is here; open Configuration and choose Refresh to reconnect."
             }
         };
-        if let Ok(mut label) = labels.get_mut(record.status) {
-            label.0 = message.into();
+        if let Ok(mut label) = labels.get_mut(record.status)
+            && label.0 != message
+            && !crate::i18n::native_text(message).is_some_and(|script| label.0 == script.encoding())
+        {
+            label.0.clear();
+            label.0.push_str(message);
         }
     }
 }
 
 fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
+    if !world.resource::<RecordsView>().pending.is_empty() {
+        world.resource_scope(|world, mut view: Mut<RecordsView>| {
+            view.pending.retain(|id, entity| {
+                world.get::<RecordEditor>(*entity).is_some_and(|record| {
+                    record
+                        .pending
+                        .as_ref()
+                        .is_some_and(|(pending, _)| pending == id)
+                })
+            });
+        });
+    }
+    let view = world.resource::<RecordsView>();
     let messages: Vec<_> = cursor
         .read(world.resource::<Messages<CellMessage>>())
+        .filter(|message| match message.0.as_ref() {
+            ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } => id == RECORDS,
+            ServerMessage::ActionOk { id, .. } => view.pending.contains_key(id),
+            // Errors also feed the existing shared notifications, even without a pending save.
+            ServerMessage::Error { .. } => true,
+            _ => false,
+        })
         .map(|message| message.0.clone())
         .collect();
     for message in messages.iter().map(|message| message.as_ref()) {
@@ -144,11 +185,12 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                 if id == RECORDS =>
             {
-                snapshot(world, rows.clone())
+                snapshot(world, rows.as_slice())
             }
-            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings.clone())),
+            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, id, Ok(warnings)),
             ServerMessage::Error { id, message, .. } => {
                 if id == crate::native::cell_bridge::CONNECTION {
+                    world.resource_mut::<RecordsView>().pending.clear();
                     let pending: Vec<_> = world
                         .query::<(Entity, &mut RecordEditor)>()
                         .iter_mut(world)
@@ -171,7 +213,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         ),
                     );
                 } else {
-                    acknowledge(world, &id, Err(message.clone()));
+                    acknowledge(world, id, Err(message));
                     crate::native::notifications::report(world, "interface::records", &message);
                 }
             }
@@ -180,36 +222,45 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
     }
 }
 
-fn acknowledge(world: &mut World, id: &str, result: Result<Vec<String>, String>) {
-    let mut editors = world.query::<(Entity, &mut RecordEditor, &mut AutoSave)>();
-    let mut label = None;
-    for (entity, mut record, mut automatic) in editors.iter_mut(world) {
-        if record
-            .pending
-            .as_ref()
-            .is_some_and(|(pending, _)| pending == id)
-        {
-            let (_, head) = record.pending.take().unwrap();
-            let text = match &result {
-                Ok(warnings) => {
-                    automatic.0 = None;
-                    record.confirmed = head;
-                    if warnings.is_empty() {
-                        "Saved".into()
-                    } else {
-                        format!("Saved: {}", warnings.join("; "))
-                    }
-                }
-                Err(message) => format!("Not saved: {message}"),
-            };
-            label = Some((entity, record.status, text));
-            break;
+fn acknowledge(world: &mut World, id: &str, result: Result<&[String], &str>) {
+    let Some(editor) = world.resource_mut::<RecordsView>().pending.remove(id) else {
+        return;
+    };
+    if world.get::<AutoSave>(editor).is_none() {
+        return;
+    }
+    let Some(mut record) = world.get_mut::<RecordEditor>(editor) else {
+        return;
+    };
+    if !record
+        .pending
+        .as_ref()
+        .is_some_and(|(pending, _)| pending == id)
+    {
+        return;
+    }
+    crate::host::performance::count(crate::host::performance::Count::RecordViewSaveRepliesRouted);
+    let _span = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeRecordSaveFeedback,
+    );
+    let (_, head) = record.pending.take().unwrap();
+    let text = match result {
+        Ok(warnings) => {
+            record.confirmed = head;
+            if warnings.is_empty() {
+                "Saved".into()
+            } else {
+                format!("Saved: {}", warnings.join("; "))
+            }
         }
+        Err(message) => format!("Not saved: {message}"),
+    };
+    let status = record.status;
+    if result.is_ok() {
+        world.get_mut::<AutoSave>(editor).unwrap().0 = None;
     }
-    if let Some((editor, status, text)) = label {
-        crate::native::save_feedback::set_failed(world, editor, result.is_err());
-        world.get_mut::<Text>(status).unwrap().0 = text;
-    }
+    crate::native::save_feedback::set_failed(world, editor, result.is_err());
+    crate::native::sand_panel::status(world, status, text);
 }
 
 pub(crate) fn pending_text(input: &EditableText) -> bool {
@@ -252,7 +303,8 @@ pub(crate) fn hide_placement(world: &mut World, root: Entity, entity: Entity) {
     }
 }
 
-fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
+fn snapshot(world: &mut World, rows: impl AsRef<[serde_json::Value]>) {
+    let rows = rows.as_ref();
     let mut identities = HashSet::new();
     if rows.iter().any(|row| {
         row["uid"]
@@ -268,14 +320,10 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
         return;
     }
     let mut view = world.remove_resource::<RecordsView>().unwrap();
-    let mut seen = HashSet::new();
     for row in rows {
         let (Some(uid), Some(head)) = (row["uid"].as_str(), row["head"].as_str()) else {
             continue;
         };
-        if !seen.insert(uid.to_string()) {
-            continue;
-        }
         if world
             .get::<crate::native::workspace::Workspaces>(view.root)
             .is_some_and(|spaces| spaces.hidden_records.contains(uid))
@@ -283,21 +331,21 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
             continue;
         }
         if let Some((card, editor)) = view.records.get(uid) {
-            let properties = crate::native::area::RecordProperties(row.clone());
-            if world.get::<crate::native::area::RecordProperties>(*card) != Some(&properties) {
-                world.entity_mut(*card).insert(properties);
+            if world
+                .get::<crate::native::area::RecordProperties>(*card)
+                .is_none_or(|properties| properties.0.as_ref() != row)
+            {
+                world
+                    .entity_mut(*card)
+                    .insert(crate::native::area::RecordProperties(row.clone().into()));
             }
             if crate::native::record_binding::active(world, *editor) {
                 continue;
             }
-            let current = world
-                .get::<EditableText>(*editor)
-                .unwrap()
-                .value()
-                .to_string();
+            let current = world.get::<EditableText>(*editor).unwrap().value();
             let record = world.get::<RecordEditor>(*editor).unwrap();
             let pending = record.pending.is_some();
-            let pristine = current == record.confirmed;
+            let pristine = current == record.confirmed.as_str();
             let input = world.get::<EditableText>(*editor).unwrap();
             if !pending
                 && pristine
@@ -311,7 +359,7 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
                     .editor
                     .set_text(head);
             }
-            if !pending {
+            if !pending && world.get::<RecordEditor>(*editor).unwrap().confirmed != head {
                 world.get_mut::<RecordEditor>(*editor).unwrap().confirmed = head.into();
             }
             continue;
@@ -321,7 +369,7 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
         let card = world
             .spawn((
                 Square,
-                crate::native::area::RecordProperties(row.clone()),
+                crate::native::area::RecordProperties(row.clone().into()),
                 InBox(view.root),
                 ChildOf(view.root),
                 CanvasItem {
@@ -404,7 +452,7 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
         view.records.insert(uid.into(), (card, editor));
     }
     view.records.retain(|uid, (card, editor)| {
-        if seen.contains(uid) {
+        if identities.contains(uid.as_str()) {
             return true;
         }
         let focus = world.resource::<InputFocus>().get();
@@ -421,15 +469,31 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
         false
     });
     if let Some(mut spaces) = world.get_mut::<crate::native::workspace::Workspaces>(view.root)
-        && spaces.saved_records.keys().any(|uid| !seen.contains(uid))
+        && spaces
+            .saved_records
+            .keys()
+            .any(|uid| !identities.contains(uid.as_str()))
     {
-        spaces.saved_records.retain(|uid, _| seen.contains(uid));
+        spaces
+            .saved_records
+            .retain(|uid, _| identities.contains(uid.as_str()));
     }
     world.insert_resource(view);
 }
 
 pub(crate) mod tests {
     use super::*;
+
+    fn pending(world: &mut World, editor: Entity, id: &str, head: &str) {
+        world.resource_scope(|world, mut view: Mut<RecordsView>| {
+            view.admit(
+                editor,
+                &mut world.get_mut::<RecordEditor>(editor).unwrap(),
+                id.into(),
+                head.into(),
+            );
+        });
+    }
 
     #[cfg(test)]
     #[test]
@@ -587,8 +651,7 @@ pub(crate) mod tests {
             .unwrap()
             .editor
             .set_text("Keep my draft");
-        world.get_mut::<RecordEditor>(editor).unwrap().pending =
-            Some(("pending".into(), "Sent version".into()));
+        pending(&mut world, editor, "pending", "Sent version");
         world.init_resource::<Messages<CellMessage>>();
         world.write_message(CellMessage::new(ServerMessage::Error {
             id: crate::native::cell_bridge::CONNECTION.into(),
@@ -692,12 +755,11 @@ pub(crate) mod tests {
     fn late_acknowledgment_and_failure_preserve_newer_typing() {
         let mut world = fixture();
         let (_, editor) = world.resource::<RecordsView>().records["record-a"];
-        world.get_mut::<RecordEditor>(editor).unwrap().pending =
-            Some(("edit-1".into(), "Submitted".into()));
+        pending(&mut world, editor, "edit-1", "Submitted");
         world
             .entity_mut(editor)
             .insert(crate::native::sand::editable("Newer typing"));
-        acknowledge(&mut world, "edit-1", Ok(Vec::new()));
+        acknowledge(&mut world, "edit-1", Ok(&[]));
         snapshot(
             &mut world,
             vec![serde_json::json!({"uid": "record-a", "head": "Submitted"})],
@@ -710,9 +772,8 @@ pub(crate) mod tests {
                 .to_string(),
             "Newer typing"
         );
-        world.get_mut::<RecordEditor>(editor).unwrap().pending =
-            Some(("edit-2".into(), "Newer typing".into()));
-        acknowledge(&mut world, "edit-2", Err("Permission denied".into()));
+        pending(&mut world, editor, "edit-2", "Newer typing");
+        acknowledge(&mut world, "edit-2", Err("Permission denied"));
         let state = world.get::<RecordEditor>(editor).unwrap();
         assert_eq!(state.confirmed, "Submitted");
         assert!(state.pending.is_none());

@@ -13,6 +13,9 @@ use bevy::{
     ui::InteractionDisabled,
 };
 
+mod presentation;
+pub(super) use presentation::refresh;
+
 #[derive(Resource, Default)]
 pub(super) struct WidthEditor(Option<Modal>);
 
@@ -38,7 +41,7 @@ struct Modal {
     save: Entity,
     add: Entity,
     add_height: Entity,
-    observed: Vec<(String, bool, bool)>,
+    observed: presentation::Observation,
     message: String,
 }
 
@@ -522,7 +525,7 @@ fn open(world: &mut World, root: Entity) {
         save,
         add,
         add_height,
-        observed: Vec::new(),
+        observed: Default::default(),
         message: String::new(),
     });
     super::own_keyboard(world, overlay);
@@ -531,14 +534,30 @@ fn open(world: &mut World, root: Entity) {
 }
 
 fn candidate(world: &World, modal: &Modal) -> Result<LayoutSettings, String> {
-    let value = |entity| -> Result<String, String> {
+    if let Some(value) = presentation::candidate(world, modal) {
+        return value.clone();
+    }
+    parse_candidate(world, modal)
+}
+
+fn fields(modal: &Modal) -> impl Iterator<Item = Entity> + Clone + '_ {
+    modal
+        .entries
+        .iter()
+        .chain(&modal.heights)
+        .map(|entry| entry.input)
+        .chain([modal.default, modal.move_step, modal.resize_step, modal.gap])
+}
+
+fn parse_candidate(world: &World, modal: &Modal) -> Result<LayoutSettings, String> {
+    let value = |entity| -> Result<std::borrow::Cow<'_, str>, String> {
         let text = world
             .get::<EditableText>(entity)
             .ok_or("A layout field is unavailable.")?;
         if text.is_composing() || !text.pending_edits.is_empty() || text.pending_paste.is_some() {
             return Err("Finish typing before saving the window layout.".into());
         }
-        Ok(text.value().to_string())
+        Ok(text.value().to_cow())
     };
     let mut layout = modal.origin.clone();
     layout.width_presets = modal
@@ -587,170 +606,6 @@ fn disabled(world: &mut World, entity: Entity, disabled: bool) {
     } else {
         world.entity_mut(entity).remove::<InteractionDisabled>();
     }
-}
-
-fn observed(world: &World, modal: &Modal) -> Vec<(String, bool, bool)> {
-    let mut values: Vec<_> = modal.entries.iter().chain(&modal.heights).map(|entry| entry.input)
-        .chain([modal.default, modal.move_step, modal.resize_step, modal.gap])
-        .map(|entity| world.get::<EditableText>(entity).map(|text| (text.value().to_string(), text.is_composing(), !text.pending_edits.is_empty() || text.pending_paste.is_some())).unwrap_or_default()).collect();
-    values.push((opening_text(modal.opening).into(), false, false));
-    values.push((modal.workspace_back_and_forth.to_string(), false, false));
-    values
-}
-
-pub(super) fn refresh(world: &mut World) {
-    let layout = world
-        .get_resource::<LayoutSettings>()
-        .cloned()
-        .unwrap_or_default();
-    let summaries: Vec<_> = world
-        .query::<(Entity, &Summary)>()
-        .iter(world)
-        .map(|(entity, summary)| (entity, summary.0))
-        .collect();
-    let value = format!(
-        "Width cycle: {} · Row height cycle: {} · Resize step: {} px · Default width: {} · Gaps: {} · New applications: {} · Back-and-forth: {}",
-        layout
-            .width_presets
-            .iter()
-            .map(|ratio| text(*ratio))
-            .collect::<Vec<_>>()
-            .join(" → "),
-        layout
-            .height_presets
-            .iter()
-            .map(|ratio| text(*ratio))
-            .collect::<Vec<_>>()
-            .join(" → "),
-        layout.resize_step,
-        text(layout.default_width),
-        layout.gaps,
-        opening_text(layout.application_opening),
-        if layout.workspace_back_and_forth { "On" } else { "Off" }
-    );
-    for (entity, root) in summaries {
-        if world
-            .get::<crate::native::edit_mode::EditMode>(root)
-            .is_some_and(|mode| !mode.enabled)
-        {
-            continue;
-        }
-        let focused = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .and_then(|spaces| {
-                spaces
-                    .entries
-                    .iter()
-                    .find(|space| space.id == spaces.active)
-            })
-            .and_then(|space| {
-                let id = space.desktop.focused()?;
-                let item = space.desktop.items().iter().find(|item| item.id == id)?;
-                let ratio = if space.desktop.mode() == crate::host::WorkspaceLayout::Tiled
-                    && !item.floating
-                {
-                    space
-                        .desktop
-                        .item_width(id)
-                        .and_then(crate::layout::desktop::Width::ratio)
-                } else {
-                    item.free_width.map(|width| width.ratio)
-                };
-                Some((id, ratio))
-            });
-        let suffix = focused
-            .and_then(|(id, intent)| {
-                world
-                    .query::<(
-                        &crate::native::layout::desktop::Managed,
-                        &crate::native::canvas::CanvasItem,
-                        &ChildOf,
-                    )>()
-                    .iter(world)
-                    .find(|(managed, _, parent)| managed.id == id && parent.parent() == root)
-                    .map(|(_, item, _)| {
-                        format!(
-                            "\nFocused width: {:.0} logical px · {}",
-                            item.size.x,
-                            intent
-                                .map(|ratio| format!("preset {}", text(ratio)))
-                                .unwrap_or_else(|| "manual size".into())
-                        )
-                    })
-            })
-            .unwrap_or_default();
-        let value = format!("{value}{suffix}");
-        if let Some(mut summary) = world.get_mut::<Text>(entity)
-            && summary.0 != value
-        {
-            summary.0 = value.clone();
-        }
-    }
-    let Some(mut modal) = world
-        .get_resource_mut::<WidthEditor>()
-        .and_then(|mut editor| editor.0.take())
-    else {
-        return;
-    };
-    if world.get_entity(modal.overlay).is_err() {
-        super::release_keyboard(world, modal.overlay);
-        focus(world, modal.previous);
-        return;
-    }
-    let observed = observed(world, &modal);
-    if observed != modal.observed {
-        let values_changed = observed.len() != modal.observed.len() || observed.iter().zip(&modal.observed).any(|(new, old)| new.0 != old.0);
-        modal.observed = observed;
-        if values_changed { modal.message.clear(); }
-    }
-    let result = candidate(world, &modal);
-    let stale = modal.origin != layout;
-    let message = result
-        .as_ref()
-        .err()
-        .cloned()
-        .unwrap_or_else(|| if stale { "Active layout settings changed. Reload active layout values or Review the draft against the file.".into() } else { modal.message.clone() });
-    if let Some(mut status) = world.get_mut::<Text>(modal.status)
-        && status.0 != message
-    {
-        status.0 = message;
-    }
-    disabled(world, modal.save, result.is_err() || stale);
-    disabled(world, modal.add, modal.entries.len() == 32);
-    disabled(world, modal.add_height, modal.heights.len() == 32);
-    for (kind, entries) in [
-        (Preset::Width, &modal.entries),
-        (Preset::RowHeight, &modal.heights),
-    ] {
-        for (index, entry) in entries.iter().enumerate() {
-            let value = format!("{} preset {}", kind.label(), index + 1);
-            if let Some(mut number) = world.get_mut::<Text>(entry.number)
-                && number.0 != value
-            {
-                number.0 = value.clone();
-            }
-            accessibility_label(world, entry.input, &value);
-            for (entity, action) in [
-                (entry.up, "Move up"),
-                (entry.down, "Move down"),
-                (entry.remove, "Remove"),
-            ] {
-                accessibility_label(
-                    world,
-                    entity,
-                    &format!(
-                        "{action} {} preset {}",
-                        kind.label().to_lowercase(),
-                        index + 1
-                    ),
-                );
-            }
-            disabled(world, entry.up, index == 0);
-            disabled(world, entry.down, index + 1 == entries.len());
-            disabled(world, entry.remove, entries.len() == 1);
-        }
-    }
-    world.resource_mut::<WidthEditor>().0 = Some(modal);
 }
 
 fn accessibility_label(world: &mut World, entity: Entity, value: &str) {
@@ -970,15 +825,15 @@ fn load_draft(world: &mut World, modal: &mut Modal, active: LayoutSettings, draf
         accessibility_label(world, button, &value);
     }
     modal.origin = active;
-    modal.observed = observed(world, modal);
+    presentation::observe(world, modal);
     focus(world, Some(modal.save));
     Ok(())
 }
 
-fn review_snapshot(world: &World, owner: Entity) -> Result<configuration::review::Snapshot, String> {
+fn review_snapshot(world: &World, owner: Entity, previous: Option<&configuration::review::Snapshot>) -> Result<configuration::review::Snapshot, String> {
     let modal = world.get_resource::<WidthEditor>().and_then(|editor| editor.0.as_ref()).filter(|modal| modal.overlay == owner).ok_or("The layout editor is unavailable.")?;
     let active = world.get_resource::<LayoutSettings>().cloned().unwrap_or_default();
-    configuration::review::Snapshot::new(&modal.origin, &candidate(world, modal)?, &active)
+    configuration::review::Snapshot::new(&modal.origin, &candidate(world, modal)?, &active, previous)
 }
 
 fn review_apply(world: &mut World, owner: Entity, active: serde_json::Value, draft: serde_json::Value) -> Result<(), String> {

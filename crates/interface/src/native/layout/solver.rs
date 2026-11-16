@@ -24,27 +24,23 @@ fn keep_shape(item: &mut Item) {
     }
 }
 
-fn arrange(items: &mut [Item], index: usize) -> Vec2 {
+fn arrange(items: &mut [Item], index: usize, grid: &mut [Vec<f32>; 2]) -> Vec2 {
     let rules = items[index].rules;
-    let children = items[index].children.clone();
+    let child_count = items[index].children.len();
     let mut extent = items[index].intrinsic;
     let mut cursor = Vec2::splat(rules.padding);
     let columns = usize::from(rules.columns);
-    let (mut widths, mut heights) =
-        if rules.arrangement == Arrangement::Grid && !children.is_empty() {
-            (
-                vec![0.0_f32; columns],
-                vec![0.0_f32; children.len().div_ceil(columns)],
-            )
-        } else {
-            (Vec::new(), Vec::new())
-        };
-    if rules.arrangement == Arrangement::Grid {
-        for (n, child) in children.iter().enumerate() {
+    let [widths, heights] = grid;
+    if rules.arrangement == Arrangement::Grid && child_count > 0 {
+        widths.clear();
+        widths.resize(columns, 0.0);
+        heights.clear();
+        heights.resize(child_count.div_ceil(columns), 0.0);
+        for (n, child) in items[index].children.iter().enumerate() {
             widths[n % columns] = widths[n % columns].max(items[*child].size.x);
             heights[n / columns] = heights[n / columns].max(items[*child].size.y);
         }
-        for lengths in [&mut widths, &mut heights] {
+        for lengths in [&mut *widths, &mut *heights] {
             let mut offset = rules.padding;
             for length in lengths {
                 let next = offset + *length + rules.gap;
@@ -53,7 +49,8 @@ fn arrange(items: &mut [Item], index: usize) -> Vec2 {
             }
         }
     }
-    for (n, child) in children.into_iter().enumerate() {
+    for n in 0..child_count {
+        let child = items[index].children[n];
         let size = items[child].size;
         let offset = match rules.arrangement {
             Arrangement::Free => items[child].offset.max(Vec2::splat(rules.padding)),
@@ -76,8 +73,9 @@ fn arrange(items: &mut [Item], index: usize) -> Vec2 {
 }
 
 pub(super) fn solve(items: &mut [Item], order: &[usize]) {
+    let mut grid = [Vec::new(), Vec::new()];
     for &index in order.iter().rev() {
-        let content = arrange(items, index);
+        let content = arrange(items, index, &mut grid);
         items[index].content = content;
         for axis in 0..2 {
             let rule = items[index].rules.axes[axis];
@@ -92,7 +90,7 @@ pub(super) fn solve(items: &mut [Item], order: &[usize]) {
     }
     for &index in order {
         let rules = items[index].rules;
-        let children = items[index].children.clone();
+        let child_count = items[index].children.len();
         let available = (items[index].size - Vec2::splat(rules.padding * 2.0)).max(Vec2::ZERO);
         let main_axis = match rules.arrangement {
             Arrangement::Row => Some(0),
@@ -100,52 +98,54 @@ pub(super) fn solve(items: &mut [Item], order: &[usize]) {
             _ => None,
         };
         for axis in 0..2 {
-            let filling = children
-                .iter()
-                .filter(|child| items[**child].rules.axes[axis].sizing == Sizing::Fill)
-                .count();
-            let fixed: f32 = children
-                .iter()
-                .filter(|child| items[**child].rules.axes[axis].sizing != Sizing::Fill)
-                .map(|child| items[*child].size[axis])
-                .sum();
-            for child in &children {
-                let rule = items[*child].rules.axes[axis];
+            let mut filling = 0usize;
+            let mut fixed = 0.0;
+            for &child in &items[index].children {
+                if items[child].rules.axes[axis].sizing == Sizing::Fill {
+                    filling += 1;
+                } else {
+                    fixed += items[child].size[axis];
+                }
+            }
+            for n in 0..child_count {
+                let child = items[index].children[n];
+                let rule = items[child].rules.axes[axis];
                 if rule.sizing == Sizing::Fill {
                     let space = if rules.axes[axis].sizing == Sizing::Fit {
                         rule.min
                     } else if main_axis == Some(axis) {
                         ((available[axis]
                             - fixed
-                            - rules.gap * children.len().saturating_sub(1) as f32)
+                            - rules.gap * child_count.saturating_sub(1) as f32)
                             / filling.max(1) as f32)
                             .max(0.0)
                     } else if rules.arrangement == Arrangement::Grid {
                         let count = if axis == 0 {
                             usize::from(rules.columns)
                         } else {
-                            children.len().div_ceil(usize::from(rules.columns)).max(1)
+                            child_count.div_ceil(usize::from(rules.columns)).max(1)
                         };
                         ((available[axis] - rules.gap * count.saturating_sub(1) as f32)
                             / count as f32)
                             .max(0.0)
                     } else if rules.arrangement == Arrangement::Free {
-                        (items[index].size[axis] - items[*child].offset[axis] - rules.padding)
+                        (items[index].size[axis] - items[child].offset[axis] - rules.padding)
                             .max(0.0)
                     } else {
                         available[axis]
                     };
-                    items[*child].size[axis] = rule.resolve(0.0, space);
+                    items[child].size[axis] = rule.resolve(0.0, space);
                 }
             }
         }
-        for child in &children {
-            keep_shape(&mut items[*child]);
+        for n in 0..child_count {
+            let child = items[index].children[n];
+            keep_shape(&mut items[child]);
         }
-        items[index].content = arrange(items, index);
+        items[index].content = arrange(items, index, &mut grid);
     }
     for &index in order.iter().rev() {
-        let content = arrange(items, index);
+        let content = arrange(items, index, &mut grid);
         items[index].content = content;
         for axis in 0..2 {
             let rule = items[index].rules.axes[axis];

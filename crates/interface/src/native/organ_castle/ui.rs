@@ -57,7 +57,7 @@ pub(super) fn organ_list(world: &mut World, owner: Entity) {
         view.rows.get("organs").cloned().unwrap_or_default(),
     );
     panel::clear(world, parent);
-    for row in &rows {
+    for row in rows.iter() {
         let uid = text(row, "uid");
         let contact = &row["contact"];
         let caption = if row["slug"] == "local-organ" {
@@ -641,7 +641,7 @@ pub(super) fn nearby(world: &mut World, owner: Entity) {
             world.despawn(*entity);
         }
     }
-    for row in rows {
+    for row in rows.iter() {
         if existing.iter().any(|(_, node_id, known)| {
             row["node_id"] == *node_id && (row["known"] == true) == *known
         }) {

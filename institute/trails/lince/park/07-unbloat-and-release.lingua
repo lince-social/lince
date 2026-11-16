@@ -10,7 +10,7 @@ Park — 7. Remove executed bloat and improve the shipping binary (
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-**Stage assignment:** P86/P89/P88/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148/P157 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
+**Stage assignment:** P86/P89/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
 
 Follow [12's session cycle](record:r_7NBQGTF152S58NPT0Z9EM58C1T). Useful local checks and test compilation are allowed in Niri; CI normally produces the optimized application. Compiler choices describe source/profile-identified artifacts, not extra production algorithm paths. Park timing runs use explicitly prepared matching artifacts without compilation, then evidence/plan updates end the visit.
 
@@ -21,8 +21,7 @@ The user accepts slower production compilation for a better runtime binary. Test
 **Continue through these Records:**
 
 - [P86 — Rank actual bloat in active paths.](record:r_394ME6MH9S27PVQDAF9DDC5V16)
-- [P89 — Consolidate one redundant derived-state cache or resolver layer.](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK)
-- [P88 — Consolidate one duplicated pure coordinate-mapping operation.](record:r_1GMZB7EER73QZC1S03KRZK69Q7)
+- [P89 — Verify single-owner canvas clipping.](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK)
 - [P92 — Initialize one unused-at-startup resource family on demand.](record:r_0ZGYWCG03CHFVF1JASD6DCST15)
 - [P90 — Remove one unused dependency or redundant feature activation.](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K)
 - [P148 — Repair worker-only test feature gates.](record:r_2M3HN9VZMK9XYX5HXKC38XPB97)
@@ -61,7 +60,7 @@ Extension @park-p86 "lince.controls" {
     }]
 }
 
-P89 — Consolidate one redundant derived-state cache or resolver layer. (
+P89 — Verify single-owner canvas clipping. (
     @park-p89: 0,
     is #task,
     #park-performance-task,
@@ -69,12 +68,13 @@ P89 — Consolidate one redundant derived-state cache or resolver layer. (
     #part-of @park-dev-07-unbloat-and-release: 19,
     #park-workflow @park-development-cycle
 ) { r_2NZ5PKRV5EBGZ2GE75QJXDVTQK
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-15).** The selected overlap is Bevy and native canvas clipping writing the same derived components. An explicit boundary now delegates each native subtree to one clip owner. Nested roots are traversed once, layout-parent bounds are prepared once per pass, and eligible extracted text runs share their entity's prepared clip. This replaces the open instruction to find and consolidate another derivation layer; it does not claim every cache or resolver is optimal.
 
-**Context:** [Source chapter](record:r_42C88G596W9EFZ00JTJDWD766E); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** CLIP-VERIFY in [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) owns ownership transitions, nested/ghost/disabled hierarchies, clipping semantics, exact paint/input/capture behavior and total-resource evaluation. The maps hold only one pass's values and retire excess capacity. No permission cache or persistent geometry cache is added.
 
+**Why:** competing producers and repeated derivation spend CPU and can dirty otherwise unchanged downstream work. Correct ownership must preserve readable text and reachable controls.
 
-**Why:** overlapping caches can repeat work and obscure invalidation/retirement. **Scope:** select one P86-proven overlap in shared style/metric/geometry/data derivation, reuse the existing canonical family and remove redundant storage/callers. **Verify:** keys, source revisions, zero/restored values, reparenting, removals, memory bounds and small/changing workloads. Do not merge unrelated semantics into an all-purpose global cache or cache permission decisions. Maintain a single explicit invalidation/lifetime contract for the selected value.
+**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Quantity remains zero until the complete behavior and performance obligation is verified.
 } r_2NZ5PKRV5EBGZ2GE75QJXDVTQK
 
 Extension @park-p89 "lince.controls" {
@@ -87,31 +87,16 @@ Extension @park-p89 "lince.controls" {
     }]
 }
 
-P88 — Consolidate one duplicated pure coordinate-mapping operation. (
+P88 — Coordinate projection preparation is implemented. (
     @park-p88: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a1,
+    is #chapter,
     #part-of @park-dev-07-unbloat-and-release: 23,
     #park-workflow @park-development-cycle
 ) { r_1GMZB7EER73QZC1S03KRZK69Q7
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Source-only implementation; removed from the implementation queue on 2026-11-15.** ContentMapping now delegates single-point projection to the same prepared CanvasProjection used by multi-point accessibility export. Each immutable-world field export reuses its validated projection and output mapping across clusters. Per-caller authority, ownership, lifetime and clipping checks remain distinct. No persistent authority cache or universal coordinate-policy merger was added.
 
-**Context:** [Source chapter](record:r_42C88G596W9EFZ00JTJDWD766E); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
-
-
-**Why:** projection/mapping formulas appear in multiple presentation and input paths, increasing derivation cost and disagreement risk. **Scope:** assess host/raster, presentation/mapping and native_input projection/transfer/pointer; share one genuinely identical pure operation. Keep each caller's authority, lifetime and eligibility checks. **Verify:** scaling, rotated/projected geometry, clipping, output epochs, queued presses and replacement. Different native/client/capture policies must not be merged merely because the arithmetic resembles each other.
+[P131](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) and ACCESS-VERIFY in [Overhaul.md](Overhaul.md) own the remaining projection/scaling, clipping, output replacement, text and resource checks. This Record preserves the original identity without a duplicate implementation or verification task. The source batch is unbuilt, untested and unmeasured; this is not evidence that all mapping paths are optimal.
 } r_1GMZB7EER73QZC1S03KRZK69Q7
-
-Extension @park-p88 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 P92 — Initialize one unused-at-startup resource family on demand. (
     @park-p92: 0,
@@ -331,36 +316,19 @@ Park — Extra delivery work found during the Park visit (
 
 ## Extra delivery work found during the Park visit
 
-**Continue through these Records:**
-
-- [P157 — Remove the unused application ELF from the validation download.](record:r_3RH4023PW0QZY8ZF6REX12B9BW)
 } r_1HT5FDT2ZZD5XTJ39RQVHAAY23
 
-P157 — Remove the unused application ELF from the validation download. (
-    @park-p157: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-b,
+P157 — Legacy duplicate-ELF task superseded by the measurement archive. (
+    @park-p157: 1,
+    is #chapter,
     #part-of @park-dev-e94bbb4d54d67aa275bf: 61,
     #park-workflow @park-development-cycle
 ) { r_3RH4023PW0QZY8ZF6REX12B9BW
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Retired from the work queue, 2026-11-15.** The old validation ZIP is no longer the current CI measurement delivery. `.github/workflows/build.yml` packages the application-root `park-responsiveness` probe, its build information, application build information and checksums; it does not include a second application ELF. The application is delivered separately. The optimized probe/archive identity and successful private use are already recorded in Overhaul.md.
 
-**Context:** [Source chapter](record:r_42C88G596W9EFZ00JTJDWD766E); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** B.
-
-
-**Why:** the matching validation ZIP is 914,534,215 bytes and duplicates a 954,940,776-byte uncompressed application ELF, although every selected case executes only interface/Park test artifacts. The application is already delivered separately. This slows each measurement cycle and consumes cache/storage; it is a Stage B delivery gain, not a desktop FPS improvement. **Build:** keep the compiled test/fixture assets and source/profile/build-info/application-digest provenance required to verify them, but omit the unused duplicate payload. Reuse the existing package/manifest/checksum flow; do not weaken source identity or require a build at measurement time. **Verify:** the same nonzero selectors and all hashes/identities validate from the smaller archive, the installed optimized candidate still matches, and byte/download reductions are measured. This must not delay the A0 runtime/coverage repairs.
+Do not implement a second archive cleanup against the obsolete bundle. Historical size figures remain in the report archive; no new byte/download saving is claimed from this source-only reconciliation. Current source-batch and physical performance acceptance remain open.
 } r_3RH4023PW0QZY8ZF6REX12B9BW
 
-Extension @park-p157 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 Park — Established release baseline (
     @park-dev-3171559da4ca208890f6: 0,
@@ -370,7 +338,7 @@ Park — Established release baseline (
 ) { r_2DQ65YSFF88767VM4MJ1PE5H4W
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
-## Established release baseline
+## Historical release baseline — c9f56419e4ac38dd1d83a9a18d6d66786837c674
 
 The completed release-profile audit verified the running c9f56419e4ac38dd1d83a9a18d6d66786837c674 binary against its completed CI build log and Nix packaging recipe. Its baseline is Rust 1.99.1 (58cf8f9c3), x86_64-unknown-linux-gnu, ui/instinct/park, opt-level = 3, debug = false and panic = "unwind". The lto, codegen-units and incremental lines are commented: Cargo supplies lto = false (local ThinLTO, not cross-crate LTO), codegen-units = 16 and incremental = false. CI additionally sets CARGO_INCREMENTAL = 0, so uncommenting incremental = false alone does not improve this binary. Codegen units govern compilation partitioning, not runtime thread count. Preserve panic recovery in comparisons. The receipt distinguishes observed flags from inferred Cargo defaults; optimized = true alone does not attest all compiler settings.
 

@@ -1,0 +1,35 @@
+Procedural appearance authoring (@ws-procedural-appearance: 0, is #chapter, #part-of @workspace-development, #requires @ws-object-recipes, #requires @ws-assets) { r_65HXEGHF9P97C921W8Y0VFQF9Q
+Status: Pending. Owner refinement, 2026-11-15: appearance is an editable reusable composition, with explicit inputs that can later bind to behavior.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Object recipes](Object-Recipes.lingua) and [Assets](Assets.lingua). Deliver bounded procedural geometry/material/emission controls and time-dependent visual recipes on ordinary local objects. Use supplied captured values/time to prove the visual interface independently; live binding to authored behavior is proved in [Authoring experiments](Authoring-Experiments.lingua). This branch does not wait for functional execution, exact CAD, globe integration or physical effects.
+
+## Ownership and parallel work
+
+Own appearance operators and native parameter/spatial controls. Reuse the renderer, numeric appearance bindings, source geometry/asset delivery and demand policies. Shared renderer/frame or recipe-schema changes have one owner. Behavioral runtime and physical solvers remain separately owned; a curve evaluator for appearance does not become another controller.
+
+## Ordered work
+
+### Task VIS.T01
+
+- [ ] Deliver a tested minimal operator set: supported geometry transforms/repetition, bounded region/mask/falloff, color/material/emission binding and temporal curves. Define source correspondence, units/frames, supplied clock, output lifetime and cost limits. Include an expanding visual pulse and configurable indicator in OA.F01. Rendering-only growth changes a display product; it does not silently edit exact CAD dimensions, collision support or a scientific field.
+
+### Task VIS.T02
+
+- [ ] Expose simple preset controls and optional recipe internals through ordinary selection/inspector tools. Directly edit the pulse region, origin, direction and curve with numeric and spatial handles addressing the same source. Group/expose parameters, save a reusable definition and create an isolated variant. Use captured-value preview and input inspection; runtime binding is an explicit typed link, never a guess from a parameter name or object label.
+
+### Task VIS.T03
+
+- [ ] Support a bounded trail or particle-style visual output through the existing render/asset lifecycle, with explicit capacity, sampling, seed where applicable, lifetime and release/cancel. Reuse supplied geometry/sprites rather than requiring a new fluid/force solver. Declare determinism or tolerance expectations. Keep authored definitions retained while low-detail representations or inactive transient products release. A visible glow/trail does not supply temperature, energy, mass or collision response.
+
+### Task VIS.T04
+
+- [ ] Prove OA.W03 independently using captured time/value sequences, two occurrences, invalid bindings, save/reopen/offline, preview/cancel/undo, output-budget exhaustion and stale completion. Vary visual detail while preserving source parameters and supplied observable values. Measure source update, frame cost, product size, peak memory and final release; preserve accessible numeric controls and edit-panel geometry. Publish actual supported interfaces before live behavior binding starts.
+
+## Completion and handoff
+
+Read OA.R01–OA.R04/OA.R06/OA.R08/OA.R10–OA.R12. Publish supported operators and visual input semantics, native proof, exact retained source, renderer/asset ownership and measured limits. Consumer: [Authoring experiments](Authoring-Experiments.lingua). Physical appearance models and unsupported shaders/volumes remain separate extensions. Current outcome: unbuilt and unverified.
+} r_65HXEGHF9P97C921W8Y0VFQF9Q

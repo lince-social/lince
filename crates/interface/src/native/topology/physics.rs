@@ -247,7 +247,9 @@ pub(crate) fn room_transform(
 }
 
 pub fn synchronize(world: &mut World) -> bool {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeBodiesSynchronize);
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeBodiesSynchronize,
+    );
     if world
         .query_filtered::<Entity, With<super::rooms::Member>>()
         .iter(world)
@@ -256,6 +258,7 @@ pub fn synchronize(world: &mut World) -> bool {
         super::rooms::synchronize(world);
     }
     super::holes::refresh(world);
+    let held_items = crate::native::physics::HeldItems::capture(world);
     if let Some(mut cache) = world.get_resource_mut::<GeometryCache>() {
         cache.0.retain(|_, shape| shape.strong_count() > 0);
     }
@@ -306,6 +309,7 @@ pub fn synchronize(world: &mut World) -> bool {
     let mut retained = HashSet::new();
     let mut changed_static_scopes = HashSet::new();
     let mut changed = false;
+    let mut part_query = world.query::<(Entity, &Part, &ChildOf)>();
     for entity in entities {
         if covered.contains(&entity) {
             continue;
@@ -374,6 +378,7 @@ pub fn synchronize(world: &mut World) -> bool {
             || crate::native::canvas::presented_spatial(world, entity).rotation(),
             |p| DQuat::from_array(p.rotation),
         );
+        let inverse_rotation = rotation.inverse();
         let enabled = crate::native::workspace_config::enabled(world, root, workspace);
         let held = partial
             || room_proxy
@@ -382,7 +387,7 @@ pub fn synchronize(world: &mut World) -> bool {
                 spatial(world, *e).world_pinned
                     || world.get::<super::terrain::Unsupported>(*e).is_some()
                     || crate::native::area_mutation::pending(world, *e)
-                    || crate::native::physics::held(world, *e)
+                    || held_items.contains(world, *e)
                     || world
                         .get_resource::<super::input::PointerState>()
                         .is_some_and(|p| p.drag.is_some_and(|(drag, _)| drag == *e))
@@ -416,7 +421,7 @@ pub fn synchronize(world: &mut World) -> bool {
         let offsets: Vec<_> = signature
             .iter()
             .map(|(entity, _, _)| {
-                rotation.inverse() * (presented_position(world, *entity).unwrap() - position)
+                inverse_rotation * (presented_position(world, *entity).unwrap() - position)
             })
             .collect();
         let offsets_changed = existing.is_none_or(|e| {
@@ -437,7 +442,7 @@ pub fn synchronize(world: &mut World) -> bool {
             let mut parts = Vec::new();
             let mut complete = true;
             for ((e, size, placement), relative) in signature.iter().zip(&offsets) {
-                let local_rotation = rotation.inverse() * placement.rotation();
+                let local_rotation = inverse_rotation * placement.rotation();
                 let collider = if let Some(asset) = world.get::<super::assets::ImportedAsset>(*e) {
                     let scale = super::assets::effective_scale(world, *e, asset);
                     imported_shape(world, *e, scale).ok().flatten()
@@ -509,10 +514,10 @@ pub fn synchronize(world: &mut World) -> bool {
                 changed_static_scopes.insert((root, workspace));
             }
             let previous: Vec<_> = world
-                .query_filtered::<(Entity, &ChildOf), With<Part>>()
-                .iter(world)
-                .filter(|(_, parent)| parent.parent() == body)
-                .map(|(entity, _)| entity)
+                .get::<Children>(body)
+                .into_iter()
+                .flat_map(|children| children.iter())
+                .filter(|entity| part_query.get(world, *entity).is_ok())
                 .collect();
             for entity in previous {
                 world.entity_mut(entity).remove::<Collider>();
@@ -536,16 +541,17 @@ pub fn synchronize(world: &mut World) -> bool {
             changed = true;
         } else if offsets_changed {
             let parts: HashMap<_, _> = world
-                .query::<(Entity, &Part, &ChildOf)>()
-                .iter(world)
-                .filter(|(_, _, parent)| parent.parent() == body)
+                .get::<Children>(body)
+                .into_iter()
+                .flat_map(|children| children.iter())
+                .filter_map(|entity| part_query.get(world, entity).ok())
                 .map(|(entity, part, _)| (part.0, entity))
                 .collect();
             for ((member, size, placement), relative) in signature.iter().zip(&offsets) {
                 let Some(part) = parts.get(member).copied() else {
                     continue;
                 };
-                let local_rotation = rotation.inverse() * placement.rotation();
+                let local_rotation = inverse_rotation * placement.rotation();
                 let local = part_center(world, *member, *size, local_rotation, *relative);
                 let point = position + rotation * local;
                 let orientation = rotation * local_rotation;
@@ -625,11 +631,18 @@ pub fn synchronize(world: &mut World) -> bool {
                 .remove::<Sleeping>();
             changed = true;
         }
-        let mut link = world.get_mut::<Body>(body).unwrap();
-        link.position = position;
-        link.rotation = rotation;
-        link.signature = signature;
-        link.held = held;
+        let link = world.get::<Body>(body).unwrap();
+        if link.position != position
+            || link.rotation != rotation
+            || link.signature != signature
+            || link.held != held
+        {
+            let mut link = world.get_mut::<Body>(body).unwrap();
+            link.position = position;
+            link.rotation = rotation;
+            link.signature = signature;
+            link.held = held;
+        }
         retained.insert(body);
     }
     let stale: Vec<_> = world
@@ -637,20 +650,25 @@ pub fn synchronize(world: &mut World) -> bool {
         .iter(world)
         .filter(|e| !retained.contains(e))
         .collect();
-    for entity in stale {
+    for &entity in &stale {
         let body = world.get::<Body>(entity).unwrap();
         if body.held {
             changed_static_scopes.insert((body.root, body.workspace));
         }
+    }
+    if !stale.is_empty() {
+        let stale_bodies: HashSet<_> = stale.iter().copied().collect();
         let colliders: Vec<_> = world
             .query::<(Entity, &ColliderOf)>()
             .iter(world)
-            .filter(|(_, owner)| owner.body == entity)
+            .filter(|(_, owner)| stale_bodies.contains(&owner.body))
             .map(|(collider, _)| collider)
             .collect();
         for collider in colliders {
             world.entity_mut(collider).remove::<Collider>();
         }
+    }
+    for entity in stale {
         world.despawn(entity);
         changed = true;
     }
@@ -882,7 +900,9 @@ mod tests {
                         world_pinned: pinned,
                         ..default()
                     },
-                    crate::native::area::RecordProperties(serde_json::json!({"quantity": -1})),
+                    crate::native::area::RecordProperties(
+                        serde_json::json!({"quantity": -1}).into(),
+                    ),
                 ))
                 .id();
             app.world_mut().spawn((
@@ -991,7 +1011,7 @@ mod tests {
                     world_pinned: true,
                     ..default()
                 },
-                crate::native::area::RecordProperties(serde_json::json!({"quantity": -1})),
+                crate::native::area::RecordProperties(serde_json::json!({"quantity": -1}).into()),
                 crate::native::canvas_selection::SandGroup([4; 16]),
             ))
             .id();

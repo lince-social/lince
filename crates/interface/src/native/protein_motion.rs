@@ -85,6 +85,7 @@ pub(crate) fn prepare(world: &mut World) {
         world.insert_resource(motion);
         return;
     }
+    let held_items = crate::native::physics::HeldItems::capture(world);
     let mut groups: HashMap<Entity, Vec<Member>> = HashMap::new();
     for (entity, item, binding, parent, workspace) in world
         .query::<(
@@ -121,7 +122,7 @@ pub(crate) fn prepare(world: &mut World) {
             || world
                 .get::<crate::native::sand_placement::Pinned>(entity)
                 .is_some()
-            || crate::native::physics::held(world, entity)
+            || held_items.contains(world, entity)
             || crate::native::area_mutation::pending(world, entity)
             || world
                 .get_resource::<crate::native::topology::input::PointerState>()
@@ -163,7 +164,7 @@ pub(crate) fn prepare(world: &mut World) {
     let dt = world
         .get_resource::<Time<Real>>()
         .map_or(1.0 / 60.0, |time| time.delta_secs_f64())
-        .clamp(0.0, 0.05);
+        .max(0.0);
     for (owner, mut members) in groups {
         members.sort_by_key(|member| member.entity);
         let mut edges = links.remove(&owner).unwrap_or_default();
@@ -187,6 +188,11 @@ pub(crate) fn prepare(world: &mut World) {
             || state.rotation != rotation
         {
             state.alpha = 1.0;
+        } else {
+            state.alpha *= (-state.settings.cooling * dt).exp();
+            if state.alpha < 0.01 {
+                state.alpha = 0.0;
+            }
         }
         state.members = members;
         state.links = edges;
@@ -206,10 +212,6 @@ pub(crate) fn prepare(world: &mut World) {
         );
         motion.evaluations += 1;
         motion.forces.extend(forces);
-        state.alpha *= (-state.settings.cooling * dt).exp();
-        if state.alpha < 0.01 {
-            state.alpha = 0.0;
-        }
     }
     world.insert_resource(motion);
 }
@@ -252,33 +254,38 @@ fn forces(
         .iter()
         .map(|member| (center - member.position) * settings.center)
         .collect();
-    for first in 0..members.len() {
-        for second in first + 1..members.len() {
-            let mut delta =
-                rotation.inverse() * (members[first].position - members[second].position);
-            delta.y = 0.0;
-            let distance = delta.length();
-            let direction = if distance > 1e-6 {
-                delta / distance
-            } else {
-                let angle = (first * 17 + second * 31) as f64 * 2.399963229728653;
-                DVec3::new(angle.cos(), 0.0, angle.sin())
-            };
-            let spacing =
-                f64::from((members[first].size.length() + members[second].size.length()) * 0.5)
-                    + 40.0;
-            let force = (rotation * direction)
-                * (settings.repulsion * spacing.powi(2) / distance.max(spacing * 0.25).powi(2))
-                    .min(100_000.0);
-            forces[first] += force;
-            forces[second] -= force;
+    if settings.repulsion > 0.0 {
+        let inverse = rotation.inverse();
+        let radii: Vec<_> = members.iter().map(|member| member.size.length()).collect();
+        for first in 0..members.len() {
+            for second in first + 1..members.len() {
+                let mut delta = inverse * (members[first].position - members[second].position);
+                delta.y = 0.0;
+                let distance = delta.length();
+                let direction = if distance > 1e-6 {
+                    delta / distance
+                } else {
+                    let angle = (first * 17 + second * 31) as f64 * 2.399963229728653;
+                    DVec3::new(angle.cos(), 0.0, angle.sin())
+                };
+                let spacing = f64::from((radii[first] + radii[second]) * 0.5) + 40.0;
+                let force = (rotation * direction)
+                    * (settings.repulsion * spacing.powi(2) / distance.max(spacing * 0.25).powi(2))
+                        .min(100_000.0);
+                forces[first] += force;
+                forces[second] -= force;
+            }
         }
     }
-    let indices: HashMap<_, _> = members
-        .iter()
-        .enumerate()
-        .map(|(index, member)| (member.entity, index))
-        .collect();
+    let indices: HashMap<_, _> = if links.is_empty() {
+        HashMap::new()
+    } else {
+        members
+            .iter()
+            .enumerate()
+            .map(|(index, member)| (member.entity, index))
+            .collect()
+    };
     for (from, to) in links {
         let (Some(&first), Some(&second)) = (indices.get(from), indices.get(to)) else {
             continue;
@@ -348,7 +355,7 @@ mod tests {
                     uid: format!("record-{index}"),
                     source: Source::Local,
                 },
-                RecordProperties(serde_json::json!({"quantity":index})),
+                RecordProperties(serde_json::json!({"quantity":index}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))
@@ -594,10 +601,13 @@ mod tests {
             }
             assert_eq!(app.world().resource::<Motion>().evaluations, evaluations);
             assert_eq!(app.world().get::<CanvasItem>(first).unwrap().position, a);
-            app.world_mut()
-                .get_mut::<RecordProperties>(first)
-                .unwrap()
-                .0["quantity"] = serde_json::json!(42);
+            std::sync::Arc::make_mut(
+                &mut app
+                    .world_mut()
+                    .get_mut::<RecordProperties>(first)
+                    .unwrap()
+                    .0,
+            )["quantity"] = serde_json::json!(42);
             app.update();
             assert!(app.world().resource::<Motion>().evaluations > evaluations);
             assert!(app.world().resource::<Motion>().states[&owner].alpha > 0.9);

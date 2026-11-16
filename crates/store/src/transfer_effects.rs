@@ -3,6 +3,7 @@ use nucleus::{DecimalValue, Fact, transfer::application::EffectMode};
 use serde::Serialize;
 use serde_json::json;
 use sqlx::{Row, SqliteConnection, SqlitePool};
+use std::collections::HashMap;
 
 use crate::{StoreError, exact, transfer_accounting as accounting};
 
@@ -57,6 +58,34 @@ pub async fn quote_on(
     canonical_after: DecimalValue,
 ) -> Result<Option<Group>, StoreError> {
     let application = accounting::effective_on(connection, binding).await?;
+    if application.policy.is_none() {
+        return Ok(None);
+    }
+    let availability = crate::transfer_loans::adjustments_on(
+        connection,
+        nucleus::execution::now().timestamp_millis(),
+    )
+    .await?
+    .into_iter()
+    .map(|adjustment| (adjustment.record.clone(), adjustment))
+    .collect();
+    quote_prepared_on(
+        connection,
+        binding,
+        canonical_after,
+        &application,
+        &availability,
+    )
+    .await
+}
+
+pub(crate) async fn quote_prepared_on(
+    connection: &mut SqliteConnection,
+    binding: &accounting::Binding<'_>,
+    canonical_after: DecimalValue,
+    application: &accounting::Effective,
+    availability: &HashMap<String, crate::transfer_loans::Adjustment>,
+) -> Result<Option<Group>, StoreError> {
     let Some(policy) = &application.policy else {
         return Ok(None);
     };
@@ -76,28 +105,18 @@ pub async fn quote_on(
         ));
     }
     let mut effects = Vec::new();
-    let availability = crate::transfer_loans::adjustments_on(
-        connection,
-        nucleus::execution::now().timestamp_millis(),
-    )
-    .await?;
     for (index, configured) in policy.effects.iter().enumerate() {
         let row = sqlx::query("SELECT r.head,r.quantity_mantissa,r.quantity_scale,r.unit_uid FROM record r JOIN record own ON own.uid = r.organ_uid AND own.slug = 'local-organ' AND own.kind = 'organ' AND own.deleted_at IS NULL WHERE r.uid = ? AND r.deleted_at IS NULL")
             .bind(&configured.record).fetch_optional(&mut *connection).await?
             .ok_or_else(|| invalid("every private effect needs a live Record on this Organ"))?;
-        if availability
-            .iter()
-            .any(|adjustment| adjustment.record == configured.record && adjustment.unit_changed)
-        {
+        let adjustment = availability.get(&configured.record);
+        if adjustment.is_some_and(|adjustment| adjustment.unit_changed) {
             return Err(invalid("loan availability needs the original Record unit"));
         }
         let before = exact::read_decimal(&row, "quantity")?;
         let available_before = exact::sum_exact([
             before,
-            availability
-                .iter()
-                .find(|adjustment| adjustment.record == configured.record)
-                .map_or_else(exact::zero, |adjustment| adjustment.delta),
+            adjustment.map_or_else(exact::zero, |adjustment| adjustment.delta),
         ])?;
         let unit: Option<String> = row.get("unit_uid");
         if previous.iter().any(|(record, _, original_unit)| {

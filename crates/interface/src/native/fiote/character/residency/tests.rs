@@ -17,9 +17,9 @@ fn hiding_releases_target_demand_and_freezes_playback_and_transitions_until_rest
     world.init_resource::<Assets<Image>>();
     world.init_resource::<Assets<AnimationGraph>>();
     world.init_resource::<Time>();
-    let avatar = world.spawn(Node::default()).id();
+    world.init_resource::<crate::native::tokens::ThemeSettings>();
+    let avatar = world.spawn((Node::default(), Avatar)).id();
     let palette = Palette::default();
-    let groups = BTreeMap::from([(palette, vec![avatar])]);
     let image = world
         .resource_mut::<Assets<Image>>()
         .add(Image::new_target_texture(
@@ -76,7 +76,8 @@ fn hiding_releases_target_demand_and_freezes_playback_and_transitions_until_rest
         visible: true,
     });
     world.get_mut::<Node>(avatar).unwrap().display = Display::None;
-    synchronize(&mut world, &groups, true);
+    let demand = Demand::capture(&mut world);
+    synchronize(&mut world, &demand, true);
     animate(&mut world, false);
     assert_eq!(
         world
@@ -105,7 +106,8 @@ fn hiding_releases_target_demand_and_freezes_playback_and_transitions_until_rest
         before
     );
     world.get_mut::<Node>(avatar).unwrap().display = Display::Flex;
-    synchronize(&mut world, &groups, true);
+    let demand = Demand::capture(&mut world);
+    synchronize(&mut world, &demand, true);
     animate(&mut world, true);
     assert_eq!(
         world

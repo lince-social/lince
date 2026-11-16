@@ -121,8 +121,8 @@ impl Engine {
             .bind(&applied.cancellation).bind(&occurrence.transfer_uid).bind(uid).bind(&occurrence.uid)
             .fetch_optional(&self.store.pool).await?
             .ok_or_else(|| invalid("Choose an applied cancellation, not a proposal"))?;
-        let people: Vec<String> = serde_json::from_str(&row.get::<String, _>("required_people"))?;
-        let occurrences: Vec<String> = serde_json::from_str(&row.get::<String, _>("occurrences"))?;
+        let people: Vec<String> = serde_json::from_str(row.get::<&str, _>("required_people"))?;
+        let occurrences: Vec<String> = serde_json::from_str(row.get::<&str, _>("occurrences"))?;
         let quantity = store::exact::read_decimal(&row, "quantity")?;
         let effect = store::exact::read_decimal(&row, "effect")?;
         if applied.action != "apply-transfer-cancellation"

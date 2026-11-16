@@ -33,7 +33,10 @@ impl Stamp {
         (generation != u64::MAX).then(|| Self { generation, order: world.get_resource::<LayoutSettings>().map(|settings| settings.opening_rules.clone()).unwrap_or_default() })
     }
 
-    fn valid(&self, world: &World) -> bool { Self::current(world).as_ref() == Some(self) }
+    fn valid(&self, world: &World) -> bool {
+        world.get_resource::<Catalog>().is_some_and(|catalog| catalog.generation != u64::MAX && catalog.generation == self.generation)
+            && world.get_resource::<LayoutSettings>().map_or(&[][..], |settings| settings.opening_rules.as_slice()) == self.order
+    }
 }
 
 fn request_view(world: &World, root: Entity) -> Option<crate::host::OpeningView> {
@@ -51,8 +54,24 @@ pub fn request(world: &World, root: Entity, target: crate::host::WindowInspectio
 }
 
 pub fn request_current(world: &World, root: Entity, request: &crate::host::OpeningRequest) -> bool {
-    request.target.valid() && request.target.owner == root.to_bits() && request.revision.valid(world)
-        && request_view(world, root).as_ref() == Some(&request.view)
+    let _validation = engine::performance::Span::new("opening-request-validation");
+    if !request.target.valid()
+        || request.target.owner != root.to_bits()
+        || !request.revision.valid(world)
+    {
+        return false;
+    }
+    let Some(spaces) = world.get::<Workspaces>(root) else {
+        return false;
+    };
+    let views = world
+        .get_resource::<crate::native::output_views::OutputViews>()
+        .filter(|views| views.applies_to(root));
+    request.view.canvas == spaces.canvas_id
+        && request.view.workspace == spaces.active
+        && request.view.output == views.map(|views| views.focused)
+        && request.view.outputs.as_slice()
+            == views.map_or(&[][..], |views| views.outputs.as_slice())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -127,6 +146,7 @@ struct Catalog {
     rules: Feed,
     windows: Feed,
     window_refs: BTreeSet<String>,
+    references: Option<ui::References>,
     sender: Option<crate::native::cell_bridge::Sender>,
     cursor: MessageCursor<CellMessage>,
     pending: HashMap<String, Pending>,
@@ -135,7 +155,7 @@ struct Catalog {
 
 impl Default for Catalog {
     fn default() -> Self {
-        Self { generation: 1, rules: Feed::new(RULE_NAMESPACE), windows: Feed::new(WINDOW_NAMESPACE), window_refs: BTreeSet::new(), sender: None, cursor: Default::default(), pending: HashMap::new(), clock: None }
+        Self { generation: 1, rules: Feed::new(RULE_NAMESPACE), windows: Feed::new(WINDOW_NAMESPACE), window_refs: BTreeSet::new(), references: None, sender: None, cursor: Default::default(), pending: HashMap::new(), clock: None }
     }
 }
 

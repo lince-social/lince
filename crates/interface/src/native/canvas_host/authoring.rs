@@ -1,7 +1,9 @@
 use super::*;
 use crate::native::tokens::{Token, TokenOverrides, TokenValue};
 use api::authoring::{AddedPart, Edits, Element, PartInfo, TokenInfo};
+use std::cell::OnceCell;
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 mod events;
 pub(crate) mod inspector;
@@ -44,26 +46,69 @@ struct Original {
 }
 
 #[derive(Component, Clone, Default)]
-struct Editing {
+struct Editing(Arc<EditSnapshot>);
+
+#[derive(Default)]
+struct EditSnapshot {
     original: BTreeMap<String, Original>,
     added: BTreeMap<String, (Entity, AddedPart)>,
     applied: Edits,
+}
+
+impl Clone for EditSnapshot {
+    fn clone(&self) -> Self {
+        crate::host::performance::count(
+            crate::host::performance::Count::CanvasAuthoringSnapshotsCopied,
+        );
+        Self {
+            original: self.original.clone(),
+            added: self.added.clone(),
+            applied: self.applied.clone(),
+        }
+    }
+}
+
+impl std::ops::Deref for Editing {
+    type Target = EditSnapshot;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for Editing {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        Arc::make_mut(&mut self.0)
+    }
+}
+
+impl Editing {
+    fn publish(&self, world: &mut World, host: Entity) {
+        if world
+            .get::<Self>(host)
+            .is_none_or(|current| !Arc::ptr_eq(&current.0, &self.0))
+        {
+            world.entity_mut(host).insert(self.clone());
+        }
+    }
+
+    fn entity(&self, id: &str) -> Option<Entity> {
+        self.added
+            .get(id)
+            .map(|(entity, _)| *entity)
+            .or_else(|| self.original.get(id).map(|original| original.entity))
+    }
 }
 
 #[derive(Component)]
 struct Maintained(std::time::Instant, Option<String>);
 
 pub(super) fn token(name: &str) -> Result<Token, String> {
-    serde_json::from_value(serde_json::Value::String(name.into()))
-        .map_err(|_| format!("Unknown native token: {name}."))
+    Token::from_identifier(name).ok_or_else(|| format!("Unknown native token: {name}."))
 }
 
 fn token_name(token: Token) -> String {
-    serde_json::to_value(token)
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .into()
+    token.identifier().into()
 }
 
 fn value(value: TokenValue) -> api::authoring::TokenValue {
@@ -194,12 +239,19 @@ fn role(world: &World, entity: Entity) -> &'static str {
 }
 
 fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
+    let _index = engine::performance::Span::new("native-canvas-authoring-index");
     world.init_resource::<crate::native::tokens::ThemeSettings>();
     let mut editing = world.get::<Editing>(host).cloned().unwrap_or_default();
     let mut indexed = BTreeSet::new();
-    editing
+    if editing
         .original
-        .retain(|_, original| world.get_entity(original.entity).is_ok());
+        .values()
+        .any(|original| world.get_entity(original.entity).is_err())
+    {
+        editing
+            .original
+            .retain(|_, original| world.get_entity(original.entity).is_ok());
+    }
     let added: BTreeSet<_> = editing.added.values().map(|(entity, _)| *entity).collect();
     let mut owned = owned(world, host);
     let record = owned
@@ -286,7 +338,7 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
             }
             if let Some(defaults) = world
                 .get::<Content>(host)
-                .map(|content| api::authoring::edits(&content.0))
+                .and_then(|content| api::authoring::edits_ref(&content.0))
                 .and_then(|edits| edits.defaults.get(&id).cloned())
             {
                 let original = editing.original.get_mut(&id).unwrap();
@@ -324,7 +376,7 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
                     });
                 }
                 if let Some(layout) = defaults.layout {
-                    original.layout = serde_json::from_value(layout["rules"].clone())
+                    original.layout = serde::Deserialize::deserialize(&layout["rules"])
                         .map_err(|error| error.to_string())?;
                 }
                 original.layout_parent = defaults.layout_parent;
@@ -337,21 +389,17 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
             .get::<Children>(entity)
             .map(|children| children.iter().collect())
             .unwrap_or_default();
+        let mut names = BTreeMap::new();
+        for child in &children {
+            if let Some(name) = world.get::<PartName>(*child) {
+                *names.entry(name.0.as_str()).or_insert(0usize) += 1;
+            }
+        }
         for (order, child) in children.into_iter().enumerate().rev() {
             let name = world
                 .get::<PartName>(child)
                 .map(|name| {
-                    let duplicate = world.get::<Children>(entity).is_some_and(|children| {
-                        children
-                            .iter()
-                            .filter(|sibling| {
-                                world
-                                    .get::<PartName>(*sibling)
-                                    .is_some_and(|other| other.0 == name.0)
-                            })
-                            .count()
-                            > 1
-                    });
+                    let duplicate = names.get(name.0.as_str()).is_some_and(|count| *count > 1);
                     if duplicate {
                         format!("{}#{order}", name.0)
                     } else {
@@ -362,23 +410,27 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
             pending.push((child, format!("{id}/{name}"), Some(id.clone()), order));
         }
     }
-    let lookup = entities(&editing);
-    for id in indexed {
-        if api::authoring::edits(
-            &world
-                .get::<Content>(host)
-                .map(|content| content.0.clone())
-                .unwrap_or_else(|| capture_content(world, host)),
-        )
-        .defaults
-        .get(&id)
-        .is_none()
-        {
-            let original = editing.original.get_mut(&id).unwrap();
-            original.layout_parent = layout_parent(world, original.entity, &lookup);
+    if !indexed.is_empty() {
+        let lookup = entities(&editing);
+        let layouts = LayoutParts::new(&lookup);
+        let captured = world
+            .get::<Content>(host)
+            .is_none()
+            .then(|| capture_content(world, host));
+        let component = world
+            .get::<Content>(host)
+            .map(|content| &content.0)
+            .or(captured.as_ref())
+            .unwrap();
+        let defaults = api::authoring::edits_ref(component).map(|edits| &edits.defaults);
+        for id in indexed {
+            if defaults.is_none_or(|defaults| !defaults.contains_key(&id)) {
+                let original = editing.original.get_mut(&id).unwrap();
+                original.layout_parent = layouts.parent(world, original.entity);
+            }
         }
     }
-    world.entity_mut(host).insert(editing.clone());
+    editing.publish(world, host);
     Ok(editing)
 }
 
@@ -499,39 +551,53 @@ fn entities(editing: &Editing) -> BTreeMap<String, Entity> {
         .collect()
 }
 
-fn layout_parent(
-    world: &World,
-    entity: Entity,
-    lookup: &BTreeMap<String, Entity>,
-) -> Option<String> {
-    let parent = world
-        .get::<crate::native::layout::LayoutBox>(entity)?
-        .parent?;
-    lookup
-        .iter()
-        .find(|(_, entity)| {
-            world
-                .get::<crate::native::layout::LayoutBox>(**entity)
-                .is_some_and(|layout| layout.id == parent)
-        })
-        .map(|(id, _)| id.clone())
+// This index lives only within one immutable-world index/validation/inspection
+// phase. A phase without layout parents never materializes it.
+struct LayoutParts<'a> {
+    parts: &'a BTreeMap<String, Entity>,
+    by_id: OnceCell<BTreeMap<[u8; 16], &'a str>>,
+}
+
+impl<'a> LayoutParts<'a> {
+    fn new(parts: &'a BTreeMap<String, Entity>) -> Self {
+        Self {
+            parts,
+            by_id: OnceCell::new(),
+        }
+    }
+
+    fn parent(&self, world: &World, entity: Entity) -> Option<String> {
+        let parent = world
+            .get::<crate::native::layout::LayoutBox>(entity)?
+            .parent?;
+        let by_id = self.by_id.get_or_init(|| {
+            let mut by_id = BTreeMap::new();
+            for (part, entity) in self.parts {
+                if let Some(layout) = world.get::<crate::native::layout::LayoutBox>(*entity) {
+                    // Preserve the old lookup's first match in part-ID order.
+                    by_id.entry(layout.id).or_insert(part.as_str());
+                }
+            }
+            by_id
+        });
+        by_id.get(&parent).map(|part| (*part).into())
+    }
 }
 
 fn has_draft(world: &World, entity: Entity) -> bool {
     let Some(text) = world.get::<bevy::text::EditableText>(entity) else {
         return false;
     };
-    let value = text.value().to_string();
     world
         .get::<crate::native::record_view::RecordEditor>(entity)
         .is_some_and(|editor| {
             editor.pending.is_some()
                 || crate::native::record_view::pending_text(text)
-                || value != editor.confirmed
+                || text.value() != editor.confirmed.as_str()
         })
         || world
             .get::<crate::native::record_binding::TextBinding>(entity)
-            .is_some_and(|binding| binding.unsaved(&value))
+            .is_some_and(|binding| binding.editor_unsaved(text))
         || world
             .get::<crate::native::sand::Unsaved>(entity)
             .is_some_and(|unsaved| unsaved.0)
@@ -547,10 +613,12 @@ pub(super) fn validate(
     host: Entity,
     component: &ContentKind,
 ) -> Result<(), String> {
-    let edits = api::authoring::edits(component);
-    edits.validate(&registry())?;
+    let empty = Edits::default();
+    let edits = api::authoring::edits_ref(component).unwrap_or(&empty);
+    edits.validate(&shared_registry())?;
     let editing = index(world, host)?;
     let existing = entities(&editing);
+    let layouts = LayoutParts::new(&existing);
     let removed_added: BTreeSet<_> = editing
         .added
         .keys()
@@ -559,9 +627,12 @@ pub(super) fn validate(
         .collect();
     let known = |id: &str| {
         (existing.contains_key(id)
-            && !removed_added
-                .iter()
-                .any(|removed| id == removed || id.starts_with(&format!("{removed}/"))))
+            && !removed_added.iter().any(|removed| {
+                id == removed
+                    || id
+                        .strip_prefix(removed.as_str())
+                        .is_some_and(|rest| rest.starts_with('/'))
+            }))
             || edits.added.contains_key(id)
     };
     let mut parents: BTreeMap<_, _> = editing
@@ -577,7 +648,9 @@ pub(super) fn validate(
     let mut layout_parents: BTreeMap<_, _> = existing
         .iter()
         .filter_map(|(id, entity)| {
-            layout_parent(world, *entity, &existing).map(|parent| (id.clone(), parent))
+            layouts
+                .parent(world, *entity)
+                .map(|parent| (id.clone(), parent))
         })
         .collect();
     for (id, part) in &edits.added {
@@ -618,7 +691,7 @@ pub(super) fn validate(
                 && world
                     .get::<crate::native::layout::LayoutBox>(*entity)
                     .is_some_and(|layout| layout.parent.is_some())
-                && layout_parent(world, *entity, &existing).is_none()
+                && layouts.parent(world, *entity).is_none()
             {
                 return Err(
                     "Include the current layout parent in the authored composition before changing membership.".into(),
@@ -654,7 +727,7 @@ pub(super) fn validate(
             }
             if let Some(layout) = &edit.layout {
                 let rules: crate::native::layout::Rules =
-                    serde_json::from_value(layout.clone()).map_err(|error| error.to_string())?;
+                    serde::Deserialize::deserialize(layout).map_err(|error| error.to_string())?;
                 if !rules.valid()
                     || world.get::<CanvasItem>(*entity).is_none()
                         && world
@@ -753,7 +826,8 @@ pub(super) fn validate(
                     .ok_or("This part has no registered settings.")?;
                 for (key, value) in &edit.settings {
                     let value: crate::native::sand_settings::Value =
-                        serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+                        serde::Deserialize::deserialize(value)
+                            .map_err(|error| error.to_string())?;
                     if declaration
                         .settings
                         .iter()
@@ -958,6 +1032,10 @@ pub(super) fn reconcile(
     host: Entity,
     component: &ContentKind,
 ) -> Result<(), String> {
+    let _reconcile = engine::performance::Span::new("native-canvas-authoring-reconciliation");
+    crate::host::performance::count(
+        crate::host::performance::Count::CanvasAuthoringReconciliations,
+    );
     validate(world, host, component)?;
     let mut edits = api::authoring::edits(component);
     let mut editing = world.get::<Editing>(host).cloned().unwrap();
@@ -1042,7 +1120,7 @@ pub(super) fn reconcile(
         base: Box::new(api::authoring::base(component).clone()),
         edits: edits.clone(),
     }
-    .validate_snapshot(&registry())?;
+    .validate_snapshot(&shared_registry())?;
     let mut staged = Vec::new();
     for (id, definition) in &edits.added {
         if editing
@@ -1104,8 +1182,12 @@ pub(super) fn reconcile(
         }
     }
     for (id, definition) in &edits.added {
-        if let Some((_, current)) = editing.added.get_mut(id) {
-            *current = definition.clone();
+        if editing
+            .added
+            .get(id)
+            .is_some_and(|(_, current)| current != definition)
+        {
+            editing.added.get_mut(id).unwrap().1 = definition.clone();
         }
         let parent = edits
             .parts
@@ -1122,13 +1204,22 @@ pub(super) fn reconcile(
     for (id, edit) in &edits.parts {
         let entity = lookup[id];
         if let Some(geometry) = &edit.geometry {
-            world.entity_mut(entity).insert(CanvasItem {
+            let next = CanvasItem {
                 position: DVec2::from_array(geometry.position),
                 size: DVec2::from_array(geometry.size).as_vec2(),
-            });
+            };
+            if world.get::<CanvasItem>(entity).is_none_or(|current| {
+                current.position != next.position || current.size != next.size
+            }) {
+                world.entity_mut(entity).insert(next);
+            }
             if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(entity) {
-                area.center = geometry.position;
-                area.size = geometry.size;
+                if area.center != geometry.position {
+                    area.center = geometry.position;
+                }
+                if area.size != geometry.size {
+                    area.size = geometry.size;
+                }
             }
         }
         if editing.applied.parts.get(id) != Some(edit) {
@@ -1189,7 +1280,7 @@ pub(super) fn reconcile(
                         world,
                         entity,
                         key,
-                        Some(serde_json::from_value(value.clone()).unwrap()),
+                        Some(serde::Deserialize::deserialize(value).unwrap()),
                     );
                 }
             }
@@ -1204,7 +1295,7 @@ pub(super) fn reconcile(
                 crate::native::layout::configure(
                     world,
                     entity,
-                    serde_json::from_value(layout.clone()).unwrap(),
+                    serde::Deserialize::deserialize(layout).unwrap(),
                 )
                 .map_err(str::to_string)?;
                 crate::native::area_mutation::disarm(
@@ -1229,13 +1320,8 @@ pub(super) fn reconcile(
                 attach(world, entity, parent, Some(order));
             }
         }
-        if let Some(mut node) = world.get_mut::<Node>(entity) {
-            let mut next = node.clone();
-            style::apply(&mut next, &edit.style);
-            if edit.removed {
-                next.display = Display::None;
-            }
-            node.set_if_neq(next);
+        if let Some(node) = world.get_mut::<Node>(entity) {
+            style::apply_live(node, &edit.style, edit.removed);
         }
         if edit.removed {
             if let Some(focus) = world
@@ -1251,27 +1337,42 @@ pub(super) fn reconcile(
         }
         if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
             for (axis, token) in [Token::Width, Token::Height].into_iter().enumerate() {
-                if let Some(value) = edit.tokens.get(&token_name(token)) {
-                    item.size[axis] = native_value(*value).number();
+                if let Some(value) = edit.tokens.get(token.identifier()) {
+                    let next = native_value(*value).number();
+                    if item.size[axis] != next {
+                        item.size[axis] = next;
+                    }
                 }
             }
             let size = item.size;
-            world
-                .entity_mut(entity)
-                .insert(crate::native::token_style::AppliedSize(size));
+            if world
+                .get::<crate::native::token_style::AppliedSize>(entity)
+                .is_none_or(|current| current.0 != size)
+            {
+                world
+                    .entity_mut(entity)
+                    .insert(crate::native::token_style::AppliedSize(size));
+            }
         }
     }
+    let removed_entities = OnceCell::new();
     for (id, original) in &editing.original {
         if let Some(action) = &original.action {
             let disabled = edits
                 .parts
                 .get(id)
-                .is_some_and(|edit| edit.native_actions_enabled == Some(false))
-                || edits.parts.iter().any(|(removed, edit)| {
-                    edit.removed
-                        && (id == removed
-                            || subtree(world, lookup[removed]).contains(&original.entity))
-                });
+                .is_some_and(|edit| edit.native_actions_enabled == Some(false) || edit.removed)
+                || removed_entities
+                    .get_or_init(|| {
+                        let mut entities = bevy::ecs::entity::EntityHashSet::default();
+                        for (id, edit) in &edits.parts {
+                            if edit.removed {
+                                entities.extend(subtree(world, lookup[id]));
+                            }
+                        }
+                        entities
+                    })
+                    .contains(&original.entity);
             if disabled {
                 world
                     .entity_mut(original.entity)
@@ -1314,15 +1415,33 @@ pub(super) fn reconcile(
         }
     }
     events::install(world, host, &lookup, &edits);
-    editing.applied = edits.clone();
-    let component = match component {
-        ContentKind::Authored { base, .. } => ContentKind::Authored {
-            base: base.clone(),
-            edits,
-        },
-        _ => component.clone(),
-    };
-    world.entity_mut(host).insert((editing, Content(component)));
+    if editing.applied != edits {
+        editing.applied = edits.clone();
+    }
+    editing.publish(world, host);
+    let retained =
+        world
+            .get::<Content>(host)
+            .is_some_and(|current| match (&current.0, component) {
+                (
+                    ContentKind::Authored {
+                        base: current_base,
+                        edits: current_edits,
+                    },
+                    ContentKind::Authored { base, .. },
+                ) => current_base == base && current_edits == &edits,
+                (current, component) => current == component,
+            });
+    if !retained {
+        let component = match component {
+            ContentKind::Authored { base, .. } => ContentKind::Authored {
+                base: base.clone(),
+                edits,
+            },
+            _ => component.clone(),
+        };
+        world.entity_mut(host).insert(Content(component));
+    }
     Ok(())
 }
 
@@ -1493,12 +1612,14 @@ pub(super) fn inspect(
         .ok_or("The placement no longer exists.")?;
     let editing = index(world, host)?;
     let lookup = entities(&editing);
+    let layouts = LayoutParts::new(&lookup);
     let reverse: BTreeMap<_, _> = lookup.iter().map(|(id, entity)| (*entity, id)).collect();
     element.total_parts = lookup.len();
     element.next_offset = (offset + limit < lookup.len()).then_some(offset + limit);
     element.parts = lookup.iter().skip(offset).take(limit).map(|(id, entity)| {
         let token_uses = uses(world, *entity);
-        let overrides = crate::native::token_style::overrides(world, *entity);
+        let empty = TokenOverrides::default();
+        let overrides = crate::native::token_style::overrides_ref(world, *entity).unwrap_or(&empty);
         let mut used: BTreeSet<_> = token_uses.values().copied().chain(overrides.0.keys().copied()).collect();
         if *entity == host { used.extend(crate::native::tokens::TOKENS.iter().map(|definition| definition.token)); }
         let tokens = used.into_iter().map(|token| {
@@ -1506,7 +1627,7 @@ pub(super) fn inspect(
             let mut ancestor = Some(*entity);
             let mut source_part = None;
             while let Some(current) = ancestor {
-                if crate::native::token_style::overrides(world, current).0.contains_key(&token) { source_part = reverse.get(&current).map(|id| (*id).clone()); break; }
+                if crate::native::token_style::overrides_ref(world, current).is_some_and(|overrides| overrides.0.contains_key(&token)) { source_part = reverse.get(&current).map(|id| (*id).clone()); break; }
                 ancestor = world.get::<ChildOf>(current).map(ChildOf::parent);
             }
             if source == "Relation color rule" { source_part = None; }
@@ -1520,7 +1641,7 @@ pub(super) fn inspect(
             geometry: world.get::<CanvasItem>(*entity).map(|item| api::Geometry { position: item.position.to_array(), size: item.size.as_dvec2().to_array() }),
             group: world.get::<crate::native::canvas_selection::SandGroup>(*entity).map(|group| group.0.iter().map(|byte| format!("{byte:02x}")).collect()),
             layout: world.get::<crate::native::layout::LayoutBox>(*entity).map(|layout| serde_json::to_value(layout.rules).unwrap()).or_else(|| world.get::<crate::native::sand_text::SandText>(*entity).and_then(|text| text.layout).map(|layout| serde_json::to_value(layout).unwrap())),
-            layout_parent: layout_parent(world, *entity, &lookup),
+            layout_parent: layouts.parent(world, *entity),
             tokens, text: text(world, *entity), settings: world.get::<crate::native::sand_settings::Declaration>(*entity).map(|declaration| serde_json::to_value(&declaration.settings).unwrap()).unwrap_or(serde_json::Value::Null),
             removed: editing.applied.parts.get(id).is_some_and(|edit| edit.removed),
             structural_reason: (!id.starts_with("user/")).then(|| "Renderer-owned controls retain their native state when removed from presentation; reset restores them. Registered authored children are deleted with their subtree.".into()),
@@ -1538,14 +1659,15 @@ pub(super) fn inspect(
 }
 
 pub(super) fn maintain(world: &mut World) {
+    let _maintenance = engine::performance::Span::new("native-canvas-authoring-maintenance");
     let mut hosts: Vec<_> = world
         .query::<(Entity, &Content)>()
         .iter(world)
         .filter_map(|(entity, content)| {
-            matches!(content.0, ContentKind::Authored { .. }).then(|| (entity, content.0.clone()))
+            matches!(content.0, ContentKind::Authored { .. }).then_some(entity)
         })
         .collect();
-    hosts.sort_by_key(|(host, _)| {
+    hosts.sort_by_cached_key(|host| {
         let mut depth = 0;
         let mut parent = world.get::<ChildOf>(*host).map(ChildOf::parent);
         while let Some(entity) = parent {
@@ -1554,33 +1676,43 @@ pub(super) fn maintain(world: &mut World) {
         }
         std::cmp::Reverse(depth)
     });
-    for (host, component) in hosts {
+    engine::performance::add("native-canvas-authoring-hosts", hosts.len() as u64);
+    let mut maintained_parts = 0;
+    for host in hosts {
         if world
             .get::<Maintained>(host)
             .is_some_and(|last| last.0.elapsed() < std::time::Duration::from_millis(200))
         {
             if let Some(editing) = world.get::<Editing>(host).cloned() {
-                let lookup = entities(&editing);
                 for (id, edit) in &editing.applied.parts {
-                    let Some(entity) = lookup.get(id).copied() else {
+                    let Some(entity) = editing.entity(id) else {
                         continue;
                     };
                     if world.get_entity(entity).is_err() {
                         continue;
                     }
-                    if let Some(parent) = edit.parent.as_ref().and_then(|parent| lookup.get(parent))
+                    maintained_parts += 1;
+                    if let Some(parent) = edit
+                        .parent
+                        .as_ref()
+                        .and_then(|parent| editing.entity(parent))
                     {
-                        attach(world, entity, *parent, edit.order);
+                        attach(world, entity, parent, edit.order);
                     }
-                    if let Some(mut node) = world.get_mut::<Node>(entity) {
-                        let mut next = node.clone();
-                        style::apply(&mut next, &edit.style);
-                        if edit.removed {
-                            next.display = Display::None;
-                        }
-                        node.set_if_neq(next);
+                    if let Some(node) = world.get_mut::<Node>(entity) {
+                        style::apply_live(node, &edit.style, edit.removed);
                     }
                     if !edit.tokens.is_empty() {
+                        let current = crate::native::token_style::overrides_ref(world, entity);
+                        if edit.tokens.iter().all(|(name, value)| {
+                            token(name).map_or(true, |token| {
+                                current.is_some_and(|current| {
+                                    current.0.get(&token) == Some(&native_value(*value))
+                                })
+                            })
+                        }) {
+                            continue;
+                        }
                         let mut tokens = crate::native::token_style::overrides(world, entity);
                         for (name, value) in &edit.tokens {
                             if let Ok(token) = token(name) {
@@ -1593,6 +1725,9 @@ pub(super) fn maintain(world: &mut World) {
             }
             continue;
         }
+        let Some(component) = world.get::<Content>(host).map(|content| content.0.clone()) else {
+            continue;
+        };
         let error = reconcile(world, host, &component).err();
         if let Some(error) = &error
             && world
@@ -1605,4 +1740,5 @@ pub(super) fn maintain(world: &mut World) {
             .entity_mut(host)
             .insert(Maintained(std::time::Instant::now(), error));
     }
+    engine::performance::add("native-canvas-authoring-maintained-parts", maintained_parts);
 }

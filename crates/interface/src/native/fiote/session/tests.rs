@@ -75,7 +75,7 @@ pub(super) fn panel_fixture_in(mut app: App, step: Step) -> (App, Entity, FioteS
         .unwrap()
         .0;
     let saved = fixture_status(&binding.uid);
-    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone());
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone().into());
     show(world, owner, step);
     (app, owner, saved)
 }
@@ -96,7 +96,7 @@ fn saved_node_connection_opens_native_setup_instead_of_sending() {
     let binding = world.get::<Panel>(owner).unwrap().binding.clone();
     let mut panel = world.get_mut::<Panel>(owner).unwrap();
     panel.automatic = true;
-    panel.saved = Some(saved);
+    panel.saved = Some(saved.into());
     assert!(!ready(world, &binding));
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
     for label in [
@@ -138,7 +138,7 @@ fn browser_login_link_and_copy_feedback_survive_stale_acp_status_updates() {
     saved.agent_info.as_mut().unwrap()["connectionCheck"] = serde_json::json!({
         "ready":false, "detail":"Cannot find codex-acp/dist/index.js"
     });
-    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone());
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.clone().into());
     show(world, owner, Step::Browser);
     let content = world.get::<Panel>(owner).unwrap().content;
     let status = world.get::<Panel>(owner).unwrap().status;
@@ -198,7 +198,7 @@ fn laboratory_browser_shows_the_copyable_native_url_from_the_connection_picker()
     let (mut app, owner, saved) = panel_fixture(Step::Connections);
     let world = app.world_mut();
     let area = world.get::<Panel>(owner).unwrap().binding.area;
-    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved);
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(saved.into());
     let url = "https://login.example/authorize?state=laboratory";
     laboratory_browser(world, area, url);
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Browser);
@@ -259,7 +259,7 @@ fn unchanged_connection_polls_keep_controls_and_focus() {
         assert_eq!(world.resource::<InputFocus>().get(), Some(button));
     }
     saved.connections.check.as_mut().unwrap().detail = "New check result".into();
-    update_connections(world, &saved);
+    update_connections(world, &Arc::new(saved.clone()));
     assert!(!world.entities().contains(button));
     assert!(
         world
@@ -297,7 +297,7 @@ fn disconnected_fiote_login_and_send_offer_generic_routes() {
     saved.settings.enabled = false;
     let mut panel = world.get_mut::<Panel>(owner).unwrap();
     panel.automatic = true;
-    panel.saved = Some(saved);
+    panel.saved = Some(saved.into());
     assert!(command(world, &binding, "/login"));
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Connections);
     show(world, owner, Step::Closed);
@@ -355,7 +355,7 @@ fn external_login_setup_preserves_fields_during_polling_without_prompting() {
         choices: vec![],
         fields: vec![],
         pending: None,
-        saved: Some(saved.clone()),
+        saved: Some(saved.clone().into()),
         poll: std::time::Instant::now(),
         automatic: true,
     });
@@ -414,7 +414,7 @@ fn external_login_setup_preserves_fields_during_polling_without_prompting() {
     );
     let mut locked = saved;
     locked.requires_credential = true;
-    world.get_mut::<Panel>(owner).unwrap().saved = Some(locked);
+    world.get_mut::<Panel>(owner).unwrap().saved = Some(locked.into());
     assert!(command(world, &binding, "/login"));
     assert!(world.get::<Panel>(owner).unwrap().step == Step::Agent);
 }

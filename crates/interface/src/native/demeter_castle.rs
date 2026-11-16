@@ -1,3 +1,4 @@
+mod catalog;
 mod editor;
 mod persistence;
 #[cfg(test)]
@@ -14,7 +15,7 @@ use nucleus::demeter::{
 pub(crate) use persistence::{SavedDemeterCastle, snapshot};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 pub const CREDITS: &[crate::native::credits::Attribution] = &[
     crate::native::credits::Attribution {
@@ -57,13 +58,13 @@ pub struct DemeterCastle {
     pub missing_page: u16,
     pub task_page: u16,
     #[serde(skip)]
-    pub managed_tasks: Vec<Value>,
+    pub managed_tasks: Arc<Vec<Value>>,
     #[serde(skip)]
-    pub catalog: Value,
+    pub catalog: catalog::Catalog,
     #[serde(skip)]
-    pub result: Option<demeter::Outcome>,
+    pub result: Option<Arc<demeter::Outcome>>,
     #[serde(skip)]
-    pub projection: Option<demeter::production::Projection>,
+    pub projection: Option<Arc<demeter::production::Projection>>,
 }
 
 impl Default for DemeterCastle {
@@ -94,8 +95,8 @@ impl Default for DemeterCastle {
             session: nucleus::new_uid("demeter-editor"),
             missing_page: 0,
             task_page: 0,
-            managed_tasks: Vec::new(),
-            catalog: Value::Null,
+            managed_tasks: Default::default(),
+            catalog: Default::default(),
             result: None,
             projection: None,
         }
@@ -104,8 +105,11 @@ impl Default for DemeterCastle {
 
 impl DemeterCastle {
     pub fn valid(&self) -> bool {
-        self.config.validate().is_ok()
-            && self.budget_ms <= 30_000
+        self.config.validate().is_ok() && self.editor_valid()
+    }
+
+    fn editor_valid(&self) -> bool {
+        self.budget_ms <= 30_000
             && self
                 .plan
                 .as_ref()
@@ -319,11 +323,21 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
     );
 }
 
-fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
-    let target = world.get::<View>(owner).map(|v| v.status);
-    if let Some(mut text) = target.and_then(|e| world.get_mut::<Text>(e)) {
-        text.0 = message.into();
+fn status(world: &mut World, owner: Entity, message: impl AsRef<str>) {
+    if let Some(target) = world.get::<View>(owner).map(|view| view.status) {
+        panel::status(world, target, message);
     }
+}
+
+fn solve_status(data: &Value) -> String {
+    format!(
+        "Solve {}{}",
+        data["state"].as_str().unwrap_or("unknown"),
+        data["message"]
+            .as_str()
+            .map(|message| format!(": {message}"))
+            .unwrap_or_default()
+    )
 }
 
 fn request(world: &mut World, owner: Entity, command: Command, reply: Reply) {
@@ -837,6 +851,21 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     {
         return;
     }
+    let _reply = nucleus::performance::Span::new("demeter-reply-application");
+    if matches!(reply, Reply::Poll)
+        && let ServerMessage::ActionOk {
+            data: Some(data), ..
+        } = message
+        && !data["result"].is_object()
+    {
+        // Progress changes the status label and poll lifetime, not the editor
+        // or result tree. Keep focus, composition and unfinished fields intact.
+        world.get_mut::<View>(owner).unwrap().running =
+            ["running", "cancelling"].contains(&data["state"].as_str().unwrap_or_default());
+        status(world, owner, solve_status(data));
+        nucleus::performance::add("demeter-status-only-replies", 1);
+        return;
+    }
     let _ = editor::capture(world, owner);
     let data = match message {
         ServerMessage::ActionOk {
@@ -862,7 +891,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     let message = match reply {
         Reply::Catalog => {
             world.get_mut::<View>(owner).unwrap().ready = true;
-            state.catalog = data.clone();
+            state.catalog = data.clone().into();
             if state.config.references.is_empty() && state.config.profile.is_some() {
                 state.config.references = data["references"]
                     .as_array()
@@ -875,10 +904,11 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             "Catalogue refreshed. Select foods and enter local offers.".to_owned()
         }
         Reply::Vocabulary => {
-            if !state.catalog.is_object() {
-                state.catalog = json!({});
+            let catalog = state.catalog.edit();
+            if !catalog.is_object() {
+                *catalog = json!({});
             }
-            state.catalog["vocabulary"]["price"] = data["price_predicate"].clone();
+            catalog["vocabulary"]["price"] = data["price_predicate"].clone();
             "Local price assertion and units are ready.".into()
         }
         Reply::Offer => {
@@ -904,10 +934,11 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             if !state.config.offers.iter().any(|v| v == id) {
                 state.config.offers.push(id.into());
             }
-            if !state.catalog["offers"].is_array() {
-                state.catalog["offers"] = json!([]);
+            let catalog = state.catalog.edit();
+            if !catalog["offers"].is_array() {
+                catalog["offers"] = json!([]);
             }
-            state.catalog["offers"]
+            catalog["offers"]
                 .as_array_mut()
                 .unwrap()
                 .push(json!({"uid":id,"market":market}));
@@ -928,7 +959,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             state.revision = data["saved"]["revision"].as_u64().unwrap_or(state.revision);
             state.stale = true;
             if state.edit_version == version {
-                match serde_json::from_value::<Config>(data["saved"]["config"].clone()) {
+                match Config::deserialize(&data["saved"]["config"]) {
                     Ok(config) => state.config = config,
                     Err(error) => {
                         status(world, owner, error.to_string());
@@ -959,7 +990,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 return;
             }
             if !state.changed {
-                match serde_json::from_value::<Config>(data["saved"]["config"].clone()) {
+                match Config::deserialize(&data["saved"]["config"]) {
                     Ok(config) => state.config = config,
                     Err(error) => {
                         status(world, owner, error.to_string());
@@ -970,7 +1001,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 editor::retain_auxiliary(&mut state.drafts);
             }
             state.stale = data["last"]["stale"].as_bool().unwrap_or(true) || state.changed;
-            state.managed_tasks = data["tasks"].as_array().cloned().unwrap_or_default();
+            state.managed_tasks = Arc::new(data["tasks"].as_array().cloned().unwrap_or_default());
             state.run = data["saved"]["last_run"].as_str().map(str::to_owned);
             if !state.stale {
                 state.run_revision = Some(state.revision);
@@ -998,34 +1029,27 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 ["running", "cancelling"].contains(&data["state"].as_str().unwrap_or_default());
             world.get_mut::<View>(owner).unwrap().running = running;
             if data["result"].is_object() {
-                match serde_json::from_value::<demeter::Outcome>(data["result"].clone()) {
-                    Ok(result) => state.result = Some(result),
+                match demeter::Outcome::deserialize(&data["result"]) {
+                    Ok(result) => state.result = Some(Arc::new(result)),
                     Err(error) => {
                         status(world, owner, error.to_string());
                         return;
                     }
                 }
             }
-            format!(
-                "Solve {}{}",
-                data["state"].as_str().unwrap_or("unknown"),
-                data["message"]
-                    .as_str()
-                    .map(|m| format!(": {m}"))
-                    .unwrap_or_default()
-            )
+            solve_status(data)
         }
         Reply::Project | Reply::Accept => {
             if let Some(tasks) = data["managed_tasks"].as_array() {
-                state.managed_tasks = tasks.clone();
+                state.managed_tasks = Arc::new(tasks.clone());
             }
-            if let Ok(result) = serde_json::from_value::<demeter::Outcome>(data["result"].clone()) {
-                state.result = Some(result);
+            if let Ok(result) = demeter::Outcome::deserialize(&data["result"]) {
+                state.result = Some(Arc::new(result));
             }
-            if let Ok(projection) = serde_json::from_value::<demeter::production::Projection>(
-                data["projection"].clone(),
-            ) {
-                state.projection = Some(projection);
+            if let Ok(projection) =
+                demeter::production::Projection::deserialize(&data["projection"])
+            {
+                state.projection = Some(Arc::new(projection));
             }
             state.tab = Tab::Production;
             if data["accepted"] == true {

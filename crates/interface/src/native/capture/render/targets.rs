@@ -35,34 +35,61 @@ struct Audit<'a> {
     additional: &'a BTreeSet<Entity>,
     history: &'a BTreeMap<AssetId<Image>, Arc<CaptureOrigins>>,
     writers: &'a BTreeMap<AssetId<Image>, Vec<Writer>>,
+    public: bevy::ecs::entity::EntityHashMap<bool>,
     private: BTreeSet<u64>,
     unresolved: bool,
 }
 
 impl Audit<'_> {
     fn entity(&mut self, entity: Entity) -> bool {
-        if super::super::excluded_with(self.world, entity, self.additional) {
-            self.private.extend(super::super::semantic_sources(self.world, entity).into_iter().map(Entity::to_bits));
-            false
-        } else { true }
+        if let Some(public) = self.public.get(&entity) {
+            return *public;
+        }
+        // This audit holds an immutable world throughout classification. Shared
+        // writers and retained contributors need one complete policy walk here.
+        let public = !super::super::excluded_with(self.world, entity, self.additional);
+        if !public {
+            self.private.extend(
+                super::super::semantic_sources(self.world, entity)
+                    .into_iter()
+                    .map(Entity::to_bits),
+            );
+        }
+        self.public.insert(entity, public);
+        public
     }
 
     fn image(&mut self, image: AssetId<Image>) -> bool {
         let mut public = true;
         let mut known = false;
-        if let Some(writers) = self.writers.get(&image).cloned() {
+        let writers = self.writers;
+        if let Some(writers) = writers.get(&image) {
             for writer in writers {
                 public &= self.entity(writer.entity);
-                if let Some(source) = writer.source { public &= self.entity(source); known = true; }
-                else if !self.history.contains_key(&image) { public = false; self.unresolved = true; }
+                if let Some(source) = writer.source {
+                    public &= self.entity(source);
+                    known = true;
+                } else if !self.history.contains_key(&image) {
+                    public = false;
+                    self.unresolved = true;
+                }
             }
         }
-        if let Some(origins) = self.history.get(&image).cloned() {
+        let history = self.history;
+        if let Some(origins) = history.get(&image) {
             known = true;
-            if !origins.complete { public = false; self.unresolved = true; }
-            for entity in &origins.contributors { public &= self.entity(*entity); }
+            if !origins.complete {
+                public = false;
+                self.unresolved = true;
+            }
+            for entity in &origins.contributors {
+                public &= self.entity(*entity);
+            }
         }
-        if !known { public = false; self.unresolved = true; }
+        if !known {
+            public = false;
+            self.unresolved = true;
+        }
         public
     }
 }
@@ -79,7 +106,7 @@ impl Targets {
                 writers.entry(image.handle.id()).or_default().push(Writer { entity, source: source.map(|source| source.0) });
             }
         }
-        let mut audit = Audit { world, additional, history: &history, writers: &writers, private: BTreeSet::new(), unresolved: false };
+        let mut audit = Audit { world, additional, history: &history, writers: &writers, public: default(), private: BTreeSet::new(), unresolved: false };
         let mut reusable = BTreeSet::new();
         let mut redacted = BTreeSet::new();
         let mut seeds = BTreeMap::new();
@@ -94,10 +121,10 @@ impl Targets {
                 seeds.insert(*image, origins);
             }
             if writers.get(image).is_some_and(|writers| !writers.is_empty()
-                && writers.iter().all(|writer| super::super::excluded_with(world, writer.entity, additional)))
+                && writers.iter().all(|writer| !audit.entity(writer.entity)))
                 || history.get(image).is_some_and(|origins| origins.complete && !origins.contributors.is_empty()
-                    && origins.contributors.iter().all(|entity| super::super::excluded_with(world, *entity, additional)))
-                    && writers.get(image).is_none_or(|writers| writers.iter().all(|writer| super::super::excluded_with(world, writer.entity, additional)))
+                    && origins.contributors.iter().all(|entity| !audit.entity(*entity)))
+                    && writers.get(image).is_none_or(|writers| writers.iter().all(|writer| !audit.entity(writer.entity)))
             {
                 reusable.remove(image);
                 redacted.insert(*image);
@@ -106,7 +133,7 @@ impl Targets {
             if !reusable.contains(image) {
                 for writer in writers.get(image).into_iter().flatten() {
                     if world.get::<SurfaceCapture>(writer.entity).is_some()
-                        && !super::super::excluded_with(world, writer.entity, additional)
+                        && audit.entity(writer.entity)
                         && world.get::<Camera>(writer.entity).is_some_and(|camera| !camera.is_active
                             && camera.physical_target_size().is_some_and(|size| size.min_element() > 0))
                     { refresh.insert(writer.entity); }

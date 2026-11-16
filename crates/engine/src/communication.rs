@@ -311,29 +311,28 @@ impl Engine {
         let Some(person_uid) = self.comm_actor_person(actor).await? else {
             return Ok(());
         };
-        let participants = comm::participants(&self.store.pool, conversation_uid).await?;
-        if participants.iter().any(|p| p.uid == person_uid) {
+        if comm::is_participant(&self.store.pool, conversation_uid, &person_uid).await? {
             return Ok(());
         }
-        if let Some(group_of) =
-            store::vocabulary::feature_read(&self.store.pool, "group").await?
-        {
-            if let Some(member_of) = store::vocabulary::feature_read(&self.store.pool, "membership").await?
+        if let Some(group_of) = store::vocabulary::feature_read(&self.store.pool, "group").await? {
+            if let Some(member_of) =
+                store::vocabulary::feature_read(&self.store.pool, "membership").await?
             {
-                for group in store::assertions::objects_from_subject(
+                for group in store::assertions::active_object_uids(
                     &self.store.pool,
                     conversation_uid,
                     &group_of,
                 )
                 .await?
                 {
-                    let members = store::assertions::subjects_pointing_to(
+                    if store::assertions::subject_exists(
                         &self.store.pool,
                         &member_of,
-                        &group.uid,
+                        &group,
+                        &person_uid,
                     )
-                    .await?;
-                    if members.iter().any(|m| m.uid == person_uid) {
+                    .await?
+                    {
                         return Ok(());
                     }
                 }
@@ -351,9 +350,8 @@ impl Engine {
 
 impl Engine {
     async fn comm_resolve(&self, token: &str) -> Result<String, EngineError> {
-        store::records::resolve(&self.store.pool, token)
+        store::records::resolve_uid(&self.store.pool, token)
             .await?
-            .map(|r| r.uid)
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 

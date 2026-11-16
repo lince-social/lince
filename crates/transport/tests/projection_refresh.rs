@@ -18,7 +18,7 @@ fn snapshots(messages: Vec<ServerMessage>) -> BTreeMap<String, Vec<Value>> {
     messages
         .into_iter()
         .map(|message| match message {
-            ServerMessage::Snapshot { id, rows } => (id, rows),
+            ServerMessage::Snapshot { id, rows } => (id, std::sync::Arc::unwrap_or_clone(rows)),
             message => panic!("Unexpected response: {message:?}"),
         })
         .collect()

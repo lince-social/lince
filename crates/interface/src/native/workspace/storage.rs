@@ -5,7 +5,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex,
+        Arc, Condvar, Mutex,
         atomic::{AtomicBool, Ordering},
         mpsc,
     },
@@ -18,10 +18,129 @@ type SaveResult = Result<(), String>;
 struct Request {
     document: Document,
     finished: Option<mpsc::SyncSender<SaveResult>>,
+    slot: Slot,
+}
+
+struct QueueState {
+    sender: Option<mpsc::SyncSender<Request>>,
+    reserved: bool,
+}
+
+struct Queue {
+    state: Mutex<QueueState>,
+    available: Condvar,
+}
+
+impl Queue {
+    fn reserve(self: &Arc<Self>, wait: bool) -> Result<Option<Slot>, String> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        loop {
+            if state.sender.is_none() {
+                return Err("Workspace saving stopped".into());
+            }
+            if !state.reserved {
+                state.reserved = true;
+                return Ok(Some(Slot(self.clone())));
+            }
+            if !wait {
+                return Ok(None);
+            }
+            state = self
+                .available
+                .wait(state)
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+        }
+    }
+
+    fn send(&self, request: Request) -> SaveResult {
+        // A reserved slot covers capture as well as the queued request. Never
+        // drop a returned Request while holding this lock: its Slot releases it.
+        let sent = {
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            match &state.sender {
+                Some(sender) => sender.try_send(request),
+                None => Err(mpsc::TrySendError::Disconnected(request)),
+            }
+        };
+        sent.map_err(|error| match error {
+            mpsc::TrySendError::Disconnected(_) => "Workspace saving stopped".into(),
+            mpsc::TrySendError::Full(_) => "Workspace saving lost its queue reservation".into(),
+        })
+    }
+
+    fn close(&self) {
+        let sender = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .sender
+            .take();
+        self.available.notify_all();
+        // Outstanding capture slots do not retain a sender or keep shutdown
+        // waiting for a document that has not been submitted.
+        drop(sender);
+    }
+}
+
+struct Slot(Arc<Queue>);
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        self.0
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .reserved = false;
+        self.0.available.notify_one();
+    }
+}
+
+// Wake synchronous reservers even if the worker exits unexpectedly.
+struct WorkerQueue(Arc<Queue>);
+impl Drop for WorkerQueue {
+    fn drop(&mut self) {
+        self.0.close();
+    }
+}
+
+pub(super) struct Capture {
+    slot: Slot,
+    flush: bool,
+}
+
+impl Capture {
+    pub(super) fn save(self, document: Document) -> SaveResult {
+        let queue = self.slot.0.clone();
+        let (finished, completion) = if self.flush {
+            let (sender, receiver) = mpsc::sync_channel(1);
+            (Some(sender), Some(receiver))
+        } else {
+            (None, None)
+        };
+        queue.send(Request {
+            document,
+            finished,
+            slot: self.slot,
+        })?;
+        if let Some(completion) = completion {
+            let _wait = nucleus::performance::Span::new("workspace-save-flush-await");
+            completion
+                .recv()
+                .map_err(|_| "Workspace saving stopped".to_owned())?
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub(super) struct Writer {
-    sender: Option<mpsc::SyncSender<Request>>,
+    queue: Arc<Queue>,
     status: Arc<Mutex<Option<SaveResult>>>,
     due: Arc<AtomicBool>,
     saved_revision: Arc<Mutex<Option<(String, u64)>>>,
@@ -36,6 +155,14 @@ impl Writer {
         wake: Option<WakeSignal>,
     ) -> io::Result<Self> {
         let (sender, receiver) = mpsc::sync_channel::<Request>(1);
+        let queue = Arc::new(Queue {
+            state: Mutex::new(QueueState {
+                sender: Some(sender),
+                reserved: false,
+            }),
+            available: Condvar::new(),
+        });
+        let worker_queue = queue.clone();
         let status = Arc::new(Mutex::new(None));
         let result = status.clone();
         let due = Arc::new(AtomicBool::new(true));
@@ -45,31 +172,35 @@ impl Writer {
         let task = thread::Builder::new()
             .name("workspace-storage".into())
             .spawn(move || {
+                let _lifetime = WorkerQueue(worker_queue);
                 let mut storage = Storage::new(path, last, settings);
                 let interval = Duration::from_secs(settings.snapshot_seconds);
                 let mut next = Instant::now() + interval;
                 loop {
                     match receiver.recv_timeout(next.saturating_duration_since(Instant::now())) {
-                        Ok(mut request) => {
-                            let saved_canvas_revision = request
-                                .document
+                        Ok(request) => {
+                            let Request {
+                                mut document,
+                                finished,
+                                slot,
+                            } = request;
+                            drop(slot);
+                            let saved_canvas_revision = document
                                 .canvas_state
                                 .as_ref()
                                 .map_or(0, |state| state.snapshot.revision);
-                            if let Some(state) = &mut request.document.canvas_state {
+                            if let Some(state) = &mut document.canvas_state {
                                 state.mark_saved_through(saved_canvas_revision);
                             }
-                            let saved =
-                                timestamp().and_then(|now| storage.save(&request.document, now));
+                            let saved = timestamp().and_then(|now| storage.save(&document, now));
                             if saved.is_ok() {
-                                *revision.lock().unwrap() = request
-                                    .document
+                                *revision.lock().unwrap() = document
                                     .canvas_id
-                                    .clone()
+                                    .take()
                                     .map(|id| (id, saved_canvas_revision));
                             }
                             *result.lock().unwrap() = Some(saved.clone());
-                            if let Some(finished) = request.finished {
+                            if let Some(finished) = finished {
                                 let _ = finished.send(saved);
                             }
                             if let Some(wake) = &wake {
@@ -88,7 +219,7 @@ impl Writer {
                 }
             })?;
         Ok(Self {
-            sender: Some(sender),
+            queue,
             status,
             due,
             saved_revision,
@@ -117,38 +248,32 @@ impl Writer {
         self.status.lock().unwrap().take()
     }
 
-    pub(super) fn save(&self, document: Document, flush: bool) -> SaveResult {
-        let sender = self.sender.as_ref().unwrap();
-        if flush {
-            let (finished, receiver) = mpsc::sync_channel(1);
-            sender
-                .send(Request {
-                    document,
-                    finished: Some(finished),
-                })
-                .map_err(|_| "Workspace saving stopped".to_owned())?;
-            receiver
-                .recv()
-                .map_err(|_| "Workspace saving stopped".to_owned())?
-        } else {
-            match sender.try_send(Request {
-                document,
-                finished: None,
-            }) {
-                Ok(()) => Ok(()),
-                Err(mpsc::TrySendError::Full(_)) => {
-                    self.request_save();
-                    Ok(())
-                }
-                Err(mpsc::TrySendError::Disconnected(_)) => Err("Workspace saving stopped".into()),
+    pub(super) fn prepare(&self, flush: bool) -> Result<Option<Capture>, String> {
+        let _admission = nucleus::performance::Span::new("workspace-save-admission-await");
+        match self.queue.reserve(flush)? {
+            Some(slot) => {
+                nucleus::performance::add("workspace-captures-admitted", 1);
+                Ok(Some(Capture { slot, flush }))
             }
+            None => {
+                nucleus::performance::add("workspace-captures-deferred", 1);
+                self.request_save();
+                Ok(None)
+            }
+        }
+    }
+
+    pub(super) fn save(&self, document: Document, flush: bool) -> SaveResult {
+        match self.prepare(flush)? {
+            Some(capture) => capture.save(document),
+            None => Ok(()),
         }
     }
 }
 
 impl Drop for Writer {
     fn drop(&mut self) {
-        self.sender.take();
+        self.queue.close();
         if let Some(task) = self.task.take() {
             let _ = task.join();
         }
@@ -173,18 +298,28 @@ impl Storage {
     }
 
     fn save(&mut self, document: &Document, now: u64) -> SaveResult {
-        if let Some(error) = document.validation_error() {
+        let _save = nucleus::performance::Span::new("workspace-storage-save");
+        let invalid = {
+            let _validate = nucleus::performance::Span::new("workspace-storage-validation");
+            document.validation_error()
+        };
+        if let Some(error) = invalid {
             return Err(format!("Could not save workspaces: {error}"));
         }
-        let bytes = serde_json::to_vec_pretty(document)
-            .map_err(|error| format!("Could not save workspaces: {error}"))?;
+        let bytes = {
+            let _encode = nucleus::performance::Span::new("workspace-storage-encoding");
+            serde_json::to_vec_pretty(document)
+                .map_err(|error| format!("Could not save workspaces: {error}"))?
+        };
         if self.last.as_ref() != Some(&bytes) {
+            let _commit = nucleus::performance::Span::new("workspace-storage-commit");
             self.write_snapshot(&bytes, now)
                 .map_err(|error| format!("Could not save workspaces: {error}"))?;
             self.last = Some(bytes);
             self.prune_pending = true;
         }
         if self.prune_pending {
+            let _prune = nucleus::performance::Span::new("workspace-storage-prune");
             self.prune().map_err(|error| {
                 format!("Snapshot saved, but old snapshots could not be removed: {error}")
             })?;

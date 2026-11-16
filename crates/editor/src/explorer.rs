@@ -6,7 +6,7 @@ use std::{
 
 pub const MAX_ENTRIES: usize = 20_000;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Entry {
     pub path: PathBuf,
     pub directory: bool,

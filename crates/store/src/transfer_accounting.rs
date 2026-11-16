@@ -32,7 +32,7 @@ pub struct PolicyInput {
 
 fn map(row: sqlx::sqlite::SqliteRow) -> Result<Policy, StoreError> {
     let mut effects: Vec<PrivateEffect> =
-        serde_json::from_str(&row.get::<String, _>("effects_json")).map_err(invalid)?;
+        serde_json::from_str(row.get::<&str, _>("effects_json")).map_err(invalid)?;
     if effects.is_empty() {
         effects.push(PrivateEffect {
             record: row.get("record_uid"),
@@ -229,9 +229,22 @@ pub(crate) async fn effective_on(
     connection: &mut sqlx::SqliteConnection,
     binding: &Binding<'_>,
 ) -> Result<Effective, StoreError> {
-    let policy = sqlx::query("SELECT e.* FROM transfer_private_policy p JOIN transfer_private_policy_event e ON e.uid = p.event_uid WHERE p.transfer_uid = ? AND p.exchange_uid = ? AND p.person_uid = ?")
-        .bind(binding.transfer).bind(binding.exchange).bind(binding.person)
-        .fetch_optional(&mut *connection).await?.map(map).transpose()?;
+    let policy = policy_on(
+        connection,
+        binding.transfer,
+        binding.exchange,
+        binding.person,
+    )
+    .await?;
+    effective_with_policy_on(connection, binding, policy).await
+}
+
+/// Resolve a policy already read for this binding in the current transaction.
+pub(crate) async fn effective_with_policy_on(
+    connection: &mut sqlx::SqliteConnection,
+    binding: &Binding<'_>,
+    policy: Option<Policy>,
+) -> Result<Effective, StoreError> {
     let legacy: Option<(String, i64)> = if policy.is_none() {
         sqlx::query_as("SELECT formula, version FROM transfer_occurrence_application_policy WHERE occurrence_uid = ? AND receiver_person_uid = ?")
             .bind(binding.occurrence).bind(binding.person).fetch_optional(&mut *connection).await?

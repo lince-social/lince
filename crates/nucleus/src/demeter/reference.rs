@@ -10,7 +10,7 @@ pub enum ReferenceGroup {
     Female,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Profile {
     pub age: u8,
@@ -78,7 +78,7 @@ pub struct Reference {
     pub energy_fraction: Option<EnergyFraction>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NutrientBound {
     pub nutrient: String,
@@ -88,7 +88,7 @@ pub struct NutrientBound {
     pub source: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EnergyShare {
     pub nutrient: String,
@@ -97,7 +97,7 @@ pub struct EnergyShare {
     pub kcal_per_g: DecimalValue,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Requirements {
     pub bounds: Vec<NutrientBound>,

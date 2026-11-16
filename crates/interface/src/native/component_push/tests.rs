@@ -81,7 +81,7 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
     app.world_mut()
         .entity_mut(note)
         .insert(crate::native::area::RecordProperties(
-            serde_json::json!({"quantity":-1}),
+            serde_json::json!({"quantity":-1}).into(),
         ));
     let area = app
         .world_mut()
@@ -119,7 +119,7 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
                 position: DVec2::ZERO,
                 size: Vec2::splat(20.0),
             },
-            crate::native::area::RecordProperties(serde_json::json!({"quantity":-1})),
+            crate::native::area::RecordProperties(serde_json::json!({"quantity":-1}).into()),
             ChildOf(root),
             WorkspaceMember(1),
         ))

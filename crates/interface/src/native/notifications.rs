@@ -6,7 +6,7 @@ use crate::native::{
     wake::WakeSignal,
 };
 use bevy::prelude::*;
-use std::collections::HashSet;
+use std::{collections::HashMap, sync::Arc};
 
 pub(crate) use ui::close;
 
@@ -15,8 +15,30 @@ pub struct Notifications {
     pub log: cell::Diagnostics,
     subscription: Option<cell::DiagnosticSubscription>,
     revision: u64,
+    snapshot: Arc<NotificationSnapshot>,
+    toasts: Arc<HashMap<u64, u64>>,
+}
+
+struct NotificationSnapshot {
     notices: Vec<cell::Notice>,
-    toasts: HashSet<u64>,
+    label: String,
+    badge: String,
+}
+
+impl NotificationSnapshot {
+    fn new(notices: Vec<cell::Notice>) -> Self {
+        nucleus::performance::add("notification-snapshots-prepared", 1);
+        let count = notices.len();
+        Self {
+            notices,
+            label: if count == 0 {
+                "Notifications".into()
+            } else {
+                format!("Notifications ({count})")
+            },
+            badge: count.to_string(),
+        }
+    }
 }
 
 impl Notifications {
@@ -26,8 +48,8 @@ impl Notifications {
             log,
             subscription: None,
             revision,
-            notices,
-            toasts: HashSet::new(),
+            snapshot: Arc::new(NotificationSnapshot::new(notices)),
+            toasts: Arc::default(),
         }
     }
 }
@@ -218,6 +240,7 @@ fn recommendation(source: &str, message: &str) -> &'static str {
 }
 
 fn render(world: &mut World) {
+    let _presentation = nucleus::performance::Span::new("notification-presentation");
     if world.resource::<Notifications>().subscription.is_none()
         && let Some(wake) = world.get_resource::<WakeSignal>().cloned()
     {
@@ -229,33 +252,28 @@ fn render(world: &mut World) {
     }
     let log = world.resource::<Notifications>().log.clone();
     if world.resource::<Notifications>().revision != log.revision() {
+        let _preparation = nucleus::performance::Span::new("notification-snapshot-preparation");
         let (revision, notices) = log.snapshot();
         let mut state = world.resource_mut::<Notifications>();
         for notice in &notices {
-            if !state.notices.iter().any(|previous| {
+            if !state.snapshot.notices.iter().any(|previous| {
                 previous.id == notice.id && previous.occurrences == notice.occurrences
             }) {
-                state.toasts.insert(notice.id);
+                Arc::make_mut(&mut state.toasts).insert(notice.id, notice.occurrences);
             }
         }
-        state
-            .toasts
-            .retain(|id| notices.iter().any(|notice| notice.id == *id));
+        Arc::make_mut(&mut state.toasts)
+            .retain(|id, _| notices.iter().any(|notice| notice.id == *id));
         state.revision = revision;
-        state.notices = notices;
+        state.snapshot = Arc::new(NotificationSnapshot::new(notices));
     }
-    let count = world.resource::<Notifications>().notices.len();
-    let value = if count == 0 {
-        "Notifications".into()
-    } else {
-        format!("Notifications ({count})")
-    };
+    let snapshot = Arc::clone(&world.resource::<Notifications>().snapshot);
     for mut label in world
         .query_filtered::<&mut crate::native::icons::IconButton, With<NotificationCount>>()
         .iter_mut(world)
     {
-        if label.label != value {
-            label.label.clone_from(&value);
+        if label.label != snapshot.label {
+            label.label.clone_from(&snapshot.label);
         }
     }
     ui::render_panels(world);

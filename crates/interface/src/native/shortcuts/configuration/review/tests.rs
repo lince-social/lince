@@ -8,9 +8,9 @@ struct Draft {
     applied: usize,
 }
 
-fn snapshot(world: &World, owner: Entity) -> Result<Snapshot, String> {
+fn snapshot(world: &World, owner: Entity, previous: Option<&Snapshot>) -> Result<Snapshot, String> {
     let draft = world.get::<Draft>(owner).ok_or("The original editor is closed.")?;
-    Snapshot::new(&draft.base, &draft.local, &world.resource::<LayoutSettings>().overview)
+    Snapshot::new(&draft.base, &draft.local, &world.resource::<LayoutSettings>().overview, previous)
 }
 
 fn apply(world: &mut World, owner: Entity, active: Value, value: Value) -> Result<(), String> {

@@ -1,4 +1,5 @@
 use nucleus::component::{ComponentState, Presentation};
+use serde::Deserialize;
 use tokio::sync::broadcast;
 
 use crate::{Engine, EngineError, actions::ActionOutcome};
@@ -12,12 +13,35 @@ impl Engine {
         &self,
         mut component: ComponentState,
     ) -> Result<ComponentState, EngineError> {
+        self.resolve_component_in_place(&mut component).await?;
+        Ok(component)
+    }
+
+    pub(crate) async fn resolve_component_in_place(
+        &self,
+        component: &mut ComponentState,
+    ) -> Result<(), EngineError> {
+        // Stage only resolved references. A failure leaves the whole component
+        // unchanged without cloning its text, settings and action payloads.
+        let records = self.resolve_component_records(component).await?;
+        for (record, resolved) in component.records_mut().into_iter().zip(records) {
+            *record = resolved;
+        }
+        Ok(())
+    }
+
+    /// Validate and resolve references without copying the presentation tree.
+    /// Validation-only callers may discard the resolved identifiers.
+    pub(crate) async fn resolve_component_records(
+        &self,
+        component: &ComponentState,
+    ) -> Result<Vec<String>, EngineError> {
+        let _resolution = crate::performance::Span::new("component-reference-resolution-await");
         component.validate().map_err(EngineError::Consequence)?;
         component
             .visit(&mut |component| {
                 if let ComponentState::Button { action, .. } = component {
-                    serde_json::from_value::<crate::actions::Action>(action.clone())
-                        .map_err(|e| e.to_string())?;
+                    crate::actions::Action::deserialize(action).map_err(|e| e.to_string())?;
                 }
                 Ok(())
             })
@@ -26,17 +50,19 @@ impl Engine {
             .visit(&mut |component| {
                 if let ComponentState::Composition { composition } = component {
                     for binding in composition.parts.iter().flat_map(|part| &part.events) {
-                        serde_json::from_value::<crate::actions::Action>(binding.action.clone())
+                        crate::actions::Action::deserialize(&binding.action)
                             .map_err(|e| e.to_string())?;
                     }
                 }
                 Ok(())
             })
             .map_err(EngineError::Consequence)?;
-        for record in component.records_mut() {
-            *record = self.resolve(record).await?;
+        let references = component.records();
+        let mut resolved = Vec::with_capacity(references.len());
+        for record in references {
+            resolved.push(self.resolve(record).await?);
         }
-        Ok(component)
+        Ok(resolved)
     }
 
     pub(crate) async fn authorize_component(
@@ -44,6 +70,7 @@ impl Engine {
         component: &ComponentState,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
+        let _authorization = crate::performance::Span::new("component-authorization-await");
         component.validate().map_err(EngineError::Consequence)?;
         for record in component.records() {
             let uid = self.resolve(record).await?;
@@ -51,35 +78,39 @@ impl Engine {
         }
         let mut actions = Vec::new();
         let mut origins = Vec::new();
-        component.visit(&mut |component| {
-            match component {
-                ComponentState::Button { action, .. } => actions.push(serde_json::from_value::<crate::actions::Action>(action.clone()).map_err(|error| error.to_string())?),
-                ComponentState::Composition { composition } => {
-                    for binding in composition.parts.iter().flat_map(|part| &part.events) {
-                        actions.push(serde_json::from_value::<crate::actions::Action>(binding.action.clone()).map_err(|error| error.to_string())?);
-                    }
-                    if let Some(origin) = &composition.origin { origins.extend([origin.agent.clone(), origin.thread.clone()]); }
-                }
-                _ => {}
-            }
-            Ok(())
-        }).map_err(EngineError::Consequence)?;
-        self.refuse_unreadable(actor, &origins).await?;
-        for action in actions { self.authorize_action(&action, actor).await?; }
         let mut calls = Vec::new();
         component
             .visit(&mut |component| {
-                if let ComponentState::Record {
-                    record,
-                    start_call: Some(start),
-                    ..
-                } = component
-                {
-                    calls.push((record.clone(), start.clone()));
+                match component {
+                    ComponentState::Button { action, .. } => actions.push(
+                        crate::actions::Action::deserialize(action)
+                            .map_err(|error| error.to_string())?,
+                    ),
+                    ComponentState::Composition { composition } => {
+                        for binding in composition.parts.iter().flat_map(|part| &part.events) {
+                            actions.push(
+                                crate::actions::Action::deserialize(&binding.action)
+                                    .map_err(|error| error.to_string())?,
+                            );
+                        }
+                        if let Some(origin) = &composition.origin {
+                            origins.extend([origin.agent.clone(), origin.thread.clone()]);
+                        }
+                    }
+                    ComponentState::Record {
+                        record,
+                        start_call: Some(start),
+                        ..
+                    } => calls.push((record, start)),
+                    _ => {}
                 }
                 Ok(())
             })
             .map_err(EngineError::Consequence)?;
+        self.refuse_unreadable(actor, &origins).await?;
+        for action in actions {
+            self.authorize_action(&action, actor).await?;
+        }
         for (record, start) in calls {
             if actor.is_some_and(|actor| actor != start.person) {
                 return Err(EngineError::Forbidden(
@@ -91,21 +122,21 @@ impl Engine {
                     "Choose an active Person for the automatic call".into(),
                 ));
             }
-            let predicate =
-                store::vocabulary::feature_read(&self.store.pool, "thread")
-                    .await?
-                    .ok_or_else(|| {
-                        EngineError::Consequence(
-                            "The call thread is not attached to this Record".into(),
-                        )
-                    })?;
-            let parents = store::assertions::objects_from_subject(
+            let predicate = store::vocabulary::feature_read(&self.store.pool, "thread")
+                .await?
+                .ok_or_else(|| {
+                    EngineError::Consequence(
+                        "The call thread is not attached to this Record".into(),
+                    )
+                })?;
+            if !store::assertions::object_exists(
                 &self.store.pool,
                 &start.thread,
                 &predicate,
+                Some(record),
             )
-            .await?;
-            if !parents.iter().any(|parent| parent.uid == record) {
+            .await?
+            {
                 return Err(EngineError::Consequence(
                     "The call thread is not attached to this Record".into(),
                 ));

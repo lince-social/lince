@@ -1,194 +1,181 @@
 use super::*;
 pub(super) use lince_interface::markup::parse;
 
-pub(super) fn render(
+mod retention;
+pub(super) use retention::render;
+
+fn spawn_block(
     world: &mut World,
     parent: Entity,
-    source: &str,
+    block: &lince_interface::markup::Block,
     context: &Context,
-    shaders: Vec<Entity>,
+    base: Option<&str>,
+    shader: Option<Entity>,
 ) {
-    world.init_resource::<Fonts>();
-    let mut shaders = shaders.into_iter();
-    for block in parse(source) {
-        if let Some(reference) = &block.transclusion {
-            super::transclusion::spawn(world, parent, reference, context);
-            continue;
-        }
-        if block
-            .code
-            .as_deref()
-            .is_some_and(|language| language.trim().eq_ignore_ascii_case("wgsl"))
-        {
-            shader::spawn(
-                world,
-                parent,
-                &block
-                    .runs
-                    .iter()
-                    .map(|run| run.text.as_str())
-                    .collect::<String>(),
-                shaders.next(),
-            );
-            continue;
-        }
-        if let Some(source) = &block.image {
-            if source.starts_with("asset:") {
-                super::assets::spawn(world, parent, source, context);
-                continue;
-            }
-            let mut cursor = Some(context.owner);
-            let mut base = None;
-            while let Some(entity) = cursor {
-                if let Some(value) = world.get::<crate::native::source_view::ReferenceBase>(entity)
-                {
-                    base = Some(value.0.clone());
-                    break;
-                }
-                cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
-            }
-            let resolved = if source.starts_with("data:") {
-                Ok(source.clone())
-            } else if let Some(base) = base {
-                lince_resources::resolve(&base, source)
-            } else {
-                lince_resources::address(source).map(|uri| uri.to_string())
-            };
-            let Ok(source) = resolved else {
-                continue;
-            };
-            if !matches!(context.source, Source::Local) && source.starts_with("file:") {
-                continue;
-            }
-            pictures::spawn(
-                world,
-                parent,
-                &source,
-                &block
-                    .runs
-                    .iter()
-                    .map(|run| run.text.as_str())
-                    .collect::<String>(),
-            );
-            continue;
-        }
-        if block
-            .code
-            .as_deref()
-            .is_some_and(|lang| lang.trim().eq_ignore_ascii_case("mermaid"))
-        {
-            diagram::spawn(
-                world,
-                parent,
-                &block
-                    .runs
-                    .iter()
-                    .map(|run| run.text.as_str())
-                    .collect::<String>(),
-            );
-            continue;
-        }
-        if block.code.is_some() {
-            let text = block
+    if let Some(reference) = &block.transclusion {
+        super::transclusion::spawn(world, parent, reference, context);
+        return;
+    }
+    if block
+        .code
+        .as_deref()
+        .is_some_and(|language| language.trim().eq_ignore_ascii_case("wgsl"))
+    {
+        shader::spawn(
+            world,
+            parent,
+            &block
                 .runs
                 .iter()
                 .map(|run| run.text.as_str())
-                .collect::<String>();
-            let entity = crate::native::edit_mode::label(world, parent, &text, 14.0);
-            world.entity_mut(entity).insert(Node {
-                width: percent(100),
-                padding: UiRect::all(px(8)),
-                flex_shrink: 0.0,
-                ..default()
-            });
-            continue;
+                .collect::<String>(),
+            shader,
+        );
+        return;
+    }
+    if let Some(source) = &block.image {
+        if source.starts_with("asset:") {
+            super::assets::spawn(world, parent, source, context);
+            return;
         }
-        let size = match block.heading {
-            1 => 26.0,
-            2 => 23.0,
-            3.. => 20.0,
-            _ => 16.0,
+        let resolved = if source.starts_with("data:") {
+            Ok(source.clone())
+        } else if let Some(base) = base {
+            lince_resources::resolve(base, source)
+        } else {
+            lince_resources::address(source).map(|uri| uri.to_string())
         };
-        let row = crate::native::edit_mode::label(world, parent, "", size);
-        world.get_mut::<Node>(row).unwrap().width = percent(100);
-        if block.quote {
-            let mut node = world.get_mut::<Node>(row).unwrap();
-            node.padding.left = px(10);
-            node.border.left = px(2);
+        let Ok(source) = resolved else {
+            return;
+        };
+        if !matches!(context.source, Source::Local) && source.starts_with("file:") {
+            return;
+        }
+        pictures::spawn(
+            world,
+            parent,
+            &source,
+            &block
+                .runs
+                .iter()
+                .map(|run| run.text.as_str())
+                .collect::<String>(),
+        );
+        return;
+    }
+    if block
+        .code
+        .as_deref()
+        .is_some_and(|lang| lang.trim().eq_ignore_ascii_case("mermaid"))
+    {
+        diagram::spawn(
+            world,
+            parent,
+            &block
+                .runs
+                .iter()
+                .map(|run| run.text.as_str())
+                .collect::<String>(),
+        );
+        return;
+    }
+    if block.code.is_some() {
+        let text = block
+            .runs
+            .iter()
+            .map(|run| run.text.as_str())
+            .collect::<String>();
+        let entity = crate::native::edit_mode::label(world, parent, &text, 14.0);
+        world.entity_mut(entity).insert(Node {
+            width: percent(100),
+            padding: UiRect::all(px(8)),
+            flex_shrink: 0.0,
+            ..default()
+        });
+        return;
+    }
+    let size = match block.heading {
+        1 => 26.0,
+        2 => 23.0,
+        3.. => 20.0,
+        _ => 16.0,
+    };
+    let row = crate::native::edit_mode::label(world, parent, "", size);
+    world.get_mut::<Node>(row).unwrap().width = percent(100);
+    if block.quote {
+        let mut node = world.get_mut::<Node>(row).unwrap();
+        node.padding.left = px(10);
+        node.border.left = px(2);
+        world
+            .entity_mut(row)
+            .insert(crate::native::token_style::border(Token::Accent));
+    }
+    let mut links = Vec::new();
+    for (index, run) in block.runs.iter().enumerate() {
+        let reference = run.link.clone();
+        let mut font = world
+            .resource::<crate::native::theme::Typography>()
+            .text(size);
+        if run.bold || block.heading > 0 {
+            font.font = world.resource::<Fonts>().bold.clone().into();
+        } else if run.italic {
+            font.font = world.resource::<Fonts>().italic.clone().into();
+        }
+        let entity = world
+            .spawn((
+                TextSpan::new(&run.text),
+                font,
+                crate::native::token_style::text(if reference.is_some() {
+                    Token::Accent
+                } else {
+                    Token::Ink
+                }),
+                ChildOf(row),
+            ))
+            .id();
+        if run.code {
             world
-                .entity_mut(row)
-                .insert(crate::native::token_style::border(Token::Accent));
+                .entity_mut(entity)
+                .insert(bevy::text::TextBackgroundColor(Color::srgba(
+                    0.5, 0.5, 0.5, 0.15,
+                )));
         }
-        let mut links = Vec::new();
-        for (index, run) in block.runs.into_iter().enumerate() {
-            let reference = run.link.clone();
-            let mut font = world
-                .resource::<crate::native::theme::Typography>()
-                .text(size);
-            if run.bold || block.heading > 0 {
-                font.font = world.resource::<Fonts>().bold.clone().into();
-            } else if run.italic {
-                font.font = world.resource::<Fonts>().italic.clone().into();
-            }
-            let entity = world
-                .spawn((
-                    TextSpan::new(&run.text),
-                    font,
-                    crate::native::token_style::text(if reference.is_some() {
-                        Token::Accent
-                    } else {
-                        Token::Ink
-                    }),
-                    ChildOf(row),
-                ))
-                .id();
-            if run.code {
-                world
-                    .entity_mut(entity)
-                    .insert(bevy::text::TextBackgroundColor(Color::srgba(
-                        0.5, 0.5, 0.5, 0.15,
-                    )));
-            }
-            if run.strike {
-                world.entity_mut(entity).insert(bevy::text::Strikethrough);
-            }
-            if let Some(reference) = reference {
-                world.entity_mut(entity).insert(bevy::text::Underline);
-                links.push((
-                    index + 1,
-                    Link {
-                        reference,
-                        context: context.clone(),
-                    },
-                ));
-            }
+        if run.strike {
+            world.entity_mut(entity).insert(bevy::text::Strikethrough);
         }
-        if !links.is_empty() {
-            let mut accessibility = accesskit::Node::new(accesskit::Role::Link);
-            accessibility.set_label(format!(
-                "Record links: {}. Arrow keys select a link; Enter opens it.",
-                links
-                    .iter()
-                    .map(|(_, link)| link.reference.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+        if let Some(reference) = reference {
+            world.entity_mut(entity).insert(bevy::text::Underline);
+            links.push((
+                index + 1,
+                Link {
+                    reference,
+                    context: context.clone(),
+                },
             ));
-            world
-                .entity_mut(row)
-                .insert((
-                    ParagraphLinks { links, selected: 0 },
-                    bevy::input_focus::tab_navigation::TabIndex(0),
-                    bevy::a11y::AccessibilityNode::from(accessibility),
-                    crate::native::icons::Tooltip(
-                        "Record links: ← / → to select, Enter to open".into(),
-                    ),
-                ))
-                .observe(click)
-                .observe(keyboard);
         }
     }
-    for shader in shaders {
-        world.despawn(shader);
+    if !links.is_empty() {
+        let mut accessibility = accesskit::Node::new(accesskit::Role::Link);
+        accessibility.set_label(format!(
+            "Record links: {}. Arrow keys select a link; Enter opens it.",
+            links
+                .iter()
+                .map(|(_, link)| link.reference.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+        world
+            .entity_mut(row)
+            .insert((
+                ParagraphLinks { links, selected: 0 },
+                bevy::input_focus::tab_navigation::TabIndex(0),
+                bevy::a11y::AccessibilityNode::from(accessibility),
+                crate::native::icons::Tooltip(
+                    "Record links: ← / → to select, Enter to open".into(),
+                ),
+            ))
+            .observe(click)
+            .observe(keyboard);
     }
 }
 
@@ -281,7 +268,6 @@ mod tests {
                 owner: parent,
                 source: Source::Local,
             },
-            Vec::new(),
         );
         let links = world.query::<&ParagraphLinks>().single(&world).unwrap();
         assert_eq!(links.links.len(), 3);

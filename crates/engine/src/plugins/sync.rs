@@ -164,7 +164,7 @@ impl Engine {
             .await?
             .ok_or_else(|| invalid("Sync binding is unavailable"))?;
         let binding = binding_row(&row)?;
-        let cursor: Value = serde_json::from_str(&row.get::<String, _>("cursor"))?;
+        let cursor: Value = serde_json::from_str(row.get::<&str, _>("cursor"))?;
         let previous_export = cursor["successful_at_ms"]
             .as_i64()
             .and_then(chrono::DateTime::from_timestamp_millis);
@@ -249,7 +249,7 @@ impl Engine {
         pulled: PullResult,
     ) -> Result<usize, EngineError> {
         if pulled.records.len() > nucleus::plugins::MAX_ITEMS
-            || serde_json::to_vec(&pulled.cursor)?.len() > 16384
+            || nucleus::json::encoded_len(&pulled.cursor)? > 16384
         {
             return Err(invalid("Plugin exceeded its import or checkpoint budget"));
         }
@@ -440,7 +440,7 @@ impl Engine {
             let prepared = match prepared {
                 Some(prepared) => serde_json::from_str(&prepared)?,
                 None => {
-                    let input: Value = serde_json::from_str(&row.get::<String, _>("input"))?;
+                    let input: Value = serde_json::from_str(row.get::<&str, _>("input"))?;
                     let prepared = self
                         .plugin_call(
                             &binding.provider,
@@ -448,7 +448,7 @@ impl Engine {
                             json!({"settings":binding.settings,"record":input}),
                         )
                         .await?;
-                    if serde_json::to_vec(&prepared)?.len() > 65536 {
+                    if nucleus::json::encoded_len(&prepared)? > 65536 {
                         return Err(invalid("Prepared publication exceeds its budget"));
                     }
                     store::sqlx::query(

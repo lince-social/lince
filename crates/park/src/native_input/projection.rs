@@ -399,42 +399,153 @@ fn projected(
     ])
 }
 
-pub(crate) fn accessibility_points(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, local: Option<Rect>) -> Option<[[f64; 2]; 4]> {
-    let node = world.get::<ComputedNode>(entity)?;
-    if node.size().min_element() <= 0.0 { return None; }
-    let transform = world.get::<UiGlobalTransform>(entity)?;
-    let bounds = local.unwrap_or_else(|| Rect::from_center_size(Vec2::ZERO, node.size()));
-    let mut corners = [bounds.min, Vec2::new(bounds.max.x, bounds.min.y), bounds.max, Vec2::new(bounds.min.x, bounds.max.y)]
-        .map(|point| transform.transform_point2(point));
-    if corners.iter().any(|point| !point.is_finite()) { return None; }
-    if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-        let low = corners.iter().copied().fold(Vec2::splat(f32::INFINITY), Vec2::min).max(clip.clip.min);
-        let high = corners.iter().copied().fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max).min(clip.clip.max);
-        if (high - low).min_element() < 0.0 { return None; }
-        corners = [low, Vec2::new(high.x, low.y), high, Vec2::new(low.x, high.y)];
+/// Geometry prepared for one immutable-world accessibility export. Borrowed
+/// components prevent this from surviving a world mutation or becoming a
+/// cross-frame ownership cache.
+pub(crate) struct AccessibilityProjection<'a> {
+    transform: &'a UiGlobalTransform,
+    size: Vec2,
+    clip: Option<Rect>,
+    source: AccessibilitySource<'a>,
+}
+
+enum AccessibilitySource<'a> {
+    Final(&'a RasterMapping),
+    Surface {
+        pixels: UVec2,
+        mapping: lince_interface::host::CanvasProjection,
+    },
+}
+
+impl<'a> AccessibilityProjection<'a> {
+    pub(crate) fn new(
+        world: &'a World,
+        view: &'a View,
+        geometry: Option<&'a GeometrySnapshot>,
+        entity: Entity,
+    ) -> Option<Self> {
+        let node = world.get::<ComputedNode>(entity)?;
+        if node.size().min_element() <= 0.0 {
+            return None;
+        }
+        let transform = world.get::<UiGlobalTransform>(entity)?;
+        let camera = world
+            .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
+            .get()?;
+        let bevy::camera::RenderTarget::Image(target) =
+            world.get::<bevy::camera::RenderTarget>(camera)?
+        else {
+            return None;
+        };
+        let source = if target.handle.id() == view.image {
+            AccessibilitySource::Final(&view.raster)
+        } else {
+            let owner = world
+                .get::<native::topology::presentation::VisualOwner>(camera)?
+                .0;
+            let surface = world.get::<native::topology::presentation::Surface>(owner)?;
+            if surface.camera != camera
+                || surface.image.id() != target.handle.id()
+                || !surface.visible
+                || surface.pixels.min_element() == 0
+                || !descendant(world, entity, owner)
+                || view.root != world.get::<ChildOf>(owner).map(ChildOf::parent)
+                || world
+                    .get::<native::layout::desktop::ApplicationWindow>(owner)
+                    .is_some()
+            {
+                return None;
+            }
+            let id = world.get::<native::layout::LayoutBox>(owner)?.id;
+            let item = geometry?
+                .items
+                .iter()
+                .find(|item| item.id == ItemId::Native(id) && item.output == view.output)?;
+            AccessibilitySource::Surface {
+                pixels: surface.pixels,
+                mapping: item.mapping.canvas_projection()?,
+            }
+        };
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::AccessibleProjectionPrepared,
+        );
+        Some(Self {
+            transform,
+            size: node.size(),
+            clip: world
+                .get::<bevy::ui::CalculatedClip>(entity)
+                .map(|clip| clip.clip),
+            source,
+        })
     }
-    let camera = world.get::<bevy::ui::ComputedUiTargetCamera>(entity)?.get()?;
-    let bevy::camera::RenderTarget::Image(target) = world.get::<bevy::camera::RenderTarget>(camera)? else { return None; };
-    let points = if target.handle.id() == view.image {
-        corners.map(|point| view.raster.logical_point(point.as_dvec2().to_array()))
-    } else {
-        let owner = world.get::<native::topology::presentation::VisualOwner>(camera)?.0;
-        let surface = world.get::<native::topology::presentation::Surface>(owner)?;
-        if surface.camera != camera || surface.image.id() != target.handle.id() || !surface.visible
-            || surface.pixels.min_element() == 0 || !descendant(world, entity, owner)
-            || view.root != world.get::<ChildOf>(owner).map(ChildOf::parent)
-            || world.get::<native::layout::desktop::ApplicationWindow>(owner).is_some()
-        { return None; }
-        let id = world.get::<native::layout::LayoutBox>(owner)?.id;
-        let item = geometry?.items.iter().find(|item| item.id == ItemId::Native(id) && item.output == view.output)?;
-        let points = corners.into_iter().map(|point| {
-            let source = std::array::from_fn(|axis| item.mapping.surface.origin()[axis]
-                + f64::from(point[axis]) / f64::from(surface.pixels[axis]) * item.mapping.surface.size()[axis]);
-            item.mapping.canvas_point(source)
-        }).collect::<Option<Vec<_>>>()?;
-        <[[f64; 2]; 4]>::try_from(points).ok()?
-    };
-    points.iter().flatten().all(|value| value.is_finite()).then_some(points)
+
+    pub(crate) fn points(&self, local: Option<Rect>) -> Option<[[f64; 2]; 4]> {
+        let bounds = local.unwrap_or_else(|| Rect::from_center_size(Vec2::ZERO, self.size));
+        let mut corners = [
+            bounds.min,
+            Vec2::new(bounds.max.x, bounds.min.y),
+            bounds.max,
+            Vec2::new(bounds.min.x, bounds.max.y),
+        ]
+        .map(|point| self.transform.transform_point2(point));
+        if corners.iter().any(|point| !point.is_finite()) {
+            return None;
+        }
+        if let Some(clip) = self.clip {
+            let low = corners
+                .iter()
+                .copied()
+                .fold(Vec2::splat(f32::INFINITY), Vec2::min)
+                .max(clip.min);
+            let high = corners
+                .iter()
+                .copied()
+                .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max)
+                .min(clip.max);
+            if (high - low).min_element() < 0.0 {
+                return None;
+            }
+            corners = [
+                low,
+                Vec2::new(high.x, low.y),
+                high,
+                Vec2::new(low.x, high.y),
+            ];
+        }
+        let points = match &self.source {
+            AccessibilitySource::Final(raster) => {
+                corners.map(|point| raster.logical_point(point.as_dvec2().to_array()))
+            }
+            AccessibilitySource::Surface { pixels, mapping } => {
+                let mut points = [[0.0; 2]; 4];
+                let surface = mapping.surface();
+                for (point, corner) in points.iter_mut().zip(corners) {
+                    let source = std::array::from_fn(|axis| {
+                        surface.origin()[axis]
+                            + f64::from(corner[axis]) / f64::from(pixels[axis])
+                                * surface.size()[axis]
+                    });
+                    *point = mapping.point(source)?;
+                }
+                points
+            }
+        };
+        points
+            .iter()
+            .flatten()
+            .all(|value| value.is_finite())
+            .then_some(points)
+    }
+}
+
+pub(crate) fn accessibility_points(
+    world: &World,
+    view: &View,
+    geometry: Option<&GeometrySnapshot>,
+    entity: Entity,
+    local: Option<Rect>,
+) -> Option<[[f64; 2]; 4]> {
+    AccessibilityProjection::new(world, view, geometry, entity)?.points(local)
 }
 
 pub(crate) fn accessibility_bounds(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, local: Option<Rect>) -> Option<Rectangle> {

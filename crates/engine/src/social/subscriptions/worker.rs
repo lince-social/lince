@@ -151,7 +151,7 @@ impl Engine {
                     &self.store.pool,
                     endpoint,
                     "out",
-                    serde_json::to_vec(&request)?.len(),
+                    nucleus::json::encoded_len(&request)?,
                     settings.outgoing_bytes_per_minute,
                     now,
                 )
@@ -163,7 +163,7 @@ impl Engine {
                             &self.store.pool,
                             endpoint,
                             "in",
-                            serde_json::to_vec(&data)?.len(),
+                            nucleus::json::encoded_len(&data)?,
                             settings.incoming_bytes_per_minute,
                             now,
                         )

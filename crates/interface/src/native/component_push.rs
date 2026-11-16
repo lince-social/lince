@@ -267,7 +267,7 @@ pub(crate) fn spawn(
         }
         ComponentState::Button { label, action } => {
             let action: engine::actions::Action =
-                serde_json::from_value(action.clone()).map_err(|e| e.to_string())?;
+                engine::actions::Action::deserialize(action).map_err(|e| e.to_string())?;
             let entity = crate::native::sand_store::spawn_sand(
                 world,
                 root,

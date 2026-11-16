@@ -1,6 +1,11 @@
 use crate::{Library, Resource, Result, Url, address, resolve};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{
+    collections::BTreeMap,
+    fs,
+    io::{BufWriter, Write},
+    path::Path,
+};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(default, deny_unknown_fields)]
@@ -250,13 +255,18 @@ impl Library {
             Err(error) => return Err(error.to_string()),
         };
         let locations = entries.entry(uid.into()).or_default();
-        if !locations.contains(&entry) {
-            locations.insert(0, entry);
-            locations.truncate(64);
+        if locations.contains(&entry) {
+            return Ok(());
         }
+        locations.insert(0, entry);
+        locations.truncate(64);
         let mut temporary =
             tempfile::NamedTempFile::new_in(files).map_err(|error| error.to_string())?;
-        serde_json::to_writer(&mut temporary, &entries).map_err(|error| error.to_string())?;
+        {
+            let mut buffered = BufWriter::new(&mut temporary);
+            serde_json::to_writer(&mut buffered, &entries).map_err(|error| error.to_string())?;
+            buffered.flush().map_err(|error| error.to_string())?;
+        }
         temporary.persist(path).map_err(|error| error.to_string())?;
         Ok(())
     }

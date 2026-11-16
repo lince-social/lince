@@ -51,6 +51,10 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-presentation")]
+#[path = "castles/sand/kamalie/mod.rs"]
+pub mod kamalie;
+
+#[cfg(feature = "native-presentation")]
 pub mod schedule_editor;
 #[cfg(feature = "native-presentation")]
 pub mod time_castle;

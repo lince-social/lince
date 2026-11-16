@@ -11,7 +11,9 @@ use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
 use model::Entry;
 pub(crate) use model::LocalTimer;
+use serde::Deserialize;
 use serde_json::{Value, json};
+use std::{borrow::Cow, sync::Arc};
 
 struct Pending {
     id: String,
@@ -28,7 +30,7 @@ pub struct WorkTimer {
     control: Entity,
     status: Entity,
     list: Option<Entity>,
-    logs: Vec<Entry>,
+    logs: Arc<model::Logs>,
     pending: Option<Pending>,
 }
 
@@ -137,31 +139,36 @@ pub fn populate(
         control,
         status,
         list,
-        logs: Vec::new(),
+        logs: Arc::default(),
         pending: None,
     });
     refresh(world, parent, data);
-    ui::reconcile(world, parent);
 }
 
 pub(crate) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
     let Some(timer) = world.get::<WorkTimer>(entity) else {
         return false;
     };
-    let logs = if timer.binding.is_none() && timer.query.is_empty() {
-        world
-            .get::<LocalTimer>(entity)
-            .map(|local| local.logs.clone())
-            .unwrap_or_default()
+    let logs: Cow<'_, [Entry]> = if timer.binding.is_none() && timer.query.is_empty() {
+        Cow::Borrowed(
+            world
+                .get::<LocalTimer>(entity)
+                .map_or(&[][..], |local| local.logs.as_slice()),
+        )
     } else {
-        data["work_logs"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(|value| serde_json::from_value::<Entry>(value.clone()).ok())
-            .collect()
+        Cow::Owned(
+            data["work_logs"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|value| Entry::deserialize(value).ok())
+                .collect(),
+        )
     };
-    world.get_mut::<WorkTimer>(entity).unwrap().logs = logs;
+    if timer.logs.entries() != logs.as_ref() {
+        let logs = Arc::new(model::Logs::new(logs.into_owned()));
+        world.get_mut::<WorkTimer>(entity).unwrap().logs = logs;
+    }
     ui::reconcile(world, entity);
     true
 }
@@ -196,7 +203,7 @@ fn reference_matches(world: &World, timer: &WorkTimer) -> bool {
             !input.is_composing()
                 && input
                     .value()
-                    .to_string()
+                    .to_cow()
                     .trim()
                     .trim_start_matches('#')
                     .trim_start_matches('@')
@@ -243,7 +250,7 @@ fn change(
     form: Option<(Entity, [String; 2])>,
 ) -> Result<(), String> {
     if let Some(value) = &value {
-        engine::private_work::WorkMetadata::parse(&json!({"logs":[value.value()]}))
+        engine::private_work::WorkMetadata::validate_log(&value.value())
             .map_err(|error| error.to_string())?;
     }
     let timer = world
@@ -284,13 +291,13 @@ pub(crate) struct Toggle;
 pub(crate) fn running(world: &World, entity: Entity) -> Option<bool> {
     world
         .get::<WorkTimer>(entity)
-        .map(|timer| timer.logs.iter().any(|entry| entry.end.is_none()))
+        .map(|timer| timer.logs.active())
 }
 
 pub(crate) fn stopped_log(world: &World, entity: Entity) -> bool {
     world
         .get::<WorkTimer>(entity)
-        .is_some_and(|timer| timer.logs.iter().any(|entry| entry.end.is_some()))
+        .is_some_and(|timer| timer.logs.entries().iter().any(|entry| entry.end.is_some()))
 }
 impl Action for Toggle {
     fn tutorial_operations(&self) -> &'static [lince_interface::practice::Operation] {
@@ -308,7 +315,7 @@ impl Action for Toggle {
             status(world, entity, "Wait for the selected Record to load");
             return;
         }
-        let running = timer.logs.iter().any(|entry| entry.end.is_none());
+        let running = timer.logs.active();
         let result = if timer.binding.is_some() {
             submit(
                 world,
@@ -362,7 +369,7 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
                 } else {
                     let mut timer = world.get_mut::<WorkTimer>(entity).unwrap();
                     timer.binding = None;
-                    timer.logs.clear();
+                    timer.logs = Arc::default();
                     ui::reconcile(world, entity);
                     status(
                         world,
@@ -411,6 +418,7 @@ fn update(
         std::collections::HashMap<Entity, (String, crate::native::cell_bridge::Sender)>,
     >,
 ) {
+    let _update = nucleus::performance::Span::new("work-timer-update");
     subscriptions.retain(|entity, (id, sender)| {
         (world.get::<WorkTimer>(*entity).is_some()
             && !crate::native::laboratory::blocked(world, *entity))
@@ -450,67 +458,66 @@ fn update(
         let value = timer
             .input
             .and_then(|input| world.get::<EditableText>(input))
-            .filter(|text| !text.is_composing())
-            .map(|text| text.value().to_string());
+            .filter(|text| !text.is_composing() && timer.pending.is_none())
+            .and_then(|text| {
+                let text = text.value().to_cow();
+                let value = text.trim().trim_start_matches('#').trim_start_matches('@');
+                (value != timer.query).then(|| value.to_owned())
+            });
         if let Some(value) = value {
-            let value = value.trim().trim_start_matches('#').trim_start_matches('@');
-            if value != timer.query && timer.pending.is_none() {
-                let previous = timer.subscription.clone();
-                let subscription = nucleus::new_uid("timer");
-                let message = if value.is_empty() {
-                    ClientMessage::Unsubscribe {
-                        id: previous.clone(),
-                    }
-                } else {
-                    let predicate = if nucleus::valid_uid(value, "r") {
-                        json!({"uid_eq":value})
-                    } else {
-                        json!({"slug_eq":value})
-                    };
-                    ClientMessage::Subscribe { id: subscription.clone(), protein: serde_json::from_value(json!({"source":"record", "where":[predicate], "fields":["uid","work_logs"], "limit":1})).unwrap() }
-                };
-                let sender = crate::native::practice_cells::sender(world, entity);
-                let sent = sender.as_ref().is_some_and(|sender| {
-                    if !value.is_empty()
-                        && !timer.query.is_empty()
-                        && sender
-                            .try_send(ClientMessage::Unsubscribe { id: previous })
-                            .is_err()
-                    {
-                        return false;
-                    }
-                    sender.try_send(message).is_ok()
-                });
-                if sent || value.is_empty() {
-                    let mut timer = world.get_mut::<WorkTimer>(entity).unwrap();
-                    timer.query = value.into();
-                    timer.subscription = subscription.clone();
-                    timer.binding = None;
-                    timer.logs.clear();
-                    ui::reset(world, entity);
-                    if value.is_empty() {
-                        subscriptions.remove(&entity);
-                        refresh(world, entity, &Value::Null);
-                        status(world, entity, "Standalone stopwatch");
-                    } else {
-                        subscriptions.insert(entity, (subscription, sender.unwrap()));
-                        ui::reconcile(world, entity);
-                        status(world, entity, "Loading Record");
-                    }
-                } else {
-                    status(world, entity, "Waiting for the local Organ");
+            let standalone = value.is_empty();
+            let previous = timer.subscription.clone();
+            let subscription = nucleus::new_uid("timer");
+            let message = if standalone {
+                ClientMessage::Unsubscribe {
+                    id: previous.clone(),
                 }
+            } else {
+                let predicate = if nucleus::valid_uid(&value, "r") {
+                    json!({"uid_eq":&value})
+                } else {
+                    json!({"slug_eq":&value})
+                };
+                ClientMessage::Subscribe { id: subscription.clone(), protein: serde_json::from_value(json!({"source":"record", "where":[predicate], "fields":["uid","work_logs"], "limit":1})).unwrap() }
+            };
+            let sender = crate::native::practice_cells::sender(world, entity);
+            let sent = sender.as_ref().is_some_and(|sender| {
+                if !standalone
+                    && !timer.query.is_empty()
+                    && sender
+                        .try_send(ClientMessage::Unsubscribe { id: previous })
+                        .is_err()
+                {
+                    return false;
+                }
+                sender.try_send(message).is_ok()
+            });
+            if sent || standalone {
+                let mut timer = world.get_mut::<WorkTimer>(entity).unwrap();
+                timer.query = value;
+                timer.subscription = subscription.clone();
+                timer.binding = None;
+                timer.logs = Arc::default();
+                ui::reset(world, entity);
+                if standalone {
+                    subscriptions.remove(&entity);
+                    refresh(world, entity, &Value::Null);
+                    status(world, entity, "Standalone stopwatch");
+                } else {
+                    subscriptions.insert(entity, (subscription, sender.unwrap()));
+                    ui::reconcile(world, entity);
+                    status(world, entity, "Loading Record");
+                }
+            } else {
+                status(world, entity, "Waiting for the local Organ");
             }
         }
         let timer = world.get::<WorkTimer>(entity).unwrap();
-        let active = timer.logs.iter().any(|entry| entry.end.is_none());
+        let active = timer.logs.active();
         running |= active
             || world
                 .get::<LocalTimer>(entity)
                 .is_some_and(|local| local.logs.iter().any(|entry| entry.end.is_none()));
-        let seconds = timer.logs.iter().fold(0i64, |total, entry| {
-            total.saturating_add(entry.seconds(now))
-        });
         let (label, control) = (timer.label, timer.control);
         let state = timer
             .pending
@@ -518,11 +525,12 @@ fn update(
             .and_then(|_| timer.binding.as_ref())
             .and_then(|binding| crate::native::record_binding::status(world, binding));
         let caption = if active { "Pause" } else { "Start" };
-        let text = format!("Total {}", formatted(seconds));
-        if world
+        let text = timer.logs.total_caption(now);
+        let text = world
             .get::<Text>(label)
-            .is_some_and(|label| label.0 != text)
-        {
+            .filter(|label| label.0 != text.as_ref())
+            .map(|_| text.into_owned());
+        if let Some(text) = text {
             world.get_mut::<Text>(label).unwrap().0 = text;
         }
         if world

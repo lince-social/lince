@@ -35,7 +35,7 @@ fn catalog(world: &mut World) {
         json!({"kind":"role", "id":"2", "name":"writer", "revision":1, "permissions":["record:read","record:update"]}),
         json!({"kind":"permission_catalog", "keys":["record:read","record:update"]}),
         json!({"kind":"user", "id":"person-1", "username":"alice", "name":"Alice", "role":"reader", "roles":["reader"], "access_revision":0, "active":true}),
-    ];
+    ].into();
 }
 
 fn set(world: &mut World, field: Entity, value: &str) {
@@ -115,10 +115,13 @@ fn soft_delete_requires_confirmation_and_preserves_drafts_during_standing_update
     Command::Delete.apply(app.world_mut(), sand);
     set(app.world_mut(), note, &"é".repeat(600));
     assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
-    let row = &mut app.world_mut().resource_mut::<Catalog>().rows[3];
-    row["active"] = json!(false);
-    row["deactivated_at"] = json!("2026-09-23T12:00:00Z");
-    row["standing_note"] = json!("Moved away");
+    {
+        let mut catalog = app.world_mut().resource_mut::<Catalog>();
+        let row = &mut catalog.rows.edit()[3];
+        row["active"] = json!(false);
+        row["deactivated_at"] = json!("2026-09-23T12:00:00Z");
+        row["standing_note"] = json!("Moved away");
+    }
     assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
     list(app.world_mut(), sand);
     assert_eq!(value(app.world(), name).unwrap(), "Unsaved name");
@@ -208,7 +211,7 @@ fn permissions_use_the_catalog_and_pending_changes_cannot_be_submitted_twice() {
 fn large_user_lists_are_paged_and_idle_frames_preserve_the_editor() {
     let (mut app, _, sand) = fixture();
     catalog(app.world_mut());
-    app.world_mut().resource_mut::<Catalog>().rows.extend((0..10_000).map(|i| json!({"kind":"user", "id":format!("user-{i}"),"username":format!("user{i}"),"name":format!("User {i}"),"role":"reader"})));
+    app.world_mut().resource_mut::<Catalog>().rows.edit().extend((0..10_000).map(|i| json!({"kind":"user", "id":format!("user-{i}"),"username":format!("user{i}"),"name":format!("User {i}"),"role":"reader"})));
     editor(app.world_mut(), sand);
     list(app.world_mut(), sand);
     let editor_entity = app.world().get::<AccessControlSand>(sand).unwrap().editor;
@@ -260,8 +263,8 @@ fn role_updates_preserve_drafts_and_confirmation_revision() {
     Command::Select("1".into()).apply(app.world_mut(), sand);
     let field = app.world().get::<RoleForm>(sand).unwrap().0;
     set(app.world_mut(), field, "my draft");
-    app.world_mut().resource_mut::<Catalog>().rows[0]["revision"] = json!(2);
-    app.world_mut().resource_mut::<Catalog>().rows[0]["name"] = json!("someone else's edit");
+    app.world_mut().resource_mut::<Catalog>().rows.edit()[0]["revision"] = json!(2);
+    app.world_mut().resource_mut::<Catalog>().rows.edit()[0]["name"] = json!("someone else's edit");
     refresh_role(app.world_mut(), sand);
     assert_eq!(value(app.world(), field).unwrap(), "my draft");
     assert!(matches!(
@@ -276,7 +279,7 @@ fn role_updates_preserve_drafts_and_confirmation_revision() {
     editor(app.world_mut(), sand);
     assert_eq!(app.world().get::<RoleEdit>(sand).unwrap().revision, 2);
     Command::DeleteRole.apply(app.world_mut(), sand);
-    app.world_mut().resource_mut::<Catalog>().rows[0]["revision"] = json!(3);
+    app.world_mut().resource_mut::<Catalog>().rows.edit()[0]["revision"] = json!(3);
     refresh_role(app.world_mut(), sand);
     assert!(matches!(
         mutation(app.world(), sand, &Command::ConfirmDeleteRole)

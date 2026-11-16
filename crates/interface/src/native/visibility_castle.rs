@@ -119,10 +119,14 @@ fn receive(
         .unwrap_or_default();
     for message in messages {
         match message.0.as_ref() {
-            cell::ServerMessage::ActionOk { id, data, .. } => {
-                ui::receive(world, &id, Ok(data.clone().unwrap_or_default()))
+            cell::ServerMessage::ActionOk { id, data, .. } => ui::receive_ref(
+                world,
+                id,
+                Ok(data.as_ref().unwrap_or(&serde_json::Value::Null)),
+            ),
+            cell::ServerMessage::Error { id, message, .. } => {
+                ui::receive_ref(world, id, Err(message))
             }
-            cell::ServerMessage::Error { id, message, .. } => ui::receive(world, &id, Err(message.clone())),
             _ => {}
         }
     }

@@ -28,11 +28,10 @@ impl Default for Palette {
 
 impl Palette {
     pub fn resolve(world: &World, entity: Entity) -> Self {
+        let inherited_kind = crate::native::token_style::inherited_kind(world, entity);
         let read = |token| match {
             let (value, source) = crate::native::token_style::resolve(world, entity, token);
-            if crate::native::token_style::inherited_kind(world, entity).is_none()
-                && matches!(source, "Theme" | "Default" | "All Sands")
-            {
+            if inherited_kind.is_none() && matches!(source, "Theme" | "Default" | "All Sands") {
                 world
                     .resource::<ThemeSettings>()
                     .resolve(token, Some(SandStyleKind::Fiote), &default())
@@ -124,7 +123,12 @@ impl Role {
         }
     }
 
-    pub fn apply(self, material: &mut StandardMaterial, palette: Palette, motion: f32) {
+    pub fn apply(
+        self,
+        mut material: impl std::ops::DerefMut<Target = StandardMaterial>,
+        palette: Palette,
+        motion: f32,
+    ) {
         let rgba = match self {
             Self::Fur => palette.fur,
             Self::Light => mix(palette.light, palette.fur, 0.12),
@@ -140,19 +144,22 @@ impl Role {
             LinearRgba::BLACK
         };
         emission.alpha = 0.0;
-        if material.base_color != color {
-            material.base_color = color;
-        }
-        if material.emissive != emission {
-            material.emissive = emission;
-        }
         let alpha = if rgba[3] == 255 {
             AlphaMode::Opaque
         } else {
             AlphaMode::Blend
         };
-        if material.alpha_mode != alpha {
+        // Preserve the AssetMut change guard until a rendered value actually
+        // differs. Coercing it to &mut StandardMaterial before comparison
+        // would publish a spurious asset modification on every animation tick.
+        if material.base_color != color
+            || material.emissive != emission
+            || material.alpha_mode != alpha
+        {
+            material.base_color = color;
+            material.emissive = emission;
             material.alpha_mode = alpha;
+            nucleus::performance::add("fiote-avatar-material-updates", 1);
         }
     }
 }
@@ -184,6 +191,7 @@ pub(super) fn motion_strength(
 }
 
 pub(super) fn motion_effects(world: &mut World) {
+    let _motion = nucleus::performance::Span::new("fiote-avatar-motion-effects");
     let delta = world
         .get_resource::<Time>()
         .map_or(1.0 / 30.0, Time::delta_secs);
@@ -204,13 +212,11 @@ pub(super) fn motion_effects(world: &mut World) {
                 binding.motion = motion_strength(previous, current, delta, binding.motion);
             }
             binding.previous = Some(current);
-            if let Some(mut material) = world
+            if let Some(material) = world
                 .resource_mut::<Assets<StandardMaterial>>()
                 .get_mut(&binding.material)
             {
-                binding
-                    .role
-                    .apply(&mut material, scene.palette, binding.motion);
+                binding.role.apply(material, scene.palette, binding.motion);
             }
         }
     }

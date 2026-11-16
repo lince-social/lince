@@ -202,9 +202,7 @@ pub fn permitted_edges(
         BTreeMap::new();
     for checked in disclosures {
         let document = &checked.document;
-        let size = serde_json::to_vec(document)
-            .map_err(|error| error.to_string())?
-            .len();
+        let size = crate::json::encoded_len(document).map_err(|error| error.to_string())?;
         if size > MAX_DOCUMENT_BYTES {
             return Err("Use a bounded authenticated contact-disclosure document".into());
         }

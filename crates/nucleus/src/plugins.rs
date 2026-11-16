@@ -282,10 +282,7 @@ impl Field {
 
 pub fn validate_values(fields: &[Field], value: &Value) -> Result<(), String> {
     let object = value.as_object().ok_or("Plugin fields must be an object")?;
-    if serde_json::to_vec(value)
-        .map_err(|error| error.to_string())?
-        .len()
-        > 65536
+    if crate::json::encoded_len(value).map_err(|error| error.to_string())? > 65536
         || object
             .keys()
             .any(|key| !fields.iter().any(|field| &field.id == key))

@@ -1,3 +1,6 @@
+mod blockers;
+pub(crate) use blockers::{BlockerQuery, Blockers, blocked};
+
 use super::{Spatial, spatial};
 use crate::native::area::{InfluenceArea, ReachMode, RecordProperties};
 use bevy::{
@@ -449,7 +452,7 @@ pub(crate) mod tests {
                     position: DVec2::new(20.0, 0.0),
                     size: Vec2::splat(10.0),
                 },
-                RecordProperties(serde_json::json!({"uid":"r_one", "quantity":-1})),
+                RecordProperties(serde_json::json!({"uid":"r_one", "quantity":-1}).into()),
                 crate::native::workspace::WorkspaceMember(1),
                 ChildOf(root),
             ))
@@ -544,7 +547,8 @@ pub(crate) mod tests {
                 .length()
                 < 1e-10
         );
-        world.get_mut::<RecordProperties>(sand).unwrap().0["quantity"] = serde_json::json!(0);
+        std::sync::Arc::make_mut(&mut world.get_mut::<RecordProperties>(sand).unwrap().0)["quantity"] =
+            serde_json::json!(0);
         update(&mut world);
         assert_eq!(world.resource::<Forces>().totals[&sand], DVec3::ZERO);
         assert!(world.resource::<Forces>().simple.is_empty());
@@ -734,7 +738,7 @@ pub(crate) mod tests {
                         },
                         ChildOf(root),
                         crate::native::workspace::WorkspaceMember(1),
-                        RecordProperties(serde_json::json!({"quantity": -1})),
+                        RecordProperties(serde_json::json!({"quantity": -1}).into()),
                     ))
                     .id(),
             );
@@ -753,56 +757,6 @@ pub(crate) mod tests {
         area_depth_and_rotation_control_actual_membership,
         an_attached_area_cannot_drive_its_group_but_can_drive_another_sand,
     }
-}
-
-pub(crate) fn blocked(
-    world: &mut World,
-    root: Entity,
-    workspace: u64,
-    source: Entity,
-    point: DVec3,
-    record: Option<&RecordProperties>,
-    binding: Option<&crate::native::protein_area::RecordBinding>,
-    forces: bool,
-) -> bool {
-    let Some(center) = super::position(world, source) else {
-        return false;
-    };
-    world
-        .query_filtered::<(
-            Entity,
-            &InfluenceArea,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-            Option<&crate::native::protein_area::filter::Matches>,
-        ), (
-            Without<crate::native::component_push::composition::Generated>,
-            Without<crate::native::canvas_host::composition::Generated>,
-        )>()
-        .iter(world)
-        .any(|(entity, shield, parent, member, filter)| {
-            if crate::native::influence_report::activity(world, entity, shield, root, workspace)
-                != crate::native::influence_report::Outcome::Active
-                || shield.immunity == crate::native::area_effects::Immunity::None
-                || entity == source
-                || parent.parent() != root
-                || member.0 != workspace
-                || (!forces
-                    && shield.immunity == crate::native::area_effects::Immunity::Containment)
-            {
-                return false;
-            }
-            let blocks = shield.immunity.blocks(
-                contains(shield, spatial(world, entity), center),
-                contains(shield, spatial(world, entity), point),
-            );
-            blocks
-                && if shield.filter.is_some() {
-                    record.is_some_and(|r| filter.is_some_and(|f| f.allows(r, binding)))
-                } else {
-                    shield.rules.is_empty() || record.is_some_and(|r| shield.matches(r))
-                }
-        })
 }
 
 pub(crate) fn attraction_force(area: &InfluenceArea, placement: Spatial, point: DVec3) -> DVec3 {

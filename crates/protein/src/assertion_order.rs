@@ -6,7 +6,7 @@ pub(crate) async fn values(
     store: &store::Store,
     records: &[String],
     fields: &[String],
-) -> Result<HashMap<(String, String), DecimalValue>, ProteinError> {
+) -> Result<HashMap<String, HashMap<String, DecimalValue>>, ProteinError> {
     if fields.len() > 16
         || fields
             .iter()
@@ -25,6 +25,10 @@ pub(crate) async fn values(
     let assertions = store::assertions::incident_to(&store.pool, &records).await?;
     let mut values = HashMap::new();
     for field in fields {
+        if values.contains_key(field) {
+            continue;
+        }
+        let mut priorities = HashMap::new();
         if let Some(predicate) = store::concepts::resolve(&store.pool, &field[1..]).await? {
             for assertion in &assertions {
                 if assertion.predicate_uid == predicate
@@ -34,13 +38,14 @@ pub(crate) async fn values(
                     && assertion.unit_uid.is_none()
                     && let Some(value) = assertion.quantity
                 {
-                    let slot = values
-                        .entry((assertion.subject_uid.clone(), field.clone()))
+                    let slot = priorities
+                        .entry(assertion.subject_uid.clone())
                         .or_insert(value);
                     *slot = (*slot).max(value);
                 }
             }
         }
+        values.insert(field.clone(), priorities);
     }
     Ok(values)
 }

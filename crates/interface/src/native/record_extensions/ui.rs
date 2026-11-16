@@ -82,6 +82,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
 }
 
 fn render_inner(world: &mut World, owner: Entity) {
+    let _presentation = nucleus::performance::Span::new("extension-view-presentation");
     let Some(settings) = world.get::<Settings>(owner).cloned() else {
         return;
     };
@@ -100,7 +101,6 @@ fn render_inner(world: &mut World, owner: Entity) {
     let editable = view.editable;
     let record_input = view.record_input.clone();
     let picker = view.picker.clone();
-    let data = inspection(world, owner).cloned();
     crate::native::sand_panel::clear(world, owner);
     if settings.mode != Mode::Column {
         crate::native::edit_mode::label(
@@ -175,7 +175,7 @@ fn render_inner(world: &mut World, owner: Entity) {
             owner,
             vec![("Search", Command::Search), ("Back", Command::ClosePicker)],
         );
-        for value in &picker.rows {
+        for value in picker.rows.iter() {
             if let Some(uid) = value["uid"].as_str() {
                 let name = value["name"]
                     .as_str()
@@ -195,10 +195,8 @@ fn render_inner(world: &mut World, owner: Entity) {
         schema_form(world, owner, &draft, &search, page);
         return;
     }
-    let Some(data) = data else {
-        let error = world
-            .get_resource::<Runtime>()
-            .and_then(|runtime| runtime.feeds.get(&world.get::<View>(owner).unwrap().feed))
+    let Some(data) = inspection(world, owner).cloned() else {
+        let error = feed(world, owner)
             .map(|feed| feed.error.clone())
             .unwrap_or_default();
         label(
@@ -250,7 +248,7 @@ fn render_inner(world: &mut World, owner: Entity) {
             .as_ref()
             .unwrap()
             .fields
-            .clone();
+            .snapshot();
         value_field(
             world,
             owner,
@@ -283,16 +281,11 @@ fn render_inner(world: &mut World, owner: Entity) {
             &search,
         );
         button(world, owner, owner, "Search", Command::Search);
+        let needle = search.to_lowercase();
         let schemas = data
             .schemas
             .iter()
-            .filter(|entry| {
-                entry
-                    .schema
-                    .name
-                    .to_lowercase()
-                    .contains(&search.to_lowercase())
-            })
+            .filter(|entry| entry.schema.name.to_lowercase().contains(&needle))
             .collect::<Vec<_>>();
         if schemas.is_empty() {
             label(
@@ -373,14 +366,11 @@ fn render_inner(world: &mut World, owner: Entity) {
     }
     let writable = settings.record.is_some() && editable && data.writable.contains(&definition.uid);
     draft_values(world, owner, schema);
-    let draft = world
-        .get::<View>(owner)
-        .unwrap()
-        .values
-        .as_ref()
-        .unwrap()
-        .clone();
-    if !draft.attached {
+    let (fields, attached) = {
+        let draft = world.get::<View>(owner).unwrap().values.as_ref().unwrap();
+        (draft.fields.snapshot(), draft.attached)
+    };
+    if !attached {
         label(
             world,
             owner,
@@ -391,7 +381,7 @@ fn render_inner(world: &mut World, owner: Entity) {
         if settings.mode == Mode::Dropdown && settings.field.as_deref() != Some(&field.id) {
             continue;
         }
-        if field.archived && !draft.fields.contains_key(&field.id) {
+        if field.archived && !fields.contains_key(&field.id) {
             continue;
         }
         value_field(
@@ -399,14 +389,14 @@ fn render_inner(world: &mut World, owner: Entity) {
             owner,
             owner,
             field,
-            draft.fields.get(&field.id).unwrap_or(&Value::Null),
+            fields.get(&field.id).unwrap_or(&Value::Null),
             writable,
             &open,
             &search,
             page,
         );
     }
-    finish_values(world, owner, definition, &draft.fields, writable, undo);
+    finish_values(world, owner, definition, &fields, writable, undo);
     let row = row(world, owner);
     button(world, row, owner, "Choose schema or field", ChooseSchema);
     if definition.editable {
@@ -418,7 +408,7 @@ fn render_inner(world: &mut World, owner: Entity) {
             Command::Edit(schema.into()),
         );
     }
-    if draft.attached && writable {
+    if attached && writable {
         button(
             world,
             owner,
@@ -517,7 +507,8 @@ fn schema_form(world: &mut World, owner: Entity, draft: &SchemaDraft, search: &s
     label(world, owner, &format!("Type: {}", field.kind.name()));
     if draft.uid.is_none()
         || !draft
-            .original
+            .schema
+            .original()
             .fields
             .iter()
             .any(|saved| saved.id == field.id)
@@ -570,11 +561,12 @@ fn schema_form(world: &mut World, owner: Entity, draft: &SchemaDraft, search: &s
             ("Add choice", Command::AddChoice),
         ],
     );
+    let needle = search.to_lowercase();
     let choices = field
         .choices
         .iter()
         .enumerate()
-        .filter(|(_, choice)| choice.name.to_lowercase().contains(&search.to_lowercase()))
+        .filter(|(_, choice)| choice.name.to_lowercase().contains(&needle))
         .collect::<Vec<_>>();
     for index in pages(world, owner, owner, page, choices.len()) {
         let (index, choice) = choices[index];
@@ -755,7 +747,7 @@ fn value_field(
             let caption = field
                 .choices
                 .iter()
-                .filter(|choice| selected.contains(&choice.id.as_str()))
+                .filter(|choice| selected.binary_search(&choice.id.as_str()).is_ok())
                 .map(|choice| {
                     format!(
                         "{}{}",
@@ -803,22 +795,24 @@ fn value_field(
                             ("Clear selection", Command::Clear(field.id.clone())),
                         ],
                     );
+                    let needle = search.to_lowercase();
                     let choices = field
                         .choices
                         .iter()
                         .filter(|choice| {
-                            (!choice.archived || selected.contains(&choice.id.as_str()))
-                                && choice.name.to_lowercase().contains(&search.to_lowercase())
+                            (!choice.archived
+                                || selected.binary_search(&choice.id.as_str()).is_ok())
+                                && choice.name.to_lowercase().contains(&needle)
                         })
                         .collect::<Vec<_>>();
                     for index in pages(world, menu, owner, page, choices.len()) {
                         let choice = choices[index];
-                        if choice.archived && !selected.contains(&choice.id.as_str()) {
+                        if choice.archived && !selected.binary_search(&choice.id.as_str()).is_ok() {
                             continue;
                         }
                         let caption = format!(
                             "{} {}{}",
-                            if selected.contains(&choice.id.as_str()) {
+                            if selected.binary_search(&choice.id.as_str()).is_ok() {
                                 "✓"
                             } else {
                                 "○"
@@ -841,7 +835,7 @@ fn value_field(
                         if let Some(mut node) =
                             world.get_mut::<bevy::a11y::AccessibilityNode>(option)
                         {
-                            node.set_selected(selected.contains(&choice.id.as_str()));
+                            node.set_selected(selected.binary_search(&choice.id.as_str()).is_ok());
                         }
                     }
                     if choices.is_empty() {
@@ -886,32 +880,37 @@ fn finish_values(
     undo: bool,
 ) {
     let wanted = selected_presets(&definition.schema, fields);
-    let original = world
+    let previous = match world
         .get::<View>(owner)
         .and_then(|view| view.values.as_ref())
-        .map(|draft| selected_presets(&definition.schema, &draft.original))
-        .unwrap_or_default();
-    let added = wanted
+    {
+        Some(draft) if std::ptr::eq(fields, draft.fields.original()) => None,
+        Some(draft) => Some(selected_presets(
+            &definition.schema,
+            draft.fields.original(),
+        )),
+        None => Some(SelectedPresets::default()),
+    };
+    let original = previous.as_ref().unwrap_or(&wanted);
+    let mut removed = original
+        .ordered
         .iter()
-        .filter(|preset| !original.contains(preset))
-        .collect::<Vec<_>>();
-    let removed = original
-        .iter()
-        .filter(|preset| !wanted.contains(preset))
-        .collect::<Vec<_>>();
-    if !wanted.is_empty() || !removed.is_empty() {
+        .copied()
+        .filter(|preset| !wanted.membership.contains(preset))
+        .peekable();
+    if !wanted.ordered.is_empty() || removed.peek().is_some() {
         label(
             world,
             owner,
             "Preset assertion preview · Manual assertions are preserved.",
         );
-        for preset in &wanted {
+        for preset in &wanted.ordered {
             label(
                 world,
                 owner,
                 &format!(
                     "{} {}",
-                    if added.contains(&preset) {
+                    if !original.membership.contains(preset) {
                         "Apply if missing:"
                     } else {
                         "Keep or restore:"
@@ -945,18 +944,28 @@ fn finish_values(
     }
 }
 
-fn selected_presets(schema: &Schema, fields: &BTreeMap<String, Value>) -> Vec<Preset> {
-    let mut presets = Vec::new();
+#[derive(Default)]
+struct SelectedPresets<'a> {
+    ordered: Vec<&'a Preset>,
+    membership: HashSet<&'a Preset>,
+}
+
+fn selected_presets<'a>(
+    schema: &'a Schema,
+    fields: &BTreeMap<String, Value>,
+) -> SelectedPresets<'a> {
+    let _selection = nucleus::performance::Span::new("extension-preset-selection");
+    nucleus::performance::add("extension-preset-selections-prepared", 1);
+    let mut presets = SelectedPresets::default();
     for field in &schema.fields {
-        for id in field
-            .selection(fields.get(&field.id).unwrap_or(&Value::Null))
-            .unwrap_or_default()
-        {
-            if let Some(choice) = field.choices.iter().find(|choice| choice.id == id) {
-                for preset in &choice.assertions {
-                    if !presets.contains(preset) {
-                        presets.push(preset.clone());
-                    }
+        let Ok(choices) = field.selected_choices(fields.get(&field.id).unwrap_or(&Value::Null))
+        else {
+            continue;
+        };
+        for choice in choices.flatten() {
+            for preset in &choice.assertions {
+                if presets.membership.insert(preset) {
+                    presets.ordered.push(preset);
                 }
             }
         }

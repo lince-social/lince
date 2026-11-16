@@ -1,23 +1,27 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, io::Write, sync::Arc};
+use std::{
+    collections::HashMap,
+    io::{BufWriter, Write},
+    sync::Arc,
+};
 
 #[derive(Clone, Default, PartialEq, Serialize, Deserialize)]
 struct Saved {
     body: String,
-    parts: Vec<MessagePart>,
+    parts: Parts,
 }
 
 #[derive(Component)]
 struct Persistent {
     path: PathBuf,
-    last: Saved,
+    last: Arc<Saved>,
     revision: u64,
 }
 
 #[derive(Resource)]
 struct Writer {
-    send: mpsc::SyncSender<(PathBuf, Saved)>,
+    send: mpsc::SyncSender<(PathBuf, Arc<Saved>)>,
     errors: Arc<Mutex<Vec<(PathBuf, String)>>>,
     task: Option<std::thread::JoinHandle<()>>,
 }
@@ -50,7 +54,7 @@ pub(super) fn attach(world: &mut World, owner: Entity, thread: &str, binding: &R
             return Err("Saved draft exceeds its size limit.".into());
         }
         let saved: Saved = serde_json::from_reader(file).map_err(|error| error.to_string())?;
-        nucleus::message::validate(&saved.parts)?;
+        saved.parts.validate()?;
         if saved.body.len() > 65_536 {
             return Err("Saved draft text exceeds its size limit.".into());
         }
@@ -79,11 +83,11 @@ pub(super) fn attach(world: &mut World, owner: Entity, thread: &str, binding: &R
     let revision = world.get::<Draft>(owner).unwrap().revision;
     world.entity_mut(owner).insert(Persistent {
         path,
-        last: saved,
+        last: Arc::new(saved),
         revision,
     });
     if !world.contains_resource::<Writer>() {
-        let (send, received) = mpsc::sync_channel::<(PathBuf, Saved)>(16);
+        let (send, received) = mpsc::sync_channel::<(PathBuf, Arc<Saved>)>(16);
         let errors = Arc::new(Mutex::new(Vec::new()));
         let results = errors.clone();
         let wake = world
@@ -117,7 +121,8 @@ pub(super) fn attach(world: &mut World, owner: Entity, thread: &str, binding: &R
 }
 
 fn write(path: &std::path::Path, saved: &Saved) -> Result<(), String> {
-    nucleus::message::validate(&saved.parts)?;
+    let _write = nucleus::performance::Span::new("message-draft-file-write");
+    saved.parts.validate()?;
     if saved.body.len() > 65_536 {
         return Err("Draft text exceeds 64 KiB.".into());
     }
@@ -143,8 +148,11 @@ fn write(path: &std::path::Path, saved: &Saved) -> Result<(), String> {
         );
     }
     let mut file = tempfile::NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
-    serde_json::to_writer(&mut file, saved).map_err(|error| error.to_string())?;
-    file.flush().map_err(|error| error.to_string())?;
+    {
+        let mut buffered = BufWriter::new(&mut file);
+        serde_json::to_writer(&mut buffered, saved).map_err(|error| error.to_string())?;
+        buffered.flush().map_err(|error| error.to_string())?;
+    }
     file.persist(path).map_err(|error| error.to_string())?;
     Ok(())
 }
@@ -155,7 +163,7 @@ pub(super) fn clear(world: &mut World, owner: Entity) {
         .map(|draft| draft.path.clone())
     {
         if let Some(writer) = world.get_resource::<Writer>() {
-            let _ = writer.send.try_send((path, Saved::default()));
+            let _ = writer.send.try_send((path, Arc::new(Saved::default())));
         }
         if let Some(mut saved) = world.get_mut::<Persistent>(owner) {
             saved.revision = u64::MAX;
@@ -164,6 +172,7 @@ pub(super) fn clear(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn update(world: &mut World) {
+    let _admission = nucleus::performance::Span::new("message-draft-save-admission");
     let Some(writer) = world.get_resource::<Writer>() else {
         return;
     };
@@ -183,19 +192,29 @@ pub(super) fn update(world: &mut World) {
             world.get_mut::<Text>(status).unwrap().0 = format!("Draft could not be saved: {error}");
             continue;
         }
-        let body = world
-            .get::<EditableText>(draft.input)
-            .map(|input| input.value().to_string())
-            .unwrap_or_default();
-        if body == saved.last.body && draft.revision == saved.revision {
+        let editor = world.get::<EditableText>(draft.input);
+        let same_body = editor.map_or(saved.last.body.is_empty(), |input| {
+            input.value() == saved.last.body.as_str()
+        });
+        if same_body && draft.revision == saved.revision {
             continue;
         }
         let revision = draft.revision;
-        let next = Saved {
-            body,
+        if same_body && draft.parts == saved.last.parts {
+            world.get_mut::<Persistent>(owner).unwrap().revision = revision;
+            continue;
+        }
+        let next = Arc::new(Saved {
+            body: editor
+                .map(|input| input.value().to_string())
+                .unwrap_or_default(),
             parts: draft.parts.clone(),
-        };
-        if next != saved.last && sender.try_send((saved.path.clone(), next.clone())).is_err() {
+        });
+        nucleus::performance::add("message-draft-snapshots-prepared", 1);
+        if sender
+            .try_send((saved.path.clone(), Arc::clone(&next)))
+            .is_err()
+        {
             continue;
         }
         let mut saved = world.get_mut::<Persistent>(owner).unwrap();
@@ -217,7 +236,8 @@ mod tests {
                 name: "image.png".into(),
                 mime_type: "image/png".into(),
                 data: "YWJj".into(),
-            }],
+            }]
+            .into(),
         };
         write(&path, &saved).unwrap();
         let restored: Saved = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();

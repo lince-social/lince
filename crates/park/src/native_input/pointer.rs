@@ -1,10 +1,16 @@
 use super::{native, projection::View};
-use bevy::{a11y::AccessibilityNode, asset::AssetId, ecs::change_detection::DetectChanges, prelude::*};
-use bevy::{camera::{ImageRenderTarget, NormalizedRenderTarget}, picking::pointer::Location};
-use lince_interface::host::{GeometrySnapshot, ItemGeometry, ItemId, OutputId, Rectangle, raster::RasterMapping};
-use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
+use bevy::{asset::AssetId, prelude::*};
+use bevy::{
+    camera::{ImageRenderTarget, NormalizedRenderTarget},
+    picking::pointer::Location,
+};
 use lince_interface::host::performance::{self, Count, Stage};
+use lince_interface::host::{
+    GeometrySnapshot, ItemGeometry, ItemId, OutputId, Rectangle, raster::RasterMapping,
+};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 const MAX_TARGETS: usize = 16_384;
 
@@ -98,7 +104,7 @@ struct Geometry {
     node: ComputedNode,
     transform: UiGlobalTransform,
     clip: Option<Rect>,
-    projection: Projection,
+    projection: Arc<Projection>,
 }
 
 impl Geometry {
@@ -113,15 +119,24 @@ impl Geometry {
     }
 
     fn same_hit(&self, other: &Self) -> bool {
-        self.same_owner(other) && self.owner == other.owner && self.bounds == other.bounds
-            && self.image == other.image && self.blocks == other.blocks && self.node == other.node
-            && self.transform == other.transform && self.projection == other.projection
+        self.same_owner(other)
+            && self.owner == other.owner
+            && self.bounds == other.bounds
+            && self.image == other.image
+            && self.blocks == other.blocks
+            && self.node == other.node
+            && self.transform == other.transform
+            && self.projection == other.projection
     }
 
     fn point(&self, point: [f64; 2]) -> Option<Vec2> {
-        if self.bounds.is_some_and(|bounds| !bounds.contains(point)) { return None; }
-        let point = match &self.projection {
-            Projection::Final(raster) => Vec2::from_array(raster.point(point).map(|value| value as f32)),
+        if self.bounds.is_some_and(|bounds| !bounds.contains(point)) {
+            return None;
+        }
+        let point = match self.projection.as_ref() {
+            Projection::Final(raster) => {
+                Vec2::from_array(raster.point(point).map(|value| value as f32))
+            }
             Projection::Sand { pixels, item, .. } => {
                 let point = item.surface_point(point)?;
                 Vec2::from_array(std::array::from_fn(|axis| ((point[axis] - item.mapping.surface.origin()[axis])
@@ -232,13 +247,100 @@ impl Snapshot {
     }
 }
 
-fn candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity) -> Option<Geometry> {
+fn candidate(
+    world: &World,
+    view: &View,
+    geometry: Option<&GeometrySnapshot>,
+    entity: Entity,
+) -> Option<Geometry> {
     let mut timings = Timings::default();
-    measured_candidate(world, view, geometry, entity, false, timings.begin())
+    Capture::new(world, view, geometry).candidate(entity, false, timings.begin())
+}
+
+struct Capture<'a> {
+    world: &'a World,
+    view: &'a View,
+    geometry: Option<&'a GeometrySnapshot>,
+    cameras: HashMap<Entity, Option<(AssetId<Image>, Arc<Projection>)>>,
+    modal: Option<Entity>,
+}
+
+impl<'a> Capture<'a> {
+    fn new(world: &'a World, view: &'a View, geometry: Option<&'a GeometrySnapshot>) -> Self {
+        Self {
+            world,
+            view,
+            geometry,
+            cameras: HashMap::new(),
+            modal: native::shortcuts::keyboard_owner(world),
+        }
+    }
+
+    fn projection(&mut self, camera: Entity) -> Option<(AssetId<Image>, Arc<Projection>)> {
+        if let Some(projection) = self.cameras.get(&camera) {
+            return projection.clone();
+        }
+        let projection = self.project(camera);
+        self.cameras.insert(camera, projection.clone());
+        projection
+    }
+
+    fn project(&self, camera: Entity) -> Option<(AssetId<Image>, Arc<Projection>)> {
+        let Self {
+            world,
+            view,
+            geometry,
+            ..
+        } = self;
+        let active = world.get::<Camera>(camera)?.is_active;
+        let bevy::camera::RenderTarget::Image(target) =
+            world.get::<bevy::camera::RenderTarget>(camera)?
+        else {
+            return None;
+        };
+        let image = target.handle.id();
+        let projection = if image == view.image {
+            if !active {
+                return None;
+            }
+            Projection::Final(view.raster)
+        } else {
+            let owner = world
+                .get::<native::topology::presentation::VisualOwner>(camera)?
+                .0;
+            let surface = world.get::<native::topology::presentation::Surface>(owner)?;
+            let id = world.get::<native::layout::LayoutBox>(owner)?.id;
+            if !surface.visible
+                || surface.camera != camera
+                || surface.image.id() != image
+                || surface.pixels.min_element() == 0
+                || world
+                    .get::<native::layout::desktop::ApplicationWindow>(owner)
+                    .is_some()
+                || !active && !native::topology::presentation::displayed(world, owner)
+            {
+                return None;
+            }
+            let item = geometry
+                .as_ref()?
+                .items
+                .iter()
+                .find(|item| item.id == ItemId::Native(id) && item.output == view.output)?
+                .clone();
+            Projection::Sand {
+                owner,
+                pixels: surface.pixels,
+                item,
+            }
+        };
+        Some((image, Arc::new(projection)))
+    }
 }
 
 fn clipped_out(node: &ComputedNode, transform: UiGlobalTransform, clip: Rect) -> bool {
-    if transform.matrix2.x_axis.y != 0.0 || transform.matrix2.y_axis.x != 0.0 { return false; }
+    if transform.matrix2.x_axis.y != 0.0 || transform.matrix2.y_axis.x != 0.0 {
+        return false;
+    }
     let half = node.size() * 0.5;
     let a = transform.transform_point2(-half);
     let b = transform.transform_point2(half);
@@ -249,77 +351,98 @@ fn clipped_out(node: &ComputedNode, transform: UiGlobalTransform, clip: Rect) ->
     high.cmplt(clip.min).any() || low.cmpgt(clip.max).any()
 }
 
-fn measured_candidate(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, exclude_clipped: bool, mut timing: Timing<'_>) -> Option<Geometry> {
-    let node = *world.get::<ComputedNode>(entity)?;
-    if node.size().min_element() <= 0.0 || world.get::<InheritedVisibility>(entity).is_none_or(|visible| !visible.get())
-        || world.get::<Pickable>(entity).is_some_and(|pickable| !pickable.should_block_lower && !pickable.is_hoverable)
-    { return None; }
-    let clip = world.get::<bevy::ui::CalculatedClip>(entity).map(|clip| clip.clip);
-    if clip.is_some_and(|clip| clip.size().min_element() <= 0.0) { return None; }
-    let transform = *world.get::<UiGlobalTransform>(entity)?;
-    if exclude_clipped && clip.is_some_and(|clip| clipped_out(&node, transform, clip)) {
-        if timing.totals.active { timing.totals.clipped += 1; }
-        return None;
-    }
-    let camera = world.get::<bevy::ui::ComputedUiTargetCamera>(entity)?.get()?;
-    let active = world.get::<Camera>(camera)?.is_active;
-    let bevy::camera::RenderTarget::Image(target) = world.get::<bevy::camera::RenderTarget>(camera)? else { return None; };
-    let image = target.handle.id();
-    timing.next(Part::Projection);
-    let projection = if image == view.image {
-        if !active { return None; }
-        Projection::Final(view.raster)
-    } else {
-        let owner = world.get::<native::topology::presentation::VisualOwner>(camera)?.0;
-        let surface = world.get::<native::topology::presentation::Surface>(owner)?;
-        let id = world.get::<native::layout::LayoutBox>(owner)?.id;
-        if !surface.visible || surface.camera != camera || surface.image.id() != image || surface.pixels.min_element() == 0
-            || world.get::<native::layout::desktop::ApplicationWindow>(owner).is_some()
-            || !active && !native::topology::presentation::displayed(world, owner)
-        { return None; }
-        let item = geometry?.items.iter().find(|item| item.id == ItemId::Native(id) && item.output == view.output)?.clone();
-        Projection::Sand { owner, pixels: surface.pixels, item }
-    };
-    timing.next(Part::Ownership);
-    let owner = native::accessibility::owner_context(world, entity, false);
-    if owner.as_ref().is_some_and(|owner| owner.output().is_some_and(|output| output != view.output)) { return None; }
-    timing.next(Part::Lineage);
-    let mut lineage = Vec::new();
-    let mut actions = Vec::new();
-    let mut eligible = view.root.is_none() || owner.as_ref().is_some_and(|owner| Some(owner.root) == view.root);
-    let mut next = Some(entity);
-    for _ in 0..native::layout::MAX_DEPTH {
-        let Some(current) = next else { break; };
-        if world.get::<bevy::ecs::entity_disabling::Disabled>(current).is_some()
-            || world.get::<Node>(current).is_some_and(|node| node.display == Display::None)
-            || world.get::<Visibility>(current).is_some_and(|visible| *visible == Visibility::Hidden)
-            || world.get::<InheritedVisibility>(current).is_some_and(|visible| !visible.get())
-        { return None; }
-        eligible &= world.get::<bevy::ui::InteractionDisabled>(current).is_none()
-            && world.get::<AccessibilityNode>(current).is_none_or(|node| !node.is_disabled());
-        lineage.push(current);
-        if let Some(action) = world.get_entity(current).ok().and_then(|entity| entity.get_ref::<native::actions::ActionButton>()) {
-            actions.push((current, action.target, action.last_changed().get()));
+impl Capture<'_> {
+    fn candidate(
+        &mut self,
+        entity: Entity,
+        exclude_clipped: bool,
+        mut timing: Timing<'_>,
+    ) -> Option<Geometry> {
+        let world = self.world;
+        let view = self.view;
+        let node = *world.get::<ComputedNode>(entity)?;
+        if node.size().min_element() <= 0.0
+            || world
+                .get::<InheritedVisibility>(entity)
+                .is_none_or(|visible| !visible.get())
+            || world
+                .get::<Pickable>(entity)
+                .is_some_and(|pickable| !pickable.should_block_lower && !pickable.is_hoverable)
+        {
+            return None;
         }
-        next = world.get::<ChildOf>(current).map(ChildOf::parent);
+        let clip = world
+            .get::<bevy::ui::CalculatedClip>(entity)
+            .map(|clip| clip.clip);
+        if clip.is_some_and(|clip| clip.size().min_element() <= 0.0) {
+            return None;
+        }
+        let transform = *world.get::<UiGlobalTransform>(entity)?;
+        if exclude_clipped && clip.is_some_and(|clip| clipped_out(&node, transform, clip)) {
+            if timing.totals.active {
+                timing.totals.clipped += 1;
+            }
+            return None;
+        }
+        let camera = world
+            .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
+            .get()?;
+        timing.next(Part::Projection);
+        let (image, projection) = self.projection(camera)?;
+        timing.next(Part::Ownership);
+        let context = native::accessibility::pointer_context(world, entity)?;
+        let owner = context.owner;
+        if owner
+            .as_ref()
+            .is_some_and(|owner| owner.output().is_some_and(|output| output != view.output))
+        {
+            return None;
+        }
+        timing.next(Part::Lineage);
+        let lineage = context.lineage;
+        let actions = context.actions;
+        let mut eligible = context.eligible && (view.root.is_none()
+            || owner
+                .as_ref()
+                .is_some_and(|owner| Some(owner.root) == view.root));
+        if let Projection::Sand { owner, .. } = projection.as_ref() {
+            eligible &= lineage.contains(owner)
+                && world.get::<ChildOf>(*owner).map(ChildOf::parent) == view.root;
+        }
+        timing.next(Part::Result);
+        Some(Geometry {
+            entity,
+            output: view.output,
+            bounds: view.viewport.as_ref().map(|viewport| viewport.bounds),
+            image,
+            lineage,
+            actions,
+            owner,
+            eligible,
+            blocks: world
+                .get::<Pickable>(entity)
+                .is_none_or(|pickable| pickable.should_block_lower),
+            modal: self.modal,
+            node,
+            transform,
+            clip,
+            projection,
+        })
     }
-    eligible &= next.is_none();
-    if let Projection::Sand { owner, .. } = &projection {
-        eligible &= lineage.contains(owner) && world.get::<ChildOf>(*owner).map(ChildOf::parent) == view.root;
-    }
-    timing.next(Part::Result);
-    Some(Geometry { entity, output: view.output, bounds: view.viewport.as_ref().map(|viewport| viewport.bounds), image, lineage, actions, owner, eligible,
-        blocks: world.get::<Pickable>(entity).is_none_or(|pickable| pickable.should_block_lower),
-        modal: native::shortcuts::keyboard_owner(world), node, transform,
-        clip, projection })
 }
 
 pub(crate) fn capture(world: &World, views: &[View], geometry: Option<&GeometrySnapshot>) -> Snapshot {
     let _cpu = crate::presentation::observe_work("lince_park::native_input::pointer::capture");
-    let mut timings = Timings { active: performance::enabled(), ..default() };
-    let Some(stack) = world.get_resource::<bevy::ui::UiStack>() else { return Snapshot::default(); };
+    let mut timings = Timings {
+        active: performance::enabled(),
+        ..default()
+    };
+    let Some(stack) = world.get_resource::<bevy::ui::UiStack>() else {
+        return Snapshot::default();
+    };
     let mut snapshot = Snapshot::default();
     for view in views {
+        let mut capture = Capture::new(world, view, geometry);
         if let Some(root) = view.root
             && let Some(viewport) = &view.viewport
             && let Some(owner) = native::accessibility::owner_context(world, root, true)
@@ -327,8 +450,13 @@ pub(crate) fn capture(world: &World, views: &[View], geometry: Option<&GeometryS
             snapshot.backgrounds.push(Background { root, output: view.output, image: view.image, bounds: viewport.bounds, owner });
         }
         for entity in stack.uinodes.iter().rev() {
-            let Some(target) = measured_candidate(world, view, geometry, *entity, true, timings.begin()) else { continue; };
-            if snapshot.targets.len() == MAX_TARGETS { snapshot.overflowed = true; return snapshot; }
+            let Some(target) = capture.candidate(*entity, true, timings.begin()) else {
+                continue;
+            };
+            if snapshot.targets.len() == MAX_TARGETS {
+                snapshot.overflowed = true;
+                return snapshot;
+            }
             snapshot.targets.push(target);
         }
     }
@@ -389,20 +517,35 @@ pub(crate) fn location(world: &mut World, views: &[View], geometry: Option<&Geom
     let view = views.iter().find(|view| view.output == output)?;
     let (image, scale, position) = if let Some(original) = captured.geometry.first() {
         let current = candidate(world, view, geometry, original.entity)?;
-        if !original.same_owner(&current) { return None; }
-        match current.projection {
+        if !original.same_owner(&current) {
+            return None;
+        }
+        match current.projection.as_ref() {
             Projection::Final(raster) => (current.image, raster.scale[0], raster.point(point)),
-            Projection::Sand { owner, pixels, item } => {
-                let surface = world.get::<native::topology::presentation::Surface>(owner)?;
+            Projection::Sand {
+                owner,
+                pixels,
+                item,
+            } => {
+                let surface = world.get::<native::topology::presentation::Surface>(*owner)?;
                 let local = item.mapping.surface_point_unbounded(point)?;
-                let position = std::array::from_fn(|axis| (local[axis] - item.mapping.surface.origin()[axis])
-                    / item.mapping.surface.size()[axis] * f64::from(pixels[axis]));
+                let position = std::array::from_fn(|axis| {
+                    (local[axis] - item.mapping.surface.origin()[axis])
+                        / item.mapping.surface.size()[axis]
+                        * f64::from(pixels[axis])
+                });
                 (current.image, f64::from(surface.density), position)
             }
         }
-    } else { (view.image, view.raster.scale[0], view.raster.point(point)) };
-    if !scale.is_finite() || scale <= 0.0 || position.iter().any(|value| !value.is_finite()) { return None; }
-    let image = world.get_resource_mut::<Assets<Image>>()?.get_strong_handle(image)?;
+    } else {
+        (view.image, view.raster.scale[0], view.raster.point(point))
+    };
+    if !scale.is_finite() || scale <= 0.0 || position.iter().any(|value| !value.is_finite()) {
+        return None;
+    }
+    let image = world
+        .get_resource_mut::<Assets<Image>>()?
+        .get_strong_handle(image)?;
     let position = Vec2::from_array(position.map(|value| (value / scale) as f32));
     if !position.is_finite() { return None; }
     Some(Location { target: NormalizedRenderTarget::Image(ImageRenderTarget { handle: image, scale_factor: scale as f32 }),

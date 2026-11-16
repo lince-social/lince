@@ -15,7 +15,7 @@ impl crate::location::Network for Wire {
         let node = node
             .parse::<EndpointId>()
             .map_err(|_| EngineError::Consequence("Invalid location device endpoint".into()))?;
-        if serde_json::to_vec(&request)?.len() > 16 * 1024 {
+        if nucleus::json::encoded_len(&request)? > 16 * 1024 {
             return Err(EngineError::Consequence(
                 "Location request exceeds its limit".into(),
             ));

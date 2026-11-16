@@ -1,0 +1,37 @@
+Reusable object recipes and public interfaces (@ws-object-recipes: 0, is #chapter, #part-of @workspace-development, #requires @ws-geometry, #requires @ws-shared-presence) { r_0G19P6BW808PG897RB5J8WV6W5
+Status: Pending. Owner refinement, 2026-11-15: author reusable objects whose construction, appearance, actions and behavior can be customized together. Aveltuner supplies inspiration; spells are examples, not a domain in the shared model.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Geometry](Geometry.lingua) and [Shared presence](Shared-Presence.lingua). Reuse durable definitions/occurrences, typed operators/ports, numeric and spatial edits, accepted revisions and shared-definition variants. Exact CAD, functional execution, character authoring and globe/imported-splat integration are not prerequisites.
+
+Deliver a saved reusable recipe with a small exposed interface and inspectable internals, exercised by a real parameterized mesh object. This package proves construction and parameter editing; action/state descriptors remain inert until their supported runtime is present. Its export cannot claim arbitrary executable behavior.
+
+## Ownership and parallel work
+
+One owner extends the existing definition/operator/command families. Freeze the actual first-consumer export before behavior and procedural appearance branch. Do not create a second document, asset store, undo system, programming language or generic runtime. Work in the current checkout with reserved file/service ownership; independent leaf work may overlap only after the required export is verified.
+
+## Ordered work
+
+### Task REC.T01
+
+- [ ] Extend existing definitions with stable recipe/operator identities and an exposed interface: typed parameters, action descriptors, input/output ports, required capabilities, defaults/ranges, units/frames, source revision and applicable model contracts. Distinguish immutable definition, occurrence overrides and per-activity state. Reuse K1/K4/K6 rather than a parallel type system. Pin required operator implementations/versions and bound graph size, composition depth and output expansion. Importing an unsupported definition preserves inspectable source and diagnostics without executing it.
+
+### Task REC.T02
+
+- [ ] Build a reusable panel/hatch mesh recipe with width/height and placement handles using actual bounded geometry operators. Forms and spatial controls address the same source parameters. Expose selected controls, open the recipe, group supported nodes into a reusable subrecipe and connect typed inputs/outputs through native controls. Validate quantity kinds, ranges, frames, source references and dependency cycles; no mandatory script or diagram is required for ordinary parameter use. Preserve edit-panel geometry, keyboard equivalents, selection and recoverable invalid drafts.
+
+### Task REC.T03
+
+- [ ] Deliver revisioned save/reopen, two independent occurrences, selected-copy overrides, Make unique and explicit shared-definition update through existing acceptance/undo paths. Show affected overrides and unresolved references before updating consumers. Recompute only affected products with bounded caches and generation checks, retaining the last accepted result during pending/failed evaluation. Reuse actual asset/rights/offline closure and include subrecipe/operator dependencies without copying live workers or activity state into source.
+
+### Task REC.T04
+
+- [ ] Expose recipe values, source-to-result correspondence, invalid links and evaluation status in the existing inspector. Preview/cancel and undo cover the real first consumer. Record measured graph/parameter/output limits, evaluation and release costs; exercise stale completion, invalid units, missing operator, unauthorized shared edit and oversized expansion. Freeze the tested interface with OA.W01 evidence before dependent packages start.
+
+## Completion and handoff
+
+Publish schema/operation ownership, source and build revisions, supported operators, native proof, units/limits, error/lifetime/authority semantics and save/offline evidence. Read OA.R01–OA.R04/OA.R10–OA.R12 in the contract. Consumers: [Behavior authoring](Behavior-Authoring.lingua), [Procedural appearance](Procedural-Appearance.lingua) and downstream CAD/control bindings. Current outcome: unbuilt and unverified.
+} r_0G19P6BW808PG897RB5J8WV6W5

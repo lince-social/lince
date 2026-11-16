@@ -51,7 +51,7 @@ fn validate_map(map: &Value) -> Result<Vec<Mute>, EngineError> {
     let fields = map
         .as_object()
         .ok_or_else(|| invalid("Invalid private mute settings"))?;
-    if fields.len() > MAX_MUTES || serde_json::to_vec(map)?.len() > 64 * 1024 {
+    if fields.len() > MAX_MUTES || nucleus::json::encoded_len(map)? > 64 * 1024 {
         return Err(invalid(
             "Resolve private mute settings within 256 entries and 64 KiB",
         ));
@@ -108,7 +108,7 @@ impl Engine {
         let fields = map
             .as_object()
             .ok_or_else(|| invalid("Invalid private mute settings"))?;
-        let over_limit = fields.len() > MAX_MUTES || serde_json::to_vec(&map)?.len() > 64 * 1024;
+        let over_limit = fields.len() > MAX_MUTES || nucleus::json::encoded_len(&map)? > 64 * 1024;
         let page: serde_json::Map<String, Value> = fields
             .iter()
             .filter(|(key, _)| key.as_str() > after.unwrap_or(""))
@@ -317,7 +317,7 @@ impl Engine {
         for (post, reason, time, body) in rows {
             let document: Option<Value> = body.as_deref().map(serde_json::from_str).transpose()?;
             let row = json!({"post":post,"reason":reason,"removed_at":time,"document":document});
-            let size = serde_json::to_vec(&row)?.len();
+            let size = nucleus::json::encoded_len(&row)?;
             if bytes + size > MAX_FRAME_BYTES - 1024 {
                 break;
             }

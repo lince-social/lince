@@ -10,7 +10,7 @@ The linked packages own implementation and its task order. This Record preserves
 For a mixed milestone, each contributor records its verified subset, then this join runs the actual composed workflow when all contributors exist. Do not mark the full milestone done from a local helper or silently drop geographic/hosted/numerical portions. Published exports remain usable without reopening their implementation solely to await this join; fixes to real interface defects remain mandatory.
 
 
-Finish with the useful local/offline/hosted modeling workspace working as a whole before any new physical-material or scientific capability is scheduled. Completion requires observed user workflows and measured recovery/resource behavior, including the intended scale journey and authored landmarks.
+Finish with the useful local/offline/hosted modeling workspace working as a whole. Numerical branches follow their own verified prerequisites in the development graph. Completion requires observed user workflows and measured recovery/resource behavior, including the intended scale journey, authored landmarks and exploration/possession.
 
 ## Required workflow milestones
 
@@ -30,6 +30,12 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 
 - [ ] **15.M08.** Complete B42/B43 together: author and inspect a connected PCB, use its functional device in the mixed lamp/camera/actuator scene, switch supported functional models and unload internal geometry. Preserve external behavior, source/model validity, native controls, local overrides, offline closure and authoritative hosted state. Numerical circuit solving remains deferred to 15a.
 
+- [ ] **15.M09.** Complete the [exploration contract](Exploration-contracts.lingua) in the mixed workspace: observe/follow, enter/surroundings/back, possess to place with undo/save, and play/discard or explicitly Keep pose. Preserve supported control/authority, exact dimensions, selected behavior models and bounded history/activity cost. Automatic tours, impossible portals and unbuilt numerical/rig possession adapters remain outside this core gate.
+
+- [ ] **15.M10.** Complete [object authoring acceptance](Object-authoring-contracts.lingua): compose reusable construction, appearance and behavior; expose public controls/actions; bind a CAD dimension and operate the same action through supported controls/possession; inspect and compare isolated variants. Preserve source/authority, independent fidelity and bounded cost. Basic authoring trials are core; new physical solvers and scientific Laboratory remain separate.
+
+- [ ] **15.M11.** Complete [camera and vision acceptance](Camera-vision-contracts.lingua): connect a feed with spatial/optical/time metadata through generic providers, let Fiote use an actual supported vision model for observations/events, and model a selected place once or periodically. Preserve authored source, bounded transient media, explicit coverage and generation-checked outputs. No raw-video archive or whole-world reconstruction is required.
+
 ## Entry and scope
 
 - [ ] Follow the development graph and owned-package delivery rules. Preserve every requirement, composed workflow and evidence obligation below; former stage numbers are stable traceability labels.
@@ -38,9 +44,11 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 
 - [ ] Recover the actual contributing package handoffs and open only needed contract sections. Read-only references to other contracts are not additional hard prerequisites.
 
-- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, experiments and calculated-state recording deferred to [stage 15a and stages 16–21](../Workspace-Development.lingua#numerical-scope-and-independent-scientific-readiness). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
+- [ ] Limit implementation to the current core subset: preserve existing Areas/gravity/motion cooling and implement needed geometry/navigation/definition/hosting contracts. Keep new property evaluation, heating/thermodynamics, additional physical solvers, scientific experiments and calculated-state recording deferred to [stage 15a and stages 16–21](../Workspace-Development.lingua#numerical-scope-and-independent-scientific-readiness). A future example/field/reference below does not activate its evaluator or make it a core exit requirement.
 
 - [ ] Keep one model/accepted-edit/query/artifact/demand implementation. Treat the following source ownership as a starting location to re-audit, not permission to create every proposed crate/profile upfront: `crates/xtask/`; `crates/interface/src/native/`; `crates/engine/src/`; `crates/transport/`; `stage-owned contract modules`.
+
+Bounded recipe/behavior authoring trials and their causal diagnostics belong to core through OA.M01–OA.M06. They reuse existing activity services and do not activate the deferred scientific Laboratory or calculated-state recording scope.
 
 ## Task ownership
 
@@ -62,6 +70,12 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 
 - [ ] [15.T07 — Complete core workspace acceptance](../features/Core-Acceptance.lingua#task-15t07). Full task text and execution order live with that owner.
 
+- [ ] [15.T08 — Exploration and possession integration](../features/Core-Acceptance.lingua#task-15t08). Full task text and execution order live with the core acceptance owner; its provider is [exploration acceptance](Exploration-contracts.lingua).
+
+- [ ] [15.T09 — Reusable object authoring integration](../features/Core-Acceptance.lingua#task-15t09). Full task text and execution order live with the core acceptance owner; its provider is [object authoring acceptance](Object-authoring-contracts.lingua).
+
+- [ ] [15.T10 — Camera feeds and Fiote vision integration](../features/Core-Acceptance.lingua#task-15t10). Full task text and order live with the core acceptance owner; its provider is [camera and vision acceptance](Camera-vision-contracts.lingua).
+
 ## Delivery cycles and retained workflows
 
 - [ ] **Cycle A — Verify retained capabilities individually.** Recover stages 01–14 handoffs and runnable workflow links, then replay the affected core journey, authoring/CAD/structure, operational and articulated subsets on the selected fixture/profile. Record missing coverage and regressions against their original owning requirements.
@@ -80,6 +94,9 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 | **15.W04 — Delegate, focus and reconcile real outputs** | Combined Agent/presentation/model-linked-work recipe; 15.M06. Continue Fiote's edit natively, focus spatial content into HUD and refresh/reconcile work after a source edit. | Actual output identity, native continuation, derived/manual/accepted status and provider-loss recovery remain clear. | Same authority/undo/source path; private context/stale acceptance/implicit commitment changes = 0; retain native responsiveness while separately admitted Agent work waits or runs. |
 | **15.W05 — Detail a character and return to ordinary use** | Combined B41 authoring/anatomy/navigation recipe; 15.M07. Customize/pose, inspect/annotate with Fiote, simplify, walk and reopen offline; repeat mechanism articulation. | Useful posing, optional coverage, fit/motion and detailed-to-lightweight transitions survive composition. | Preserve source/rig/motion limits/privacy/undo; internal payloads release after last demand; no new physical/clinical claim; measure B41 plus other active work under aggregate caps. |
 | **15.W06 — Stabilize functional devices and electronic design** | B42/B43 composed core workflow; 15.M08/15.T07, replay 15.P04. | Schematic/layout/3D and model controls remain useful together. | Required nets/events, independent detail, source validity, offline/hosted recovery and aggregate budgets pass; numerical circuit solving stays deferred. |
+| **15.W07 — Explore and possess objects in the mixed workspace** | EXP.F01 and EXP.W01–EXP.W05; 15.M09/15.T08, replay 15.P05. | Subject/path, relative movement, Place/Play choice, saved versus temporary pose and reliable exit remain clear beside ordinary work. | Same source/command/view/activity authority; exact accepted pose and undo; no leaked trial events, hidden model change or duplicate writer; bounded history, input/frame cost and last-demand release. |
+| **15.W08 — Author and operate reusable creations** | OA.F01 and OA.W01–OA.W06; 15.M10/15.T09, replay 15.P06. | Preset use, internal editing, exposed controls, CAD relationships and causal comparison remain understandable together. | Source/undo/offline/rights, typed binding repair, input parity, state transfer, one writer and trial isolation hold under measured mixed budgets; no unsupported physics is inferred. |
+| **15.W09 — Observe and model a place through camera feeds** | CV.F01 and CV.W01–CV.W05; 15.M11/15.T10, replay 15.P07. | Camera placement/metadata, task purpose, model outputs and current versus stale coverage remain understandable. | Actual pixels plus metadata reach a supported model; event/one-shot/periodic results meet fixture limits; source/authority, manual layers, timing/calibration and transient-media limits survive faults. |
 
 - [ ] **Checks to select.** Reuse existing meaningful unit/integration/fault/native suites and run the required composed journeys on their actual services. Exercise controlled failures at the shared acceptance/loader/Agent boundaries and review native outputs; record named build/device/profile and source revisions. Add a test only for an uncovered observed defect or integration contract, then retain its reproducer at the owning stage.
 
@@ -94,6 +111,12 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 - [ ] **15.P03 — Close the gate with current results; 15.T03/15.T04 / 15.W01–15.W05.** Compare mixed frame/input/commit/query/open percentiles, cold/warm/offline conditions, steady/transient RAM/GPU/disk/queues and cancellation/release with the original profiles and actual workload sizes. Compare repeated travel and settled idle with 01.W01, and assert exact quantities, IDs, rights, receipt recovery and zero unintended worker/network/action starts. Repair failures at their owning stages and rerun only the invalidated proofs plus affected composition. Keep the gate open for unresolved hard or qualitative failures; no budget/scope change is implicit in summary compression.
 
 - [ ] **15.P04 / 15.W06 — Stabilize mixed functional devices and electronics authoring; 15.M08/15.T07.** Execute the actual B42/B43 native sequence, including layout repair, local model choice, offscreen triggering, geometry release, source edit and offline/hosted reopen. Preserve the independent expected nets/events and export evidence, measured aggregate budgets and accessible model/diagnostic controls. Retain this workflow in the completion summary; stage 15a's physical substitution evidence cannot be claimed here.
+
+- [ ] **15.P05 — Explore and possess within the composed core; 15.T08 / 15.W07.** Reuse the exploration contract's proved profiles and EXP.F01 source. Run its observe/enter/back and placement/play journeys beside a functional device, editable room, mounted input and restricted visitor. Interrupt control during held input and loading; retain current accepted state after stale/revoked edits and isolate trial events. Capture exact pose/receipt/undo evidence, source/model identity, active authority and bounded history/demand under the existing mixed budgets. Optional tours and later physical control profiles remain separately reported capabilities.
+
+- [ ] **15.P06 — Reuse and explain authored objects in the mixed core; 15.T09 / 15.W08.** Recover OA.P01–OA.P03 provider evidence and replay the lamp/hatch/pulse workflow beside existing native tools, shared source and possession. Compare known geometry and event outcomes, exercise broken/stale links, lowered visual detail, incompatible live edits and cancellation. Inspect controls, cost/trace meaning and offline recovery; retain actual revisions, measured limits and missing domain adapters. Do not rerun unaffected specialist science or replace absent behavior with a preset-only demonstration.
+
+- [ ] **15.P07 — Integrate camera observation and modeling; 15.T10 / 15.W09.** Recover CV.P01/CV.P02 handoffs and run the two-source workflow with native controls, Fiote and a restricted observer. Compare independently known events and calibrated references, exercise source/format/pose changes, missed windows, stale completion and stop/revoke. Check saved files/logs for unintended raw media, preserve last valid derived state with age, and measure actual output error/latency/cost. Retain implemented source/model limits; do not substitute a rendered simulated camera or metadata-only stub for external-image consumption.
 
 ## Worked contract example
 

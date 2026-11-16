@@ -95,7 +95,7 @@ impl Engine {
             .social_network()?
             .request(&endpoint, PublicRequest::DescribeService)
             .await?;
-        if serde_json::to_vec(&response)?.len() > 8 * 1024 {
+        if nucleus::json::encoded_len(&response)? > 8 * 1024 {
             return Err(invalid("The service descriptor exceeds its bound"));
         }
         let descriptor: ServiceDescriptor = serde_json::from_value(response["descriptor"].clone())?;

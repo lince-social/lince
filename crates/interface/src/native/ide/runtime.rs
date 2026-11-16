@@ -225,7 +225,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             syntax.language = None;
         }
         let mut editor = world.get_mut::<EditableText>(editor).unwrap();
-        if !editor.value().to_string().is_empty() {
+        if editor.value() != "" {
             editor.editor.set_text("");
         }
         let view = world.get::<View>(owner).unwrap();
@@ -251,7 +251,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     }
     let Some(doc) = world.resource::<Documents>().0.get(&path) else {
         let mut input = world.get_mut::<EditableText>(editor).unwrap();
-        if !input.value().to_string().is_empty() {
+        if input.value() != "" {
             input.editor.set_text("");
         }
         let message = world.get::<View>(owner).unwrap().notice.clone();

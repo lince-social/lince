@@ -1,6 +1,9 @@
 use crate::native::actions::Action;
 use bevy::{prelude::*, text::EditableText};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
 #[derive(Clone, PartialEq)]
 pub(crate) struct Command {
@@ -12,7 +15,67 @@ pub(crate) struct Command {
 }
 
 #[derive(Resource, Default)]
-pub(crate) struct Catalog(HashMap<String, Vec<Command>>);
+pub(crate) struct Catalog(HashMap<String, Arc<[PreparedCommand]>>);
+
+struct PreparedCommand {
+    command: Command,
+    search: String,
+}
+
+impl PreparedCommand {
+    fn new(command: Command) -> Self {
+        let search = format!(
+            "{} {} {}",
+            command.name, command.description, command.target
+        )
+        .to_lowercase();
+        Self { command, search }
+    }
+}
+
+enum CommandIndex {
+    Builtin(usize),
+    Agent(usize),
+}
+
+struct Selection {
+    catalog: Option<Arc<[PreparedCommand]>>,
+    matches: Vec<CommandIndex>,
+}
+
+impl Selection {
+    fn uses(&self, catalog: Option<&Arc<[PreparedCommand]>>) -> bool {
+        match (self.catalog.as_ref(), catalog) {
+            (None, None) => true,
+            (Some(previous), Some(current)) => Arc::ptr_eq(previous, current),
+            _ => false,
+        }
+    }
+
+    fn new(catalog: Option<Arc<[PreparedCommand]>>, search: &str) -> Self {
+        let _preparation = nucleus::performance::Span::new("message-command-selection");
+        nucleus::performance::add("message-command-selections-prepared", 1);
+        let search = search.to_lowercase();
+        let matches = matching(catalog.as_deref(), &search)
+            .take(64)
+            .map(|(index, _)| index)
+            .collect();
+        Self { catalog, matches }
+    }
+
+    fn commands(&self) -> impl Iterator<Item = &Command> {
+        self.matches.iter().map(|index| match index {
+            CommandIndex::Builtin(index) => &builtins()[*index].command,
+            CommandIndex::Agent(index) => &self.catalog.as_ref().unwrap()[*index].command,
+        })
+    }
+}
+
+fn catalog<'a>(world: &'a World, thread: &str) -> Option<&'a Arc<[PreparedCommand]>> {
+    world
+        .get_resource::<Catalog>()
+        .and_then(|catalog| catalog.0.get(thread))
+}
 
 #[derive(Component)]
 struct Picker {
@@ -21,7 +84,7 @@ struct Picker {
     search: Entity,
     list: Entity,
     panel: Entity,
-    previous: Vec<Command>,
+    selection: Option<Arc<Selection>>,
     filter: String,
     literal: bool,
     toggle: Entity,
@@ -87,7 +150,7 @@ pub(crate) fn create(
         search,
         list,
         panel,
-        previous: Vec::new(),
+        selection: None,
         filter: String::new(),
         literal: false,
         toggle,
@@ -95,6 +158,21 @@ pub(crate) fn create(
 }
 
 pub(crate) fn update(world: &mut World, thread: &str, commands: Vec<Command>) {
+    if catalog(world, thread).is_some_and(|previous| {
+        previous
+            .iter()
+            .map(|entry| &entry.command)
+            .eq(commands.iter())
+    }) {
+        return;
+    }
+    let _preparation = nucleus::performance::Span::new("message-command-catalog-preparation");
+    nucleus::performance::add("message-command-catalogs-prepared", 1);
+    let commands: Arc<[PreparedCommand]> = commands
+        .into_iter()
+        .map(PreparedCommand::new)
+        .collect::<Vec<_>>()
+        .into();
     if !world.contains_resource::<Catalog>() {
         world.init_resource::<Catalog>();
     }
@@ -113,68 +191,87 @@ pub(crate) fn literal(world: &World, owner: Entity) -> bool {
         .is_some_and(|picker| picker.literal)
 }
 
-fn commands(world: &World, picker: &Picker) -> Vec<Command> {
-    let mut commands = vec![
-        Command {
-            name: "login".into(),
-            description: "Open Fiote account setup".into(),
-            hint: String::new(),
-            target: "Lince".into(),
-            insert: "/login".into(),
-        },
-        Command {
-            name: "lock".into(),
-            description: "Lock Fiote credentials".into(),
-            hint: String::new(),
-            target: "Lince".into(),
-            insert: "/lock".into(),
-        },
-    ];
-    if let Some(catalog) = world
-        .get_resource::<Catalog>()
-        .and_then(|catalog| catalog.0.get(&picker.thread))
-    {
-        commands.extend(catalog.clone());
-    }
-    let search = world
-        .get::<EditableText>(picker.search)
-        .map(|text| text.value().to_string().to_lowercase())
-        .unwrap_or_default();
-    commands.retain(|command| {
-        format!(
-            "{} {} {}",
-            command.name, command.description, command.target
+fn builtins() -> &'static [PreparedCommand; 2] {
+    static COMMANDS: OnceLock<[PreparedCommand; 2]> = OnceLock::new();
+    COMMANDS.get_or_init(|| {
+        [
+            Command {
+                name: "login".into(),
+                description: "Open Fiote account setup".into(),
+                hint: String::new(),
+                target: "Lince".into(),
+                insert: "/login".into(),
+            },
+            Command {
+                name: "lock".into(),
+                description: "Lock Fiote credentials".into(),
+                hint: String::new(),
+                target: "Lince".into(),
+                insert: "/lock".into(),
+            },
+        ]
+        .map(PreparedCommand::new)
+    })
+}
+
+fn matching<'a>(
+    catalog: Option<&'a [PreparedCommand]>,
+    search: &'a str,
+) -> impl Iterator<Item = (CommandIndex, &'a Command)> {
+    builtins()
+        .iter()
+        .enumerate()
+        .map(|(index, command)| (CommandIndex::Builtin(index), command))
+        .chain(
+            catalog
+                .into_iter()
+                .flatten()
+                .enumerate()
+                .map(|(index, command)| (CommandIndex::Agent(index), command)),
         )
-        .to_lowercase()
-        .contains(&search)
-    });
-    commands
+        .filter(move |(_, command)| search.is_empty() || command.search.contains(search))
+        .map(|(index, command)| (index, &command.command))
 }
 
 pub(crate) fn refresh(world: &mut World) {
+    let _presentation = nucleus::performance::Span::new("message-command-presentation");
     let updates: Vec<_> = world
         .query::<(Entity, &Picker)>()
         .iter(world)
         .filter_map(|(owner, picker)| {
-            let commands = commands(world, picker);
-            let search = world
-                .get::<EditableText>(picker.search)
-                .map(|text| text.value().to_string())
+            let editor = world.get::<EditableText>(picker.search);
+            let same_search = editor.map_or(picker.filter.is_empty(), |editor| {
+                editor.value() == picker.filter.as_str()
+            });
+            let catalog = catalog(world, &picker.thread);
+            if same_search
+                && picker
+                    .selection
+                    .as_ref()
+                    .is_some_and(|selection| selection.uses(catalog))
+            {
+                return None;
+            }
+            let search = editor
+                .map(|editor| editor.value().to_string())
                 .unwrap_or_default();
-            (commands != picker.previous || search != picker.filter).then_some((
-                owner,
-                picker.list,
-                commands,
-                search,
-            ))
+            let selection = Arc::new(Selection::new(catalog.cloned(), &search));
+            let redraw = picker
+                .selection
+                .as_ref()
+                .is_none_or(|previous| !previous.commands().eq(selection.commands()));
+            Some((owner, picker.list, selection, search, redraw))
         })
         .collect();
-    for (owner, list, commands, search) in updates {
+    for (owner, list, selection, search, redraw) in updates {
         let mut picker = world.get_mut::<Picker>(owner).unwrap();
-        picker.previous = commands.clone();
+        picker.selection = Some(Arc::clone(&selection));
         picker.filter = search;
+        if !redraw {
+            continue;
+        }
         world.entity_mut(list).despawn_children();
-        for command in commands.iter().take(64) {
+        for command in selection.commands() {
             crate::native::description::button(
                 world,
                 list,
@@ -207,9 +304,18 @@ pub(crate) fn keyboard(world: &mut World) {
         .iter(world)
         .find(|(_, picker)| Some(picker.search) == focus)
         .and_then(|(owner, picker)| {
-            commands(world, picker)
-                .first()
-                .map(|command| (owner, command.insert.clone()))
+            // Keyboard input runs before refresh; resolve against current input
+            // and catalog rather than accepting a stale displayed selection.
+            let search = world
+                .get::<EditableText>(picker.search)
+                .map(|text| text.value().to_cow().to_lowercase())
+                .unwrap_or_default();
+            matching(
+                catalog(world, &picker.thread).map(|catalog| catalog.as_ref()),
+                &search,
+            )
+            .next()
+            .map(|(_, command)| (owner, command.insert.clone()))
         });
     if let Some((owner, text)) = selected {
         world
@@ -237,13 +343,16 @@ impl Action for Select {
         };
         let (input, panel) = (picker.input, picker.panel);
         if let Some(mut text) = world.get_mut::<EditableText>(input) {
-            let old = text.value().to_string();
-            let suffix = if old.starts_with('/') {
-                old.split_once(' ').map(|(_, suffix)| suffix).unwrap_or("")
-            } else {
-                &old
+            let next = {
+                let old = text.value().to_cow();
+                let suffix = if old.starts_with('/') {
+                    old.split_once(' ').map(|(_, suffix)| suffix).unwrap_or("")
+                } else {
+                    old.as_ref()
+                };
+                format!("{} {suffix}", self.0)
             };
-            text.editor.set_text(&format!("{} {suffix}", self.0));
+            text.editor.set_text(&next);
         }
         world.get_mut::<Node>(panel).unwrap().display = Display::None;
         if world

@@ -432,22 +432,31 @@ pub fn spawn(
 }
 
 fn fit(views: Query<&View>, viewports: Query<&ComputedNode>, mut images: Query<&mut Node>) {
+    let _measurement =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeMediaFit);
     for view in &views {
         let Ok(viewport) = viewports.get(view.viewport) else {
             continue;
         };
-        let size = viewport.size() * viewport.inverse_scale_factor();
-        if size.min_element() <= 0.0 {
-            continue;
+        if let Ok(node) = images.get_mut(view.image) {
+            fit_image(node, viewport, view.ratio);
         }
-        let width = size.x.min(size.y * view.ratio);
-        let height = width / view.ratio;
-        if let Ok(mut node) = images.get_mut(view.image)
-            && (node.width != px(width) || node.height != px(height))
-        {
-            node.width = px(width);
-            node.height = px(height);
-        }
+    }
+}
+
+// Share image/video containment without marking Node changed on an idle frame.
+// Taking Mut<Node> preserves change detection until an owned field really changes.
+pub(crate) fn fit_image(mut node: Mut<'_, Node>, viewport: &ComputedNode, ratio: f32) {
+    let size = viewport.size() * viewport.inverse_scale_factor();
+    if size.min_element() <= 0.0 {
+        return;
+    }
+    let width = size.x.min(size.y * ratio);
+    let height = width / ratio;
+    if node.width != px(width) || node.height != px(height) {
+        node.width = px(width);
+        node.height = px(height);
+        crate::host::performance::count(crate::host::performance::Count::MediaFitWrites);
     }
 }
 

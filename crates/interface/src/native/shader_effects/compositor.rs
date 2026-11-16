@@ -159,11 +159,18 @@ fn fields(world: &mut World) {
                 if input.is_composing() { message(world, field.status, "Finish composing before applying this value."); }
                 else if !input.pending_edits.is_empty() || input.pending_paste.is_some() {
                     field.pending = Some(Edit::Apply);
-                    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() { wake.after(Duration::ZERO); }
+                    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+                        wake.after(Duration::ZERO);
+                    }
                 } else {
-                    let candidate = input.value().to_string().trim().parse::<f32>().ok();
-                    let mut settings = world.get_resource::<ShaderSettings>().copied().unwrap_or_default().compositor;
-                    if let Some(value) = candidate.filter(|value| settings.set(field.kind, *value)) {
+                    let candidate = input.value().to_cow().trim().parse::<f32>().ok();
+                    let mut settings = world
+                        .get_resource::<ShaderSettings>()
+                        .copied()
+                        .unwrap_or_default()
+                        .compositor;
+                    if let Some(value) = candidate.filter(|value| settings.set(field.kind, *value))
+                    {
                         world.resource_mut::<ShaderSettings>().compositor = settings;
                         field.origin = value;
                         field.conflict = false;
@@ -174,10 +181,17 @@ fn fields(world: &mut World) {
                     }
                 }
             }
-        } else if eligible && !field.conflict && current != field.origin
+        } else if eligible
+            && !field.conflict
+            && current != field.origin
             && world.get_resource::<InputFocus>().and_then(InputFocus::get) != Some(entity)
-            && world.get::<EditableText>(entity).is_some_and(|input| input.value().to_string().trim().parse::<f32>().ok() == Some(field.origin)
-                && !input.is_composing() && input.pending_edits.is_empty() && input.pending_paste.is_none()) {
+            && world.get::<EditableText>(entity).is_some_and(|input| {
+                !input.is_composing()
+                    && input.pending_edits.is_empty()
+                    && input.pending_paste.is_none()
+                    && input.value().to_cow().trim().parse::<f32>().ok() == Some(field.origin)
+            })
+        {
             write(world, entity, current);
             field.origin = current;
         }

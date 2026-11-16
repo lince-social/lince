@@ -60,12 +60,18 @@ pub(super) fn refresh(world: &mut World, owner: Entity, data: &Value) {
     let Some(transcript) = world.get::<Transcript>(owner) else {
         return;
     };
+    let _presentation = nucleus::performance::Span::new("message-transcript-presentation");
     let preview = transcript.preview;
     let tool = &data["tool_call"];
-    world.get_mut::<Text>(preview).unwrap().0 = format!(
-        "{}\n{}",
-        tool["status"].as_str().unwrap_or("working"),
-        tool["preview"].as_str().unwrap_or("")
+    publish(
+        world,
+        preview,
+        [
+            tool["status"].as_str().unwrap_or("working"),
+            "\n",
+            tool["preview"].as_str().unwrap_or(""),
+        ]
+        .into_iter(),
     );
 }
 
@@ -133,66 +139,135 @@ impl Action for DeleteTranscript {
 }
 
 pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
-    let (id, rows, error) = match event.clone() {
+    let (id, rows, error) = match event {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-            (id, rows, None)
+            (id, rows.as_slice(), None)
         }
-        ServerMessage::Error { id, message, .. } => (id, Vec::new(), Some(message)),
+        ServerMessage::Error { id, message, .. } => (id, &[][..], Some(message)),
         _ => return,
     };
+    let _presentation = nucleus::performance::Span::new("message-transcript-presentation");
     let targets: Vec<_> = world
-        .query::<&Transcript>()
+        .query::<(Entity, &Transcript)>()
         .iter(world)
-        .filter(|item| item.subscription.as_deref() == Some(&id))
-        .map(|item| (item.text, item.thread.clone()))
+        .filter(|(_, item)| item.subscription.as_deref() == Some(id.as_str()))
+        .map(|(owner, _)| owner)
         .collect();
-    for (text, thread) in targets {
-        let content = error.clone().unwrap_or_else(|| {
-                let transcript = rows
-                    .first()
-                    .and_then(|row| row["threads"].as_array())
-                    .and_then(|threads| threads.iter().find(|item| item["uid"] == thread));
-                match transcript {
-                    None => "Transcript deleted or unavailable.".into(),
-                    Some(transcript) => {
-                        let parts: Vec<_> = transcript["messages"]
-                            .as_array()
-                            .into_iter()
-                            .flatten()
-                            .filter_map(|message| message["body"].as_str())
-                            .collect();
-                        if parts.is_empty() {
-                            "No output received yet.".into()
-                        } else {
-                            let mut text = parts.join("\n\n");
-                            if transcript["messages_has_more"] == true {
-                                text.insert_str(0, "Showing the latest 256 transcript entries. Older entries remain in the thread.\n\n");
-                            }
-                            text
-                        }
-                    }
-                }
+    for owner in targets {
+        let Some(current) = world.get::<Transcript>(owner) else {
+            continue;
+        };
+        let text = current.text;
+        if let Some(error) = error {
+            publish(world, text, std::iter::once(error.as_str()));
+            continue;
+        }
+        let transcript = rows
+            .first()
+            .and_then(|row| row["threads"].as_array())
+            .and_then(|threads| {
+                threads
+                    .iter()
+                    .find(|item| item["uid"].as_str() == Some(current.thread.as_str()))
             });
-        world.get_mut::<Text>(text).unwrap().0 = content;
+        let Some(transcript) = transcript else {
+            publish(
+                world,
+                text,
+                std::iter::once("Transcript deleted or unavailable."),
+            );
+            continue;
+        };
+        let mut messages = transcript["messages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|message| message["body"].as_str())
+            .peekable();
+        if messages.peek().is_none() {
+            publish(world, text, std::iter::once("No output received yet."));
+            continue;
+        }
+        let heading = (transcript["messages_has_more"] == true).then_some(
+            "Showing the latest 256 transcript entries. Older entries remain in the thread.\n\n",
+        );
+        let body = messages.enumerate().flat_map(|(index, text)| {
+            [(index > 0).then_some("\n\n"), Some(text)]
+                .into_iter()
+                .flatten()
+        });
+        publish(world, text, heading.into_iter().chain(body));
     }
 }
 
+/// Return only the newly appended chunks when the current text is an exact
+/// prefix. Returned slices borrow the reply, never the live Text component.
+fn append_suffix<'a, I>(
+    mut current: &str,
+    mut chunks: I,
+) -> Option<std::iter::Chain<std::iter::Once<&'a str>, I>>
+where
+    I: Iterator<Item = &'a str>,
+{
+    while let Some(chunk) = chunks.next() {
+        if current.len() < chunk.len() {
+            let suffix = chunk.strip_prefix(current)?;
+            return Some(std::iter::once(suffix).chain(chunks));
+        }
+        current = current.strip_prefix(chunk)?;
+    }
+    let empty: &'a str = "";
+    current
+        .is_empty()
+        .then(|| std::iter::once(empty).chain(chunks))
+}
+
+fn publish<'a>(world: &mut World, entity: Entity, chunks: impl Iterator<Item = &'a str> + Clone) {
+    let Some(current) = world.get::<Text>(entity) else {
+        return;
+    };
+    let suffix = append_suffix(&current.0, chunks.clone());
+    let bytes = if let Some(suffix) = suffix {
+        if !suffix.clone().any(|chunk| !chunk.is_empty()) {
+            return;
+        }
+        let mut text = world.get_mut::<Text>(entity).unwrap();
+        let previous = text.0.len();
+        text.0.extend(suffix);
+        text.0.len() - previous
+    } else {
+        // Replacements and truncation release the old allocation, rather than
+        // pinning a once-large transcript behind a short error/empty caption.
+        let value: String = chunks.collect();
+        let bytes = value.len();
+        world.get_mut::<Text>(entity).unwrap().0 = value;
+        bytes
+    };
+    nucleus::performance::add("message-transcript-text-updates", 1);
+    nucleus::performance::add("message-transcript-text-bytes-prepared", bytes as u64);
+}
+
 pub(super) fn receive(world: &mut World) {
-    let active: HashSet<String> = world
-        .query::<&Transcript>()
-        .iter(world)
-        .filter_map(|item| item.subscription.clone())
-        .collect();
-    if let Some(mut subscriptions) = world.get_resource_mut::<Subscriptions>() {
-        subscriptions.0.retain(|id, sender| {
-            if active.contains(id) {
-                true
-            } else {
-                sender
-                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                    .is_err()
-                    && !sender.is_closed()
-            }
+    if world
+        .get_resource::<Subscriptions>()
+        .is_some_and(|subscriptions| !subscriptions.0.is_empty())
+    {
+        world.resource_scope(|world, mut subscriptions: Mut<Subscriptions>| {
+            let mut transcripts = world.query::<&Transcript>();
+            let active: HashSet<_> = transcripts
+                .iter(world)
+                .filter_map(|item| item.subscription.as_deref())
+                .collect();
+            subscriptions.0.retain(|id, sender| {
+                if active.contains(id.as_str()) {
+                    true
+                } else {
+                    sender
+                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                        .is_err()
+                        && !sender.is_closed()
+                }
+            });
         });
     }
 }

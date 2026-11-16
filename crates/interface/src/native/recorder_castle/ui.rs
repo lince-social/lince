@@ -391,6 +391,11 @@ pub(super) fn inputs(world: &mut World) {
     let names: Vec<_> = world
         .query::<(&Name, &EditableText)>()
         .iter(world)
+        .filter(|(name, text)| {
+            world
+                .get::<RecorderCastle>(name.0)
+                .is_some_and(|castle| text.value() != castle.name.as_str())
+        })
         .map(|(name, text)| (name.0, text.value().to_string()))
         .collect();
     for (owner, name) in names {
@@ -403,7 +408,7 @@ pub(super) fn inputs(world: &mut World) {
     let searches: Vec<_> = world
         .query::<(Entity, &Search, &EditableText)>()
         .iter(world)
-        .filter(|(_, search, text)| search.last != text.value().to_string())
+        .filter(|(_, search, text)| text.value() != search.last.as_str())
         .map(|(e, search, text)| (e, search.owner, text.value().to_string()))
         .collect();
     for (entity, owner, value) in searches {
@@ -418,11 +423,7 @@ pub(super) fn refresh(world: &mut World) {
         .iter(world)
         .filter_map(|(owner, view)| {
             let audio = crate::native::sound::audio_for(world, owner)?;
-            (view.revision != audio.revision).then_some((
-                owner,
-                audio.revision,
-                audio.error.clone(),
-            ))
+            (view.revision != audio.revision).then(|| (owner, audio.revision, audio.error.clone()))
         })
         .collect();
     for (owner, revision, error) in owners {

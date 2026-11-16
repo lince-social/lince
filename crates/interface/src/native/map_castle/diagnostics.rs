@@ -94,7 +94,7 @@ pub(super) fn snapshot(world: &World) -> serde_json::Value {
                 .unwrap_or_default()
         })
         .unwrap_or_default();
-    serde_json::json!({"metrics":metrics,"scene_tasks":lince_map::diagnostics::snapshot(),"gpu_scope":"Buffer/texture device counters include the whole Bevy device. Per-view output textures and UI buffers are tracked separately. Unavailable counters are unknown; driver memory is unmeasured.","timing_scope":"Render submission is CPU time, frame interval is host redraw interval, and input latency ends at submission. GPU/display timing and RSS require the named manual procedure."})
+    serde_json::json!({"metrics":metrics,"scene_tasks":lince_map::diagnostics::snapshot(),"gpu_scope":"Buffer/texture device counters include the whole Bevy device. Per-view output textures and selected UI buffers are tracked separately; retained query/configuration snapshots and allocator overhead are excluded. Unavailable counters are unknown; driver memory is unmeasured.","timing_scope":"Render submission is CPU time, frame interval is host redraw interval, and input latency ends at submission. GPU/display timing and RSS require the named manual procedure."})
 }
 
 pub(super) fn toggle(world: &mut World, owner: Entity) {
@@ -150,7 +150,7 @@ fn report(world: &World) -> String {
         .lock()
         .unwrap_or_else(|error| error.into_inner());
     let views: Vec<_> = state.views.iter().map(|(uid, view)| serde_json::json!({"view":uid,"query_p95_us":p95(&view.query_micros),"query_samples":view.query_micros.len(),"render_submission_p95_us":p95(&view.render_submission_micros),"input_to_submission_p95_us":p95(&view.input_to_submission_micros),"owned_output_texture_bytes":view.tracked_output_texture_bytes,"tracked_ui_buffer_bytes":view.tracked_ui_buffer_bytes})).collect();
-    serde_json::to_string_pretty(&serde_json::json!({"views":views,"host_frame_interval_p95_us":p95(&state.frame_interval_micros),"device_gpu":state.device,"scene_tasks":lince_map::diagnostics::snapshot(),"measurement":"GPU counters cover the whole Bevy device; unavailable counters are unknown. Driver memory and display/GPU time are unmeasured. Timings retain at most 16384 samples; reset before a measured run."})).unwrap_or_default()
+    serde_json::to_string_pretty(&serde_json::json!({"views":views,"host_frame_interval_p95_us":p95(&state.frame_interval_micros),"device_gpu":state.device,"scene_tasks":lince_map::diagnostics::snapshot(),"measurement":"GPU counters cover the whole Bevy device; unavailable counters are unknown. Driver memory, retained query/configuration snapshots, allocator overhead and display/GPU time are unmeasured. Timings retain at most 16384 samples; reset before a measured run."})).unwrap_or_default()
 }
 
 pub(super) fn maintain(world: &mut World) {

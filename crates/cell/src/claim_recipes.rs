@@ -5,7 +5,7 @@ use std::time::Duration;
 pub fn spawn(engine: Arc<Engine>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut bus = engine.subscribe();
-        let mut changes = engine.watch_query_changes();
+        let mut changes = engine.watch_general_query_changes();
         let mut dirty = true;
         loop {
             if dirty {

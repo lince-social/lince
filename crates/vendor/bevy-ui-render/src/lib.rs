@@ -12,8 +12,6 @@ mod gradient;
 mod pipeline;
 pub mod render_pass;
 mod text;
-#[cfg(test)]
-mod camera_mapping_tests;
 pub mod ui_material;
 mod ui_material_pipeline;
 pub mod ui_texture_slice_pipeline;
@@ -428,6 +426,12 @@ pub fn extract_uinode_background_colors(
             || (background_color.is_fully_transparent()
                 && maybe_outer_color.is_none_or(|outer| outer.is_fully_transparent()))
             || uinode.is_empty()
+            || !clipping::visible(
+                Affine2::from(*transform),
+                Vec2::ZERO,
+                uinode.size(),
+                clip.map(|clip| clip.clip),
+            )
         {
             continue;
         }
@@ -552,6 +556,15 @@ pub fn extract_uinode_images(
             visual_box.size()
         };
 
+        if !clipping::visible(
+            Affine2::from(*transform),
+            visual_box.center(),
+            size,
+            clip.map(|clip| clip.clip),
+        ) {
+            continue;
+        }
+
         let atlas_rect = image
             .texture_atlas
             .as_ref()
@@ -647,6 +660,12 @@ pub fn extract_uinode_borders(
 
         // Don't extract borders with zero width along all edges
         if computed_node.border() != BorderRect::ZERO
+            && clipping::visible(
+                Affine2::from(*transform),
+                Vec2::ZERO,
+                computed_node.size(),
+                maybe_clip.map(|clip| clip.clip),
+            )
             && let Some(border_color) = maybe_border_color
         {
             let border_colors = [
@@ -714,6 +733,14 @@ pub fn extract_uinode_borders(
         if let Some(outline) = maybe_outline.filter(|outline| !outline.color.is_fully_transparent())
         {
             let outline_size = computed_node.outlined_node_size();
+            if !clipping::visible(
+                Affine2::from(*transform),
+                Vec2::ZERO,
+                outline_size,
+                maybe_clip.map(|clip| clip.clip),
+            ) {
+                continue;
+            }
             extracted_uinodes.uinodes.push(ExtractedUiNode {
                 z_order: stack_index.0 as f32 + stack_z_offsets::BORDER,
                 render_entity: commands.spawn(TemporaryRenderEntity).id(),
@@ -979,9 +1006,6 @@ pub fn extract_text_sections(
     text_styles: Extract<Query<&TextColor>>,
     camera_map: Extract<UiCameraMap>,
 ) {
-    let mut start = extracted_uinodes.glyphs.len();
-    let mut end = start + 1;
-
     let mut camera_mapper = camera_map.get_mapper();
     for (
         entity,
@@ -1030,6 +1054,7 @@ pub fn extract_text_sections(
             .map(|selected_text_color| selected_text_color.to_linear());
 
         let mut current_section_index = 0;
+        let mut start = extracted_uinodes.glyphs.len();
 
         for (
             i,
@@ -1054,48 +1079,52 @@ pub fn extract_text_sections(
                 current_section_index = *section_index;
             }
 
-            let color = if !atlas_info.is_alpha_mask {
-                LinearRgba::WHITE
-            } else if let Some(selected_text_color) = selected_text_color
-                && text_layout_info
-                    .selection_rects
-                    .iter()
-                    .any(|selection_rect| {
-                        let glyph_rect = Rect::from_center_size(*position, atlas_info.rect.size());
-                        selection_rect.contains(glyph_rect.min)
-                            && selection_rect.contains(glyph_rect.max)
-                    })
-            {
-                selected_text_color
-            } else {
-                color
-            };
+            if clipping::visible(transform, *position, atlas_info.rect.size(), clip) {
+                let color = if !atlas_info.is_alpha_mask {
+                    LinearRgba::WHITE
+                } else if let Some(selected_text_color) = selected_text_color
+                    && text_layout_info
+                        .selection_rects
+                        .iter()
+                        .any(|selection_rect| {
+                            let glyph_rect =
+                                Rect::from_center_size(*position, atlas_info.rect.size());
+                            selection_rect.contains(glyph_rect.min)
+                                && selection_rect.contains(glyph_rect.max)
+                        })
+                {
+                    selected_text_color
+                } else {
+                    color
+                };
 
-            extracted_uinodes.glyphs.push(ExtractedGlyph {
-                color,
-                translation: *position,
-                rect: atlas_info.rect,
-            });
+                extracted_uinodes.glyphs.push(ExtractedGlyph {
+                    color,
+                    translation: *position,
+                    rect: atlas_info.rect,
+                });
+            }
 
             if text_layout_info
                 .glyphs
                 .get(i + 1)
                 .is_none_or(|info| info.atlas_info.texture != atlas_info.texture)
             {
-                extracted_uinodes.uinodes.push(ExtractedUiNode {
-                    z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
-                    render_entity: commands.spawn(TemporaryRenderEntity).id(),
-                    image: atlas_info.texture,
-                    clip,
-                    extracted_camera_entity,
-                    item: ExtractedUiItem::Glyphs { range: start..end },
-                    main_entity: entity.into(),
-                    transform,
-                });
+                let end = extracted_uinodes.glyphs.len();
+                if start != end {
+                    extracted_uinodes.uinodes.push(ExtractedUiNode {
+                        z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
+                        render_entity: commands.spawn(TemporaryRenderEntity).id(),
+                        image: atlas_info.texture,
+                        clip,
+                        extracted_camera_entity,
+                        item: ExtractedUiItem::Glyphs { range: start..end },
+                        main_entity: entity.into(),
+                        transform,
+                    });
+                }
                 start = end;
             }
-
-            end += 1;
         }
     }
 }
@@ -1121,9 +1150,6 @@ pub fn extract_text_shadows(
     text_decoration_query: Extract<Query<(Has<Strikethrough>, Has<Underline>)>>,
     camera_map: Extract<UiCameraMap>,
 ) {
-    let mut start = extracted_uinodes.glyphs.len();
-    let mut end = start + 1;
-
     let mut camera_mapper = camera_map.get_mapper();
     for (
         entity,
@@ -1165,6 +1191,7 @@ pub fn extract_text_shadows(
             maybe_clip.map(|clip| clip.clip)
         };
 
+        let mut start = extracted_uinodes.glyphs.len();
         for (
             i,
             PositionedGlyph {
@@ -1175,30 +1202,33 @@ pub fn extract_text_shadows(
             },
         ) in text_layout_info.glyphs.iter().enumerate()
         {
-            extracted_uinodes.glyphs.push(ExtractedGlyph {
-                color: shadow.color.into(),
-                translation: *position,
-                rect: atlas_info.rect,
-            });
+            if clipping::visible(node_transform, *position, atlas_info.rect.size(), clip) {
+                extracted_uinodes.glyphs.push(ExtractedGlyph {
+                    color: shadow.color.into(),
+                    translation: *position,
+                    rect: atlas_info.rect,
+                });
+            }
 
             if text_layout_info.glyphs.get(i + 1).is_none_or(|info| {
                 info.section_index != *section_index
                     || info.atlas_info.texture != atlas_info.texture
             }) {
-                extracted_uinodes.uinodes.push(ExtractedUiNode {
-                    transform: node_transform,
-                    z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
-                    render_entity: commands.spawn(TemporaryRenderEntity).id(),
-                    image: atlas_info.texture,
-                    clip,
-                    extracted_camera_entity,
-                    item: ExtractedUiItem::Glyphs { range: start..end },
-                    main_entity: entity.into(),
-                });
+                let end = extracted_uinodes.glyphs.len();
+                if start != end {
+                    extracted_uinodes.uinodes.push(ExtractedUiNode {
+                        transform: node_transform,
+                        z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
+                        render_entity: commands.spawn(TemporaryRenderEntity).id(),
+                        image: atlas_info.texture,
+                        clip,
+                        extracted_camera_entity,
+                        item: ExtractedUiItem::Glyphs { range: start..end },
+                        main_entity: entity.into(),
+                    });
+                }
                 start = end;
             }
-
-            end += 1;
         }
 
         for run in text_layout_info.run_geometry.iter() {
@@ -1214,7 +1244,14 @@ pub fn extract_text_shadows(
                 continue;
             };
 
-            if has_strikethrough {
+            if has_strikethrough
+                && clipping::visible(
+                    node_transform,
+                    run.strikethrough_position(),
+                    run.strikethrough_size(),
+                    clip,
+                )
+            {
                 extracted_uinodes.uinodes.push(ExtractedUiNode {
                     z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
                     render_entity: commands.spawn(TemporaryRenderEntity).id(),
@@ -1240,7 +1277,14 @@ pub fn extract_text_shadows(
                 });
             }
 
-            if has_underline {
+            if has_underline
+                && clipping::visible(
+                    node_transform,
+                    run.underline_position(),
+                    run.underline_size(),
+                    clip,
+                )
+            {
                 extracted_uinodes.uinodes.push(ExtractedUiNode {
                     z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
                     render_entity: commands.spawn(TemporaryRenderEntity).id(),
@@ -1352,7 +1396,9 @@ pub fn extract_text_decorations(
                 continue;
             };
 
-            if let Some(text_background_color) = text_background_color {
+            if let Some(text_background_color) = text_background_color
+                && clipping::visible(transform, run.bounds.center(), run.bounds.size(), clip)
+            {
                 extracted_uinodes.uinodes.push(ExtractedUiNode {
                     z_order: stack_index.0 as f32 + stack_z_offsets::TEXT,
                     render_entity: commands.spawn(TemporaryRenderEntity).id(),
@@ -1377,7 +1423,14 @@ pub fn extract_text_decorations(
                 });
             }
 
-            if maybe_strikethrough.is_some() {
+            if maybe_strikethrough.is_some()
+                && clipping::visible(
+                    transform,
+                    run.strikethrough_position(),
+                    run.strikethrough_size(),
+                    clip,
+                )
+            {
                 let color = maybe_strikethrough_color
                     .map(|sc| sc.0)
                     .unwrap_or(text_color.0)
@@ -1407,7 +1460,14 @@ pub fn extract_text_decorations(
                 });
             }
 
-            if maybe_underline.is_some() {
+            if maybe_underline.is_some()
+                && clipping::visible(
+                    transform,
+                    run.underline_position(),
+                    run.underline_size(),
+                    clip,
+                )
+            {
                 let color = maybe_underline_color
                     .map(|uc| uc.0)
                     .unwrap_or(text_color.0)

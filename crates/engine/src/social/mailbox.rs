@@ -54,7 +54,7 @@ async fn route_on(
             .fetch_optional(&mut **tx)
             .await?
             .ok_or_else(|| invalid("This private mailbox route is unavailable or expired"))?;
-    let route: CertifiedRoute = serde_json::from_str(&row.get::<String, _>("body"))?;
+    let route: CertifiedRoute = serde_json::from_str(row.get::<&str, _>("body"))?;
     require_generation(tx, &route.control.owner_key, &route.control.generation).await?;
     Ok((route, row.get("state")))
 }
@@ -531,7 +531,7 @@ impl Engine {
                 );
                 for row in &rows {
                     let document: PrivateDelivery =
-                        serde_json::from_str(&row.get::<String, _>("body"))?;
+                        serde_json::from_str(row.get::<&str, _>("body"))?;
                     if require_generation(
                         &mut tx,
                         &document.envelope.sender_owner,
@@ -544,12 +544,11 @@ impl Engine {
                     }
                     let item =
                         json!({"document":document,"accepted_at":row.get::<i64, _>("created_at")});
-                    let length = serde_json::to_vec(&item)?.len();
+                    let length = nucleus::json::encoded_len(&item)?;
                     let total: usize = envelopes
                         .iter()
                         .map(|item: &Value| {
-                            serde_json::to_vec(item)
-                                .map_or(MAX_PRIVATE_FRAME_BYTES, |bytes| bytes.len())
+                            nucleus::json::encoded_len(item).unwrap_or(MAX_PRIVATE_FRAME_BYTES)
                         })
                         .sum();
                     if total + length + 2048 > MAX_PRIVATE_FRAME_BYTES {

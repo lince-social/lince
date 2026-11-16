@@ -1,5 +1,6 @@
 use super::*;
 use engine::location::clock::Instant;
+use serde::Deserialize;
 use std::{collections::HashMap, time::Duration};
 
 #[derive(Clone)]
@@ -37,6 +38,7 @@ pub(super) fn reset(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn maintain(world: &mut World) {
+    let _update = nucleus::performance::Span::new("map-live-feed-update");
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<MapSand>>()
         .iter(world)
@@ -49,7 +51,8 @@ pub(super) fn maintain(world: &mut World) {
         }
         let records = paging::records(world, owner);
         let sand = world.get::<MapSand>(owner).unwrap();
-        if records.is_empty() {
+        if records.clone().next().is_none() {
+            drop(records);
             world.entity_mut(owner).remove::<Feed>();
             world
                 .get_mut::<MapSand>(owner)
@@ -59,13 +62,16 @@ pub(super) fn maintain(world: &mut World) {
             continue;
         }
         let changed = world.get::<Feed>(owner).is_none_or(|feed| {
-            feed.records != records
+            !feed.records.iter().eq(records.clone())
                 || feed.person != sand.person
                 || feed.authority != sand.authority_node_id
         });
         if changed {
-            let (records, person, authority) =
-                (records, sand.person.clone(), sand.authority_node_id.clone());
+            let (records, person, authority) = (
+                records.cloned().collect(),
+                sand.person.clone(),
+                sand.authority_node_id.clone(),
+            );
             world.entity_mut(owner).insert(Feed {
                 pending: HashMap::new(),
                 next: Instant::now(),
@@ -79,6 +85,8 @@ pub(super) fn maintain(world: &mut World) {
                 .markers
                 .retain(|marker| !marker.live);
             world.get_mut::<MapSand>(owner).unwrap().live_offset = 0;
+        } else {
+            drop(records);
         }
         let now = Instant::now();
         let stale: Vec<_> = world
@@ -97,29 +105,30 @@ pub(super) fn maintain(world: &mut World) {
         if feed.next > now {
             continue;
         }
-        let pending = !feed.pending.is_empty();
-        let records = feed.records.clone();
+        if !feed.pending.is_empty() {
+            continue;
+        }
+        let record_count = feed.records.len();
+        let offset = world
+            .get::<MapSand>(owner)
+            .unwrap()
+            .live_offset
+            .min(record_count);
+        let records: Vec<_> = feed.records.iter().skip(offset).take(2).cloned().collect();
+        nucleus::performance::add("map-live-records-prepared", records.len() as u64);
         let person = feed.person.clone();
         let authority = world
             .get::<MapSand>(owner)
             .unwrap()
             .authority_node_id
             .clone();
-        if pending {
-            continue;
-        }
-        let offset = world
-            .get::<MapSand>(owner)
-            .unwrap()
-            .live_offset
-            .min(records.len());
-        let next_offset = (offset + 2).min(records.len());
-        let delay = if next_offset == records.len() {
+        let next_offset = (offset + 2).min(record_count);
+        let delay = if next_offset == record_count {
             Duration::from_secs(5)
         } else {
             Duration::from_millis(16)
         };
-        world.get_mut::<MapSand>(owner).unwrap().live_offset = if next_offset == records.len() {
+        world.get_mut::<MapSand>(owner).unwrap().live_offset = if next_offset == record_count {
             0
         } else {
             next_offset
@@ -128,7 +137,7 @@ pub(super) fn maintain(world: &mut World) {
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
             wake.after(delay);
         }
-        for record in records.into_iter().skip(offset).take(2) {
+        for record in records {
             if authority.is_some() && world.get::<MapSand>(owner).unwrap().invitation.is_none() {
                 request(
                     world,
@@ -242,8 +251,10 @@ pub(super) fn receive(
         .collect();
     for message in messages {
         let (id, result) = match message.0.as_ref() {
-            cell::ServerMessage::ActionOk { id, data, .. } => (id, Ok(data.clone().unwrap_or_default())),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
+            cell::ServerMessage::ActionOk { id, data, .. } => {
+                (id, Ok(data.as_ref().unwrap_or(&serde_json::Value::Null)))
+            }
+            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.as_str())),
             _ => continue,
         };
         let owner = world
@@ -256,6 +267,8 @@ pub(super) fn receive(
         else {
             continue;
         };
+        let _reply = nucleus::performance::Span::new("map-live-reply-application");
+        nucleus::performance::add("map-live-replies-accepted", 1);
         clear(world, owner, &record, kind);
         let Ok(data) = result else {
             if matches!(kind, Kind::Save) {
@@ -266,9 +279,7 @@ pub(super) fn receive(
         };
         match kind {
             Kind::Saved => {
-                if let Ok(location) =
-                    serde_json::from_value::<nucleus::vocabulary::SavedLocation>(data)
-                {
+                if let Ok(location) = nucleus::vocabulary::SavedLocation::deserialize(data) {
                     if location.record_uid == record
                         && let Some(selected) = location.selected
                     {
@@ -298,8 +309,7 @@ pub(super) fn receive(
                 }
             }
             Kind::Context => {
-                if let Ok(mut context) = serde_json::from_value::<nucleus::location::Context>(data)
-                {
+                if let Ok(mut context) = nucleus::location::Context::deserialize(data) {
                     context
                         .view
                         .elapse(sent.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
@@ -324,7 +334,7 @@ pub(super) fn receive(
                 }
             }
             Kind::Live => {
-                if let Ok(mut view) = serde_json::from_value::<nucleus::location::View>(data) {
+                if let Ok(mut view) = nucleus::location::View::deserialize(data) {
                     view.elapse(sent.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
                     add_live(world, owner, &record, view);
                 }
@@ -372,9 +382,9 @@ fn add_live(world: &mut World, owner: Entity, record: &str, view: nucleus::locat
                 record: record.into(),
                 coordinate,
                 live: true,
-                view: Some(view.clone()),
-                observed: Instant::now(),
                 radius_metres: view.radius_metres,
+                view: Some(view),
+                observed: Instant::now(),
             });
     }
 }

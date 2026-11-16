@@ -27,7 +27,8 @@ pub struct OrganCastle {
     nearby: Entity,
     devices: Entity,
     selected: Option<String>,
-    rows: HashMap<&'static str, Vec<Value>>,
+    rows: HashMap<&'static str, Arc<Vec<Value>>>,
+    ids: [String; TOPICS.len()],
 }
 
 #[derive(Resource, Default)]
@@ -348,6 +349,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         devices,
         selected: None,
         rows: HashMap::new(),
+        ids: TOPICS.map(|topic| subscription(sand, topic)),
     });
     ui::devices(world, sand);
     sand
@@ -406,12 +408,10 @@ impl Action for Command {
             }
             Self::Reload => ui::detail(world, owner),
             Self::Reconnect => {
+                let ids = view.ids.clone();
                 world.init_resource::<Requests>();
-                for topic in TOPICS {
-                    world
-                        .resource_mut::<Requests>()
-                        .subscriptions
-                        .remove(&subscription(owner, topic));
+                for id in ids {
+                    world.resource_mut::<Requests>().subscriptions.remove(&id);
                 }
             }
             Self::Open(uid, remote) => {
@@ -452,12 +452,13 @@ fn open_live(world: &mut World, root: Entity, uid: &str) -> Option<Entity> {
     let mut config = crate::native::protein_area::Config::records();
     config.source = crate::native::protein_area::Source::Organ(uid.into());
     config.draft.name = "Live Organ Records".into();
-    config.draft.query = json!({"source":"record","where":[],"order":[{"asc":"head"}],"limit":100});
+    config.draft.query = json!({"source":"record","where":[],"order":[{"asc":"head"}],"limit":100}).into();
     area.protein = Some(config);
     crate::native::area::spawn_area(world, root, workspace, area)
 }
 
 fn subscription(owner: Entity, topic: &str) -> String {
+    nucleus::performance::add("organ-subscription-identities-prepared", 1);
     format!("organ-castle-{}-{topic}", owner.to_bits())
 }
 
@@ -679,29 +680,32 @@ fn receive(world: &mut World, message: &ServerMessage) {
             let owners: Vec<_> = world
                 .query::<(Entity, &OrganCastle)>()
                 .iter(world)
-                .map(|(owner, view)| (owner, view.status))
+                .filter(|(_, view)| {
+                    id == crate::native::cell_bridge::CONNECTION || view.ids.contains(id)
+                })
+                .map(|(_, view)| view.status)
                 .collect();
-            for (owner, status) in owners {
-                if id == crate::native::cell_bridge::CONNECTION
-                    || TOPICS.iter().any(|topic| *id == subscription(owner, topic))
-                {
-                    panel::status(world, status, message);
-                }
+            for status in owners {
+                panel::status(world, status, message);
             }
         }
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
             let owners: Vec<_> = world
-                .query_filtered::<Entity, With<OrganCastle>>()
+                .query::<(Entity, &OrganCastle)>()
                 .iter(world)
+                .filter_map(|(owner, view)| {
+                    view.ids
+                        .iter()
+                        .position(|candidate| candidate == id)
+                        .map(|index| (owner, TOPICS[index]))
+                })
                 .collect();
-            for owner in owners {
-                for topic in TOPICS {
-                    if *id != subscription(owner, topic) {
-                        continue;
-                    }
-                    let mut view = world.get_mut::<OrganCastle>(owner).unwrap();
-                    let changed = view.rows.get(topic) != Some(rows);
-                    let local_roster_changed = view.rows.get(topic).is_none_or(|previous| {
+            for (owner, topic) in owners {
+                let mut view = world.get_mut::<OrganCastle>(owner).unwrap();
+                let changed = view.rows.get(topic) != Some(rows);
+                let local_roster_changed = topic == "roster"
+                    && changed
+                    && view.rows.get(topic).is_none_or(|previous| {
                         previous
                             .iter()
                             .find(|row| row["slug"] == "local-organ")
@@ -711,28 +715,27 @@ fn receive(world: &mut World, message: &ServerMessage) {
                                 .find(|row| row["slug"] == "local-organ")
                                 .map(|row| &row["extension"])
                     });
-                    view.rows.insert(topic, rows.clone());
-                    let status = view.status;
-                    panel::status(
-                        world,
-                        status,
-                        "Connected · drafts change only when you select or reload an Organ",
-                    );
-                    if !changed {
-                        continue;
-                    }
-                    match topic {
-                        "organs" => ui::organ_list(world, owner),
-                        "nearby" => ui::nearby(world, owner),
-                        "roster" => {
-                            if local_roster_changed {
-                                ui::devices(world, owner);
-                            }
-                            ui::pairings(world, owner);
+                view.rows.insert(topic, rows.clone());
+                let status = view.status;
+                panel::status(
+                    world,
+                    status,
+                    "Connected · drafts change only when you select or reload an Organ",
+                );
+                if !changed {
+                    continue;
+                }
+                match topic {
+                    "organs" => ui::organ_list(world, owner),
+                    "nearby" => ui::nearby(world, owner),
+                    "roster" => {
+                        if local_roster_changed {
+                            ui::devices(world, owner);
                         }
-                        "pairing" => ui::pairings(world, owner),
-                        _ => {}
+                        ui::pairings(world, owner);
                     }
+                    "pairing" => ui::pairings(world, owner),
+                    _ => {}
                 }
             }
         }
@@ -740,32 +743,32 @@ fn receive(world: &mut World, message: &ServerMessage) {
     }
 }
 
-fn update(
-    world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
-) {
-    social::poll_media(world);
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
-        .map(|m| m.0.clone())
-        .collect();
-    for message in messages {
-        receive(world, &message);
-    }
+fn maintain_subscriptions(world: &mut World) {
+    let _maintenance = nucleus::performance::Span::new("organ-subscription-maintenance");
     let owners: Vec<_> = world
         .query_filtered::<Entity, With<OrganCastle>>()
         .iter(world)
         .collect();
-    let active: HashSet<_> = owners
-        .iter()
-        .flat_map(|owner| TOPICS.map(|topic| subscription(*owner, topic)))
-        .collect();
-    let stale: Vec<_> = world
-        .resource::<Requests>()
-        .subscriptions
-        .difference(&active)
-        .cloned()
-        .collect();
+    let stale: Vec<_> = {
+        let active: HashSet<_> = owners
+            .iter()
+            .flat_map(|owner| {
+                world
+                    .get::<OrganCastle>(*owner)
+                    .unwrap()
+                    .ids
+                    .iter()
+                    .map(String::as_str)
+            })
+            .collect();
+        world
+            .resource::<Requests>()
+            .subscriptions
+            .iter()
+            .filter(|id| !active.contains(id.as_str()))
+            .cloned()
+            .collect()
+    };
     for id in stale {
         if world
             .resource::<Requests>()
@@ -783,11 +786,12 @@ fn update(
         }
     }
     for owner in owners {
-        for topic in TOPICS {
-            let id = subscription(owner, topic);
-            if !world.resource::<Requests>().subscriptions.contains(&id)
+        for (index, topic) in TOPICS.into_iter().enumerate() {
+            let id = &world.get::<OrganCastle>(owner).unwrap().ids[index];
+            if !world.resource::<Requests>().subscriptions.contains(id)
                 && !crate::native::laboratory::blocked(world, owner)
             {
+                let id = id.clone();
                 if crate::native::practice_cells::send(
                     world,
                     owner,
@@ -809,6 +813,21 @@ fn update(
             }
         }
     }
+}
+
+fn update(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+) {
+    social::poll_media(world);
+    let messages: Vec<_> = cursor
+        .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
+        .map(|m| m.0.clone())
+        .collect();
+    for message in messages {
+        receive(world, &message);
+    }
+    maintain_subscriptions(world);
     let expired: Vec<_> = world
         .resource::<Requests>()
         .actions

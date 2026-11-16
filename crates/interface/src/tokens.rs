@@ -94,6 +94,16 @@ macro_rules! tokens {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
         #[repr(usize)]
         pub enum Token { $($id,)* }
+        impl Token {
+            /// Stable identifier used by serialized overrides and authoring.
+            pub const fn identifier(self) -> &'static str {
+                match self { $(Self::$id => stringify!($id),)* }
+            }
+
+            pub fn from_identifier(name: &str) -> Option<Self> {
+                match name { $(stringify!($id) => Some(Self::$id),)* _ => None }
+            }
+        }
         pub static TOKENS: &[TokenDefinition] = &[
             $(TokenDefinition { token: Token::$id, name: $name, dark: $dark, light: $light, range: $range },)*
         ];

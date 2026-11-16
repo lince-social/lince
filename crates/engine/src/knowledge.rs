@@ -159,7 +159,7 @@ impl Engine {
                             results.push(result);
                         }
                         let data = json!({"sources":results});
-                        if serde_json::to_vec(&data)?.len() > nucleus::knowledge::ITEM_LIMIT {
+                        if nucleus::json::encoded_len(&data)? > nucleus::knowledge::ITEM_LIMIT {
                             return Err(invalid("Knowledge search results exceed 4 MiB"));
                         }
                         Ok(data)

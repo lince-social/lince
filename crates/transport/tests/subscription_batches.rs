@@ -80,8 +80,12 @@ fn rows(messages: Vec<ServerMessage>, snapshot: bool) -> BTreeMap<String, Vec<Va
     messages
         .into_iter()
         .map(|message| match message {
-            ServerMessage::Snapshot { id, rows } if snapshot => (id, rows),
-            ServerMessage::Update { id, rows } if !snapshot => (id, rows),
+            ServerMessage::Snapshot { id, rows } if snapshot => {
+                (id, std::sync::Arc::unwrap_or_clone(rows))
+            }
+            ServerMessage::Update { id, rows } if !snapshot => {
+                (id, std::sync::Arc::unwrap_or_clone(rows))
+            }
             other => panic!("Unexpected subscription response: {other:?}"),
         })
         .collect()

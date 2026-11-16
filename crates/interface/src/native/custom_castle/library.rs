@@ -1,3 +1,4 @@
+use std::sync::Arc;
 mod packages;
 #[cfg(test)]
 mod tests;
@@ -57,7 +58,7 @@ fn decode(row: &Value) -> Result<CustomCastle, String> {
         }
         document
             .component
-            .validate(&crate::native::canvas_host::registry(), false)?;
+            .validate(&crate::native::canvas_host::shared_registry(), false)?;
         return Ok(CustomCastle {
             name: row["head"].as_str().unwrap_or(&document.name).into(),
             canvas_component: Some(document.component),
@@ -107,8 +108,8 @@ struct Library {
     contacts_id: String,
     list_id: String,
     detail_id: Option<String>,
-    contacts: Vec<Value>,
-    entries: Vec<Value>,
+    contacts: Arc<Vec<Value>>,
+    entries: Arc<Vec<Value>>,
     selected: Option<String>,
     castle: Option<CustomCastle>,
     name: String,
@@ -130,8 +131,8 @@ impl Default for Library {
             contacts_id: nucleus::new_uid("component-organs"),
             list_id: nucleus::new_uid("components"),
             detail_id: None,
-            contacts: Vec::new(),
-            entries: Vec::new(),
+            contacts: Arc::default(),
+            entries: Arc::default(),
             selected: None,
             castle: None,
             name: String::new(),
@@ -237,7 +238,7 @@ fn connect(world: &mut World, root: Entity, organ: Option<String>) -> Result<(),
     library.detail_id = None;
     library.selected = None;
     library.castle = None;
-    library.entries.clear();
+    library.entries = Arc::default();
     library.name.clear();
     library.status = "Connecting…".into();
     library.dirty = true;
@@ -491,7 +492,7 @@ fn receive(world: &mut World, root: Entity, message: &ServerMessage) {
             if id == "connection" || id == crate::native::cell_bridge::CONNECTION {
                 library.connected = false;
                 library.login = false;
-                library.entries.clear();
+                library.entries = Arc::default();
                 library.castle = None;
             }
         }

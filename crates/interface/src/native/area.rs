@@ -456,8 +456,14 @@ fn polygon_contains(points: &[[f64; 2]], point: DVec2) -> bool {
     inside
 }
 
-#[derive(Component, Clone, Debug, PartialEq)]
-pub struct RecordProperties(pub serde_json::Value);
+#[derive(Component, Clone, Debug)]
+pub struct RecordProperties(pub std::sync::Arc<serde_json::Value>);
+
+impl PartialEq for RecordProperties {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.0, &other.0) || self.0 == other.0
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AreaForce {
@@ -686,7 +692,7 @@ pub(crate) mod tests {
             assert_eq!(area.strength, 0.0);
             assert!(area.rules.is_empty());
             assert_eq!(area.changes, Default::default());
-            let record = RecordProperties(json!({"quantity": -3}));
+            let record = RecordProperties(json!({"quantity": -3}).into());
             let point = DVec2::new(10.0, 0.0);
             assert_eq!(area.force(point, &record), DVec2::ZERO);
             area.rules.push(PropertyRule {
@@ -766,8 +772,9 @@ pub(crate) mod tests {
 
     #[cfg_attr(test, test)]
     fn properties_and_direction_produce_finite_forces_only_inside() {
-        let record =
-            RecordProperties(json!({"uid":"r_test", "head":"Work", "quantity":-3, "slug":null}));
+        let record = RecordProperties(
+            json!({"uid":"r_test", "head":"Work", "quantity":-3, "slug":null}).into(),
+        );
         let mut area = area();
         assert_eq!(
             area.force(DVec2::new(50.0, 0.0), &record),
@@ -804,7 +811,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn reach_expands_the_perimeter_without_changing_local_membership() {
         let mut area = area();
-        let record = RecordProperties(json!({"quantity": -3}));
+        let record = RecordProperties(json!({"quantity": -3}).into());
         let outside = DVec2::new(125.0, 0.0);
         assert!(!area.reaches(outside));
         area.reach.radius = 25.0;
@@ -824,7 +831,7 @@ pub(crate) mod tests {
         assert!(area.reaches(DVec2::new(1e8, -1e8)));
         assert!(!area.reaches(DVec2::NAN));
         assert_eq!(
-            area.force(outside, &RecordProperties(json!({"quantity": -2}))),
+            area.force(outside, &RecordProperties(json!({"quantity": -2}).into())),
             DVec2::ZERO
         );
         let restored: InfluenceArea =
@@ -882,7 +889,7 @@ pub(crate) mod tests {
                             position: DVec2::new(20_000.0, 0.0),
                             size: Vec2::splat(20.0),
                         },
-                        RecordProperties(json!({"quantity": -3})),
+                        RecordProperties(json!({"quantity": -3}).into()),
                         ChildOf(parent),
                         WorkspaceMember(workspace),
                     ))
@@ -975,7 +982,7 @@ pub(crate) mod tests {
                     position,
                     size: Vec2::splat(20.0),
                 },
-                RecordProperties(json!({"quantity":-3})),
+                RecordProperties(json!({"quantity":-3}).into()),
                 ChildOf(root),
                 WorkspaceMember(1),
             ))
@@ -1010,7 +1017,7 @@ pub(crate) mod tests {
         assert_eq!(app.world().get::<AreaForces>(sand).unwrap().0.len(), 2);
         app.world_mut()
             .entity_mut(sand)
-            .insert(RecordProperties(json!({"quantity":-2})));
+            .insert(RecordProperties(json!({"quantity":-2}).into()));
         app.update();
         assert_eq!(
             app.world().get::<AreaForces>(sand).unwrap().total(),
@@ -1018,7 +1025,7 @@ pub(crate) mod tests {
         );
         app.world_mut()
             .entity_mut(sand)
-            .insert(RecordProperties(json!({"quantity":-3})));
+            .insert(RecordProperties(json!({"quantity":-3}).into()));
         app.world_mut().get_mut::<Workspaces>(root).unwrap().active = 2;
         app.update();
         assert_eq!(

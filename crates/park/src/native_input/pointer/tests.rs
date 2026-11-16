@@ -1,11 +1,28 @@
 use super::*;
 
 fn node(entity: Entity, blocks: bool) -> Geometry {
-    Geometry { entity, output: OutputId(1), bounds: Some(Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap()), image: Handle::<Image>::default().id(),
-        lineage: vec![entity], actions: Vec::new(), owner: None, modal: None, eligible: true, blocks,
-        node: ComputedNode { size: Vec2::splat(100.0), inverse_scale_factor: 1.0, ..default() },
-        transform: UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(50.0))), clip: None,
-        projection: Projection::Final(RasterMapping::default()) }
+    Geometry {
+        entity,
+        output: OutputId(1),
+        bounds: Some(Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap()),
+        image: Handle::<Image>::default().id(),
+        lineage: vec![entity],
+        actions: Vec::new(),
+        owner: None,
+        modal: None,
+        eligible: true,
+        blocks,
+        node: ComputedNode {
+            size: Vec2::splat(100.0),
+            inverse_scale_factor: 1.0,
+            ..default()
+        },
+        transform: UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(
+            50.0,
+        ))),
+        clip: None,
+        projection: Arc::new(Projection::Final(RasterMapping::default())),
+    }
 }
 
 #[test]
@@ -80,7 +97,10 @@ fn queued_hits_survive_clip_changes_only_while_the_original_recipient_and_mappin
 fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source_geometry() {
     let entity = World::new().spawn_empty().id();
     let mut target = node(entity, true);
-    target.projection = Projection::Final(RasterMapping { origin: [1000.0, 50.0], scale: [2.0; 2] });
+    target.projection = Arc::new(Projection::Final(RasterMapping {
+        origin: [1000.0, 50.0],
+        scale: [2.0; 2],
+    }));
     target.bounds = Some(Rectangle::new([1000.0, 50.0], [400.0, 300.0]).unwrap());
     assert!(target.hit([1025.0, 75.0]));
     assert!(!target.hit([25.0, 25.0]));
@@ -89,13 +109,24 @@ fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source
     target.transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(Vec2::ONE, std::f32::consts::FRAC_PI_4, Vec2::splat(50.0)));
     assert!(target.hit([1025.0, 75.0]));
     assert!(!target.hit([1001.0, 51.0]));
-    target.transform = UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(50.0)));
+    target.transform =
+        UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(50.0)));
     target.clip = None;
-    target.projection = Projection::Sand { owner: entity, pixels: UVec2::splat(200), item: ItemGeometry {
-        id: ItemId::Native([1; 16]), output: OutputId(1), floating: true, clip: None,
-        mapping: lince_interface::host::ContentMapping { canvas: Rectangle::new([1000.0, 50.0], [400.0, 300.0]).unwrap(),
-            surface: Rectangle::new([0.0; 2], [200.0; 2]).unwrap(), corners: None },
-    } };
+    target.projection = Arc::new(Projection::Sand {
+        owner: entity,
+        pixels: UVec2::splat(200),
+        item: ItemGeometry {
+            id: ItemId::Native([1; 16]),
+            output: OutputId(1),
+            floating: true,
+            clip: None,
+            mapping: lince_interface::host::ContentMapping {
+                canvas: Rectangle::new([1000.0, 50.0], [400.0, 300.0]).unwrap(),
+                surface: Rectangle::new([0.0; 2], [200.0; 2]).unwrap(),
+                corners: None,
+            },
+        },
+    });
     assert!(target.hit([1100.0, 125.0]));
     assert!(!target.hit([1300.0, 275.0]));
     assert!(!target.hit([f64::NAN, 0.0]));

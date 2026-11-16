@@ -8,6 +8,7 @@ use crate::native::{
     workspace::{WorkspaceMember, Workspaces},
 };
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
+use std::borrow::Cow;
 
 mod export;
 mod sections;
@@ -153,105 +154,133 @@ struct OverrideSummary {
     root: Entity,
     scope: Scope,
     token: Token,
+    observed: OverrideLayers,
 }
 
 #[derive(Component)]
 struct InvalidValue;
 
-fn overwrites(world: &World, root: Entity, scope: Scope, token: Token) -> String {
-    let settings = world.resource::<ThemeSettings>();
-    let mut layers = vec![format!(
-        "{} {}",
-        settings.scheme.name(),
-        token.default_value(settings.scheme).display()
-    )];
-    if let Some(value) = settings.global.0.get(&token) {
-        layers.push(format!("All Sands {}", value.display()));
-    }
-    for (kind, overrides) in &settings.kinds {
-        if let Some(value) = overrides.0.get(&token) {
-            layers.push(format!("{} {}", kind.name(), value.display()));
-        }
-    }
-    if matches!(token, Token::CanvasBackground | Token::CanvasGrid)
-        && let Some(spaces) = world.get::<Workspaces>(root)
-    {
-        let index = usize::from(token == Token::CanvasGrid);
-        for space in &spaces.entries {
-            if space.color_overrides[index] {
-                let [r, g, b] = if index == 0 {
-                    space.colors.background
-                } else {
-                    space.colors.grid
-                };
-                layers.push(format!(
-                    "{} {}",
-                    space.name,
-                    TokenValue::Color([r, g, b, 255]).display()
-                ));
+struct OverrideCatalog<'a> {
+    scheme: ColorScheme,
+    layers: Vec<(Cow<'static, str>, Cow<'a, TokenOverrides>)>,
+}
+
+type OverrideLayers = Vec<(Cow<'static, str>, TokenValue)>;
+
+impl<'a> OverrideCatalog<'a> {
+    fn capture(world: &'a World, root: Entity) -> Self {
+        let settings = world.resource::<ThemeSettings>();
+        let mut layers = vec![("All Sands".into(), Cow::Borrowed(&settings.global))];
+        for (kind, overrides) in &settings.kinds {
+            if !overrides.0.is_empty() {
+                layers.push((kind.name().into(), Cow::Borrowed(overrides)));
             }
         }
-    }
-    let active = world.get::<Workspaces>(root).map(|spaces| spaces.active);
-    let mut sands = world
-        .get::<Children>(root)
-        .map(|children| {
-            children
-                .iter()
-                .filter(|entity| {
-                    world
-                        .get::<WorkspaceMember>(*entity)
-                        .is_some_and(|member| Some(member.0) == active)
-                        && token_style::kind(world, *entity).is_some()
-                })
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    sands.sort();
-    for (index, entity) in sands.into_iter().enumerate() {
-        if let Some(value) = token_style::overrides(world, entity).0.get(&token) {
-            layers.push(format!(
-                "{} {} {}",
-                token_style::kind(world, entity).unwrap().name(),
-                index + 1,
-                value.display()
-            ));
-        }
-        if let Some(children) = world.get::<Children>(entity) {
-            for (block, child) in children
-                .iter()
-                .filter(|child| {
-                    world
-                        .get::<crate::native::sand_text::SandText>(*child)
-                        .is_some()
-                })
-                .enumerate()
-            {
-                if let Some(value) = token_style::overrides(world, child).0.get(&token) {
-                    layers.push(format!(
-                        "Text {}.{} {}",
-                        index + 1,
-                        block + 1,
-                        value.display()
-                    ));
+        if let Some(spaces) = world.get::<Workspaces>(root) {
+            for space in &spaces.entries {
+                let mut overrides = TokenOverrides::default();
+                for (index, token, color) in [
+                    (0, Token::CanvasBackground, space.colors.background),
+                    (1, Token::CanvasGrid, space.colors.grid),
+                ] {
+                    if space.color_overrides[index] {
+                        let [r, g, b] = color;
+                        overrides.0.insert(token, TokenValue::Color([r, g, b, 255]));
+                    }
+                }
+                if !overrides.0.is_empty() {
+                    layers.push((space.name.clone().into(), Cow::Owned(overrides)));
                 }
             }
         }
-    }
-    if scope != Scope::All {
-        let (current, source) = value(world, scope, token);
-        if source == "This Sand"
-            && matches!(scope, Scope::Sand(entity) if world.get::<crate::native::fiote::Fiote>(entity).is_some())
-        {
-            layers.push(format!("This Fiote: {}", current.display()));
+        let active = world.get::<Workspaces>(root).map(|spaces| spaces.active);
+        let mut sands: Vec<_> = world
+            .get::<Children>(root)
+            .into_iter()
+            .flat_map(|children| children.iter())
+            .filter(|entity| {
+                world
+                    .get::<WorkspaceMember>(*entity)
+                    .is_some_and(|member| Some(member.0) == active)
+            })
+            .filter_map(|entity| token_style::kind(world, entity).map(|kind| (entity, kind)))
+            .collect();
+        sands.sort_by_key(|(entity, _)| *entity);
+        for (index, (entity, kind)) in sands.into_iter().enumerate() {
+            if let Some(overrides) = token_style::overrides_ref(world, entity)
+                .filter(|overrides| !overrides.0.is_empty())
+            {
+                layers.push((
+                    format!("{} {}", kind.name(), index + 1).into(),
+                    Cow::Borrowed(overrides),
+                ));
+            }
+            if let Some(children) = world.get::<Children>(entity) {
+                for (block, child) in children
+                    .iter()
+                    .filter(|child| {
+                        world
+                            .get::<crate::native::sand_text::SandText>(*child)
+                            .is_some()
+                    })
+                    .enumerate()
+                {
+                    if let Some(overrides) = token_style::overrides_ref(world, child)
+                        .filter(|overrides| !overrides.0.is_empty())
+                    {
+                        layers.push((
+                            format!("Text {}.{}", index + 1, block + 1).into(),
+                            Cow::Borrowed(overrides),
+                        ));
+                    }
+                }
+            }
         }
-        if matches!(source, "Default" | "Parent Sand")
-            || (source == "Theme" && current != token.default_value(settings.scheme))
-        {
-            layers.push(format!("{source}: {}", current.display()));
+        Self {
+            scheme: settings.scheme,
+            layers,
         }
     }
-    layers.join(" · ")
+
+    fn into_owned(self) -> OverrideCatalog<'static> {
+        OverrideCatalog {
+            scheme: self.scheme,
+            layers: self
+                .layers
+                .into_iter()
+                .map(|(label, overrides)| (label, Cow::Owned(overrides.into_owned())))
+                .collect(),
+        }
+    }
+
+    fn summary(&self, world: &World, scope: Scope, token: Token) -> OverrideLayers {
+        let mut layers = vec![(self.scheme.name().into(), token.default_value(self.scheme))];
+        layers.extend(self.layers.iter().filter_map(|(label, overrides)| {
+            overrides.0.get(&token).map(|value| (label.clone(), *value))
+        }));
+        if scope != Scope::All {
+            let (current, source) = value(world, scope, token);
+            if source == "This Sand"
+                && matches!(scope, Scope::Sand(entity) if world.get::<crate::native::fiote::Fiote>(entity).is_some())
+            {
+                layers.push(("This Fiote:".into(), current));
+            }
+            if matches!(source, "Default" | "Parent Sand")
+                || (source == "Theme" && current != token.default_value(self.scheme))
+            {
+                layers.push((format!("{source}:").into(), current));
+            }
+        }
+        layers
+    }
+}
+
+fn format_overrides(layers: &OverrideLayers) -> String {
+    layers
+        .iter()
+        .map(|(label, value)| format!("{label} {}", value.display()))
+        .collect::<Vec<_>>()
+        .join(" · ")
 }
 
 fn edit(world: &mut World, scope: Scope, token: Token, value: Option<TokenValue>) {
@@ -420,7 +449,7 @@ fn row(world: &mut World, parent: Entity) -> Entity {
         .id()
 }
 
-fn pattern_control(world: &mut World, root: Entity, panel: Entity) {
+fn pattern_control(world: &mut World, root: Entity, panel: Entity, overrides: &OverrideCatalog<'_>) {
     let heading = row(world, panel);
     world.get_mut::<Node>(heading).unwrap().justify_content = JustifyContent::SpaceBetween;
     label(world, heading, "Pattern", 16.0);
@@ -431,16 +460,13 @@ fn pattern_control(world: &mut World, root: Entity, panel: Entity) {
         CustomizationAction::ResetPattern,
         "Reset",
     );
-    let status = label(
-        world,
-        panel,
-        &overwrites(world, root, Scope::All, Token::CanvasPattern),
-        12.0,
-    );
+    let observed = overrides.summary(world, Scope::All, Token::CanvasPattern);
+    let status = label(world, panel, &format_overrides(&observed), 12.0);
     world.entity_mut(status).insert(OverrideSummary {
         root,
         scope: Scope::All,
         token: Token::CanvasPattern,
+        observed,
     });
     let value = world
         .resource::<ThemeSettings>()
@@ -681,8 +707,9 @@ fn render_theme(world: &mut World, root: Entity, panel: Entity) {
     if crate::native::protein_area::presentation::panel(world, root, panel) {
         return;
     }
+    let overrides = OverrideCatalog::capture(world, root).into_owned();
     if scope == Scope::All {
-        pattern_control(world, root, panel);
+        pattern_control(world, root, panel, &overrides);
     }
     let groups = [
         sections::accordion(world, root, panel, "colors", "Colors"),
@@ -729,10 +756,11 @@ fn render_theme(world: &mut World, root: Entity, panel: Entity) {
             .id();
         label(world, group, definition.name, 16.0);
         let (current, _) = value(world, scope, token);
-        let status = label(world, group, &overwrites(world, root, scope, token), 12.0);
+        let observed = overrides.summary(world, scope, token);
+        let status = label(world, group, &format_overrides(&observed), 12.0);
         world
             .entity_mut(status)
-            .insert(OverrideSummary { root, scope, token });
+            .insert(OverrideSummary { root, scope, token, observed });
         let fields = row(world, group);
         if let TokenValue::Color(rgba) = current {
             world.get_mut::<Node>(fields).unwrap().width = percent(100);
@@ -850,16 +878,23 @@ fn preview_value(world: &mut World, entity: Entity, token: Token, value: TokenVa
 
 pub(crate) fn autosave(world: &mut World) {
     export::poll(world);
+    if !world
+        .query::<&EditMode>()
+        .iter(world)
+        .any(|mode| mode.enabled)
+    {
+        return;
+    }
     let edits: Vec<_> = world
         .query::<(Entity, &EditableText, &TokenField)>()
         .iter(world)
         .filter(|(_, text, field)| {
             !text.is_composing()
                 && text.pending_paste.is_none()
-                && text.value().to_string() != field.observed
                 && world
                     .get::<EditMode>(field.root)
                     .is_some_and(|mode| mode.enabled)
+                && text.value() != field.observed.as_str()
         })
         .map(|(entity, text, field)| {
             (
@@ -881,28 +916,43 @@ pub(crate) fn autosave(world: &mut World) {
             preview_value(world, preview, token, parsed);
         } else {
             world.entity_mut(status).insert(InvalidValue);
+            if let Some(mut summary) = world.get_mut::<OverrideSummary>(status) {
+                summary.observed.clear();
+            }
             world.get_mut::<Text>(status).unwrap().0 = match token.definition().range {
                 Some((min, max)) => format!("{min}–{max}"),
                 None => "Invalid color".into(),
             };
         }
     }
-    let summaries: Vec<_> = world
-        .query_filtered::<(Entity, &OverrideSummary), Without<InvalidValue>>()
-        .iter(world)
-        .map(|(entity, summary)| {
-            (
-                entity,
-                overwrites(world, summary.root, summary.scope, summary.token),
-            )
+    let mut catalogs = bevy::ecs::entity::EntityHashMap::default();
+    let mut summary_query =
+        world.query_filtered::<(Entity, &OverrideSummary), Without<InvalidValue>>();
+    let read_world: &World = world;
+    let summaries: Vec<_> = summary_query
+        .iter(read_world)
+        .filter(|(_, summary)| {
+            read_world
+                .get::<EditMode>(summary.root)
+                .is_some_and(|mode| mode.enabled)
+        })
+        .filter_map(|(entity, summary)| {
+            let catalog = catalogs
+                .entry(summary.root)
+                .or_insert_with(|| OverrideCatalog::capture(read_world, summary.root));
+            let layers = catalog.summary(read_world, summary.scope, summary.token);
+            (layers != summary.observed).then_some((entity, layers))
         })
         .collect();
-    for (entity, value) in summaries {
+    drop(catalogs);
+    for (entity, layers) in summaries {
+        let value = format_overrides(&layers);
         if let Some(mut text) = world.get_mut::<Text>(entity)
             && text.0 != value
         {
             text.0 = value;
         }
+        world.get_mut::<OverrideSummary>(entity).unwrap().observed = layers;
     }
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
@@ -911,24 +961,28 @@ pub(crate) fn autosave(world: &mut World) {
         .query::<(Entity, &EditableText, &TokenField)>()
         .iter(world)
         .filter(|(entity, text, field)| {
-            Some(*entity) != focus
+            world
+                .get::<EditMode>(field.root)
+                .is_some_and(|mode| mode.enabled)
+                && Some(*entity) != focus
                 && !text.is_composing()
                 && text.pending_paste.is_none()
                 && world.get::<InvalidValue>(field.status).is_none()
-                && text.value().to_string() == field.observed
+                && text.value() == field.observed.as_str()
         })
         .filter_map(|(entity, _, field)| {
             let current = value(world, field.scope, field.token).0;
-            (current.display() != field.observed).then_some((
+            let display = current.display();
+            (display != field.observed).then_some((
                 entity,
                 current,
+                display,
                 field.token,
                 field.preview,
             ))
         })
         .collect();
-    for (entity, current, token, preview) in updates {
-        let value = current.display();
+    for (entity, current, value, token, preview) in updates {
         world
             .get_mut::<EditableText>(entity)
             .unwrap()
@@ -1360,7 +1414,9 @@ pub(crate) mod tests {
         assert_eq!(colors.background, [1, 2, 3]);
         assert_eq!(colors.grid, [210, 214, 222]);
         assert!(
-            overwrites(app.world(), root, Scope::All, Token::CanvasBackground).contains("#010203")
+            format_overrides(&OverrideCatalog::capture(app.world(), root).summary(
+                app.world(), Scope::All, Token::CanvasBackground,
+            )).contains("#010203")
         );
         edit(
             app.world_mut(),

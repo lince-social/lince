@@ -223,6 +223,17 @@ pub async fn participants(
     }
 }
 
+pub async fn is_participant(
+    pool: &SqlitePool,
+    conversation_uid: &str,
+    person_uid: &str,
+) -> Result<bool, StoreError> {
+    match crate::vocabulary::feature_read(pool, "participant").await? {
+        Some(kind) => assertions::object_exists(pool, conversation_uid, &kind, Some(person_uid)).await,
+        None => Ok(false),
+    }
+}
+
 pub async fn conversations_by_tag(
     pool: &SqlitePool,
     tag_uid: &str,

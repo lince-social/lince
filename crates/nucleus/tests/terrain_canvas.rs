@@ -132,7 +132,7 @@ fn removing_anchor_freezes_dependents_and_scoped_undo_restores_them_after_motion
         .unwrap();
     assert_eq!(dependent.anchor, Anchor::Fixed);
     assert_eq!(dependent.position, [10.0, 20.0, 30.0]);
-    let mut live = state.snapshot.clone();
+    let mut live = state.snapshot.as_ref().clone();
     live.placements
         .iter_mut()
         .find(|p| p.id == unrelated)
@@ -185,7 +185,7 @@ fn scoped_undo_preserves_camera_motion_but_rejects_later_authored_changes() {
         },
     )
     .unwrap();
-    let mut live = state.snapshot.clone();
+    let mut live = state.snapshot.as_ref().clone();
     live.placements[0].geometry.position = [100.0, 200.0];
     live.placements[0]
         .metadata

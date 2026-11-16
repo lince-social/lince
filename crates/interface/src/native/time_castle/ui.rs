@@ -591,7 +591,7 @@ impl Action for Apply {
             .map(|field| {
                 world
                     .get::<EditableText>(*field)
-                    .map(|text| text.value().to_string().trim().to_owned())
+                    .map(|text| text.value().to_cow().trim().to_owned())
                     .unwrap_or_default()
             })
             .collect();

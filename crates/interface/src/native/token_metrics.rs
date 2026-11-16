@@ -62,25 +62,29 @@ pub(crate) struct IconData {
     metrics: &'static mut IconMetrics,
 }
 
-pub(crate) fn icons(mut tokens: Tokens, mut icons: Query<IconData>) {
+pub(crate) fn icons(
+    mut tokens: Tokens,
+    mut queries: ParamSet<(
+        Query<IconData>,
+        Query<Entity, Or<(Changed<crate::native::icons::IconStyle>, Added<IconMetrics>)>>,
+    )>,
+) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeIconMetrics);
     tokens.refresh();
+    let mut pending: EntityHashSet = queries.p1().iter().collect();
+    let mut icons = queries.p0();
     if crate::host::performance::enabled() {
         crate::host::performance::add(
             crate::host::performance::Count::IconMetricsVisited,
             icons.iter().len() as u64,
         );
     }
-    let mut pending = EntityHashSet::default();
-    for icon in icons.iter_mut() {
-        if !tokens.invalidated(icon.entity) && !icon.style.is_changed() && !icon.metrics.is_added()
-        {
-            continue;
-        }
-        pending.insert(icon.entity);
-        tokens.prepare_metric(icon.entity, "icon-size", Token::IconSize);
-        tokens.prepare_metric(icon.entity, "icon-padding", Token::IconPadding);
+    tokens.extend_invalidated(&mut pending, icons.iter().map(|icon| icon.entity));
+    pending.retain(|entity| icons.contains(*entity));
+    for &entity in &pending {
+        tokens.prepare_metric(entity, "icon-size", Token::IconSize);
+        tokens.prepare_metric(entity, "icon-padding", Token::IconPadding);
     }
     tokens.finish_preparing();
     let apply = |IconDataItem {
@@ -154,12 +158,27 @@ impl RequiredMetrics {
 
 pub(crate) fn layout(
     mut tokens: Tokens,
-    mut nodes: Query<LayoutData>,
+    mut queries: ParamSet<(
+        Query<LayoutData>,
+        Query<
+            Entity,
+            Or<(
+                Changed<Node>,
+                Added<Metrics>,
+                Changed<TextFont>,
+                Changed<WidthToken>,
+                Changed<RadiusToken>,
+            )>,
+        >,
+    )>,
     mut removed_icons: RemovedComponents<crate::native::icons::IconButton>,
 ) {
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeLayoutMetrics);
     tokens.refresh();
+    let mut pending: EntityHashSet = queries.p1().iter().collect();
+    pending.extend(removed_icons.read());
+    let mut nodes = queries.p0();
     if crate::host::performance::enabled() {
         crate::host::performance::add(
             crate::host::performance::Count::NodeMetricsVisited,
@@ -167,22 +186,12 @@ pub(crate) fn layout(
         );
     }
     let mut work = 0;
-    let mut pending: EntityHashSet = removed_icons.read().collect();
-    for node in nodes.iter_mut() {
-        if !tokens.invalidated(node.entity)
-            && !node.node.is_changed()
-            && !node.metrics.is_added()
-            && !node.font.as_ref().is_some_and(|font| font.is_changed())
-            && !node.width.as_ref().is_some_and(|width| width.is_changed())
-            && !node
-                .radius
-                .as_ref()
-                .is_some_and(|radius| radius.is_changed())
-            && !pending.contains(&node.entity)
-        {
+    tokens.extend_invalidated(&mut pending, nodes.iter().map(|node| node.entity));
+    pending.retain(|entity| nodes.contains(*entity));
+    for &entity in &pending {
+        let Ok(node) = nodes.get(entity) else {
             continue;
-        }
-        pending.insert(node.entity);
+        };
         let required =
             RequiredMetrics::new(&node.node, &node.metrics, node.font.as_deref(), node.icon);
         if required.any() || node.width.is_some() || node.radius.is_some() {

@@ -88,8 +88,8 @@ impl Registry {
                     || agent.name.chars().any(char::is_control)
                     || agent.version.len() > 80
                     || agent.version.chars().any(char::is_control)
-                    || serde_json::to_vec(&agent.distribution)
-                        .map_or(true, |bytes| bytes.len() > 32_768)
+                    || nucleus::json::encoded_len(&agent.distribution)
+                        .map_or(true, |bytes| bytes > 32_768)
                     || !valid_distribution(&agent.distribution)
             })
         {

@@ -214,6 +214,7 @@ impl StressRun {
                     SandKind::Freedoom => Vec2::new(520.0, 540.0),
                     SandKind::Square => Vec2::splat(12.0),
                     SandKind::Overview => Vec2::new(248.0, 184.0),
+                    SandKind::Kamalie => crate::native::kamalie::SIZE,
                     SandKind::Operation
                     | SandKind::AccessControl
                     | SandKind::Visibility
@@ -246,7 +247,7 @@ impl StressRun {
                 }
                 world.entity_mut(sand).insert((
                     StressSand,
-                    RecordProperties(serde_json::json!({"quantity":-3})),
+                    RecordProperties(serde_json::json!({"quantity":-3}).into()),
                 ));
             }
             self.count = end;

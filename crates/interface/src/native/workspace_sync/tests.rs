@@ -1,4 +1,5 @@
 use super::*;
+use bevy::ecs::system::RunSystemOnce;
 
 fn panel_fixture(world: &mut World, center: DVec2) -> (Entity, Entity) {
     let root = world
@@ -156,7 +157,7 @@ fn closing_a_workspace_panel_removes_its_personal_replica_and_feed_state() {
         .collect();
     assert_eq!(replicas.len(), 1);
     world.entity_mut(owner).despawn();
-    maintain(world);
+    world.run_system_once(maintain).unwrap();
     assert!(!world.resource::<ReplicaFeeds>().0.contains_key(&owner));
     for replica in replicas {
         assert!(world.get_entity(replica).is_err());

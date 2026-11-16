@@ -114,11 +114,7 @@ impl Definition {
         {
             return Err("Published automatic summaries use approved public receipts and explicit identities, without private contact paths, known/proximity criteria or network endpoints".into());
         }
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES {
             return Err("Publication recipe exceeds 96 KiB".into());
         }
         Ok(())
@@ -199,11 +195,7 @@ impl Recipe {
             return Err("The permit must bind this exact recipe and output scope".into());
         }
         self.permit.signing_bytes()?;
-        if serde_json::to_vec(self)
-            .map_err(|error| error.to_string())?
-            .len()
-            > MAX_BYTES
-        {
+        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES {
             return Err("Signed recipe exceeds 96 KiB".into());
         }
         Ok(())

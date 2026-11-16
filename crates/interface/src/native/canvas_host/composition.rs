@@ -45,7 +45,7 @@ pub(crate) fn populate(
     ContentKind::Composition {
         composition: composition.clone(),
     }
-    .validate(&registry(), false)?;
+    .validate(&shared_registry(), false)?;
     let mut minimum = DVec2::splat(f64::INFINITY);
     let mut maximum = DVec2::splat(f64::NEG_INFINITY);
     for part in &composition.parts {

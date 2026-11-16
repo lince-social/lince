@@ -42,6 +42,7 @@ pub(crate) mod authoring;
 mod factories;
 mod kanban;
 mod lifecycle;
+mod metadata;
 mod registry;
 mod rooms;
 mod snapshot;
@@ -49,6 +50,7 @@ use apply::apply;
 pub(crate) use lifecycle::{restore_content, spawn};
 use registry::kind_id;
 pub use registry::registry;
+pub(crate) use registry::shared_registry;
 pub use snapshot::capture;
 use snapshot::{capture_content, record_references};
 
@@ -68,15 +70,18 @@ fn handle_checked(
 ) -> Result<api::Response, String> {
     crate::native::topology::rooms::synchronize(world);
     let snapshot = capture(world, root)?;
-    let mut before = world
+    let existing = world
         .get::<Workspaces>(root)
         .ok_or("Canvas has no workspaces.")?
         .canvas_state
-        .clone()
-        .map(Ok)
-        .unwrap_or_else(|| api::State::new(snapshot.clone(), registry()))?;
-    before.refresh_registry(registry())?;
-    before.synchronize(snapshot)?;
+        .clone();
+    let mut before = if let Some(mut state) = existing {
+        state.refresh_registry(shared_registry())?;
+        state.synchronize(snapshot)?;
+        state
+    } else {
+        api::State::new(snapshot, shared_registry())?
+    };
     before.mark_saved_through(crate::native::workspace::saved_canvas_revision(world, root));
     let mut next = before.clone();
     let mut response = next.handle(request)?;
@@ -90,7 +95,8 @@ fn handle_checked(
     if cancelled() {
         return Err("Canvas request cancelled before applying.".into());
     }
-    if next.snapshot != before.snapshot {
+    if !std::sync::Arc::ptr_eq(&next.snapshot, &before.snapshot) && next.snapshot != before.snapshot
+    {
         apply(world, root, &before.snapshot, &next.snapshot)?;
         crate::native::topology::rooms::synchronize(world);
         next.normalize_applied_snapshot(capture(world, root)?)?;
@@ -117,7 +123,7 @@ pub(crate) fn synchronize_saved_state(world: &mut World, root: Entity) -> Result
         .canvas_state
         .as_mut()
         .unwrap();
-    state.refresh_registry(registry())?;
+    state.refresh_registry(shared_registry())?;
     state.synchronize(snapshot)?;
     state.mark_saved_through(saved);
     Ok(())
@@ -143,7 +149,7 @@ fn update(world: &mut World) {
                     runtime
                         .0
                         .engine
-                        .register_canvas(id, "Lince canvas".into(), registry())?;
+                        .register_canvas(id, "Lince canvas".into(), shared_registry())?;
                 if let Some(wake) = world
                     .get_resource::<crate::native::wake::WakeSignal>()
                     .cloned()

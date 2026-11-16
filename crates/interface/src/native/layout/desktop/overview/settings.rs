@@ -1,4 +1,6 @@
-use super::super::input_settings::{button, disable, feedback, field, text};
+use super::super::input_settings::{button, disable, feedback, field, text, prepared::Prepared};
+use bevy::ecs::query::QueryState;
+use std::collections::HashMap;
 use crate::{
     layout::desktop::OverviewSettings,
     native::{
@@ -150,6 +152,17 @@ fn candidate(world: &World, page: Entity) -> Result<OverviewSettings, String> {
         .get::<Page>(page)
         .ok_or("Overview settings are unavailable.")?
         .fields;
+    if let Some(value) = world
+        .get_resource::<Presentation>()
+        .and_then(|presentation| presentation.drafts.get(&page))
+        .and_then(|draft| draft.get(world, fields, &()))
+    {
+        return value.clone();
+    }
+    parse_fields(world, fields)
+}
+
+fn parse_fields(world: &World, fields: [Entity; 2]) -> Result<OverviewSettings, String> {
     let value = |entity| -> Result<u16, String> {
         let input = world
             .get::<EditableText>(entity)
@@ -160,7 +173,7 @@ fn candidate(world: &World, page: Entity) -> Result<OverviewSettings, String> {
         }
         input
             .value()
-            .to_string()
+            .to_cow()
             .trim()
             .parse()
             .map_err(|_| "Use whole numbers for overview delay and speed.".into())
@@ -243,63 +256,104 @@ impl Action for Change {
     }
 }
 
-fn refresh(world: &mut World) {
-    let active = current(world);
-    let support = world.get_resource::<crate::host::FileDragSupport>().map_or_else(
-        || "File hover requires file-drag events from the window host. Park provides this directly.".to_owned(),
-        |support| if support.available { "File-hover activation is available in this host.".to_owned() }
-            else { support.reason.clone().unwrap_or_else(|| "This window host does not provide file-drag events. The saved settings can still be used in Park.".to_owned()) },
-    );
-    let pages: Vec<_> = world
-        .query_filtered::<Entity, With<Page>>()
-        .iter(world)
-        .collect();
-    for page in pages {
-        let state = world.get::<Page>(page).unwrap();
-        let (origin, summary, status, save, previous, support_entity) = (
-            state.origin,
-            state.summary,
-            state.status,
-            state.save,
-            state.error.clone(),
-            state.support,
-        );
-        text(world, support_entity, support.clone());
-        let mut draft = candidate(world, page);
-        if draft.as_ref().is_ok_and(|draft| *draft == origin) && origin != active {
-            load(world, page, active);
-            draft = candidate(world, page);
-        }
-        text(
-            world,
-            summary,
-            format!(
-                "File hover: {} ms · edge scroll: {}% of viewport/s",
-                active.hover_delay_ms, active.edge_scroll_percent
-            ),
-        );
-        let origin = world.get::<Page>(page).unwrap().origin;
-        let error = draft.as_ref().err().cloned().or_else(|| {
-            (origin != active)
-                .then(|| "Overview settings changed. Reload active values or Review the draft against the file; your draft is kept.".into())
-        });
-        disable(world, save, error.is_some());
-        if error != previous {
-            text(
-                world,
-                status,
-                error
-                    .clone()
-                    .unwrap_or_else(|| "Ready to save overview settings.".into()),
-            );
-            world.get_mut::<Page>(page).unwrap().error = error;
+#[derive(Resource)]
+struct Presentation {
+    pages: QueryState<Entity, With<Page>>,
+    pending: Vec<Entity>,
+    drafts: HashMap<Entity, Prepared<(), OverviewSettings>>,
+    summary: Option<(OverviewSettings, String)>,
+    support: String,
+}
+
+impl FromWorld for Presentation {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            pages: world.query_filtered(),
+            pending: Vec::new(),
+            drafts: HashMap::new(),
+            summary: None,
+            support: String::new(),
         }
     }
 }
 
-fn review_snapshot(world: &World, page: Entity) -> Result<configuration::review::Snapshot, String> {
+fn refresh(world: &mut World) {
+    let _presentation = engine::performance::Span::new("overview-settings-presentation");
+    let mut presentation = world
+        .remove_resource::<Presentation>()
+        .unwrap_or_else(|| Presentation::from_world(world));
+    render(world, &mut presentation);
+    world.insert_resource(presentation);
+}
+
+fn render(world: &mut World, presentation: &mut Presentation) {
+    presentation.pending.clear();
+    presentation.pending.extend(presentation.pages.iter(world));
+    presentation
+        .drafts
+        .retain(|page, _| world.get::<Page>(*page).is_some());
+    if presentation.pending.is_empty() {
+        return;
+    }
+    let active = current(world);
+    if presentation
+        .summary
+        .as_ref()
+        .is_none_or(|(previous, _)| *previous != active)
+    {
+        presentation.summary = Some((
+            active,
+            format!(
+                "File hover: {} ms · edge scroll: {}% of viewport/s",
+                active.hover_delay_ms, active.edge_scroll_percent
+            ),
+        ));
+        engine::performance::add("settings-summaries-prepared", 1);
+    }
+    let support = world.get_resource::<crate::host::FileDragSupport>().map_or(
+        "File hover requires file-drag events from the window host. Park provides this directly.",
+        |support| if support.available { "File-hover activation is available in this host." }
+            else { support.reason.as_deref().unwrap_or("This window host does not provide file-drag events. The saved settings can still be used in Park.") },
+    );
+    if presentation.support != support {
+        support.clone_into(&mut presentation.support);
+    }
+    for page in presentation.pending.drain(..) {
+        let state = world.get::<Page>(page).unwrap();
+        let (fields, origin, summary, status, save, support_entity) = (
+            state.fields,
+            state.origin,
+            state.summary,
+            state.status,
+            state.save,
+            state.support,
+        );
+        let prepared = presentation.drafts.entry(page).or_default();
+        let mut draft = prepared.prepare(world, fields, &(), || parse_fields(world, fields));
+        if draft.as_ref().is_ok_and(|draft| *draft == origin) && origin != active {
+            load(world, page, active);
+            draft = prepared.prepare(world, fields, &(), || parse_fields(world, fields));
+        }
+        text(world, support_entity, &presentation.support);
+        text(world, summary, &presentation.summary.as_ref().unwrap().1);
+        let origin = world.get::<Page>(page).unwrap().origin;
+        let error = draft.as_ref().err().map(String::as_str).or_else(|| (origin != active)
+            .then_some("Overview settings changed. Reload active values or Review the draft against the file; your draft is kept."));
+        disable(world, save, error.is_some());
+        if world.get::<Page>(page).unwrap().error.as_deref() != error {
+            text(
+                world,
+                status,
+                error.unwrap_or("Ready to save overview settings."),
+            );
+            world.get_mut::<Page>(page).unwrap().error = error.map(str::to_owned);
+        }
+    }
+}
+
+fn review_snapshot(world: &World, page: Entity, previous: Option<&configuration::review::Snapshot>) -> Result<configuration::review::Snapshot, String> {
     let state = world.get::<Page>(page).ok_or("The overview editor is unavailable.")?;
-    configuration::review::Snapshot::new(&state.origin, &candidate(world, page)?, &current(world))
+    configuration::review::Snapshot::new(&state.origin, &candidate(world, page)?, &current(world), previous)
 }
 
 fn review_apply(world: &mut World, page: Entity, active: serde_json::Value, draft: serde_json::Value) -> Result<(), String> {

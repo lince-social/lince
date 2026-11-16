@@ -173,7 +173,7 @@ impl Request {
             || self.inputs.len() > 1024
             || self.records.len() > 128
             || self.checks.len() > 1024
-            || serde_json::to_vec(self).map_err(EngineError::Json)?.len() > 1024 * 1024
+            || nucleus::json::encoded_len(self).map_err(EngineError::Json)? > 1024 * 1024
         {
             return Err(invalid(
                 "Use 1–32 proposed Rules and a bounded set of inputs and readings",

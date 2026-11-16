@@ -40,6 +40,7 @@ pub mod manipulation;
 mod outputs;
 mod records;
 mod pixels;
+mod pipelines;
 mod phase_metrics;
 mod system_metrics;
 
@@ -78,7 +79,7 @@ pub struct Presentation {
     render_origin: [f64; 2],
     render_fullscreen: bool,
     linear_output: bool,
-    last_geometry: Option<lince_interface::host::GeometrySnapshot>,
+    last_geometry: Option<Arc<lince_interface::host::GeometrySnapshot>>,
     window_requests: std::collections::HashMap<
         lince_interface::host::SurfaceId,
         lince_interface::host::WindowRequest,
@@ -102,8 +103,8 @@ pub struct Frame {
     image: Option<ExportedImage>,
     pub geometry: Option<Arc<lince_interface::host::GeometrySnapshot>>,
     pub input: Arc<InputSnapshot>,
-    pub windows: Vec<WindowConfiguration>,
-    pub previewed: Vec<lince_interface::host::SurfaceId>,
+    pub windows: Arc<[WindowConfiguration]>,
+    pub previewed: Arc<[lince_interface::host::SurfaceId]>,
     pub fullscreen: bool,
     pub origin: [f64; 2],
     pub outputs: Vec<OutputFrame>,
@@ -187,7 +188,7 @@ fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::R
 impl Frame {
     #[cfg(feature = "nested")]
     pub(crate) fn owns_modal_pointer(&self, point: [f64; 2]) -> bool {
-        self.input.modal && self.geometry.as_ref().is_none_or(|geometry| {
+        self.input.modal && self.geometry.as_deref().is_none_or(|geometry| {
             geometry.outputs.iter().any(|output| Some(output.id) == self.output && output.bounds.contains(point))
         })
     }
@@ -640,7 +641,7 @@ impl Presentation {
             })
             .set(RenderPlugin {
                 render_creation,
-                synchronous_pipeline_compilation: true,
+                synchronous_pipeline_compilation: false,
                 ..default()
             });
         let mut app = native::app::presentation_app(assets, plugins);
@@ -691,6 +692,7 @@ impl Presentation {
         }
         app.finish();
         app.cleanup();
+        pipelines::install(&mut app);
         if lince_interface::host::performance::enabled() {
             use bevy::render::{Render, RenderSystems};
             let render = app.sub_app_mut(RenderApp);
@@ -779,16 +781,16 @@ impl Presentation {
 
     #[cfg(all(test, feature = "server-tests"))]
     pub(crate) fn published_geometry(&self) -> Option<&lince_interface::host::GeometrySnapshot> {
-        self.last_geometry.as_ref()
+        self.last_geometry.as_deref()
     }
 
     pub(crate) fn native_test_points(&mut self, entity: Entity) -> Option<(lince_interface::host::OutputId, [[f64; 2]; 4])> {
         let geometry = self.last_geometry.clone();
         let focused = self.output_state.assignments.focused();
-        let mut views = self.accessibility_views(geometry.as_ref());
+        let mut views = self.accessibility_views(geometry.as_deref());
         views.sort_by_key(|view| Some(view.output) != focused);
         views.into_iter().find_map(|view| {
-            crate::native_input::projection::accessibility_points(self.app.world(), &view, geometry.as_ref(), entity, None)
+            crate::native_input::projection::accessibility_points(self.app.world(), &view, geometry.as_deref(), entity, None)
                 .map(|points| (view.output, points))
         })
     }
@@ -796,8 +798,8 @@ impl Presentation {
     pub(crate) fn native_pointer_current(&mut self, target: &crate::native_input::PointerTarget) -> bool {
         if self.suspended() { return false; }
         let geometry = self.frame_geometry();
-        let views = self.accessibility_views(geometry.as_ref());
-        crate::native_input::pointer::current(self.app.world(), &views, geometry.as_ref(), target)
+        let views = self.accessibility_views(geometry.as_deref());
+        crate::native_input::pointer::current(self.app.world(), &views, geometry.as_deref(), target)
     }
 
     pub fn pointer(&mut self, position: [f32; 2]) -> Result<(), ProbeFailure> {
@@ -840,16 +842,16 @@ impl Presentation {
             let Some(position) = self.app.world().get::<Window>(window).and_then(Window::physical_cursor_position) else { return Ok(()); };
             let point = self.input_mapping().logical_point(position.as_dvec2().to_array());
             let geometry = self.frame_geometry();
-            let views = self.accessibility_views(geometry.as_ref());
-            let target = crate::native_input::pointer::capture(self.app.world(), &views, geometry.as_ref()).target(point);
+            let views = self.accessibility_views(geometry.as_deref());
+            let target = crate::native_input::pointer::capture(self.app.world(), &views, geometry.as_deref()).target(point);
             let Some(target) = target else { return Ok(()); };
             if !self.app.world_mut().resource_mut::<crate::native_input::pointer::Held>().press(button, target) { return Ok(()); }
         } else {
             let Ok(target) = self.app.world_mut().resource_mut::<crate::native_input::pointer::Held>().release(button) else { return Ok(()); };
             if let Some(target) = target {
                 let geometry = self.frame_geometry();
-                let views = self.accessibility_views(geometry.as_ref());
-                if !crate::native_input::pointer::held_current(self.app.world(), &views, geometry.as_ref(), &target) {
+                let views = self.accessibility_views(geometry.as_deref());
+                if !crate::native_input::pointer::held_current(self.app.world(), &views, geometry.as_deref(), &target) {
                     cancel_pointer(self.app.world_mut());
                     return Ok(());
                 }
@@ -1092,19 +1094,50 @@ impl Presentation {
     }
 
     pub fn frame(&mut self) -> Result<Frame, ProbeFailure> {
+        loop {
+            if let Some(frame) = self.try_frame()? {
+                return Ok(frame);
+            }
+            self.complete_pipelines();
+        }
+    }
+
+    pub(crate) fn try_frame(&mut self) -> Result<Option<Frame>, ProbeFailure> {
         self.retained = None;
         self.synchronize_input_activity()?;
-        let hand_focus = self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>();
+        let hand_focus = self
+            .app
+            .world_mut()
+            .remove_resource::<native::output_views::HandFocusRequest>();
         if let Some(request) = hand_focus
             && !self.suspended()
             && request.fresh()
-            && self.app.world().get_resource::<lince_interface::host::input::InputActivity>().is_none_or(|activity| activity.active())
-            && self.canvas_root().ok().is_some_and(|root| self.output_state.assignments.outputs().iter().any(|output| request.matches(root, output.id, output.active)))
+            && self
+                .app
+                .world()
+                .get_resource::<lince_interface::host::input::InputActivity>()
+                .is_none_or(|activity| activity.active())
+            && self.canvas_root().ok().is_some_and(|root| {
+                self.output_state
+                    .assignments
+                    .outputs()
+                    .iter()
+                    .any(|output| request.matches(root, output.id, output.active))
+            })
         {
             self.focus_output(request.output)?;
         }
         let started = std::time::Instant::now();
-        let references = self.windows.values().filter_map(|window| self.app.world().get::<native::protein_area::RecordBinding>(window.entity).map(|binding| binding.uid.clone())).collect();
+        let references = self
+            .windows
+            .values()
+            .filter_map(|window| {
+                self.app
+                    .world()
+                    .get::<native::protein_area::RecordBinding>(window.entity)
+                    .map(|binding| binding.uid.clone())
+            })
+            .collect();
         native::layout::desktop::opening::window_references(self.app.world_mut(), references);
         if let Some(records) = &mut self.records {
             records.tick(self.app.world_mut(), &self.windows, &self.identities);
@@ -1130,38 +1163,49 @@ impl Presentation {
             });
         }
         if self.suspended() {
-            let geometry = self.frame_geometry().map(Arc::new);
+            let geometry = self.frame_geometry();
             let input = Arc::new(self.finish_input(geometry.as_deref())?);
             self.release_capture_uploads();
-            return Ok(Frame {
+            return Ok(Some(Frame {
                 client_formats: self.client_formats.clone(),
                 encoding: self.native_encoding(),
                 output: None,
                 image: None,
                 geometry,
                 input,
-                windows: self.window_configurations(),
-                previewed: Vec::new(),
+                windows: self.window_configurations().into(),
+                previewed: Arc::default(),
                 fullscreen: false,
                 origin: [0.0; 2],
                 outputs: Vec::new(),
                 capture: None,
-            });
+            }));
         }
-        let geometry = self.frame_geometry().map(Arc::new);
+        if self.pipelines_pending() {
+            // Imported pixels have their own retained texture. Retire their
+            // client uploads after submitted GPU work even while shaders wait.
+            self.release_capture_uploads();
+            return Ok(None);
+        }
+        let geometry = self.frame_geometry();
         crate::runtime::trace_frame("frame-geometry", started);
         let detail = std::time::Instant::now();
         let input = Arc::new(self.finish_input(geometry.as_deref())?);
         crate::runtime::trace_frame("frame-input", detail);
         let detail = std::time::Instant::now();
-        let windows = self.window_configurations();
+        let windows = self.window_configurations().into();
         crate::runtime::trace_frame("frame-window-configurations", detail);
         let retained = pixels::Retained {
-            geometry, input, windows,
-            previewed: native::layout::desktop::overview::previewed_applications(self.app.world_mut()),
+            geometry,
+            input,
+            windows,
+            previewed: native::layout::desktop::overview::previewed_applications(
+                self.app.world_mut(),
+            )
+            .into(),
         };
         self.retained = Some(retained.clone());
-        self.export_frame(retained)
+        self.export_frame(retained).map(Some)
     }
 
     fn export_frame(&mut self, retained: pixels::Retained) -> Result<Frame, ProbeFailure> {
@@ -1280,7 +1324,7 @@ impl Presentation {
             .collect()
     }
 
-    fn frame_geometry(&mut self) -> Option<lince_interface::host::GeometrySnapshot> {
+    fn frame_geometry(&mut self) -> Option<Arc<lince_interface::host::GeometrySnapshot>> {
         if self.suspended() {
             return Some(self.remember_geometry(lince_interface::host::GeometrySnapshot {
                 revision: 0,
@@ -1289,7 +1333,12 @@ impl Presentation {
                 focused: None,
             }));
         }
-        let mut geometry = self.geometry()?.clone();
+        let mut geometry = lince_interface::host::GeometrySnapshot {
+            revision: 0,
+            outputs: self.geometry()?.outputs.clone(),
+            items: Vec::new(),
+            focused: None,
+        };
         let root = self.canvas_root().ok()?;
         geometry.focused = self.app.world().get::<native::workspace::Workspaces>(root).and_then(|spaces| {
             let id = spaces.entries.iter().find(|space| space.id == spaces.active)?.desktop.focused()?;
@@ -1416,15 +1465,22 @@ impl Presentation {
         Some(self.remember_geometry(geometry))
     }
 
-    fn remember_geometry(&mut self, mut geometry: lince_interface::host::GeometrySnapshot) -> lince_interface::host::GeometrySnapshot {
-        geometry.revision = self.last_geometry.as_ref().map_or(1, |previous| {
-            previous.revision
-                + u64::from(
-                    previous.outputs != geometry.outputs
-                        || previous.items != geometry.items
-                        || previous.focused != geometry.focused,
-                )
-        });
+    fn remember_geometry(
+        &mut self,
+        mut geometry: lince_interface::host::GeometrySnapshot,
+    ) -> Arc<lince_interface::host::GeometrySnapshot> {
+        if let Some(previous) = &self.last_geometry {
+            if previous.outputs == geometry.outputs
+                && previous.items == geometry.items
+                && previous.focused == geometry.focused
+            {
+                return previous.clone();
+            }
+            geometry.revision = previous.revision + 1;
+        } else {
+            geometry.revision = 1;
+        }
+        let geometry = Arc::new(geometry);
         self.last_geometry = Some(geometry.clone());
         geometry
     }

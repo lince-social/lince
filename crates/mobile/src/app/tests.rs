@@ -542,7 +542,7 @@ fn receiving_record_updates_does_not_replace_an_unfinished_editor() {
         &mut world,
         ServerMessage::Update {
             id: "mobile/record".into(),
-            rows: vec![serde_json::json!({"uid":uid,"body":"Remote"})],
+            rows: vec![serde_json::json!({"uid":uid,"body":"Remote"})].into(),
         },
     );
     render(&mut world);
@@ -585,7 +585,7 @@ fn scroll_returns_with_the_page_and_other_pages_drafts_do_not_block_updates() {
         &mut world,
         ServerMessage::Update {
             id: "mobile/records".into(),
-            rows: vec![serde_json::json!({"uid":"r_new","head":"Arrived"})],
+            rows: vec![serde_json::json!({"uid":"r_new","head":"Arrived"})].into(),
         },
     );
     assert!(world.resource::<Mobile>().dirty);

@@ -94,6 +94,10 @@ pub fn extract_text_cursor(
             let selection_color = sc.to_linear();
 
             for selection in text_layout_info.selection_rects.iter() {
+                if !crate::clipping::visible(transform, selection.center(), selection.size(), clip)
+                {
+                    continue;
+                }
                 extracted_uinodes.uinodes.push(ExtractedUiNode {
                     render_entity: commands.spawn(TemporaryRenderEntity).id(),
                     z_order: stack_index.0 as f32 + stack_z_offsets::TEXT_SELECTION,
@@ -122,6 +126,7 @@ pub fn extract_text_cursor(
         if let Some((true, cursor_rect)) = text_layout_info.cursor
             && !cursor_rect.is_empty()
             && !cursor_style.color.is_fully_transparent()
+            && crate::clipping::visible(transform, cursor_rect.center(), cursor_rect.size(), clip)
         {
             extracted_uinodes.uinodes.push(ExtractedUiNode {
                 render_entity: commands.spawn(TemporaryRenderEntity).id(),
@@ -216,6 +221,9 @@ pub fn extract_preedit_underlines(
         let color = text_color.0.to_linear();
 
         for rect in text_layout_info.preedit_underline_rects.iter() {
+            if !crate::clipping::visible(transform, rect.center(), rect.size(), clip) {
+                continue;
+            }
             extracted_uinodes.uinodes.push(ExtractedUiNode {
                 render_entity: commands.spawn(TemporaryRenderEntity).id(),
                 z_order: stack_index.0 as f32 + stack_z_offsets::TEXT_STRIKETHROUGH,

@@ -57,7 +57,7 @@ pub struct Origin {
 
 impl Composition {
     pub fn validate(&self) -> Result<(), String> {
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > MAX_BYTES {
+        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > MAX_BYTES {
             return Err("Composition exceeds 256 KiB".into());
         }
         self.validate_tree(0, &mut 0)

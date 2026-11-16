@@ -25,7 +25,7 @@ pub fn action_change(action: &Value) -> Result<Change, EngineError> {
         change_valid(&change)?;
         return Ok(change);
     }
-    let parsed = serde_json::from_value::<crate::actions::Action>(action.clone())?;
+    let parsed = crate::actions::Action::deserialize(action)?;
     let quantity = match &parsed {
         crate::actions::Action::SetQuantityExact { target, amount } => {
             Some((target.clone(), format!("={amount}")))
@@ -101,28 +101,56 @@ pub fn action_change(action: &Value) -> Result<Change, EngineError> {
 }
 
 pub fn component_records(component: &Component) -> BTreeSet<String> {
-    let mut records = component
-        .records()
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<BTreeSet<_>>();
-    fn origins(component: &Component, records: &mut BTreeSet<String>) {
+    let mut records = BTreeSet::new();
+    let _: ControlFlow<()> = visit_component_records(component, &mut |record| {
+        records.insert(record.to_owned());
+        ControlFlow::Continue(())
+    });
+    records
+}
+
+// Includes the workspace adapter's origin/control references in addition to
+// the component's declared bindings. Values from decoded actions are borrowed
+// only for this call; this is preparation, never an authorization cache.
+pub(super) fn visit_component_records<B>(
+    component: &Component,
+    visit: &mut impl FnMut(&str) -> ControlFlow<B>,
+) -> ControlFlow<B> {
+    fn origins<B>(
+        component: &Component,
+        visit: &mut impl FnMut(&str) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
         if let Component::Composition { composition } = component {
             if let Some(origin) = &composition.origin {
-                records.extend([origin.agent.clone(), origin.thread.clone()]);
+                visit(&origin.agent)?;
+                visit(&origin.thread)?;
             }
             for part in &composition.parts {
-                origins(&part.component, records);
+                origins(&part.component, visit)?;
             }
         }
+        ControlFlow::Continue(())
     }
-    origins(component, &mut records);
-    for (_, _, action) in controls(component) {
-        if let Ok(change) = action_change(&action) {
-            records.extend(change_records(&change));
+
+    component.visit_records(visit)?;
+    origins(component, visit)?;
+    visit_controls(component, |_, _, action| {
+        if let Ok(change) = action_change(action) {
+            visit_change_records(&change, visit)?;
         }
-    }
-    records
+        ControlFlow::Continue(())
+    })
+}
+
+pub(super) fn component_contains(component: &Component, target: &str) -> bool {
+    visit_component_records(component, &mut |record| {
+        if record == target {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    })
+    .is_break()
 }
 
 pub(super) fn size(component: &Component) -> usize {
@@ -139,34 +167,84 @@ pub(super) fn size(component: &Component) -> usize {
 }
 
 pub fn controls(component: &Component) -> Vec<(Vec<String>, Option<String>, Value)> {
-    fn visit(
-        component: &Component,
-        path: &mut Vec<String>,
-        output: &mut Vec<(Vec<String>, Option<String>, Value)>,
-    ) {
-        match component {
-            Component::Builtin {
-                state: ComponentState::Button { action, .. },
-            } => output.push((path.clone(), None, action.clone())),
-            Component::Composition { composition } => {
-                for part in &composition.parts {
-                    path.push(part.id.clone());
-                    for binding in &part.events {
-                        output.push((
-                            path.clone(),
-                            Some(binding.event.clone()),
-                            binding.action.clone(),
-                        ));
-                    }
-                    visit(&part.component, path, output);
-                    path.pop();
-                }
-            }
-            _ => {}
+    let mut output = Vec::new();
+    let _: ControlFlow<()> = visit_controls(component, |path, event, action| {
+        output.push((
+            path.iter().map(|part| (*part).to_owned()).collect(),
+            event.map(str::to_owned),
+            action.clone(),
+        ));
+        ControlFlow::Continue(())
+    });
+    output
+}
+
+/// Walks declared controls in their existing presentation order. Paths are
+/// temporary borrowed views; only consumers that retain controls need copies.
+pub fn visit_controls<'a, B>(
+    component: &'a Component,
+    mut visit: impl FnMut(&[&'a str], Option<&'a str>, &'a Value) -> ControlFlow<B>,
+) -> ControlFlow<B> {
+    walk_controls(component, &mut Vec::new(), None, &mut visit)
+}
+
+// The same declaration walk serves enumeration and invocation. A selected
+// path prunes unrelated branches without assuming IDs in unvalidated input
+// are unique; duplicate matching branches retain the existing any-match rule.
+fn walk_controls<'a, B>(
+    component: &'a Component,
+    path: &mut Vec<&'a str>,
+    selected_path: Option<&[String]>,
+    visit: &mut impl FnMut(&[&'a str], Option<&'a str>, &'a Value) -> ControlFlow<B>,
+) -> ControlFlow<B> {
+    match component {
+        Component::Builtin {
+            state: ComponentState::Button { action, .. },
+        } if selected_path.is_none_or(|remaining| remaining.is_empty()) => {
+            visit(path, None, action)?
         }
+        Component::Composition { composition } => {
+            for part in &composition.parts {
+                let remaining = if let Some(selected) = selected_path {
+                    let Some((id, rest)) = selected.split_first() else {
+                        break;
+                    };
+                    if id != &part.id {
+                        continue;
+                    }
+                    Some(rest)
+                } else {
+                    None
+                };
+                path.push(&part.id);
+                if remaining.is_none_or(|remaining| remaining.is_empty()) {
+                    for binding in &part.events {
+                        visit(path, Some(&binding.event), &binding.action)?;
+                    }
+                }
+                walk_controls(&part.component, path, remaining, visit)?;
+                path.pop();
+            }
+        }
+        _ => {}
     }
-    let mut output = vec![];
-    visit(component, &mut vec![], &mut output);
+    ControlFlow::Continue(())
+}
+
+pub(super) fn has_controls(component: &Component) -> bool {
+    visit_controls(component, |_, _, _| ControlFlow::Break(())).is_break()
+}
+
+fn control_actions(component: &Component, limit: usize) -> Vec<&Value> {
+    let mut output = Vec::new();
+    let _: ControlFlow<()> = visit_controls(component, |_, _, action| {
+        output.push(action);
+        if output.len() >= limit {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    });
     output
 }
 
@@ -244,11 +322,19 @@ pub(super) fn resolve(layout: &Layout, change: &Change) -> Result<Change, Engine
         .find(|item| &item.id == element)
         .ok_or_else(|| invalid("Control unavailable"))?
         .component;
-    if !controls(component)
-        .iter()
-        .any(|(declared_path, declared_event, declared)| {
-            declared_path == path && declared_event == event && declared == action
-        })
+    if walk_controls(
+        component,
+        &mut Vec::new(),
+        Some(path),
+        &mut |_, declared_event, declared| {
+            if declared_event == event.as_deref() && declared == action {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        },
+    )
+    .is_continue()
     {
         return Err(invalid(
             "The declared control changed. Refresh before using it.",
@@ -275,9 +361,14 @@ pub fn portable(component: Component) -> Component {
             }
         }
         Component::Composition { mut composition } => {
-            for part in &mut composition.parts {
-                part.component = portable(part.component.clone());
-            }
+            composition.parts = composition
+                .parts
+                .into_iter()
+                .map(|mut part| {
+                    part.component = portable(part.component);
+                    part
+                })
+                .collect();
             Component::Composition { composition }
         }
         Component::Builtin {
@@ -313,12 +404,16 @@ impl Engine {
         tx: &mut Transaction<'_, Sqlite>,
         hosted: &Hosted,
     ) -> Result<(), EngineError> {
+        let _verification = crate::performance::Span::new("workspace-control-verification-await");
         let mut count = 0;
         for element in &hosted.layout.elements {
             if hosted.layout.disabled_controls.contains(&element.id) {
                 continue;
             }
-            for (_, _, action) in controls(&element.component) {
+            // Keep the first over-limit action so the same count failure is
+            // reported after the preceding ordered checks, without preparing
+            // an arbitrarily large unvalidated declaration list.
+            for action in control_actions(&element.component, 257 - count) {
                 count += 1;
                 if count > 256 {
                     return Err(invalid(
@@ -328,7 +423,7 @@ impl Engine {
                 store::sqlx::query("SAVEPOINT workspace_control")
                     .execute(&mut **tx)
                     .await?;
-                let change = action_change(&action)?;
+                let change = action_change(action)?;
                 let result = self
                     .workspace_record_change(tx, hosted, &change, None, nucleus::execution::now())
                     .await;
@@ -338,6 +433,7 @@ impl Engine {
                 store::sqlx::query("RELEASE workspace_control")
                     .execute(&mut **tx)
                     .await?;
+                crate::performance::add("workspace-controls-checked", 1);
                 result?;
             }
         }
@@ -362,7 +458,7 @@ impl Engine {
             return Err(invalid("Use a workspace name of 1–80 characters"));
         }
         let mut layout: Layout = serde_json::from_value(layout)?;
-        if layout.elements.len() > 256 || serde_json::to_vec(&layout)?.len() > 262144 {
+        if layout.elements.len() > 256 || nucleus::json::encoded_len(&layout)? > 262144 {
             return Err(invalid("Import at most 256 placements and 256 KiB"));
         }
         let mut converted = vec![];
@@ -371,9 +467,14 @@ impl Engine {
             if portable != element.component {
                 converted.push(json!({"element":element.id,"notice":"Convert to portable presentation. Native text styling and composition part settings are not transferred."}));
             }
-            if !controls(&portable)
-                .iter()
-                .all(|(_, event, _)| event.is_none())
+            if visit_controls(&portable, |_, event, _| {
+                if event.is_some() {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })
+            .is_break()
             {
                 converted.push(json!({"element":element.id,"notice":"Named event bindings become explicit host controls; they do not run automatically on this computer."}));
             }

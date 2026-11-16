@@ -301,7 +301,7 @@ fn prepare_inputs(
             .and_then(|gate| gate.read())
             .is_none_or(|policy| !policy.requires_filter())
     );
-    let geometry = canvas.frame_geometry().map(Arc::new);
+    let geometry = canvas.frame_geometry();
     let input = Arc::new(canvas.finish_input(geometry.as_deref()).unwrap());
     let expected = "a".repeat(number + 1);
     assert_eq!(input.editor.as_ref().unwrap().surrounding, expected);
@@ -334,8 +334,8 @@ fn prepare_inputs(
             image: None,
             geometry,
             input,
-            windows: canvas.window_configurations(),
-            previewed: Vec::new(),
+            windows: canvas.window_configurations().into(),
+            previewed: Arc::default(),
             fullscreen: canvas.render_fullscreen,
             origin: canvas.render_origin,
             outputs: Vec::new(),

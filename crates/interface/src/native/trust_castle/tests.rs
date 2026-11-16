@@ -136,7 +136,7 @@ fn viewer_changes_clear_private_drafts_and_late_trust_replies() {
         view.contact = "private-contact".into();
         view.readers = "private-audience".into();
         view.import = "private-proof".into();
-        view.result = json!({"kind":"contact_document","export":"private-export"});
+        view.result = json!({"kind":"contact_document","export":"private-export"}).into();
         view.pending = Some(("old-result".into(), 0));
     }
     app.world_mut()
@@ -290,7 +290,7 @@ fn reader_query_roundtrip_keeps_independent_filters_weights_budgets_and_exclusio
             {"current":true,"content":{"kind":"need","requested":{"scale":0,"value":"10"}}},
             {"current":true,"content":{"kind":"settled","quantity":nucleus::transfer::receipt::RecordedFloat::new(10.0).unwrap()}}
         ],"withheld":[]
-    }});
+    }}).into();
     drop(view);
     render(app.world_mut(), owner);
     let labels = app
@@ -431,7 +431,7 @@ fn claim_controls_separate_publisher_amount_from_visible_support_and_clear_priva
     assert!(labels.contains("Partial support in visible evidence"));
     let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
     view.claims.import = "private-claim-document".into();
-    view.claims.review = Some((review.clone(), review.hash().unwrap()));
+    view.claims.review = Some((Arc::new(review.clone()), review.hash().unwrap()));
     clear_scope(&mut view);
     assert!(view.claims.import.is_empty());
     assert!(view.claims.review.is_none());
@@ -569,7 +569,7 @@ fn recipe_controls_default_paused_bind_public_scope_and_reject_late_edited_revie
     };
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-        view.recipes.review = Some((review.clone(), review.hash().unwrap()));
+        view.recipes.review = Some((Arc::new(review.clone()), review.hash().unwrap()));
     }
     render(app.world_mut(), owner);
     let labels = app
@@ -603,7 +603,7 @@ fn recipe_controls_default_paused_bind_public_scope_and_reject_late_edited_revie
     assert_eq!(view.recipes.refresh, "90");
     assert!(view.recipes.review.is_none());
     view.recipes.recipe = "private-recipe".into();
-    view.recipes.review = Some((review.clone(), review.hash().unwrap()));
+    view.recipes.review = Some((Arc::new(review.clone()), review.hash().unwrap()));
     clear_scope(&mut view);
     assert!(view.recipes.recipe.is_empty());
     assert!(view.recipes.review.is_none());
@@ -680,10 +680,10 @@ fn profile_snapshot_checks_cache_only_the_exact_reader_document_and_source_polic
     let result = json!({"kind":"claim_check","document":document,"query":query,"checked_at":now,"support":{"state":"unknown","claimed":{"value":"100"},"partial":true}});
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-        view.claims.snapshot = Some(document.clone());
-        profile_claims::cache(&mut view, &result);
+        view.claims.snapshot = Some(Arc::new(document.clone()));
+        profile_claims::cache(&mut view, &Snapshot::capture(&result));
         assert_eq!(view.claims.checks.len(), 1);
-        profile_claims::cache(&mut view, &result);
+        profile_claims::cache(&mut view, &Snapshot::capture(&result));
         assert_eq!(view.claims.checks.len(), 1);
     }
     render(app.world_mut(), owner);
@@ -713,10 +713,10 @@ fn profile_snapshot_checks_cache_only_the_exact_reader_document_and_source_polic
     let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
     let mut large = result.clone();
     large["padding"] = json!("");
-    profile_claims::cache(&mut view, &large);
+    profile_claims::cache(&mut view, &Snapshot::capture(&large));
     let bytes = serde_json::to_vec(&view.claims.checks).unwrap().len();
     large["padding"] = json!("x".repeat(nucleus::trust_analysis::MAX_BYTES - bytes + 1));
-    profile_claims::cache(&mut view, &large);
+    profile_claims::cache(&mut view, &Snapshot::capture(&large));
     assert_eq!(view.claims.checks.len(), 1);
     assert!(
         serde_json::to_vec(&view.claims.checks).unwrap().len()
@@ -767,7 +767,7 @@ fn organ_root_controls_require_exact_independent_review_clear_on_viewer_change_a
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
         view.person = person.clone();
-        view.context = json!({"organ":organ,"organ_admin":true});
+        view.context = json!({"organ":organ,"organ_admin":true}).into();
         view.roots.subject = organ.clone();
         view.roots.document = serde_json::to_string(&proof).unwrap();
         view.roots.focused = true;
@@ -792,7 +792,7 @@ fn organ_root_controls_require_exact_independent_review_clear_on_viewer_change_a
     assert!(labels(&mut app).contains("Open full trust analysis"));
     assert!(!labels(&mut app).contains("Accept independently compared Organ owner key"));
     let result = json!({"kind":"identity","value":{"kind":"organ_root_preview","review":review,"review_hash":review.hash().unwrap(),"new_fingerprint":proof.fingerprint().unwrap()}});
-    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone();
+    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone().into();
     render(app.world_mut(), owner);
     assert!(labels(&mut app).contains("Accept independently compared Organ owner key"));
     let request = root_controls::request(
@@ -805,12 +805,19 @@ fn organ_root_controls_require_exact_independent_review_clear_on_viewer_change_a
     let action = engine::actions::Action::Identity { request };
     serde_json::from_value::<engine::actions::Action>(serde_json::to_value(action).unwrap())
         .unwrap();
-    app.world_mut().get_mut::<View>(owner).unwrap().context["organ_admin"] = json!(false);
+    {
+        let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
+        let mut context = (*view.context).clone();
+        context["organ_admin"] = json!(false);
+        view.context = context.into();
+    }
     render(app.world_mut(), owner);
     assert!(!labels(&mut app).contains("Accept independently compared Organ owner key"));
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-        view.context["organ_admin"] = json!(true);
+        let mut context = (*view.context).clone();
+        context["organ_admin"] = json!(true);
+        view.context = context.into();
         view.pending = Some(("old-root-preview".into(), view.generation));
     }
     render(app.world_mut(), owner);
@@ -930,10 +937,10 @@ fn serving_controls_default_private_review_exact_conditions_and_clear_late_viewe
         expires_at: now + 3600,
     };
     let result = json!({"kind":"serving_preview","review":review,"hash":review.hash().unwrap(),"artifact_hash":review.artifact.hash().unwrap()});
-    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone();
+    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone().into();
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-        view.context = json!({"organ_admin":true});
+        view.context = json!({"organ_admin":true}).into();
         view.as_organ = true;
     }
     assert!(
@@ -957,7 +964,7 @@ fn serving_controls_default_private_review_exact_conditions_and_clear_late_viewe
     );
     Command::Toggle("as_organ").apply(app.world_mut(), owner);
     assert!(app.world().get::<View>(owner).unwrap().result.is_null());
-    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone();
+    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone().into();
     render(app.world_mut(), owner);
     let labels = app
         .world_mut()
@@ -1112,7 +1119,7 @@ fn remote_view_edits_and_closing_discard_jobs_through_the_original_connection() 
         view.person = person.clone();
         view.remote.job = Some(job.clone());
         view.remote.document =
-            json!({"kind":"remote_artifact","artifact":{"secret":"private evidence"}});
+            json!({"kind":"remote_artifact","artifact":{"secret":"private evidence"}}).into();
         view.pending = Some(("held".into(), view.generation));
     }
     render(app.world_mut(), owner);
@@ -1286,7 +1293,7 @@ fn rolling_serving_controls_require_explicit_scope_review_and_clear_changed_or_l
         expires_at: now + 86400,
     };
     let result = json!({"kind":"serving_preview", "review":review, "hash":review.hash().unwrap(), "artifact_hash":review.artifact.hash().unwrap()});
-    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone();
+    app.world_mut().get_mut::<View>(owner).unwrap().result = result.clone().into();
     assert!(
         serving_controls::request(
             app.world().get::<View>(owner).unwrap(),
@@ -1356,7 +1363,7 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
         view.analysis.subject = nucleus::new_uid("r");
         view.analysis.organ = true;
         view.remote.job = Some(job);
-        view.remote.result = json!({"kind":"remote_progress","state":"completed"});
+        view.remote.result = json!({"kind":"remote_progress","state":"completed"}).into();
         assert!(remote_controls::receive(&mut view, &verified));
         assert!(matches!(
             remote_controls::request(&view, &remote_controls::UiCommand::Verify).unwrap(),
@@ -1366,7 +1373,7 @@ fn merged_proof_controls_keep_verification_separate_and_review_context_before_ne
             &mut view,
             &json!({"kind":"remote_progress","state":"completed","artifacts":[]}),
         );
-        assert_eq!(view.remote.verified, verified);
+        assert_eq!(&*view.remote.verified, &verified);
     }
     render(app.world_mut(), owner);
     let text = app
@@ -1436,8 +1443,8 @@ fn combined_advisory_results_keep_raw_amounts_and_typed_proof_navigation() {
         view.analysis.subject = subject.uid().into();
         view.analysis.organ = true;
         view.remote.job = Some(nucleus::new_uid("ask"));
-        view.remote.result = json!({"state":"completed"});
-        view.remote.verified = json!({"kind":"remote_verified","checked_at":1000,"partial":false,"analysis":{"groups":[{"raw_quantity":{"value":"12.000000000000000001"},"weighted_index":{"value":"6"},"occurrences":1}],"rows":[{"quantity":{"value":"12.000000000000000001"},"records":[record],"originals":[{"provenance":"artifact","hash":artifact}],"selected":true}],"protocol":[],"withheld":[]},"claim_checks":[],"signatures":[]});
+        view.remote.result = json!({"state":"completed"}).into();
+        view.remote.verified = json!({"kind":"remote_verified","checked_at":1000,"partial":false,"analysis":{"groups":[{"raw_quantity":{"value":"12.000000000000000001"},"weighted_index":{"value":"6"},"occurrences":1}],"rows":[{"quantity":{"value":"12.000000000000000001"},"records":[record],"originals":[{"provenance":"artifact","hash":artifact}],"selected":true}],"protocol":[],"withheld":[]},"claim_checks":[],"signatures":[]}).into();
         let draft = remote_controls::selection(&view).unwrap();
         assert_eq!(draft.query, analysis::build(&view).unwrap());
         assert!(
@@ -1528,9 +1535,9 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
     let (sender, mut receiver) = tokio::sync::mpsc::channel(4);
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-        view.claims.snapshot = Some(published.clone());
+        view.claims.snapshot = Some(Arc::new(published.clone()));
         view.remote.job = Some(job.clone());
-        view.remote.verified = json!({"kind":"remote_verified","claim_checks":[{"review_required":true,"document":document}]});
+        view.remote.verified = json!({"kind":"remote_verified","claim_checks":[{"review_required":true,"document":document}]}).into();
     }
     remote_controls::track_with_sender(app.world_mut(), owner, sender.into());
     Command::Remote(remote_controls::UiCommand::ReviewClaim(0)).apply(app.world_mut(), owner);
@@ -1554,7 +1561,7 @@ fn changed_claim_review_discards_old_job_without_starting_new_network_work() {
     let view = app.world().get::<View>(owner).unwrap();
     assert!(view.remote.job.is_none());
     assert!(view.remote.review.is_none());
-    assert_eq!(view.claims.snapshot.as_ref(), Some(&document));
+    assert_eq!(view.claims.snapshot.as_deref(), Some(&document));
     assert_eq!(published.statement.revision, 1);
     assert_eq!(
         published.statement.descriptor.measurement.meaning.revision,

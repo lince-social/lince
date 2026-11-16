@@ -263,21 +263,26 @@ pub(super) fn resolve(world: &mut World) {
         .query::<(Entity, &LayoutBox, &CanvasItem)>()
         .iter(world)
         .filter(|(_, layout, _)| layout.valid())
-        .map(|(entity, layout, item)| (entity, *layout, *item))
+        .map(|(entity, layout, item)| (entity, *layout, *item, scope(world, entity)))
         .collect();
-    entries.sort_by_key(|(entity, layout, _)| (layout.order, entity.to_bits()));
+    entries.sort_by_key(|(entity, layout, _, _)| (layout.order, entity.to_bits()));
     let mut ids = HashMap::new();
     let mut duplicates = HashSet::new();
-    for (index, (entity, layout, _)) in entries.iter().enumerate() {
-        let key = (scope(world, *entity), layout.id);
+    for (index, (_, layout, _, scope)) in entries.iter().enumerate() {
+        let key = (*scope, layout.id);
         if ids.insert(key, index).is_some() {
             duplicates.insert(key);
         }
     }
-    let mut entities: Vec<_> = entries.iter().map(|(entity, _, _)| *entity).collect();
+    let mut entities: Vec<_> = entries.iter().map(|(entity, _, _, _)| *entity).collect();
+    let mut item_orders: Vec<_> = entries
+        .iter()
+        .map(|(_, layout, _, _)| layout.order)
+        .collect();
+    let mut viewports = HashMap::new();
     let mut items: Vec<_> = entries
         .iter()
-        .map(|(entity, layout, item)| solver::Item {
+        .map(|(entity, layout, item, scope)| solver::Item {
             rules: if super::desktop::tiled(world, *entity)
                 || super::desktop::manipulation::held(world, *entity)
             {
@@ -295,7 +300,7 @@ pub(super) fn resolve(world: &mut World) {
                 .parent
                 .filter(|_| !crate::native::topology::rooms::owned(world, *entity))
                 .and_then(|id| {
-                    let key = (scope(world, *entity), id);
+                    let key = (*scope, id);
                     (!duplicates.contains(&key))
                         .then(|| ids.get(&key).copied())
                         .flatten()
@@ -313,43 +318,47 @@ pub(super) fn resolve(world: &mut World) {
                 Vec2::ZERO
             },
             size: item.size,
-            available: scope(world, *entity)
+            available: scope
                 .and_then(|(root, _)| {
-                    let node = world.get::<ComputedNode>(root)?;
-                    let view = world.get::<crate::native::canvas::CanvasView>(root)?;
-                    let size = node.size() * node.inverse_scale_factor() / view.zoom as f32;
-                    (size.is_finite() && size.min_element() > 0.0).then_some(size)
+                    *viewports.entry(root).or_insert_with(|| {
+                        let node = world.get::<ComputedNode>(root)?;
+                        let view = world.get::<crate::native::canvas::CanvasView>(root)?;
+                        let size = node.size() * node.inverse_scale_factor() / view.zoom as f32;
+                        (size.is_finite() && size.min_element() > 0.0).then_some(size)
+                    })
                 })
                 .unwrap_or(item.size),
             content: Vec2::ZERO,
             children: Vec::new(),
         })
         .collect();
+    let mut seen = vec![usize::MAX; items.len()];
     for index in 0..items.len() {
         let mut next = Some(index);
-        let mut seen = HashSet::new();
+        let mut depth = 0;
         while let Some(current) = next {
-            if !seen.insert(current) || seen.len() > MAX_DEPTH {
+            if seen[current] == index || depth == MAX_DEPTH {
                 items[index].parent = None;
                 break;
             }
+            seen[current] = index;
+            depth += 1;
             next = items[current].parent;
         }
     }
-    for (parent, (entity, _, _)) in entries.iter().enumerate() {
+    for (parent, (entity, _, _, _)) in entries.iter().enumerate() {
         let mut children: Vec<_> = world
             .get::<Children>(*entity)
-            .map(|children| children.iter().collect())
-            .unwrap_or_default();
-        children.sort_by_key(|entity| world.get::<SandText>(*entity).map_or(0, |text| text.order));
-        for child in children {
-            let Some(text) = world.get::<SandText>(child) else {
-                continue;
-            };
-            let rules = text_rules(text);
-            if !rules.valid() {
-                continue;
-            }
+            .into_iter()
+            .flat_map(|children| children.iter())
+            .filter_map(|child| {
+                let text = world.get::<SandText>(child)?;
+                let rules = text_rules(text);
+                rules.valid().then_some((child, text, rules))
+            })
+            .collect();
+        children.sort_by_key(|(_, text, _)| text.order);
+        for (child, text, rules) in children {
             let measured = world
                 .get::<TextLayoutInfo>(child)
                 .map_or(Vec2::ZERO, text_extent)
@@ -372,6 +381,11 @@ pub(super) fn resolve(world: &mut World) {
                 children: Vec::new(),
             });
             entities.push(child);
+            item_orders.push(
+                world
+                    .get::<LayoutBox>(child)
+                    .map_or(text.order, |layout| layout.order),
+            );
         }
     }
     for index in 0..items.len() {
@@ -380,15 +394,7 @@ pub(super) fn resolve(world: &mut World) {
         }
     }
     for item in &mut items {
-        item.children.sort_by_key(|index| {
-            let entity = entities[*index];
-            let order = world
-                .get::<LayoutBox>(entity)
-                .map(|layout| layout.order)
-                .or_else(|| world.get::<SandText>(entity).map(|text| text.order))
-                .unwrap_or(0);
-            order
-        });
+        item.children.sort_by_key(|index| item_orders[*index]);
     }
     let mut order = Vec::with_capacity(items.len());
     let mut pending: Vec<_> = (0..items.len())

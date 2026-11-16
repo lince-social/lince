@@ -234,7 +234,7 @@ fn read_fields(world: &World, modal: &mut Modal) -> Result<(), String> {
     let values = modal.fields.map(|entity| {
         world
             .get::<EditableText>(entity)
-            .map(|text| text.value().to_string().trim().to_string())
+            .map(|text| text.value().to_cow().trim().to_string())
             .unwrap_or_default()
     });
     let x: i32 = values[0]

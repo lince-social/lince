@@ -60,11 +60,8 @@ pub fn receipts(inputs: &[Receipt<'_>], now: i64) -> Result<Vec<ReceiptGroup>, S
             .document
             .public_bundle()
             .ok_or("Only original public receipt proofs can be assembled")?;
-        bytes = bytes.saturating_add(
-            serde_json::to_vec(input.document)
-                .map_err(|e| e.to_string())?
-                .len(),
-        );
+        bytes = bytes
+            .saturating_add(crate::json::encoded_len(input.document).map_err(|e| e.to_string())?);
         events = events.saturating_add(bundle.publication.events.len());
         if bytes > super::MAX_BYTES || events > super::MAX_DISCLOSURES {
             return Err("Receipt assembly exceeds its byte or event budget".into());
@@ -185,11 +182,8 @@ pub fn claim_heads(inputs: &[Claim<'_>], now: i64) -> Result<Vec<ClaimHead>, Str
     let mut series: BTreeMap<_, Vec<_>> = BTreeMap::new();
     for input in inputs {
         input.document.validate()?;
-        bytes = bytes.saturating_add(
-            serde_json::to_vec(input.document)
-                .map_err(|e| e.to_string())?
-                .len(),
-        );
+        bytes = bytes
+            .saturating_add(crate::json::encoded_len(input.document).map_err(|e| e.to_string())?);
         if bytes > super::MAX_BYTES {
             return Err("Claim controls exceed their byte budget".into());
         }

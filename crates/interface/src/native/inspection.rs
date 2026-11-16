@@ -13,7 +13,12 @@ use bevy::{
     prelude::*,
     text::EditableText,
 };
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
+
+mod drawing;
+mod preparation;
+use drawing::{Drawing, Mark};
+use preparation::draw;
 
 #[derive(Component, Clone, PartialEq)]
 pub struct Inspection {
@@ -205,7 +210,9 @@ fn input(
     >,
     excluded: Query<(), With<InspectionExcluded>>,
     mut roots: Query<(Entity, &EditMode, &mut Inspection)>,
+    mut chain: Local<Vec<Entity>>,
 ) {
+    let _input = engine::performance::Span::new("inspection-input");
     let pressed = events
         .read()
         .filter(|event| {
@@ -219,7 +226,7 @@ fn input(
             .min_by(|(_, a), (_, b)| a.depth.total_cmp(&b.depth))
             .map(|(entity, _)| *entity)
     });
-    let mut chain = Vec::new();
+    chain.clear();
     let mut cursor = hit;
     while let Some(entity) = cursor {
         chain.push(entity);
@@ -228,37 +235,39 @@ fn input(
     let control = chain.iter().any(|entity| settings.contains(*entity));
     let excluded = chain.iter().any(|entity| excluded.contains(*entity));
     for (root, mode, mut state) in &mut roots {
+        let mut next = (*state).clone();
         if !mode.enabled {
-            state.selected = None;
-            state.selected_point = None;
-            state.hovered = None;
-            state.suppressed = None;
+            next.selected = None;
+            next.selected_point = None;
+            next.hovered = None;
+            next.suppressed = None;
+        } else if control {
             continue;
-        }
-        if control {
-            continue;
-        }
-        if excluded {
-            state.hovered = None;
-            continue;
-        }
-        let candidate = (!control && !excluded && chain.contains(&root))
-            .then(|| {
-                chain
-                    .iter()
-                    .copied()
-                    .find(|entity| *entity != root && candidates.contains(*entity))
-            })
-            .flatten();
-        if candidate != state.suppressed {
-            state.suppressed = None;
-        }
-        state.hovered = candidate.filter(|entity| Some(*entity) != state.suppressed);
-        if pressed.is_some() && chain.contains(&root) {
-            state.selected_point = pressed;
-            if state.click {
-                select_control(&mut state, candidate, pressed);
+        } else if excluded {
+            next.hovered = None;
+        } else {
+            let in_root = chain.contains(&root);
+            let candidate = in_root
+                .then(|| {
+                    chain
+                        .iter()
+                        .copied()
+                        .find(|entity| *entity != root && candidates.contains(*entity))
+                })
+                .flatten();
+            if candidate != next.suppressed {
+                next.suppressed = None;
             }
+            next.hovered = candidate.filter(|entity| Some(*entity) != next.suppressed);
+            if pressed.is_some() && in_root {
+                next.selected_point = pressed;
+                if next.click {
+                    select_control(&mut next, candidate, pressed);
+                }
+            }
+        }
+        if state.set_if_neq(next) {
+            engine::performance::add("inspection-state-writes", 1);
         }
     }
 }
@@ -279,13 +288,20 @@ fn settings(
             state.events,
             state.hidden,
         ][setting.index];
-        let name = ["Click", "Hover", "Groups", "Events", "Hidden"][setting.index];
-        let value = format!("{name}: {}", if enabled { "on" } else { "off" });
+        let (off, on) = [
+            ("Click: off", "Click: on"),
+            ("Hover: off", "Hover: on"),
+            ("Groups: off", "Groups: on"),
+            ("Events: off", "Events: on"),
+            ("Hidden: off", "Hidden: on"),
+        ][setting.index];
+        let value = if enabled { on } else { off };
         for child in children {
             if let Ok(mut text) = labels.get_mut(*child)
                 && text.0 != value
             {
-                text.0.clone_from(&value);
+                text.0.clear();
+                text.0.push_str(value);
             }
         }
     }
@@ -302,7 +318,7 @@ fn descendants(world: &World, entity: Entity, result: &mut HashSet<Entity>) {
     }
 }
 
-fn family(world: &World, root: Entity, entity: Entity) -> HashSet<Entity> {
+fn family(world: &World, root: Entity, entity: Entity, result: &mut HashSet<Entity>) {
     let mut outer = entity;
     let mut cursor = entity;
     while let Some(parent) = world.get::<ChildOf>(cursor) {
@@ -314,12 +330,11 @@ fn family(world: &World, root: Entity, entity: Entity) -> HashSet<Entity> {
             outer = cursor;
         }
     }
-    let mut result = HashSet::new();
-    descendants(world, outer, &mut result);
-    for member in crate::native::canvas_selection::group_members(world, root, outer) {
-        descendants(world, member, &mut result);
+    result.clear();
+    descendants(world, outer, result);
+    for member in crate::native::canvas_selection::group_members_iter(world, root, outer) {
+        descendants(world, member, result);
     }
-    result
 }
 
 fn hidden(world: &World, entity: Entity) -> bool {
@@ -358,29 +373,48 @@ fn active_member(world: &World, root: Entity, entity: Entity) -> bool {
     false
 }
 
-fn preview(world: &World, entity: Entity) -> String {
-    let mut members = HashSet::new();
-    descendants(world, entity, &mut members);
-    let mut members: Vec<_> = members.into_iter().collect();
-    members.sort();
-    let text = members
-        .iter()
-        .filter_map(|entity| {
-            world
-                .get::<Text>(*entity)
-                .map(|text| text.0.clone())
-                .or_else(|| {
-                    world
-                        .get::<EditableText>(*entity)
-                        .map(|text| text.value().to_string())
-                })
-        })
-        .collect::<Vec<_>>()
-        .join(" ");
-    if text.is_empty() {
-        "Hidden Sand".into()
-    } else {
-        format!("Hidden: {}", text.chars().take(160).collect::<String>())
+#[derive(Default)]
+struct Preview {
+    members: HashSet<Entity>,
+    ordered: Vec<Entity>,
+}
+
+impl Preview {
+    fn text(&mut self, world: &World, entity: Entity) -> String {
+        self.members.clear();
+        descendants(world, entity, &mut self.members);
+        self.ordered.clear();
+        self.ordered.extend(self.members.iter().copied());
+        self.ordered.sort();
+        let mut text = String::from("Hidden: ");
+        let mut remaining = 160;
+        let mut first = true;
+        for entity in self.ordered.iter().copied() {
+            let mut append = |value: &str| {
+                if !first {
+                    text.push(' ');
+                    remaining -= 1;
+                }
+                first = false;
+                for ch in value.chars().take(remaining) {
+                    text.push(ch);
+                    remaining -= 1;
+                }
+            };
+            if let Some(value) = world.get::<Text>(entity) {
+                append(&value.0);
+            } else if let Some(value) = world.get::<EditableText>(entity) {
+                append(&value.value());
+            }
+            if remaining == 0 {
+                break;
+            }
+        }
+        if text.len() == "Hidden: ".len() {
+            "Hidden Sand".into()
+        } else {
+            text
+        }
     }
 }
 
@@ -418,10 +452,26 @@ pub(crate) fn connections(world: &World, entity: Entity) -> Vec<Connection> {
     if excluded(world, entity) {
         return Vec::new();
     }
-    let mut links = world
-        .get::<EventConnections>(entity)
-        .map(|links| links.0.clone())
-        .unwrap_or_default();
+    let mut links = Vec::new();
+    visit_connections(world, entity, |target, name| {
+        links.push(Connection {
+            target,
+            name: name.into_owned(),
+        });
+    });
+    links
+}
+
+fn visit_connections<'a>(
+    world: &'a World,
+    entity: Entity,
+    mut visit: impl FnMut(Entity, Cow<'a, str>),
+) {
+    if let Some(links) = world.get::<EventConnections>(entity) {
+        for link in &links.0 {
+            visit(link.target, Cow::Borrowed(&link.name));
+        }
+    }
     if let Some(effect) = world.get::<crate::native::effect::SendBoxEvent>(entity)
         && world.get::<Square>(entity).is_some()
         && world
@@ -435,10 +485,7 @@ pub(crate) fn connections(world: &World, entity: Entity) -> Vec<Connection> {
             .is_some_and(|owner| owner.0 == effect.box_entity)
         && world.get::<Square>(effect.square).is_some()
     {
-        links.push(Connection {
-            target: effect.square,
-            name: "Sand Clicked Toggle".into(),
-        });
+        visit(effect.square, Cow::Borrowed("Sand Clicked Toggle"));
     }
     if let Some(button) = world.get::<ActionButton>(entity) {
         let described = button.actions.connections(world, button.target);
@@ -452,21 +499,16 @@ pub(crate) fn connections(world: &World, entity: Entity) -> Vec<Connection> {
                         .map(|tip| tip.0.as_str())
                 })
                 .unwrap_or("Button");
-            links.push(Connection {
-                target: button.target,
-                name: format!("{label} Clicked"),
-            });
+            visit(button.target, Cow::Owned(format!("{label} Clicked")));
         } else {
-            links.extend(described);
+            for link in described {
+                visit(link.target, Cow::Owned(link.name));
+            }
         }
     }
     if let Some(record) = world.get::<crate::native::record_view::RecordEditor>(entity) {
-        links.push(Connection {
-            target: record.status,
-            name: "Record Text Changed Save".into(),
-        });
+        visit(record.status, Cow::Borrowed("Record Text Changed Save"));
     }
-    links
 }
 
 pub(crate) fn inspect_control(world: &mut World, root: Entity, control: Entity) {
@@ -541,257 +583,11 @@ pub(crate) fn edit_connection(
     })
 }
 
-#[derive(Clone, PartialEq)]
-enum Mark {
-    Contour(Rect, BorderRadius, bool),
-    Line(Vec2, Vec2),
-    Label(Vec2, String, bool),
-}
-
-#[derive(Resource, Default)]
-struct Drawing {
-    marks: Vec<Mark>,
-    entities: Vec<Entity>,
-}
-
-fn draw(world: &mut World) {
-    let roots: Vec<_> = world
-        .query::<(Entity, &EditMode, &Inspection)>()
-        .iter(world)
-        .filter(|(_, mode, _)| mode.enabled)
-        .map(|(entity, _, state)| (entity, state.clone()))
-        .collect();
-    let mut marks = Vec::new();
-    for (root, state) in roots {
-        let focus = state
-            .selected
-            .filter(|entity| state.click && world.get_entity(*entity).is_ok())
-            .or(if state.hover { state.hovered } else { None });
-        if focus.is_none() && !state.contours && !state.events && !state.hidden {
-            continue;
-        }
-        let related = focus
-            .map(|entity| family(world, root, entity))
-            .unwrap_or_default();
-        let mut all = HashSet::new();
-        descendants(world, root, &mut all);
-        let mut entities: Vec<_> = all.into_iter().collect();
-        entities.sort();
-        let mut contoured = HashSet::new();
-        let mut previews = HashSet::new();
-        for entity in entities {
-            if entity == root
-                || world
-                    .get::<crate::native::area::InfluenceArea>(entity)
-                    .is_some()
-                || excluded(world, entity)
-                || world.get::<Setting>(entity).is_some()
-                || !active_member(world, root, entity)
-            {
-                continue;
-            }
-            let local = related.contains(&entity);
-            let invisible = hidden(world, entity);
-            let rect = bounds(world, entity);
-            let sand = world.get::<Square>(entity).is_some()
-                || world.get::<ImageSand>(entity).is_some()
-                || world.get::<Text>(entity).is_some()
-                || world.get::<EditableText>(entity).is_some()
-                || world.get::<Castle>(entity).is_some()
-                || world
-                    .get::<crate::native::canvas::CanvasItem>(entity)
-                    .is_some();
-            if sand
-                && (((state.contours || local) && !invisible)
-                    || (invisible && (state.hidden || local)))
-                && let Some(rect) = rect
-                && contoured.insert(entity)
-            {
-                let radius = world
-                    .get::<Node>(entity)
-                    .map(|node| node.border_radius)
-                    .unwrap_or_default();
-                let mut margin = 0.0;
-                if world.get::<Castle>(entity).is_some() {
-                    let mut depth = 1;
-                    let mut cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
-                    while let Some(parent) = cursor {
-                        if world.get::<Castle>(parent).is_some() {
-                            depth += 1;
-                        }
-                        cursor = world.get::<ChildOf>(parent).map(ChildOf::parent);
-                    }
-                    margin = 6.0 / depth as f32;
-                }
-                marks.push(Mark::Contour(
-                    Rect::from_corners(
-                        rect.min - Vec2::splat(margin),
-                        rect.max + Vec2::splat(margin),
-                    ),
-                    radius,
-                    invisible,
-                ));
-            }
-            let links = connections(world, entity);
-            for link in links {
-                if !active_member(world, root, link.target)
-                    || excluded(world, link.target)
-                    || world.get_entity(link.target).is_err()
-                    || !(state.events || state.hidden || local || related.contains(&link.target))
-                {
-                    continue;
-                }
-                let Some(source) = rect else { continue };
-                let destination = bounds(world, link.target).unwrap_or(Rect::from_center_size(
-                    source.center() + Vec2::new(-100.0, -60.0),
-                    Vec2::new(160.0, 50.0),
-                ));
-                if state.events || local || related.contains(&link.target) {
-                    let radius = world
-                        .get::<Node>(link.target)
-                        .map(|node| node.border_radius)
-                        .unwrap_or_default();
-                    if contoured.insert(link.target) {
-                        marks.push(Mark::Contour(
-                            destination,
-                            radius,
-                            hidden(world, link.target),
-                        ));
-                    }
-                    marks.push(Mark::Line(source.center(), destination.center()));
-                    marks.push(Mark::Label(
-                        (source.center() + destination.center()) * 0.5,
-                        link.name,
-                        false,
-                    ));
-                }
-                if hidden(world, link.target)
-                    && (state.hidden || local)
-                    && previews.insert(link.target)
-                {
-                    if contoured.insert(link.target) {
-                        marks.push(Mark::Contour(destination, BorderRadius::all(px(4)), true));
-                    }
-                    marks.push(Mark::Label(
-                        destination.min,
-                        preview(world, link.target),
-                        true,
-                    ));
-                }
-            }
-            if (state.hidden || local)
-                && !invisible
-                && let Some(rect) = rect
-                && let Some(tip) = world.get::<crate::native::icons::Tooltip>(entity)
-                && !tip.0.is_empty()
-            {
-                let position = rect.min + Vec2::new(0.0, -48.0);
-                marks.push(Mark::Label(position, format!("Tooltip: {}", tip.0), true));
-                if state.events || local {
-                    marks.push(Mark::Line(rect.center(), position));
-                    marks.push(Mark::Label(
-                        (rect.center() + position) * 0.5,
-                        "Info Icon Hovered Show Tooltip".into(),
-                        false,
-                    ));
-                }
-            }
-        }
-    }
-    if world.resource::<Drawing>().marks == marks {
-        return;
-    }
-    let previous = std::mem::take(&mut world.resource_mut::<Drawing>().entities);
-    for entity in previous {
-        if let Ok(entity) = world.get_entity_mut(entity) {
-            entity.despawn();
-        }
-    }
-    let mut entities = Vec::new();
-    for mark in &marks {
-        let mut node = Node {
-            position_type: PositionType::Absolute,
-            ..default()
-        };
-        let mut transform = UiTransform::default();
-        match mark {
-            Mark::Contour(rect, radius, _) => {
-                node.left = px(rect.min.x);
-                node.top = px(rect.min.y);
-                node.width = px(rect.width());
-                node.height = px(rect.height());
-                node.border = UiRect::all(px(1));
-                node.border_radius = *radius;
-            }
-            Mark::Line(start, end) => {
-                let delta = *end - *start;
-                let center = (*start + *end) * 0.5;
-                node.left = px(center.x - delta.length() * 0.5);
-                node.top = px(center.y - 0.5);
-                node.width = px(delta.length());
-                node.height = px(1);
-                transform.rotation = Rot2::radians(delta.y.atan2(delta.x));
-            }
-            Mark::Label(position, _, _) => {
-                node.left = px(position.x.max(0.0));
-                node.top = px(position.y.max(0.0));
-                node.max_width = px(230);
-                node.padding = UiRect::all(px(3));
-            }
-        }
-        let entity = world
-            .spawn((
-                InspectionOverlay,
-                node,
-                transform,
-                Pickable::IGNORE,
-                GlobalZIndex(90),
-                crate::native::token_style::border(crate::native::tokens::Token::Connections),
-            ))
-            .id();
-        match mark {
-            Mark::Line(..) => {
-                world
-                    .entity_mut(entity)
-                    .insert(crate::native::token_style::background(
-                        crate::native::tokens::Token::Connections,
-                    ));
-            }
-            Mark::Contour(_, _, true) => {
-                world
-                    .entity_mut(entity)
-                    .insert(crate::native::token_style::background(
-                        crate::native::tokens::Token::ConnectionFill,
-                    ));
-            }
-            Mark::Label(_, value, ghost) => {
-                let font = world
-                    .resource::<Typography>()
-                    .text(if *ghost { 14.0 } else { 11.0 });
-                world.entity_mut(entity).insert((
-                    Text::new(value),
-                    font,
-                    crate::native::token_style::text(if *ghost {
-                        crate::native::tokens::Token::Connections
-                    } else {
-                        crate::native::tokens::Token::Ink
-                    }),
-                    crate::native::token_style::background(crate::native::tokens::Token::Surface),
-                ));
-            }
-            _ => {}
-        }
-        entities.push(entity);
-    }
-    *world.resource_mut::<Drawing>() = Drawing { marks, entities };
-    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-        wake.ring();
-    }
-}
-
 pub(crate) mod tests {
     use super::*;
-    use bevy::{camera::NormalizedRenderTarget, picking::backend::HitData};
+    use bevy::{
+        camera::NormalizedRenderTarget, ecs::system::RunSystemOnce, picking::backend::HitData,
+    };
 
     #[cfg_attr(test, test)]
     fn inspection_defaults_are_off_and_click_controls_selection() {
@@ -897,7 +693,8 @@ pub(crate) mod tests {
         let sand = world.spawn((Square, ChildOf(inner))).id();
         let sibling = world.spawn((Square, ChildOf(outer))).id();
         let other = world.spawn((Square, ChildOf(root))).id();
-        let members = family(&world, root, sand);
+        let mut members = HashSet::new();
+        family(&world, root, sand, &mut members);
         assert_eq!(members, HashSet::from([outer, inner, sand, sibling]));
         assert!(!members.contains(&root));
         assert!(!members.contains(&other));
@@ -970,7 +767,10 @@ pub(crate) mod tests {
             .spawn((Text::new("Private draft"), ChildOf(parent)))
             .id();
         assert!(hidden(&world, child));
-        assert_eq!(preview(&world, parent), "Hidden: Private draft");
+        assert_eq!(
+            Preview::default().text(&world, parent),
+            "Hidden: Private draft"
+        );
         assert_eq!(world.get::<Visibility>(parent), Some(&Visibility::Hidden));
         assert_eq!(world.get::<Text>(child).unwrap().0, "Private draft");
     }
@@ -1017,11 +817,11 @@ pub(crate) mod tests {
             ))
             .id();
         world.get_mut::<Inspection>(root).unwrap().selected = Some(sand);
-        draw(world);
+        world.run_system_once(draw).unwrap();
         assert!(world.resource::<Drawing>().marks.is_empty());
         let click = Setting { root, index: 0 };
         click.apply(world, root);
-        draw(world);
+        world.run_system_once(draw).unwrap();
         assert!(
             world
                 .resource::<Drawing>()
@@ -1032,15 +832,15 @@ pub(crate) mod tests {
         assert!(!world.resource::<Drawing>().entities.is_empty());
         click.apply(world, root);
         world.get_mut::<Inspection>(root).unwrap().selected = Some(button);
-        draw(world);
+        world.run_system_once(draw).unwrap();
         assert!(world.resource::<Drawing>().marks.is_empty());
         assert!(world.resource::<Drawing>().entities.is_empty());
         world.get_mut::<Inspection>(root).unwrap().hover = true;
         world.get_mut::<Inspection>(root).unwrap().hovered = Some(sand);
-        draw(world);
+        world.run_system_once(draw).unwrap();
         assert!(!world.resource::<Drawing>().marks.is_empty());
         world.get_mut::<Inspection>(root).unwrap().hover = false;
-        draw(world);
+        world.run_system_once(draw).unwrap();
         assert!(world.resource::<Drawing>().marks.is_empty());
     }
 }

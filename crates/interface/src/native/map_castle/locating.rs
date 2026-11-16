@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Component)]
 pub(super) struct Locate {
-    key: String,
+    key: Arc<paging::Key>,
     receiver: tokio::sync::oneshot::Receiver<Result<nucleus::location::Fix, String>>,
     task: tokio::task::JoinHandle<()>,
 }
@@ -49,9 +49,10 @@ pub(super) fn maintain(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if !visible(world, owner)
-            || world.get::<Locate>(owner).unwrap().key != paging::key(world, owner)
-        {
+        if !visible(world, owner) || {
+            let current = paging::key(world, owner);
+            world.get::<Locate>(owner).unwrap().key != current
+        } {
             world.entity_mut(owner).remove::<Locate>();
             continue;
         }
@@ -105,7 +106,7 @@ mod tests {
         };
         for response in [Err("OS permission denied".to_string()), Ok(result(-23.5))] {
             let (sender, receiver) = tokio::sync::oneshot::channel();
-            let key = paging::key(app.world(), owner);
+            let key = paging::key(app.world_mut(), owner);
             let task = tokio::spawn(std::future::pending());
             app.world_mut().entity_mut(owner).insert(Locate {
                 key,
@@ -122,7 +123,7 @@ mod tests {
         assert!(sand.markers.is_empty());
         assert!(sand.device_centered);
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let key = paging::key(app.world(), owner);
+        let key = paging::key(app.world_mut(), owner);
         app.world_mut().entity_mut(owner).insert(Locate {
             key,
             receiver,

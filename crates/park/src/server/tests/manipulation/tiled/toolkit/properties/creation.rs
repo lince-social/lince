@@ -27,7 +27,9 @@ fn record_uids(
     let rows = replies
         .into_iter()
         .find_map(|message| match message {
-            cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+            cell::ServerMessage::Snapshot { rows, .. } => {
+                Some(std::sync::Arc::unwrap_or_clone(rows))
+            }
             _ => None,
         })
         .unwrap();
@@ -55,7 +57,9 @@ fn record(
     let mut rows = replies
         .into_iter()
         .find_map(|message| match message {
-            cell::ServerMessage::Snapshot { rows, .. } => Some(rows),
+            cell::ServerMessage::Snapshot { rows, .. } => {
+                Some(std::sync::Arc::unwrap_or_clone(rows))
+            }
             _ => None,
         })
         .unwrap();

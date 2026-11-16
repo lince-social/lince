@@ -10,6 +10,7 @@ use protein::authority::RolePolicy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::ControlFlow;
 use store::sqlx::{Sqlite, Transaction};
 
 pub const PROTOCOL: u32 = 2;
@@ -45,11 +46,19 @@ impl Presence {
         let Ok(mut state) = self.0.lock() else {
             return false;
         };
-        let mut changed = false;
-        state.retain(|uid, participants| {
-            if workspace.is_none_or(|workspace| workspace == uid) {
-                changed |= participants.remove(participant);
+        if let Some(workspace) = workspace {
+            let Some(participants) = state.get_mut(workspace) else {
+                return false;
+            };
+            let changed = participants.remove(participant);
+            if participants.is_empty() {
+                state.remove(workspace);
             }
+            return changed;
+        }
+        let mut changed = false;
+        state.retain(|_, participants| {
+            changed |= participants.remove(participant);
             !participants.is_empty()
         });
         changed
@@ -437,6 +446,7 @@ impl Policy {
 
 impl Layout {
     fn validate(&self) -> Result<(), EngineError> {
+        let _validation = crate::performance::Span::new("workspace-layout-validation");
         if self.elements.len() > 256
             || self
                 .elements
@@ -444,17 +454,17 @@ impl Layout {
                 .map(|element| adapters::size(&element.component))
                 .sum::<usize>()
                 > 256
-            || self.records().len() > 256
-            || serde_json::to_vec(self)?.len() > 262144
+            || !self.references_within_limit(256)
+            || nucleus::json::encoded_len(self)? > 262144
         {
             return Err(invalid(
                 "A shared workspace supports at most 256 elements, 256 exposed Records and 256 KiB",
             ));
         }
-        let mut ids = BTreeSet::new();
+        let mut elements = BTreeMap::new();
         for element in &self.elements {
             if !nucleus::valid_uid(&element.id, "placement")
-                || !ids.insert(&element.id)
+                || elements.insert(element.id.as_str(), element).is_some()
                 || !component_valid(&element.component)
             {
                 return Err(invalid(
@@ -465,14 +475,13 @@ impl Layout {
         }
         for (id, changes) in &self.areas {
             if !changes.validate()
-                || !self.elements.iter().any(|element| {
-                    &element.id == id
-                        && matches!(
-                            element.component,
-                            Component::Builtin {
-                                state: ComponentState::Area { .. }
-                            }
-                        )
+                || !elements.get(id.as_str()).is_some_and(|element| {
+                    matches!(
+                        element.component,
+                        Component::Builtin {
+                            state: ComponentState::Area { .. }
+                        }
+                    )
                 })
             {
                 return Err(invalid(
@@ -488,9 +497,9 @@ impl Layout {
             return Err(invalid("A suspended Area must have an existing recipe"));
         }
         if self.disabled_controls.iter().any(|id| {
-            !self.elements.iter().any(|element| {
-                &element.id == id && !adapters::controls(&element.component).is_empty()
-            })
+            !elements
+                .get(id.as_str())
+                .is_some_and(|element| adapters::has_controls(&element.component))
         }) {
             return Err(invalid("A suspended control must exist"));
         }
@@ -498,15 +507,49 @@ impl Layout {
     }
 
     fn records(&self) -> BTreeSet<String> {
-        self.elements
-            .iter()
-            .flat_map(|element| adapters::component_records(&element.component).into_iter())
-            .chain(
-                self.areas
-                    .values()
-                    .flat_map(|changes| changes.assign.iter().chain(&changes.unassign).cloned()),
-            )
-            .collect()
+        let mut records = BTreeSet::new();
+        let _: ControlFlow<()> = self.visit_records(&mut |record| {
+            records.insert(record.to_owned());
+            ControlFlow::Continue(())
+        });
+        records
+    }
+
+    fn visit_records<B>(&self, visit: &mut impl FnMut(&str) -> ControlFlow<B>) -> ControlFlow<B> {
+        let _references = crate::performance::Span::new("workspace-reference-preparation");
+        for element in &self.elements {
+            adapters::visit_component_records(&element.component, visit)?;
+        }
+        for changes in self.areas.values() {
+            for record in changes.assign.iter().chain(&changes.unassign) {
+                visit(record)?;
+            }
+        }
+        ControlFlow::Continue(())
+    }
+
+    fn contains_record(&self, target: &str) -> bool {
+        self.visit_records(&mut |record| {
+            if record == target {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        })
+        .is_break()
+    }
+
+    fn references_within_limit(&self, limit: usize) -> bool {
+        let mut records = BTreeSet::new();
+        self.visit_records(&mut |record| {
+            records.insert(record.to_owned());
+            if records.len() > limit {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        })
+        .is_continue()
     }
 }
 
@@ -537,7 +580,7 @@ fn sensitive(hosted: &Hosted, change: &Change) -> bool {
         | Change::DeleteRecord { .. }
         | Change::EditRecord { .. }
         | Change::RestoreRecord { .. } => true,
-        Change::Add { element } => !adapters::controls(&element.component).is_empty(),
+        Change::Add { element } => adapters::has_controls(&element.component),
         Change::Configure { element, component } => {
             hosted.layout.areas.contains_key(element)
                 || !matches!(
@@ -649,7 +692,7 @@ fn change_valid(change: &Change) -> Result<(), EngineError> {
             }
         }
         Change::Policy { policy } => {
-            serde_json::from_value::<Policy>(policy.clone())?.validate()?;
+            Policy::deserialize(policy)?.validate()?;
         }
         Change::Area { element, changes } => {
             if !valid_element(element) || !changes.validate() {
@@ -682,15 +725,17 @@ fn change_valid(change: &Change) -> Result<(), EngineError> {
 }
 
 fn presentation_conflicts(a: &Change, b: &Change) -> bool {
-    let element = |change: &Change| match change {
-        Change::Add { element } => Some(element.id.clone()),
-        Change::Configure { element, .. }
-        | Change::Move { element, .. }
-        | Change::Resize { element, .. }
-        | Change::Remove { element }
-        | Change::Area { element, .. } => Some(element.clone()),
-        _ => None,
-    };
+    fn element(change: &Change) -> Option<&str> {
+        match change {
+            Change::Add { element } => Some(&element.id),
+            Change::Configure { element, .. }
+            | Change::Move { element, .. }
+            | Change::Resize { element, .. }
+            | Change::Remove { element }
+            | Change::Area { element, .. } => Some(element),
+            _ => None,
+        }
+    }
     if matches!(
         a,
         Change::Policy { .. }
@@ -715,79 +760,125 @@ fn presentation_conflicts(a: &Change, b: &Change) -> bool {
     if matches!((a, b), (Change::Rename { .. }, Change::Rename { .. })) {
         return true;
     }
-    element(a).is_some_and(|id| element(b).as_ref() == Some(&id))
+    element(a).is_some_and(|id| element(b) == Some(id))
 }
 
 fn policy_records(policy: &Policy) -> BTreeSet<String> {
-    fn visit(selector: &protein::Predicate, records: &mut BTreeSet<String>) {
-        match selector {
+    let mut records = BTreeSet::new();
+    let _: ControlFlow<()> = visit_policy_records(policy, &mut |record| {
+        records.insert(record.to_owned());
+        ControlFlow::Continue(())
+    });
+    records
+}
+
+fn visit_policy_records<B>(
+    policy: &Policy,
+    visit: &mut impl FnMut(&str) -> ControlFlow<B>,
+) -> ControlFlow<B> {
+    fn selector<B>(
+        predicate: &protein::Predicate,
+        visit: &mut impl FnMut(&str) -> ControlFlow<B>,
+    ) -> ControlFlow<B> {
+        match predicate {
             protein::Predicate::All(items) | protein::Predicate::Any(items) => {
                 for item in items {
-                    visit(item, records);
+                    selector(item, visit)?;
                 }
             }
-            protein::Predicate::Not(item) => visit(item, records),
+            protein::Predicate::Not(item) => selector(item, visit)?,
             protein::Predicate::UidEq(uid)
             | protein::Predicate::OrganEq(uid)
             | protein::Predicate::Under { record: uid, .. } => {
-                records.insert(uid.clone());
+                visit(uid)?;
             }
-            protein::Predicate::OrganIn(uids) => records.extend(uids.iter().cloned()),
+            protein::Predicate::OrganIn(uids) => {
+                for uid in uids {
+                    visit(uid)?;
+                }
+            }
             protein::Predicate::Relation {
                 other: Some(uid), ..
             } => {
-                records.insert(uid.clone());
+                visit(uid)?;
             }
             _ => {}
         }
+        ControlFlow::Continue(())
     }
-    let mut records = BTreeSet::new();
-    visit(&policy.ceiling.read, &mut records);
+    selector(&policy.ceiling.read, visit)?;
     for grant in &policy.ceiling.grants {
-        visit(&grant.selector, &mut records);
+        selector(&grant.selector, visit)?;
         for rule in grant.assertions_add.iter().chain(&grant.assertions_remove) {
             if let protein::authority::AssertionTarget::Record(uid) = &rule.target {
-                records.insert(uid.clone());
+                visit(uid)?;
             }
         }
     }
     for audience in [&policy.viewers, &policy.editors, &policy.managers] {
-        records.extend(audience.actors.iter().cloned());
+        for actor in &audience.actors {
+            visit(actor)?;
+        }
     }
-    records
+    ControlFlow::Continue(())
 }
 
 fn change_records(change: &Change) -> BTreeSet<String> {
+    let mut records = BTreeSet::new();
+    let _: ControlFlow<()> = visit_change_records(change, &mut |record| {
+        records.insert(record.to_owned());
+        ControlFlow::Continue(())
+    });
+    records
+}
+
+fn visit_change_records<B>(
+    change: &Change,
+    visit: &mut impl FnMut(&str) -> ControlFlow<B>,
+) -> ControlFlow<B> {
     match change {
-        Change::Policy { policy } => serde_json::from_value::<Policy>(policy.clone())
-            .map(|policy| policy_records(&policy))
-            .unwrap_or_default(),
-        Change::Invoke { action, .. } => adapters::action_change(action)
-            .map(|change| change_records(&change))
-            .unwrap_or_default(),
-        Change::EditRecord { record, edits } => std::iter::once(record.clone())
-            .chain(edit::references(edits))
-            .collect(),
-        Change::RestoreRecord { record, .. } => BTreeSet::from([record.clone()]),
-        Change::Add { element } => adapters::component_records(&element.component),
-        Change::Configure { component, .. } => adapters::component_records(component),
-        Change::Area { changes, .. } => changes
-            .assign
-            .iter()
-            .chain(&changes.unassign)
-            .cloned()
-            .collect(),
-        Change::ChangeRecord { record, changes } => std::iter::once(record.clone())
-            .chain(changes.assign.iter().chain(&changes.unassign).cloned())
-            .collect(),
-        Change::CreateRecord { draft, .. } => draft
-            .assertions
-            .iter()
-            .filter_map(|assertion| assertion.object.clone())
-            .collect(),
-        Change::DeleteRecord { record } => BTreeSet::from([record.clone()]),
-        _ => BTreeSet::new(),
+        Change::Policy { policy } => {
+            if let Ok(policy) = Policy::deserialize(policy) {
+                visit_policy_records(&policy, visit)?;
+            }
+        }
+        Change::Invoke { action, .. } => {
+            if let Ok(change) = adapters::action_change(action) {
+                visit_change_records(&change, visit)?;
+            }
+        }
+        Change::EditRecord { record, edits } => {
+            visit(record)?;
+            for reference in edit::references(edits) {
+                visit(reference)?;
+            }
+        }
+        Change::RestoreRecord { record, .. } | Change::DeleteRecord { record } => visit(record)?,
+        Change::Add { element } => adapters::visit_component_records(&element.component, visit)?,
+        Change::Configure { component, .. } => adapters::visit_component_records(component, visit)?,
+        Change::Area { changes, .. } => {
+            for reference in changes.assign.iter().chain(&changes.unassign) {
+                visit(reference)?;
+            }
+        }
+        Change::ChangeRecord { record, changes } => {
+            visit(record)?;
+            for reference in changes.assign.iter().chain(&changes.unassign) {
+                visit(reference)?;
+            }
+        }
+        Change::CreateRecord { draft, .. } => {
+            for reference in draft
+                .assertions
+                .iter()
+                .filter_map(|assertion| assertion.object.as_deref())
+            {
+                visit(reference)?;
+            }
+        }
+        _ => {}
     }
+    ControlFlow::Continue(())
 }
 
 async fn independent_since(
@@ -826,7 +917,7 @@ fn apply(hosted: &mut Hosted, change: &Change) -> Result<(), EngineError> {
             apply(hosted, &resolved)?;
         }
         Change::EditRecord { record, .. } => {
-            if !hosted.layout.records().contains(record) {
+            if !hosted.layout.contains_record(record) {
                 return Err(invalid("Choose an exposed Record"));
             }
         }
@@ -872,7 +963,7 @@ fn apply(hosted: &mut Hosted, change: &Change) -> Result<(), EngineError> {
         Change::Rename { name } if name_valid(name) => hosted.name = name.trim().into(),
         Change::Rename { .. } => return Err(invalid("Use a workspace name of 1–80 characters")),
         Change::Policy { policy } => {
-            hosted.policy = serde_json::from_value(policy.clone())?;
+            hosted.policy = Policy::deserialize(policy)?;
             hosted.policy.validate()?;
             hosted
                 .layout
@@ -883,7 +974,7 @@ fn apply(hosted: &mut Hosted, change: &Change) -> Result<(), EngineError> {
                     .layout
                     .elements
                     .iter()
-                    .filter(|element| !adapters::controls(&element.component).is_empty())
+                    .filter(|element| adapters::has_controls(&element.component))
                     .map(|element| element.id.clone()),
             );
         }
@@ -919,26 +1010,32 @@ fn apply(hosted: &mut Hosted, change: &Change) -> Result<(), EngineError> {
             if !nucleus::valid_uid(record, "r")
                 || !changes.validate()
                 || changes.is_empty()
-                || !hosted.layout.records().contains(record)
+                || !hosted.layout.contains_record(record)
             {
                 return Err(invalid("Choose an exposed Record and bounded changes"));
             }
         }
         Change::DeleteRecord { record } => {
-            if !nucleus::valid_uid(record, "r") || !hosted.layout.records().contains(record) {
+            if !nucleus::valid_uid(record, "r") || !hosted.layout.contains_record(record) {
                 return Err(invalid("Choose an exposed Record"));
             }
-            hosted.layout.elements.retain(|element| {
-                !adapters::component_records(&element.component).contains(record)
-            });
-            hosted.layout.disabled_controls.retain(|id| {
-                hosted
+            hosted
+                .layout
+                .elements
+                .retain(|element| !adapters::component_contains(&element.component, record));
+            if !hosted.layout.disabled_controls.is_empty() {
+                let surviving: BTreeSet<_> = hosted
                     .layout
                     .elements
                     .iter()
-                    .any(|element| &element.id == id)
-            });
-            if hosted.layout.records().contains(record) {
+                    .map(|element| element.id.as_str())
+                    .collect();
+                hosted
+                    .layout
+                    .disabled_controls
+                    .retain(|id| surviving.contains(id.as_str()));
+            }
+            if hosted.layout.contains_record(record) {
                 return Err(invalid(
                     "Remove Area references before deleting this Record",
                 ));
@@ -1102,7 +1199,14 @@ impl Engine {
         let mut layout = hosted.layout.clone();
         if permitted_view {
             layout.elements.retain(|element| {
-                adapters::component_records(&element.component).is_subset(&readable)
+                adapters::visit_component_records(&element.component, &mut |record| {
+                    if readable.contains(record) {
+                        ControlFlow::Continue(())
+                    } else {
+                        ControlFlow::Break(())
+                    }
+                })
+                .is_continue()
                     && !hosted.layout.areas.contains_key(&element.id)
             });
             layout.areas.clear();
@@ -1259,9 +1363,9 @@ impl Engine {
                 let graph = crate::access::policy_graph_on(&mut tx, &[])
                     .await
                     .map_err(crate::record_policy::denied)?;
-                if !policy_records(&proposed.policy).is_empty()
-                    && !policy_records(&proposed.policy)
-                        .is_subset(&self.readable_on(&mut tx, actor, &graph).await?)
+                let references = policy_records(&proposed.policy);
+                if !references.is_empty()
+                    && !references.is_subset(&self.readable_on(&mut tx, actor, &graph).await?)
                 {
                     return Err(invalid("Workspace policy references unavailable Records"));
                 }

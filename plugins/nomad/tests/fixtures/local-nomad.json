@@ -1,0 +1,65 @@
+{
+  "/api/zim/curated-categories": [
+    {
+      "name": "Practical knowledge", "slug": "practical", "icon": "IconTools",
+      "description": "Knowledge for maintenance and preservation.", "language": "en",
+      "installedTierSlug": "essential",
+      "tiers": [
+        {
+          "name": "Essential", "slug": "essential", "description": "Small download bundle.",
+          "recommended": true,
+          "resources": [
+            {"id":"manuals_en_all","version":"2026-01","title":"Shared manuals","description":"A shared source collection.","url":"https://catalog.invalid/manuals_en_all_2026-01.zim","size_mb":12}
+          ]
+        },
+        {
+          "name": "Comprehensive", "slug": "comprehensive", "description": "Additional source material.",
+          "includesTier": "essential",
+          "resources": [
+            {"id":"repair_en_all","version":"2026-02","title":"Repair guides","description":"Repair reference.","url":"https://catalog.invalid/repair_en_all_2026-02.zim","size_mb":24}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reference", "slug": "reference", "description": "Another use for shared manuals.", "language": "pt",
+      "tiers": [
+        {
+          "name": "Essential", "slug": "essential", "description": "Shared material.",
+          "resources": [
+            {"id":"manuals_en_all","version":"2026-01","title":"Shared manuals","description":"Shared reference material in another context.","url":"https://catalog.invalid/manuals_en_all_2026-01.zim","size_mb":13}
+          ]
+        }
+      ]
+    }
+  ],
+  "/api/zim/list": {
+    "files": [
+      {"type":"file","key":"storage/zim/manuals_en_all_2025-12.zim","name":"manuals_en_all_2025-12.zim","title":null,"summary":null,"author":null,"size_bytes":12345},
+      {"type":"file","key":"storage/zim/wikipedia_en_all_2026-01.zim","name":"wikipedia_en_all_2026-01.zim","title":"Wikipedia","summary":"An offline encyclopedia.","author":"Wikipedia contributors","size_bytes":98765}
+    ]
+  },
+  "/api/maps/curated-collections": [
+    {
+      "name":"Test region","slug":"region","description":"A regional map bundle.","language":"en",
+      "all_installed":true,"installed_count":1,"total_count":1,
+      "resources":[
+        {"id":"region-map","version":"2026-02","title":"Regional map","description":"Offline map data.","url":"https://catalog.invalid/region_2026-02.pmtiles","size_mb":1.5}
+      ]
+    }
+  ],
+  "/api/maps/regions": {"files":[{"type":"file","key":"storage/maps/region_2026-02.pmtiles","name":"region_2026-02.pmtiles"}]},
+  "/api/zim/wikipedia": {
+    "options":[
+      {"id":"none","name":"No Wikipedia","description":"No archive.","size_mb":0,"url":null,"version":null},
+      {"id":"compact","name":"Complete Wikipedia (Compact)","description":"A compact edition.","size_mb":100,"url":"https://catalog.invalid/wikipedia_en_all_2026-01.zim","version":"2026-01"}
+    ],
+    "currentSelection":{"optionId":"compact","status":"installed","filename":"wikipedia_en_all_2026-01.zim","url":"https://catalog.invalid/wikipedia_en_all_2026-01.zim"}
+  },
+  "/api/rag/files": {
+    "files":[
+      {"source":"/opt/project-nomad/storage/uploads/Water & soil #1.pdf","state":"indexed","chunksEmbedded":8,"fileName":"Water & soil #1.pdf","size":4567,"uploadedAt":"2026-11-14T12:00:00Z","isUserUpload":true,"collection":"Water","active":true},
+      {"source":"/opt/project-nomad/storage/zim/wikipedia_en_all_2026-01.zim","state":"browse_only","chunksEmbedded":0,"fileName":"wikipedia_en_all_2026-01.zim","size":98765,"uploadedAt":null,"isUserUpload":false,"collection":null,"active":false}
+    ]
+  }
+}

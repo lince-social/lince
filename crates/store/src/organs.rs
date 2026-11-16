@@ -376,26 +376,26 @@ pub async fn set_contact_accept_scope(
     Ok(())
 }
 
-fn parse_scope(raw: Option<String>) -> Option<Vec<String>> {
-    raw.and_then(|raw| serde_json::from_str::<Vec<String>>(&raw).ok())
-}
-
-fn unreadable_scope(raw: Option<String>) -> Option<String> {
-    let raw = raw?;
-    match serde_json::from_str::<Vec<String>>(&raw) {
-        Ok(_) => None,
-        Err(_) => Some(raw),
+fn parse_scope(raw: Option<&str>) -> (Option<Vec<String>>, Option<String>) {
+    let Some(raw) = raw else {
+        return (None, None);
+    };
+    match serde_json::from_str(raw) {
+        Ok(fields) => (Some(fields), None),
+        Err(_) => (None, Some(raw.to_owned())),
     }
 }
 
 fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
+    let (scope_fields, scope_unreadable) = parse_scope(r.get("scope_fields"));
+    let (accept_fields, accept_unreadable) = parse_scope(r.get("accept_fields"));
     Contact {
         record_uid: r.get("record_uid"),
-        scope_fields: parse_scope(r.get("scope_fields")),
-        scope_unreadable: unreadable_scope(r.get("scope_fields")),
+        scope_fields,
+        scope_unreadable,
         scope_version: r.get("scope_version"),
-        accept_fields: parse_scope(r.get("accept_fields")),
-        accept_unreadable: unreadable_scope(r.get("accept_fields")),
+        accept_fields,
+        accept_unreadable,
         accept_version: r.get("accept_version"),
         slug: r.get("slug"),
         head: r.get("head"),
@@ -730,6 +730,19 @@ pub async fn contacts(pool: &SqlitePool) -> Result<Vec<Contact>, StoreError> {
     .into_iter()
     .map(map_contact)
     .collect())
+}
+
+/// Read only the cadence input used by the sync runner. Keep the same Record
+/// join and eligibility as `contacts`; display text and scope JSON are not
+/// needed to choose the next catch-up interval.
+pub async fn minimum_catchup_interval(pool: &SqlitePool) -> Result<Option<i64>, StoreError> {
+    sqlx::query_scalar(
+        "SELECT MIN(c.catchup_interval_secs) FROM organ_contact c
+         JOIN record r ON r.uid = c.record_uid
+         WHERE c.sync_in <> 0 AND c.catchup_interval_secs > 0 AND c.trust <> 'blocked'",
+    )
+    .fetch_one(pool)
+    .await
 }
 
 pub const QUARANTINE_PER_CONTACT: i64 = 200;

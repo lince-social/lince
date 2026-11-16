@@ -55,7 +55,7 @@ impl Default for Draft {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Field {
     Subject,
     Name,
@@ -681,8 +681,28 @@ fn artifact_controls(world: &mut World, owner: Entity, row: &Value) {
 }
 
 pub(super) fn render_result(world: &mut World, owner: Entity, result: &Value, page: usize) {
-    let analysis = &result["analysis"];
-    let checked = result["checked_at"]
+    render_analysis(
+        world,
+        owner,
+        &result["analysis"],
+        &result["checked_at"],
+        page,
+    );
+}
+
+pub(super) fn render_local_result(world: &mut World, owner: Entity, result: &Value) {
+    // The remote review's local projection never supplied a checked timestamp.
+    render_analysis(world, owner, &result["local"], &Value::Null, 0);
+}
+
+fn render_analysis(
+    world: &mut World,
+    owner: Entity,
+    analysis: &Value,
+    checked: &Value,
+    page: usize,
+) {
+    let checked = checked
         .as_i64()
         .and_then(|time| chrono::DateTime::from_timestamp(time, 0))
         .map(|time| time.to_rfc3339())
@@ -752,7 +772,7 @@ pub(super) fn render_result(world: &mut World, owner: Entity, result: &Value, pa
                     .unwrap_or("unspecified")
             ),
         );
-        if let Ok(measurement) = serde_json::from_value(group["measurement"].clone()) {
+        if let Ok(measurement) = decode(&group["measurement"]) {
             panel::button(
                 world,
                 owner,
@@ -786,9 +806,9 @@ pub(super) fn render_result(world: &mut World, owner: Entity, result: &Value, pa
                 row["source"].as_str().unwrap_or_default()
             ),
         );
-        if let Ok(agreed) = serde_json::from_value::<nucleus::transfer::receipt::RecordedFloat>(
-            row["agreed_quantity"].clone(),
-        ) {
+        if let Ok(agreed) =
+            decode::<nucleus::transfer::receipt::RecordedFloat>(&row["agreed_quantity"])
+        {
             if let Ok(value) = agreed.value() {
                 label(
                     world,
@@ -830,7 +850,7 @@ pub(super) fn render_result(world: &mut World, owner: Entity, result: &Value, pa
     for row in protocol.into_iter().flatten().skip(start).take(64) {
         let content = &row["content"];
         let recorded = |value: &Value| {
-            serde_json::from_value::<nucleus::transfer::receipt::RecordedFloat>(value.clone())
+            decode::<nucleus::transfer::receipt::RecordedFloat>(value)
                 .ok()
                 .and_then(|value| {
                     value

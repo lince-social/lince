@@ -2411,6 +2411,21 @@ pub struct CalculatedClip {
     pub clip: Rect,
 }
 
+/// Delegates this node's clipping subtree to an application-owned clip pass.
+///
+/// Built-in clipping publishes the incoming ancestor clip here and stops before
+/// writing this node's [`CalculatedClip`] or visiting its descendants. The owner
+/// must run after [`UiSystems::PostLayout`](crate::UiSystems::PostLayout), apply
+/// the node's own display/override/overflow rules, and publish the subtree's
+/// calculated clips. A nested boundary receives its incoming clip from the
+/// surrounding owner. Removing this component restores built-in clipping.
+#[derive(Component, Default, Copy, Clone, Debug, Reflect)]
+#[reflect(Component, Default, Debug, Clone)]
+pub struct UiClippingBoundary {
+    /// Computed input from the enclosing clip owner, before this node's rules.
+    pub inherited_clip: Option<Rect>,
+}
+
 /// UI node entities with this component will ignore any clipping rect they inherit,
 /// the node will not be clipped regardless of its ancestors' `Overflow` setting.
 #[derive(Component, Clone, Default, Reflect)]

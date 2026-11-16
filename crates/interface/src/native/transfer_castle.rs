@@ -352,10 +352,9 @@ pub(crate) fn activate_promise(world: &mut World, owner: Entity, promise: &str) 
     ui::Command::Submit.apply(world, owner);
 }
 
-fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
-    if let Some(view) = world.get::<View>(owner) {
-        let entity = view.status;
-        world.get_mut::<Text>(entity).unwrap().0 = message.into();
+fn status(world: &mut World, owner: Entity, message: impl AsRef<str>) {
+    if let Some(entity) = world.get::<View>(owner).map(|view| view.status) {
+        crate::native::sand_panel::status(world, entity, message);
     }
 }
 
@@ -370,11 +369,15 @@ fn selected(world: &World, owner: Entity) -> Option<Value> {
 }
 
 fn person(world: &World, owner: Entity) -> String {
+    person_ref(world, owner).into_owned()
+}
+
+fn person_ref(world: &World, owner: Entity) -> std::borrow::Cow<'_, str> {
     let castle = world.get::<TransferCastle>(owner).unwrap();
     let view = world.get::<View>(owner).unwrap();
     if view.context["viewer"]["local"] == true {
-        castle.person.clone()
+        castle.person.as_str().into()
     } else {
-        text(&view.context["viewer"], "person")
+        model::display_ref(&view.context["viewer"]["person"])
     }
 }

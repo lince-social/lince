@@ -234,9 +234,9 @@ where
     .await?;
     let row = sqlx::query("SELECT * FROM transfer_cancellation WHERE uid = ? AND transfer_uid = ? AND revision = ? AND applied_fact_uid IS NULL").bind(&input.cancellation).bind(&input.transfer).bind(input.expected_revision as i64).fetch_optional(&mut *tx).await?.ok_or_else(||invalid("cancellation is stale or already completed"))?;
     let people: Vec<String> =
-        serde_json::from_str(&row.get::<String, _>("required_people")).map_err(invalid)?;
+        serde_json::from_str(row.get::<&str, _>("required_people")).map_err(invalid)?;
     let occurrences: Vec<String> =
-        serde_json::from_str(&row.get::<String, _>("occurrences")).map_err(invalid)?;
+        serde_json::from_str(row.get::<&str, _>("occurrences")).map_err(invalid)?;
     let quantity = exact::read_decimal(&row, "quantity")?;
     let mut agreement_facts = Vec::new();
     for person in people {
@@ -307,10 +307,10 @@ pub async fn terms_on(
             Ok(nucleus::transfer::TransferCancellationTerms {
                 uid: row.get("uid"),
                 exchange_path_uid: row.get("exchange_path_uid"),
-                occurrences: serde_json::from_str(&row.get::<String, _>("occurrences"))
+                occurrences: serde_json::from_str(row.get::<&str, _>("occurrences"))
                     .map_err(invalid)?,
                 quantity: exact::read_decimal(&row, "quantity")?,
-                required_people: serde_json::from_str(&row.get::<String, _>("required_people"))
+                required_people: serde_json::from_str(row.get::<&str, _>("required_people"))
                     .map_err(invalid)?,
             })
         })

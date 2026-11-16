@@ -1,6 +1,25 @@
 use super::*;
 use nucleus::property_rule::{Property, PropertyRule};
 
+pub(super) mod draft;
+pub(super) mod presentation;
+
+pub(super) fn state(world: &World, owner: Entity) -> Option<&EditorState> {
+    world.get::<Editor>(owner)?.0.as_ref()
+}
+
+fn take(world: &mut World, owner: Entity) -> Option<EditorState> {
+    world.get_mut::<Editor>(owner)?.0.take()
+}
+
+fn restore(world: &mut World, owner: Entity, state: EditorState) {
+    if let Some(mut editor) = world.get_mut::<Editor>(owner) {
+        editor.0 = Some(state);
+    } else {
+        world.entity_mut(owner).insert(Editor(Some(state)));
+    }
+}
+
 fn column(world: &mut World, parent: Entity) -> Entity {
     world.spawn((Node { width: percent(100), min_width: px(0), flex_direction: FlexDirection::Column, row_gap: px(8), flex_shrink: 0.0, ..Default::default() }, ChildOf(parent))).id()
 }
@@ -83,43 +102,88 @@ pub(super) fn open(world: &mut World, root: Entity, uid: Option<String>, is_wind
     let cancel = button(world, actions, overlay, "Cancel", EditChange::Cancel).0;
     let loaded = creating || payload.is_some();
     let revision = payload.as_ref().map_or(0, Payload::revision);
-    world.entity_mut(overlay).insert(Editor { root, canvas, workspace, output, content, previous, uid, title, name, kind, form, origin: payload, raw: entry.map(|entry| entry.value), revision, creating, needs_link: creating, loaded, reloading: false, pending: false, reload: false, message: String::new(), status, save, secondary: [reload, open] });
+    world.entity_mut(overlay).insert(Editor(Some(EditorState { root, canvas, workspace, output, content, previous, uid, title, name, kind, form, origin: payload, raw: entry.map(|entry| entry.value), revision, creating, needs_link: creating, loaded, reloading: false, pending: false, reload: false, message: String::new(), status, save, secondary: [reload, open], preparation: Default::default(), presentation: Default::default() })));
     shortcuts::own_keyboard(world, overlay);
     if let Some(mut focus) = world.get_resource_mut::<InputFocus>() { focus.set(name.unwrap_or(cancel), FocusCause::Navigated); }
     refresh(world);
 }
 
-fn record(world: &World, uid: &str, window: bool) -> Option<Entry> {
+fn record_ref<'a>(world: &'a World, uid: &str, window: bool) -> Option<&'a Entry> {
     let catalog = world.get_resource::<Catalog>()?;
-    let feed = if window { &catalog.windows } else { &catalog.rules };
-    feed.entries.get(uid).cloned()
+    let feed = if window {
+        &catalog.windows
+    } else {
+        &catalog.rules
+    };
+    feed.entries.get(uid)
 }
 
-fn input(world: &World, entity: Entity) -> Result<String, String> {
+fn record(world: &World, uid: &str, window: bool) -> Option<Entry> {
+    record_ref(world, uid, window).cloned()
+}
+
+fn input(world: &World, entity: Entity) -> Result<std::borrow::Cow<'_, str>, String> {
     let input = world.get::<EditableText>(entity).ok_or("The rule field is unavailable.")?;
     if input.is_composing() || !input.pending_edits.is_empty() || input.pending_paste.is_some() { return Err("Finish text composition or the pending paste before saving.".into()); }
-    Ok(input.value().to_string())
+    Ok(input.value().to_cow())
 }
 
-fn candidate(world: &World, state: &Editor) -> Result<Payload, String> {
-    let revision = state.revision.checked_add(1).ok_or("The Record revision is exhausted.")?;
+fn candidate(world: &World, state: &EditorState) -> Result<Payload, String> {
+    if let Some(value) = state.preparation.get(world, state) {
+        return value.clone();
+    }
+    parse_candidate(world, state)
+}
+
+fn parse_candidate(world: &World, state: &EditorState) -> Result<Payload, String> {
+    let revision = state
+        .revision
+        .checked_add(1)
+        .ok_or("The Record revision is exhausted.")?;
     let properties = state.form.properties(world)?;
     let payload = match &state.kind {
-        Kind::Window => Payload::Window(Window { revision, properties }),
-        Kind::Rule { enabled, all, conditions, .. } => {
-            let conditions = conditions.iter().map(|condition| Ok(PropertyRule { property: condition.property, value: input(world, condition.value)? })).collect::<Result<Vec<_>, String>>()?;
-            Payload::Rule(Rule { revision, enabled: *enabled, match_all: *all, conditions, properties })
+        Kind::Window => Payload::Window(Window {
+            revision,
+            properties,
+        }),
+        Kind::Rule {
+            enabled,
+            all,
+            conditions,
+            ..
+        } => {
+            let conditions = conditions
+                .iter()
+                .map(|condition| {
+                    Ok(PropertyRule {
+                        property: condition.property,
+                        value: input(world, condition.value)?.into_owned(),
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            Payload::Rule(Rule {
+                revision,
+                enabled: *enabled,
+                match_all: *all,
+                conditions,
+                properties,
+            })
         }
     };
     payload.validate()?;
     if state.creating {
         let name = input(world, state.name.ok_or("Give the new rule a name.")?)?;
-        if name.trim().is_empty() || name.chars().count() > 160 || name.chars().any(char::is_control) { return Err("Give the new rule a name of 1–160 characters.".into()); }
+        if name.trim().is_empty()
+            || name.chars().count() > 160
+            || name.chars().any(char::is_control)
+        {
+            return Err("Give the new rule a name of 1–160 characters.".into());
+        }
     }
     Ok(payload)
 }
 
-fn eligible(world: &World, owner: Entity, state: &Editor) -> bool {
+fn eligible(world: &World, owner: Entity, state: &EditorState) -> bool {
     shortcuts::input_eligible(world, state.root, &state.canvas, owner)
         && world.get::<Workspaces>(state.root).is_some_and(|spaces| spaces.active == state.workspace)
         && state.output.is_none_or(|output| world.get_resource::<crate::native::output_views::OutputViews>().is_some_and(|views| {
@@ -127,28 +191,53 @@ fn eligible(world: &World, owner: Entity, state: &Editor) -> bool {
         }))
 }
 
-fn stale(world: &World, owner: Entity, state: &Editor) -> Option<String> {
-    if !eligible(world, owner, state) { return Some("The original workspace or output view is unavailable. Your draft is kept; return to that view or cancel.".into()); }
-    if !state.loaded || state.reloading { return Some("Loading the selected Record…".into()); }
-    if state.reload { return Some("The Record or Cell changed. Your draft is kept; Reload saved Record before saving again.".into()); }
-    if world.get::<Workspaces>(state.root).is_none_or(|spaces| spaces.canvas_id != state.canvas) { return Some("The original canvas is unavailable. The draft remains attached to its captured Record.".into()); }
+fn stale(world: &World, owner: Entity, state: &EditorState) -> Option<&'static str> {
+    let _validity = engine::performance::Span::new("opening-editor-validity");
+    if !eligible(world, owner, state) { return Some("The original workspace or output view is unavailable. Your draft is kept; return to that view or cancel."); }
+    if !state.loaded || state.reloading { return Some("Loading the selected Record…"); }
+    if state.reload { return Some("The Record or Cell changed. Your draft is kept; Reload saved Record before saving again."); }
+    if world.get::<Workspaces>(state.root).is_none_or(|spaces| spaces.canvas_id != state.canvas) { return Some("The original canvas is unavailable. The draft remains attached to its captured Record."); }
     if state.creating { return None; }
-    let entry = state.uid.as_deref().and_then(|uid| record(world, uid, matches!(&state.kind, Kind::Window)));
+    let entry = state.uid.as_deref().and_then(|uid| record_ref(world, uid, matches!(&state.kind, Kind::Window)));
     match entry {
         Some(entry) if entry.exists && state.raw.as_ref() == Some(&entry.value) => None,
-        Some(entry) if !entry.exists => Some("The selected Record is missing or unreadable. Your draft is kept.".into()),
-        Some(_) => Some("Saved opening preferences changed. Your draft is kept; Reload saved Record to review them.".into()),
-        None => Some("The selected Record is loading or unavailable. Your draft is kept.".into()),
+        Some(entry) if !entry.exists => Some("The selected Record is missing or unreadable. Your draft is kept."),
+        Some(_) => Some("Saved opening preferences changed. Your draft is kept; Reload saved Record to review them."),
+        None => Some("The selected Record is loading or unavailable. Your draft is kept."),
     }
 }
 
-fn unchanged(state: &Editor, payload: &Payload) -> bool {
-    let mut value = payload.clone();
-    match &mut value { Payload::Rule(rule) => rule.revision = state.revision, Payload::Window(window) => window.revision = state.revision }
-    state.origin.as_ref() == Some(&value)
+fn unchanged(state: &EditorState, payload: &Payload) -> bool {
+    let _validity = engine::performance::Span::new("opening-editor-validity");
+    match (state.origin.as_ref(), payload) {
+        (
+            Some(Payload::Rule(origin)),
+            Payload::Rule(Rule {
+                revision: _,
+                enabled,
+                match_all,
+                conditions,
+                properties,
+            }),
+        ) => {
+            origin.revision == state.revision
+                && origin.enabled == *enabled
+                && origin.match_all == *match_all
+                && origin.conditions == *conditions
+                && origin.properties == *properties
+        }
+        (
+            Some(Payload::Window(origin)),
+            Payload::Window(Window {
+                revision: _,
+                properties,
+            }),
+        ) => origin.revision == state.revision && origin.properties == *properties,
+        _ => false,
+    }
 }
 
-fn close(world: &mut World, owner: Entity, state: Editor) {
+fn close(world: &mut World, owner: Entity, state: EditorState) {
     let owns = world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|modal| modal.0 == Some(owner));
     let previous = state.previous.filter(|entity| eligible(world, owner, &state) && previous_input(world, &state, *entity));
     shortcuts::release_keyboard(world, owner);
@@ -159,11 +248,11 @@ fn close(world: &mut World, owner: Entity, state: Editor) {
     }
 }
 
-fn previous_input(world: &World, state: &Editor, previous: Entity) -> bool {
+fn previous_input(world: &World, state: &EditorState, previous: Entity) -> bool {
     shortcuts::input_eligible(world, state.root, &state.canvas, previous)
 }
 
-fn reload(world: &mut World, owner: Entity, state: &mut Editor, entry: Entry) {
+fn reload(world: &mut World, owner: Entity, state: &mut EditorState, entry: Entry) {
     state.loaded = true;
     if !entry.exists {
         if state.creating {
@@ -189,13 +278,14 @@ fn reload(world: &mut World, owner: Entity, state: &mut Editor, entry: Entry) {
     let window = matches!(&state.kind, Kind::Window);
     let (kind, form, name) = contents(world, state.content, owner, state.root, Some(&payload), window, false, &entry.title, None);
     state.kind = kind; state.form = form; state.name = name; state.title = entry.title;
+    state.presentation.invalidate_content();
     state.revision = payload.revision(); state.origin = Some(payload); state.raw = Some(entry.value);
     state.loaded = true; state.reloading = false; state.creating = false; state.reload = false;
     state.message = "Saved Record loaded. Existing windows keep their placement until Reapply.".into();
     if let Some(mut focus) = world.get_resource_mut::<InputFocus>() { focus.set(state.save, FocusCause::Navigated); }
 }
 
-fn link(world: &mut World, state: &mut Editor, uid: &str) -> Result<(), String> {
+fn link(world: &mut World, state: &mut EditorState, uid: &str) -> Result<(), String> {
     if !state.needs_link { return Ok(()); }
     let old = active_order(world);
     if old.iter().any(|current| current == uid) { state.needs_link = false; return Ok(()); }
@@ -215,11 +305,11 @@ fn link(world: &mut World, state: &mut Editor, uid: &str) -> Result<(), String> 
 }
 
 pub(super) fn completed(world: &mut World, owner: Entity, completion: catalog::Completion) {
-    let Some(mut state) = world.get_entity_mut(owner).ok().and_then(|mut entity| entity.take::<Editor>()) else {
+    let Some(mut state) = take(world, owner) else {
         crate::native::notifications::report(world, "Opening preferences", &format!("Record {}: {}", completion.uid, completion.result.map(|_| "saved; its closed editor did not change rule order".to_owned()).unwrap_or_else(|error| error)));
         return;
     };
-    if !state.pending || state.uid.as_deref() != Some(completion.uid.as_str()) { world.entity_mut(owner).insert(state); return; }
+    if !state.pending || state.uid.as_deref() != Some(completion.uid.as_str()) { restore(world, owner, state); return; }
     state.pending = false;
     if completion.created { state.creating = false; }
     match completion.result {
@@ -235,26 +325,29 @@ pub(super) fn completed(world: &mut World, owner: Entity, completion: catalog::C
         }
         Err(error) => { state.reload = true; state.message = format!("{error} Record: {}. Your draft is kept.", completion.uid); }
     }
-    world.entity_mut(owner).insert(state);
+    restore(world, owner, state);
 }
 
 impl Action for EditChange {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if !world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|modal| modal.0 == Some(owner)) || world.get::<Editor>(owner).is_none() { return; }
-        let Some(mut state) = world.entity_mut(owner).take::<Editor>() else { return; };
+        if !world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|modal| modal.0 == Some(owner)) || state(world, owner).is_none() { return; }
+        let Some(mut state) = take(world, owner) else { return; };
         if matches!(self, Self::Cancel) { close(world, owner, state); return; }
-        if state.pending { world.entity_mut(owner).insert(state); return; }
+        if state.pending { restore(world, owner, state); return; }
         if !eligible(world, owner, &state) {
             state.message = "The original workspace or output view is unavailable. Your draft is kept; return to that view or cancel.".into();
-            world.entity_mut(owner).insert(state);
+            restore(world, owner, state);
             refresh(world);
             return;
         }
         state.message.clear();
+        if matches!(self, Self::AddCondition | Self::RemoveCondition(_)) {
+            state.presentation.invalidate_content();
+        }
         match self {
             Self::Save => {
                 let result = (|| {
-                    if let Some(error) = stale(world, owner, &state) { return Err(error); }
+                    if let Some(error) = stale(world, owner, &state) { return Err(error.to_owned()); }
                     let payload = candidate(world, &state)?;
                     if unchanged(&state, &payload) && state.needs_link {
                         let uid = state.uid.clone().ok_or("The saved Record identity is unavailable.")?;
@@ -305,66 +398,129 @@ impl Action for EditChange {
             Self::Flag(index) => if let Some(flag) = state.form.flags.get_mut(*index) { *flag = match *flag { None => Some(true), Some(true) => Some(false), Some(false) => None }; },
             Self::Cancel => unreachable!(),
         }
-        world.entity_mut(owner).insert(state);
+        restore(world, owner, state);
         refresh(world);
     }
 }
 
 impl Action for OutputChoice {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if !world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|modal| modal.0 == Some(owner)) || world.get::<Editor>(owner).is_none() { return; }
-        let Some(mut state) = world.entity_mut(owner).take::<Editor>() else { return; };
+        if !world.get_resource::<shortcuts::KeyboardModalOwner>().is_some_and(|modal| modal.0 == Some(owner)) || state(world, owner).is_none() { return; }
+        let Some(mut state) = take(world, owner) else { return; };
         if !state.pending && eligible(world, owner, &state) { state.form.output = self.0.clone(); state.form.close_output(world); }
-        world.entity_mut(owner).insert(state);
+        restore(world, owner, state);
         refresh(world);
     }
 }
 
 pub(super) fn context_changed(world: &mut World) {
-    for mut state in world.query::<&mut Editor>().iter_mut(world) {
+    for mut editor in world.query::<&mut Editor>().iter_mut(world) {
+        let Some(state) = editor.0.as_mut() else { continue; };
         state.reload = true;
         state.message = "The Cell connection or login changed. Reload this Record before saving; your draft is kept.".into();
     }
 }
 
-fn enable_content(world: &mut World, root: Entity, disabled: bool) {
-    let mut stack = vec![root];
-    while let Some(entity) = stack.pop() {
-        if let Some(children) = world.get::<Children>(entity) { stack.extend(children.iter()); }
-        if world.get::<EditableText>(entity).is_some() || world.get::<ActionButton>(entity).is_some() { disable(world, entity, disabled); }
-    }
-}
-
 pub(super) fn refresh(world: &mut World) {
-    let owners: Vec<_> = world.query_filtered::<Entity, With<Editor>>().iter(world).collect();
-    for owner in owners {
-        let mut state = world.entity_mut(owner).take::<Editor>().unwrap();
-        if !state.pending && (!state.loaded || state.reloading)
-            && let Some(entry) = state.uid.as_deref().and_then(|uid| record(world, uid, matches!(&state.kind, Kind::Window))) {
+    let _presentation = engine::performance::Span::new("opening-editor-presentation");
+    let mut owners = world
+        .remove_resource::<presentation::Owners>()
+        .unwrap_or_else(|| presentation::Owners::from_world(world));
+    owners.collect(world);
+    for owner in owners.pending.drain(..) {
+        let Some(mut state) = take(world, owner) else {
+            continue;
+        };
+        if !state.pending
+            && (!state.loaded || state.reloading)
+            && let Some(entry) = state
+                .uid
+                .as_deref()
+                .and_then(|uid| record(world, uid, matches!(&state.kind, Kind::Window)))
+        {
             reload(world, owner, &mut state, entry);
         }
         if !state.pending && (!state.loaded || state.reloading) {
-            let error = world.get_resource::<Catalog>().and_then(|catalog| if matches!(&state.kind, Kind::Window) { catalog.windows.error.clone() } else { catalog.rules.error.clone() });
-            if let Some(error) = error { state.message = error; state.reloading = false; state.loaded = true; state.reload = true; }
+            let error = world.get_resource::<Catalog>().and_then(|catalog| {
+                if matches!(&state.kind, Kind::Window) {
+                    catalog.windows.error.clone()
+                } else {
+                    catalog.rules.error.clone()
+                }
+            });
+            if let Some(error) = error {
+                state.message = error;
+                state.reloading = false;
+                state.loaded = true;
+                state.reload = true;
+            }
         }
         state.form.refresh(world, state.root);
-        if let Kind::Rule { enabled, all, conditions, enabled_control, all_control, .. } = &state.kind {
-            caption(world, *enabled_control, if *enabled { "Rule enabled: Yes" } else { "Rule enabled: No" });
-            caption(world, *all_control, if *all { "Match all conditions" } else { "Match any condition" });
-            for condition in conditions { caption(world, condition.choice, condition.property.name()); }
+        if let Kind::Rule {
+            enabled,
+            all,
+            conditions,
+            enabled_control,
+            all_control,
+            ..
+        } = &state.kind
+        {
+            caption(
+                world,
+                *enabled_control,
+                if *enabled {
+                    "Rule enabled: Yes"
+                } else {
+                    "Rule enabled: No"
+                },
+            );
+            caption(
+                world,
+                *all_control,
+                if *all {
+                    "Match all conditions"
+                } else {
+                    "Match any condition"
+                },
+            );
+            for condition in conditions {
+                caption(world, condition.choice, condition.property.name());
+            }
         }
-        enable_content(world, state.content, state.pending || !state.loaded || state.reloading);
+        state.presentation.enable_content(
+            world,
+            state.content,
+            state.pending || !state.loaded || state.reloading,
+        );
         disable(world, state.secondary[0], state.pending || state.reloading);
-        disable(world, state.secondary[1], state.pending || state.uid.is_none());
-        if !state.creating && let Some(name) = state.name { disable(world, name, true); }
-        let payload = candidate(world, &state);
-        let error = stale(world, owner, &state).or_else(|| payload.as_ref().err().cloned());
-        let dirty = payload.as_ref().is_ok_and(|payload| !unchanged(&state, payload));
-        let message = if state.pending { state.message.clone() } else if let Some(error) = &error {
-            if state.message.is_empty() { error.clone() } else { format!("{error}\n{}", state.message) }
-        } else { state.message.clone() };
+        disable(
+            world,
+            state.secondary[1],
+            state.pending || state.uid.is_none(),
+        );
+        if !state.creating
+            && let Some(name) = state.name
+        {
+            disable(world, name, true);
+        }
+        let mut preparation = std::mem::take(&mut state.preparation);
+        let payload = preparation.prepare(world, &state);
+        let error =
+            stale(world, owner, &state).or_else(|| payload.as_ref().err().map(String::as_str));
+        let dirty = payload
+            .as_ref()
+            .is_ok_and(|payload| !unchanged(&state, payload));
+        let message = state
+            .presentation
+            .feedback(if state.pending { None } else { error }, &state.message);
         text(world, state.status, message);
-        disable(world, state.save, state.pending || error.is_some() || (!dirty && !state.needs_link));
-        world.entity_mut(owner).insert(state);
+        disable(
+            world,
+            state.save,
+            state.pending || error.is_some() || (!dirty && !state.needs_link),
+        );
+        state.preparation = preparation;
+        restore(world, owner, state);
     }
+    world.insert_resource(owners);
 }

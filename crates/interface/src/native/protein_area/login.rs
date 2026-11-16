@@ -455,15 +455,12 @@ pub(super) fn masks(world: &mut World) {
                 entity,
                 world
                     .get::<EditableText>(mask.0)
-                    .map_or(0, |field| field.value().chars().count()),
+                    .map_or(0, |field| field.value().chars().take(32).count()),
             )
         })
         .collect();
     for (entity, count) in updates {
-        world
-            .get_mut::<Text>(entity)
-            .unwrap()
-            .set_if_neq(Text::new("•".repeat(count.min(32))));
+        crate::controls::password_mask(world.get_mut::<Text>(entity).unwrap(), count);
     }
 }
 

@@ -224,7 +224,7 @@ async fn protein_selection_renumbers_in_visible_order_and_persists() {
         ids[2].clone(),
         ids[0].clone(),
     ];
-    app.world_mut().get_mut::<View>(owner).unwrap().feed.clear();
+    app.world_mut().get_mut::<View>(owner).unwrap().feed = None;
     app.update();
     assert_eq!(
         app.world()

@@ -89,7 +89,7 @@ async fn explicit_attachment_streams_existing_properties_updates_and_detaches_wi
     let baseline = json!({"head":"Canvas item","local":"retained"});
     app.world_mut()
         .entity_mut(item)
-        .insert(RecordProperties(baseline.clone()));
+        .insert(RecordProperties(baseline.clone().into()));
     app.world_mut().insert_non_send(cell_bridge::connect(
         runtime.clone(),
         crate::host::WakeSignal::new(|| {}),
@@ -129,8 +129,12 @@ async fn explicit_attachment_streams_existing_properties_updates_and_detaches_wi
     assert!(app.world().get::<Attachment>(item).is_none());
     assert!(app.world().get::<RecordBinding>(item).is_none());
     assert_eq!(
-        app.world().get::<RecordProperties>(item).unwrap().0,
-        baseline
+        app.world()
+            .get::<RecordProperties>(item)
+            .unwrap()
+            .0
+            .as_ref(),
+        &baseline
     );
     let mut session = runtime.local_session();
     let messages = session.handle(cell_bridge::records_subscription()).await;

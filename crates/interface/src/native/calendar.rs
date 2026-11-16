@@ -47,7 +47,9 @@ pub struct CalendarSand(pub Calendar);
 struct View {
     scroll: f32,
     rendered: Option<Calendar>,
-    feed: String,
+    feed: Option<crate::native::protein_area::FeedVersion<'static>>,
+    picker_key: String,
+    projection_revision: Option<u64>,
     body: Option<Entity>,
     selector: Option<Selector>,
     page: usize,
@@ -159,14 +161,14 @@ fn scroll_steps(
 }
 
 fn area(world: &mut World, owner: Entity) -> Option<Entity> {
-    let id = world.get::<CalendarSand>(owner)?.0.area.clone()?;
+    let mut areas = world.query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>();
+    let id = world.get::<CalendarSand>(owner)?.0.area.as_ref()?;
     let root = world.get::<ChildOf>(owner)?.parent();
     let workspace = world.get::<WorkspaceMember>(owner)?.0;
-    world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
+    areas
         .iter(world)
         .find(|(_, area, parent, member)| {
-            area.id == id
+            &area.id == id
                 && parent.parent() == root
                 && member.0 == workspace
                 && area.protein.is_some()
@@ -197,17 +199,27 @@ fn update(world: &mut World) {
         let picker_key = picker::sync(world, owner);
         projection::maintain(world, owner);
         let feed = area(world, owner)
-            .and_then(|a| crate::native::protein_area::calendar_feed(world, a).map(|(_, key)| key))
-            .unwrap_or(picker_key);
-        let feed = if let Some(projection) = world.get::<projection::Feed>(owner) {
-            format!("{feed}:{}", projection.revision)
+            .and_then(|a| crate::native::protein_area::calendar_feed(world, a).map(|(_, key)| key));
+        let picker_key = if feed.is_none() {
+            picker_key.as_deref().unwrap_or("")
         } else {
-            feed
+            ""
         };
+        let projection_revision = world
+            .get::<projection::Feed>(owner)
+            .map(|feed| feed.revision);
         let current = &world.get::<CalendarSand>(owner).unwrap().0;
         let view = world.get::<View>(owner).unwrap();
-        if view.rendered.as_ref() != Some(current) || view.feed != feed {
-            world.get_mut::<View>(owner).unwrap().feed = feed;
+        if view.rendered.as_ref() != Some(current)
+            || view.feed != feed
+            || view.picker_key != picker_key
+            || view.projection_revision != projection_revision
+        {
+            let feed = feed.map(crate::native::protein_area::FeedVersion::into_owned);
+            let mut view = world.get_mut::<View>(owner).unwrap();
+            view.feed = feed;
+            view.picker_key = picker_key.to_owned();
+            view.projection_revision = projection_revision;
             ui::render(world, owner);
         }
     }
@@ -271,7 +283,7 @@ impl Action for Command {
                     .query::<(&projection::TimezoneInput, &bevy::text::EditableText)>()
                     .iter(world)
                     .find(|(input, _)| input.0 == owner)
-                    .map(|(_, editor)| editor.value().to_string().trim().to_string());
+                    .map(|(_, editor)| editor.value().to_cow().trim().to_string());
                 let Some(timezone) = timezone else {
                     return;
                 };

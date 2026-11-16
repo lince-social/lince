@@ -7,6 +7,7 @@ mod face;
 mod keyboard;
 mod motion;
 mod palette;
+mod preparation;
 mod render;
 mod scene;
 mod timing;
@@ -23,7 +24,8 @@ use crate::native::protein_area::Source;
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};
 use lince_interface::time_castle::{self as model, CursorMode, Entry, Mode, Settings};
-use std::collections::HashMap;
+use serde::Deserialize;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Component)]
 pub(crate) struct AttachedCard;
@@ -78,7 +80,7 @@ struct View {
     unwind: f32,
     animation_at: std::time::Instant,
     image: Option<Handle<Image>>,
-    rendered: Option<(Settings, u64, i64, [u32; 4], u32, bool, usize)>,
+    rendered: Option<(Arc<Settings>, u64, i64, [u32; 4], u32, bool, usize)>,
     scene: Option<Entity>,
     fallback: bool,
     projection: Option<nucleus::projection::Status>,
@@ -87,6 +89,7 @@ struct View {
 
 struct Feed {
     source: Source,
+    selection: Option<Arc<preparation::Selection>>,
     query: protein::Protein,
     key: String,
     id: String,
@@ -95,10 +98,26 @@ struct Feed {
     sender: Option<crate::native::cell_bridge::Sender>,
 }
 
+struct ClosingFeed {
+    source: Source,
+    id: String,
+    sender: Option<crate::native::cell_bridge::Sender>,
+}
+
+impl From<Feed> for ClosingFeed {
+    fn from(feed: Feed) -> Self {
+        Self {
+            source: feed.source,
+            id: feed.id,
+            sender: feed.sender,
+        }
+    }
+}
+
 #[derive(Resource, Default)]
 struct Feeds {
     active: HashMap<Entity, Feed>,
-    closing: Vec<Feed>,
+    closing: Vec<ClosingFeed>,
 }
 
 pub(crate) fn organs(world: &World) -> Vec<String> {
@@ -108,8 +127,9 @@ pub(crate) fn organs(world: &World) -> Vec<String> {
             feeds
                 .active
                 .values()
-                .chain(&feeds.closing)
-                .filter_map(|feed| match &feed.source {
+                .map(|feed| &feed.source)
+                .chain(feeds.closing.iter().map(|feed| &feed.source))
+                .filter_map(|source| match source {
                     Source::Organ(organ) => Some(organ.clone()),
                     Source::Local => None,
                 })
@@ -231,64 +251,12 @@ fn source_query(
     world: &mut World,
     owner: Entity,
 ) -> Result<(Source, Vec<protein::Predicate>, Vec<protein::Order>), String> {
-    let settings = &world
-        .get::<TimeSettings>(owner)
-        .ok_or("Time Castle closed")?
-        .0;
-    if let Some(source) = &settings.source {
-        let source = source.clone();
-        if !source.valid() {
-            return Err("Invalid clock schedule source".into());
-        }
-        if crate::native::practice_cells::source(world, owner)
-            .is_some_and(|cell| source.cell != Source::Organ(cell))
-        {
-            return Err("Choose a Protein from this practice Cell.".into());
-        }
-        let query = source.draft.compile()?;
-        return Ok((
-            source.cell,
-            query.filter,
-            default_schedule_order(query.order),
-        ));
-    }
-    let Some(id) = settings.area.clone() else {
-        return Ok((
-            crate::native::practice_cells::source(world, owner)
-                .map_or(Source::Local, Source::Organ),
-            Vec::new(),
-            vec![protein::Order::Desc("#task".into())],
-        ));
-    };
-    let root = world
-        .get::<ChildOf>(owner)
-        .ok_or("Workspace missing")?
-        .parent();
-    let workspace = world
-        .get::<crate::native::workspace::WorkspaceMember>(owner)
-        .map(|member| member.0);
-    let area = world
-        .query::<(
-            &crate::native::area::InfluenceArea,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-        )>()
-        .iter(world)
-        .find(|(area, parent, member)| {
-            area.id == id && parent.parent() == root && Some(member.0) == workspace
-        })
-        .and_then(|(area, _, _)| area.protein.clone())
-        .ok_or("Selected Protein Area is unavailable")?;
-    if crate::native::practice_cells::source(world, owner)
-        .is_some_and(|source| area.source != Source::Organ(source))
-    {
-        return Err("Choose a Protein from this practice Cell.".into());
-    }
-    let query = area.query()?;
+    let (settings, _) = preparation::settings(world, owner)?;
+    let selection = preparation::source(world, owner, &settings)?;
     Ok((
-        area.source,
-        query.filter,
-        default_schedule_order(query.order),
+        selection.source.clone(),
+        selection.filter.clone(),
+        selection.order.clone(),
     ))
 }
 
@@ -311,7 +279,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 let entries: Vec<model::Entry> = rows
                     .iter()
                     .filter(|row| row["kind"] == "schedule-entry")
-                    .filter_map(|row| serde_json::from_value(row.clone()).ok())
+                    .filter_map(|row| model::Entry::deserialize(row).ok())
                     .collect();
                 let changed_selection = if let Some(mut view) = world.get_mut::<View>(owner) {
                     let before = (view.selected.len() == 1)
@@ -413,6 +381,7 @@ fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
 ) {
+    let _update = nucleus::performance::Span::new("time-feed-update");
     if !crate::native::laboratory::normal(world) {
         return;
     }
@@ -444,16 +413,16 @@ fn update(
         .collect();
     for owner in closed {
         let feed = world.resource_mut::<Feeds>().active.remove(&owner).unwrap();
-        world.resource_mut::<Feeds>().closing.push(feed);
+        world.resource_mut::<Feeds>().closing.push(feed.into());
     }
     for owner in owners {
-        let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-        let (source, filter, order) = match source_query(world, owner) {
+        let (settings, settings_valid) = preparation::settings(world, owner).unwrap();
+        let selection = match preparation::source(world, owner, &settings) {
             Ok(value) => value,
             Err(error) => {
                 status(world, owner, &error);
                 if let Some(feed) = world.resource_mut::<Feeds>().active.remove(&owner) {
-                    world.resource_mut::<Feeds>().closing.push(feed);
+                    world.resource_mut::<Feeds>().closing.push(feed.into());
                 }
                 if let Some(mut view) = world.get_mut::<View>(owner)
                     && (!view.entries.is_empty() || view.projection.is_some())
@@ -466,6 +435,7 @@ fn update(
                 continue;
             }
         };
+        let source = &selection.source;
         let previous = world.resource::<Feeds>().active.get(&owner);
         let window = previous
             .filter(|feed| {
@@ -473,16 +443,37 @@ fn update(
                     && feed.window.until_ms >= now.saturating_add(settings.horizon_ms)
                     && feed.window.from_ms <= settings.history_from(now)
             })
-            .map(|feed| feed.window.clone())
-            .or_else(|| settings.window(now));
+            .map(|feed| std::borrow::Cow::Borrowed(&feed.window))
+            .or_else(|| {
+                settings_valid
+                    .then(|| settings.window(now))
+                    .flatten()
+                    .map(std::borrow::Cow::Owned)
+            });
         let Some(window) = window else {
             status(world, owner, "Invalid clock settings");
             continue;
         };
-        let mut query = protein::schedule::query(window.clone(), filter);
-        query.order = order;
-        let key = serde_json::to_string(&query).unwrap();
-        let changed = previous.is_none_or(|feed| feed.source != source || feed.key != key);
+        let retained = previous.is_some_and(|feed| {
+            &feed.source == source
+                && feed.window == *window
+                && feed
+                    .selection
+                    .as_ref()
+                    .is_some_and(|previous| Arc::ptr_eq(previous, &selection))
+        });
+        let query = (!retained).then(|| {
+            let _prepare = nucleus::performance::Span::new("time-subscription-preparation");
+            let mut query =
+                protein::schedule::query(window.clone().into_owned(), selection.filter.clone());
+            query.order = selection.order.clone();
+            let key = serde_json::to_string(&query).unwrap();
+            nucleus::performance::add("time-subscription-queries-prepared", 1);
+            (query, key)
+        });
+        let changed = query.as_ref().is_some_and(|(_, key)| {
+            previous.is_none_or(|feed| &feed.source != source || &feed.key != key)
+        });
         let filter_key = |query: &protein::Protein| {
             serde_json::to_value(
                 query
@@ -495,13 +486,15 @@ fn update(
         };
         let same_source = changed
             && previous.is_some_and(|feed| {
-                feed.source == source
+                &feed.source == source
                     && feed.window.timezone == window.timezone
-                    && filter_key(&feed.query) == filter_key(&query)
+                    && filter_key(&feed.query) == filter_key(&query.as_ref().unwrap().0)
             });
         if changed {
+            let (query, key) = query.unwrap();
+            let window = window.into_owned();
             if let Some(feed) = world.resource_mut::<Feeds>().active.remove(&owner) {
-                world.resource_mut::<Feeds>().closing.push(feed);
+                world.resource_mut::<Feeds>().closing.push(feed.into());
             }
             let mut view = world.get_mut::<View>(owner).unwrap();
             if !same_source {
@@ -516,6 +509,7 @@ fn update(
                 owner,
                 Feed {
                     source: source.clone(),
+                    selection: Some(selection.clone()),
                     query,
                     key,
                     id: nucleus::new_uid("clock"),
@@ -526,9 +520,19 @@ fn update(
             );
             status(world, owner, "Loading schedule");
             chrome::availability(world, owner, false);
+        } else if !retained {
+            drop(window);
+            // Changed authored inputs can still produce the same wire query.
+            // Remember their preparation without replacing the subscription.
+            world
+                .resource_mut::<Feeds>()
+                .active
+                .get_mut(&owner)
+                .unwrap()
+                .selection = Some(selection.clone());
         }
-        crate::native::protein_area::ensure_auxiliary(world, &source);
-        let sender = crate::native::protein_area::auxiliary_sender(world, &source);
+        crate::native::protein_area::ensure_auxiliary(world, source);
+        let sender = crate::native::protein_area::auxiliary_sender(world, source);
         let feed = world.resource::<Feeds>().active.get(&owner).unwrap();
         if !feed.sent {
             let message = ClientMessage::Subscribe {
@@ -538,7 +542,7 @@ fn update(
             if let Some(sender) = sender
                 && sender.try_send(message.clone()).is_ok()
             {
-                crate::native::protein_area::auxiliary_subscribed(world, &source, &message);
+                crate::native::protein_area::auxiliary_subscribed(world, source, &message);
                 let mut feeds = world.resource_mut::<Feeds>();
                 let feed = feeds.active.get_mut(&owner).unwrap();
                 feed.sent = true;
@@ -688,7 +692,7 @@ mod tests {
             &Source::Local,
             &ServerMessage::Snapshot {
                 id: "closed-clock".into(),
-                rows: rows.clone(),
+                rows: rows.clone().into(),
             },
         );
         let revision = world.get::<View>(owner).unwrap().revision;
@@ -698,7 +702,7 @@ mod tests {
             &Source::Local,
             &ServerMessage::Update {
                 id: "closed-clock".into(),
-                rows,
+                rows: rows.into(),
             },
         );
         assert_eq!(world.get::<View>(owner).unwrap().revision, revision);
@@ -707,7 +711,7 @@ mod tests {
             &Source::Local,
             &ServerMessage::Update {
                 id: "closed-clock".into(),
-                rows: Vec::new(),
+                rows: Vec::new().into(),
             },
         );
         assert!(world.get::<View>(owner).unwrap().entries.is_empty());
@@ -721,6 +725,7 @@ mod tests {
         let query = protein::schedule::query(window.clone(), Vec::new());
         Feed {
             source: Source::Local,
+            selection: None,
             key: serde_json::to_string(&query).unwrap(),
             query,
             id: "closed-clock".into(),

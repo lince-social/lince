@@ -56,7 +56,7 @@ impl Form {
             && self.inputs.len() <= 65_536
             && self.saved_checks.len() <= 200
             && self.checks.len() <= 1024
-            && serde_json::to_vec(self).is_ok_and(|bytes| bytes.len() <= 1024 * 1024)
+            && nucleus::json::encoded_len(self).is_ok_and(|bytes| bytes <= 1024 * 1024)
     }
 }
 
@@ -339,22 +339,21 @@ impl crate::native::actions::Action for Command {
 
 fn setup(world: &mut World, owner: Entity) -> Result<(), String> {
     let root = world.get::<ChildOf>(owner).unwrap().parent();
-    let models: Vec<_> = world
+    let sources: Vec<_> = world
         .query::<(
             &crate::native::simulation_castle::SimulationCastle,
             &ChildOf,
         )>()
         .iter(world)
         .filter(|(_, parent)| parent.parent() == root)
-        .map(|(model, _)| model.clone())
+        .map(|(model, _)| model.scenario.clone())
         .collect();
-    if models.len() != 1 {
+    if sources.len() != 1 {
         return Err(
             "Open one Simulation Castle in this workspace to choose its checks and limits".into(),
         );
     }
-    let scenario: simulation::scenario::Scenario =
-        serde_json::from_str(&models[0].scenario).map_err(|error| error.to_string())?;
+    let scenario = sources[0].parsed()?;
     let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
     let form = &mut castle.preview;
     form.horizon = (scenario.end_ms - scenario.start_ms).to_string();
@@ -363,9 +362,9 @@ fn setup(world: &mut World, owner: Entity) -> Result<(), String> {
         .limits
         .wall_time_ms
         .map_or_else(String::new, |value| value.to_string());
-    form.checks = scenario.checks;
+    form.checks = scenario.checks.clone();
     form.checks_start_ms = Some(scenario.start_ms);
-    form.checking = scenario.checking;
+    form.checking = scenario.checking.clone();
     form.steps = scenario.limits.steps;
     form.evidence_bytes = scenario.limits.evidence_bytes;
     let values = [

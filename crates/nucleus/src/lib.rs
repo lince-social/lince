@@ -14,6 +14,7 @@ pub mod hlc;
 pub mod id;
 pub mod identity;
 pub mod imagination;
+pub mod json;
 pub mod karma;
 pub mod knowledge;
 pub mod location;

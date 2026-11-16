@@ -243,13 +243,13 @@ fn masks(world: &mut World) {
                 entity,
                 world
                     .get::<EditableText>(mask.0)
-                    .map_or(0, |text| text.value().chars().count()),
+                    .map_or(0, |text| text.value().chars().take(32).count()),
             )
         })
         .collect();
     for (entity, count) in values {
-        if let Some(mut text) = world.get_mut::<Text>(entity) {
-            text.set_if_neq(Text::new("•".repeat(count.min(32))));
+        if let Some(text) = world.get_mut::<Text>(entity) {
+            crate::controls::password_mask(text, count);
         }
     }
 }

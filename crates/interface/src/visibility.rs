@@ -1,6 +1,8 @@
 use crate::{controls, theme::Typography};
 use bevy::prelude::*;
 use nucleus::visibility::{Bound, Command, Condition, Context, Data, Policy};
+use serde::Deserialize;
+use std::sync::{Arc, OnceLock};
 
 #[derive(Message, Clone)]
 pub struct Request {
@@ -102,6 +104,7 @@ pub struct Panel {
     context: Option<Context>,
     include: Vec<Rule>,
     exclude: Vec<Rule>,
+    prepared_policy: OnceLock<Result<Arc<Policy>, String>>,
     fields: Vec<(bool, usize, bool, Entity)>,
     radius_fields: Vec<(usize, Entity)>,
     pending: Option<(String, std::time::Instant)>,
@@ -152,6 +155,7 @@ pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Ent
         context: None,
         include: vec![],
         exclude: vec![],
+        prepared_policy: OnceLock::new(),
         fields: vec![],
         radius_fields: vec![],
         pending: None,
@@ -191,6 +195,7 @@ pub fn mount_policy_draft(
         context: Some(context),
         include: policy.include.iter().map(Rule::from).collect(),
         exclude: policy.exclude.iter().map(Rule::from).collect(),
+        prepared_policy: OnceLock::new(),
         fields: vec![],
         radius_fields: vec![],
         pending: None,
@@ -204,12 +209,19 @@ pub fn mount_policy_draft(
 }
 
 pub fn edited_policy(world: &mut World, entity: Entity) -> Result<Policy, String> {
+    edited_policy_shared(world, entity).map(|policy| (*policy).clone())
+}
+
+pub(crate) fn edited_policy_shared(
+    world: &mut World,
+    entity: Entity,
+) -> Result<Arc<Policy>, String> {
     let mut panel = world
         .entity_mut(entity)
         .take::<Panel>()
         .ok_or("Visibility draft unavailable")?;
     read_fields(world, &mut panel);
-    let result = policy(&panel);
+    let result = prepared_policy(&panel);
     world.entity_mut(entity).insert(panel);
     result
 }
@@ -234,6 +246,7 @@ pub fn set_target(world: &mut World, entity: Entity, record: &str, data: Data) {
     };
     panel.record = record.into();
     panel.data = data;
+    panel.prepared_policy.take();
     panel.context = None;
     panel.include.clear();
     panel.exclude.clear();
@@ -315,28 +328,45 @@ fn input(world: &mut World, parent: Entity, caption: &str, value: &str) -> Entit
 }
 
 fn policy(panel: &Panel) -> Result<Policy, String> {
-    let policy = Policy {
-        include: panel
-            .include
-            .iter()
-            .map(Rule::condition)
-            .collect::<Result<_, _>>()?,
-        exclude: panel
-            .exclude
-            .iter()
-            .map(Rule::condition)
-            .collect::<Result<_, _>>()?,
-    };
-    policy.validate_for(panel.data).map_err(str::to_owned)?;
-    Ok(policy)
+    prepared_policy(panel).map(|policy| (*policy).clone())
+}
+
+// Only the authored rules are retained. Decisions still use the current
+// context, and saving still checks the current source and saved revision.
+fn prepared_policy(panel: &Panel) -> Result<Arc<Policy>, String> {
+    panel
+        .prepared_policy
+        .get_or_init(|| {
+            let _preparation = nucleus::performance::Span::new("visibility-policy-preparation");
+            nucleus::performance::add("visibility-policies-prepared", 1);
+            let policy = Policy {
+                include: panel
+                    .include
+                    .iter()
+                    .map(Rule::condition)
+                    .collect::<Result<_, _>>()?,
+                exclude: panel
+                    .exclude
+                    .iter()
+                    .map(Rule::condition)
+                    .collect::<Result<_, _>>()?,
+            };
+            policy.validate_for(panel.data).map_err(str::to_owned)?;
+            Ok(Arc::new(policy))
+        })
+        .clone()
 }
 
 fn read_fields(world: &World, panel: &mut Panel) {
+    let mut changed = false;
     for &(index, entity) in &panel.radius_fields {
         if let Some(text) = world.get::<bevy::text::EditableText>(entity)
             && let Some(rule) = panel.include.get_mut(index)
         {
-            rule.radius = text.value().to_string();
+            if text.value() != rule.radius.as_str() {
+                rule.radius = text.value().to_string();
+                changed = true;
+            }
         }
     }
     for &(exclude, index, upper, entity) in &panel.fields {
@@ -347,13 +377,20 @@ fn read_fields(world: &World, panel: &mut Panel) {
                 &mut panel.include
             };
             if let Some(rule) = rules.get_mut(index) {
-                if upper {
-                    rule.upper = text.value().to_string();
+                let value = if upper {
+                    &mut rule.upper
                 } else {
-                    rule.lower = text.value().to_string();
+                    &mut rule.lower
+                };
+                if text.value() != value.as_str() {
+                    *value = text.value().to_string();
+                    changed = true;
                 }
             }
         }
+    }
+    if changed {
+        panel.prepared_policy.take();
     }
 }
 
@@ -617,7 +654,7 @@ fn draw(world: &mut World, entity: Entity) {
         entity,
         "Preview of these rules · existing roles and authentication also apply",
     );
-    match policy(&panel) {
+    match prepared_policy(&panel) {
         Ok(policy) => {
             if let Some(context) = &panel.context {
                 for organ in &context.organs {
@@ -749,6 +786,9 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
             &mut panel.include
         }
     }
+    // Every rule/data mutation below is an explicit control action. View-only
+    // actions may discard this small cache, but idle reads never do.
+    panel.prepared_policy.take();
     match intent {
         Intent::ChooseRecord => panel.choosing_record = !panel.choosing_record,
         Intent::Record(record) => {
@@ -867,6 +907,23 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
 }
 
 pub fn receive(world: &mut World, id: &str, result: Result<serde_json::Value, String>) {
+    receive_with(world, id, || {
+        result.and_then(|value| {
+            serde_json::from_value::<Context>(value).map_err(|error| error.to_string())
+        })
+    });
+}
+
+/// Borrow a wire reply until an existing panel accepts its request ID.
+pub fn receive_ref(world: &mut World, id: &str, result: Result<&serde_json::Value, &str>) {
+    receive_with(world, id, || {
+        result
+            .map_err(str::to_owned)
+            .and_then(|value| Context::deserialize(value).map_err(|error| error.to_string()))
+    });
+}
+
+fn receive_with(world: &mut World, id: &str, decode: impl FnOnce() -> Result<Context, String>) {
     let entity = world
         .query::<(Entity, &Panel)>()
         .iter(world)
@@ -883,11 +940,12 @@ pub fn receive(world: &mut World, id: &str, result: Result<serde_json::Value, St
     let Some(mut panel) = world.entity_mut(entity).take::<Panel>() else {
         return;
     };
+    let _reply = nucleus::performance::Span::new("visibility-reply-application");
+    nucleus::performance::add("visibility-replies-accepted", 1);
     panel.pending = None;
-    match result.and_then(|value| {
-        serde_json::from_value::<Context>(value).map_err(|error| error.to_string())
-    }) {
+    match decode() {
         Ok(context) => {
+            panel.prepared_policy.take();
             let saved = context
                 .saved
                 .as_ref()

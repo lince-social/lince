@@ -38,7 +38,7 @@ fn boundary(row: sqlx::sqlite::SqliteRow) -> Result<Boundary, StoreError> {
         uid: row.get("uid"),
         schedule: row.get("schedule_uid"),
         revision: row.get("revision"),
-        input: serde_json::from_str(&row.get::<String, _>("input"))
+        input: serde_json::from_str(row.get::<&str, _>("input"))
             .map_err(|error| invalid(&error.to_string()))?,
         intended_at_ms: row.get("intended_at_ms"),
         frequency: row.get("frequency_uid"),
@@ -126,7 +126,7 @@ pub async fn replay(
         ));
     }
     Ok(Some(
-        serde_json::from_str(&row.get::<String, _>("result"))
+        serde_json::from_str(row.get::<&str, _>("result"))
             .map_err(|error| invalid(&error.to_string()))?,
     ))
 }
@@ -179,7 +179,7 @@ pub async fn reflect_rule_edit(
     let rule = sqlx::query("SELECT r.record_uid, r.consequences_json, r.state, record.slug FROM recurrence r JOIN record ON record.uid = r.record_uid WHERE r.uid = ?")
         .bind(uid).fetch_one(&mut **tx).await?;
     let mut input = boundary.input;
-    input.consequences = serde_json::from_str(&rule.get::<String, _>("consequences_json"))
+    input.consequences = serde_json::from_str(rule.get::<&str, _>("consequences_json"))
         .map_err(|error| invalid(&error.to_string()))?;
     let target: String = input
         .consequences

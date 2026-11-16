@@ -1,3 +1,5 @@
+mod drafts;
+mod feeds;
 mod persistence;
 #[cfg(test)]
 mod tests;
@@ -9,12 +11,14 @@ use crate::native::{
 };
 use bevy::{math::DVec2, prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
+use drafts::DraftData;
 use nucleus::record_extension::{Choice, Field, FieldKind, Inspection, Preset, Request, Schema};
 pub(crate) use persistence::{SavedExtensions, snapshot};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -61,8 +65,7 @@ impl Settings {
 struct SchemaDraft {
     uid: Option<String>,
     revision: u64,
-    original: Schema,
-    schema: Schema,
+    schema: DraftData<Schema>,
     field: usize,
     choice: Option<usize>,
 }
@@ -72,16 +75,34 @@ struct ValueDraft {
     schema: String,
     schema_revision: u64,
     revision: u64,
-    original: BTreeMap<String, Value>,
-    fields: BTreeMap<String, Value>,
+    fields: DraftData<BTreeMap<String, Value>>,
     attached: bool,
+}
+
+impl ValueDraft {
+    fn set(&mut self, field: &str, value: Value) {
+        if self
+            .fields
+            .get(field)
+            .is_some_and(|old| nucleus::json::same_value_encoding(old, &value))
+        {
+            return;
+        }
+        self.fields.edit().insert(field.into(), value);
+    }
+
+    fn remove(&mut self, field: &str) {
+        if self.fields.contains_key(field) {
+            self.fields.edit().remove(field);
+        }
+    }
 }
 
 #[derive(Clone)]
 struct Undo {
     schema: String,
     schema_revision: u64,
-    fields: BTreeMap<String, Value>,
+    fields: Arc<BTreeMap<String, Value>>,
     attached: bool,
     revision: u64,
 }
@@ -92,7 +113,7 @@ struct View {
     focus: Option<(String, Option<String>)>,
     record_input: Option<String>,
     picker: Option<Picker>,
-    feed: String,
+    feed: Option<Arc<FeedKey>>,
     seen: u64,
     schema: Option<SchemaDraft>,
     values: Option<ValueDraft>,
@@ -112,11 +133,11 @@ impl View {
     fn dirty(&self) -> bool {
         self.schema
             .as_ref()
-            .is_some_and(|draft| draft.schema != draft.original)
+            .is_some_and(|draft| draft.schema.changed())
             || self
                 .values
                 .as_ref()
-                .is_some_and(|draft| draft.fields != draft.original)
+                .is_some_and(|draft| draft.fields.changed())
     }
 }
 
@@ -141,16 +162,28 @@ enum InputKey {
 #[derive(Clone)]
 struct Picker {
     key: InputKey,
-    rows: Vec<Value>,
+    rows: Arc<Vec<Value>>,
     request: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct FeedKey {
+    source: Source,
+    target: Option<String>,
+    catalog: bool,
+}
+
+impl FeedKey {
+    fn matches(&self, settings: &Settings) -> bool {
+        self.source == settings.source
+            && self.target == settings.record
+            && self.catalog == (settings.mode != Mode::Column)
+    }
 }
 
 struct Feed {
     schemas: Vec<String>,
-    source: Source,
-    target: Option<String>,
-    catalog: bool,
-    data: Option<Inspection>,
+    data: Option<Arc<Inspection>>,
     error: String,
     version: u64,
     next: Instant,
@@ -158,7 +191,7 @@ struct Feed {
 }
 
 enum PendingKind {
-    Inspect(String),
+    Inspect(Arc<FeedKey>),
     Change(Entity),
     Picker(Entity),
 }
@@ -170,7 +203,7 @@ struct Pending {
 
 #[derive(Resource, Default)]
 struct Runtime {
-    feeds: HashMap<String, Feed>,
+    feeds: HashMap<Arc<FeedKey>, Feed>,
     pending: HashMap<String, Pending>,
     wake: Option<Instant>,
 }
@@ -198,46 +231,45 @@ fn sender(world: &World, source: &Source) -> Option<crate::native::cell_bridge::
     )
 }
 
-fn key(settings: &Settings) -> String {
-    serde_json::to_string(&(
-        &settings.source,
-        &settings.record,
-        settings.mode != Mode::Column,
-    ))
-    .unwrap()
+fn key(settings: &Settings) -> Arc<FeedKey> {
+    nucleus::performance::add("extension-feed-keys-prepared", 1);
+    Arc::new(FeedKey {
+        source: settings.source.clone(),
+        target: settings.record.clone(),
+        catalog: settings.mode != Mode::Column,
+    })
 }
 
-fn inspection(world: &World, owner: Entity) -> Option<&Inspection> {
+fn feed(world: &World, owner: Entity) -> Option<&Feed> {
+    let key = world.get::<View>(owner)?.feed.as_ref()?;
+    world.get_resource::<Runtime>()?.feeds.get(key)
+}
+
+fn inspection(world: &World, owner: Entity) -> Option<&Arc<Inspection>> {
     if crate::native::laboratory::blocked(world, owner) {
         return None;
     }
-    let view = world.get::<View>(owner)?;
-    world
-        .get_resource::<Runtime>()?
-        .feeds
-        .get(&view.feed)?
-        .data
-        .as_ref()
+    feed(world, owner)?.data.as_ref()
 }
 
 fn capture(world: &mut World, owner: Entity) {
+    capture_matching(world, |candidate| candidate == owner);
+}
+
+fn capture_matching(world: &mut World, includes: impl Fn(Entity) -> bool) {
+    let _capture = nucleus::performance::Span::new("extension-field-capture");
     let inputs: Vec<_> = world
         .query::<(Entity, &Input, &EditableText)>()
         .iter(world)
-        .filter(|(_, input, _)| input.owner == owner)
-        .map(|(entity, input, text)| {
-            (
-                entity,
-                input.key.clone(),
-                text.value().to_string(),
-                input.observed.clone(),
-            )
+        .filter(|(_, input, _)| includes(input.owner))
+        .filter_map(|(entity, input, text)| {
+            let text = text.value();
+            (text != input.observed.as_str())
+                .then(|| (entity, input.owner, input.key.clone(), text.to_string()))
         })
         .collect();
-    for (entity, key, value, observed) in inputs {
-        if value == observed {
-            continue;
-        }
+    nucleus::performance::add("extension-field-values-prepared", inputs.len() as u64);
+    for (entity, owner, key, value) in inputs {
         world.get_mut::<Input>(entity).unwrap().observed = value.clone();
         let Some(mut view) = world.get_mut::<View>(owner) else {
             continue;
@@ -252,28 +284,31 @@ fn capture(world: &mut World, owner: Entity) {
             }
             InputKey::SchemaName => {
                 if let Some(draft) = &mut view.schema {
-                    draft.schema.name = value;
+                    draft.schema.edit().name = value;
                 }
             }
             InputKey::FieldName => {
                 if let Some(draft) = &mut view.schema {
-                    draft.schema.fields[draft.field].name = value;
+                    draft.schema.edit().fields[draft.field].name = value;
                 }
             }
             InputKey::ChoiceName => {
                 if let Some(draft) = &mut view.schema
                     && let Some(choice) = draft.choice
                 {
-                    draft.schema.fields[draft.field].choices[choice].name = value;
+                    draft.schema.edit().fields[draft.field].choices[choice].name = value;
                 }
             }
             InputKey::Preset(index, part) => {
                 if let Some(draft) = &mut view.schema
                     && let Some(choice) = draft.choice
-                    && let Some(preset) = draft.schema.fields[draft.field].choices[choice]
-                        .assertions
-                        .get_mut(index)
+                    && index
+                        < draft.schema.fields[draft.field].choices[choice]
+                            .assertions
+                            .len()
                 {
+                    let preset = &mut draft.schema.edit().fields[draft.field].choices[choice]
+                        .assertions[index];
                     let optional = (!value.trim().is_empty()).then(|| value.trim().to_owned());
                     match part {
                         0 => preset.predicate = value.trim().into(),
@@ -285,7 +320,7 @@ fn capture(world: &mut World, owner: Entity) {
             }
             InputKey::Value(field) => {
                 if let Some(draft) = &mut view.values {
-                    draft.fields.insert(field, Value::String(value));
+                    draft.set(&field, Value::String(value));
                 }
             }
         }
@@ -313,15 +348,14 @@ fn draft_values(world: &mut World, owner: Entity, schema: &str) {
         schema: schema.into(),
         schema_revision,
         revision: value.revision,
-        original: value.fields.clone(),
-        fields: value.fields,
+        fields: DraftData::new(value.fields),
         attached: value.attached,
     });
 }
 
 fn changes(draft: &ValueDraft) -> BTreeMap<String, Value> {
-    let mut fields = draft.fields.clone();
-    for key in draft.original.keys() {
+    let mut fields = (*draft.fields).clone();
+    for key in draft.fields.original().keys() {
         fields.entry(key.clone()).or_insert(Value::Null);
     }
     fields
@@ -490,7 +524,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
         Command::Pick(key) => {
             world.get_mut::<View>(owner).unwrap().picker = Some(Picker {
                 key: key.clone(),
-                rows: vec![],
+                rows: Default::default(),
                 request: None,
             });
             world.get_mut::<View>(owner).unwrap().search.clear();
@@ -543,10 +577,13 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     if let Some(draft) = &mut view.schema
                         && let Some(choice) = draft.choice
-                        && let Some(preset) = draft.schema.fields[draft.field].choices[choice]
-                            .assertions
-                            .get_mut(index)
+                        && index
+                            < draft.schema.fields[draft.field].choices[choice]
+                                .assertions
+                                .len()
                     {
+                        let preset = &mut draft.schema.edit().fields[draft.field].choices[choice]
+                            .assertions[index];
                         match part {
                             0 => preset.predicate = uid.clone(),
                             1 => preset.object = Some(uid.clone()),
@@ -596,8 +633,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             view.schema = Some(SchemaDraft {
                 uid: None,
                 revision: 0,
-                original: schema.clone(),
-                schema,
+                schema: DraftData::new(schema),
                 field: 0,
                 choice: None,
             });
@@ -610,17 +646,19 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
             let definition = inspection(world, owner)
                 .and_then(|data| data.schemas.iter().find(|schema| &schema.uid == uid))
-                .ok_or("Schema unavailable")?
-                .clone();
+                .ok_or("Schema unavailable")?;
             if !definition.editable {
                 return Err("This schema is read only".into());
             }
+            let (revision, schema) = (
+                definition.revision,
+                DraftData::new(definition.schema.clone()),
+            );
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.schema = Some(SchemaDraft {
                 uid: Some(uid.clone()),
-                revision: definition.revision,
-                original: definition.schema.clone(),
-                schema: definition.schema,
+                revision,
+                schema,
                 field: 0,
                 choice: None,
             });
@@ -648,20 +686,21 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .as_ref()
                 .ok_or("Open a schema")?
                 .clone();
-            draft.schema.validate()?;
             if draft.uid.is_some() {
-                draft.schema.update_from(&draft.original)?;
+                draft.schema.update_from(draft.schema.original())?;
+            } else {
+                draft.schema.validate()?;
             }
             let request = if draft.uid.is_some() {
                 Request::Save {
                     id: nucleus::new_uid("op"),
                     expected_revision: draft.revision,
-                    schema: draft.schema,
+                    schema: (*draft.schema).clone(),
                 }
             } else {
                 Request::Create {
                     id: nucleus::new_uid("op"),
-                    schema: draft.schema,
+                    schema: (*draft.schema).clone(),
                 }
             };
             return send_change(world, owner, draft.uid, request);
@@ -672,19 +711,27 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             if draft.schema.fields.len() >= 64 {
                 return Err("A schema can have at most 64 fields".into());
             }
-            draft.schema.fields.push(new_field(*kind));
+            draft.schema.edit().fields.push(new_field(*kind));
             draft.field = draft.schema.fields.len() - 1;
             draft.choice = None;
         }
         Command::Kind(kind) => {
             let mut view = world.get_mut::<View>(owner).unwrap();
             let draft = view.schema.as_mut().ok_or("Open a schema")?;
-            let field = &mut draft.schema.fields[draft.field];
-            if draft.uid.is_some() && draft.original.fields.iter().any(|old| old.id == field.id) {
+            let field = &draft.schema.fields[draft.field];
+            if draft.uid.is_some()
+                && draft
+                    .schema
+                    .original()
+                    .fields
+                    .iter()
+                    .any(|old| old.id == field.id)
+            {
                 return Err(
                     "Saved field types stay fixed. Add a new field for another type.".into(),
                 );
             }
+            let field = &mut draft.schema.edit().fields[draft.field];
             field.kind = *kind;
             if !kind.choices() {
                 field.choices.clear();
@@ -707,7 +754,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
         Command::ArchiveField => {
             let mut view = world.get_mut::<View>(owner).unwrap();
             if let Some(draft) = &mut view.schema {
-                let field = &mut draft.schema.fields[draft.field];
+                let field = &mut draft.schema.edit().fields[draft.field];
                 field.archived = !field.archived;
             }
         }
@@ -719,8 +766,8 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 } else {
                     draft.field.saturating_sub(1)
                 };
-                if other < draft.schema.fields.len() {
-                    draft.schema.fields.swap(draft.field, other);
+                if other < draft.schema.fields.len() && other != draft.field {
+                    draft.schema.edit().fields.swap(draft.field, other);
                     draft.field = other;
                 }
             }
@@ -728,10 +775,10 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
         Command::AddChoice => {
             let mut view = world.get_mut::<View>(owner).unwrap();
             if let Some(draft) = &mut view.schema {
-                let choices = &mut draft.schema.fields[draft.field].choices;
-                if choices.len() >= 512 {
+                if draft.schema.fields[draft.field].choices.len() >= 512 {
                     return Err("A field can have at most 512 choices".into());
                 }
+                let choices = &mut draft.schema.edit().fields[draft.field].choices;
                 choices.push(new_choice());
                 draft.choice = Some(choices.len() - 1);
             }
@@ -749,7 +796,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
-                let choice = &mut draft.schema.fields[draft.field].choices[index];
+                let choice = &mut draft.schema.edit().fields[draft.field].choices[index];
                 choice.archived = !choice.archived;
             }
         }
@@ -758,14 +805,15 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
-                let choices = &mut draft.schema.fields[draft.field].choices;
                 let other = if *down {
                     index + 1
                 } else {
                     index.saturating_sub(1)
                 };
-                if other < choices.len() {
-                    choices.swap(index, other);
+                if other < draft.schema.fields[draft.field].choices.len() && other != index {
+                    draft.schema.edit().fields[draft.field]
+                        .choices
+                        .swap(index, other);
                     draft.choice = Some(other);
                 }
             }
@@ -775,16 +823,21 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
-                let list = &mut draft.schema.fields[draft.field].choices[index].assertions;
-                if list.len() >= 16 {
+                if draft.schema.fields[draft.field].choices[index]
+                    .assertions
+                    .len()
+                    >= 16
+                {
                     return Err("A choice can have at most 16 preset assertions".into());
                 }
-                list.push(Preset {
-                    predicate: String::new(),
-                    object: None,
-                    quantity: None,
-                    unit: None,
-                });
+                draft.schema.edit().fields[draft.field].choices[index]
+                    .assertions
+                    .push(Preset {
+                        predicate: String::new(),
+                        object: None,
+                        quantity: None,
+                        unit: None,
+                    });
             }
         }
         Command::RemovePreset(index) => {
@@ -792,9 +845,14 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             if let Some(draft) = &mut view.schema
                 && let Some(choice) = draft.choice
             {
-                let list = &mut draft.schema.fields[draft.field].choices[choice].assertions;
-                if *index < list.len() {
-                    list.remove(*index);
+                if *index
+                    < draft.schema.fields[draft.field].choices[choice]
+                        .assertions
+                        .len()
+                {
+                    draft.schema.edit().fields[draft.field].choices[choice]
+                        .assertions
+                        .remove(*index);
                 }
             }
         }
@@ -869,8 +927,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .values
                 .as_mut()
                 .unwrap()
-                .fields
-                .insert(field.clone(), value.clone());
+                .set(field, value.clone());
         }
         Command::Clear(field) => {
             prepare_value(world, owner)?;
@@ -880,72 +937,62 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .values
                 .as_mut()
                 .unwrap()
-                .fields
                 .remove(field);
         }
         Command::Select(field, choice) => {
             prepare_value(world, owner)?;
+            let data = inspection(world, owner)
+                .cloned()
+                .ok_or("Field unavailable")?;
             let schema = world
                 .get::<Settings>(owner)
                 .unwrap()
                 .schema
-                .clone()
+                .as_ref()
                 .ok_or("Choose a schema")?;
-            let definition = inspection(world, owner)
-                .and_then(|data| data.schemas.iter().find(|entry| entry.uid == schema))
+            let definition = data
+                .schemas
+                .iter()
+                .find(|entry| &entry.uid == schema)
                 .and_then(|entry| entry.schema.fields.iter().find(|entry| entry.id == *field))
-                .ok_or("Field unavailable")?
-                .clone();
+                .ok_or("Field unavailable")?;
             let mut view = world.get_mut::<View>(owner).unwrap();
             let draft = view.values.as_mut().unwrap();
-            let mut selected = definition
-                .selection(draft.fields.get(field).unwrap_or(&Value::Null))?
-                .into_iter()
-                .map(str::to_owned)
-                .collect::<Vec<_>>();
+            let selected = definition.selection(draft.fields.get(field).unwrap_or(&Value::Null))?;
             if definition.kind == FieldKind::Select {
-                draft.fields.insert(field.clone(), json!(choice));
+                draft.set(field, json!(choice));
                 view.open = None;
                 view.focus = Some((field.clone(), None));
             } else {
-                if let Some(index) = selected.iter().position(|id| id == choice) {
+                let mut selected = selected.into_iter().map(str::to_owned).collect::<Vec<_>>();
+                if let Ok(index) = selected.binary_search(choice) {
                     selected.remove(index);
                 } else {
                     selected.push(choice.clone());
                 }
-                draft.fields.insert(field.clone(), json!(selected));
+                draft.set(field, json!(selected));
                 view.focus = Some((field.clone(), Some(choice.clone())));
             }
         }
         Command::Apply | Command::Detach => {
             prepare_value(world, owner)?;
-            let settings = world.get::<Settings>(owner).unwrap().clone();
-            let draft = world
-                .get::<View>(owner)
-                .unwrap()
-                .values
-                .as_ref()
-                .unwrap()
-                .clone();
+            let target = world.get::<Settings>(owner).unwrap().record.clone();
+            let draft = world.get::<View>(owner).unwrap().values.as_ref().unwrap();
             let remove = matches!(command, Command::Detach);
             let values = if remove {
                 BTreeMap::new()
             } else {
-                changes(&draft)
+                changes(draft)
             };
-            return send_change(
-                world,
-                owner,
-                settings.record,
-                Request::Apply {
-                    id: nucleus::new_uid("op"),
-                    schema: draft.schema,
-                    expected_revision: draft.revision,
-                    expected_schema_revision: draft.schema_revision,
-                    values,
-                    remove,
-                },
-            );
+            let request = Request::Apply {
+                id: nucleus::new_uid("op"),
+                schema: draft.schema.clone(),
+                expected_revision: draft.revision,
+                expected_schema_revision: draft.schema_revision,
+                values,
+                remove,
+            };
+            return send_change(world, owner, target, request);
         }
         Command::Undo => {
             if world.get::<View>(owner).unwrap().dirty() {
@@ -968,7 +1015,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                     expected_revision: undo.revision,
                     expected_schema_revision: undo.schema_revision,
                     values: if undo.attached {
-                        undo.fields
+                        (*undo.fields).clone()
                     } else {
                         BTreeMap::new()
                     },
@@ -981,7 +1028,9 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 return Err("Discard your draft before reloading".into());
             }
             let feed = world.get::<View>(owner).unwrap().feed.clone();
-            if let Some(feed) = world.resource_mut::<Runtime>().feeds.get_mut(&feed) {
+            if let Some(key) = feed
+                && let Some(feed) = world.resource_mut::<Runtime>().feeds.get_mut(&key)
+            {
                 feed.next = Instant::now();
             }
             world.get_mut::<View>(owner).unwrap().values = None;
@@ -1047,11 +1096,11 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     }
     if matches!(message,ServerMessage::Error{id,code,..} if id==crate::native::cell_bridge::CONNECTION||id=="connection"||code.as_deref()==Some("session_expired"))
     {
-        for feed in world
+        for (_, feed) in world
             .resource_mut::<Runtime>()
             .feeds
-            .values_mut()
-            .filter(|feed| &feed.source == source)
+            .iter_mut()
+            .filter(|(key, _)| &key.source == source)
         {
             feed.data = None;
             feed.error = "Access unavailable; reconnect to reload".into();
@@ -1073,12 +1122,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
     {
         return;
     }
-    let result = match message {
-        ServerMessage::Snapshot { rows, .. } => Ok(json!(rows)),
-        ServerMessage::ActionOk { data, .. } => Ok(data.clone().unwrap_or(Value::Null)),
-        ServerMessage::Error { message, .. } => Err(message.clone()),
-        _ => unreachable!(),
-    };
+    let _reply = nucleus::performance::Span::new("extension-reply-preparation");
     let pending = world.resource_mut::<Runtime>().pending.remove(id).unwrap();
     match pending.kind {
         PendingKind::Picker(owner) => {
@@ -1093,31 +1137,53 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 {
                     return;
                 }
-                match result {
-                    Ok(value) => {
+                match message {
+                    ServerMessage::Snapshot { rows, .. } => {
                         if let Some(picker) = &mut view.picker {
-                            picker.rows = value.as_array().cloned().unwrap_or_default();
+                            picker.rows = rows.clone();
                         }
                     }
-                    Err(error) => view.message = error,
+                    ServerMessage::ActionOk { data, .. } => {
+                        if let Some(picker) = &mut view.picker {
+                            picker.rows = Arc::new(
+                                data.as_ref()
+                                    .and_then(Value::as_array)
+                                    .cloned()
+                                    .unwrap_or_default(),
+                            );
+                        }
+                    }
+                    ServerMessage::Error { message, .. } => view.message = message.clone(),
+                    _ => unreachable!(),
                 }
                 view.render = true;
             }
         }
         PendingKind::Inspect(key) => {
-            let result = result.and_then(|value| {
-                serde_json::from_value::<Inspection>(value).map_err(|error| error.to_string())
-            });
+            let result = match message {
+                ServerMessage::ActionOk { data, .. } => {
+                    Inspection::deserialize(data.as_ref().unwrap_or(&Value::Null))
+                        .map_err(|error| error.to_string())
+                }
+                // Preserve the decoder's rejection of an unexpected row reply.
+                ServerMessage::Snapshot { rows, .. } => {
+                    serde_json::from_value::<Inspection>(json!(rows))
+                        .map_err(|error| error.to_string())
+                }
+                ServerMessage::Error { message, .. } => Err(message.clone()),
+                _ => unreachable!(),
+            };
             if let Some(feed) = world.resource_mut::<Runtime>().feeds.get_mut(&key) {
                 feed.pending = None;
                 feed.next = Instant::now() + Duration::from_secs(3);
                 match result {
                     Ok(data) => {
-                        let changed = feed.data.as_ref() != Some(&data);
+                        let changed = feed.data.as_deref() != Some(&data);
                         if changed || !feed.error.is_empty() {
                             feed.version += 1;
                         }
-                        feed.data = Some(data);
+                        feed.data = Some(Arc::new(data));
+                        nucleus::performance::add("extension-inspection-snapshots-prepared", 1);
                         feed.error.clear();
                     }
                     Err(error) => {
@@ -1132,58 +1198,67 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             if !world.entities().contains(owner) {
                 return;
             }
-            let retry = world.get::<View>(owner).unwrap().retry.clone();
+            let result = match message {
+                ServerMessage::ActionOk { data, .. } => Ok(data.as_ref().unwrap_or(&Value::Null)),
+                // The old array normalization exposes no schema/revision fields.
+                ServerMessage::Snapshot { .. } => Ok(&Value::Null),
+                ServerMessage::Error { message, .. } => Err(message),
+                _ => unreachable!(),
+            };
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.pending = None;
             view.render = true;
             match result {
-                Err(error) => view.message = error,
+                Err(error) => view.message = error.clone(),
                 Ok(data) => {
-                    if let Some((_, request)) = &retry {
-                        match request {
-                            Request::Create { .. } | Request::Save { .. } => {
-                                if let Some(uid) = data["schema"].as_str() {
-                                    let mut settings = world.get_mut::<Settings>(owner).unwrap();
-                                    settings.schema = Some(uid.into());
-                                }
-                                let mut view = world.get_mut::<View>(owner).unwrap();
-                                view.schema = None;
-                                view.values = None;
-                                view.message =
-                                    "Schema saved. Labels changed without changing selection IDs."
-                                        .into();
-                                view.retry = None;
-                            }
-                            Request::Apply { schema, .. } => {
-                                let revision = data["revision"].as_u64().unwrap_or(0);
-                                if let Some(draft) = &view.values {
-                                    let mut fields = draft.original.clone();
-                                    for key in draft.fields.keys() {
-                                        fields.entry(key.clone()).or_insert(Value::Null);
-                                    }
-                                    view.undo = Some(Undo {
-                                        schema: schema.clone(),
-                                        schema_revision: draft.schema_revision,
-                                        fields,
-                                        attached: draft.attached,
-                                        revision,
-                                    });
-                                } else {
-                                    view.undo = None;
-                                }
-                                view.values = None;
-                                view.retry = None;
-                                view.open = None;
-                                view.message = "Saved values and preset assertions".into();
-                            }
-                            _ => {}
+                    let schema_saved = view.retry.as_ref().is_some_and(|(_, request)| {
+                        matches!(request, Request::Create { .. } | Request::Save { .. })
+                    });
+                    let applied_schema =
+                        view.retry.as_ref().and_then(|(_, request)| match request {
+                            Request::Apply { schema, .. } => Some(schema.clone()),
+                            _ => None,
+                        });
+                    if schema_saved {
+                        if let Some(uid) = data["schema"].as_str() {
+                            let mut settings = world.get_mut::<Settings>(owner).unwrap();
+                            settings.schema = Some(uid.into());
                         }
+                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        view.schema = None;
+                        view.values = None;
+                        view.message =
+                            "Schema saved. Labels changed without changing selection IDs.".into();
+                        view.retry = None;
+                    } else if let Some(schema) = applied_schema {
+                        let revision = data["revision"].as_u64().unwrap_or(0);
+                        if let Some(draft) = &view.values {
+                            let mut fields = draft.fields.original_snapshot();
+                            for key in draft.fields.keys() {
+                                if !fields.contains_key(key) {
+                                    drafts::edit(&mut fields).insert(key.clone(), Value::Null);
+                                }
+                            }
+                            view.undo = Some(Undo {
+                                schema,
+                                schema_revision: draft.schema_revision,
+                                fields,
+                                attached: draft.attached,
+                                revision,
+                            });
+                        } else {
+                            view.undo = None;
+                        }
+                        view.values = None;
+                        view.retry = None;
+                        view.open = None;
+                        view.message = "Saved values and preset assertions".into();
                     }
-                    for feed in world
+                    for (_, feed) in world
                         .resource_mut::<Runtime>()
                         .feeds
-                        .values_mut()
-                        .filter(|feed| &feed.source == source)
+                        .iter_mut()
+                        .filter(|(key, _)| &key.source == source)
                     {
                         feed.next = Instant::now();
                     }
@@ -1215,163 +1290,38 @@ fn update(
         .iter(world)
         .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
         .collect::<Vec<_>>();
-    for owner in &owners {
-        capture(world, *owner);
-    }
-    let now = Instant::now();
-    let mut runtime = world.remove_resource::<Runtime>().unwrap_or_default();
-    let mut active = std::collections::HashSet::new();
-    for owner in &owners {
-        let settings = world.get::<Settings>(*owner).unwrap().clone();
-        let key = key(&settings);
-        active.insert(key.clone());
-        if runtime.feeds.len() < 256 || runtime.feeds.contains_key(&key) {
-            runtime.feeds.entry(key.clone()).or_insert_with(|| Feed {
-                schemas: vec![],
-                source: settings.source.clone(),
-                target: settings.record.clone(),
-                catalog: settings.mode != Mode::Column,
-                data: None,
-                error: String::new(),
-                version: 1,
-                next: now,
-                pending: None,
-            });
-            let mut view = world.get_mut::<View>(*owner).unwrap();
-            if view.feed != key {
-                view.feed = key;
-                view.seen = 0;
-                view.render = true;
-            }
-        }
-    }
-    runtime.feeds.retain(|key, _| active.contains(key));
-    for (key, feed) in &mut runtime.feeds {
-        let schemas = owners
-            .iter()
-            .filter_map(|owner| {
-                let settings = world.get::<Settings>(*owner)?;
-                (self::key(settings) == *key)
-                    .then_some(settings.schema.clone())
-                    .flatten()
-            })
-            .collect::<std::collections::BTreeSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        if schemas != feed.schemas {
-            feed.schemas = schemas;
-            feed.next = now;
-        }
-    }
-    let expired = runtime
-        .pending
-        .iter()
-        .filter(|(_, pending)| now.duration_since(pending.started) > Duration::from_secs(20))
-        .map(|(id, _)| id.clone())
-        .collect::<Vec<_>>();
-    for id in expired {
-        if let Some(pending) = runtime.pending.remove(&id) {
-            match pending.kind {
-                PendingKind::Picker(owner) => {
-                    if let Some(sender) = sender(world, &pending.source) {
-                        let _ = sender.try_send(ClientMessage::Unsubscribe { id: id.clone() });
-                    }
-                    if let Some(mut view) = world.get_mut::<View>(owner) {
-                        if !view
-                            .picker
-                            .as_ref()
-                            .is_some_and(|picker| picker.request.as_ref() == Some(&id))
-                        {
-                            continue;
-                        }
-                        view.message = "Picker timed out. Search again.".into();
-                        view.render = true;
-                    }
-                }
-                PendingKind::Inspect(key) => {
-                    if let Some(feed) = runtime.feeds.get_mut(&key) {
-                        feed.pending = None;
-                        feed.data = None;
-                        feed.error = "Loading timed out; retrying".into();
-                        feed.version += 1;
-                        feed.next = now + Duration::from_secs(3);
-                    }
-                }
-                PendingKind::Change(owner) => {
-                    if let Some(mut view) = world.get_mut::<View>(owner) {
-                        view.pending = None;
-                        view.message="No confirmation received. Retry this same change to confirm its result.".into();
-                        view.render = true;
-                    }
-                }
-            }
-        }
-    }
-    if crate::native::laboratory::normal(world) {
-        for (key, feed) in &mut runtime.feeds {
-            if feed.pending.is_some() || feed.next > now || runtime.pending.len() >= 128 {
-                continue;
-            }
-            if let Some(sender) = sender(world, &feed.source) {
-                let id = nucleus::new_uid("extension");
-                if sender
-                    .try_send(ClientMessage::Act {
-                        id: id.clone(),
-                        action: engine::actions::Action::RecordExtensions {
-                            target: feed.target.clone(),
-                            request: Request::Inspect {
-                                catalog: feed.catalog,
-                                schemas: feed.schemas.clone(),
-                            },
-                        },
-                    })
-                    .is_ok()
-                {
-                    feed.pending = Some(id.clone());
-                    runtime.pending.insert(
-                        id,
-                        Pending {
-                            source: feed.source.clone(),
-                            kind: PendingKind::Inspect(key.clone()),
-                            started: now,
-                        },
-                    );
-                }
-            } else if feed.data.is_some() || feed.error.is_empty() {
-                feed.data = None;
-                feed.error = "Connect to the Organ to load extensions".into();
-                feed.version += 1;
-            }
-            feed.next = now + Duration::from_secs(3);
-        }
-    }
-    if !active.is_empty() && runtime.wake.is_none_or(|deadline| deadline <= now) {
-        let deadline = now + Duration::from_secs(3);
-        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-            wake.after(Duration::from_secs(3));
-        }
-        runtime.wake = Some(deadline);
-    }
-    world.insert_resource(runtime);
+    let active: HashSet<_> = owners.iter().copied().collect();
+    capture_matching(world, |owner| active.contains(&owner));
+    feeds::update(world, &owners);
     for owner in owners {
-        let (key, seen, dirty) = {
+        let state = {
             let view = world.get::<View>(owner).unwrap();
-            (view.feed.clone(), view.seen, view.dirty())
+            feed(world, owner)
+                .filter(|feed| feed.version != view.seen)
+                .map(|feed| {
+                    (
+                        feed.version,
+                        feed.data.as_ref().and_then(|data| data.record.clone()),
+                        feed.data.is_none(),
+                        if feed.data.is_none() {
+                            feed.error.clone()
+                        } else {
+                            String::new()
+                        },
+                        feed.data.is_some() && view.pending.is_none() && !view.dirty(),
+                    )
+                })
         };
-        let state = world
-            .resource::<Runtime>()
-            .feeds
-            .get(&key)
-            .map(|feed| (feed.version, feed.data.clone(), feed.error.clone()));
-        if let Some((version, data, error)) = state
-            && version != seen
-        {
-            if let Some(uid) = data.as_ref().and_then(|data| data.record.clone()) {
-                world.get_mut::<Settings>(owner).unwrap().record = Some(uid);
+        if let Some((version, record, unavailable, error, refresh_values)) = state {
+            if let Some(uid) = record {
+                let mut settings = world.get_mut::<Settings>(owner).unwrap();
+                if settings.record.as_ref() != Some(&uid) {
+                    settings.record = Some(uid);
+                }
             }
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.seen = version;
-            if data.is_none() {
+            if unavailable {
                 view.values = None;
                 view.schema = None;
                 view.reference_labels.clear();
@@ -1379,7 +1329,7 @@ fn update(
                 view.open = None;
                 view.message = error;
                 view.render = true;
-            } else if !dirty && view.pending.is_none() {
+            } else if refresh_values {
                 view.values = None;
                 view.render = true;
             }

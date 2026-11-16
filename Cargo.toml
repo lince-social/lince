@@ -44,6 +44,8 @@ members = [
     "crates/vendor/smithay-capture",
     "crates/vendor/bevy-ui",
     "crates/vendor/bevy-ui-render",
+    "crates/vendor/bevy-render",
+    "crates/vendor/bevy-core-pipeline",
 ]
 
 # `cargo build` / `cargo run` operate on `default-members` (the lince binary),
@@ -149,6 +151,8 @@ zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [patch.crates-io]
+bevy_core_pipeline = { path = "crates/vendor/bevy-core-pipeline" }
+bevy_render = { path = "crates/vendor/bevy-render" }
 bevy_ui = { path = "crates/vendor/bevy-ui" }
 bevy_ui_render = { path = "crates/vendor/bevy-ui-render" }
 gemm-common = { path = "crates/vendor/gemm-common" }

@@ -115,7 +115,7 @@ impl Profile {
         {
             return Err("Use a connection name of 1–80 characters.".into());
         }
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 32_768 {
+        if nucleus::json::encoded_len(self).map_err(|e| e.to_string())? > 32_768 {
             return Err("A connection profile exceeds 32 KiB.".into());
         }
         Ok(())
@@ -154,7 +154,7 @@ impl Profiles {
         if self.selected.as_ref().is_some_and(|id| !ids.contains(id)) {
             return Err("The selected connection no longer exists.".into());
         }
-        if serde_json::to_vec(self).map_err(|e| e.to_string())?.len() > 524_288 {
+        if nucleus::json::encoded_len(self).map_err(|e| e.to_string())? > 524_288 {
             return Err("Saved connections exceed 512 KiB.".into());
         }
         Ok(())

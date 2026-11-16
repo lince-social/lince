@@ -301,7 +301,7 @@ impl Action for Command {
                 }
                 Self::Editable(index) => {
                     if let Some(binding) = config.bindings.get_mut(*index) {
-                        if protein::record_schema::fields()
+                        if protein::record_schema::FIELDS
                             .iter()
                             .any(|field| field.key == binding.property && field.editable)
                         {
@@ -374,7 +374,7 @@ pub(super) fn inputs(world: &mut World) {
         .filter(|(_, input, text)| {
             !text.is_composing()
                 && text.pending_paste.is_none()
-                && text.value().to_string() != input.observed
+                && text.value() != input.observed.as_str()
         })
         .map(|(entity, input, text)| (entity, input.area, input.field, text.value().to_string()))
         .collect();
@@ -860,8 +860,8 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         "Space between row Castles",
     );
     for (index, binding) in config.bindings.iter().enumerate() {
-        let field = protein::record_schema::fields()
-            .into_iter()
+        let field = protein::record_schema::FIELDS
+            .iter()
             .find(|field| field.key == binding.property);
         label(
             world,
@@ -963,8 +963,8 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         owner,
         "Add property",
         "+",
-        protein::record_schema::fields()
-            .into_iter()
+        protein::record_schema::FIELDS
+            .iter()
             .map(|field| {
                 (
                     field.title.into(),
@@ -1020,14 +1020,51 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
             ChildOf(panel),
         ))
         .id();
-    let data = protein::record_schema::fields()
-        .into_iter()
+    let data = protein::record_schema::FIELDS
+        .iter()
         .map(|field| (field.key.to_string(), Value::String(field.title.into())))
         .collect::<serde_json::Map<_, _>>();
     rows::content(world, preview, &config, &Value::Object(data), None);
 }
 
-pub(super) fn navigation(world: &mut World, owner: Entity, page: usize, count: usize) -> Entity {
+#[derive(Component)]
+struct PageNavigation {
+    page: usize,
+    count: usize,
+    label: Entity,
+}
+
+pub(super) fn navigation(
+    world: &mut World,
+    owner: Entity,
+    navigation: &mut Option<Entity>,
+    page: usize,
+    count: usize,
+) {
+    if count <= 200 {
+        if let Some(entity) = navigation.take() {
+            let _ = world.despawn(entity);
+        }
+        return;
+    }
+    if let Some(entity) = *navigation
+        && let Some(previous) = world.get::<PageNavigation>(entity)
+    {
+        if previous.page == page && previous.count == count {
+            return;
+        }
+        let label = previous.label;
+        if let Some(mut text) = world.get_mut::<Text>(label) {
+            text.0 = format!("{} / {} · {count}", page + 1, count.div_ceil(200));
+            world
+                .entity_mut(entity)
+                .insert(PageNavigation { page, count, label });
+            return;
+        }
+    }
+    if let Some(entity) = navigation.take() {
+        let _ = world.despawn(entity);
+    }
     let parent = world
         .spawn((
             Node {
@@ -1049,7 +1086,7 @@ pub(super) fn navigation(world: &mut World, owner: Entity, page: usize, count: u
         Icon::Previous,
         "Previous Records",
     );
-    label(
+    let label = label(
         world,
         parent,
         &format!("{} / {} · {count}", page + 1, count.div_ceil(200)),
@@ -1063,7 +1100,10 @@ pub(super) fn navigation(world: &mut World, owner: Entity, page: usize, count: u
         Icon::Next,
         "Next Records",
     );
-    parent
+    world
+        .entity_mut(parent)
+        .insert(PageNavigation { page, count, label });
+    *navigation = Some(parent);
 }
 
 fn grouping_controls(world: &mut World, panel: Entity, owner: Entity, config: &Config) {
@@ -1074,7 +1114,7 @@ fn grouping_controls(world: &mut World, panel: Entity, owner: Entity, config: &C
         (false, &config.grouping.vertical, "Vertical"),
     ] {
         label(world, panel, title, 14.0);
-        let fields = protein::record_schema::fields();
+        let fields = protein::record_schema::FIELDS;
         let selected = axis
             .as_ref()
             .and_then(|axis| fields.iter().find(|field| field.key == axis.property))

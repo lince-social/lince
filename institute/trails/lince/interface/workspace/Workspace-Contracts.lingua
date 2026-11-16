@@ -27,6 +27,19 @@ Workspace contracts and acceptance (@workspace-contracts: 0, is #chapter, #part-
 - [20: Recording-contracts](contracts/Recording-contracts.lingua) — required contributors: @ws-recording.
 - [21: Specialist-science-contracts](contracts/Specialist-science-contracts.lingua) — required contributors: @ws-astronomy, @ws-biomechanics, @ws-chemical-living, @ws-cloth, @ws-coupled-physics, @ws-device-physics, @ws-molecular-dynamics, @ws-nonlinear, @ws-nuclear, @ws-process-physics.
 
+## Added exploration contracts
+
+- [Exploration and possession](contracts/Exploration-contracts.lingua) — required core contributors: @ws-exploration and @ws-possession; joins full core acceptance. EXP.T/EXP.M/EXP.W/EXP.P/EXP.R and POS.T identifiers preserve the new scope without renumbering earlier contracts.
+- [Optional automatic exploration](features/Automatic-Exploration.lingua) — @ws-automatic-exploration owns AUTO.T01–AUTO.T03 and AUTO.W01; its absence does not block core acceptance.
+
+## Added object authoring contracts
+
+- [Reusable object authoring](contracts/Object-authoring-contracts.lingua) — required contributors: @ws-object-recipes, @ws-behavior-authoring, @ws-procedural-appearance, @ws-cad-behavior, @ws-object-controls and @ws-authoring-experiments. Joins full core acceptance through 15.T09/15.W08. REC/BHV/VIS/CBN/CTL/AEX own tasks; OA owns shared requirements, fixture and composed proof. Numerical domain adapters retain their separate gates.
+
+## Added camera and vision contracts
+
+- [Camera feeds and Fiote vision](contracts/Camera-vision-contracts.lingua) — required contributors: @ws-camera-feeds, @ws-vision-tasks and @ws-observed-models. Extends F10 through explicit providers and joins core acceptance through 15.T10/15.W09. CFE/VSN/OMD own tasks; CV owns schema/processing requirements, fixture and composed proof. Raw-video archival, a global camera catalog and unimplemented high-detail reconstruction are outside this bounded gate.
+
 ## Conversion coverage
 
 All original task and requirement identifiers are retained. 05.T04 is partitioned into shared source/layer delivery and its geographic application; 11.T01 is partitioned into generic joint/assembly relations and exact-solid operations. The full parent text remains in its contract, and both clauses must pass before the parent closes. No other task has multiple implementation owners. Historical fixture evidence is preserved, with links corrected for the moved directory. A missing original supporting document remains explicitly unavailable rather than silently invented.

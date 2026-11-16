@@ -83,7 +83,7 @@ impl Connection {
             );
         }
         if parts.len() > 256
-            || serde_json::to_vec(parts).map_err(failure)?.len() + text.len() > 8 * 1024 * 1024
+            || nucleus::json::encoded_len(parts).map_err(failure)? + text.len() > 8 * 1024 * 1024
         {
             return Err("The agent request exceeds its content limit. Start a new thread.".into());
         }

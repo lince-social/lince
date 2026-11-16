@@ -485,7 +485,7 @@ fn floor_areas_affect_gravity_supported_sands_through_their_support_point() {
                 elevation: 20.1,
                 ..Default::default()
             },
-            crate::native::area::RecordProperties(serde_json::json!({"head":"Card"})),
+            crate::native::area::RecordProperties(serde_json::json!({"head":"Card"}).into()),
             WorkspaceMember(1),
             ChildOf(root),
         ))

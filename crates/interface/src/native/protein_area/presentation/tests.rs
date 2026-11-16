@@ -25,11 +25,12 @@ pub(super) fn fixture() -> (App, Entity, Entity, Vec<Entity>) {
     app.world_mut().resource_mut::<Runtime>().areas.insert(
         owner,
         super::super::State {
-            applied: Some(config),
+            applied: Some(config.into()),
             data: vec![
                 json!({"uid":"first", "head":"First", "body":"Description", "quantity":"7"}),
                 json!({"uid":"second", "head":"Second", "body":"Other", "quantity":"3"}),
-            ],
+            ]
+            .into(),
             ready: true,
             dirty: true,
             ..default()
@@ -87,8 +88,8 @@ fn record_save_refresh_preserves_measured_field_sizes() {
         .unwrap()
         .protein = Some(config.clone());
     app.world_mut().resource_mut::<Runtime>().areas.insert(owner, super::super::State {
-        applied: Some(config),
-        data: vec![json!({"uid":"record", "head":"Title", "body":"Body", "slug":"slug", "quantity":"0"})],
+        applied: Some(config.into()),
+        data: vec![json!({"uid":"record", "head":"Title", "body":"Body", "slug":"slug", "quantity":"0"})].into(),
         ready: true,
         dirty: true,
         ..default()
@@ -117,7 +118,7 @@ fn record_save_refresh_preserves_measured_field_sizes() {
         {
             let mut runtime = app.world_mut().resource_mut::<Runtime>();
             let state = runtime.areas.get_mut(&owner).unwrap();
-            state.data[0]["slug"] = json!(slug);
+            std::sync::Arc::make_mut(&mut state.data)[0]["slug"] = json!(slug);
             state.dirty = true;
         }
         super::super::rows::reconcile(app.world_mut(), owner);
@@ -407,8 +408,8 @@ fn record_materials_and_lights_survive_real_projection_refresh_and_row_recreatio
     {
         let mut runtime = app.world_mut().resource_mut::<Runtime>();
         let state = runtime.areas.get_mut(&owner).unwrap();
-        state.data[0]["quantity"] = json!("0");
-        state.data[0]["head"] = json!("Refreshed title");
+        std::sync::Arc::make_mut(&mut state.data)[0]["quantity"] = json!("0");
+        std::sync::Arc::make_mut(&mut state.data)[0]["head"] = json!("Refreshed title");
         state.dirty = true;
     }
     super::super::rows::reconcile(app.world_mut(), owner);
@@ -635,18 +636,43 @@ fn retained_views_follow_same_tick_edits_source_changes_and_restoration_without_
     assert!(set_view(app.world_mut(), row, template("Retained view", Layout::Castle, &["head", "body", "due_date"])));
     for _ in 0..3 { app.world_mut().increment_change_tick(); update(app.world_mut()); }
     for fill in ["First local fill", "Second local fill"] {
-        app.world_mut().get_mut::<State>(row).unwrap().view.as_mut().unwrap().fills.insert("due_date".into(), fill.into());
+        app.world_mut()
+            .get_mut::<State>(row)
+            .unwrap()
+            .view
+            .as_mut()
+            .unwrap()
+            .fills
+            .insert("due_date".into(), fill.into());
         update(app.world_mut());
         assert!(contains_text(app.world(), row, fill));
     }
-    app.world_mut().get_mut::<super::super::rows::Row>(row).unwrap().data["due_date"] = json!("2026-12-25");
+    std::sync::Arc::make_mut(
+        &mut app
+            .world_mut()
+            .get_mut::<super::super::rows::Row>(row)
+            .unwrap()
+            .data,
+    )["due_date"] = json!("2026-12-25");
     update(app.world_mut());
     assert!(contains_text(app.world(), row, "2026-12-25"));
-    app.world_mut().get_mut::<super::super::rows::Row>(row).unwrap().data["due_date"] = Value::Null;
+    std::sync::Arc::make_mut(
+        &mut app
+            .world_mut()
+            .get_mut::<super::super::rows::Row>(row)
+            .unwrap()
+            .data,
+    )["due_date"] = Value::Null;
     app.world_mut().get_mut::<State>(row).unwrap().view = None;
     let mut view = template("Source view", Layout::Castle, &["head", "body", "due_date"]);
     view.fills.insert("due_date".into(), "Area fallback".into());
-    app.world_mut().get_mut::<InfluenceArea>(owner).unwrap().protein.as_mut().unwrap().presentation = Some(view);
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein
+        .as_mut()
+        .unwrap()
+        .presentation = Some(view);
     update(app.world_mut());
     assert!(contains_text(app.world(), row, "Area fallback"));
     app.world_mut().get_mut::<InfluenceArea>(owner).unwrap().protein.as_mut().unwrap().presentation.as_mut().unwrap().fills.insert("due_date".into(), "New area fallback".into());
@@ -668,20 +694,40 @@ fn retained_views_prepare_replaced_declarations_and_continue_after_a_real_row_re
     update(app.world_mut());
     app.world_mut().entity_mut(row).remove::<crate::native::sand_settings::Declaration>();
     update(app.world_mut());
-    assert!(app.world().get::<crate::native::sand_settings::Declaration>(row).is_some());
-    app.world_mut().get_mut::<InfluenceArea>(owner).unwrap().protein.as_mut().unwrap().show_labels = true;
-    let config = app.world().get::<InfluenceArea>(owner).unwrap().protein.clone().unwrap();
+    assert!(
+        app.world()
+            .get::<crate::native::sand_settings::Declaration>(row)
+            .is_some()
+    );
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein
+        .as_mut()
+        .unwrap()
+        .show_labels = true;
+    let config = app
+        .world()
+        .get::<InfluenceArea>(owner)
+        .unwrap()
+        .protein
+        .clone()
+        .unwrap();
     {
         let mut runtime = app.world_mut().resource_mut::<Runtime>();
         let state = runtime.areas.get_mut(&owner).unwrap();
-        state.applied = Some(config);
+        state.applied = Some(config.into());
         state.dirty = true;
         state.template_dirty = true;
-        state.data[0]["head"] = json!("Rebuilt record head");
+        std::sync::Arc::make_mut(&mut state.data)[0]["head"] = json!("Rebuilt record head");
     }
     super::super::rows::reconcile(app.world_mut(), owner);
     update(app.world_mut());
-    assert!(app.world().get::<crate::native::sand_settings::Declaration>(row).is_some());
+    assert!(
+        app.world()
+            .get::<crate::native::sand_settings::Declaration>(row)
+            .is_some()
+    );
     let head = editor(app.world_mut(), row, "head");
     assert_eq!(app.world().get::<EditableText>(head).unwrap().value().to_string(), "Rebuilt record head");
     app.world_mut().get_mut::<State>(row).unwrap().view.as_mut().unwrap().fills.insert("due_date".into(), "After rebuild".into());

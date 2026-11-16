@@ -201,8 +201,8 @@ impl Form {
             .all(|value| value.len() <= 256)
             && self.drafts.len() <= 128
             && self.drafts.keys().all(|key| key.len() <= 256)
-            && serde_json::to_vec(&self.drafts).is_ok_and(|bytes| bytes.len() <= 1024 * 1024)
-            && serde_json::to_vec(&self.editing).is_ok_and(|bytes| bytes.len() <= 1024 * 1024)
+            && nucleus::json::encoded_len(&self.drafts).is_ok_and(|bytes| bytes <= 1024 * 1024)
+            && nucleus::json::encoded_len(&self.editing).is_ok_and(|bytes| bytes <= 1024 * 1024)
     }
 
     fn values(&self) -> BTreeMap<String, String> {
@@ -347,10 +347,42 @@ struct Input {
 #[derive(Component)]
 struct SourceStatus(Entity);
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LiveRecords {
+    Checking,
+    Unchanged,
+    Changed,
+    Unavailable,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct Observation {
+    records: LiveRecords,
+    source_dirty: bool,
+}
+
+impl Observation {
+    fn message(self) -> String {
+        let text = match self.records {
+            LiveRecords::Checking => "Checking captured Records against the live Cell",
+            LiveRecords::Unchanged => "Captured Records unchanged in live Cell",
+            LiveRecords::Changed => {
+                "Captured Records changed in live Cell · using the retained base"
+            }
+            LiveRecords::Unavailable => "Live Cell unavailable · using the retained base",
+        };
+        if self.source_dirty {
+            format!("{text} · live source may have changed; inspect to check its fingerprint")
+        } else {
+            text.into()
+        }
+    }
+}
+
 #[derive(Component)]
 struct LiveWatch {
     stamp: String,
-    updates: tokio::sync::watch::Receiver<String>,
+    updates: tokio::sync::watch::Receiver<Observation>,
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -360,8 +392,13 @@ impl Drop for LiveWatch {
     }
 }
 
-fn watch_source(world: &mut World, owner: Entity, proposal: &simulation::proposal::Proposal) {
-    let Ok(stamp) = simulation::world::digest(&(&proposal.source, &proposal.records)) else {
+fn watch_source(
+    world: &mut World,
+    owner: Entity,
+    source: &super::source::Source,
+    proposal: &simulation::proposal::Proposal,
+) {
+    let Ok(Some(stamp)) = source.base_stamp() else {
         return;
     };
     if world
@@ -381,34 +418,48 @@ fn watch_source(world: &mut World, owner: Entity, proposal: &simulation::proposa
         .iter()
         .map(|record| (record.uid.clone(), record.revision))
         .collect();
-    let mut changed = runtime.engine.watch_query_changes();
+    let mut changed = runtime.engine.watch_general_query_changes();
     let mut facts = runtime.engine.subscribe();
-    let (status, updates) =
-        tokio::sync::watch::channel("Checking captured Records against the live Cell".to_string());
+    let (status, updates) = tokio::sync::watch::channel(Observation {
+        records: LiveRecords::Checking,
+        source_dirty: false,
+    });
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
         .cloned();
     let task = handle.spawn(async move {
         let mut source_dirty = false;
         loop {
-            let mut message = "Captured Records unchanged in live Cell".to_string();
-            for (uid, revision) in &selected {
-                let current = store::sqlx::query_as::<_, (i64, bool)>("SELECT rr.revision, r.deleted_at IS NOT NULL FROM record r JOIN record_revision rr ON rr.record_uid = r.uid WHERE r.uid = ?")
-                    .bind(uid).fetch_optional(&runtime.store.pool).await;
-                match current {
-                    Ok(Some((current, false))) if current == *revision => {}
-                    Ok(_) => { message = "Captured Records changed in live Cell · using the retained base".into(); break; }
-                    Err(_) => { message = "Live Cell unavailable · using the retained base".into(); break; }
+            let records = match store::record_revisions::live_match(&runtime.store.pool, &selected).await {
+                Ok(true) => LiveRecords::Unchanged,
+                Ok(false) => LiveRecords::Changed,
+                Err(_) => LiveRecords::Unavailable,
+            };
+            let observation = Observation { records, source_dirty };
+            if status.send_if_modified(|current| {
+                if *current == observation {
+                    return false;
                 }
+                *current = observation;
+                true
+            }) {
+                nucleus::performance::add("simulation-live-status-updates", 1);
+                if let Some(wake) = &wake { wake.ring(); }
             }
-            if source_dirty { message.push_str(" · live source may have changed; inspect to check its fingerprint"); }
-            status.send_replace(message);
-            if let Some(wake) = &wake { wake.ring(); }
             let available = tokio::select! {
                 result = changed.changed() => result.is_ok(),
                 result = facts.recv() => !matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)),
             };
             if !available { break; }
+            // Facts only invalidate this observation. Consume the backlog
+            // already present, then take one fresh sample; later arrivals stay
+            // queued for another pass. This adds no coalescing timer.
+            let mut coalesced = 0;
+            for _ in 0..facts.len() {
+                if facts.try_recv().is_err() { break; }
+                coalesced += 1;
+            }
+            nucleus::performance::add("simulation-live-facts-coalesced", coalesced);
             source_dirty = true;
         }
     });
@@ -420,7 +471,7 @@ fn watch_source(world: &mut World, owner: Entity, proposal: &simulation::proposa
 }
 
 pub(super) fn receive(world: &mut World) {
-    let updates: Vec<_> = world
+    let updates: std::collections::HashMap<_, _> = world
         .query::<(Entity, &mut LiveWatch)>()
         .iter_mut(world)
         .filter_map(|(owner, mut watch)| {
@@ -429,20 +480,17 @@ pub(super) fn receive(world: &mut World) {
                 .has_changed()
                 .ok()
                 .filter(|changed| *changed)
-                .map(|_| (owner, watch.updates.borrow_and_update().clone()))
+                .map(|_| (owner, watch.updates.borrow_and_update().message()))
         })
         .collect();
-    for (owner, message) in updates {
-        let labels: Vec<_> = world
-            .query::<(Entity, &SourceStatus)>()
-            .iter(world)
-            .filter(|(_, status)| status.0 == owner)
-            .map(|(entity, _)| entity)
-            .collect();
-        for label in labels {
-            if let Some(mut text) = world.get_mut::<Text>(label) {
-                text.0 = message.clone();
-            }
+    if updates.is_empty() {
+        return;
+    }
+    for (owner, mut text) in world.query::<(&SourceStatus, &mut Text)>().iter_mut(world) {
+        if let Some(message) = updates.get(&owner.0)
+            && text.0 != *message
+        {
+            text.0.clone_from(message);
         }
     }
 }
@@ -526,7 +574,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         world.entity_mut(owner).remove::<LiveWatch>();
         return;
     }
-    let Ok(scenario) = serde_json::from_str::<Scenario>(&model.scenario) else {
+    let Ok(scenario) = model.scenario.parsed() else {
         world.entity_mut(owner).remove::<LiveWatch>();
         return;
     };
@@ -564,10 +612,10 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         );
         return;
     };
-    watch_source(world, owner, proposal);
+    watch_source(world, owner, &model.scenario, proposal);
     let source_status = world
         .get::<LiveWatch>(owner)
-        .map(|watch| watch.updates.borrow().clone())
+        .map(|watch| watch.updates.borrow().message())
         .unwrap_or_else(|| "Retained base · live Cell unavailable".into());
     let label = crate::native::edit_mode::label(world, panel, &source_status, 13.0);
     world.entity_mut(label).insert(SourceStatus(owner));
@@ -772,7 +820,24 @@ pub(super) fn capture(world: &mut World) {
     let values: Vec<_> = world
         .query::<(&Input, &EditableText)>()
         .iter(world)
-        .map(|(input, text)| (input.owner, input.field, text.value().to_string()))
+        .filter_map(|(input, text)| {
+            let model = world.get::<SimulationCastle>(input.owner)?;
+            let form = &model.record_form;
+            let current = match input.field {
+                InputField::Record => &form.record,
+                InputField::Value => &form.value,
+                InputField::Start => &form.start,
+                InputField::Due => &form.due,
+                InputField::Estimate => &form.estimate,
+                InputField::Predicate => &form.predicate,
+                InputField::Object => &form.object,
+                InputField::RelationQuantity => &form.relation_quantity,
+                InputField::Unit => &form.unit,
+                InputField::After => &form.after,
+                InputField::Horizon => &form.horizon,
+            };
+            super::changed_text(text, current).map(|value| (input.owner, input.field, value))
+        })
         .collect();
     for (owner, field, value) in values {
         let Some(mut model) = world.get_mut::<SimulationCastle>(owner) else {
@@ -806,7 +871,7 @@ fn milliseconds(value: &str) -> simulation::Result<u64> {
 
 pub(super) fn apply(command: &Command, world: &mut World, owner: Entity) -> simulation::Result<()> {
     let mut model = world.get::<SimulationCastle>(owner).unwrap().clone();
-    let mut scenario: Scenario = serde_json::from_str(&model.scenario)?;
+    let mut scenario = model.scenario.draft()?;
     let form = &mut model.record_form;
     match command {
         Command::Toggle => form.open = !form.open,
@@ -1075,7 +1140,7 @@ pub(super) fn apply(command: &Command, world: &mut World, owner: Entity) -> simu
     if !form.valid() {
         return Err("Record draft exceeds its size limits".into());
     }
-    model.scenario = serde_json::to_string_pretty(&scenario)?;
+    model.scenario.set(serde_json::to_string_pretty(&scenario)?);
     let editor = world.get::<View>(owner).unwrap().editor;
     world
         .get_mut::<EditableText>(editor)
@@ -1211,7 +1276,7 @@ mod tests {
             ],
         });
         let (mut app, owner) = super::super::tests::fixture(SimulationCastle {
-            scenario: serde_json::to_string_pretty(&scenario).unwrap(),
+            scenario: serde_json::to_string_pretty(&scenario).unwrap().into(),
             record_form: Form::target(&uid),
             ..Default::default()
         });
@@ -1324,7 +1389,7 @@ mod tests {
             current.end_ms = scenario.end_ms;
             let (mut app, owner) = super::super::tests::fixture(SimulationCastle {
                 current_database: true,
-                scenario: serde_json::to_string_pretty(&current).unwrap(),
+                scenario: serde_json::to_string_pretty(&current).unwrap().into(),
                 selected_cell: "current".into(),
                 output_directory: directory.path().join("runs").to_string_lossy().into(),
                 record_form: Form {

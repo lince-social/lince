@@ -1,4 +1,7 @@
+mod catalog;
 mod ui;
+
+use catalog::Rows;
 
 use crate::native::cell_bridge::{CellBridge, CellMessage, ReceiveCell};
 use bevy::prelude::*;
@@ -7,7 +10,7 @@ use serde_json::Value;
 
 #[derive(Resource, Default)]
 struct Catalog {
-    rows: Vec<Value>,
+    rows: Rows,
     subscription: Option<String>,
     refresh: bool,
     ready: bool,
@@ -99,10 +102,8 @@ pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity
 }
 
 fn status(world: &mut World, sand: Entity, message: &str) {
-    if let Some(entity) = world.get::<AccessControlSand>(sand).map(|view| view.status)
-        && let Some(mut text) = world.get_mut::<Text>(entity)
-    {
-        text.set_if_neq(Text::new(message));
+    if let Some(entity) = world.get::<AccessControlSand>(sand).map(|view| view.status) {
+        crate::native::sand_panel::status(world, entity, message);
     }
 }
 
@@ -192,11 +193,10 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
         .find(|(_, catalog)| catalog.0.subscription.as_ref() == Some(id))
         .map(|(owner, _)| owner);
     if let Some(owner) = scoped {
-        match message.clone() {
+        match message {
             ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
                 let mut catalog = world.get_mut::<ScopedCatalog>(owner).unwrap();
-                let changed = !catalog.0.ready || catalog.0.rows != rows;
-                catalog.0.rows = rows;
+                let changed = catalog.0.rows.replace(rows) || !catalog.0.ready;
                 catalog.0.ready = true;
                 if changed {
                     world.get_mut::<AccessControlSand>(owner).unwrap().dirty = true;
@@ -230,14 +230,16 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
         return;
     }
     if world.resource::<Catalog>().subscription.as_ref() == Some(id) {
-        match message.clone() {
+        match message {
             ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
                 let mut catalog = world.resource_mut::<Catalog>();
-                let changed = !catalog.ready || catalog.rows != rows;
-                catalog.rows = rows;
+                let changed = catalog.rows.replace(rows) || !catalog.ready;
                 catalog.ready = true;
                 if changed {
-                    for mut view in world.query::<&mut AccessControlSand>().iter_mut(world) {
+                    for mut view in world
+                        .query_filtered::<&mut AccessControlSand, Without<ScopedCatalog>>()
+                        .iter_mut(world)
+                    {
                         view.dirty = true;
                     }
                 }
@@ -245,7 +247,7 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
             ServerMessage::Error { message, .. } => {
                 world.resource_mut::<Catalog>().ready = false;
                 let owners: Vec<_> = world
-                    .query_filtered::<Entity, With<AccessControlSand>>()
+                    .query_filtered::<Entity, (With<AccessControlSand>, Without<ScopedCatalog>)>()
                     .iter(world)
                     .collect();
                 for owner in owners {
@@ -268,7 +270,7 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
     let Some((owner, kind)) = owner else {
         return;
     };
-    match message.clone() {
+    match message {
         ServerMessage::ActionOk {
             created,
             warnings,
@@ -285,6 +287,7 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                     world,
                     owner,
                     &data
+                        .as_ref()
                         .and_then(|data| serde_json::to_string_pretty(&data).ok())
                         .unwrap_or_else(|| "Authority preview unavailable".into()),
                 );
@@ -295,11 +298,11 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                     form.uid = created.clone();
                 }
                 let mut view = world.get_mut::<AccessControlSand>(owner).unwrap();
-                view.selected = created;
+                view.selected = created.clone();
                 view.reload_editor = true;
             } else if matches!(kind, Mutation::Role) {
                 let mut view = world.get_mut::<AccessControlSand>(owner).unwrap();
-                view.selected = created;
+                view.selected = created.clone();
                 view.reload_editor = true;
             } else if matches!(
                 kind,
@@ -351,7 +354,7 @@ fn maintain(world: &mut World) {
         {
             let mut catalog = world.resource_mut::<Catalog>();
             catalog.subscription = None;
-            catalog.rows.clear();
+            catalog.rows = Default::default();
             catalog.ready = false;
         }
         return;
@@ -472,10 +475,10 @@ fn maintain_scoped(world: &mut World) {
 
 pub(crate) fn inspect_user(world: &mut World, owner: Entity, uid: &str) -> bool {
     if !catalog(world, owner).ready
-        || !catalog(world, owner)
+        || catalog(world, owner)
             .rows
-            .iter()
-            .any(|row| row["kind"] == "user" && row["id"] == uid)
+            .find(Tab::Users, Some(uid))
+            .is_none()
     {
         return false;
     }

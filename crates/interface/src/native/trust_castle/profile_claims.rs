@@ -1,6 +1,17 @@
 use super::*;
 use nucleus::trust_analysis::{claims::Document, query::Query};
 
+#[derive(Clone, serde::Serialize)]
+pub(super) struct CachedCheck {
+    as_organ: bool,
+    check: Snapshot,
+    document_hash: nucleus::karma::CanonicalHash,
+    person: String,
+    query_hash: nucleus::karma::CanonicalHash,
+    #[serde(skip)]
+    encoded_len: usize,
+}
+
 #[derive(Clone)]
 pub(super) struct OpenSnapshot(pub Document);
 
@@ -45,33 +56,49 @@ pub(super) fn load_snapshot(view: &mut View, document: &Document) {
     }
     view.anchor = view.person.clone();
     view.anchor_organ = false;
-    view.claims.snapshot = Some(document.clone());
+    view.claims.snapshot = Some(Arc::new(document.clone()));
     view.analyze_after_context = true;
 }
 
-pub(super) fn cache(view: &mut View, result: &Value) {
-    let Ok(document) = serde_json::from_value::<Document>(result["document"].clone()) else {
+pub(super) fn cache(view: &mut View, result: &Snapshot) {
+    let _prepare = nucleus::performance::Span::new("trust-claim-cache-preparation");
+    let Ok(document) = decode::<Document>(&result["document"]) else {
         return;
     };
-    let Ok(query) = serde_json::from_value::<Query>(result["query"].clone()) else {
+    let Ok(query) = decode::<Query>(&result["query"]) else {
         return;
     };
     let (Ok(document_hash), Ok(query_hash)) = (document.id(), query.id()) else {
         return;
     };
     view.claims.checks.retain(|entry| {
-        entry["document_hash"] != document_hash.as_str()
-            || entry["query_hash"] != query_hash.as_str()
-            || entry["as_organ"] != view.as_organ
+        entry.document_hash != document_hash
+            || entry.query_hash != query_hash
+            || entry.as_organ != view.as_organ
     });
-    let entry = json!({"person":view.person,"as_organ":view.as_organ,"document_hash":document_hash,"query_hash":query_hash,"check":result});
-    let size = serde_json::to_vec(&entry).map_or(usize::MAX, |bytes| bytes.len());
+    let mut entry = CachedCheck {
+        person: view.person.clone(),
+        as_organ: view.as_organ,
+        document_hash,
+        query_hash,
+        check: result.clone(),
+        encoded_len: 0,
+    };
+    nucleus::performance::add("trust-claim-cache-entries-prepared", 1);
+    let size = nucleus::json::encoded_len(&entry).unwrap_or(usize::MAX);
+    entry.encoded_len = size;
     if size > nucleus::trust_analysis::MAX_BYTES {
         return;
     }
     while view.claims.checks.len() >= 8
-        || serde_json::to_vec(&view.claims.checks)
-            .map_or(usize::MAX, |bytes| bytes.len())
+        || view
+            .claims
+            .checks
+            .iter()
+            .fold(2usize, |bytes, entry| {
+                bytes.saturating_add(entry.encoded_len)
+            })
+            .saturating_add(view.claims.checks.len().saturating_sub(1))
             .saturating_add(size)
             .saturating_add(1)
             > nucleus::trust_analysis::MAX_BYTES
@@ -84,7 +111,7 @@ pub(super) fn cache(view: &mut View, result: &Value) {
     view.claims.checks.push(entry);
 }
 
-fn cached(view: &View, document: &Document) -> Option<Value> {
+fn cached(view: &View, document: &Document) -> Option<Snapshot> {
     let query = document
         .statement
         .descriptor
@@ -97,12 +124,12 @@ fn cached(view: &View, document: &Document) -> Option<Value> {
         .iter()
         .rev()
         .find(|entry| {
-            entry["person"] == view.person
-                && entry["as_organ"] == view.as_organ
-                && entry["document_hash"] == hash.as_str()
-                && entry["query_hash"] == policy.as_str()
+            entry.person == view.person
+                && entry.as_organ == view.as_organ
+                && entry.document_hash == hash
+                && entry.query_hash == policy
         })
-        .map(|entry| entry["check"].clone())
+        .map(|entry| entry.check.clone())
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {

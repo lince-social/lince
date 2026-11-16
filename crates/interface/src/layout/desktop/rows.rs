@@ -1,6 +1,7 @@
 use super::*;
 
 mod sizing;
+mod validation;
 mod transfers;
 mod compact;
 mod scratch;
@@ -119,85 +120,6 @@ impl Rows {
                 return id;
             }
         }
-    }
-
-    pub fn valid(&self, items: &[Item]) -> bool {
-        let all: BTreeMap<_, _> = items.iter().map(|item| (item.id, item.floating)).collect();
-        let mut expected: BTreeSet<_> = items
-            .iter()
-            .filter(|item| !item.floating)
-            .map(|item| item.id)
-            .collect();
-        let mut grouped = BTreeSet::new();
-        let groups_valid = self.compact.iter().all(|group| {
-            group.members.len() >= 2 && group.members.len() <= MAX_ITEMS
-                && group.members.contains(&group.active)
-                && group.members.iter().all(|id| {
-                    all.get(id) == Some(&false) && grouped.insert(*id)
-                        && self.homes.iter().filter(|home| home.item.id == *id).count() == 1
-                })
-                && self.location(group.active).is_some()
-                && group.members.iter().filter(|id| **id != group.active).all(|id| self.location(*id).is_none())
-        });
-        for group in &self.compact {
-            for id in group.members.iter().filter(|id| **id != group.active) { expected.remove(id); }
-        }
-        let mut arranged = BTreeSet::new();
-        let mut row_ids = BTreeSet::new();
-        let mut floating = BTreeSet::new();
-        let member_valid = |member: &Member| {
-            member.width.valid()
-                && member.floating_width.is_none_or(FreeWidth::valid)
-                && member
-                    .floating_sizing
-                    .is_none_or(|sizing| sizing.into_iter().all(SizeIntent::valid))
-                && member
-                    .floating
-                    .is_none_or(|geometry| geometry.rectangle().is_some())
-        };
-        self.next_id != 0
-            && groups_valid
-            && self.rows.len() <= items.len()
-            && self.homes.len() <= items.len()
-            && self
-                .scroll
-                .iter()
-                .all(|value| value.is_finite() && *value >= 0.0)
-            && self.rows.iter().all(|row| {
-                row.id != 0
-                    && row_ids.insert(row.id)
-                    && row.height.valid()
-                    && !row.items.is_empty()
-                    && row
-                        .items
-                        .iter()
-                        .all(|item| member_valid(item) && arranged.insert(item.id))
-            })
-            && arranged == expected
-            && self.homes.iter().all(|home| {
-                (all.get(&home.item.id) == Some(&true) || grouped.contains(&home.item.id))
-                    && floating.insert(home.item.id)
-                    && home.row != 0
-                    && home.index <= MAX_ITEMS
-                    && home.row_index <= MAX_ITEMS
-                    && home.height.valid()
-                    && member_valid(&home.item)
-                    && home.free.rectangle().is_some()
-                    && home.free_width.is_none_or(FreeWidth::valid)
-                    && home.free_sizing.into_iter().all(SizeIntent::valid)
-                    && [home.before, home.after]
-                        .into_iter()
-                        .flatten()
-                        .all(|id| id != home.item.id && id.0 != [0; 16])
-            })
-            && self.last_focus.is_none_or(|id| arranged.contains(&id))
-            && self.free_view.is_none_or(|(center, zoom)| {
-                center
-                    .into_iter()
-                    .all(|value| value.is_finite() && value.abs() <= 1_000_000_000.0)
-                    && zoom.is_finite()
-                    && zoom > 0.0
-            })
     }
 
     pub fn insert(&mut self, id: PlacementId, near: Option<PlacementId>) {

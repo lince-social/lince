@@ -859,7 +859,7 @@ fn room_metadata_roundtrips_clears_and_preserves_hosted_placement_authority() {
     let restored: api::State =
         serde_json::from_str(&serde_json::to_string(&state).unwrap()).unwrap();
     restored.validate().unwrap();
-    assert_eq!(restored.snapshot, capture(app.world_mut(), root).unwrap());
+    assert_eq!(*restored.snapshot, capture(app.world_mut(), root).unwrap());
     execute(
         app.world_mut(),
         root,
@@ -1440,7 +1440,7 @@ fn active_influence_stays_inside_balloon_and_outside_influence_stays_outside() {
         app.world_mut()
             .entity_mut(entity)
             .insert(crate::native::area::RecordProperties(
-                serde_json::json!({"uid":nucleus::new_uid("r"),"quantity":-3}),
+                serde_json::json!({"uid":nucleus::new_uid("r"),"quantity":-3}).into(),
             ));
     }
     fn emitter(world: &mut World, root: Entity, strength: f64) -> Entity {

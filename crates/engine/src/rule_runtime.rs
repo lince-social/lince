@@ -351,8 +351,10 @@ impl Engine {
         let mut queue = VecDeque::from([(changed, event_id)]);
         let mut result = Vec::new();
         let mut steps = 0;
-        while let Some((changed, event_id)) = queue.pop_front() {
+        while let Some((mut changed, event_id)) = queue.pop_front() {
             execution_checkpoint(false).await?;
+            changed.sort_unstable();
+            changed.dedup();
             let mut readers = BTreeSet::new();
             for uid in changed {
                 readers.extend(index.records.get(&uid).into_iter().flatten().cloned());
@@ -364,19 +366,35 @@ impl Engine {
                         .flatten()
                         .cloned(),
                 );
-                for (concept, rules) in &index.concepts {
-                    if store::ledger::records_with_concept(&self.store.pool, concept)
-                        .await?
-                        .contains(&uid)
-                    {
-                        readers.extend(rules.iter().cloned());
+                if !index.concepts.is_empty() {
+                    let membership =
+                        crate::performance::Span::new("record-reaction-membership-await");
+                    crate::performance::add("record-reaction-membership-queries", 1);
+                    let concepts =
+                        store::ledger::record_concept_ancestors(&self.store.pool, &uid).await?;
+                    crate::performance::add(
+                        "record-reaction-membership-concepts-read",
+                        concepts.len() as u64,
+                    );
+                    drop(membership);
+                    for concept in concepts {
+                        readers.extend(index.concepts.get(&concept).into_iter().flatten().cloned());
                     }
                 }
             }
             for uid in readers {
-                if crate::commands::SAMPLE_ORIGIN.try_with(|origin| origin.as_deref() == Some(uid.as_str())).unwrap_or(false) { continue; }
+                if crate::commands::SAMPLE_ORIGIN
+                    .try_with(|origin| origin.as_deref() == Some(uid.as_str()))
+                    .unwrap_or(false)
+                {
+                    continue;
+                }
                 steps += 1;
-                if steps > 256 && nucleus::execution::current().and_then(|execution| execution.control()).is_none() {
+                if steps > 256
+                    && nucleus::execution::current()
+                        .and_then(|execution| execution.control())
+                        .is_none()
+                {
                     return Err(EngineError::Conflict {
                         code: "karma_reaction_limit",
                         message: "Rule reactions exceeded 256 evaluations; inspect the rule cycle."
@@ -731,8 +749,7 @@ impl Engine {
             let work = work.map(|raw| serde_json::from_str::<serde_json::Value>(&raw)).transpose();
             let range = work.map_err(|error| error.to_string()).and_then(|work| {
                 let work = work.unwrap_or_else(|| serde_json::json!({}));
-                crate::private_work::WorkMetadata::parse(&work).map_err(|error| error.to_string())?;
-                nucleus::schedule::range(work["start"].as_str(), work["due"].as_str(), work["estimate_min"].as_f64(), Some(event.at.timestamp_millis()))
+                crate::private_work::WorkMetadata::time_range(&work, Some(event.at.timestamp_millis()))
             });
             match range {
                 Ok(Some(time)) => Some(nucleus::simulation::RecordedSchedule { cell:cell.into(), occurrence:occurrence.clone(), record:nucleus::karma::TypedUid::new(nucleus::karma::ReferenceKind::Record, rule.record_uid.clone()).map_err(|error| invalid(error.to_string()))?, observed_at_ms:now.timestamp_millis(), time:Some(time), unavailable:false }),
@@ -862,8 +879,7 @@ impl Engine {
             if rule.is_paused() {
                 continue;
             }
-            let target = store::records::get(&self.store.pool, &rule.record_uid).await?;
-            if target.is_none() {
+            if !store::records::exists(&self.store.pool, &rule.record_uid).await? {
                 continue;
             }
             if let Some(condition) = &rule.condition {
@@ -872,10 +888,16 @@ impl Engine {
                     .map_err(|e| invalid(e.to_string()))?
                     .reads()
                 {
-                    if token.func == "query_command" { continue; }
+                    if token.func == "query_command" {
+                        continue;
+                    }
                     if token.func == "startup" {
                         let uid = self.resolve(&token.slug).await?;
-                        index.startups.entry(uid).or_default().insert(rule.uid.clone());
+                        index
+                            .startups
+                            .entry(uid)
+                            .or_default()
+                            .insert(rule.uid.clone());
                     } else if token.func == "freq" {
                         let uid = self.resolve_frequency_uid(&token.slug).await?;
                         index
@@ -886,16 +908,28 @@ impl Engine {
                         index.used.insert(uid);
                     } else if nucleus::transfer::karma::is_reading(&token.func) {
                         for name in token.slug.split('|') {
-                            let uid = match store::records::resolve(&self.store.pool, name).await? {
-                                Some(record) => record.uid,
-                                None => name.to_string(),
-                            };
-                            index.records.entry(uid).or_default().insert(rule.uid.clone());
+                            let uid =
+                                match store::records::resolve_uid(&self.store.pool, name).await? {
+                                    Some(uid) => uid,
+                                    None => name.to_string(),
+                                };
+                            index
+                                .records
+                                .entry(uid)
+                                .or_default()
+                                .insert(rule.uid.clone());
                         }
-                    } else if token.func==nucleus::expr::HAS_ASSERTION {
-                        for (position,name) in token.slug.split('|').enumerate() {
-                            if position!=1 && let Some(record)=store::records::resolve(&self.store.pool,name).await? {
-                                index.records.entry(record.uid).or_default().insert(rule.uid.clone());
+                    } else if token.func == nucleus::expr::HAS_ASSERTION {
+                        for (position, name) in token.slug.split('|').enumerate() {
+                            if position != 1
+                                && let Some(uid) =
+                                    store::records::resolve_uid(&self.store.pool, name).await?
+                            {
+                                index
+                                    .records
+                                    .entry(uid)
+                                    .or_default()
+                                    .insert(rule.uid.clone());
                             }
                         }
                     } else if token.func == nucleus::expr::ASSERTION {
@@ -906,12 +940,12 @@ impl Engine {
                             .insert(rule.uid.clone());
                     } else {
                         for name in token.slug.split('|') {
-                            if let Some(record) =
-                                store::records::resolve(&self.store.pool, name).await?
+                            if let Some(uid) =
+                                store::records::resolve_uid(&self.store.pool, name).await?
                             {
                                 index
                                     .records
-                                    .entry(record.uid)
+                                    .entry(uid)
                                     .or_default()
                                     .insert(rule.uid.clone());
                             }
@@ -943,15 +977,15 @@ impl Engine {
                     if token.func != "value" {
                         continue;
                     }
-                    let Some(record) =
-                        store::records::resolve(&self.store.pool, &token.slug).await?
+                    let Some(uid) =
+                        store::records::resolve_uid(&self.store.pool, &token.slug).await?
                     else {
                         continue;
                     };
                     for dependency in index
                         .rules
                         .values()
-                        .filter(|dependency| dependency.record_uid == record.uid)
+                        .filter(|dependency| dependency.record_uid == uid)
                     {
                         for (record_uid, readers) in &index.records {
                             if readers.contains(&dependency.uid) {

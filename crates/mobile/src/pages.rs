@@ -314,7 +314,7 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
             Intent::Open(Page::Transfer(uid.into())),
         );
     }
-    for field in protein::record_schema::fields() {
+    for field in protein::record_schema::FIELDS {
         let value = display(&record[field.key]);
         if field.key == "body" {
             label(world, parent, "Description preview", 22.0);

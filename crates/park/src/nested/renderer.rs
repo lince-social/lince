@@ -852,7 +852,7 @@ impl Composition {
                 .output
                 .or_else(|| geometry.outputs.first().map(|output| output.id));
             if let Some(output) = output {
-                for id in &canvas.frame.previewed {
+                for id in canvas.frame.previewed.iter() {
                     if applications.insert(*id)
                         && let Some(window) = canvas.windows.iter().find(|window| window.id == *id)
                     {

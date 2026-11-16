@@ -1,0 +1,33 @@
+CAD and behavior parameter bindings (@ws-cad-behavior: 0, is #chapter, #part-of @workspace-development, #requires @ws-cad, #requires @ws-behavior-authoring) { r_1H5FC1Z7KP93YADKTB90YMTN7E
+Status: Pending. Owner refinement, 2026-11-15: construction dimensions and operating behavior can share declared parameters and stable feature references.
+
+[Development graph](../Workspace-Development.lingua) · [Object authoring contracts](../contracts/Object-authoring-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Required verified exports: [Exact CAD](Cad.lingua) and [Behavior authoring](Behavior-Authoring.lingua). This is a real join: source parameter exchange can be specified earlier, but this package cannot claim working CAD/behavior integration before both providers exist. It needs no possession, geographic data or numerical physical model.
+
+## Ownership and ordered work
+
+Own the binding adapter and composed native workflow; CAD owns feature evaluation/correspondence and Functional owns activity state. Shared interface changes are serialized with their owners in the current checkout.
+
+### Task CBN.T01
+
+- [ ] Map exposed recipe parameters to supported CAD feature/sketch parameters and behavior inputs with stable identities, quantity kinds, frame conversions, ranges and dependency direction. A geometric constraint solve is distinct from a one-way formula. Reject undeclared cycles and ambiguous inversion. When several consumers constrain a public parameter, report incompatible requirements rather than silently clamp different values in each consumer.
+
+### Task CBN.T02
+
+- [ ] Extend OA.F01's hatch with an exact construction recipe. Bind its authored opening width to the supported actuator travel and detection-region geometry through explicit expressions/maps. A dimension change previews the affected geometry, bounds and links, validates the captured generation and commits through the ordinary command path. A live state incompatible with new limits follows a supported state transition or explicit pause/restart; it is not silently clipped. Generated face changes use existing correspondence/repair rather than triangle indices.
+
+### Task CBN.T03
+
+- [ ] Keep construction recomputation, rigid runtime pose and rendering cadence separate. Opening the hatch does not reevaluate exact CAD on every frame. A reusable authoring operation that produces geometry uses preview/validated adoption; a device action changes only its activity under the selected model. Preserve source/history, accepted dimensions and unrelated descendants while derived products are pending or failed.
+
+### Task CBN.T04
+
+- [ ] Prove OA.W04 with native numeric/spatial edits, unit conversion, an invalid operating range, renamed/deleted/ambiguous feature, two instances, stale kernel result, undo/reopen and restricted shared updates. Independently check dimensions and operating bounds. Measure affected-product work, kernel cancellations and runtime continuity; no inferred motor forces, electrical model or automatic equivalent-model derivation. Publish the real binding adapter and unsupported relationships.
+
+## Completion
+
+Read OA.R03–OA.R06/OA.R09–OA.R12 and CAD R0398–R0405. Required evidence includes the first plain mesh hatch retained alongside the CAD extension. Consumer: [Object authoring acceptance](../contracts/Object-authoring-contracts.lingua). Current outcome: unbuilt and unverified.
+} r_1H5FC1Z7KP93YADKTB90YMTN7E

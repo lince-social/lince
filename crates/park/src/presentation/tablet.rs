@@ -26,21 +26,21 @@ impl Presentation {
             return Ok(false);
         }
         let geometry = self.frame_geometry();
-        let views = self.accessibility_views(geometry.as_ref());
+        let views = self.accessibility_views(geometry.as_deref());
         let current = self.app.world().resource::<Pens>().tools.get(&id);
         let exists = current.is_some();
         let held = !matches!(event.event.phase, TabletPhase::Enter) && current.is_some_and(|pen| pen.tip || !pen.buttons.is_empty());
-        let captured = if !held { event.target.clone().filter(|target| pointer::current(self.app.world(), &views, geometry.as_ref(), target)) }
+        let captured = if !held { event.target.clone().filter(|target| pointer::current(self.app.world(), &views, geometry.as_deref(), target)) }
             else { current.map(|pen| pen.target.clone()) };
         let Some(captured) = captured else { if same { self.cancel_tablet_id(id, TabletPhase::Cancel); } return Ok(false); };
         let mapping = self.app.world().get_resource::<lince_interface::host::mapping::Snapshot>().and_then(|snapshot| snapshot.get(event.event.output));
         if !event.event.axes.valid() || event.event.point.iter().any(|value| !value.is_finite()) || captured.output() != Some(event.event.output)
             || mapping.is_none_or(|mapping| mapping.revision() != event.mapping)
-            || !pointer::held_current(self.app.world(), &views, geometry.as_ref(), &captured) {
+            || !pointer::held_current(self.app.world(), &views, geometry.as_deref(), &captured) {
             if same { self.cancel_tablet_id(id, TabletPhase::Cancel); }
             return Ok(false);
         }
-        let Some(location) = pointer::location(self.app.world_mut(), &views, geometry.as_ref(), &captured, event.event.point) else { return Ok(false); };
+        let Some(location) = pointer::location(self.app.world_mut(), &views, geometry.as_deref(), &captured, event.event.point) else { return Ok(false); };
         let acquire = matches!(event.event.phase, TabletPhase::Enter)
             || !same && !exists && (event.fresh_press || !event.held && matches!(event.event.phase, TabletPhase::Motion));
         if acquire {
@@ -103,10 +103,13 @@ impl Presentation {
     }
 
     pub(super) fn reconcile_tablet(&mut self) {
+        if self.app.world().resource::<Pens>().tools.is_empty() {
+            return;
+        }
         let geometry = self.frame_geometry();
-        let views = self.accessibility_views(geometry.as_ref());
+        let views = self.accessibility_views(geometry.as_deref());
         let ids = self.app.world().resource::<Pens>().tools.iter().filter_map(|(id, pen)|
-            (pen.lifetime.load(Ordering::Acquire) != pen.epoch || !pointer::held_current(self.app.world(), &views, geometry.as_ref(), &pen.target)
+            (pen.lifetime.load(Ordering::Acquire) != pen.epoch || !pointer::held_current(self.app.world(), &views, geometry.as_deref(), &pen.target)
                 || pen.scope.load(Ordering::Acquire) != pen.scope_epoch
                 || self.app.world().get_resource::<lince_interface::host::mapping::Snapshot>().and_then(|snapshot| snapshot.get(pen.last.output))
                     .is_none_or(|mapping| mapping.revision() != pen.mapping)).then_some(*id)).collect::<Vec<_>>();

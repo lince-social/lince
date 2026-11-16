@@ -358,6 +358,10 @@ impl Workspace {
     }
 
     pub fn valid(&self) -> bool {
+        #[cfg(feature = "native-presentation")]
+        let _validation = engine::performance::Span::new("desktop-model-validation");
+        #[cfg(feature = "native-presentation")]
+        engine::performance::add("desktop-model-validations", 1);
         if self.items.len() > MAX_ITEMS
             || self.columns.len() > self.items.len()
             || !self.gap.is_finite()
@@ -369,11 +373,11 @@ impl Workspace {
         {
             return false;
         }
-        let mut all = BTreeSet::new();
+        let mut all = BTreeMap::new();
         let mut tiled = BTreeSet::new();
         for item in &self.items {
             if item.id.0 == [0; 16]
-                || !all.insert(item.id)
+                || all.insert(item.id, item).is_some()
                 || !item.rules.valid()
                 || item.free.rectangle().is_none()
                 || item.free_width.is_some_and(|width| !width.valid())
@@ -393,29 +397,46 @@ impl Workspace {
                 return false;
             }
         }
-        tiled == arranged
-            && self.rows.valid(&self.items)
-            && self.maximized.iter().all(|id| all.contains(id))
-            && self.minimized.iter().all(|id| all.contains(id))
+        if tiled != arranged {
+            return false;
+        }
+        let Some(rows) = self.rows.validated(&all, &tiled) else {
+            return false;
+        };
+        self.maximized.iter().all(|id| all.contains_key(id))
+            && self.minimized.iter().all(|id| all.contains_key(id))
             && self
                 .minimized_fullscreen
                 .iter()
                 .all(|id| self.minimized.contains(id))
-            && self.focused.is_none_or(|id| !self.minimized.contains(&id) && !self.scratch_hidden(id))
+            && self
+                .focused
+                .is_none_or(|id| !self.minimized.contains(&id) && !self.scratch_hidden(id))
             && self
                 .fullscreen
                 .is_none_or(|id| !self.minimized.contains(&id))
             && self.influences.iter().all(|(id, influence)| {
-                all.contains(id)
+                all.contains_key(id)
                     && influence.scale.is_finite()
                     && (0.05..=20.0).contains(&influence.scale)
             })
-            && self.focused.is_none_or(|id| all.contains(&id))
-            && self.fullscreen.is_none_or(|id| all.contains(&id))
-            && self.fullscreen.is_none_or(|id| !self.compact_hidden(id) && !self.scratch_hidden(id))
-            && self.scratch.iter().all(|(id, scratch)| all.contains(id) && scratch.valid(*id) && self.compact_group(*id).is_none())
-            && self.windowed_fullscreen.iter().all(|id| self.fullscreen != Some(*id)
-                && self.items.iter().any(|item| item.id == *id && item.kind == ItemKind::Application))
+            && self.focused.is_none_or(|id| all.contains_key(&id))
+            && self.fullscreen.is_none_or(|id| all.contains_key(&id))
+            && self.fullscreen.is_none_or(|id| {
+                (self.mode != WorkspaceLayout::Tiled
+                    || !rows.grouped.contains(&id)
+                    || rows.arranged.contains(&id))
+                    && !self.scratch_hidden(id)
+            })
+            && self.scratch.iter().all(|(id, scratch)| {
+                all.contains_key(id) && scratch.valid(*id) && !rows.grouped.contains(id)
+            })
+            && self.windowed_fullscreen.iter().all(|id| {
+                self.fullscreen != Some(*id)
+                    && all
+                        .get(id)
+                        .is_some_and(|item| item.kind == ItemKind::Application)
+            })
     }
 
     pub fn insert(&mut self, item: Item) -> Result<(), LayoutError> {
@@ -880,22 +901,36 @@ impl Workspace {
         if self.mode == WorkspaceLayout::ScrollingColumns {
             self.split_overflow(inner[1], gap);
         }
-        let columns: Vec<_> = self
-            .columns
-            .iter()
-            .filter_map(|column| {
-                let mut column = column.clone();
-                column.items.retain(|id| !hidden.contains(id));
-                (!column.items.is_empty()).then_some(column)
-            })
-            .collect();
-        let entries: BTreeMap<_, _> = self
-            .items
-            .iter()
-            .filter(|item| !hidden.contains(&item.id))
-            .map(|item| (item.id, item))
-            .collect();
-        let mut solved = Vec::with_capacity(self.items.len());
+        // Free and tiled layouts do not consume the column projection. Free
+        // layouts need the item index only when applying maximized geometry.
+        // Prepare these invocation-local views at their actual first use.
+        let source_columns = &self.columns;
+        let columns = std::cell::LazyCell::new(|| {
+            #[cfg(feature = "native-presentation")]
+            engine::performance::add("desktop-solver-columns-prepared", 1);
+            source_columns
+                .iter()
+                .filter_map(|column| {
+                    let mut column = column.clone();
+                    column.items.retain(|id| !hidden.contains(id));
+                    (!column.items.is_empty()).then_some(column)
+                })
+                .collect::<Vec<_>>()
+        });
+        let source_items = &self.items;
+        let entries = std::cell::LazyCell::new(|| {
+            #[cfg(feature = "native-presentation")]
+            engine::performance::add("desktop-solver-indexes-prepared", 1);
+            source_items
+                .iter()
+                .filter(|item| !hidden.contains(&item.id))
+                .map(|item| (item.id, item))
+                .collect::<BTreeMap<_, _>>()
+        });
+        let mut solved = Vec::new();
+        if self.mode != WorkspaceLayout::Tiled {
+            solved.reserve(self.items.len());
+        }
         let mut extent = inner;
         match self.mode {
             WorkspaceLayout::Tiled => {
@@ -926,7 +961,7 @@ impl Workspace {
             }
             WorkspaceLayout::ScrollingColumns => {
                 let mut x = gap;
-                for column in &columns {
+                for column in columns.iter() {
                     let requested = if column.maximized {
                         inner[0]
                     } else {

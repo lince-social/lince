@@ -498,7 +498,7 @@ fn exercise(world: &mut World) {
             world
                 .entity_mut(asset)
                 .insert(lince_sandbox::area::RecordProperties(
-                    serde_json::json!({"quantity": 999}),
+                    serde_json::json!({"quantity": 999}).into(),
                 ));
             let barrier = lince_sandbox::sand_store::spawn_sand(
                 world,

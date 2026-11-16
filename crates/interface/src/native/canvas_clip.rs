@@ -1,9 +1,12 @@
 use crate::native::canvas::CanvasView;
 use bevy::{
+    ecs::entity::EntityHashMap,
     math::Affine2,
     prelude::*,
     render::{Extract, ExtractSchedule, RenderApp},
-    ui::{OverrideClip, UiSystems, widget::TextScroll},
+    ui::{
+        OverrideClip, UiClippingBoundary, UiSystems, experimental::UiChildren, widget::TextScroll,
+    },
     ui_render::{ExtractedUiNodes, RenderUiSystems},
 };
 
@@ -14,7 +17,13 @@ struct TextStart(usize);
 
 impl Plugin for CanvasClipPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, canvas_clips.after(UiSystems::PostLayout));
+        app.add_systems(
+            PostUpdate,
+            (
+                clipping_boundaries.before(UiSystems::Prepare),
+                canvas_clips.after(UiSystems::PostLayout),
+            ),
+        );
         if let Some(render) = app.get_sub_app_mut(RenderApp) {
             render.init_resource::<TextStart>().add_systems(
                 ExtractSchedule,
@@ -31,6 +40,38 @@ impl Plugin for CanvasClipPlugin {
     }
 }
 
+// Install ownership only when the canvas clip pass is present. CanvasView can
+// also be used by small hosts that rely entirely on Bevy's ordinary clip pass.
+fn clipping_boundaries(
+    missing: Query<Entity, (With<CanvasView>, Without<UiClippingBoundary>)>,
+    canvases: Query<(), With<CanvasView>>,
+    mut removed: RemovedComponents<CanvasView>,
+    mut commands: Commands,
+) {
+    for entity in &missing {
+        commands
+            .entity(entity)
+            .insert(UiClippingBoundary::default());
+    }
+    for entity in removed.read() {
+        if canvases.get(entity).is_err() {
+            commands.entity(entity).try_remove::<UiClippingBoundary>();
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ParentClip {
+    bounds: Option<Rect>,
+    parent: Option<Entity>,
+}
+
+#[derive(Default)]
+struct ClipPreparation {
+    parents: EntityHashMap<ParentClip>,
+    pending: Vec<(Entity, Option<Rect>)>,
+}
+
 fn bounds(rect: Rect, transform: &Affine2) -> Rect {
     let scale = Vec2::new(
         transform.matrix2.x_axis.length(),
@@ -45,18 +86,60 @@ fn bounds(rect: Rect, transform: &Affine2) -> Rect {
 fn canvas_clips(
     roots: Query<Entity, With<CanvasView>>,
     nodes: Query<(&Node, &ComputedNode, &UiGlobalTransform, Has<OverrideClip>)>,
-    children: Query<&Children>,
+    children: UiChildren,
     layouts: Query<&crate::native::layout::LayoutRuntime>,
+    mut boundaries: Query<&mut UiClippingBoundary>,
     mut clips: Query<&mut CalculatedClip>,
     mut commands: Commands,
+    mut preparation: Local<ClipPreparation>,
 ) {
-    for root in &roots {
-        let initial = clips.get(root).ok().map(|clip| clip.clip);
-        let mut pending = vec![(root, initial)];
+    let _preparation = engine::performance::Span::new("native-canvas-clipping");
+    let ClipPreparation { parents, pending } = &mut *preparation;
+    parents.clear();
+    pending.clear();
+    let mut visited = 0;
+    let mut ancestor_visits = 0;
+    'roots: for root in &roots {
+        // An enclosing canvas visits nested canvas roots with their current
+        // incoming clip. Starting them independently would repeat the subtree
+        // and could queue conflicting component insertions/removals before
+        // commands are applied. Stop at a gap or another owner's boundary;
+        // neither is traversed by an enclosing native canvas.
+        let mut ancestor = root;
+        while let Some(parent) = children.get_parent(ancestor) {
+            if !nodes.contains(parent) {
+                break;
+            }
+            if roots.contains(parent) {
+                continue 'roots;
+            }
+            if boundaries.contains(parent) {
+                break;
+            }
+            ancestor = parent;
+        }
+        let initial = boundaries
+            .get(root)
+            .map(|boundary| boundary.inherited_clip)
+            .unwrap_or_else(|_| clips.get(root).ok().map(|clip| clip.clip));
+        pending.push((root, initial));
         while let Some((entity, mut clip)) = pending.pop() {
             let Ok((node, computed, transform, override_clip)) = nodes.get(entity) else {
                 continue;
             };
+            visited += 1;
+            if entity != root
+                && let Ok(mut boundary) = boundaries.get_mut(entity)
+            {
+                if boundary.inherited_clip != clip {
+                    boundary.inherited_clip = clip;
+                }
+                // Another owner may delegate a nested subtree. Native canvas
+                // roots use this same pass; leave other owners their input.
+                if !roots.contains(entity) {
+                    continue;
+                }
+            }
             if override_clip {
                 clip = None;
             }
@@ -66,15 +149,24 @@ fn canvas_clips(
             let mut container = layouts.get(entity).ok().and_then(|layout| layout.parent);
             for _ in 0..crate::native::layout::MAX_DEPTH {
                 let Some(parent) = container else { break };
-                if let Ok((parent_node, parent_computed, parent_transform, _)) = nodes.get(parent) {
-                    let own = if parent_node.display == Display::None {
-                        Rect::default()
-                    } else {
-                        bounds(parent_computed.content_box(), &parent_transform.affine())
-                    };
+                ancestor_visits += 1;
+                let prepared = parents.entry(parent).or_insert_with(|| ParentClip {
+                    bounds: nodes
+                        .get(parent)
+                        .ok()
+                        .map(|(node, computed, transform, _)| {
+                            if node.display == Display::None {
+                                Rect::default()
+                            } else {
+                                bounds(computed.content_box(), &transform.affine())
+                            }
+                        }),
+                    parent: layouts.get(parent).ok().and_then(|layout| layout.parent),
+                });
+                if let Some(own) = prepared.bounds {
                     clip = Some(clip.map_or(own, |inherited| inherited.intersect(own)));
                 }
-                container = layouts.get(parent).ok().and_then(|layout| layout.parent);
+                container = prepared.parent;
             }
             match (clips.get_mut(entity), clip) {
                 (Ok(mut current), Some(clip)) => {
@@ -97,10 +189,17 @@ fn canvas_clips(
                 );
                 clip = Some(clip.map_or(own, |parent| parent.intersect(own)));
             }
-            if let Ok(children) = children.get(entity) {
-                pending.extend(children.iter().map(|child| (child, clip)));
-            }
+            pending.extend(children.iter_ui_children(entity).map(|child| (child, clip)));
         }
+    }
+    engine::performance::add("native-canvas-clip-nodes", visited);
+    engine::performance::add("native-canvas-clip-ancestor-visits", ancestor_visits);
+    engine::performance::add("native-canvas-clip-parents-prepared", parents.len() as u64);
+    if parents.capacity() > (parents.len().saturating_mul(4)).max(256) {
+        parents.shrink_to_fit();
+    }
+    if pending.capacity() > (visited as usize).saturating_mul(4).max(256) {
+        pending.shrink_to_fit();
     }
 }
 
@@ -117,13 +216,30 @@ fn text_clips(
             Or<(With<TextScroll>, With<crate::native::sand_text::SandText>)>,
         >,
     >,
+    mut prepared: Local<EntityHashMap<Rect>>,
 ) {
+    let _clipping = engine::performance::Span::new("native-text-clipping");
+    prepared.clear();
+    let mut visited = 0;
     for node in extracted.uinodes.iter_mut().skip(start.0) {
-        let Ok((computed, transform, inherited)) = texts.get(*node.main_entity) else {
-            continue;
+        visited += 1;
+        let clip = if let Some(clip) = prepared.get(&*node.main_entity) {
+            *clip
+        } else {
+            let Ok((computed, transform, inherited)) = texts.get(*node.main_entity) else {
+                continue;
+            };
+            let clip = bounds(computed.content_box(), &transform.affine());
+            let clip = inherited.map_or(clip, |parent| clip.intersect(parent.clip));
+            prepared.insert(*node.main_entity, clip);
+            clip
         };
-        let clip = bounds(computed.content_box(), &transform.affine());
-        node.clip = Some(inherited.map_or(clip, |parent| clip.intersect(parent.clip)));
+        node.clip = Some(clip);
+    }
+    engine::performance::add("native-text-clip-nodes", visited);
+    engine::performance::add("native-text-clips-prepared", prepared.len() as u64);
+    if prepared.capacity() > (prepared.len().saturating_mul(4)).max(256) {
+        prepared.shrink_to_fit();
     }
 }
 

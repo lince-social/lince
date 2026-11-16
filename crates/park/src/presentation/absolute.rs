@@ -11,23 +11,23 @@ impl Presentation {
         }
         self.app.world_mut().init_resource::<Contacts>();
         let geometry = self.frame_geometry();
-        let views = self.accessibility_views(geometry.as_ref());
+        let views = self.accessibility_views(geometry.as_deref());
         let captured = if matches!(event.phase, TouchPhase::Started) {
-            event.target.filter(|target| pointer::current(self.app.world(), &views, geometry.as_ref(), target))
+            event.target.filter(|target| pointer::current(self.app.world(), &views, geometry.as_deref(), target))
         } else {
             self.app.world().resource::<Contacts>().0.get(&event.id).map(|contact| contact.target.clone())
         };
         let Some(captured) = captured else { return Ok(false); };
         let mapping_current = captured.output().and_then(|output| self.app.world().get_resource::<lince_interface::host::mapping::Snapshot>()?.get(output))
             .is_some_and(|mapping| mapping.revision() == event.mapping);
-        let held = pointer::held_current(self.app.world(), &views, geometry.as_ref(), &captured);
+        let held = pointer::held_current(self.app.world(), &views, geometry.as_deref(), &captured);
         if !held || !mapping_current || matches!(event.phase, TouchPhase::Canceled) || event.point.iter().any(|value| !value.is_finite()) {
             self.cancel_touch_id(event.id);
             return Ok(false);
         }
         let Some(view) = views.iter().find(|view| Some(view.output) == captured.output()) else { self.cancel_touch_id(event.id); return Ok(false); };
         let touch_position = Vec2::from_array(view.raster.point(event.point).map(|value| (value / view.raster.scale[0]) as f32));
-        let Some(location) = pointer::location(self.app.world_mut(), &views, geometry.as_ref(), &captured, event.point)
+        let Some(location) = pointer::location(self.app.world_mut(), &views, geometry.as_deref(), &captured, event.point)
             else { self.cancel_touch_id(event.id); return Ok(false); };
         let window = self.input_window()?;
         let previous = self.app.world().resource::<Contacts>().0.get(&event.id).map(|contact| contact.location.position).unwrap_or(location.position);
@@ -121,10 +121,13 @@ impl Presentation {
     }
 
     pub(super) fn reconcile_touch(&mut self) {
+        if self.app.world().get_resource::<Contacts>().is_none_or(|contacts| contacts.0.is_empty()) {
+            return;
+        }
         let geometry = self.frame_geometry();
-        let views = self.accessibility_views(geometry.as_ref());
+        let views = self.accessibility_views(geometry.as_deref());
         let invalid = self.app.world().get_resource::<Contacts>().map(|contacts| contacts.0.iter().filter_map(|(id, contact)|
-            (!pointer::held_current(self.app.world(), &views, geometry.as_ref(), &contact.target)
+            (!pointer::held_current(self.app.world(), &views, geometry.as_deref(), &contact.target)
                 || contact.lifetime.load(std::sync::atomic::Ordering::Acquire) != contact.epoch
                 || contact.target.output().and_then(|output| self.app.world().get_resource::<lince_interface::host::mapping::Snapshot>()?.get(output))
                     .is_none_or(|mapping| mapping.revision() != contact.mapping)).then_some(*id)).collect::<Vec<_>>()).unwrap_or_default();

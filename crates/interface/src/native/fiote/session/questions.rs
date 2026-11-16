@@ -120,7 +120,7 @@ pub(super) fn sync(world: &mut World, saved: &FioteStatus) {
     }
 }
 
-pub(super) fn receive(world: &mut World, id: &str, result: &Result<FioteStatus, String>) {
+pub(super) fn receive(world: &mut World, id: &str, result: &Result<Arc<FioteStatus>, String>) {
     let cards: Vec<_> = world
         .query::<(Entity, &Card)>()
         .iter(world)

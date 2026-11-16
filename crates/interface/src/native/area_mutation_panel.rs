@@ -162,10 +162,10 @@ pub(crate) fn autosave(world: &mut World) {
         .filter(|(_, field, text)| {
             !text.is_composing()
                 && !crate::native::record_view::pending_text(text)
-                && text.value().to_string() != field.observed
                 && world
                     .get::<crate::native::edit_mode::EditMode>(field.root)
                     .is_some_and(|mode| mode.enabled && mode.areas)
+                && text.value() != field.observed.as_str()
         })
         .map(|(entity, field, text)| {
             (

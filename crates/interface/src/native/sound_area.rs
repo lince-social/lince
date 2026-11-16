@@ -39,7 +39,18 @@ pub struct SoundStatus(pub String);
 
 #[derive(Default)]
 struct Crossings {
-    areas: HashMap<Entity, (SoundArea, HashMap<Entity, bool>)>,
+    areas: HashMap<Entity, Crossing>,
+}
+
+struct Crossing {
+    sound: SoundArea,
+    members: HashMap<Entity, Membership>,
+    epoch: bool,
+}
+
+struct Membership {
+    inside: bool,
+    epoch: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -50,31 +61,57 @@ struct Playback {
 }
 
 impl Crossings {
+    // Callers supply distinct current participants. Missing participants are
+    // retired silently, as before; newly present participants start outside.
     fn sample(
         &mut self,
         owner: Entity,
         sound: &SoundArea,
-        sands: HashMap<Entity, bool>,
+        sands: impl IntoIterator<Item = (Entity, bool)>,
     ) -> Vec<Playback> {
+        use std::collections::hash_map::Entry;
+        let (crossing, continuing) = match self.areas.entry(owner) {
+            Entry::Vacant(entry) => (
+                entry.insert(Crossing {
+                    sound: sound.clone(),
+                    members: HashMap::new(),
+                    epoch: false,
+                }),
+                false,
+            ),
+            Entry::Occupied(entry) => {
+                let crossing = entry.into_mut();
+                let continuing = crossing.sound == *sound;
+                if !continuing {
+                    crossing.sound.clone_from(sound);
+                }
+                (crossing, continuing)
+            }
+        };
+        crossing.epoch = !crossing.epoch;
+        let epoch = crossing.epoch;
         let mut plays = Vec::new();
-        if let Some((previous_sound, previous)) = self.areas.get(&owner)
-            && previous_sound == sound
-        {
-            for (sand, inside) in &sands {
-                let before = previous.get(sand).copied().unwrap_or(false);
-                if before != *inside {
-                    let path = if *inside { &sound.enter } else { &sound.leave };
-                    if !path.is_empty() && !plays.iter().any(|play: &Playback| play.path == *path) {
-                        plays.push(Playback {
-                            owner,
-                            path: path.clone(),
-                            volume: sound.volume,
-                        });
-                    }
+        for (sand, inside) in sands {
+            let member = crossing.members.entry(sand).or_insert(Membership {
+                inside: false,
+                epoch,
+            });
+            if continuing && member.inside != inside {
+                let path = if inside { &sound.enter } else { &sound.leave };
+                if !path.is_empty() && !plays.iter().any(|play: &Playback| play.path == *path) {
+                    plays.push(Playback {
+                        owner,
+                        path: path.clone(),
+                        volume: sound.volume,
+                    });
                 }
             }
+            member.inside = inside;
+            member.epoch = epoch;
         }
-        self.areas.insert(owner, (sound.clone(), sands));
+        // Every absent entry is removed on this pass, so a two-state epoch
+        // cannot alias stale membership after another pass.
+        crossing.members.retain(|_, member| member.epoch == epoch);
         plays
     }
 }
@@ -106,11 +143,36 @@ fn update(world: &mut World) {
     if !crate::native::laboratory::normal(world) {
         return;
     }
-    let areas: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
+    world
+        .run_system_cached(sample_crossings)
+        .expect("sample sound Area crossings");
+}
+
+fn sample_crossings(
+    world: &mut World,
+    sources: &mut QueryState<(
+        Entity,
+        &'static InfluenceArea,
+        &'static ChildOf,
+        &'static WorkspaceMember,
+    )>,
+    items: &mut QueryState<
+        (
+            Entity,
+            &'static CanvasItem,
+            &'static ChildOf,
+            &'static WorkspaceMember,
+        ),
+        Without<InfluenceArea>,
+    >,
+    shields: &mut crate::native::topology::influence::BlockerQuery,
+) {
+    let _sampling = nucleus::performance::Span::new("sound-crossing-sample");
+    let areas: Vec<_> = sources
         .iter(world)
         .filter(|(entity, area, parent, member)| {
-            !crate::native::laboratory::blocked(world, *entity)
+            area.sound.is_some()
+                && !crate::native::laboratory::blocked(world, *entity)
                 && crate::native::influence_report::activity(
                     world,
                     *entity,
@@ -118,81 +180,85 @@ fn update(world: &mut World) {
                     parent.parent(),
                     member.0,
                 ) == crate::native::influence_report::Outcome::Active
-                && area.sound.is_some()
                 && area.validate()
                 && crate::native::topology::holes::live(world, parent.parent(), member.0)
         })
-        .map(|(entity, area, parent, member)| (entity, area.clone(), parent.parent(), member.0))
+        .map(|(entity, _, parent, member)| (entity, parent.parent(), member.0))
         .collect();
-    let sands: Vec<_> = world.query_filtered::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember), Without<InfluenceArea>>()
-        .iter(world).map(|(e, i, p, m)| (e, *i, p.parent(), m.0)).collect();
+    if areas.is_empty()
+        && world
+            .get_resource::<Runtime>()
+            .is_none_or(|runtime| runtime.0.areas.is_empty())
+    {
+        return;
+    }
+    let active: std::collections::HashSet<_> = areas.iter().map(|(entity, ..)| *entity).collect();
     let mut runtime = world.remove_resource::<Runtime>().unwrap_or_default();
     runtime.0.areas.retain(|entity, _| {
-        let active = areas.iter().any(|(e, ..)| e == entity);
-        if !active {
+        let retained = active.contains(entity);
+        if !retained {
             let _ = crate::native::sound::send(world, crate::native::sound::Command::Stop(*entity));
         }
-        active
+        retained
     });
-    for (entity, area, root, workspace) in areas {
-        let spatial = world
-            .get::<crate::native::topology::presentation::SpatialRoot>(root)
-            .is_some();
-        let placement = crate::native::topology::spatial(world, entity);
-        let members = sands
-            .iter()
-            .filter(|(_, _, parent, member)| *parent == root && *member == workspace)
-            .filter_map(|(sand, item, _, _)| {
-                let record = world.get::<crate::native::area::RecordProperties>(*sand);
-                let matches = if area.filter.is_some() {
-                    record.is_some_and(|record| {
-                        world
-                            .get::<crate::native::protein_area::filter::Matches>(entity)
-                            .is_some_and(|filter| {
-                                filter.allows(
-                                    record,
-                                    world.get::<crate::native::protein_area::RecordBinding>(*sand),
-                                )
-                            })
-                    })
-                } else {
-                    area.rules.is_empty() || record.is_some_and(|record| area.matches(record))
-                };
-                let inside = matches
-                    && if spatial {
-                        crate::native::topology::influence::contains(
-                            &area,
-                            placement,
-                            crate::native::topology::participation_point(world, *sand, item),
-                        )
+    // Stop departed sources before returning, but do not visit ordinary canvas
+    // items at all when no sound source needs membership.
+    if areas.is_empty() {
+        world.insert_resource(runtime);
+        return;
+    }
+    let mut scopes: HashMap<(Entity, u64), Vec<(Entity, CanvasItem)>> = HashMap::new();
+    for (_, root, workspace) in &areas {
+        scopes.entry((*root, *workspace)).or_default();
+    }
+    let mut prepared = 0;
+    for (entity, item, parent, member) in items.iter(world) {
+        if let Some(scope) = scopes.get_mut(&(parent.parent(), member.0)) {
+            scope.push((entity, *item));
+            prepared += 1;
+        }
+    }
+    nucleus::performance::add("sound-crossing-items-prepared", prepared);
+    let mut evaluated = 0;
+    let mut requested = 0;
+    for (entity, root, workspace) in areas {
+        let plays = {
+            let area = world.get::<InfluenceArea>(entity).unwrap();
+            let sound = area.sound.as_ref().unwrap();
+            let spatial = world
+                .get::<crate::native::topology::presentation::SpatialRoot>(root)
+                .is_some();
+            let placement = crate::native::topology::spatial(world, entity);
+            let filter = world.get::<crate::native::protein_area::filter::Matches>(entity);
+            let blockers = crate::native::topology::influence::Blockers::prepare(
+                world, shields, root, workspace, entity, false,
+            );
+            let members = scopes[&(root, workspace)]
+                .iter()
+                .filter_map(|(sand, item)| {
+                    evaluated += 1;
+                    let record = world.get::<crate::native::area::RecordProperties>(*sand);
+                    let binding = world.get::<crate::native::protein_area::RecordBinding>(*sand);
+                    let point = crate::native::topology::participation_point(world, *sand, item);
+                    let matches = if area.filter.is_some() {
+                        record.is_some_and(|record| {
+                            filter.is_some_and(|filter| filter.allows(record, binding))
+                        })
                     } else {
-                        area.contains(item.position)
+                        area.rules.is_empty() || record.is_some_and(|record| area.matches(record))
                     };
-                let point = crate::native::topology::participation_point(world, *sand, item);
-                let record = record.cloned();
-                let binding = world
-                    .get::<crate::native::protein_area::RecordBinding>(*sand)
-                    .cloned();
-                if crate::native::topology::influence::blocked(
-                    world,
-                    root,
-                    workspace,
-                    entity,
-                    point,
-                    record.as_ref(),
-                    binding.as_ref(),
-                    false,
-                ) {
-                    None
-                } else {
-                    Some((*sand, inside))
-                }
-            })
-            .collect();
-        for play in runtime
-            .0
-            .sample(entity, area.sound.as_ref().unwrap(), members)
-        {
+                    let inside = matches
+                        && if spatial {
+                            crate::native::topology::influence::contains(area, placement, point)
+                        } else {
+                            area.contains(item.position)
+                        };
+                    (!blockers.blocks(point, record, binding)).then_some((*sand, inside))
+                });
+            runtime.0.sample(entity, sound, members)
+        };
+        requested += plays.len() as u64;
+        for play in plays {
             let result = crate::native::sound::send(
                 world,
                 crate::native::sound::Command::Play {
@@ -202,10 +268,16 @@ fn update(world: &mut World) {
                     volume: play.volume,
                 },
             );
-            if let Err(error) = result {
+            if let Err(error) = result
+                && world
+                    .get::<SoundStatus>(entity)
+                    .is_none_or(|status| status.0 != error)
+            {
                 world.entity_mut(entity).insert(SoundStatus(error));
             }
         }
     }
+    nucleus::performance::add("sound-crossing-members-evaluated", evaluated);
+    nucleus::performance::add("sound-crossing-playback-requests", requested);
     world.insert_resource(runtime);
 }

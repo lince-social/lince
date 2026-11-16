@@ -1,0 +1,29 @@
+Optional automatic exploration (@ws-automatic-exploration: 0, is #chapter, #part-of @workspace-development, #requires @ws-exploration) { r_11YTJ9FKCEJ8RQTJEXJZVRSEWP
+Status: Optional, pending. The owner requested the exploration points from the Everything comparison; automatic observation remains an optional extension and does not block core exploration or possession.
+
+[Development graph](../Workspace-Development.lingua) · [Exploration contracts](../contracts/Exploration-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Require the verified [Exploration](Exploration.lingua) session/input export. Deliver an explicitly started observation tour through chosen objects and available scales, with immediate manual takeover and a return to the user's starting context. It can proceed alongside possession after the shared exploration boundary is fixed. Character control, globe data, physical solvers and runtime recording are not prerequisites.
+
+## Ordered work
+
+### Task AUTO.T01
+
+- [ ] Add an opt-in Explore automatically action with a bounded selected region/object list or authored route, dwell/transition preferences and Pause/Stop/Return. Reuse the shared selection/query/history service and permitted observations. The first strategy visits chosen subjects and their available internal/surrounding contexts. An activity-following strategy may rank only already exposed supported activity signals; missing activity data does not cause a new evaluator or global scan. Use declared repeat/seed behavior for reproducible routes and avoid immediately oscillating between the same subjects.
+
+### Task AUTO.T02
+
+- [ ] Drive existing exploration commands with a cancellable, budgeted view activity. Respect reduced motion, offline/source permissions, admitted coarse coverage and loading limits. Bounded prefetch may use existing budgets; unavailable detail is skipped or shown as partial without increasing caps. A useful user input, explicit stop, focus loss or permission change pauses/stops automation and cancels queued camera actions before manual control proceeds. Do not resume merely because the user becomes idle. Stop/Return restores a valid saved context using exploration repair and releases tour-only demand.
+
+### Task AUTO.T03
+
+- [ ] Prove AUTO.W01: start a small tour, traverse available scales, encounter missing/private/offline content, interrupt during a transition and resume only by explicit action. Assert zero authored transforms, possession/control grants, model changes, solver starts or accepted operational events. Record frame/input/transition latency, bounded route/history/prefetch bytes, cancellation and settled idle after stopping. Use deterministic target selection for correctness and isolated runs for timing; no continuous Fiote call is part of tour evaluation.
+
+## Ownership and handoff
+
+Own only the tour strategy, controls and scheduling adapter over the published exploration API. Reserve any shared view/input edit with that service's owner in the current checkout; no second camera controller or world generator. Existing play/animation can continue according to its own policy while the tour observes it, but this feature does not start it or change its time/fidelity. Save route/preferences through existing document/view configuration; do not persist active control authority or mandatory dense recordings.
+
+Publish the supported strategies, interruption/return behavior, admitted resource profile and AUTO.W01 native proof. Core acceptance may record this as unavailable without failing; an automatic-exploration capability claim requires this package's own complete proof. Current outcome: unbuilt and unverified.
+} r_11YTJ9FKCEJ8RQTJEXJZVRSEWP

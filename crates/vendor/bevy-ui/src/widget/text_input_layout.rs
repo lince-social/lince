@@ -6,7 +6,7 @@ use crate::{ComputedNode, ComputedUiRenderTargetInfo, ContentSize, NodeMeasure};
 use bevy_asset::Assets;
 
 use bevy_ecs::{
-    change_detection::{DetectChanges, DetectChangesMut},
+    change_detection::{DetectChanges, DetectChangesMut, Mut},
     component::Component,
     entity::{Entity, EntityHashMap},
     lifecycle::RemovedComponents,
@@ -300,14 +300,18 @@ pub fn update_editable_text_styles(
     }
 }
 
-/// Syncs each [`EditableText`]'s viewport size with their `ComputedNode`'s content size before text edits are applied.
+/// Syncs each [`EditableText`]'s viewport size with its computed content box.
 pub fn sync_editable_text_viewports(mut query: Query<(&mut EditableText, &ComputedNode)>) {
     for (mut editable_text, computed_node) in &mut query {
-        let size = computed_node.content_box().size();
-        if editable_text.viewport.size != size {
-            editable_text.viewport.size = size;
-            editable_text.editor.set_width(Some(size.x));
-        }
+        sync_viewport(&mut editable_text, computed_node);
+    }
+}
+
+fn sync_viewport(editable_text: &mut Mut<EditableText>, computed_node: &ComputedNode) {
+    let size = computed_node.content_box().size();
+    if editable_text.viewport.size != size {
+        editable_text.viewport.size = size;
+        editable_text.editor.set_width(Some(size.x));
     }
 }
 
@@ -362,6 +366,7 @@ pub fn update_editable_text_layout(
         mut generation,
     ) in input_field_query.iter_mut()
     {
+        sync_viewport(&mut editable_text, &computed_node);
         let retained = layouts.entry(entity).or_default();
         if editable_text.is_added() {
             *retained = EditableTextLayoutState::default();

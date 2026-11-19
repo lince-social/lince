@@ -154,7 +154,7 @@ impl Plugin for TimeCastlePlugin {
             .add_systems(
                 PostUpdate,
                 render::update
-                    .after(bevy::ui::UiSystems::PostLayout)
+                    .after(bevy::ui::UiSystems::Layout)
                     .before(bevy::transform::TransformSystems::Propagate),
             )
             .add_systems(Update, audio::update.after(update));

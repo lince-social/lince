@@ -92,6 +92,10 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         AssetSourceBuilder::new(move || AssetSource::get_default_reader(reader_path.clone())()),
     );
     app.insert_resource(crate::native::topology::assets::AssetDirectory(directory));
+    let mut plugins = plugins.build();
+    if plugins.contains::<bevy::ui_widgets::MenuPlugin>() {
+        plugins = plugins.disable::<bevy::ui_widgets::MenuPlugin>();
+    }
     app.add_plugins(plugins);
     app.add_plugins(crate::native::topology::splats::SplatPlugin)
         .add_plugins(crate::controls::editing::TextEditingPlugin)

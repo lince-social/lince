@@ -4,6 +4,14 @@ This is the single active report for the owner-requested responsiveness overhaul
 
 The active priority, updated 2026-11-19, is measurement improvement before further optimization. This turn only reorders the plan and prepares the handoff; the owner will reboot into Park with a new binary. On return verify the running revision/profile and matching tooling, then prioritize P153 → P70 → P67 → P36 → P66. Existing P156/P155 runner/comparison checks are prerequisites when needed. The dated November 15–17 execution deferrals do not block that resumed measurement visit. Registry 488, detailed verification obligations 471 and broad P tasks 85 remain unchanged; no new execution or performance claim accompanies this update.
 
+## Park login blocker, 2026-11-19
+
+SDDM opened the Park session and UWSM launched the Nix package for `fccb2fe69641`. Park selected a DRM device, then the `park-canvas` thread panicked while Bevy initialized `PostUpdate`. The journal identifies a loop from UI layout through editable text and actions back to UI layout, and a loop from transform propagation through Bevy menu focus and UI post-layout back to Time Castle rendering. SDDM returned to its greeter when the compositor exited. The startup plan preparation service separately refused the database at its read-only schema check.
+
+The fix restores text edits and action handling before layout. The existing glyph pass synchronizes the current viewport after layout, so the input system can use the last presented bounds without a second scan. Time Castle renders after its required UI layout and before 3D transform propagation. The presentation app omits Bevy’s built-in MenuPlugin because Lince uses its own menus and the built-in plugin orders editable input behind 3D visibility.
+
+The isolated debug canvas probe passed startup, rendering, independent output views, shared captures, reconnects and GPU export with the development Mesa vendor settings. All 97 interface checks passed, including Protein filter text and selection, Edit panel geometry, same-update font changes and retained layout/input ordering. Neither probe opened the personal database or booted a physical Park session. Verify the repaired release’s actual running revision and the separate startup plan preparation service on the next Park login before resuming P153 → P70 → P67 → P36 → P66.
+
 ## Owner review — what changed and what is really left, 2026-11-17
 
 This review changes the plan and explanation only. No production code, tests or fixtures are edited, and no compilation, execution or measurements are performed. The owner intends to push, judge a later binary and then authorize testing. Stop after this report; the older source-coding instruction is not permission to start another round now.

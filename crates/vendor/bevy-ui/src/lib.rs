@@ -280,9 +280,6 @@ fn build_text_interop(app: &mut App) {
                 .ambiguous_with(widget::update_image_content_size_system)
                 .ambiguous_with(widget::measure_text_system)
                 .ambiguous_with(bevy_sprite::update_text2d_layout),
-            widget::sync_editable_text_viewports
-                .after(UiSystems::Layout)
-                .before(EditableTextSystems),
             widget::update_editable_text_layout
                 .in_set(UiSystems::PostLayout)
                 // This is unlikely to result in real conflicts,
@@ -313,10 +310,7 @@ fn build_text_interop(app: &mut App) {
     );
 
     // We cannot set this up in bevy_text as this would create a circular dependency between bevy_ui and bevy_text
-    app.configure_sets(
-        PostUpdate,
-        EditableTextSystems
-            .after(UiSystems::Layout)
-            .before(UiSystems::PostLayout),
-    );
+    // Lince's editor consumers can change the UI before layout. Input uses the
+    // presented viewport, which the glyph system refreshes after layout.
+    app.configure_sets(PostUpdate, EditableTextSystems.in_set(UiSystems::Content));
 }
